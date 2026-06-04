@@ -1,0 +1,354 @@
+[
+  {
+    "id": "awwwards",
+    "data": {
+      "title": "Awwwards",
+      "items": [
+        {
+          "title": "Omega My Little Secret",
+          "type": "Site of the Day",
+          "year": "2026"
+        },
+        {
+          "title": "Omega My Little Secret",
+          "type": "Developer Award",
+          "year": "2026"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Site of the Day",
+          "year": "2026"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Developer Award",
+          "year": "2026"
+        },
+        {
+          "title": "Metropolis",
+          "type": "Site of the Day",
+          "year": "2025"
+        },
+        {
+          "title": "Metropolis",
+          "type": "Developer Award",
+          "year": "2025"
+        },
+        {
+          "title": "Following Wildfire",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Following Wildfire",
+          "type": "Developer Award",
+          "year": "2024"
+        },
+        {
+          "title": "Rogier de Boeve - Portfolio",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Rogier de Boeve - Portfolio",
+          "type": "Developer Award",
+          "year": "2024"
+        },
+        {
+          "title": "Film Secession",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Film Secession",
+          "type": "Developer Award",
+          "year": "2024"
+        },
+        {
+          "title": "Engaged",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "Engaged",
+          "type": "Developer Award",
+          "year": "2023"
+        },
+        {
+          "title": "The Hall of Zero Limits - Dogstudio",
+          "type": "Site of the Month",
+          "year": "2023"
+        },
+        {
+          "title": "The Hall of Zero Limits - Dogstudio",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "The Hall of Zero Limits - Dogstudio",
+          "type": "Developer Award",
+          "year": "2023"
+        },
+        {
+          "title": "The Roger - North Kingdom",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "The Roger - North Kingdom",
+          "type": "Developer Award",
+          "year": "2023"
+        },
+        {
+          "title": "Poppr",
+          "type": "Site of the Day",
+          "year": "2022"
+        },
+        {
+          "title": "Poppr",
+          "type": "Developer Award",
+          "year": "2022"
+        },
+        {
+          "title": "Thoughtlab",
+          "type": "Site of the Day",
+          "year": "2022"
+        },
+        {
+          "title": "Thoughtlab",
+          "type": "Developer Award",
+          "year": "2022"
+        },
+        {
+          "title": "De Morgen",
+          "type": "Mobile Of The Week",
+          "year": "2021"
+        },
+        {
+          "title": "De Morgen",
+          "type": "Mobile Excellence",
+          "year": "2021"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Site of the Day",
+          "year": "2020"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Developer Award",
+          "year": "2020"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Mobile Of The Week",
+          "year": "2020"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Mobile Excellence",
+          "year": "2020"
+        },
+        {
+          "title": "Portfolio 2020",
+          "type": "Mobile Of The Week",
+          "year": "2020"
+        },
+        {
+          "title": "Portfolio 2020",
+          "type": "Mobile Excellence",
+          "year": "2020"
+        }
+      ]
+    }
+  },
+  {
+    "id": "cssda",
+    "data": {
+      "title": "CSSDA",
+      "items": [
+        {
+          "title": "Ibex",
+          "type": "Site of the Day",
+          "year": "2026"
+        },
+        {
+          "title": "Omega My Little Secret",
+          "type": "Site of the Day",
+          "year": "2026"
+        },
+        {
+          "title": "Welcome to Berk",
+          "type": "Site of the Day",
+          "year": "2025"
+        },
+        {
+          "title": "Following Wildfire",
+          "type": "Site of the Month",
+          "year": "2024"
+        },
+        {
+          "title": "Following Wildfire",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Rogier de Boeve - Portfolio",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Film Secession",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Engaged",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "The Roger - North Kingdom",
+          "type": "Site of the Month",
+          "year": "2023"
+        },
+        {
+          "title": "The Roger - North Kingdom",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "Poppr",
+          "type": "Site of the Day",
+          "year": "2022"
+        },
+        {
+          "title": "Thoughtlab",
+          "type": "Site of the Day",
+          "year": "2022"
+        },
+        {
+          "title": "De Morgen",
+          "type": "Site of the Day",
+          "year": "2021"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Site of the Day",
+          "year": "2020"
+        },
+        {
+          "title": "Portfolio 2020",
+          "type": "Site of the Day",
+          "year": "2020"
+        }
+      ]
+    }
+  },
+  {
+    "id": "fwa",
+    "data": {
+      "title": "FWA",
+      "items": [
+        {
+          "title": "Ibex",
+          "type": "Site of the Day",
+          "year": "2026"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Site of the Day",
+          "year": "2025"
+        },
+        {
+          "title": "Omega My Little Secret",
+          "type": "Site of the Day",
+          "year": "2025"
+        },
+        {
+          "title": "Welcome to Berk",
+          "type": "Site of the Month",
+          "year": "2025"
+        },
+        {
+          "title": "Welcome to Berk",
+          "type": "Site of the Day",
+          "year": "2025"
+        },
+        {
+          "title": "Following Wildfire",
+          "type": "Site of the Month",
+          "year": "2024"
+        },
+        {
+          "title": "Following Wildfire",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Rogier de Boeve - Portfolio",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Film Secession",
+          "type": "Site of the Day",
+          "year": "2024"
+        },
+        {
+          "title": "Engaged",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "The Hall of Zero Limits - Dogstudio",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "The Roger - North Kingdom",
+          "type": "Site of the Day",
+          "year": "2023"
+        },
+        {
+          "title": "Poppr",
+          "type": "Site of the Day",
+          "year": "2022"
+        },
+        {
+          "title": "Thoughtlab",
+          "type": "Site of the Day",
+          "year": "2022"
+        },
+        {
+          "title": "De Morgen",
+          "type": "Site of the Day",
+          "year": "2021"
+        },
+        {
+          "title": "Glenn Catteeuw",
+          "type": "Site of the Day",
+          "year": "2020"
+        }
+      ]
+    }
+  },
+  {
+    "id": "webby",
+    "data": {
+      "title": "Webby Awards",
+      "items": [
+        {
+          "title": "Following Wildfire",
+          "type": "Webby Winner",
+          "year": "2024"
+        },
+        {
+          "title": "Following Wildfire",
+          "type": "People's Voice Winner",
+          "year": "2024"
+        }
+      ]
+    }
+  }
+]

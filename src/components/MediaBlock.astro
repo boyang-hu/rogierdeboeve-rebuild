@@ -1,0 +1,27 @@
+---
+import type { MediaItem } from "../types";
+
+const { item, class: className = "" } = Astro.props as { item: MediaItem; class?: string };
+const width = Number(item.size.width || 1600);
+const height = Number(item.size.height || 1200);
+const ratio = `${width} / ${height}`;
+const jpg = item.src.replace(/\.(webp|jpg|jpeg)$/i, ".jpg");
+---
+
+<div
+  class={`media-block ${className}`}
+  data-media
+  data-media-src={item.src}
+  data-media-type={item.type}
+  style={`aspect-ratio:${ratio}`}
+>
+  {item.type === "video" ? (
+    <video src={item.src} muted loop playsinline preload="metadata"></video>
+  ) : (
+    <picture>
+      <source srcset={item.src} type={item.src.endsWith(".webp") ? "image/webp" : "image/jpeg"} />
+      <source srcset={jpg} type="image/jpeg" />
+      <img src={item.src} loading="lazy" alt={item.alt} />
+    </picture>
+  )}
+</div>

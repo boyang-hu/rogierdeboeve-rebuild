@@ -1,0 +1,924 @@
+[
+  {
+    "id": "hashgraph-vc",
+    "data": {
+      "title": "Hashgraph VC",
+      "slug": "hashgraph-vc",
+      "date": "2026-01-05",
+      "url": "https://hashgraphvc.com/",
+      "thumbnail": {
+        "src": "hashgraph-vc",
+        "alt": "Hashgraph VC",
+        "mouseLightness": 2
+      },
+      "colors": {
+        "primary": "#79dbff",
+        "secondary": "#414652",
+        "media": "2E2E2E"
+      },
+      "contrast": 1.4,
+      "content": [
+        {
+          "src": "/content/hashgraphvc/images/01.webp",
+          "alt": "Hashgraph VC",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/hashgraphvc/images/02.webp",
+          "alt": "Hashgraph VC",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/hashgraphvc/videos/01.mp4",
+          "alt": "Hashgraph VC",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/hashgraphvc/videos/02.mp4",
+          "alt": "Hashgraph VC",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 0.75,
+      "darkenOverview": 0.2,
+      "darkenDetail": 0.3,
+      "client": "Hashgraph Ventures",
+      "year": "2026",
+      "role": "Creative dev",
+      "description": "Hashgraph Ventures is an early-stage VC fund at the intersection of blockchain infrastructure and AI, pre-seed through Series A."
+    }
+  },
+  {
+    "id": "gc-2026",
+    "data": {
+      "title": "GC 2026",
+      "slug": "gc-2026",
+      "date": "2026-01-01",
+      "url": "https://glenncatteeuw.com",
+      "thumbnail": {
+        "src": "gc",
+        "alt": "Glenn Catteeuw",
+        "darkness": 0.35,
+        "darknessColor": "#3b2413",
+        "saturation": 0.75,
+        "mouseLightness": 0.65
+      },
+      "colors": {
+        "primary": "#f2f2f2",
+        "secondary": "#794903",
+        "media": "#3b1e17",
+        "blocks": "#3d2717"
+      },
+      "contrast": 1.425,
+      "content": [
+        {
+          "src": "/content/gc-2026/images/01.jpg",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/gc-2026/images/02.jpg",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/gc-2026/videos/01.mp4",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/gc-2026/videos/02.mp4",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 1,
+      "saturation": 0.9,
+      "darkenOverview": 0.275,
+      "darkenDetail": 0.285,
+      "client": "Glenn Catteeuw",
+      "agency": "",
+      "year": "2026",
+      "role": "Full-stack dev",
+      "description": "Portfolio website for Glenn Catteeuw, an Interactive Art Director & Visual Designer."
+    }
+  },
+  {
+    "id": "following-wildfire",
+    "data": {
+      "title": "Following Wildfire",
+      "slug": "following-wildfire",
+      "date": "2025-05-12",
+      "thumbnail": {
+        "src": "following-wildfire",
+        "alt": "Following Wildfire",
+        "mouseLightness": 2.5
+      },
+      "colors": {
+        "primary": "#ff924e",
+        "secondary": "#794e32",
+        "media": "2E2E2E"
+      },
+      "contrast": 1.3,
+      "content": [
+        {
+          "src": "/content/following-wildfire/images/01.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/images/02.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/01.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/02.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 0.3,
+      "darkenOverview": 0.2,
+      "darkenDetail": 0.3,
+      "agency": "Reflektor digital",
+      "client": "Dentsu creative",
+      "year": "2024",
+      "role": "Creative dev",
+      "description": "Following Wildfire showcases an innovative project that uses artificial intelligence (AI) to detect early signs of wildfires by analyzing real-time images shared on social media."
+    }
+  },
+  {
+    "id": "Welcome-to-berk",
+    "data": {
+      "active": false,
+      "title": "Welcome to Berk",
+      "slug": "welcome-to-berk",
+      "date": "2025-05-05",
+      "thumbnail": {
+        "src": "following-wildfire",
+        "alt": "Following Wildfire",
+        "mouseLightness": 2.5
+      },
+      "colors": {
+        "primary": "#ff924e",
+        "secondary": "#794e32",
+        "media": "2E2E2E"
+      },
+      "contrast": 1.3,
+      "content": [
+        {
+          "src": "/content/following-wildfire/images/01.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/images/02.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/01.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/02.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 0.3,
+      "darkenOverview": 0.2,
+      "darkenDetail": 0.3,
+      "agency": "Reflektor digital",
+      "client": "Dentsu creative",
+      "year": "2024",
+      "role": "Creative dev",
+      "description": "Following Wildfire showcases an innovative project that uses artificial intelligence (AI) to detect early signs of wildfires by analyzing real-time images shared on social media."
+    }
+  },
+  {
+    "id": "metropolis",
+    "data": {
+      "active": false,
+      "title": "Metropolis",
+      "slug": "metropolis",
+      "date": "2025-04-12",
+      "thumbnail": {
+        "src": "following-wildfire",
+        "alt": "Following Wildfire",
+        "mouseLightness": 2.5
+      },
+      "colors": {
+        "primary": "#ff924e",
+        "secondary": "#794e32",
+        "media": "2E2E2E"
+      },
+      "contrast": 1.3,
+      "content": [
+        {
+          "src": "/content/following-wildfire/images/01.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/images/02.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/01.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/02.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 0.3,
+      "darkenOverview": 0.2,
+      "darkenDetail": 0.3,
+      "agency": "Reflektor digital",
+      "client": "Dentsu creative",
+      "year": "2024",
+      "role": "Creative dev",
+      "description": "Following Wildfire showcases an innovative project that uses artificial intelligence (AI) to detect early signs of wildfires by analyzing real-time images shared on social media."
+    }
+  },
+  {
+    "id": "omega",
+    "data": {
+      "active": false,
+      "title": "Omega",
+      "slug": "omega",
+      "date": "2025-03-05",
+      "thumbnail": {
+        "src": "following-wildfire",
+        "alt": "Following Wildfire",
+        "mouseLightness": 2.5
+      },
+      "colors": {
+        "primary": "#ff924e",
+        "secondary": "#794e32",
+        "media": "2E2E2E"
+      },
+      "contrast": 1.3,
+      "content": [
+        {
+          "src": "/content/following-wildfire/images/01.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/images/02.webp",
+          "alt": "Following Wildfire",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/01.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/following-wildfire/videos/02.mp4",
+          "alt": "Following Wildfire",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 0.3,
+      "darkenOverview": 0.2,
+      "darkenDetail": 0.3,
+      "agency": "Reflektor digital",
+      "client": "Dentsu creative",
+      "year": "2024",
+      "role": "Creative dev",
+      "description": "Following Wildfire showcases an innovative project that uses artificial intelligence (AI) to detect early signs of wildfires by analyzing real-time images shared on social media."
+    }
+  },
+  {
+    "id": "engaged",
+    "data": {
+      "title": "Engaged",
+      "date": "2024-01-21",
+      "slug": "engaged",
+      "url": "https://engaged.be/",
+      "ambient": 0.4,
+      "thumbnail": {
+        "src": "engaged",
+        "alt": "Engaged"
+      },
+      "colors": {
+        "primary": "#a8fffd",
+        "secondary": "#505566",
+        "invert": "#41434c",
+        "media": "#5856B6"
+      },
+      "content": [
+        {
+          "src": "/content/engaged/images/01.webp",
+          "alt": "Engaged Homepage Scroll",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/engaged/images/02.webp",
+          "alt": "Engaged collage",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/engaged/videos/01.mp4",
+          "alt": "Engaged Homepage Scroll",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/engaged/videos/02.mp4",
+          "alt": "Engaged Contact Form",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/engaged/videos/03.mp4",
+          "alt": "Engaged Work Transitions",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "client": "Engaged",
+      "agency": "Engaged",
+      "year": "2023",
+      "role": "Full-stack dev",
+      "description": "Engaged is a Belgium-based omnichannel activation agency helping brands get results by engaging with people in memorable experiences."
+    }
+  },
+  {
+    "id": "spritexmarvel",
+    "data": {
+      "title": "Sprite x Marvel",
+      "slug": "spritexmarvel",
+      "date": "2024-01-20",
+      "url": "https://wakanda-forever-master.dogstudio-dev.co/zerolimits",
+      "thumbnail": {
+        "src": "spritexmarvel",
+        "alt": "Sprite X Marvel"
+      },
+      "content": [
+        {
+          "src": "/content/spritexmarvel/images/01.webp",
+          "alt": "Sprite X Marvel",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/spritexmarvel/images/02.webp",
+          "alt": "Sprite X Marvel",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/spritexmarvel/videos/02.mp4",
+          "alt": "Sprite X Marvel",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/spritexmarvel/videos/01.mp4",
+          "alt": "Sprite X Marvel",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 0.4,
+      "colors": {
+        "primary": "#3fdc77",
+        "secondary": "#2b3617",
+        "media": "#222222"
+      },
+      "client": "Sprite",
+      "agency": "Dogstudio / Dept",
+      "year": "2023",
+      "role": "Front-end dev",
+      "description": "An immersive, exploratory experience built in partnership with<br> Black Panther: Wakanda Forever, to help creators find inspiration. For more information <a href='https://dogstudio.co/cases/sprite-x-marvel/' target='_blank' rel='noopener'>read the case study</a>."
+    }
+  },
+  {
+    "id": "filmsecession",
+    "data": {
+      "title": "Film Secession",
+      "slug": "filmsecession",
+      "date": "2024-01-19",
+      "url": "https://www.filmsecession.com/",
+      "thumbnail": {
+        "src": "filmsecession",
+        "alt": "Film Secession"
+      },
+      "content": [
+        {
+          "src": "/content/filmsecession/images/01.webp",
+          "alt": "Film Secession intro",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/filmsecession/images/02.webp",
+          "alt": "Film Secession collage",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/filmsecession/videos/01.mp4",
+          "alt": "Film Secession exhibition",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/filmsecession/videos/02.mp4",
+          "alt": "Film Secession cinema",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "colors": {
+        "primary": "#c6b5a0",
+        "secondary": "#2d2d19",
+        "media": "#505047"
+      },
+      "client": "Film Secession",
+      "agency": "Poppr",
+      "year": "2023",
+      "role": "Creative dev",
+      "description": "Film Secession is an immersive museum without walls that continually opens up new connections between different filmmakers, periods & art forms."
+    }
+  },
+  {
+    "id": "theroger",
+    "data": {
+      "title": "The Roger",
+      "slug": "theroger",
+      "date": "2024-01-18",
+      "ambient": 1,
+      "thumbnail": {
+        "src": "the-roger",
+        "alt": "The Roger",
+        "darkness": 0.1,
+        "darknessColor": "#2b3760",
+        "saturation": 1.3,
+        "mouseLightness": 0.7
+      },
+      "content": [
+        {
+          "src": "/content/theroger/images/01.webp",
+          "alt": "The Roger",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/theroger/images/02.webp",
+          "alt": "The Roger",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/theroger/videos/01.mp4",
+          "alt": "The Roger",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/theroger/videos/02.mp4",
+          "alt": "The Roger",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "colors": {
+        "primary": "#fef455",
+        "secondary": "#1c2d66",
+        "media": "#6487C4"
+      },
+      "darkenOverview": 0.17,
+      "darkenDetail": 0.3,
+      "client": "On Running",
+      "agency": "North Kingdom",
+      "year": "2021 / 2022",
+      "role": "Creative dev",
+      "description": "Campaign site ‘The Roger’ for On Running. A performance shoe sportswear brand tailored to both casual and athletic needs."
+    }
+  },
+  {
+    "id": "poppr",
+    "data": {
+      "active": true,
+      "title": "Poppr",
+      "slug": "poppr",
+      "date": "2024-01-17",
+      "url": "https://www.poppr.be/",
+      "thumbnail": {
+        "src": "poppr",
+        "alt": "poppr",
+        "darkness": 0.2,
+        "darknessColor": "#000000",
+        "mouseLightness": 0.75
+      },
+      "colors": {
+        "primary": "#A374FF",
+        "secondary": "#1b2921",
+        "media": "#65828D"
+      },
+      "content": [
+        {
+          "src": "/content/poppr/images/01.webp",
+          "alt": "poppr",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/poppr/images/02.webp",
+          "alt": "poppr",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/poppr/videos/01.mp4",
+          "alt": "Poppr site preview",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/poppr/videos/02.mp4",
+          "alt": "Poppr site preview",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "client": "Poppr",
+      "agency": "Poppr",
+      "year": "2023",
+      "role": "Creative dev",
+      "description": "Poppr is a digital agency in Ghent, specializing in creating immersive experiences using web, AR and VR technologies."
+    }
+  },
+  {
+    "id": "demorgen",
+    "data": {
+      "title": "De Morgen",
+      "slug": "demorgen",
+      "date": "2024-01-16",
+      "url": "https://2020-dm.com/",
+      "thumbnail": {
+        "src": "de-morgen",
+        "alt": "De Morgen",
+        "darkness": 0.15,
+        "darknessColor": "#000000",
+        "saturation": 1.45,
+        "mouseLightness": 0.75
+      },
+      "darkenOverview": 0.2,
+      "darkenDetail": 0.3,
+      "saturation": 0.65,
+      "colors": {
+        "secondary": "#62100c",
+        "primary": "#ff362b",
+        "invert": "#00f7ff"
+      },
+      "content": [
+        {
+          "src": "/content/demorgen/images/01.webp",
+          "alt": "de morgen - year overview",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/demorgen/images/02.webp",
+          "alt": "de morgen - year overview",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/demorgen/videos/01.mp4",
+          "alt": "de morgen - year overview",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/demorgen/videos/02.mp4",
+          "alt": "de morgen - year overview",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": 0.25,
+      "client": "De Morgen",
+      "agency": "Mortierbrigade",
+      "year": "2021 / 2022",
+      "role": "Full-stack dev",
+      "description": "Interactive year review for Belgian newspaper De Morgen, featuring a month-by-month breakdown of significant events, highlighting major global and local stories."
+    }
+  },
+  {
+    "id": "glenncatteeuw",
+    "data": {
+      "active": false,
+      "title": "Glenn Catteeuw",
+      "slug": "glenncatteeuw",
+      "date": "2024-01-15",
+      "url": "https://glenncatteeuw.com",
+      "thumbnail": {
+        "src": "glenn-catteeuw",
+        "alt": "Glenn Catteeuw"
+      },
+      "colors": {
+        "primary": "#c3c3c3",
+        "secondary": "#1e2b23",
+        "media": "2E2E2E"
+      },
+      "contrast": 1.075,
+      "content": [
+        {
+          "src": "/content/glenncatteeuw/images/01.webp",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/glenncatteeuw/images/02.webp",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/glenncatteeuw/videos/01.mp4",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/glenncatteeuw/videos/02.mp4",
+          "alt": "Glenn Catteeuw portfolio",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "ambient": -0.5,
+      "saturation": 0.35,
+      "client": "Glenn Catteeuw",
+      "agency": "",
+      "year": "2020",
+      "role": "Full-stack dev",
+      "description": "Portfolio website for Glenn Catteeuw, an Interactive Art Director & Visual Designer."
+    }
+  },
+  {
+    "id": "thoughtlab",
+    "data": {
+      "active": true,
+      "title": "Thoughtlab",
+      "slug": "thoughtlab",
+      "date": "2024-01-14",
+      "url": "https://www.thoughtlab.com/",
+      "thumbnail": {
+        "src": "thoughtlab",
+        "alt": "Thoughtlab"
+      },
+      "colors": {
+        "primary": "#FFFFFF",
+        "secondary": "#2b2b2b",
+        "media": "#181818"
+      },
+      "content": [
+        {
+          "src": "/content/thoughtlab/images/01.webp",
+          "alt": "Thoughtlab",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/thoughtlab/images/02.webp",
+          "alt": "Thoughtlab",
+          "type": "image",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/thoughtlab/videos/01.mp4",
+          "alt": "Thoughtlab",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        },
+        {
+          "src": "/content/thoughtlab/videos/02.mp4",
+          "alt": "Thoughtlab",
+          "type": "video",
+          "size": {
+            "width": "1600",
+            "height": "1200"
+          }
+        }
+      ],
+      "client": "Thoughtlab",
+      "agency": "Thoughtlab",
+      "year": "2021 / 2022",
+      "role": "Creative dev",
+      "description": "WebGL visuals for Thoughtlab, a digital agency based in Salt Lake City that focuses on brand strategy, premium web design, and marketing."
+    }
+  }
+]

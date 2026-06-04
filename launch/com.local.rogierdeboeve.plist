@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.local.rogierdeboeve</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/boyang/.nvm/versions/node/v24.15.0/bin/node</string>
+    <string>/Users/boyang/Documents/GitHub/rogierdeboeve-rebuild/scripts/serve.mjs</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/boyang/Documents/GitHub/rogierdeboeve-rebuild</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PORT</key>
+    <string>5173</string>
+    <key>HOST</key>
+    <string>127.0.0.1</string>
+  </dict>
+  <key>KeepAlive</key>
+  <true/>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/rogierdeboeve-server.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/rogierdeboeve-server.err</string>
+</dict>
+</plist>

@@ -1,0 +1,1 @@
+const e="webby",t="awards",i={title:"Webby Awards",items:[{title:"Following Wildfire",type:"Webby Winner",year:"2024"},{title:"Following Wildfire",type:"People's Voice Winner",year:"2024"}]},o={type:"data",filePath:"/opt/build/repo/src/content/awards/webby.json",rawData:""};export{o as _internal,t as collection,i as data,e as id};

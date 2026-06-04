@@ -1,0 +1,83 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Button from "../components/Button.astro";
+import Footer from "../components/Footer.astro";
+import MediaBlock from "../components/MediaBlock.astro";
+import { getNextProject, getProjectBySlug, projects } from "../data/site";
+
+export function getStaticPaths() {
+  return projects.map((project) => ({
+    params: { slug: project.data.slug },
+    props: { slug: project.data.slug },
+  }));
+}
+
+const { slug } = Astro.props;
+const project = getProjectBySlug(slug);
+if (!project) {
+  return Astro.redirect("/");
+}
+const nextProject = getNextProject(project);
+const [hero, ...restMedia] = project.data.content;
+---
+
+<BaseLayout title={`${project.data.title} - Rogier de Boeve`} description={project.data.description.replace(/<[^>]+>/g, "")}>
+  <section
+    data-view="project"
+    class="ui-project"
+    data-project={project.data.slug}
+    style={`--project-color:${project.data.colors.primary};--project-secondary:${project.data.colors.secondary};--project-media:${project.data.colors.media ?? project.data.colors.primary}`}
+  >
+    <div class="ui-project-header c-color">
+      <div class="wrap">
+        <a href="/" class="c-link" data-sound data-sound-click>To index</a>
+      </div>
+    </div>
+
+    <div class="wrap wrap--md">
+      <div class="grid grid-cols-24 gap-24">
+        <div class="col-span-20 col-start-5 ui-project-content">
+          <div class="ui-project-content-header">
+            <div class="grid grid-cols-20 gap-24">
+              <div class="col-span-6">
+                <h1 class="ts-2 c-color">{project.data.title}</h1>
+              </div>
+              <div class="col-span-12 col-start-7">
+                <p class="ts-p c-color" set:html={project.data.description}></p>
+              </div>
+            </div>
+
+            {hero && <MediaBlock item={hero} class="ui-project-media-mobile" />}
+
+            <div class="ui-project-info grid grid-cols-20 gap-24">
+              <div class="col-span-6">
+                {project.data.url && <Button text="View live" href={project.data.url} target="_blank" rel="noopener" />}
+              </div>
+              <div class="ui-project-info-items col-span-12 col-start-7 c-color">
+                {project.data.client && <div class="ui-project-info-item"><span>Client:</span><span>{project.data.client}</span></div>}
+                {project.data.agency && <div class="ui-project-info-item"><span>Agency:</span><span>{project.data.agency}</span></div>}
+                {project.data.role && <div class="ui-project-info-item"><span>Role:</span><span>{project.data.role}</span></div>}
+                {project.data.year && <div class="ui-project-info-item"><span>Year:</span><span>{project.data.year}</span></div>}
+              </div>
+            </div>
+          </div>
+
+          <div class="ui-project-media-items grid grid-cols-20 gap-24">
+            {project.data.content.map((item, index) => (
+              <MediaBlock item={item} class={index === 0 ? "col-span-12 col-start-7" : "col-span-18"} />
+            ))}
+          </div>
+
+          <div class="ui-project-next" data-project-slug={nextProject.data.slug}>
+            <a href={`/${nextProject.data.slug}/`} class="ui-project-next-link c-color">
+              <span class="ts-m">Next project</span>
+              <h2 class="ts-3">{nextProject.data.title}</h2>
+              {nextProject.data.content[0] && <MediaBlock item={nextProject.data.content[0]} class="ui-project-next-image" />}
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <Footer />
+  </section>
+</BaseLayout>

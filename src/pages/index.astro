@@ -1,0 +1,45 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Button from "../components/Button.astro";
+import Footer from "../components/Footer.astro";
+import { activeProjects, thumbSrc } from "../data/site";
+---
+
+<BaseLayout>
+  <section data-view="home" class="ui-work">
+    <div class="ui-work-content">
+      <div class="wrap">
+        <div class="grid grid-cols-24 gap-24">
+          <div class="col-span-10 col-start-15 work-index">
+            <div class="ui-title ts-m c-color"><span>Index</span></div>
+            <ul class="ui-work-ul">
+              {activeProjects.map((project, index) => (
+                <li
+                  class={index === 0 ? "c-color is-active" : "c-color"}
+                  data-project-card
+                  data-slug={project.data.slug}
+                  data-color={project.data.colors.primary}
+                  data-thumb={thumbSrc(project)}
+                >
+                  <a class="ui-work-a" href={`/${project.data.slug}/`} data-sound data-sound-click>
+                    <span>{project.data.title}</span>
+                  </a>
+                  <a href={`/${project.data.slug}/`} class="ui-work-cta">
+                    <Button text="View project" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="work-preview" aria-hidden="true">
+        <div class="work-preview-frame">
+          <img data-work-preview src={thumbSrc(activeProjects[0])} alt="" />
+        </div>
+      </div>
+    </div>
+    <Footer />
+  </section>
+</BaseLayout>

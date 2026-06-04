@@ -1,0 +1,38 @@
+---
+import Header from "../components/Header.astro";
+import "../styles/global.css";
+
+const {
+  title = "Rogier de Boeve - Creative Developer",
+  description = "Portfolio of Rogier de Boeve, Belgium-based creative developer",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <script is:inline>document.documentElement.classList.add("js");</script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/open-graph.jpg" />
+  </head>
+  <body>
+    <div class="gl" data-webgl-root></div>
+    <Header />
+    <main class="ui-main">
+      <slot />
+    </main>
+    <script>
+      import "../client/main.ts";
+    </script>
+  </body>
+</html>
