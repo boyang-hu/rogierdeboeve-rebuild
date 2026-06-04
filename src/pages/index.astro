@@ -41,5 +41,19 @@ import { activeProjects, thumbSrc } from "../data/site";
       </div>
     </div>
     <Footer />
+    <div class="ui-progressbar ui-progressbar--work c-color" aria-label="Project progress">
+      <div class="ui-progressbar-items">
+        {activeProjects.map((project, index) => (
+          <button
+            class={index === 0 ? "ui-progressbar-item is-active" : "ui-progressbar-item"}
+            type="button"
+            data-progress-slug={project.data.slug}
+            data-sound
+          >
+            <span>{project.data.title}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   </section>
 </BaseLayout>

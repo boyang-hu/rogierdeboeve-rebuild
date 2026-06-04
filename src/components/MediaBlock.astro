@@ -4,7 +4,8 @@ import type { MediaItem } from "../types";
 const { item, class: className = "" } = Astro.props as { item: MediaItem; class?: string };
 const width = Number(item.size.width || 1600);
 const height = Number(item.size.height || 1200);
-const ratio = `${width} / ${height}`;
+const ratioHeight = Math.round(height * 0.95);
+const ratio = `${width} / ${ratioHeight}`;
 const jpg = item.src.replace(/\.(webp|jpg|jpeg)$/i, ".jpg");
 ---
 

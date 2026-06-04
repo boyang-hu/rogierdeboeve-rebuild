@@ -21,7 +21,7 @@ const nextProject = getNextProject(project);
 const [hero, ...restMedia] = project.data.content;
 ---
 
-<BaseLayout title={`${project.data.title} - Rogier de Boeve`} description={project.data.description.replace(/<[^>]+>/g, "")}>
+<BaseLayout title={`${project.data.title} - Rogier de Boevé`} description={project.data.description.replace(/<[^>]+>/g, "")}>
   <section
     data-view="project"
     class="ui-project"
@@ -30,7 +30,25 @@ const [hero, ...restMedia] = project.data.content;
   >
     <div class="ui-project-header c-color">
       <div class="wrap">
-        <a href="/" class="c-link" data-sound data-sound-click>To index</a>
+        <a href="/" class="c-link" data-sound data-sound-click>
+          <span class="c-link-icon" aria-hidden="true">
+            <span class="c-link-icon-bg">
+              <svg class="c-icon-arrow" width="28" height="28" viewBox="0 0 28 28">
+                <rect x="0.5" y="0.5" width="27" height="27" fill="none" stroke="currentColor" stroke-dasharray="2 2"></rect>
+              </svg>
+            </span>
+            <span class="c-link-icon-static">
+              <svg class="c-icon-arrow" width="28" height="28" viewBox="0 0 28 28">
+                <g fill="currentColor">
+                  <rect rx="1" x="11.3" y="11" width="2" height="2"></rect>
+                  <rect rx="1" x="14.7" y="13" width="2" height="2"></rect>
+                  <rect rx="1" x="11.3" y="15" width="2" height="2"></rect>
+                </g>
+              </svg>
+            </span>
+          </span>
+          <span class="c-link-text">To index</span>
+        </a>
       </div>
     </div>
 
@@ -64,7 +82,7 @@ const [hero, ...restMedia] = project.data.content;
 
           <div class="ui-project-media-items grid grid-cols-20 gap-24">
             {project.data.content.map((item, index) => (
-              <MediaBlock item={item} class={index === 0 ? "col-span-12 col-start-7" : "col-span-18"} />
+              <MediaBlock item={item} class={index === 0 ? "ui-project-media col-span-12 col-start-7" : "ui-project-media col-span-18"} />
             ))}
           </div>
 
@@ -78,6 +96,28 @@ const [hero, ...restMedia] = project.data.content;
         </div>
       </div>
     </div>
+    <div class="c-scroll-cta c-color">
+      <div class="wrap wrap--md">
+        <div class="grid grid-cols-24 gap-24">
+          <div class="col-span-8 col-start-5">
+            <div class="c-scroll-cta-inner">
+              <span class="c-scroll-cta-icon" aria-hidden="true">
+                <svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6">
+                  <rect rx="1" width="2" height="2" fill="currentColor"></rect>
+                  <rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect>
+                  <rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect>
+                </svg>
+              </span>
+              <span class="c-scroll-cta-text ts-m">Scroll Down</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <Footer />
+    <div class="ui-scrollbar c-color" aria-hidden="true">
+      <div class="ui-scrollbar-thumb"><div class="ui-scrollbar-thumb-inner"></div></div>
+      <div class="ui-scrollbar-total"></div>
+    </div>
   </section>
 </BaseLayout>

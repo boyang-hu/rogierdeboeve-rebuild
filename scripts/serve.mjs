@@ -4,6 +4,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 
 const root = path.resolve(process.env.SERVE_ROOT || "dist");
+const fallbackRoot = process.env.FALLBACK_ROOT ? path.resolve(process.env.FALLBACK_ROOT) : "";
 const host = process.env.HOST || "0.0.0.0";
 const port = Number(process.env.PORT || 5173);
 
@@ -28,10 +29,10 @@ const types = {
   ".xml": "application/xml; charset=utf-8",
 };
 
-function safePath(urlPath) {
+function safePath(urlPath, base = root) {
   const decoded = decodeURIComponent(urlPath.split("?")[0]);
   const normalized = path.normalize(decoded).replace(/^(\.\.[/\\])+/, "");
-  return path.join(root, normalized);
+  return path.join(base, normalized);
 }
 
 async function resolveFile(requestPath) {
@@ -41,6 +42,17 @@ async function resolveFile(requestPath) {
   if (existsSync(file)) return file;
   const asIndex = path.join(file, "index.html");
   if (existsSync(asIndex)) return asIndex;
+
+  if (fallbackRoot) {
+    let fallbackFile = safePath(requestPath, fallbackRoot);
+    if (fallbackFile.startsWith(fallbackRoot)) {
+      if (existsSync(fallbackFile) && (await stat(fallbackFile)).isDirectory()) fallbackFile = path.join(fallbackFile, "index.html");
+      if (existsSync(fallbackFile)) return fallbackFile;
+      const fallbackIndex = path.join(fallbackFile, "index.html");
+      if (existsSync(fallbackIndex)) return fallbackIndex;
+    }
+  }
+
   const fallback = path.join(root, "404.html");
   return existsSync(fallback) ? fallback : path.join(root, "index.html");
 }

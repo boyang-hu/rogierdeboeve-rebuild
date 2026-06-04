@@ -32,10 +32,18 @@ function initIntroAnimations() {
   );
 
   gsap.fromTo(
-    ".ui-work-ul li, .ui-about-intro > *, .c-list-section, .ui-project-content-header > *",
+    ".ui-about-intro > *, .c-list-section, .ui-project-content-header > *",
     { y: 26, opacity: 0 },
     { y: 0, opacity: 1, duration: 1.15, stagger: 0.045, ease: "expo.out", delay: 0.2 },
   );
+
+  if (window.matchMedia("(min-width: 1000px)").matches) {
+    gsap.fromTo(
+      ".ui-work-ul li",
+      { y: 26, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.15, stagger: 0.045, ease: "expo.out", delay: 0.2 },
+    );
+  }
 }
 
 function initMediaReveals() {

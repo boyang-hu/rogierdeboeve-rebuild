@@ -3,9 +3,12 @@ import Header from "../components/Header.astro";
 import "../styles/global.css";
 
 const {
-  title = "Rogier de Boeve - Creative Developer",
-  description = "Portfolio of Rogier de Boeve, Belgium-based creative developer",
+  title = "Rogier de Boevé - Creative Developer",
+  description = "Portfolio of Rogier de Boevé, Belgium-based creative developer",
 } = Astro.props;
+
+const pathname = Astro.url.pathname;
+const pageClass = pathname === "/" ? "is-home" : pathname.startsWith("/about") ? "is-about" : "is-project";
 ---
 
 <!doctype html>
@@ -25,12 +28,53 @@ const {
     <meta property="og:description" content={description} />
     <meta property="og:image" content="/open-graph.jpg" />
   </head>
-  <body>
+  <body class={`is-preloading ${pageClass}`}>
+    <div class="preloader c-color" data-preloader>
+      <div class="preloader-progress">
+        <button class="preloader-cta" type="button" data-preloader-enter data-sound-mode="on">
+          <span class="preloader-cta-text">
+            <span class="preloader-cta-text-inner">
+              <span class="preloader-cta-text-static">Enter</span>
+              <span class="preloader-cta-text-hover">Enter</span>
+            </span>
+          </span>
+        </button>
+        <svg class="preloader-progress-circles" width="462" height="462" viewBox="0 0 462 462" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle class="preloader-progress-outline" opacity="0.4" cx="231" cy="231" r="224" stroke="currentColor" stroke-dasharray="2 2"></circle>
+          <circle class="preloader-progress-circle" opacity="0.5" cx="231" cy="231" r="230" stroke="currentColor"></circle>
+        </svg>
+        <div class="preloader-progress-text" aria-hidden="true">
+          <div class="preloader-progress-text-inner"><span data-preloader-percent>0</span>%</div>
+        </div>
+        <button class="preloader-cta-2" type="button" data-preloader-enter data-sound-mode="off">
+          <span class="preloader-cta-2-text">
+            <span class="preloader-cta-text-2-inner">Enter without sound</span>
+          </span>
+        </button>
+      </div>
+      <div class="preloader-footer">
+        <div class="wrap">
+          <div class="preloader-footer-text">
+            <span class="preloader-footer-text-inner">Loading<span class="preloader-footer-text-dots">...</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="gl" data-webgl-root></div>
     <Header />
     <main class="ui-main">
       <slot />
     </main>
+    <button class="ui-sound-toggle c-color" type="button" aria-label="Toggle sound" aria-pressed="true" data-sound-toggle>
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <circle class="ui-sound-toggle-static" cx="16" cy="16" r="15" fill="none" stroke="currentColor" stroke-dasharray="2 2"></circle>
+        <g class="ui-sound-toggle-rects" fill="currentColor">
+          <rect x="11" y="13" width="2" height="6" rx="1"></rect>
+          <rect x="15" y="10" width="2" height="12" rx="1"></rect>
+          <rect x="19" y="13" width="2" height="6" rx="1"></rect>
+        </g>
+      </svg>
+    </button>
     <script>
       import "../client/main.ts";
     </script>

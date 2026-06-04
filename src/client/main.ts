@@ -2,6 +2,65 @@ type WebGLLike = {
   setProject(payload: { color?: string }): void;
 };
 
+function dispatchSoundMode(enabled: boolean) {
+  window.dispatchEvent(new CustomEvent("rd:sound-mode", { detail: { enabled } }));
+}
+
+function initPreloader() {
+  const preloader = document.querySelector<HTMLElement>("[data-preloader]");
+  const percent = document.querySelector<HTMLElement>("[data-preloader-percent]");
+  const enterButtons = document.querySelectorAll<HTMLButtonElement>("[data-preloader-enter]");
+  const soundToggle = document.querySelector<HTMLButtonElement>("[data-sound-toggle]");
+  let progress = 0;
+  let complete = false;
+
+  const reveal = (soundEnabled: boolean) => {
+    if (complete) return;
+    complete = true;
+    dispatchSoundMode(soundEnabled);
+    soundToggle?.setAttribute("aria-pressed", String(soundEnabled));
+    soundToggle?.classList.toggle("is-muted", !soundEnabled);
+    document.body.classList.remove("is-preloading");
+    document.body.classList.add("has-entered");
+    preloader?.classList.add("is-hidden");
+    window.setTimeout(() => preloader?.remove(), 850);
+  };
+
+  const timer = window.setInterval(() => {
+    progress = Math.min(100, progress + Math.ceil((100 - progress) * 0.18));
+    if (percent) percent.textContent = String(progress);
+    if (progress >= 100) {
+      window.clearInterval(timer);
+      enterButtons.forEach((button) => button.classList.add("is-active"));
+    }
+  }, 90);
+
+  enterButtons.forEach((button) => {
+    button.addEventListener("click", () => reveal(button.dataset.soundMode !== "off"));
+  });
+
+  if (new URLSearchParams(window.location.search).has("skip-preloader")) {
+    window.setTimeout(() => reveal(false), 150);
+    return;
+  }
+
+  window.setTimeout(() => {
+    enterButtons.forEach((button) => button.classList.add("is-active"));
+    if (percent) percent.textContent = "100";
+  }, 1000);
+}
+
+function initSoundToggle() {
+  const toggle = document.querySelector<HTMLButtonElement>("[data-sound-toggle]");
+  if (!toggle) return;
+  toggle.addEventListener("click", () => {
+    const enabled = toggle.getAttribute("aria-pressed") !== "true";
+    toggle.setAttribute("aria-pressed", String(enabled));
+    toggle.classList.toggle("is-muted", !enabled);
+    dispatchSoundMode(enabled);
+  });
+}
+
 function initMenu() {
   const nav = document.querySelector(".ui-nav-mobile");
   const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
@@ -26,13 +85,17 @@ function initMenu() {
 function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const preview = document.querySelector<HTMLImageElement>("[data-work-preview]");
   const cards = document.querySelectorAll<HTMLElement>("[data-project-card]");
-  if (!preview || !cards.length) return;
+  const progressItems = document.querySelectorAll<HTMLElement>("[data-progress-slug]");
+  let activeIndex = Math.max(0, Array.from(cards).findIndex((card) => card.classList.contains("is-active")));
+  if (!cards.length) return;
 
   const activate = (card: HTMLElement) => {
+    activeIndex = Array.from(cards).indexOf(card);
     cards.forEach((item) => item.classList.remove("is-active"));
+    progressItems.forEach((item) => item.classList.toggle("is-active", item.dataset.progressSlug === card.dataset.slug));
     card.classList.add("is-active");
     const thumb = card.dataset.thumb;
-    if (thumb && preview.src !== new URL(thumb, location.href).href) {
+    if (preview && thumb && preview.src !== new URL(thumb, location.href).href) {
       preview.animate(
         [
           { opacity: 1, transform: "scale(1)" },
@@ -57,6 +120,47 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     card.addEventListener("mouseenter", () => activate(card));
     card.addEventListener("focusin", () => activate(card));
   });
+
+  progressItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      const card = Array.from(cards).find((candidate) => candidate.dataset.slug === item.dataset.progressSlug);
+      if (card) activate(card);
+    });
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (!window.matchMedia("(max-width: 999px)").matches) return;
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const next = (activeIndex + direction + cards.length) % cards.length;
+    activate(cards[next]);
+  });
+
+  let touchStart = 0;
+  window.addEventListener("touchstart", (event) => {
+    touchStart = event.touches[0]?.clientX ?? 0;
+  }, { passive: true });
+  window.addEventListener("touchend", (event) => {
+    if (!window.matchMedia("(max-width: 999px)").matches) return;
+    const end = event.changedTouches[0]?.clientX ?? touchStart;
+    const delta = end - touchStart;
+    if (Math.abs(delta) < 42) return;
+    const next = (activeIndex + (delta < 0 ? 1 : -1) + cards.length) % cards.length;
+    activate(cards[next]);
+  }, { passive: true });
+}
+
+function initScrollState() {
+  const update = () => {
+    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const progress = Math.min(1, Math.max(0, window.scrollY / max));
+    document.documentElement.classList.toggle("is-scrolled", window.scrollY > 24);
+    document.documentElement.style.setProperty("--scroll-progress", String(progress));
+  };
+  update();
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
 }
 
 function initProjectMedia() {
@@ -104,6 +208,7 @@ function boot() {
   document.body.classList.add("is-ready");
   let webgl: WebGLLike | undefined;
 
+  initPreloader();
   void import("./audio").then(({ initAudio }) => initAudio());
   void import("./motion").then(({ initMotion }) => initMotion());
   void initWebGL().then((instance) => {
@@ -113,8 +218,10 @@ function boot() {
   });
 
   initMenu();
+  initSoundToggle();
   initWorkPreview(() => webgl);
   initProjectMedia();
+  initScrollState();
 }
 
 if (document.readyState === "loading") {

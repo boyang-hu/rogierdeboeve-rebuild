@@ -10,7 +10,7 @@ const pathname = Astro.url.pathname;
         <div class="col-span-4">
           <a href="/" class="ui-header-version ts-m c-color">V-004</a>
         </div>
-        <div class="col-span-7 col-start-18 ui-header-availability ts-m c-color">Available for freelance</div>
+        <div class="col-span-6 col-start-19 ui-header-availability ts-m c-color">Available for freelance</div>
       </div>
     </div>
   </div>
@@ -19,9 +19,9 @@ const pathname = Astro.url.pathname;
     <div class="wrap">
       <div class="grid grid-cols-24 gap-24">
         <div class="col-span-4">
-          <a href="/" class="ui-header-name c-color" aria-label="Rogier de Boeve">
+          <a href="/" class="ui-header-name c-color" aria-label="Rogier de Boevé">
             <span>Rogier</span>
-            <span>de Boeve</span>
+            <span>de Boevé</span>
           </a>
         </div>
         <div class="col-span-4 col-start-5">
@@ -50,8 +50,8 @@ const pathname = Astro.url.pathname;
 <nav class="ui-nav" aria-label="Main navigation">
   <div class="wrap">
     <ul>
-      <li><a class={`ui-nav-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/"><span>01</span><span>Work</span></a></li>
-      <li><a class={`ui-nav-a c-color ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/"><span>02</span><span>About</span></a></li>
+      <li><a class={`ui-nav-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/"><span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span><span class="ui-nav-a-title">Work</span></a></li>
+      <li><a class={`ui-nav-a c-color ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/"><span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span><span class="ui-nav-a-title">About</span></a></li>
     </ul>
   </div>
 </nav>
