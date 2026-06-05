@@ -47,7 +47,8 @@ Last updated: 2026-06-05
 | `f9840d9` | Home WebGL | Moved gallery velocity roll from the rotating project ring to the work scene container to better match source `yD.updateScene`. |
 | `e8a811d` | Home DOM | Added source-style header description and availability inner-line animation targets from `Ki/SD.animateIn`. |
 | `e7997ec` | Home DOM | Added source-style `.ui-nav-a-inner` targets and nav animate-in timing from source `Tr`. |
-| this commit | Home DOM | Aligned mobile nav link/state structure with source `Ar` using `.ui-nav-mobile-a`, inner spans, `data-slug`, and `html.is-nav-mobile-open`. |
+| `833594d` | Home DOM | Aligned mobile nav link/state structure with source `Ar` using `.ui-nav-mobile-a`, inner spans, `data-slug`, and `html.is-nav-mobile-open`. |
+| this commit | Home DOM | Rebuilt the mobile nav shell closer to source `Ar`, including `.ui-nav-mobile-content`, `.ui-nav-mobile-content-bg`, footer links, toggle-line state, fade-in, and delayed link active/close timing. |
 
 ## Current Focus
 

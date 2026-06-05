@@ -38,17 +38,28 @@ const pathname = Astro.url.pathname;
 
   <nav class="ui-nav-mobile c-color" aria-label="Mobile navigation">
     <button class="ui-nav-mobile-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-menu-toggle>
-      <span></span>
-      <span></span>
-      <span></span>
+      <span class="ui-nav-mobile-toggle-icon-lines" aria-hidden="true">
+        <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-1"></span>
+        <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-2"></span>
+        <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-3"></span>
+      </span>
     </button>
-    <div class="ui-nav-mobile-panel">
-      <a class={`ui-nav-mobile-a ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work">
-        <span class="ui-nav-mobile-a-inner">Work</span>
-      </a>
-      <a class={`ui-nav-mobile-a ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about">
-        <span class="ui-nav-mobile-a-inner">About</span>
-      </a>
+    <div class="ui-nav-mobile-content-bg"></div>
+    <div class="ui-nav-mobile-content">
+      <div class="ui-nav-mobile-content-main wrap">
+        <a class={`ui-nav-mobile-a ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work">
+          <span class="ui-nav-mobile-a-inner">Work</span>
+        </a>
+        <a class={`ui-nav-mobile-a ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about">
+          <span class="ui-nav-mobile-a-inner">About</span>
+        </a>
+      </div>
+      <div class="ui-nav-mobile-content-footer wrap">
+        <div class="ui-nav-mobile-content-footer-links ts-m">
+          <a class="ui-nav-mobile-content-footer-link c-color" href="https://twitter.com/rogierdeboeve" target="_blank" rel="noopener" data-sound data-sound-click>Twitter</a>
+          <a class="ui-nav-mobile-content-footer-link c-color" href="https://www.instagram.com/rdboeve/" target="_blank" rel="noopener" data-sound data-sound-click>Instagram</a>
+        </div>
+      </div>
     </div>
   </nav>
 </header>
