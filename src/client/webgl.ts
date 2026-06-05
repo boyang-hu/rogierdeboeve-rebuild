@@ -209,14 +209,14 @@ void main() {
   vec3 perlinDisplaced = transformed;
   perlinDisplaced.z += displacement * perlinHeight - perlinHeight * 0.5;
   perlinDisplaced *= min(1.0, 1.0 - ((displacement * perlinHeight) - perlinHeight * 0.5) * 0.1);
-  transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
+  transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 10.25);
   transformed *= fade * uRevealSides;
 
   vec2 mouseUv = (instanceGrid.xy + uMouseUvOffset) / uMouseUvScale;
   float mouse = texture2D(tMouseSim, mouseUv).r;
   transformed *= 1.0 - mouse * 0.05;
   transformed.z -= 1.5;
-  transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
+  transformed.z += displacement * 3.0 + 9.0 * (1.0 - revealMask);
   transformed.z += mouse * 15.0 * uMouseFactor;
   transformed *= 1.0 - displacement * 0.1;
 
