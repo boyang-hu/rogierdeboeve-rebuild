@@ -1061,6 +1061,10 @@ export class WebGLBackdrop {
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
+  private darkenTween?: gsap.core.Tween;
+  private revealSpreadTween?: gsap.core.Tween;
+  private sceneRevealTween?: gsap.core.Tween;
+  private spotLightTween?: gsap.core.Tween;
   private maxSpotLightIntensity = 220;
   private spotLightIntensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
@@ -1219,13 +1223,13 @@ export class WebGLBackdrop {
   }
 
   showScene() {
-    gsap.to(this, {
+    this.sceneRevealTween?.kill();
+    this.sceneRevealTween = gsap.to(this, {
       sceneReveal: 1,
       duration: 1.6,
       ease: "expo.out",
       onUpdate: () => {
         this.compositeMaterial.uniforms.uReveal.value = this.sceneReveal;
-        this.projectionMaterial.uniforms.uReveal.value = this.sceneReveal;
       },
     });
   }
@@ -1393,7 +1397,7 @@ export class WebGLBackdrop {
         uRevealSpread: { value: 0 },
         uRevealSpreadSides: { value: 1 },
         uDarkness: { value: numeric(thumbDarkness, 0.18) },
-        uSaturation: { value: numeric(payload.thumbSaturation, 1) },
+        uSaturation: { value: 1 },
         uContrast: { value: numeric(payload.contrast, 1.15) },
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
         uMouseFactor: { value: this.mouseFactor },
@@ -1871,7 +1875,6 @@ export class WebGLBackdrop {
         tweenColor(item.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
         tweenColor(item.material.uniforms.uBlockColor.value as Color, active.payload.blocks ?? active.payload.mediaColor ?? DEFAULT_BG, 1.6);
         gsap.to(item.material.uniforms.uDarkness, { value: numeric(thumbDarkness, 0.18), duration: 1.6, ease: "expo.out" });
-        gsap.to(item.material.uniforms.uSaturation, { value: numeric(active.payload.thumbSaturation, 1), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uMouseLightness, { value: numeric(active.payload.mouseLightness, 1), duration: 1.6, ease: "expo.out" });
         gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value: numeric(thumbDarkness, 0), duration: 1.6, ease: "expo.out" });
@@ -1927,8 +1930,13 @@ export class WebGLBackdrop {
     });
   }
 
-  private setDarken(value: number) {
-    gsap.to(this.compositeMaterial.uniforms.uDarken, { value, duration: 1.6, ease: "expo.out" });
+  private setDarken(value: number, duration = 0.5) {
+    this.darkenTween?.kill();
+    if (duration <= 0) {
+      this.compositeMaterial.uniforms.uDarken.value = value;
+      return;
+    }
+    this.darkenTween = gsap.to(this.compositeMaterial.uniforms.uDarken, { value, duration, ease: "none" });
   }
 
   private setThumbDarknessIntensity(value: number) {
@@ -1936,16 +1944,10 @@ export class WebGLBackdrop {
   }
 
   private setSaturation(value: number) {
-    this.workItems.forEach((item) => {
-      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
-    });
     gsap.to(this.compositeMaterial.uniforms.uSaturation, { value: Math.max(1.15, value), duration: 1.6, ease: "expo.out" });
   }
 
   private setThumbSaturation(value: number) {
-    this.workItems.forEach((item) => {
-      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
-    });
     gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
   }
 
@@ -2001,7 +2003,15 @@ export class WebGLBackdrop {
   }
 
   private setRevealSpread(value: number, duration = 1.6, ease = "power4.out") {
-    gsap.to(this, {
+    this.revealSpreadTween?.kill();
+    if (duration <= 0) {
+      this.revealSpread = value;
+      this.workItems.forEach((item) => {
+        item.material.uniforms.uRevealSpread.value = this.revealSpread;
+      });
+      return;
+    }
+    this.revealSpreadTween = gsap.to(this, {
       revealSpread: value,
       duration,
       ease,
@@ -2014,19 +2024,27 @@ export class WebGLBackdrop {
   }
 
   private setSpotLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
-    gsap.to(this, {
-      spotLightIntensity: MathUtils.clamp(value / this.maxSpotLightIntensity, 0, 1),
+    this.spotLightTween?.kill();
+    const target = MathUtils.clamp(value / this.maxSpotLightIntensity, 0, 1);
+    const update = () => {
+      this.updateSpotLightBasis();
+      this.workItems.forEach((item) => {
+        item.material.uniforms.uSpotIntensity.value = this.spotLightIntensity;
+        item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
+        item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
+        item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
+      });
+    };
+    if (duration <= 0) {
+      this.spotLightIntensity = target;
+      update();
+      return;
+    }
+    this.spotLightTween = gsap.to(this, {
+      spotLightIntensity: target,
       duration,
       ease,
-      onUpdate: () => {
-        this.updateSpotLightBasis();
-        this.workItems.forEach((item) => {
-          item.material.uniforms.uSpotIntensity.value = this.spotLightIntensity;
-          item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
-          item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
-          item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
-        });
-      },
+      onUpdate: update,
     });
   }
 

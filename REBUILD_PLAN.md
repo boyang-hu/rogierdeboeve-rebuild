@@ -106,11 +106,12 @@ Last updated: 2026-06-05
 | `7ca3a77` | Project DOM | Batched source `RD/ND` project reveal alignment: added source-compatible title span structure for `.ts-2 > span`, split project header intro animation from the generic content fade so title/info/link targets follow source `RD.animateIn`, added overflow/display guards for project title and info spans, and moved mobile DOM media reveal timing closer to source project animation duration while keeping desktop WebGL media tracks stable. |
 | `88c7db0` | Project WebGL | Batched source `FD/ND` project media-plane alignment: cached source-style `parallaxTop` state per media plane, updated desktop media `uCameraDistance` to use `mediaCamera.position.y - plane.position.y` like source `FD.update`, preserved top-parallax override as `-scroll`, and forced a media-plane position refresh before reveal tweens start. |
 | `9899681` | Home DOM | Batched source `yD/vD` gallery nav activation alignment: title/progress nav clicks now immediately activate the selected project scene and state like source `yD.onNavClick`, while preserving the 1200ms transition lock. |
-| `current batch` | Home DOM/WebGL | Batched source `Se/yD` state payload alignment: split project saturation from thumbnail saturation, carried `data-thumb-saturation` through DOM payloads into WebGL thumb materials/composite, preserved more source-shaped `Qe.workState.scroll` fields, and corrected pointer-speed gating math toward source `checkSpeed()`. |
+| `7e35956` | Home DOM/WebGL | Batched source `Se/yD` state payload alignment: split project saturation from thumbnail saturation, carried `data-thumb-saturation` through DOM payloads into WebGL thumb materials/composite, preserved more source-shaped `Qe.workState.scroll` fields, and corrected pointer-speed gating math toward source `checkSpeed()`. |
+| `current batch` | Home WebGL | Batched source `Se/p1` visual-state control alignment: added tween ownership for scene reveal, darken, reveal spread, and spotlight intensity, moved `showScene()` back to main-composite reveal only, changed darken timing/easing to source defaults, and stopped applying thumbnail saturation directly to work-block materials so the thumb composite remains the source of that adjustment. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `Se/yD` payload and state semantics while preserving recent yD/vD nav activation semantics, FD/ND project media-plane semantics, RD/ND project reveal timing, OD/CD project-state switching, yD input lifecycle, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `Se/p1` visual-state control semantics while preserving recent Se/yD payload separation, yD/vD nav activation semantics, FD/ND project media-plane semantics, RD/ND project reveal timing, OD/CD project-state switching, yD input lifecycle, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
 
 Immediate source targets:
 
@@ -119,7 +120,7 @@ Immediate source targets:
 - `gD`: CTA formatting, magnet, animate in/out, and click sound behavior.
 - `_D`: progressbar click behavior and active state.
 - `SD`: page-level init/animate-in/out and source state wiring.
-- `Se`: keep project-level and thumbnail-level visual settings separate.
+- `Se`: keep project-level and thumbnail-level visual settings separate, with source-style tween ownership for shared visual state.
 
 ## Next Candidate Steps
 
