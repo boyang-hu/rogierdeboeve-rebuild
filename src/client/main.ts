@@ -305,6 +305,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const next = () => {
     if (nextTransitioning || prevTransitioning) return;
     nextTransitioning = true;
+    markDragging();
     scrollTo(scroll.virtual + step);
     window.setTimeout(() => {
       nextTransitioning = false;
@@ -314,6 +315,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const prev = () => {
     if (nextTransitioning || prevTransitioning) return;
     prevTransitioning = true;
+    markDragging();
     scrollTo(scroll.virtual - step);
     window.setTimeout(() => {
       prevTransitioning = false;
@@ -327,7 +329,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const markDragging = () => {
     setDragging(true);
     window.clearTimeout(draggingTimeout);
-    draggingTimeout = window.setTimeout(() => setDragging(false), 220);
+    draggingTimeout = window.setTimeout(() => setDragging(false), 800);
   };
 
   const handleGalleryDelta = (delta: number) => {
