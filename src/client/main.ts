@@ -615,7 +615,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   activateIndex(activeIndex);
-  window.dispatchEvent(new CustomEvent("rd:plucks"));
   raf = requestAnimationFrame(tick);
   window.addEventListener("pagehide", saveWorkState);
   window.addEventListener("beforeunload", () => {

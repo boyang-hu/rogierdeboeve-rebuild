@@ -65,6 +65,9 @@ export function initAudio() {
   window.addEventListener("rd:plucks", () => {
     if (enabled) plucks?.play();
   });
+  if (document.body.classList.contains("is-home")) {
+    window.dispatchEvent(new CustomEvent("rd:plucks"));
+  }
 
   document.querySelectorAll<HTMLElement>("[data-sound]").forEach((element) => {
     element.addEventListener("mouseenter", () => enabled && hover?.play());
