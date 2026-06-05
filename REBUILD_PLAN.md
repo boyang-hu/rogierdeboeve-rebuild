@@ -107,15 +107,16 @@ Last updated: 2026-06-05
 | `88c7db0` | Project WebGL | Batched source `FD/ND` project media-plane alignment: cached source-style `parallaxTop` state per media plane, updated desktop media `uCameraDistance` to use `mediaCamera.position.y - plane.position.y` like source `FD.update`, preserved top-parallax override as `-scroll`, and forced a media-plane position refresh before reveal tweens start. |
 | `9899681` | Home DOM | Batched source `yD/vD` gallery nav activation alignment: title/progress nav clicks now immediately activate the selected project scene and state like source `yD.onNavClick`, while preserving the 1200ms transition lock. |
 | `7e35956` | Home DOM/WebGL | Batched source `Se/yD` state payload alignment: split project saturation from thumbnail saturation, carried `data-thumb-saturation` through DOM payloads into WebGL thumb materials/composite, preserved more source-shaped `Qe.workState.scroll` fields, and corrected pointer-speed gating math toward source `checkSpeed()`. |
-| `current batch` | Home WebGL | Batched source `Se/p1` visual-state control alignment: added tween ownership for scene reveal, darken, reveal spread, and spotlight intensity, moved `showScene()` back to main-composite reveal only, changed darken timing/easing to source defaults, and stopped applying thumbnail saturation directly to work-block materials so the thumb composite remains the source of that adjustment. |
+| `1fe3bf9` | Home WebGL | Batched source `Se/p1` visual-state control alignment: added tween ownership for scene reveal, darken, reveal spread, and spotlight intensity, moved `showScene()` back to main-composite reveal only, changed darken timing/easing to source defaults, and stopped applying thumbnail saturation directly to work-block materials so the thumb composite remains the source of that adjustment. |
+| `current batch` | Home DOM | Batched source `Cg/yD` input lifecycle alignment: restored source pointer-speed gating expression, removed local swipe-end threshold navigation in favor of source zero-delta touchend semantics, made touch listeners non-passive like source virtual scroll, and guarded repeated mouse/touch starts while a pointer is already active. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `Se/p1` visual-state control semantics while preserving recent Se/yD payload separation, yD/vD nav activation semantics, FD/ND project media-plane semantics, RD/ND project reveal timing, OD/CD project-state switching, yD input lifecycle, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `Cg/yD` input lifecycle semantics while preserving recent Se/p1 visual-state control, Se/yD payload separation, yD/vD nav activation semantics, FD/ND project media-plane semantics, RD/ND project reveal timing, OD/CD project-state switching, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
 
 Immediate source targets:
 
-- `yD`: work gallery virtual scroll, pointer/drag state, snap timing, keyboard/mouse/touch behavior.
+- `Cg/yD`: work gallery virtual scroll, pointer/drag state, snap timing, keyboard/mouse/touch behavior.
 - `vD`: work title/nav click behavior and active project event flow.
 - `gD`: CTA formatting, magnet, animate in/out, and click sound behavior.
 - `_D`: progressbar click behavior and active state.

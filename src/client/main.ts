@@ -461,7 +461,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const checkSpeed = () => {
-    const moving = (Math.abs(pointer.lastDeltaX) + Math.abs(pointer.lastDeltaY)) * 0.001 > 0.2;
+    const moving = Math.abs(pointer.lastDeltaX) + Math.abs(pointer.lastDeltaY) * 0.001 > 0.2;
     setDragging(pointer.active && moving);
   };
 
@@ -611,6 +611,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const onMouseDown = (event: MouseEvent) => {
     if (!document.body.classList.contains("is-home")) return;
+    if (pointer.active) return;
     pointer.active = true;
     pointer.x = event.clientX;
     pointer.y = event.clientY;
@@ -648,6 +649,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const onTouchStart = (event: TouchEvent) => {
+    if (pointer.active) return;
     const point = event.touches[0];
     pointer.active = true;
     pointer.x = point?.clientX ?? 0;
@@ -677,12 +679,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.active = false;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
-    if (!window.matchMedia("(max-width: 999px)").matches) return;
-    if (pointer.moved) return;
-    const end = event.changedTouches[0]?.clientX ?? pointer.x;
-    const delta = end - pointer.startX;
-    if (Math.abs(delta) < 42) return;
-    handleGalleryDelta(-delta);
+    handleGalleryDelta(0);
   };
 
   window.addEventListener("wheel", onWheel, { passive: false });
@@ -691,9 +688,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   window.addEventListener("mousemove", onMouseMove, { passive: true });
   window.addEventListener("mouseup", onPointerEnd);
   window.addEventListener("blur", onBlur);
-  window.addEventListener("touchstart", onTouchStart, { passive: true });
-  window.addEventListener("touchmove", onTouchMove, { passive: true });
-  window.addEventListener("touchend", onTouchEnd, { passive: true });
+  window.addEventListener("touchstart", onTouchStart, { passive: false });
+  window.addEventListener("touchmove", onTouchMove, { passive: false });
+  window.addEventListener("touchend", onTouchEnd, { passive: false });
   cleanupCallbacks.push(() => {
     window.removeEventListener("wheel", onWheel);
     window.removeEventListener("keydown", onKeyDown);
