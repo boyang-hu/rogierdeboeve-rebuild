@@ -15,6 +15,7 @@ type WebGLLike = {
     saturation?: string;
     contrast?: string;
     mouseLightness?: string;
+    spotlight?: string;
   }): void;
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number): void;
@@ -38,6 +39,7 @@ function projectPayloadFromElement(element?: HTMLElement | null) {
     saturation: element?.dataset.saturation,
     contrast: element?.dataset.contrast,
     mouseLightness: element?.dataset.mouseLightness,
+    spotlight: element?.dataset.spotlight,
   };
 }
 

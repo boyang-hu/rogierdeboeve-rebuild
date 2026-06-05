@@ -46,6 +46,7 @@ type ProjectPayload = {
   saturation?: string | number;
   contrast?: string | number;
   mouseLightness?: string | number;
+  spotlight?: string | number;
   blocks?: string;
 };
 
@@ -164,6 +165,7 @@ uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
 uniform vec3 uSpotLightPosition;
 uniform float uSpotConeTan;
+uniform float uSpotIntensity;
 uniform float uTime;
 
 float hash(vec2 p) {
@@ -240,7 +242,7 @@ void main() {
   vColorSeed = instanceColor;
   vLocalNormal = normalize(normal);
   vSpotUv = spotUv;
-  vSpotMask = coneMask * depthMask;
+  vSpotMask = coneMask * depthMask * uSpotIntensity;
 }
 `;
 
@@ -767,6 +769,9 @@ export class WebGLBackdrop {
   private zoom = 0;
   private activeSlug = "";
   private mouseFactor = 0;
+  private maxSpotLightIntensity = 220;
+  private spotLightIntensity = 1;
+  private spotLightPosition = new Vector3(0, 0, 3.7);
   private revealSpread = 0;
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
@@ -833,6 +838,7 @@ export class WebGLBackdrop {
     this.setThumbDarknessColor(payload.darknessColor ?? "#000000");
     this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
+    this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
     this.setRevealSpread(0);
 
     if (payload.slug) this.setActiveSlug(payload.slug);
@@ -991,8 +997,9 @@ export class WebGLBackdrop {
         uPointer: { value: this.pointer },
         tMouseSim: { value: this.mouseSimTexture },
         uResolution: { value: new Vector2(1, 1) },
-        uSpotLightPosition: { value: new Vector3(0, 0, 3.7) },
+        uSpotLightPosition: { value: this.spotLightPosition },
         uSpotConeTan: { value: Math.tan(Math.PI / 8) },
+        uSpotIntensity: { value: this.spotLightIntensity },
         uTime: { value: 0 },
       },
       vertexShader: workBlockVertex,
@@ -1437,6 +1444,19 @@ export class WebGLBackdrop {
     });
   }
 
+  private setSpotLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
+    gsap.to(this, {
+      spotLightIntensity: MathUtils.clamp(value / this.maxSpotLightIntensity, 0, 1.35),
+      duration,
+      ease,
+      onUpdate: () => {
+        this.workItems.forEach((item) => {
+          item.material.uniforms.uSpotIntensity.value = this.spotLightIntensity;
+        });
+      },
+    });
+  }
+
   private setMediaOpacity(value: number, duration = 1.6, ease = "expo.out", delay = 0.25) {
     gsap.to(this, {
       mediaSceneOpacity: value,
@@ -1479,6 +1499,7 @@ export class WebGLBackdrop {
       saturation: element.dataset.saturation,
       contrast: element.dataset.contrast,
       mouseLightness: element.dataset.mouseLightness,
+      spotlight: element.dataset.spotlight,
     };
   }
 
@@ -1608,6 +1629,7 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       item.material.uniforms.uTime.value = time;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
+      item.material.uniforms.uSpotLightPosition.value.copy(this.spotLightPosition);
       const world = new Vector3();
       item.group.getWorldPosition(world);
       item.group.visible = !(world.x > 5.5 || world.x < -5.5 || world.z > 5);
@@ -1617,6 +1639,9 @@ export class WebGLBackdrop {
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
     });
     this.sceneWrap.rotation.x += (this.pointer.y * 0.035 - this.sceneWrap.rotation.x) * 0.04;
+    this.spotLightPosition.x += (this.pointer.x * 0.18 - this.spotLightPosition.x) * 0.08;
+    this.spotLightPosition.y += (this.pointer.y * 0.18 - this.spotLightPosition.y) * 0.08;
+    this.spotLightPosition.z = 3.7;
     this.particles.rotation.z = time * 0.015 + this.galleryProgress * Math.PI * 0.2;
     this.particles.position.x = this.pointer.x * 0.1;
     this.particles.position.y = this.pointer.y * 0.08;

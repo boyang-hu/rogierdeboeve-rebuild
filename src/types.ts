@@ -34,6 +34,7 @@ export type Project = {
     };
     content: MediaItem[];
     ambient?: number;
+    spotlight?: number;
     contrast?: number;
     saturation?: number;
     darkenOverview?: number;
