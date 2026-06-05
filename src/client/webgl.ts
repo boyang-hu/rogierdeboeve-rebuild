@@ -162,6 +162,8 @@ uniform float uRevealSpread;
 uniform float uRevealSpreadSides;
 uniform float uMouseFactor;
 uniform vec2 uPointer;
+uniform vec2 uMouseUvOffset;
+uniform float uMouseUvScale;
 uniform sampler2D tMouseSim;
 uniform sampler2D tDisplacement;
 uniform sampler2D tPerlin;
@@ -208,7 +210,7 @@ void main() {
   transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
   transformed *= fade * uRevealSides;
 
-  vec2 mouseUv = instanceGrid.xy;
+  vec2 mouseUv = (instanceGrid.xy + uMouseUvOffset) / uMouseUvScale;
   float mouse = texture2D(tMouseSim, mouseUv).r;
   transformed *= 1.0 - mouse * 0.05;
   transformed.z -= 1.5;
@@ -1121,6 +1123,8 @@ export class WebGLBackdrop {
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
         uMouseFactor: { value: this.mouseFactor },
         uPointer: { value: this.pointer },
+        uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
+        uMouseUvScale: { value: 1.5 },
         tMouseSim: { value: this.mouseSimTexture },
         tDisplacement: { value: this.displacementTarget.texture },
         tPerlin: { value: this.perlinTexture },
@@ -1337,7 +1341,7 @@ export class WebGLBackdrop {
 
   private createMousePlane() {
     const material = new MeshBasicMaterial({ visible: false });
-    const mesh = new Mesh(new PlaneGeometry(GRID_COLS * 1.3 * GRID_SCALE, GRID_ROWS * 1.3 * GRID_SCALE), material);
+    const mesh = new Mesh(new PlaneGeometry(GRID_COLS * 1.3 * GRID_SCALE * 1.5, GRID_ROWS * 1.3 * GRID_SCALE * 1.5), material);
     mesh.position.set(0, 0, 0.01);
     this.homeScene.add(mesh);
     return mesh;
@@ -1774,8 +1778,8 @@ export class WebGLBackdrop {
     this.raycaster.setFromCamera(this.pointer, this.homeCamera);
     const hit = this.raycaster.intersectObject(this.mousePlane, false)[0];
     if (!hit) return;
-    const x = MathUtils.clamp(hit.point.x / (GRID_COLS * GRID_SCALE * 0.5) * 0.5 + 0.5, 0, 1);
-    const y = MathUtils.clamp(hit.point.y / (GRID_ROWS * GRID_SCALE * 0.5) * 0.5 + 0.5, 0, 1);
+    const x = MathUtils.clamp(hit.point.x / (GRID_COLS * 1.3 * GRID_SCALE * 1.5) + 0.5, 0, 1);
+    const y = MathUtils.clamp(hit.point.y / (GRID_ROWS * 1.3 * GRID_SCALE * 1.5) + 0.5, 0, 1);
     this.mouseSimTargetPos.set(x, y);
     this.workItems.forEach((item) => {
       item.material.uniforms.uPointer.value.set(x * 2 - 1, y * 2 - 1);
