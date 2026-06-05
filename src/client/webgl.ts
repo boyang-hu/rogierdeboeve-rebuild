@@ -977,12 +977,12 @@ export class WebGLBackdrop {
     this.projectionPlane = new Mesh(new PlaneGeometry(3.9, 2.72), this.projectionMaterial);
     this.projectionPlane.position.set(0, 0, 0.42);
     this.floorMaterial = this.createFloorMaterial();
-    this.floorPlane = new Mesh(new PlaneGeometry(8.2, 2.2), this.floorMaterial);
-    this.floorPlane.position.set(0, -1.65, -2.1);
-    this.floorPlane.rotation.x = MathUtils.degToRad(-62);
+    this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
+    this.floorPlane.position.y = -1.65;
+    this.floorPlane.rotation.x = -Math.PI / 2;
     this.environmentMaterial = this.createEnvironmentMaterial();
-    this.environmentPlane = new Mesh(new PlaneGeometry(10, 4), this.environmentMaterial);
-    this.environmentPlane.position.set(0, -2.8, -7.5);
+    this.environmentPlane = new Mesh(new PlaneGeometry(300, 10), this.environmentMaterial);
+    this.environmentPlane.position.y = -12.65;
     this.homeScene.add(this.sceneWrap);
     this.sceneWrap.add(this.floorPlane);
     this.sceneWrap.add(this.environmentPlane);
@@ -1154,6 +1154,7 @@ export class WebGLBackdrop {
     const count = cards.length;
     const theta = 360 / count;
     const itemWidth = 6.5;
+    let rotationAdjustment = 0;
     this.radius = Math.round(itemWidth / 2 / Math.tan(Math.PI / count));
     this.sceneWrap.position.set(0, 0, this.radius - 0.3);
     this.sceneWrap.rotation.y = Math.PI;
@@ -1165,6 +1166,7 @@ export class WebGLBackdrop {
       const thumb = this.createThumbPlane(payload);
       const group = new Group();
       group.add(mesh);
+      if (payload.slug === "demorgen") rotationAdjustment = -theta * index;
       group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius;
       group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
       group.lookAt(0, 0, 0);
@@ -1187,6 +1189,7 @@ export class WebGLBackdrop {
         }
       });
     });
+    this.environmentPlane.rotation.y = -MathUtils.degToRad(rotationAdjustment);
   }
 
   private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
