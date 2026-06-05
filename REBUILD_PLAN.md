@@ -79,7 +79,7 @@ Last updated: 2026-06-05
 | `c183c76` | Home WebGL | Made the auxiliary thumb projection plane follow source-style scene reveal/out timing instead of staying permanently visible outside the spotlight-map lifecycle. |
 | `15b1ad9` | Home WebGL | Moved the lightweight home bloom pass closer to source `kA` by adding a `uRadius` uniform set to source bloom radius `1.5` for luminosity blur offsets. |
 | `95ebb65` | Home WebGL | Moved final home bloom compositing closer to source `OA` by adding `tBloom` directly and adding a shifted bloom sample instead of attenuating bloom a second time. |
-| `pending` | Global Audio | Split CTA click audio from gallery-out soft-woosh behavior using source `gD`/`yD` Howler assets and playback rates. |
+| `32ef9ec` | Global Audio | Split CTA click audio from gallery-out soft-woosh behavior using source `gD`/`yD` Howler assets and playback rates. |
 
 ## Current Focus
 
