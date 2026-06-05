@@ -511,7 +511,7 @@ void main() {
   color = saturation(color, 1.15);
   color = blendLighten(color, uBgColor, 0.85);
 
-  vec2 noiseUv = uv - 0.5;
+  vec2 noiseUv = baseUv - 0.5;
   noiseUv.x *= uRatio;
   noiseUv += 0.5;
   noiseUv *= 15.0;
@@ -1751,7 +1751,7 @@ export class WebGLBackdrop {
       ),
       material,
     );
-    mesh.position.set(0, 0, GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE / 2 + 0.01);
+    mesh.position.set(0, 0, (GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01) * GRID_SCALE);
     return mesh;
   }
 
@@ -2274,6 +2274,8 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
+    const displacementSize = Math.max(1, Math.round(height / 10));
+    this.displacementTarget.setSize(displacementSize, displacementSize);
     const screenSimWidth = Math.max(1, Math.round(renderWidth / SCREEN_MOUSE_SIM_SCALE));
     const screenSimHeight = Math.max(1, Math.round(renderHeight / SCREEN_MOUSE_SIM_SCALE));
     this.screenMouseSimulationTargets.forEach((target) => target.setSize(screenSimWidth, screenSimHeight));
