@@ -1061,6 +1061,13 @@ export class WebGLBackdrop {
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
+  private mainColorTweens: gsap.core.Tween[] = [];
+  private ambientTweens: gsap.core.Tween[] = [];
+  private mediaBackgroundTweens: gsap.core.Tween[] = [];
+  private saturationTween?: gsap.core.Tween;
+  private contrastTween?: gsap.core.Tween;
+  private contrastBlockTweens: gsap.core.Tween[] = [];
+  private blockColorTweens: gsap.core.Tween[] = [];
   private darkenTween?: gsap.core.Tween;
   private revealSpreadTween?: gsap.core.Tween;
   private sceneRevealTween?: gsap.core.Tween;
@@ -1884,50 +1891,78 @@ export class WebGLBackdrop {
     });
   }
 
-  private setMainColor(color?: string) {
+  private setMainColor(color?: string, duration = 1.6) {
+    this.mainColorTweens.forEach((tween) => tween.kill());
+    this.mainColorTweens = [];
     const elements = document.querySelectorAll<HTMLElement>(".c-color");
     const next = colorFrom(color);
-    tweenColor(this.backgroundMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
-    tweenColor(this.floorMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
-    elements.forEach((element) => {
-      gsap.to(element, {
-        color: `rgb(${Math.round(next.r * 255)}, ${Math.round(next.g * 255)}, ${Math.round(next.b * 255)})`,
-        duration: 1.6,
-        ease: "expo.out",
+    if (duration <= 0) {
+      this.backgroundMaterial.uniforms.uActiveColor.value.copy(next);
+      this.floorMaterial.uniforms.uActiveColor.value.copy(next);
+      (this.particles.material as PointsMaterial).color.copy(next);
+      elements.forEach((element) => {
+        element.style.color = `rgb(${Math.round(next.r * 255)}, ${Math.round(next.g * 255)}, ${Math.round(next.b * 255)})`;
       });
+      return;
+    }
+    this.mainColorTweens.push(gsap.to(this.backgroundMaterial.uniforms.uActiveColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    this.mainColorTweens.push(gsap.to(this.floorMaterial.uniforms.uActiveColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    elements.forEach((element) => {
+      this.mainColorTweens.push(gsap.to(element, {
+        color: `rgb(${Math.round(next.r * 255)}, ${Math.round(next.g * 255)}, ${Math.round(next.b * 255)})`,
+        duration,
+        ease: "expo.out",
+      }));
     });
     const particleMaterial = this.particles.material as PointsMaterial;
-    tweenColor(particleMaterial.color, color, 1.6);
+    this.mainColorTweens.push(gsap.to(particleMaterial.color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
   }
 
-  private setAmbientLight(color?: string, intensity = 0.5) {
+  private setAmbientLight(color?: string, intensity = 0.5, duration = 1.6) {
+    this.ambientTweens.forEach((tween) => tween.kill());
+    this.ambientTweens = [];
     this.currentAmbientIntensity = intensity;
+    const next = colorFrom(color, "#414652");
+    const particleOpacity = MathUtils.clamp(0.06 + intensity * 0.12, 0.05, 0.24);
+    if (duration <= 0) {
+      this.workItems.forEach((item) => {
+        if (item.slug === this.activeSlug) item.material.uniforms.uTint.value.copy(next);
+      });
+      this.backgroundMaterial.uniforms.uAmbientColor.value.copy(next);
+      this.floorMaterial.uniforms.uAmbientColor.value.copy(next);
+      this.environmentMaterial.uniforms.uAmbientColor.value.copy(next);
+      this.backgroundMaterial.uniforms.uAmbientIntensity.value = intensity;
+      this.floorMaterial.uniforms.uAmbientIntensity.value = intensity;
+      this.environmentMaterial.uniforms.uAmbientIntensity.value = intensity;
+      (this.particles.material as PointsMaterial).opacity = particleOpacity;
+      return;
+    }
     this.workItems.forEach((item) => {
-      if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uTint.value as Color, color, 1.6);
+      if (item.slug === this.activeSlug) this.ambientTweens.push(gsap.to(item.material.uniforms.uTint.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     });
-    tweenColor(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
-    tweenColor(this.floorMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
-    tweenColor(this.environmentMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
-    gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
+    this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    this.ambientTweens.push(gsap.to(this.floorMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
-      duration: 1.6,
+      duration,
       ease: "expo.out",
-    });
-    gsap.to(this.floorMaterial.uniforms.uAmbientIntensity, {
+    }));
+    this.ambientTweens.push(gsap.to(this.floorMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
-      duration: 1.6,
+      duration,
       ease: "expo.out",
-    });
-    gsap.to(this.environmentMaterial.uniforms.uAmbientIntensity, {
+    }));
+    this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
-      duration: 1.6,
+      duration,
       ease: "expo.out",
-    });
-    gsap.to(this.particles.material as PointsMaterial, {
-      opacity: MathUtils.clamp(0.06 + intensity * 0.12, 0.05, 0.24),
-      duration: 1.6,
+    }));
+    this.ambientTweens.push(gsap.to(this.particles.material as PointsMaterial, {
+      opacity: particleOpacity,
+      duration,
       ease: "expo.out",
-    });
+    }));
   }
 
   private setDarken(value: number, duration = 0.5) {
@@ -1943,19 +1978,37 @@ export class WebGLBackdrop {
     gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value, duration: 1.6, ease: "expo.out" });
   }
 
-  private setSaturation(value: number) {
-    gsap.to(this.compositeMaterial.uniforms.uSaturation, { value: Math.max(1.15, value), duration: 1.6, ease: "expo.out" });
+  private setSaturation(value: number, duration = 1.6) {
+    this.saturationTween?.kill();
+    const target = Math.max(1.15, value);
+    if (duration <= 0) {
+      this.compositeMaterial.uniforms.uSaturation.value = target;
+      return;
+    }
+    this.saturationTween = gsap.to(this.compositeMaterial.uniforms.uSaturation, { value: target, duration, ease: "expo.out" });
   }
 
   private setThumbSaturation(value: number) {
     gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
   }
 
-  private setContrast(value: number) {
+  private setContrast(value: number, duration = 1.6) {
+    this.contrastTween?.kill();
+    this.contrastBlockTweens.forEach((tween) => tween.kill());
+    this.contrastBlockTweens = [];
     this.workItems.forEach((item) => {
-      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
+      if (item.slug !== this.activeSlug) return;
+      if (duration <= 0) {
+        item.material.uniforms.uContrast.value = value;
+        return;
+      }
+      this.contrastBlockTweens.push(gsap.to(item.material.uniforms.uContrast, { value, duration, ease: "expo.out" }));
     });
-    gsap.to(this.preCompositeMaterial.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
+    if (duration <= 0) {
+      this.preCompositeMaterial.uniforms.uContrast.value = value;
+      return;
+    }
+    this.contrastTween = gsap.to(this.preCompositeMaterial.uniforms.uContrast, { value, duration, ease: "expo.out" });
   }
 
   private setThumbDarknessColor(value?: string) {
@@ -1991,14 +2044,36 @@ export class WebGLBackdrop {
     });
   }
 
-  private setMediaBackground(value?: string) {
+  private setMediaBackground(value?: string, duration = 1.6) {
+    this.mediaBackgroundTweens.forEach((tween) => tween.kill());
+    this.mediaBackgroundTweens = [];
     this.mediaBackground = colorFrom(value, DEFAULT_BG);
-    this.mediaPlanes.forEach((plane) => tweenColor(plane.material.uniforms.uBackgroundColor.value as Color, value, 1.6));
+    this.mediaPlanes.forEach((plane) => {
+      if (duration <= 0) {
+        plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
+        return;
+      }
+      this.mediaBackgroundTweens.push(gsap.to(plane.material.uniforms.uBackgroundColor.value as Color, {
+        r: this.mediaBackground.r,
+        g: this.mediaBackground.g,
+        b: this.mediaBackground.b,
+        duration,
+        ease: "expo.out",
+      }));
+    });
   }
 
-  private setBlocksColor(value?: string) {
+  private setBlocksColor(value?: string, duration = 1.6) {
+    this.blockColorTweens.forEach((tween) => tween.kill());
+    this.blockColorTweens = [];
+    const next = colorFrom(value ?? DEFAULT_BG, DEFAULT_BG);
     this.workItems.forEach((item) => {
-      if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uBlockColor.value as Color, value ?? DEFAULT_BG, 1.6);
+      if (item.slug !== this.activeSlug) return;
+      if (duration <= 0) {
+        item.material.uniforms.uBlockColor.value.copy(next);
+        return;
+      }
+      this.blockColorTweens.push(gsap.to(item.material.uniforms.uBlockColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     });
   }
 
