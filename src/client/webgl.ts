@@ -1,6 +1,8 @@
 import {
   Color,
+  CubeTextureLoader,
   DataTexture,
+  Fog,
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
@@ -1062,6 +1064,7 @@ export class WebGLBackdrop {
   private workItems: WorkItem[] = [];
   private mediaPlanes: MediaPlane[] = [];
   private loader = new TextureLoader();
+  private cubeLoader = new CubeTextureLoader();
   private textureCache = new Map<string, Texture>();
   private placeholder = makePlaceholderTexture();
   private fluidPlaceholder = makePlaceholderTexture([0, 0, 0, 255]);
@@ -1182,6 +1185,7 @@ export class WebGLBackdrop {
     this.homeCamera.position.set(0, 0, 5.5);
     this.thumbCamera.position.set(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
+    this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = colorFrom(SOURCE_WORK_BG);
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
@@ -1757,6 +1761,25 @@ export class WebGLBackdrop {
         item.material.uniforms.tPerlin.value = texture;
       });
     });
+    const cubeExt = "webp";
+    const cubeBase = "/images/cubemaps/01";
+    this.cubeLoader.load(
+      ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${cubeExt}`),
+      (texture) => {
+        texture.colorSpace = SRGBColorSpace;
+        this.homeScene.environment = texture;
+      },
+      undefined,
+      () => {
+        this.cubeLoader.load(
+          ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.jpg`),
+          (texture) => {
+            texture.colorSpace = SRGBColorSpace;
+            this.homeScene.environment = texture;
+          },
+        );
+      },
+    );
   }
 
   private createDisplacementMaterial() {
@@ -2473,6 +2496,30 @@ export class WebGLBackdrop {
     });
   }
 
+  private updateVisibleWorkItems(time: number) {
+    this.workItems.forEach((item) => {
+      item.material.uniforms.uTime.value = time;
+      const world = new Vector3();
+      item.group.getWorldPosition(world);
+      const visible = !(world.x > 5.5 || world.x < -5.5 || world.z > 5);
+      item.group.visible = visible;
+      if (!visible) return;
+
+      const sideReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 0, 5, 0, 1), 0, 1);
+      const sideSpreadReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 2, 6, 0, 1), 0, 1);
+      item.material.uniforms.uRevealSides.value = sideReveal;
+      item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
+      item.material.uniforms.uMouseFactor.value = this.mouseFactor;
+      item.material.uniforms.uDirectionalLightIntensity.value = this.directionalLightIntensity;
+      item.material.uniforms.uSpotLightPosition.value.copy(this.spotLightPosition);
+      item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
+      item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
+      item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
+      item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
+      item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
+    });
+  }
+
   private updateMouseBrush(
     material: ShaderMaterial,
     scene: Scene,
@@ -2538,6 +2585,7 @@ export class WebGLBackdrop {
     this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     this.workItems.forEach((item) => {
+      if (!item.group.visible) return;
       item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
     });
@@ -2602,31 +2650,14 @@ export class WebGLBackdrop {
     const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
     this.lastTickTime = time;
     this.pointer.lerp(this.targetPointer, 0.055);
-    this.updatePointerProjection();
-    this.updateMouseSimulation(delta);
-    this.workItems.forEach((item) => {
-      item.material.uniforms.uTime.value = time;
-      item.material.uniforms.uMouseFactor.value = this.mouseFactor;
-      item.material.uniforms.uDirectionalLightIntensity.value = this.directionalLightIntensity;
-      item.material.uniforms.uSpotLightPosition.value.copy(this.spotLightPosition);
-      const world = new Vector3();
-      item.group.getWorldPosition(world);
-      item.group.visible = !(world.x > 5.5 || world.x < -5.5 || world.z > 5);
-      const sideReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 0, 5, 0, 1), 0, 1);
-      const sideSpreadReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 2, 6, 0, 1), 0, 1);
-      item.material.uniforms.uRevealSides.value = sideReveal;
-      item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
-    });
     this.updateHomeCamera(delta);
     this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
     this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
     this.spotLightPosition.z = 3.7;
     this.updateSpotLightBasis();
-    this.workItems.forEach((item) => {
-      item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
-      item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
-      item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
-    });
+    this.updateVisibleWorkItems(time);
+    this.updatePointerProjection();
+    this.updateMouseSimulation(delta);
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
