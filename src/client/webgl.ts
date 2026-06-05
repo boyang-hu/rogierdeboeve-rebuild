@@ -1804,7 +1804,6 @@ export class WebGLBackdrop {
       if (x > totalWidth / 2) x -= totalWidth;
       item.thumb.position.set(x, 0, 0);
       item.thumb.visible = x >= -1.5 && x <= 1.5;
-      item.thumb.material.uniforms.uProgress.value = item.slug === this.activeSlug ? 1 : 0.35;
     });
   }
 

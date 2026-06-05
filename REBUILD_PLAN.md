@@ -63,7 +63,8 @@ Last updated: 2026-06-05
 | `31e3001` | Home DOM | Added source-style home gallery `mousedown` default suppression from `yD.onMouseDown`, scoped to the home view. |
 | `0c3c407` | Home WebGL | Restored source `GA` work-block displacement strength constants: Perlin reveal mix `10.25` and unrevealed wave depth `9.0`. |
 | `9021b23` | Home WebGL | Split local cube mouse simulation from source-style screen-space `tMouseSim2`, so work-block fragment light/alpha and main composite sample screen mouse flow separately from vertex displacement. |
-| this commit | Home DOM/WebGL | Passed gallery frame delta into `setGalleryProgress` and matched source `yD.updateScene` delta-based smoothing for work-scene roll and zoom. |
+| `e076340` | Home DOM/WebGL | Passed gallery frame delta into `setGalleryProgress` and matched source `yD.updateScene` delta-based smoothing for work-scene roll and zoom. |
+| this commit | Home WebGL | Matched source `w1.updateGalleryProgress` by keeping thumb `uProgress` at its default value during gallery wrapping instead of dimming non-active thumbs. |
 
 ## Current Focus
 
