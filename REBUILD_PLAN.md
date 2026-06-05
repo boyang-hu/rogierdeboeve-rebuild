@@ -192,6 +192,7 @@ Last updated: 2026-06-05
 | `0cf78b1` | Home WebGL | Batched source `TD/Fg/ZA` auxiliary scroll alignment: floating blocks now accumulate source-style scroll-velocity z drift while visible on the about route, with entry/destroy resets to prevent cross-route carryover. |
 | `6b8c626` | Home WebGL | Batched source `characterScene/TD` spotlight-map alignment: about spotlight now renders `public/models/me/me.gltf` into a dedicated character target with camera/lights and keeps the previous `model_T.jpg` composite plane as a fallback. |
 | `current batch` | Phase 1 Audit/QA Harness | Added configurable source comparison captures, recorded the first full post-preloader difference table, and rejected two non-source brightness/reveal experiments: `VA.envMapIntensity` remains `.75`, and scene reveal remains owned by `C1/A1` rather than final `OA`. |
+| `current batch` | Home WebGL | Aligned source runtime color semantics for `Se`-owned setters by parsing project colors as raw `sr()` RGB channels, and matched the source thumb-composite `toneMapped:false` flag. Full QA passed, but the luma gap remains, pointing the next batch toward `VA` full shader/lighting and render-target color-space behavior. |
 
 ## Current Focus
 
@@ -202,7 +203,7 @@ Immediate source targets:
 - `p1`: validate route-specific visibility and spotlight-map ownership for about/floating blocks, now that the source-shaped auxiliary block objects can be activated on the about route and the about spotlight map renders the local GLTF character target.
 - `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, source material flags including dithering, and a cleaner source-shaped custom-uniform surface. Full source shader override is documented as a high-risk deviation pending real WebGL QA evidence.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
-- `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain, routes active blend modes through source-shaped mode dispatchers, and aligns proven material tone/blending flags.
+- `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain, routes active blend modes through source-shaped mode dispatchers, aligns proven material tone/blending flags, and has confirmed that runtime color payload parsing alone is not enough to close the brightness gap.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
 - `Se`: source-style visual-state setter ownership without non-source side effects; core setter state ownership plus project/home/about entry timing, about leave/destroy cleanup, and home route leave dispatch are now closer and pending browser route QA.
 
@@ -218,12 +219,13 @@ Latest verification:
 - With that fallback and Chrome SwiftShader, the mirrored original naturally reaches post-preloader state on home and `/gc-2026/`; home and project both report full-viewport canvases and no runtime exceptions in the diagnostic pass.
 - A longer full pass with `CAPTURE_WAIT=4200` and `CAPTURE_SET=full` captured home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/` for both original and rebuild. Both sides reached post-preloader full-canvas states with no runtime exceptions. The contact sheet at `/tmp/rogier-compare-phase1-full/contact.png` shows the main remaining Phase 1 differences: original home cubes/thumb media are much brighter and more present than rebuild; project media exists but the rebuild composite/background is darker. An 8s home-only pass did not remove the home brightness gap.
 - Source audit correction from this pass: `VA.envMapIntensity` is `.75` in the source and should stay `.75`; `uReveal` belongs to the source `C1/A1` pre-composite material, while `OA` final composite has no `uReveal`.
+- Latest full QA after source RGB setter/thumb composite fixes: `CAPTURE_WAIT=4200 CAPTURE_SET=full` wrote screenshots to `/tmp/rogier-compare-phase1-source-rgb-full`. Home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/` reached post-preloader full-canvas states with no network failures or runtime exceptions. Dist markers stayed stable. Luma remains far lower in rebuild (`home desktop 0.010` vs original `0.106`; `/gc-2026/` `0.039` vs original `0.140`), so the next batch should not keep tweaking color payload parsing.
 
 ## Next Candidate Steps
 
-1. Run a focused 5-8 point source audit/implementation batch around the home cube brightness path: `VA` fragment tail, real `SpotLight.map` contribution, `p1` lighting/environment, and Three color-space/material assumptions.
+1. Run a focused 3-5 point source audit/implementation batch around `VA` full shader versus rebuild chunk injection, including Three 0.184 lighting/color-space side effects and whether a narrower source shader override can be introduced safely.
 2. Keep project detail pages as regression checks because the darker project composite may share `A1/C1` or media-background ownership with home.
-3. Compare about spotlight projection after the GLTF character target against the source behavior; decide whether source `rotatableMesh` event handling/render-manager parity must be ported or can remain accepted.
+3. Audit render-target color-space/tone-mapping assumptions before visual tuning; current luma data suggests the remaining gap is downstream of source RGB payload parsing.
 4. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with accepted deviations or new source-proven fixes.
 5. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.
 

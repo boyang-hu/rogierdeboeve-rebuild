@@ -1107,6 +1107,31 @@ function colorFrom(value?: string, fallback = DEFAULT_COLOR) {
   return new Color(normalizeColor(value) ?? fallback);
 }
 
+function sourceRgbColor(value?: string, fallback = DEFAULT_COLOR) {
+  const normalized = normalizeColor(value) ?? normalizeColor(fallback) ?? DEFAULT_COLOR;
+  if (normalized.startsWith("#")) {
+    const hex = normalized.slice(1);
+    const expanded = hex.length === 3
+      ? hex.split("").map((char) => `${char}${char}`).join("")
+      : hex.slice(0, 6);
+    if (/^[0-9a-f]{6}$/i.test(expanded)) {
+      return new Color(
+        Number.parseInt(expanded.slice(0, 2), 16) / 255,
+        Number.parseInt(expanded.slice(2, 4), 16) / 255,
+        Number.parseInt(expanded.slice(4, 6), 16) / 255,
+      );
+    }
+  }
+  const rgb = /^rgba?\(([^)]+)\)$/i.exec(normalized);
+  if (rgb) {
+    const channels = rgb[1].split(",").slice(0, 3).map((part) => Number.parseFloat(part.trim()));
+    if (channels.length === 3 && channels.every((channel) => Number.isFinite(channel))) {
+      return new Color(channels[0] / 255, channels[1] / 255, channels[2] / 255);
+    }
+  }
+  return colorFrom(value, fallback);
+}
+
 function numeric(value: string | number | undefined, fallback: number) {
   if (value === undefined || value === "") return fallback;
   const parsed = Number(value);
@@ -1172,7 +1197,7 @@ function sourceMouseUvOffset() {
 }
 
 function tweenColorOwned(target: Color, value?: string, duration = 1.6, tweens?: gsap.core.Tween[], fallback?: string) {
-  const next = colorFrom(value, fallback ?? `#${target.getHexString()}`);
+  const next = sourceRgbColor(value, fallback ?? `#${target.getHexString()}`);
   if (duration <= 0) {
     target.copy(next);
     return;
@@ -2449,13 +2474,14 @@ export class WebGLBackdrop {
 
   private createThumbCompositeMaterial() {
     return new ShaderMaterial({
+      toneMapped: false,
       transparent: true,
       depthWrite: false,
       depthTest: false,
       uniforms: {
         tScene: { value: this.thumbTarget.texture },
         uDarkness: { value: 0 },
-        uDarknessColor: { value: colorFrom("#000000", "#000000") },
+        uDarknessColor: { value: sourceRgbColor("#000000", "#000000") },
         uSaturation: { value: 1 },
       },
       vertexShader: backgroundVertex,
@@ -2736,7 +2762,7 @@ export class WebGLBackdrop {
     this.mainColorTweens.forEach((tween) => tween.kill());
     this.mainColorTweens = [];
     const elements = document.querySelectorAll<HTMLElement>(".c-color");
-    const next = colorFrom(color);
+    const next = sourceRgbColor(color);
     if (duration <= 0) {
       elements.forEach((element) => {
         element.style.color = `rgb(${Math.round(next.r * 255)}, ${Math.round(next.g * 255)}, ${Math.round(next.b * 255)})`;
@@ -2756,7 +2782,7 @@ export class WebGLBackdrop {
     this.ambientTweens.forEach((tween) => tween.kill());
     this.ambientTweens = [];
     this.currentAmbientIntensity = intensity;
-    const next = colorFrom(color, "#414652");
+    const next = sourceRgbColor(color, "#414652");
     if (duration <= 0) {
       this.ambientLight.color.copy(next);
       this.ambientLight.intensity = intensity;
@@ -2899,7 +2925,7 @@ export class WebGLBackdrop {
   private setMediaBackground(value?: string, duration = 1.6) {
     this.mediaBackgroundTweens.forEach((tween) => tween.kill());
     this.mediaBackgroundTweens = [];
-    const next = colorFrom(value, DEFAULT_BG);
+    const next = sourceRgbColor(value, DEFAULT_BG);
     const update = () => {
       this.mediaBackground.copy(this.mediaBackgroundState);
       this.mediaPlanes.forEach((plane) => {
@@ -2924,7 +2950,7 @@ export class WebGLBackdrop {
   private setBlocksColor(value?: string, duration = 1.6) {
     this.blockColorTweens.forEach((tween) => tween.kill());
     this.blockColorTweens = [];
-    const next = colorFrom(value ?? DEFAULT_BG, DEFAULT_BG);
+    const next = sourceRgbColor(value ?? DEFAULT_BG, DEFAULT_BG);
     this.workItems.forEach((item) => {
       if (duration <= 0) {
         item.material.emissive.copy(next);
