@@ -66,7 +66,7 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | P1-01 | `p1.update` / `GA.update` | Each `WorkItem` now owns local mouse simulation material, scene, ping-pong targets, UV target state, speed state, and visible-item update. | Real WebGL browser QA should confirm mouse interaction/performance, because the current headless Chrome environment failed WebGL probe creation. |
 | P1-02 | `GA.createPlane` / `Ka` | Per-block ray-plane hits now update the matching work item's local `Ka` target, while shared screen-space `tMouseSim2` remains render-manager owned. | Same real WebGL QA as P1-01. |
 | P1-04 | `A1` / `OA` blend functions | A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for modes `1`, `11`, and `15` instead of direct local helper calls. | Output should be equivalent, but real WebGL QA should confirm no shader/runtime differences and future work may still port the full source blend-mode table if needed. |
-| P1-06 | `Se` setter ownership | `showScene()` now follows source state tween behavior without a forced local reset; `setDarken`, `setSaturation`, `setContrast`, `setMediaBackground`, and `setDirectionalLight2Intensity` now tween local source-shaped state before writing uniforms/lights; composite uniform defaults are initialized from those state fields. Project entry is closer to source `OD`: visual init sets media opacity to `0` and media reveal is deferred to the page-enter boundary instead of running during WebGL visual-state setup. | Browser QA should confirm no cross-route visual regressions; about/home gallery leave order still needs a final audit against `SD`, `DD`, `TD`, `Fg`, and transition classes. |
+| P1-06 | `Se` setter ownership | `showScene()` now follows source state tween behavior without a forced local reset; `setDarken`, `setSaturation`, `setContrast`, `setMediaBackground`, and `setDirectionalLight2Intensity` now tween local source-shaped state before writing uniforms/lights; composite uniform defaults are initialized from those state fields. Project entry is closer to source `OD`: visual init sets media opacity to `0` and media reveal is deferred to the page-enter boundary instead of running during WebGL visual-state setup. Home `SD.animateIn`-style scene reveal/gallery entry and about `TD/Fg.animateIn`-style auxiliary reveals are also deferred to the page-enter boundary instead of running during WebGL boot. | Browser QA should confirm no cross-route visual regressions; home gallery leave and about destroy/leave timing still need final checks against `SD`, `TD`, `Fg`, and transition classes. |
 
 ### Should Fix If Source-Proven
 
@@ -135,15 +135,15 @@ Tasks:
 
 ### Batch C: `Se` Route/Setter Ownership
 
-Status: partially implemented. Core setter ownership is source-shaped; project entry order is closer to source; home/about route-specific call ordering still needs a final pass.
+Status: partially implemented. Core setter ownership is source-shaped; project, home, and about entry timing are closer to source; home/about leave timing still needs a final pass.
 
 Goal: make visual state setters source-owned instead of rebuild-compensated.
 
 Tasks:
 
 1. Audit `Se.setProject()` against rebuild `setProject()`.
-2. Audit `Se.showScene()` / `hideWorkScene()`. `showScene()` source-state tween ownership is implemented; `hideWorkScene()` still needs a final source-order audit with gallery leave.
-3. Audit about route entry/leave setter order.
+2. Audit `Se.showScene()` / `hideWorkScene()`. `showScene()` source-state tween ownership and page-enter timing are implemented; `hideWorkScene()` still needs a final source-order audit with gallery leave.
+3. Audit about route entry/leave setter order. `TD/Fg`-style entry reveal is now separated from setup and deferred to page-enter; destroy/leave cleanup timing still needs final review.
 4. Audit project route entry/leave setter order without regressing media pages. Initial `OD.init`-style media opacity reset and deferred `OD.animateIn`-style media reveal are implemented; project leave still follows the source `setMediaOpacity(0,.5)` / `setFluidStrength(.5)` shape.
 5. Remove or document any remaining rebuild-only side effects. Core `darken/saturation/contrast/media background/directionalLight2` setter state ownership is implemented.
 

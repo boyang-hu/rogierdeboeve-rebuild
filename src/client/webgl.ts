@@ -1600,6 +1600,8 @@ export class WebGLBackdrop {
   }
 
   enterAboutVisualState(visual?: HTMLElement | null, floating?: HTMLElement | null) {
+    this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
+    this.auxiliaryRevealTweens = [];
     this.setMainColor(DEFAULT_COLOR, 0);
     this.setDarken(0.2, 0.5);
     this.setSaturation(0.35);
@@ -1625,6 +1627,9 @@ export class WebGLBackdrop {
     }
     this.resize();
     this.updateAboutSpotlight();
+  }
+
+  animateAboutVisualIn() {
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     if (this.aboutBlocks) {
