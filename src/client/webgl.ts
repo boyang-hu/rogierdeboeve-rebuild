@@ -186,21 +186,6 @@ uniform float uSpotConeTan;
 uniform float uSpotIntensity;
 uniform float uTime;
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-}
-
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-    u.y
-  );
-}
-
 void main() {
   vec3 transformed = position;
   vec4 instancePos = instanceMatrix[3];
@@ -213,19 +198,19 @@ void main() {
   float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
   vec4 displacementMap = texture2D(tDisplacement, instanceGrid.xy);
   vec4 perlinMap = texture2D(tPerlin, instanceGrid.xy * 0.75 - uTime * 0.05);
-  float perlin = mix(noise(instanceGrid.xy * 12.0 - uTime * 0.05), perlinMap.r, 0.72);
-  float wave = sin(instanceGrid.x * 24.0 + instanceGrid.y * 13.0 - uTime * 0.8) * 0.5 + 0.5;
-  float displacement = mix(mix(perlin, wave, 0.35), displacementMap.r, 0.58);
   float perlinHeight = 10.0;
+  float perlinDisplacement = perlinMap.r * perlinHeight;
+  perlinDisplacement *= fade;
 
   vec3 perlinDisplaced = transformed;
-  perlinDisplaced.z += displacement * perlinHeight - perlinHeight * 0.5;
-  perlinDisplaced *= min(1.0, 1.0 - ((displacement * perlinHeight) - perlinHeight * 0.5) * 0.1);
-  transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 10.25);
+  perlinDisplaced.z += perlinDisplacement - perlinHeight * 0.5;
+  perlinDisplaced *= min(1.0, 1.0 - (perlinDisplacement - perlinHeight * 0.5) * 0.1);
+  transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
   transformed *= fade * uRevealSides;
 
   vec2 mouseUv = (instanceGrid.xy + uMouseUvOffset) / uMouseUvScale;
   float mouse = texture2D(tMouseSim, mouseUv).r;
+  float displacement = displacementMap.r;
   transformed *= 1.0 - mouse * 0.05;
   transformed.z -= 1.5;
   transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
