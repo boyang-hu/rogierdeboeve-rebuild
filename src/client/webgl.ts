@@ -860,6 +860,11 @@ export class WebGLBackdrop {
   private raf = 0;
   private pointer = new Vector2();
   private targetPointer = new Vector2();
+  private mouseSimOldPos = new Vector2(0.5, 0.5);
+  private mouseSimNewPos = new Vector2(0.5, 0.5);
+  private mouseSimTargetPos = new Vector2(0.5, 0.5);
+  private mouseSimSpeed = 0;
+  private lastTickTime = performance.now() * 0.001;
   private galleryProgress = 0;
   private sceneRotation = 0;
   private zoom = 0;
@@ -1687,6 +1692,7 @@ export class WebGLBackdrop {
   private onPointerMove = (event: PointerEvent) => {
     this.targetPointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
     this.targetPointer.y = -(event.clientY / window.innerHeight - 0.5) * 2;
+    this.mouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
   };
 
   private onScroll = () => {
@@ -1765,33 +1771,46 @@ export class WebGLBackdrop {
     if (!hit) return;
     const x = MathUtils.clamp(hit.point.x / (GRID_COLS * GRID_SCALE * 0.5) * 0.5 + 0.5, 0, 1);
     const y = MathUtils.clamp(hit.point.y / (GRID_ROWS * GRID_SCALE * 0.5) * 0.5 + 0.5, 0, 1);
+    this.mouseSimTargetPos.set(x, y);
     this.workItems.forEach((item) => {
       item.material.uniforms.uPointer.value.set(x * 2 - 1, y * 2 - 1);
     });
   }
 
-  private updateMouseSimulation() {
+  private updateMouseSimulation(delta: number) {
     const size = 128;
-    const pointerUv = new Vector2(this.pointer.x * 0.5 + 0.5, this.pointer.y * 0.5 + 0.5);
+    const lerpFactor = MathUtils.clamp(delta * 7.5, 0, 1);
+    this.mouseSimNewPos.lerp(this.mouseSimTargetPos, lerpFactor);
+    this.mouseSimSpeed = this.mouseSimNewPos.distanceTo(this.mouseSimOldPos);
+    const brushUv = this.mouseSimOldPos;
+    const sourcePersistence = Math.pow(0.85, delta * 10);
+    const ratio = GRID_COLS / GRID_ROWS;
+    const thickness = MathUtils.clamp(0.1 + this.mouseSimSpeed * 0.3, 0.0001, 0.2) * MathUtils.clamp(this.mouseFactor, 0.25, 1);
     const data = this.mouseSimData;
-    const radius = Math.max(7, 17 * this.mouseFactor);
+    const previousFlowX = (this.mouseSimNewPos.x - this.mouseSimOldPos.x) * 14;
+    const previousFlowY = (this.mouseSimNewPos.y - this.mouseSimOldPos.y) * 14;
 
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
         const index = (y * size + x) * 4;
-        const dx = x + 0.5 - pointerUv.x * size;
-        const dy = y + 0.5 - pointerUv.y * size;
-        const falloff = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / radius);
-        const next = Math.max(data[index] * 0.88, Math.pow(falloff, 1.6) * 255);
-        const flowX = 128 + MathUtils.clamp(-dx / radius, -1, 1) * next * 0.35;
-        const flowY = 128 + MathUtils.clamp(-dy / radius, -1, 1) * next * 0.35;
-        data[index] = next;
-        data[index + 1] = flowX;
-        data[index + 2] = flowY;
+        const uvx = (x + 0.5) / size;
+        const uvy = (y + 0.5) / size;
+        const dx = uvx - brushUv.x;
+        const dy = uvy / ratio - brushUv.y / ratio;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const lineValue = 1 - MathUtils.smoothstep(distance, 0, thickness);
+        const injection = lineValue * 0.05 * 255;
+        const red = MathUtils.clamp(data[index] * sourcePersistence + (255 - data[index]) * (injection / 255), 0, 255);
+        const flowX = 128 + MathUtils.clamp(previousFlowX, -1, 1) * red * 0.5;
+        const flowY = 128 + MathUtils.clamp(previousFlowY, -1, 1) * red * 0.5;
+        data[index] = red;
+        data[index + 1] = MathUtils.clamp(data[index + 1] * sourcePersistence + (flowX - 128) * 0.18 + 128 * (1 - sourcePersistence), 0, 255);
+        data[index + 2] = MathUtils.clamp(data[index + 2] * sourcePersistence + (flowY - 128) * 0.18 + 128 * (1 - sourcePersistence), 0, 255);
         data[index + 3] = 255;
       }
     }
 
+    this.mouseSimOldPos.copy(this.mouseSimNewPos);
     this.mouseSimTexture.image.data = data;
     this.mouseSimTexture.image.width = size;
     this.mouseSimTexture.image.height = size;
@@ -1800,9 +1819,11 @@ export class WebGLBackdrop {
 
   private tick = () => {
     const time = performance.now() * 0.001;
+    const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
+    this.lastTickTime = time;
     this.pointer.lerp(this.targetPointer, 0.055);
-    this.updateMouseSimulation();
     this.updatePointerProjection();
+    this.updateMouseSimulation(delta);
     this.workItems.forEach((item) => {
       item.material.uniforms.uTime.value = time;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
