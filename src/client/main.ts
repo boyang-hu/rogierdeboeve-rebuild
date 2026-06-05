@@ -378,16 +378,17 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     animateCta(card, true);
   };
 
-  const activateIndex = (index: number, emitScene = true) => {
+  const activateIndex = (index: number, emitScene = true, force = false) => {
     setDomActiveIndex(index);
     const card = cardsArray[activeIndex];
     if (!card) return;
     const nextProjectId = card.dataset.slug ?? "";
     const changedProject = nextProjectId !== activeProjectId;
+    if (!changedProject && !force) return;
     activeProjectId = nextProjectId;
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
-    window.dispatchEvent(new CustomEvent("rd:project-active", { detail: { slug: card.dataset.slug, payload } }));
+    window.dispatchEvent(new CustomEvent("rd:project-active", { detail: { slug: nextProjectId, payload } }));
     if (changedProject) window.dispatchEvent(new CustomEvent("rd:woosh"));
     if (emitScene) getWebgl()?.setProject(payload);
   };
@@ -434,6 +435,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const scrollToIndex = (index: number) => {
+    if (!cardsArray[index]) return;
     if (index === activeIndex && !isTransitioning) return;
     window.clearTimeout(navClickTimeout);
     isTransitioning = true;
@@ -526,6 +528,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const enterWorkGallery = () => {
+    if (scroll.active) return;
     scroll.active = true;
     getWebgl()?.restoreGalleryState?.(scroll.progress, sceneRotation, sceneZoom);
     getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
@@ -775,13 +778,16 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     cancelAnimationFrame(raf);
     cardsArray.forEach((card) => {
       const cta = card.querySelector<HTMLElement>(".ui-work-cta .c-button");
-      if (cta) ctaTimelines.get(cta)?.kill();
+      if (cta) {
+        ctaTimelines.get(cta)?.kill();
+        ctaTimelines.delete(cta);
+      }
     });
     setDragging(false);
     cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
   };
 
-  activateIndex(activeIndex, false);
+  activateIndex(activeIndex, false, true);
   raf = requestAnimationFrame(tick);
   const onPageHide = () => saveWorkState();
   const onBeforeUnload = () => cleanupWorkGallery();
