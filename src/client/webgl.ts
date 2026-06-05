@@ -988,12 +988,13 @@ export class WebGLBackdrop {
     if (active) this.setProjectBlockReveal(active);
   }
 
-  setGalleryProgress(progress: number, velocity = 0) {
+  setGalleryProgress(progress: number, velocity = 0, delta = 1 / 60) {
     this.galleryProgress = progress;
     this.compositeMaterial.uniforms.uTransformX.value = progress;
     const targetRotation = MathUtils.degToRad(progress * 360 + 180);
-    this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * 0.08;
-    this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * 0.08;
+    const lerpFactor = Math.min(1, 5 * Math.max(0.001, delta));
+    this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * lerpFactor;
+    this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * lerpFactor;
     this.sceneWrap.rotation.y = targetRotation;
     this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation);
     this.homeScene.position.z = this.homeScene.rotation.z - this.zoom;

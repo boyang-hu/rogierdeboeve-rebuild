@@ -18,7 +18,7 @@ type WebGLLike = {
     spotlight?: string;
   }): void;
   setActiveSlug?(slug: string): void;
-  setGalleryProgress?(progress: number, velocity?: number): void;
+  setGalleryProgress?(progress: number, velocity?: number, delta?: number): void;
   setPreviewMode?(enabled: boolean): void;
   hideWorkScene?(): void;
   mediaAnimateIn?(): void;
@@ -534,7 +534,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
         activateIndex(index);
       }
     }
-    getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity);
+    getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
     raf = requestAnimationFrame(tick);
   };
 
