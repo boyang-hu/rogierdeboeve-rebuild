@@ -152,6 +152,7 @@ void main() {
 
 const workBlockVertex = `
 attribute vec3 instanceGrid;
+attribute float instanceIndex;
 attribute float instanceAlpha;
 attribute vec3 instanceColor;
 
@@ -281,6 +282,7 @@ uniform float uContrast;
 uniform float uMouseLightness;
 uniform float uDirectionalLightIntensity;
 uniform float uRevealSides;
+uniform float uMouseFactor;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
 uniform sampler2D tMouseSim2;
@@ -361,7 +363,7 @@ void main() {
   float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
   float centerAlpha = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
   float revealAlpha = sourceVignette(uv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-  if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseLightness * 0.5), 0.0, 1.0);
+  if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
   alpha += centerAlpha * 0.1;
   alpha -= 1.0 - revealAlpha;
   alpha = max(alpha, logoMask * revealCombined * 0.16);
@@ -942,11 +944,6 @@ function numeric(value: string | number | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function seededRandom(index: number, projectIndex: number, salt: number) {
-  const value = Math.sin(index * 12.9898 + projectIndex * 78.233 + salt * 37.719) * 43758.5453123;
-  return value - Math.floor(value);
-}
-
 function makePlaceholderTexture(color = [20, 20, 20, 255]) {
   const texture = new DataTexture(new Uint8Array(color), 1, 1, RGBAFormat);
   texture.needsUpdate = true;
@@ -1420,7 +1417,7 @@ export class WebGLBackdrop {
     cards.forEach((card, index) => {
       const payload = this.payloadFromElement(card);
       const material = this.createWorkBlockMaterial(payload, card.classList.contains("is-active") ? 1 : 0);
-      const mesh = this.createBlockMesh(material, index);
+      const mesh = this.createBlockMesh(material);
       const thumb = this.createThumbPlane(payload);
       const group = new Group();
       group.add(mesh);
@@ -1453,7 +1450,7 @@ export class WebGLBackdrop {
     return new ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      depthTest: true,
+      depthTest: false,
       uniforms: {
         tThumb: { value: this.thumbCompositeTarget.texture },
         uMapSize: { value: new Vector2(1600, 1200) },
@@ -1493,11 +1490,12 @@ export class WebGLBackdrop {
     });
   }
 
-  private createBlockMesh(material: ShaderMaterial, projectIndex: number) {
-    const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 2, 0.05);
+  private createBlockMesh(material: ShaderMaterial) {
+    const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 1, 0.05);
     const count = GRID_COLS * GRID_ROWS * this.gridLayers;
     const matrices = new Array<Matrix4>(count);
     const gridOffsets = new Float32Array(count * 3);
+    const instanceIndexes = new Float32Array(count);
     const colors = new Float32Array(count * 3);
     const alphas = new Float32Array(count);
     const dummy = new Object3D();
@@ -1518,10 +1516,11 @@ export class WebGLBackdrop {
           gridOffsets[index * 3] = x / GRID_COLS;
           gridOffsets[index * 3 + 1] = y / GRID_ROWS;
           gridOffsets[index * 3 + 2] = z / this.gridLayers;
-          colors[index * 3] = seededRandom(index, projectIndex, 1);
-          colors[index * 3 + 1] = seededRandom(index, projectIndex, 2);
-          colors[index * 3 + 2] = seededRandom(index, projectIndex, 3);
-          alphas[index] = seededRandom(index, projectIndex, 4);
+          instanceIndexes[index] = index;
+          colors[index * 3] = Math.random();
+          colors[index * 3 + 1] = Math.random();
+          colors[index * 3 + 2] = Math.random();
+          alphas[index] = Math.random();
           index++;
         }
       }
@@ -1530,6 +1529,7 @@ export class WebGLBackdrop {
     const mesh = new InstancedMesh(geometry, material, count);
     matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
     geometry.setAttribute("instanceGrid", new InstancedBufferAttribute(gridOffsets, 3));
+    geometry.setAttribute("instanceIndex", new InstancedBufferAttribute(instanceIndexes, 1));
     geometry.setAttribute("instanceAlpha", new InstancedBufferAttribute(alphas, 1));
     geometry.setAttribute("instanceColor", new InstancedBufferAttribute(colors, 3));
     mesh.instanceMatrix.needsUpdate = true;
