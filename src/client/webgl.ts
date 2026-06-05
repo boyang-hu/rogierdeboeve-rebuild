@@ -278,6 +278,7 @@ uniform float uDarkness;
 uniform float uSaturation;
 uniform float uContrast;
 uniform float uMouseLightness;
+uniform float uDirectionalLightIntensity;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
 uniform sampler2D tMouseSim2;
@@ -330,7 +331,8 @@ void main() {
   lightMask = max(lightMask * (0.18 + centerMask * 0.38 + spotCenter * 0.85), logoMask * 0.68);
   float hotMask = max(smoothstep(0.52, 0.9, centeredLum), logoMask * 0.7);
 
-  float faceLight = clamp(dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5, 0.45, 1.2);
+  float directional = dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5;
+  float faceLight = mix(1.0, clamp(directional, 0.45, 1.2), clamp(uDirectionalLightIntensity / 1.5, 0.0, 2.0));
   vec3 base = mix(vec3(0.026, 0.031, 0.04), uBlockColor, 0.34);
   vec3 projection = mix(uTint * (0.42 + lightMask * 0.72), thumb * (0.75 + spotMask * 0.38), 0.38 + spotMask * 0.18);
   vec3 color = mix(base, projection, 0.34 + lightMask * 0.32);
@@ -1086,11 +1088,13 @@ export class WebGLBackdrop {
   private revealSpreadTween?: gsap.core.Tween;
   private sceneRevealTween?: gsap.core.Tween;
   private spotLightTween?: gsap.core.Tween;
+  private directionalLightTween?: gsap.core.Tween;
   private fluidStrengthTween?: gsap.core.Tween;
   private mediaOpacityTween?: gsap.core.Tween;
   private mediaTranslationTweens: gsap.core.Tween[] = [];
   private maxSpotLightIntensity = 220;
   private spotLightIntensity = 1;
+  private directionalLightIntensity = 1.5;
   private spotLightPosition = new Vector3(0, 0, 3.7);
   private spotLightTarget = new Vector3(0, 0, -8);
   private spotLightRight = new Vector3(1, 0, 0);
@@ -1192,6 +1196,7 @@ export class WebGLBackdrop {
     this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
     this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
+    this.setDirectionalLightIntensity(1.5);
     this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
     this.setRevealSpread(0);
 
@@ -1433,6 +1438,7 @@ export class WebGLBackdrop {
         uSaturation: { value: 1 },
         uContrast: { value: numeric(payload.contrast, 1.15) },
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
+        uDirectionalLightIntensity: { value: this.directionalLightIntensity },
         uMouseFactor: { value: this.mouseFactor },
         uPointer: { value: this.pointer },
         uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
@@ -2193,6 +2199,26 @@ export class WebGLBackdrop {
     });
   }
 
+  private setDirectionalLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
+    this.directionalLightTween?.kill();
+    const update = () => {
+      this.workItems.forEach((item) => {
+        item.material.uniforms.uDirectionalLightIntensity.value = this.directionalLightIntensity;
+      });
+    };
+    if (duration <= 0) {
+      this.directionalLightIntensity = value;
+      update();
+      return;
+    }
+    this.directionalLightTween = gsap.to(this, {
+      directionalLightIntensity: value,
+      duration,
+      ease,
+      onUpdate: update,
+    });
+  }
+
   private setFluidStrength(value: number, duration = 0.5) {
     this.fluidStrengthTween?.kill();
     const update = () => {
@@ -2497,6 +2523,7 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       item.material.uniforms.uTime.value = time;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
+      item.material.uniforms.uDirectionalLightIntensity.value = this.directionalLightIntensity;
       item.material.uniforms.uSpotLightPosition.value.copy(this.spotLightPosition);
       const world = new Vector3();
       item.group.getWorldPosition(world);
