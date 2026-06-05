@@ -71,6 +71,7 @@ type MediaPlane = {
   translation: Vector2;
   offset: Vector2;
   loaded: boolean;
+  parallaxTop: boolean;
   video?: HTMLVideoElement;
   texture?: Texture;
 };
@@ -1749,6 +1750,7 @@ export class WebGLBackdrop {
         translation: new Vector2(0, -100),
         offset: new Vector2(),
         loaded: false,
+        parallaxTop: track.dataset.mediaParallax === "top",
       };
       material.uniforms.uMapSize.value.set(
         numeric(track.dataset.mediaWidth, 1600),
@@ -1842,6 +1844,7 @@ export class WebGLBackdrop {
   }
 
   private showMediaPlane(plane: MediaPlane) {
+    this.updateMediaPlanePositions();
     gsap.fromTo(plane.material.uniforms.uReveal, { value: 0 }, { value: 1, duration: 0.5, ease: "none" });
   }
 
@@ -2172,7 +2175,7 @@ export class WebGLBackdrop {
       plane.mesh.position.x = plane.offset.x + plane.translation.x;
       plane.mesh.position.y = plane.offset.y + plane.translation.y + scroll;
       plane.material.uniforms.uCameraDistance.value =
-        plane.track.dataset.mediaParallax === "top" ? -scroll : -plane.mesh.position.y;
+        plane.parallaxTop ? -scroll : this.mediaCamera.position.y - plane.mesh.position.y;
     });
   }
 
