@@ -26,14 +26,26 @@ Phase 1 is in late implementation, but not complete enough to declare 1:1.
 
 Estimated status:
 
-- Architecture parity: 70-80%
-- Shader/render-manager parity: 60-70%
-- Final home visual parity: 55-65%
+- Architecture parity: 80-85%
+- Shader/render-manager parity: 70-75%
+- Final home visual parity: 65-70%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke
 
 The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with shader chunk injection, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, floor/environment layers, and about/floating auxiliary blocks.
 
 The remaining risk is mostly in fine-grained shader behavior, render pass ordering, source material details, and visual validation of the spotlight projection and mouse/fluid feel.
+
+## Latest Source Audit Snapshot
+
+This checkpoint narrows Phase 1 from a broad rebuild target into a short source-difference list.
+
+| Area | Source evidence | Rebuild state | Current decision |
+| --- | --- | --- | --- |
+| `TD` about scroll opacity | `TD.onScroll()` updates spotlight every RAF and sets mobile `uScrollOpacity = Cs(scroll, 0, Pe.h * .25, 1, 0, true)`, while desktop stays `1`. | `updateAuxiliaryBlocks()` updates the about spotlight while visible and applies the same desktop/mobile opacity shape from `window.scrollY`. | Treat as implemented, pending real route/WebGL QA. |
+| `TD` about spotlight ownership | Source switches `spotLight.map` to `J.characterScene.renderManager.renderTargetComposite.texture`, disables work spotlight parallax, and positions spotlight relative to `aboutBlocks`. | Rebuild switches to an offscreen character target, disables parallax, and positions/targets spotlight relative to about blocks. | Ownership is source-shaped; remaining gap is the target content itself. |
+| `Fg` floating scroll velocity | `Fg.onRaf(e)` calls `floatingBlocks.update(e)` and then adds `.005 * abs(this.page.scroll.velocity)` to `floatingBlocks.translationZ`. | Floating z positions use time and `translationZ`, but page scroll velocity is not currently injected into `translationZ`. | Source-proven low-risk difference; next code batch should add a narrow about-route velocity feed. |
+| `ZA` floating block z/hole behavior | `positionOnUpdate(e)` subtracts `translationZ`, wraps z into a 250-unit band plus `10`, and hides the center hole when `x > -3.5 && x < 3.5 && y < 5`. | Rebuild follows the same z wrapping, `translationZ` subtraction, and center-hole hide logic. | Treat as implemented except for the missing `Fg` velocity feed above. |
+| `P1-07` character scene | Source about spotlight map is rendered by the real character scene/render manager and rotatable character mesh. | Rebuild uses `public/models/me/model_T.jpg` in a lightweight character composite target; `public/models/me/me.gltf` exists but is not yet rendered as the original character scene. | Keep as the only Must Fix unless we explicitly accept it as a Phase 1 gap after visual QA. |
 
 ## Completed Source-Aligned Areas
 
@@ -78,7 +90,7 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | S1-04 | `a1/o1/i1` floor | Floor reflection is approximated around source constants but not a full source material port. | Lower-viewport reflection may be visually different. | Medium | Nice isolated batch |
 | S1-05 | `h1/u1/l1/c1` environment | Environment shader is source-shaped but simplified. | Background horizon/sky texture movement may be off. | Medium | Nice isolated batch |
 | S1-06 | `T1/w1/E1` transition state | Strip wrapping and sizing are source-shaped; transition ownership may still differ during gallery leave/enter. | Thumb projection may flicker or lag differently around transitions. | Medium | Pair with gallery transition QA |
-| S1-07 | `TD/Fg` scroll lifecycle | About/floating visual behavior is source-shaped but not fully tied to source scroll/event lifecycle. | About route may diverge under scroll/resize/touch. | Medium | Can be batched with Se route state |
+| S1-07 | `TD/Fg` scroll lifecycle | About `TD` opacity/spotlight lifecycle is source-shaped, but source `Fg` scroll velocity still needs to feed floating `translationZ += .005 * abs(scroll.velocity)`. | About route floating blocks may drift less responsively under scroll. | Low-medium | Next low-risk code batch |
 
 ### Risky Or Needs Visual QA
 
@@ -153,9 +165,9 @@ Goal: improve source parity for about/floating visual scene without destabilizin
 
 Tasks:
 
-1. Audit `$A` about blocks material against current auxiliary material.
-2. Audit `ZA` floating blocks update and z drift.
-3. Audit `TD` scroll opacity and spotlight update timing.
+1. Implement source `Fg` scroll velocity feed for floating blocks, scoped to the about route.
+2. Keep `$A`/`ZA` material and z-position behavior as implemented unless browser QA shows a mismatch.
+3. Browser QA about entry, scroll, resize, and leave when a real WebGL context is available.
 4. Decide whether full character scene work is required for Phase 1 or can remain a documented acceptance gap.
 
 ## Phase 1 Completion Criteria
