@@ -38,6 +38,8 @@ type WebGLLike = {
   projectLeave?(): void;
   enterAboutVisualState?(visual?: HTMLElement | null, floating?: HTMLElement | null): void;
   animateAboutVisualIn?(): void;
+  animateAboutVisualOut?(): void;
+  destroyAboutVisualState?(): void;
   leaveAboutVisualState?(): void;
   refreshMedia?(): void;
 };
@@ -961,6 +963,31 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
   return () => cleanups.splice(0).forEach((cleanup) => cleanup());
 }
 
+function initAboutLeave(getWebgl: () => WebGLLike | undefined) {
+  const about = document.querySelector<HTMLElement>("[data-view='about']");
+  if (!about) return () => {};
+
+  const cleanups: Array<() => void> = [];
+  about.querySelectorAll<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])").forEach((link) => {
+    const onClick = (event: MouseEvent) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
+      const target = new URL(link.href, window.location.href);
+      if (target.origin !== window.location.origin || target.href === window.location.href) return;
+      event.preventDefault();
+      if (!prefersReducedMotion()) {
+        gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
+      }
+      getWebgl()?.animateAboutVisualOut?.();
+      window.setTimeout(() => {
+        window.location.href = target.href;
+      }, 500);
+    };
+    link.addEventListener("click", onClick);
+    cleanups.push(() => link.removeEventListener("click", onClick));
+  });
+  return () => cleanups.splice(0).forEach((cleanup) => cleanup());
+}
+
 function initViewLifecycle() {
   const view = document.querySelector<HTMLElement>("[data-view]");
   if (!view) return () => {};
@@ -1054,7 +1081,7 @@ function boot() {
         document.querySelector<HTMLElement>(".ui-about-hero"),
       );
       onPageEntered(() => webgl?.animateAboutVisualIn?.(), cleanupCallbacks);
-      cleanupCallbacks.push(() => webgl?.leaveAboutVisualState?.());
+      cleanupCallbacks.push(() => webgl?.destroyAboutVisualState?.());
     } else if (project) {
       webgl?.enterProjectVisualState?.(payload);
       onPageEntered(() => webgl?.mediaAnimateIn?.(), cleanupCallbacks);
@@ -1068,6 +1095,7 @@ function boot() {
   cleanupCallbacks.push(initProjectMedia());
   cleanupCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
   cleanupCallbacks.push(initProjectLeave(() => webgl));
+  cleanupCallbacks.push(initAboutLeave(() => webgl));
   cleanupCallbacks.push(initScrollState());
   window.addEventListener("pagehide", cleanupPage, { once: true });
   window.addEventListener("beforeunload", cleanupPage, { once: true });

@@ -1648,7 +1648,7 @@ export class WebGLBackdrop {
     }
   }
 
-  leaveAboutVisualState() {
+  animateAboutVisualOut() {
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     if (this.aboutBlocks) {
@@ -1682,6 +1682,26 @@ export class WebGLBackdrop {
     this.setSpotLightIntensity(0);
     this.spotLightParallax = true;
     this.spotLight.map = this.thumbCompositeTarget.texture;
+  }
+
+  destroyAboutVisualState() {
+    this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
+    this.auxiliaryRevealTweens = [];
+    if (this.aboutBlocks) {
+      this.aboutBlocks.group.visible = false;
+      this.aboutBlocks.track = null;
+    }
+    if (this.floatingBlocks) {
+      this.floatingBlocks.group.visible = false;
+      this.floatingBlocks.track = null;
+    }
+    this.setSpotLightIntensity(0, 0);
+    this.spotLightParallax = true;
+    this.spotLight.map = this.thumbCompositeTarget.texture;
+  }
+
+  leaveAboutVisualState() {
+    this.animateAboutVisualOut();
   }
 
   setProjectScrollState(payload: ProjectPayload) {
