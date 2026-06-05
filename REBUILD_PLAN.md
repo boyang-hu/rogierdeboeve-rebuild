@@ -76,10 +76,11 @@ Last updated: 2026-06-05
 | `ec26bfe` | Home WebGL | Matched source `yD.onWorkGalleryOut()` more closely by killing active work-block reveal tweens before running the gallery-out spread and project fade. |
 | `1cb6a6b` | Home WebGL | Matched source `p1.update()` mobile spotlight parallax by adding the `.3` y-offset below `MD=800` while keeping camera-derived spotlight movement. |
 | `e93e165` | Home WebGL | Matched source `p1.setLights()` spotlight cone by using `angle = PI / 4` for the shader thumb-map projection instead of the narrower half-angle approximation. |
+| `pending` | Home WebGL | Made the auxiliary thumb projection plane follow source-style scene reveal/out timing instead of staying permanently visible outside the spotlight-map lifecycle. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `p1/SD` spotlight cone and thumb-map projection behavior before returning to composite details.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `p1/SD` spotlight map lifecycle and thumb projection behavior before returning to composite details.
 
 Immediate source targets:
 
@@ -91,7 +92,7 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Continue `p1/SD/T1` spotlight and thumb projection comparison, especially projection-plane contribution and source spotlight map behavior.
+1. Continue `p1/SD/T1` spotlight and thumb projection comparison, especially reducing the auxiliary projection-plane approximation in favor of source spotlight-map behavior.
 2. Return to Phase 1 `OA/kA` composite and bloom/luminosity fidelity after the next projection pass lands.
 3. Compare CTA navigation timing and click-sound/soft-woosh behavior against source `gD` and `yD.onWorkGalleryOut()`.
 4. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.

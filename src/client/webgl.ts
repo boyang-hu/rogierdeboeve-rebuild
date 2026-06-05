@@ -1063,6 +1063,7 @@ export class WebGLBackdrop {
       ease: "expo.out",
       onUpdate: () => {
         this.compositeMaterial.uniforms.uReveal.value = this.sceneReveal;
+        this.projectionMaterial.uniforms.uReveal.value = this.sceneReveal;
       },
     });
   }
@@ -1073,6 +1074,7 @@ export class WebGLBackdrop {
     this.setRevealSpread(1, 0.65, "power3.in");
     this.setSpotLightIntensity(0, 1, "none");
     this.setFluidStrength(0.5, 0.5);
+    gsap.to(this.projectionMaterial.uniforms.uReveal, { value: 0, duration: 0.5, ease: "none" });
     this.workItems.forEach((item) => {
       gsap.to(item.material.uniforms.uRevealProject, { value: 0, duration: 0.5, ease: "none" });
     });
@@ -1401,7 +1403,7 @@ export class WebGLBackdrop {
       uniforms: {
         tThumb: { value: this.thumbCompositeTarget.texture },
         uTint: { value: colorFrom(DEFAULT_COLOR) },
-        uReveal: { value: 1 },
+        uReveal: { value: 0 },
         uOpacity: { value: 0.065 },
       },
       vertexShader: thumbVertex,
