@@ -34,7 +34,8 @@ const colorValue = (value?: string) => {
                     data-overview-darkness={project.data.darkenOverview}
                     data-thumb-darkness={project.data.thumbnail.darkness}
                     data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
-                    data-saturation={project.data.thumbnail.saturation ?? project.data.saturation}
+                    data-saturation={project.data.saturation}
+                    data-thumb-saturation={project.data.thumbnail.saturation}
                     data-contrast={project.data.contrast}
                     data-mouse-lightness={project.data.thumbnail.mouseLightness}
                     data-ambient={project.data.ambient}

@@ -17,6 +17,7 @@ type WebGLLike = {
     darkness?: string;
     darknessColor?: string;
     saturation?: string;
+    thumbSaturation?: string;
     contrast?: string;
     mouseLightness?: string;
     spotlight?: string;
@@ -50,6 +51,7 @@ function projectPayloadFromElement(element?: HTMLElement | null) {
     thumbDarkness: element?.dataset.thumbDarkness,
     darknessColor: element?.dataset.darknessColor,
     saturation: element?.dataset.saturation,
+    thumbSaturation: element?.dataset.thumbSaturation,
     contrast: element?.dataset.contrast,
     mouseLightness: element?.dataset.mouseLightness,
     spotlight: element?.dataset.spotlight,
@@ -459,7 +461,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const checkSpeed = () => {
-    const moving = Math.abs(pointer.lastDeltaX) + Math.abs(pointer.lastDeltaY) * 0.001 > 0.2;
+    const moving = (Math.abs(pointer.lastDeltaX) + Math.abs(pointer.lastDeltaY)) * 0.001 > 0.2;
     setDragging(pointer.active && moving);
   };
 
@@ -494,6 +496,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
           current: scroll.current,
           progress: scroll.progress,
           remainder: scroll.remainder,
+          limit,
+          step,
+          offset: 0,
         },
         activeHook,
         targetHook,

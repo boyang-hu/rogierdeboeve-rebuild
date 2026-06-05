@@ -46,6 +46,7 @@ type ProjectPayload = {
   thumbDarkness?: string | number;
   darknessColor?: string;
   saturation?: string | number;
+  thumbSaturation?: string | number;
   contrast?: string | number;
   mouseLightness?: string | number;
   spotlight?: string | number;
@@ -1156,6 +1157,7 @@ export class WebGLBackdrop {
     this.setMediaBackground(payload.mediaColor ?? payload.color);
     this.setThumbDarknessIntensity(numeric(payload.thumbDarkness ?? payload.darkness, 0));
     this.setThumbDarknessColor(payload.darknessColor ?? "#000000");
+    this.setThumbSaturation(numeric(payload.thumbSaturation, 1));
     this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
     this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
@@ -1391,7 +1393,7 @@ export class WebGLBackdrop {
         uRevealSpread: { value: 0 },
         uRevealSpreadSides: { value: 1 },
         uDarkness: { value: numeric(thumbDarkness, 0.18) },
-        uSaturation: { value: numeric(payload.saturation, 1) },
+        uSaturation: { value: numeric(payload.thumbSaturation, 1) },
         uContrast: { value: numeric(payload.contrast, 1.15) },
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
         uMouseFactor: { value: this.mouseFactor },
@@ -1869,12 +1871,12 @@ export class WebGLBackdrop {
         tweenColor(item.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
         tweenColor(item.material.uniforms.uBlockColor.value as Color, active.payload.blocks ?? active.payload.mediaColor ?? DEFAULT_BG, 1.6);
         gsap.to(item.material.uniforms.uDarkness, { value: numeric(thumbDarkness, 0.18), duration: 1.6, ease: "expo.out" });
-        gsap.to(item.material.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
+        gsap.to(item.material.uniforms.uSaturation, { value: numeric(active.payload.thumbSaturation, 1), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uMouseLightness, { value: numeric(active.payload.mouseLightness, 1), duration: 1.6, ease: "expo.out" });
         gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value: numeric(thumbDarkness, 0), duration: 1.6, ease: "expo.out" });
         tweenColor(this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
-        gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
+        gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value: numeric(active.payload.thumbSaturation, 1), duration: 1.6, ease: "expo.out" });
       }
     });
   }
@@ -1937,8 +1939,14 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
     });
-    gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
     gsap.to(this.compositeMaterial.uniforms.uSaturation, { value: Math.max(1.15, value), duration: 1.6, ease: "expo.out" });
+  }
+
+  private setThumbSaturation(value: number) {
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
+    });
+    gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
   }
 
   private setContrast(value: number) {
@@ -2075,6 +2083,7 @@ export class WebGLBackdrop {
       thumbDarkness: element.dataset.thumbDarkness,
       darknessColor: element.dataset.darknessColor,
       saturation: element.dataset.saturation,
+      thumbSaturation: element.dataset.thumbSaturation,
       contrast: element.dataset.contrast,
       mouseLightness: element.dataset.mouseLightness,
       spotlight: element.dataset.spotlight,
