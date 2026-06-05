@@ -339,6 +339,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
   const ctaTimelines = new WeakMap<HTMLElement, gsap.core.Timeline>();
   const cleanupCallbacks: Array<() => void> = [];
+  const mobileQuery = window.matchMedia("(max-width: 999px)");
   const pointer = {
     active: false,
     x: 0,
@@ -547,11 +548,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   });
 
   cardsArray.forEach((card, index) => {
-    const onCardMouseEnter = () => {
-      if (window.matchMedia("(max-width: 999px)").matches) return;
-      scrollToIndex(index);
-    };
-    const onCardFocusIn = () => scrollToIndex(index);
     const workLink = card.querySelector<HTMLElement>(".ui-work-a");
     const onWorkLinkClick = (event: MouseEvent) => {
       event.preventDefault();
@@ -559,7 +555,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       scrollToIndex(index);
     };
     const onWorkLinkTouchStart = (event: TouchEvent) => {
-      if (!window.matchMedia("(max-width: 999px)").matches) return;
       event.preventDefault();
       lastTouchSelect = performance.now();
       scrollToIndex(index);
@@ -573,27 +568,20 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     };
     const onCtaMouseEnter = () => previewWork(true);
     const onCtaMouseLeave = () => previewWork(false);
-    const onCtaFocusIn = () => {
-      scrollToIndex(index);
-      previewWork(true);
-    };
+    const onCtaFocusIn = () => previewWork(true);
     const onCtaFocusOut = () => previewWork(false);
     const cleanupCtaMagnet = cta ? initCtaMagnet(cta) : undefined;
 
-    card.addEventListener("mouseenter", onCardMouseEnter);
-    card.addEventListener("focusin", onCardFocusIn);
     workLink?.addEventListener("click", onWorkLinkClick);
-    workLink?.addEventListener("touchstart", onWorkLinkTouchStart);
+    if (mobileQuery.matches) workLink?.addEventListener("touchstart", onWorkLinkTouchStart);
     cta?.addEventListener("click", onCtaClick);
     cta?.addEventListener("mouseenter", onCtaMouseEnter);
     cta?.addEventListener("mouseleave", onCtaMouseLeave);
     cta?.addEventListener("focusin", onCtaFocusIn);
     cta?.addEventListener("focusout", onCtaFocusOut);
     cleanupCallbacks.push(() => {
-      card.removeEventListener("mouseenter", onCardMouseEnter);
-      card.removeEventListener("focusin", onCardFocusIn);
       workLink?.removeEventListener("click", onWorkLinkClick);
-      workLink?.removeEventListener("touchstart", onWorkLinkTouchStart);
+      if (mobileQuery.matches) workLink?.removeEventListener("touchstart", onWorkLinkTouchStart);
       cta?.removeEventListener("click", onCtaClick);
       cta?.removeEventListener("mouseenter", onCtaMouseEnter);
       cta?.removeEventListener("mouseleave", onCtaMouseLeave);
@@ -609,7 +597,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       const index = cardsArray.findIndex((candidate) => candidate.dataset.slug === slug);
       if (index >= 0) {
         scrollToIndex(index);
-        setDomActiveIndex(index);
       }
     };
     const onProgressClick = () => {
@@ -617,16 +604,15 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       selectProgressItem();
     };
     const onProgressTouchStart = (event: TouchEvent) => {
-      if (!window.matchMedia("(max-width: 999px)").matches) return;
       event.preventDefault();
       lastTouchSelect = performance.now();
       selectProgressItem();
     };
     item.addEventListener("click", onProgressClick);
-    item.addEventListener("touchstart", onProgressTouchStart);
+    if (mobileQuery.matches) item.addEventListener("touchstart", onProgressTouchStart);
     cleanupCallbacks.push(() => {
       item.removeEventListener("click", onProgressClick);
-      item.removeEventListener("touchstart", onProgressTouchStart);
+      if (mobileQuery.matches) item.removeEventListener("touchstart", onProgressTouchStart);
     });
   });
 
