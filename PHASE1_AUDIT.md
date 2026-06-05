@@ -56,7 +56,6 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | ID | Source area | Difference | Impact | Risk | Suggested batch |
 | --- | --- | --- | --- | --- | --- |
 | P1-03 | `VA` shader injection | Source replaces full `vertexShader` and `fragmentShader` on MeshStandardMaterial. Rebuild injects chunks into modern Three standard material. | Chunk injection preserves current Three pipeline but may differ from source material ordering, varyings, fog, and lighting side effects. | High | Audit first, implement only if proven worth risk |
-| P1-05 | `OA` final composite | Source OA is small: fluid-warped `tScene`, optional bloom, fluid length, output. Rebuild still adds darken/saturation in the final pass for visual state. | Some visual state may be in source `Se`/composite settings, but final shader may still carry rebuild-specific compensation. | Medium-high | Pair with Se ownership audit |
 | P1-07 | Character scene | Source about spotlight map comes from a real character scene/render manager; rebuild uses a lightweight texture composite target from `model_T.jpg`. | About spotlight projection can only approximate the original character render. | Medium-high | Risky; needs visual QA before full GLTF work |
 
 ### Implemented, Needs Real WebGL QA
@@ -66,6 +65,7 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | P1-01 | `p1.update` / `GA.update` | Each `WorkItem` now owns local mouse simulation material, scene, ping-pong targets, UV target state, speed state, and visible-item update. | Real WebGL browser QA should confirm mouse interaction/performance, because the current headless Chrome environment failed WebGL probe creation. |
 | P1-02 | `GA.createPlane` / `Ka` | Per-block ray-plane hits now update the matching work item's local `Ka` target, while shared screen-space `tMouseSim2` remains render-manager owned. | Same real WebGL QA as P1-01. |
 | P1-04 | `A1` / `OA` blend functions | A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for modes `1`, `11`, and `15` instead of direct local helper calls. | Output should be equivalent, but real WebGL QA should confirm no shader/runtime differences and future work may still port the full source blend-mode table if needed. |
+| P1-05 | `OA` final composite | Source audit confirmed final `OA` owns `uDarken/uSaturation`, so those final-pass visual states remain in place. `OA` final composite now carries source-shaped `toneMapped:false`, `transparent:true`, and `NormalBlending`; the A1/C1 pre-composite, luminosity, bloom composite, and FXAA screen materials now explicitly use source-shaped tone/blending flags where proven. | Browser QA should confirm no shader/runtime/color-management regressions; deeper shader math audit is still only needed if visual evidence shows remaining OA mismatch. |
 | P1-06 | `Se` setter ownership | `showScene()` now follows source state tween behavior without a forced local reset; `setDarken`, `setSaturation`, `setContrast`, `setMediaBackground`, and `setDirectionalLight2Intensity` now tween local source-shaped state before writing uniforms/lights; composite uniform defaults are initialized from those state fields. Project entry is closer to source `OD`: visual init sets media opacity to `0` and media reveal is deferred to the page-enter boundary instead of running during WebGL visual-state setup. Home `SD.animateIn`-style scene reveal/gallery entry and about `TD/Fg.animateIn`-style auxiliary reveals are also deferred to the page-enter boundary instead of running during WebGL boot. About leave separates `TD/Fg.animateOut`-style reveal animation from `TD.destroy`-style immediate cleanup. Home route links outside the work gallery now route through the same work-gallery-out path as source `BD/zD` transitions. | Browser QA should confirm no cross-route visual regressions and no duplicate navigation/leave events. |
 
 ### Should Fix If Source-Proven
@@ -121,7 +121,7 @@ This was the highest source-parity gain left for `GA/Ka`, but it remains one of 
 
 ### Batch B: `A1/OA` Shader Blend Audit
 
-Status: partially implemented. The currently used source modes are routed through a source-shaped dispatcher; full unused blend-mode table is not ported.
+Status: partially implemented. The currently used source modes are routed through a source-shaped dispatcher; final OA visual-state ownership and material flags are source-shaped; full unused blend-mode table is not ported.
 
 Goal: reduce remaining composite shader approximations.
 
@@ -130,7 +130,7 @@ Tasks:
 1. Port or exactly map source `blend(1, ...)` and `blend(11, ...)` used by A1.
 2. Compare source A1 final color order against rebuild order after recent split bloom changes.
 3. Audit whether final OA should keep darken/saturation or move that responsibility elsewhere.
-4. Keep bloom chain separation intact.
+4. Keep bloom chain separation intact. This remains intact after the OA/C1/Lu material flag pass.
 5. Browser smoke after every shader pass change if compilation risk appears.
 
 ### Batch C: `Se` Route/Setter Ownership

@@ -16,6 +16,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  NormalBlending,
   Object3D,
   OrthographicCamera,
   PerspectiveCamera,
@@ -2203,6 +2204,9 @@ export class WebGLBackdrop {
   private createCompositeMaterial() {
     const settings = this.renderSettings;
     return new ShaderMaterial({
+      toneMapped: false,
+      transparent: true,
+      blending: NormalBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -2226,6 +2230,8 @@ export class WebGLBackdrop {
 
   private createPreCompositeMaterial() {
     return new ShaderMaterial({
+      toneMapped: false,
+      blending: NormalBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -2263,6 +2269,7 @@ export class WebGLBackdrop {
   private createLuminosityMaterial() {
     const { luminosity } = this.renderSettings;
     return new ShaderMaterial({
+      blending: NormalBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -2294,6 +2301,7 @@ export class WebGLBackdrop {
   private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[]) {
     const factors = sourceBloomFactors(this.renderSettings.bloom.strength, this.renderSettings.bloom.radius);
     return new ShaderMaterial({
+      blending: NormalBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -2315,6 +2323,7 @@ export class WebGLBackdrop {
 
   private createFxaaMaterial() {
     return new ShaderMaterial({
+      blending: NormalBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
