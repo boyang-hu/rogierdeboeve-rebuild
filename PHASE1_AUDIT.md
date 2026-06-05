@@ -22,14 +22,14 @@ Primary source areas:
 
 ## Current Phase 1 Status
 
-Phase 1 is in late implementation, but not complete enough to declare 1:1.
+Phase 1 is QA-ready, but not complete enough to declare 1:1 until source-vs-rebuild visual QA is reviewed.
 
 Estimated status:
 
 - Architecture parity: 80-85%
 - Shader/render-manager parity: 70-75%
 - Final home visual parity: 65-70%
-- Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke
+- Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
 The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with shader chunk injection, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, floor/environment layers, and about/floating auxiliary blocks.
 
@@ -65,7 +65,18 @@ This checkpoint narrows Phase 1 from a broad rebuild target into a short source-
 
 ### Must Fix
 
-No source-proven Phase 1 implementation gaps are currently classified as Must Fix. Phase 1 still needs real WebGL/browser visual QA before it can be declared complete.
+No source-proven Phase 1 implementation gaps are currently classified as Must Fix. Phase 1 still needs source-vs-rebuild visual QA before it can be declared complete.
+
+### Latest Browser QA
+
+Chrome headless with SwiftShader enabled was used as the available local WebGL QA environment:
+
+- Home `/?skip-preloader`: WebGL initialized, `.gl-canvas` covered `1440x900`, screenshot pixels were nonblank, 10 project cards remained present, and no failed network requests were reported.
+- About `/about/?skip-preloader`: WebGL initialized, `.gl-canvas` covered `1440x900`, screenshot pixels were nonblank, `me.gltf` loaded, and no runtime errors were reported.
+- Project `/gc-2026/?skip-preloader`: WebGL initialized, `.gl-canvas` covered `1440x900`, screenshot pixels were nonblank, desktop/mobile media markers remained `5/5`, and no failed network requests were reported.
+- Project `/hashgraph-vc/?skip-preloader`: WebGL initialized, `.gl-canvas` covered `1440x900`, screenshot pixels were nonblank, desktop/mobile media markers remained `5/5`, and no failed network requests were reported.
+
+This proves the local runtime smoke gate, not exact source visual parity. Remaining Phase 1 evidence should come from comparing the rendered home/about/project visuals against the mirrored source behavior.
 
 ### Implemented, Needs Real WebGL QA
 
@@ -176,6 +187,6 @@ Phase 1 should be considered complete only when:
 - `p1`, `GA`, `VA`, `T1/w1/E1`, `A1/C1`, `OA/kA/Lu`, `Ka`, and `Se` each have either source-aligned implementation or documented accepted deviation.
 - Build and `git diff --check` pass.
 - Dist markers remain stable.
-- Browser smoke passes home, about, and at least two project pages.
+- Browser smoke passes home, about, and at least two project pages. Current local Chrome/SwiftShader smoke passes this gate.
 - Project media pages retain desktop WebGL tracks and mobile media fallback.
 - A final visual QA pass confirms no obvious regressions in home WebGL, thumb projection, mouse interaction, about visual, and project media pages.

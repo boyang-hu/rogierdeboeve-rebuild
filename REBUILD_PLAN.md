@@ -211,12 +211,13 @@ Latest verification:
 - `git diff --check`
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
-- About WebGL smoke with Chrome `--use-gl=swiftshader --enable-unsafe-swiftshader`: WebGL initialized, `canvas.gl-canvas` existed, `/models/me/me.gltf`, `/models/me/me.bin`, and `/models/me/model_T.jpg` loaded, and no runtime errors were reported.
-- Real hardware/browser visual QA is still required before declaring Phase 1 complete.
+- Browser WebGL smoke with Chrome `--use-gl=swiftshader --enable-unsafe-swiftshader`: home, about, `/gc-2026/`, and `/hashgraph-vc/` initialized WebGL, displayed visible full-viewport `.gl-canvas` screenshots, reported no failed network requests, and retained the expected home/project markers.
+- About character resources loaded during WebGL smoke: `/models/me/me.gltf`, `/models/me/me.bin`, and `/models/me/model_T.jpg`.
+- Source-vs-rebuild visual QA is still required before declaring Phase 1 complete.
 
 ## Next Candidate Steps
 
-1. Run real browser/WebGL visual QA for home, about, and at least two project pages.
+1. Run source-vs-rebuild visual QA for home, about, and at least two project pages using the mirrored original bundle as the comparison target.
 2. Compare about spotlight projection after the GLTF character target against the source behavior; decide whether source `rotatableMesh` event handling/render-manager parity must be ported or can remain accepted.
 3. Continue deeper `A1/OA`, `GA/VA`, or `T1/w1/E1` work only if real visual QA identifies a specific mismatch that cannot be solved through lower-risk source-shaped bridges.
 4. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.
