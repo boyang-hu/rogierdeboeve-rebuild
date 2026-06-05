@@ -351,12 +351,16 @@ precision highp float;
 
 uniform sampler2D tWork;
 uniform sampler2D tMouseSim;
+uniform sampler2D tNoise;
+uniform sampler2D tPerlin;
 uniform float uTime;
 uniform float uRatio;
 uniform float uProgress;
 uniform float uTransformX;
 uniform float uFluidStrength;
 uniform float uContrast;
+uniform float uDarken;
+uniform float uSaturation;
 uniform vec3 uBgColor;
 uniform vec3 uActiveColor;
 uniform vec3 uAmbientColor;
@@ -399,6 +403,18 @@ vec3 saturation(vec3 color, float amount) {
   return mix(vec3(gray), color, amount);
 }
 
+vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
+  return max(blend, base) * opacity + base * (1.0 - opacity);
+}
+
+vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
+  return base * blend * opacity + base * (1.0 - opacity);
+}
+
+vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
+  return min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity);
+}
+
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   vec2 offset = vec2(cos(angle), sin(angle)) * amount;
   float r = texture2D(tex, uv + offset).r;
@@ -420,7 +436,6 @@ void main() {
   p.x *= uRatio;
 
   vec4 mouseSim = texture2D(tMouseSim, uv);
-  vec2 fluidUv = uv + (mouseSim.rg - 0.5) * -0.18 * uFluidStrength;
   vec2 perlinUv = uv * 0.25;
   perlinUv -= 0.5;
   perlinUv.x *= uRatio;
@@ -429,15 +444,28 @@ void main() {
   perlinUv.y -= uTime * 0.005;
   perlinUv.x += uTransformX;
 
-  float perlin = fbm(perlinUv * 6.0);
+  vec4 perlinMap = texture2D(tPerlin, perlinUv);
+  perlinMap.rgb = contrast(perlinMap.rgb, 5.0);
+  float proceduralPerlin = fbm(perlinUv * 6.0);
+  float perlin = mix(proceduralPerlin, perlinMap.b, 0.72);
+  vec2 perlinCoords = uv + perlin * 0.1 - 0.0065;
+  vec2 flowVector = vec2(mouseSim.g - 0.5, mouseSim.b - 0.5);
+  vec2 fluidUv = uv + flowVector * -0.2 * uFluidStrength;
+  vec2 sourceUv = fluidUv;
+
   float flow = fbm(p * 2.3 + vec2(uTime * -0.035 + uTransformX, uTime * -0.018));
   float rings = abs(1.0 / (sin(pow(length(p) * 0.9, 0.25) - uTime * 0.35 + sin(length(p) * 0.8 - 1.6)) * 10.8)) - 0.1;
-  vec4 workBase = texture2D(tWork, uv);
-  vec4 workShift = rgbshift(tWork, fluidUv, -1.0, 0.0005 + 0.024 * mouseSim.r * uFluidStrength);
+  float perlinVignette = vignette(perlinCoords, 0.1, 0.35);
+  float displacementVignette = vignette(sourceUv, 0.1, 0.5);
+  vec4 sampledMouse = texture2D(tMouseSim, mix(perlinCoords, sourceUv, 2.5));
+  sampledMouse.rgb = contrast(sampledMouse.rgb, 1.0);
+  vec4 workBase = texture2D(tWork, sourceUv);
+  vec4 sceneDisplaced = rgbshift(tWork, sourceUv, -1.0, 0.005);
+  vec4 workShift = rgbshift(tWork, sourceUv, -1.0, 0.0005 + 0.1 * length(flowVector) * uFluidStrength);
   vec4 glowX = texture2D(tWork, uv + vec2(0.006, 0.0)) + texture2D(tWork, uv - vec2(0.006, 0.0));
   vec4 glowY = texture2D(tWork, uv + vec2(0.0, 0.006)) + texture2D(tWork, uv - vec2(0.0, 0.006));
   vec3 glow = max(vec3(0.0), (glowX.rgb + glowY.rgb) * 0.25 - vec3(0.22));
-  vec3 work = mix(workBase.rgb, workShift.rgb, 0.65);
+  vec3 work = mix(workShift.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
 
   vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.68);
   vec3 accent = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.4) * 0.28);
@@ -449,14 +477,22 @@ void main() {
   float workMask = clamp(workBase.a * 1.25, 0.0, 1.0);
   color = mix(color, work, workMask);
   color += glow * (0.24 + uFluidStrength * 0.18);
-  color += mouseSim.rgb * 0.065;
-  color = mix(color, color * 5.0, (1.0 - vignette(uv + perlin * 0.015, 0.1, 0.35)) * 0.055);
-  color = mix(color, color * vec3(0.94 + perlin * 0.12), 0.25);
+  color += sampledMouse.rgb * 0.065;
+  color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
+  color = blendAdd(color, perlinMap.rgb, (1.0 - displacementVignette + sampledMouse.r * 0.5) * 0.05);
   color = contrast(color, uContrast);
   color *= uContrast;
-  color = saturation(color, 1.15);
-  color = mix(color * uBgColor, color, 0.85);
-  color = mix(color * vec3(0.92 + hash(floor(uv * vec2(uRatio, 1.0) * 900.0) + uTime) * 0.14), color, 0.72);
+  color = saturation(color, uSaturation);
+  color = blendLighten(color, uBgColor, 0.85);
+
+  vec2 noiseUv = uv - 0.5;
+  noiseUv.x *= uRatio;
+  noiseUv += 0.5;
+  noiseUv *= 15.0;
+  vec3 noiseMap = texture2D(tNoise, noiseUv).rgb;
+  color = mix(color * noiseMap, color, 0.75);
+  color = mix(color * noiseMap, color, 1.5);
+  color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + sampledMouse.r * 0.25 * uDarken);
 
   gl_FragColor = vec4(color, 1.0);
 }
@@ -799,6 +835,8 @@ export class WebGLBackdrop {
   private placeholder = makePlaceholderTexture();
   private mouseSimTexture = makePlaceholderTexture([128, 128, 0, 255]);
   private mouseSimData = new Uint8Array(128 * 128 * 4);
+  private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
+  private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private backgroundMaterial: ShaderMaterial;
   private compositeMaterial: ShaderMaterial;
   private compositeScene = new Scene();
@@ -881,6 +919,7 @@ export class WebGLBackdrop {
     this.particles = this.createParticles();
     this.homeScene.add(this.particles);
     this.createMediaPlanes();
+    this.loadCompositeTextures();
 
     this.resize();
     this.bind();
@@ -974,6 +1013,8 @@ export class WebGLBackdrop {
     window.removeEventListener("scroll", this.onScroll);
     this.textureCache.forEach((texture) => texture.dispose());
     this.mouseSimTexture.dispose();
+    this.noiseTexture.dispose();
+    this.perlinTexture.dispose();
     this.mediaPlanes.forEach((plane) => {
       plane.video?.pause();
       plane.texture?.dispose();
@@ -1179,12 +1220,16 @@ export class WebGLBackdrop {
       uniforms: {
         tWork: { value: this.compositeTarget.texture },
         tMouseSim: { value: this.mouseSimTexture },
+        tNoise: { value: this.noiseTexture },
+        tPerlin: { value: this.perlinTexture },
         uTime: { value: 0 },
         uRatio: { value: 1 },
         uProgress: { value: 0 },
         uTransformX: { value: 0 },
         uFluidStrength: { value: this.fluidStrength },
         uContrast: { value: 1.1 },
+        uDarken: { value: 0.1 },
+        uSaturation: { value: 1.15 },
         uBgColor: { value: colorFrom("#1f1f1f") },
         uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
         uAmbientColor: { value: colorFrom("#414652") },
@@ -1192,6 +1237,15 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeCompositeFragment,
+    });
+  }
+
+  private loadCompositeTextures() {
+    this.loadTexture("/images/textures/blue-noise.png", (texture) => {
+      this.compositeMaterial.uniforms.tNoise.value = texture;
+    });
+    this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
+      this.compositeMaterial.uniforms.tPerlin.value = texture;
     });
   }
 
@@ -1498,6 +1552,7 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uDarkness, { value, duration: 1.6, ease: "expo.out" });
     });
+    gsap.to(this.compositeMaterial.uniforms.uDarken, { value, duration: 1.6, ease: "expo.out" });
   }
 
   private setSaturation(value: number) {
@@ -1505,12 +1560,14 @@ export class WebGLBackdrop {
       if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
     });
     gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
+    gsap.to(this.compositeMaterial.uniforms.uSaturation, { value: Math.max(1.15, value), duration: 1.6, ease: "expo.out" });
   }
 
   private setContrast(value: number) {
     this.workItems.forEach((item) => {
       if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
     });
+    gsap.to(this.compositeMaterial.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
   }
 
   private setThumbDarknessColor(value?: string) {
