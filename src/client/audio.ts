@@ -4,16 +4,23 @@ let unlocked = false;
 let ambient: Howl | null = null;
 let click: Howl | null = null;
 let hover: Howl | null = null;
+let softWoosh: Howl | null = null;
 let enabled = true;
 
 export function initAudio() {
   click = new Howl({
-    src: ["/audio/soft-woosh.webm", "/audio/soft-woosh.ogg", "/audio/soft-woosh.mp3"],
-    volume: 0.2,
+    src: ["/audio/eerie.webm", "/audio/eerie.ogg", "/audio/eerie.mp3"],
+    volume: 0.15,
+    rate: 0.75,
   });
   hover = new Howl({
     src: ["/audio/plucks.webm", "/audio/plucks.ogg", "/audio/plucks.mp3"],
     volume: 0.08,
+  });
+  softWoosh = new Howl({
+    src: ["/audio/soft-woosh.webm", "/audio/soft-woosh.ogg", "/audio/soft-woosh.mp3"],
+    volume: 0.25,
+    rate: 1.5,
   });
   ambient = new Howl({
     src: ["/audio/ambient.webm", "/audio/ambient.ogg", "/audio/ambient-2.mp3"],
@@ -45,6 +52,9 @@ export function initAudio() {
     }
     if (unlocked && ambient && !ambient.playing()) ambient.play();
     ambient?.fade(ambient?.volume() ?? 0, 0.18, 900);
+  });
+  window.addEventListener("rd:soft-woosh", () => {
+    if (enabled) softWoosh?.play();
   });
 
   document.querySelectorAll<HTMLElement>("[data-sound]").forEach((element) => {

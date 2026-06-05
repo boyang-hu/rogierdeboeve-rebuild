@@ -79,10 +79,11 @@ Last updated: 2026-06-05
 | `c183c76` | Home WebGL | Made the auxiliary thumb projection plane follow source-style scene reveal/out timing instead of staying permanently visible outside the spotlight-map lifecycle. |
 | `15b1ad9` | Home WebGL | Moved the lightweight home bloom pass closer to source `kA` by adding a `uRadius` uniform set to source bloom radius `1.5` for luminosity blur offsets. |
 | `95ebb65` | Home WebGL | Moved final home bloom compositing closer to source `OA` by adding `tBloom` directly and adding a shifted bloom sample instead of attenuating bloom a second time. |
+| `pending` | Global Audio | Split CTA click audio from gallery-out soft-woosh behavior using source `gD`/`yD` Howler assets and playback rates. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `OA/kA` final composite bloom behavior while preserving the recent spotlight work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source CTA/gallery-out audio timing while preserving the recent WebGL composite and spotlight work.
 
 Immediate source targets:
 
@@ -96,8 +97,8 @@ Immediate source targets:
 
 1. Continue Phase 1 `OA/kA` composite and bloom/luminosity fidelity, especially multi-mip blur approximation and shifted bloom tuning.
 2. Continue `p1/SD/T1` spotlight and thumb projection comparison, especially reducing the auxiliary projection-plane approximation in favor of source spotlight-map behavior.
-3. Compare CTA navigation timing and click-sound/soft-woosh behavior against source `gD` and `yD.onWorkGalleryOut()`.
-4. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
+3. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
+4. Continue source `gD` CTA navigation timing comparison beyond audio, especially leave delay and preview-state cleanup.
 
 ## Verification Baseline
 
