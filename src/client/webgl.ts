@@ -267,6 +267,7 @@ precision highp float;
 
 uniform sampler2D tThumb;
 uniform vec2 uMapSize;
+uniform vec3 uGridSize;
 uniform vec3 uTint;
 uniform vec3 uBlockColor;
 uniform vec3 uDiffuseColor;
@@ -276,6 +277,7 @@ uniform float uEmissiveIntensity;
 uniform float uDarkness;
 uniform float uSaturation;
 uniform float uContrast;
+uniform float uMouseSpeed;
 uniform float uMouseLightness;
 uniform float uRevealSides;
 uniform float uMouseFactor;
@@ -313,7 +315,7 @@ float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, floa
 }
 
 void main() {
-  vec2 uv = vLocalUv / vec2(35.0, 23.0) + vThumbUv;
+  vec2 uv = vLocalUv / uGridSize.xy + vThumbUv;
   vec2 projectedUv = (uv - 0.5) * 0.48 + 0.5;
   vec3 gridThumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.22);
   vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
@@ -343,8 +345,8 @@ void main() {
   float mouseF = 1.0 - simLight;
   color = mix(color, color * vec3(mouseF), 1.0 - uMouseLightness);
 
-  vec2 gridUv = vec2(floor(uv.x * 35.0), floor(uv.y * 23.0));
-  vec2 gridUv2 = vec2(floor(uv.y * 23.0), floor(uv.x * 23.0));
+  vec2 gridUv = vec2(floor(uv.x * uGridSize.x), floor(uv.y * uGridSize.y));
+  vec2 gridUv2 = vec2(floor(uv.y * uGridSize.y), floor(uv.x * uGridSize.y));
   float alpha1 = mix(random(gridUv * vAlpha), random(gridUv), 1.0);
   float alpha2 = mix(random(gridUv2 * vAlpha), random(gridUv2), 1.0);
   float alpha = alpha1 * alpha2 * vAlpha;
@@ -1556,6 +1558,7 @@ export class WebGLBackdrop {
         uDarkness: { value: numeric(thumbDarkness, 0.18) },
         uSaturation: { value: 1 },
         uContrast: { value: numeric(payload.contrast, 1.15) },
+        uMouseSpeed: { value: 0 },
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
         uMouseFactor: { value: this.mouseFactor },
         uPointer: { value: this.pointer },
@@ -2603,7 +2606,7 @@ export class WebGLBackdrop {
       0.85,
       0.1,
     );
-    this.mouseSimSpeed = meshResult.speed;
+    this.mouseSimSpeed = MathUtils.damp(this.mouseSimSpeed, meshResult.speed, 10, delta);
     this.mouseSimulationIndex = meshResult.index;
     const screenResult = this.updateMouseBrush(
       this.screenMouseSimulationMaterial,
@@ -2625,6 +2628,7 @@ export class WebGLBackdrop {
       if (!item.group.visible) return;
       item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
+      item.material.uniforms.uMouseSpeed.value = this.mouseSimSpeed;
     });
   }
 
