@@ -204,6 +204,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let lastFrame = performance.now();
   let raf = 0;
   let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
+  const ctaTimelines = new WeakMap<HTMLElement, gsap.core.Timeline>();
 
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
   const lerp = (current: number, target: number, factor: number, delta: number) =>
@@ -217,13 +218,40 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     setIndexState(index);
     const card = cardsArray[activeIndex];
     if (!card) return;
-    cardsArray.forEach((item) => item.classList.remove("is-active"));
+    cardsArray.forEach((item) => {
+      const wasActive = item.classList.contains("is-active");
+      item.classList.remove("is-active");
+      if (item !== card && wasActive) animateCta(item, false);
+    });
     progressArray.forEach((item) => item.classList.toggle("is-active", (item.dataset.slug ?? item.dataset.progressSlug) === card.dataset.slug));
     card.classList.add("is-active");
+    animateCta(card, true);
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
     if (emitScene) getWebgl()?.setProject(payload);
   };
+
+  function animateCta(card: HTMLElement, active: boolean) {
+    const cta = card.querySelector<HTMLElement>(".ui-work-cta .c-button");
+    if (!cta) return;
+    ctaTimelines.get(cta)?.kill();
+    const textInner = cta.querySelector<HTMLElement>(".c-button-text-inner");
+    const timeline = gsap.timeline();
+    ctaTimelines.set(cta, timeline);
+    if (active) {
+      timeline.fromTo(cta, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" });
+      if (textInner) {
+        timeline.fromTo(
+          textInner,
+          { opacity: 0, y: "102%" },
+          { opacity: 1, y: 0, duration: 1.6, ease: "expo.out", clearProps: "transform,opacity" },
+          0,
+        );
+      }
+      return;
+    }
+    timeline.to(cta, { opacity: 0, duration: 0.3, ease: "none", clearProps: "opacity" });
+  }
 
   const finalScrollPosition = (index: number) => {
     const close = Math.abs(activeIndex - index) <= cardsArray.length / 2;
