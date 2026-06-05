@@ -3,7 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Button from "../components/Button.astro";
 import Footer from "../components/Footer.astro";
 import MediaBlock from "../components/MediaBlock.astro";
-import { getNextProject, getProjectBySlug, projects } from "../data/site";
+import { getNextProject, getProjectBySlug, projects, thumbSrc } from "../data/site";
 
 export function getStaticPaths() {
   return projects.map((project) => ({
@@ -19,6 +19,14 @@ if (!project) {
 }
 const nextProject = getNextProject(project);
 const [hero, ...restMedia] = project.data.content;
+const colorValue = (value?: string) => {
+  if (!value) return undefined;
+  return value.startsWith("#") ? value : `#${value}`;
+};
+const projectColor = colorValue(project.data.colors.primary) ?? "#bcbcbc";
+const projectSecondary = colorValue(project.data.colors.secondary) ?? projectColor;
+const projectMedia = colorValue(project.data.colors.media) ?? projectColor;
+const projectBlocks = colorValue(project.data.colors.blocks);
 ---
 
 <BaseLayout title={`${project.data.title} - Rogier de Boevé`} description={project.data.description.replace(/<[^>]+>/g, "")}>
@@ -26,7 +34,20 @@ const [hero, ...restMedia] = project.data.content;
     data-view="project"
     class="ui-project"
     data-project={project.data.slug}
-    style={`--project-color:${project.data.colors.primary};--project-secondary:${project.data.colors.secondary};--project-media:${project.data.colors.media ?? project.data.colors.primary}`}
+    data-webgl-project
+    data-color={projectColor}
+    data-secondary={projectSecondary}
+    data-invert={colorValue(project.data.colors.invert)}
+    data-media-color={projectMedia}
+    data-blocks={projectBlocks}
+    data-thumb={thumbSrc(project)}
+    data-darkness={project.data.thumbnail.darkness ?? project.data.darkenDetail}
+    data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
+    data-saturation={project.data.thumbnail.saturation ?? project.data.saturation}
+    data-contrast={project.data.contrast}
+    data-mouse-lightness={project.data.thumbnail.mouseLightness}
+    data-ambient={project.data.ambient}
+    style={`--project-color:${projectColor};--project-secondary:${projectSecondary};--project-media:${projectMedia}`}
   >
     <div class="ui-project-header c-color">
       <div class="wrap">
@@ -65,7 +86,7 @@ const [hero, ...restMedia] = project.data.content;
               </div>
             </div>
 
-            {hero && <MediaBlock item={hero} class="ui-project-media-mobile" />}
+            {hero && <MediaBlock item={hero} class="ui-project-media-mobile" mode="mobile" />}
 
             <div class="ui-project-info grid grid-cols-20 gap-24">
               <div class="col-span-6">
@@ -80,9 +101,15 @@ const [hero, ...restMedia] = project.data.content;
             </div>
           </div>
 
-          <div class="ui-project-media-items grid grid-cols-20 gap-24">
+          <div class="ui-project-media-items ui-project-media-items--desktop grid grid-cols-20 gap-24">
             {project.data.content.map((item, index) => (
               <MediaBlock item={item} class={index === 0 ? "ui-project-media col-span-12 col-start-7" : "ui-project-media col-span-18"} />
+            ))}
+          </div>
+
+          <div class="ui-project-media-items ui-project-media-items--mobile">
+            {restMedia.map((item) => (
+              <MediaBlock item={item} class="ui-project-media-mobile" mode="mobile" />
             ))}
           </div>
 
@@ -90,7 +117,12 @@ const [hero, ...restMedia] = project.data.content;
             <a href={`/${nextProject.data.slug}/`} class="ui-project-next-link c-color">
               <span class="ts-m">Next project</span>
               <h2 class="ts-3">{nextProject.data.title}</h2>
-              {nextProject.data.content[0] && <MediaBlock item={nextProject.data.content[0]} class="ui-project-next-image" />}
+              {nextProject.data.content[0] && (
+                <>
+                  <MediaBlock item={nextProject.data.content[0]} class="ui-project-next-image" parallax="bottom" />
+                  <MediaBlock item={nextProject.data.content[0]} class="ui-project-media-mobile ui-project-next-mobile" mode="mobile" />
+                </>
+              )}
             </a>
           </div>
         </div>

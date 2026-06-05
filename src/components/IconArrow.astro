@@ -1,5 +1,5 @@
 ---
-const { class: className = "c-icon-arrow" } = Astro.props;
+const { class: className = "c-icon-arrow", line } = Astro.props;
 ---
 
 <svg class={className} width="28" height="28" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" aria-hidden="true">
@@ -8,4 +8,6 @@ const { class: className = "c-icon-arrow" } = Astro.props;
     <rect rx="1" ry="1" x="14.7" y="13" width="2" height="2"></rect>
     <rect rx="1" ry="1" x="11.3" y="15" width="2" height="2"></rect>
   </g>
+  {line === "left" && <line stroke="currentColor" stroke-dasharray="2 2" stroke-width="1" x1="0" y1="1" x2="0" y2="26"></line>}
+  {line === "right" && <line stroke="currentColor" stroke-dasharray="2 2" stroke-width="1" x1="28" y1="1" x2="28" y2="26"></line>}
 </svg>

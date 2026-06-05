@@ -3,6 +3,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Button from "../components/Button.astro";
 import Footer from "../components/Footer.astro";
 import { activeProjects, thumbSrc } from "../data/site";
+
+const colorValue = (value?: string) => {
+  if (!value) return undefined;
+  return value.startsWith("#") ? value : `#${value}`;
+};
 ---
 
 <BaseLayout>
@@ -18,8 +23,18 @@ import { activeProjects, thumbSrc } from "../data/site";
                   class={index === 0 ? "c-color is-active" : "c-color"}
                   data-project-card
                   data-slug={project.data.slug}
-                  data-color={project.data.colors.primary}
+                  data-color={colorValue(project.data.colors.primary)}
+                  data-secondary={colorValue(project.data.colors.secondary)}
+                  data-invert={colorValue(project.data.colors.invert)}
+                  data-media-color={colorValue(project.data.colors.media)}
+                  data-blocks={colorValue(project.data.colors.blocks)}
                   data-thumb={thumbSrc(project)}
+                  data-darkness={project.data.thumbnail.darkness ?? project.data.darkenOverview}
+                  data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
+                  data-saturation={project.data.thumbnail.saturation ?? project.data.saturation}
+                  data-contrast={project.data.contrast}
+                  data-mouse-lightness={project.data.thumbnail.mouseLightness}
+                  data-ambient={project.data.ambient}
                 >
                   <a class="ui-work-a" href={`/${project.data.slug}/`} data-sound data-sound-click>
                     <span>{project.data.title}</span>

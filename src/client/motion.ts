@@ -25,29 +25,45 @@ function initLenis() {
 function initIntroAnimations() {
   if (prefersReducedMotion()) return;
 
-  gsap.fromTo(
-    [".ui-header-primary", ".ui-header-secondary", ".ui-nav", ".ui-title", ".ui-footer"],
-    { y: 18, opacity: 0 },
-    { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: "expo.out" },
-  );
+  const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary, .ui-nav, .ui-title, .ui-footer");
+  const contentTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro > *, .c-list-section, .ui-project-content-header > *");
 
-  gsap.fromTo(
-    ".ui-about-intro > *, .c-list-section, .ui-project-content-header > *",
-    { y: 26, opacity: 0 },
-    { y: 0, opacity: 1, duration: 1.15, stagger: 0.045, ease: "expo.out", delay: 0.2 },
-  );
-
-  if (window.matchMedia("(min-width: 1000px)").matches) {
+  if (chromeTargets.length) {
     gsap.fromTo(
-      ".ui-work-ul li",
+      chromeTargets,
+      { y: 18, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: "expo.out" },
+    );
+  }
+
+  if (contentTargets.length) {
+    gsap.fromTo(
+      contentTargets,
       { y: 26, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.15, stagger: 0.045, ease: "expo.out", delay: 0.2 },
+    );
+  }
+
+  const workLinks = gsap.utils.toArray<HTMLElement>(".ui-work-a");
+  if (workLinks.length && window.matchMedia("(min-width: 1000px)").matches) {
+    gsap.fromTo(
+      workLinks,
+      { y: 18, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1.15,
+        stagger: 0.045,
+        ease: "expo.out",
+        delay: 0.2,
+        clearProps: "transform,opacity",
+      },
     );
   }
 }
 
 function initMediaReveals() {
-  const blocks = document.querySelectorAll<HTMLElement>(".media-block");
+  const blocks = document.querySelectorAll<HTMLElement>("[data-mobile-media]");
   if (!blocks.length) return;
 
   if (prefersReducedMotion() || !("IntersectionObserver" in window)) {

@@ -1,6 +1,53 @@
+import gsap from "gsap";
+
 type WebGLLike = {
-  setProject(payload: { color?: string }): void;
+  setProject(payload: {
+    slug?: string;
+    color?: string;
+    secondary?: string;
+    invert?: string;
+    mediaColor?: string;
+    thumb?: string;
+    blocks?: string;
+    ambient?: string;
+    darkness?: string;
+    darknessColor?: string;
+    saturation?: string;
+    contrast?: string;
+    mouseLightness?: string;
+  }): void;
+  setActiveSlug?(slug: string): void;
+  setGalleryProgress?(progress: number, velocity?: number): void;
+  setPreviewMode?(enabled: boolean): void;
+  mediaAnimateIn?(): void;
+  refreshMedia?(): void;
 };
+
+function projectPayloadFromElement(element?: HTMLElement | null) {
+  return {
+    slug: element?.dataset.slug ?? element?.dataset.project,
+    color: element?.dataset.color,
+    secondary: element?.dataset.secondary,
+    invert: element?.dataset.invert,
+    mediaColor: element?.dataset.mediaColor,
+    thumb: element?.dataset.thumb,
+    blocks: element?.dataset.blocks,
+    ambient: element?.dataset.ambient,
+    darkness: element?.dataset.darkness,
+    darknessColor: element?.dataset.darknessColor,
+    saturation: element?.dataset.saturation,
+    contrast: element?.dataset.contrast,
+    mouseLightness: element?.dataset.mouseLightness,
+  };
+}
+
+function applyActiveColor(color?: string) {
+  if (color) document.documentElement.style.setProperty("--active-color", color);
+}
+
+function setWorkPreviewing(enabled: boolean) {
+  document.documentElement.classList.toggle("is-work-previewing", enabled);
+}
 
 function dispatchSoundMode(enabled: boolean) {
   window.dispatchEvent(new CustomEvent("rd:sound-mode", { detail: { enabled } }));
@@ -40,7 +87,7 @@ function initPreloader() {
   });
 
   if (new URLSearchParams(window.location.search).has("skip-preloader")) {
-    window.setTimeout(() => reveal(false), 150);
+    reveal(false);
     return;
   }
 
@@ -83,58 +130,154 @@ function initMenu() {
 }
 
 function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
-  const preview = document.querySelector<HTMLImageElement>("[data-work-preview]");
   const cards = document.querySelectorAll<HTMLElement>("[data-project-card]");
   const progressItems = document.querySelectorAll<HTMLElement>("[data-progress-slug]");
+  const cardsArray = Array.from(cards);
+  const progressArray = Array.from(progressItems);
   let activeIndex = Math.max(0, Array.from(cards).findIndex((card) => card.classList.contains("is-active")));
   if (!cards.length) return;
 
-  const activate = (card: HTMLElement) => {
-    activeIndex = Array.from(cards).indexOf(card);
-    cards.forEach((item) => item.classList.remove("is-active"));
-    progressItems.forEach((item) => item.classList.toggle("is-active", item.dataset.progressSlug === card.dataset.slug));
-    card.classList.add("is-active");
-    const thumb = card.dataset.thumb;
-    if (preview && thumb && preview.src !== new URL(thumb, location.href).href) {
-      preview.animate(
-        [
-          { opacity: 1, transform: "scale(1)" },
-          { opacity: 0, transform: "scale(1.03)" },
-        ],
-        { duration: 220, easing: "ease" },
-      ).onfinish = () => {
-        preview.src = thumb;
-        preview.animate(
-          [
-            { opacity: 0, transform: "scale(1.02)" },
-            { opacity: 1, transform: "scale(1)" },
-          ],
-          { duration: 550, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
-        );
-      };
-    }
-    getWebgl()?.setProject({ color: card.dataset.color });
+  const totalItems = cardsArray.length - 1;
+  const step = 1000;
+  const limit = cardsArray.length * step;
+  const scroll = {
+    virtual: cardsArray.length * 100000,
+    target: cardsArray.length * 100000,
+    animated: cardsArray.length * 100000,
+    diff: 0,
+    current: 0,
+    progress: 0,
+    remainder: 0,
+    velocity: 0,
+    active: true,
+  };
+  let isTransitioning = false;
+  let nextTransitioning = false;
+  let prevTransitioning = false;
+  let lastFrame = performance.now();
+  let raf = 0;
+  let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
+
+  const wrap = (value: number, max: number) => ((value % max) + max) % max;
+  const lerp = (current: number, target: number, factor: number, delta: number) =>
+    current + (target - current) * Math.min(1, factor * delta);
+
+  const setIndexState = (index: number) => {
+    activeIndex = index < 0 ? totalItems : index > totalItems ? 0 : index;
   };
 
-  cards.forEach((card) => {
-    card.addEventListener("mouseenter", () => activate(card));
-    card.addEventListener("focusin", () => activate(card));
-  });
+  const activateIndex = (index: number, emitScene = true) => {
+    setIndexState(index);
+    const card = cardsArray[activeIndex];
+    if (!card) return;
+    cardsArray.forEach((item) => item.classList.remove("is-active"));
+    progressArray.forEach((item) => item.classList.toggle("is-active", item.dataset.progressSlug === card.dataset.slug));
+    card.classList.add("is-active");
+    const payload = projectPayloadFromElement(card);
+    applyActiveColor(payload.color);
+    if (emitScene) getWebgl()?.setProject(payload);
+  };
 
-  progressItems.forEach((item) => {
-    item.addEventListener("click", () => {
-      const card = Array.from(cards).find((candidate) => candidate.dataset.slug === item.dataset.progressSlug);
-      if (card) activate(card);
+  const finalScrollPosition = (index: number) => {
+    const close = Math.abs(activeIndex - index) <= cardsArray.length / 2;
+    const activePastHalf = activeIndex > cardsArray.length / 2;
+    const hook = index * step;
+    if (close) return hook + scroll.remainder;
+    if (activePastHalf) return hook + scroll.remainder + limit;
+    return hook + scroll.remainder - (scroll.virtual > scroll.target ? 0 : limit);
+  };
+
+  const scrollTo = (position: number) => {
+    scroll.virtual = position;
+    scrollToAnimation?.kill();
+    scrollToAnimation = gsap.to(scroll, {
+      target: position,
+      duration: 1.6,
+      ease: "expo.out",
+    });
+  };
+
+  const scrollToIndex = (index: number) => {
+    isTransitioning = true;
+    const targetHook = finalScrollPosition(index);
+    scrollTo(targetHook);
+    activateIndex(index);
+    window.setTimeout(() => {
+      isTransitioning = false;
+    }, 1200);
+  };
+
+  const next = () => {
+    if (nextTransitioning || prevTransitioning) return;
+    nextTransitioning = true;
+    scrollTo(scroll.virtual + step);
+    window.setTimeout(() => {
+      nextTransitioning = false;
+    }, 800);
+  };
+
+  const prev = () => {
+    if (nextTransitioning || prevTransitioning) return;
+    prevTransitioning = true;
+    scrollTo(scroll.virtual - step);
+    window.setTimeout(() => {
+      prevTransitioning = false;
+    }, 800);
+  };
+
+  cardsArray.forEach((card, index) => {
+    card.addEventListener("mouseenter", () => {
+      if (window.matchMedia("(max-width: 999px)").matches) return;
+      scrollToIndex(index);
+    });
+    card.addEventListener("focusin", () => scrollToIndex(index));
+    card.querySelector<HTMLElement>(".ui-work-a")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      scrollToIndex(index);
+    });
+    const cta = card.querySelector<HTMLElement>(".ui-work-cta");
+    cta?.addEventListener("mouseenter", () => {
+      setWorkPreviewing(true);
+      getWebgl()?.setPreviewMode?.(true);
+    });
+    cta?.addEventListener("mouseleave", () => {
+      setWorkPreviewing(false);
+      getWebgl()?.setPreviewMode?.(false);
+    });
+    cta?.addEventListener("focusin", () => {
+      scrollToIndex(index);
+      setWorkPreviewing(true);
+      getWebgl()?.setPreviewMode?.(true);
+    });
+    cta?.addEventListener("focusout", () => {
+      setWorkPreviewing(false);
+      getWebgl()?.setPreviewMode?.(false);
     });
   });
 
-  window.addEventListener("keydown", (event) => {
-    if (!window.matchMedia("(max-width: 999px)").matches) return;
-    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+  progressArray.forEach((item) => {
+    item.addEventListener("click", () => {
+      const index = cardsArray.findIndex((candidate) => candidate.dataset.slug === item.dataset.progressSlug);
+      if (index >= 0) scrollToIndex(index);
+    });
+  });
+
+  window.addEventListener("wheel", (event) => {
+    if (!document.body.classList.contains("is-home")) return;
+    const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+    if (Math.abs(delta) < 15) return;
     event.preventDefault();
-    const direction = event.key === "ArrowRight" ? 1 : -1;
-    const next = (activeIndex + direction + cards.length) % cards.length;
-    activate(cards[next]);
+    scroll.diff += delta;
+    if (delta > 15) next();
+    if (delta < -15) prev();
+  }, { passive: false });
+
+  window.addEventListener("keydown", (event) => {
+    if (!document.body.classList.contains("is-home")) return;
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next();
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") prev();
   });
 
   let touchStart = 0;
@@ -146,17 +289,47 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const end = event.changedTouches[0]?.clientX ?? touchStart;
     const delta = end - touchStart;
     if (Math.abs(delta) < 42) return;
-    const next = (activeIndex + (delta < 0 ? 1 : -1) + cards.length) % cards.length;
-    activate(cards[next]);
+    if (delta < 0) next();
+    else prev();
   }, { passive: true });
+
+  const tick = (now: number) => {
+    const delta = Math.min(0.05, Math.max(0.001, (now - lastFrame) / 1000));
+    lastFrame = now;
+    scroll.velocity = scroll.target - scroll.animated;
+    scroll.diff = lerp(scroll.diff, 0, 5, delta);
+    const targetPlusDiff = scroll.target + scroll.diff;
+    scroll.remainder = scroll.target - (scroll.target % limit);
+    scroll.animated = lerp(scroll.animated, targetPlusDiff, 5, delta);
+    scroll.current = wrap(scroll.animated, limit);
+    scroll.progress = scroll.current / limit;
+
+    if (!isTransitioning && scroll.active) {
+      let index = Math.round(Math.abs((scroll.current % limit) / step));
+      if (scroll.current > limit - step / 2) index = 0;
+      if (cardsArray[index] && index !== activeIndex) {
+        activateIndex(index);
+      }
+    }
+    getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity);
+    raf = requestAnimationFrame(tick);
+  };
+
+  activateIndex(activeIndex);
+  raf = requestAnimationFrame(tick);
+  window.addEventListener("beforeunload", () => cancelAnimationFrame(raf), { once: true });
 }
 
 function initScrollState() {
   const update = () => {
     const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
     const progress = Math.min(1, Math.max(0, window.scrollY / max));
+    const projectHeader = document.querySelector<HTMLElement>(".ui-project-content-header");
+    const projectHeaderMax = Math.max(1, projectHeader?.offsetHeight ?? window.innerHeight);
+    const projectHeaderProgress = Math.min(1, Math.max(0, window.scrollY / projectHeaderMax));
     document.documentElement.classList.toggle("is-scrolled", window.scrollY > 24);
     document.documentElement.style.setProperty("--scroll-progress", String(progress));
+    document.documentElement.style.setProperty("--project-header-progress", String(projectHeaderProgress));
   };
   update();
   window.addEventListener("scroll", update, { passive: true });
@@ -188,6 +361,8 @@ function initProjectMedia() {
 function shouldInitWebGL(root: HTMLElement) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
   if (!window.matchMedia("(min-width: 760px)").matches) return false;
+  const probe = document.createElement("canvas");
+  if (!probe.getContext("webgl2") && !probe.getContext("webgl")) return false;
   const nav = navigator as Navigator & {
     connection?: { saveData?: boolean };
     deviceMemory?: number;
@@ -200,8 +375,15 @@ function shouldInitWebGL(root: HTMLElement) {
 async function initWebGL() {
   const root = document.querySelector<HTMLElement>("[data-webgl-root]");
   if (!root || !shouldInitWebGL(root)) return undefined;
-  const { WebGLBackdrop } = await import("./webgl");
-  return new WebGLBackdrop(root);
+  try {
+    const { WebGLBackdrop } = await import("./webgl");
+    return new WebGLBackdrop(root);
+  } catch (error) {
+    console.warn("WebGL initialization failed", error);
+    document.body.classList.remove("has-webgl");
+    root.replaceChildren();
+    return undefined;
+  }
 }
 
 function boot() {
@@ -214,7 +396,10 @@ function boot() {
   void initWebGL().then((instance) => {
     webgl = instance;
     const active = document.querySelector<HTMLElement>("[data-project-card].is-active");
-    webgl?.setProject({ color: active?.dataset.color });
+    const project = document.querySelector<HTMLElement>("[data-webgl-project]");
+    const payload = projectPayloadFromElement(active ?? project);
+    applyActiveColor(payload.color);
+    webgl?.setProject(payload);
   });
 
   initMenu();

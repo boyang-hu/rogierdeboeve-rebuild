@@ -1,149 +1,1425 @@
 import {
-  AmbientLight,
-  BoxGeometry,
+  AdditiveBlending,
   Color,
-  DirectionalLight,
+  DataTexture,
+  Float32BufferAttribute,
   Group,
+  InstancedBufferAttribute,
+  InstancedMesh,
+  LinearFilter,
+  MathUtils,
+  Matrix4,
   Mesh,
-  MeshStandardMaterial,
+  MeshBasicMaterial,
+  Object3D,
+  OrthographicCamera,
   PerspectiveCamera,
+  PlaneGeometry,
+  Points,
+  PointsMaterial,
+  RGBAFormat,
+  Raycaster,
   Scene,
+  ShaderMaterial,
   SRGBColorSpace,
-  TetrahedronGeometry,
+  Texture,
+  TextureLoader,
   Vector2,
+  Vector3,
+  VideoTexture,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import gsap from "gsap";
 
-type PreviewPayload = {
+type ProjectPayload = {
+  slug?: string;
   color?: string;
+  secondary?: string;
+  invert?: string;
+  mediaColor?: string;
+  thumb?: string;
+  ambient?: string | number;
+  darkness?: string | number;
+  darknessColor?: string;
+  saturation?: string | number;
+  contrast?: string | number;
+  mouseLightness?: string | number;
+  blocks?: string;
 };
+
+type WorkItem = {
+  slug: string;
+  payload: ProjectPayload;
+  group: Group;
+  material: ShaderMaterial;
+  mesh: InstancedMesh;
+  thumb: Mesh<PlaneGeometry, ShaderMaterial>;
+  reveal: number;
+};
+
+type MediaPlane = {
+  track: HTMLElement;
+  mesh: Mesh<PlaneGeometry, ShaderMaterial>;
+  material: ShaderMaterial;
+  src: string;
+  type: string;
+  translation: Vector2;
+  offset: Vector2;
+  loaded: boolean;
+  video?: HTMLVideoElement;
+  texture?: Texture;
+};
+
+const BREAKPOINT_LG = 1000;
+const DEFAULT_BG = "#141414";
+const DEFAULT_COLOR = "#bcbcbc";
+const GRID_COLS = 35;
+const GRID_ROWS = 23;
+const GRID_LAYERS = 7;
+const GRID_CUBE_SIZE = 1.25;
+const GRID_SPACING = 0.1;
+const GRID_SCALE = 0.09;
+
+const projectMediaVertex = `
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+  vec4 mvPosition = viewMatrix * worldPosition;
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const projectMediaFragment = `
+precision highp float;
+
+uniform sampler2D tMap;
+uniform vec2 uMapSize;
+uniform vec2 uContainerSize;
+uniform float uCameraDistance;
+uniform float uRadius;
+uniform vec3 uBackgroundColor;
+uniform float uReveal;
+uniform float uSceneOpacity;
+
+varying vec2 vUv;
+
+vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 size) {
+  vec2 s = size;
+  vec2 i = imgSize;
+  float rs = s.x / s.y;
+  float ri = i.x / i.y;
+  vec2 newSize = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
+  vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
+  vec2 uv = ouv * s / newSize + newOffset;
+  return texture2D(tex, uv);
+}
+
+float udRoundBox(vec2 p, vec2 b, float r) {
+  return length(max(abs(p) - b + r, 0.0)) - r;
+}
+
+void main() {
+  float parallax = uCameraDistance * 0.0001;
+  vec2 uv = vUv;
+  uv.y -= parallax;
+
+  vec4 color = coverTexture(tMap, uMapSize, uv, uContainerSize);
+  color.rgb = max(color.rgb, vec3(0.02));
+
+  vec2 res = uContainerSize;
+  vec2 halfRes = 0.5 * res;
+  float rounded = udRoundBox(vUv.xy * res - halfRes, halfRes, uRadius);
+  float mask = 1.0 - smoothstep(0.0, 1.0, rounded);
+
+  color.rgb = mix(color.rgb, uBackgroundColor, 1.0 - uReveal);
+  gl_FragColor = vec4(color.rgb, mask * uSceneOpacity);
+}
+`;
+
+const workBlockVertex = `
+attribute vec3 instanceGrid;
+attribute float instanceAlpha;
+attribute vec3 instanceColor;
+
+varying vec2 vThumbUv;
+varying float vAlpha;
+varying float vReveal;
+varying vec3 vColorSeed;
+varying vec3 vLocalNormal;
+
+uniform vec3 uGridSize;
+uniform float uReveal;
+uniform float uRevealProject;
+uniform float uRevealSides;
+uniform float uRevealSpread;
+uniform float uRevealSpreadSides;
+uniform float uMouseFactor;
+uniform vec2 uPointer;
+uniform float uTime;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+void main() {
+  vec3 transformed = position;
+  vec4 instancePos = instanceMatrix[3];
+  float revealMask = uReveal * uRevealProject;
+  float toCenter = length(instancePos.xy);
+
+  float fadeScale = (revealMask * 5.75) - (toCenter * (revealMask / 5.75));
+  float fade = clamp(fadeScale, 0.0, 1.05);
+  float fadeDisplacementScale = (revealMask * 4.85) - (toCenter * (revealMask / 4.85));
+  float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
+  float perlin = noise(instanceGrid.xy * 12.0 - uTime * 0.05);
+  float wave = sin(instanceGrid.x * 24.0 + instanceGrid.y * 13.0 - uTime * 0.8) * 0.5 + 0.5;
+  float displacement = mix(perlin, wave, 0.35);
+  float perlinHeight = 10.0;
+
+  vec3 perlinDisplaced = transformed;
+  perlinDisplaced.z += displacement * perlinHeight - perlinHeight * 0.5;
+  perlinDisplaced *= min(1.0, 1.0 - ((displacement * perlinHeight) - perlinHeight * 0.5) * 0.1);
+  transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
+  transformed *= fade * uRevealSides;
+
+  vec2 mouseUv = instanceGrid.xy;
+  vec2 pointerUv = uPointer * 0.5 + 0.5;
+  float mouse = 1.0 - smoothstep(0.0, 0.38, distance(mouseUv, pointerUv));
+  transformed.z -= 1.5;
+  transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
+  transformed.z += mouse * 2.35 * uMouseFactor;
+  transformed *= 1.0 - displacement * 0.1;
+
+  vec3 transformedSpread = transformed;
+  float spread = 3.0;
+  transformedSpread.x -= instanceColor.x * spread;
+  transformedSpread.x += spread * 0.5;
+  transformedSpread.y -= instanceColor.y * spread;
+  transformedSpread.y += spread * 0.5;
+  transformedSpread.z -= instanceColor.z * spread;
+  transformedSpread.z += spread * 0.5;
+  transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
+  transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
+
+  vec4 mvPosition = instanceMatrix * vec4(transformed, 1.0);
+  mvPosition = modelViewMatrix * mvPosition;
+  gl_Position = projectionMatrix * mvPosition;
+
+  vThumbUv = instanceGrid.xy;
+  vAlpha = instanceAlpha;
+  vReveal = revealMask;
+  vColorSeed = instanceColor;
+  vLocalNormal = normalize(normal);
+}
+`;
+
+const workBlockFragment = `
+precision highp float;
+
+uniform sampler2D tThumb;
+uniform vec2 uMapSize;
+uniform vec3 uTint;
+uniform vec3 uBlockColor;
+uniform vec3 uDarknessColor;
+uniform float uDarkness;
+uniform float uSaturation;
+uniform float uContrast;
+uniform float uMouseLightness;
+uniform vec2 uPointer;
+
+varying vec2 vThumbUv;
+varying float vAlpha;
+varying float vReveal;
+varying vec3 vColorSeed;
+varying vec3 vLocalNormal;
+
+vec3 saturateColor(vec3 color, float amount) {
+  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  return mix(vec3(gray), color, amount);
+}
+
+float random(vec2 st) {
+  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+float vignette(vec2 uv, vec2 center, float inner, float outer) {
+  return smoothstep(outer, inner, distance(uv, center));
+}
+
+float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, float vignfade, float fstop) {
+  float dist = distance(coords.xy, center);
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
+}
+
+void main() {
+  vec2 uv = vThumbUv;
+  vec2 projectedUv = (uv - 0.5) * 0.36 + 0.5;
+  vec3 thumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.72);
+  thumb = (thumb - 0.5) * uContrast + 0.5;
+  thumb = saturateColor(thumb, uSaturation);
+  float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
+  float centerMask = pow(vignette(uv, vec2(0.5), 0.02, 0.72), 1.45);
+  float neutral = 1.0 - smoothstep(0.04, 0.22, length(thumb - vec3(lum)));
+  float centeredLum = lum * (0.34 + centerMask * 1.95);
+  float lightMask = smoothstep(0.14, 0.66, centeredLum);
+  float logoMask = smoothstep(0.18, 0.56, lum) * neutral * centerMask;
+  lightMask = max(lightMask * (0.18 + centerMask * 1.1), logoMask * 1.25);
+  float hotMask = max(smoothstep(0.38, 0.82, centeredLum), logoMask);
+
+  float faceLight = clamp(dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5, 0.45, 1.2);
+  vec3 base = mix(vec3(0.026, 0.031, 0.04), uBlockColor, 0.26);
+  vec3 projection = mix(uTint * (0.38 + lightMask * 1.8), thumb * 2.15, 0.45);
+  vec3 color = mix(base, projection, 0.42 + lightMask * 0.52);
+  color += thumb * (0.2 + lightMask * 1.55);
+  color += vec3(1.0) * hotMask * 1.25;
+  color += uTint * pow(max(lightMask, 0.0), 1.65) * 0.58;
+  color = mix(color, uTint, 0.035 + lightMask * 0.08);
+  color = mix(color, uDarknessColor, uDarkness * (0.06 + (1.0 - lum) * 0.16));
+  color *= faceLight;
+
+  vec2 pointerUv = uPointer * 0.5 + 0.5;
+  float mouseLight = 1.0 - smoothstep(0.02, 0.58, distance(uv, pointerUv));
+  color *= 0.72 + mouseLight * uMouseLightness * 0.24;
+  color += pow(max(0.0, 1.0 - length(uv - 0.5) * 1.65), 2.0) * 0.12;
+
+  vec2 gridUv = floor(uv * vec2(35.0, 23.0));
+  vec2 gridUv2 = floor(uv.yx * vec2(23.0, 35.0));
+  float alpha = random(gridUv + vColorSeed.xy) * random(gridUv2 + vColorSeed.yz) * vAlpha;
+  float revealCombined = clamp(vReveal, 0.0, 1.0);
+  float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
+  float centerAlpha = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+  float revealAlpha = sourceVignette(uv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+  alpha += centerAlpha * 0.1;
+  alpha -= 1.0 - revealAlpha;
+  alpha += clamp(mouseLight * uMouseLightness * 0.08, 0.0, 0.18);
+  alpha = max(alpha, logoMask * revealCombined * 0.32);
+  alpha *= revealCombined * clamp(vAlpha + 0.35, 0.0, 1.0);
+
+  gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.92));
+}
+`;
+
+const projectionFragment = `
+precision highp float;
+
+uniform sampler2D tThumb;
+uniform vec3 uTint;
+uniform float uReveal;
+uniform float uOpacity;
+
+varying vec2 vUv;
+
+float vignette(vec2 uv, vec2 center, float inner, float outer) {
+  return smoothstep(outer, inner, distance(uv, center));
+}
+
+void main() {
+  vec2 sourceUv = (vUv - 0.5) * 0.42 + 0.5;
+  vec3 thumb = texture2D(tThumb, sourceUv).rgb;
+  float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
+  float neutral = 1.0 - smoothstep(0.04, 0.22, length(thumb - vec3(lum)));
+  float center = pow(vignette(vUv, vec2(0.5), 0.02, 0.52), 2.4);
+  float mask = max(smoothstep(0.36, 0.76, lum), neutral * smoothstep(0.28, 0.68, lum));
+  mask *= center * uReveal;
+  vec3 color = mix(uTint * 0.95, vec3(1.0), smoothstep(0.52, 0.86, lum));
+  color += thumb * 0.18;
+  gl_FragColor = vec4(color, clamp(mask * uOpacity, 0.0, 0.16));
+}
+`;
+
+const thumbVertex = `
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const thumbFragment = `
+precision highp float;
+
+uniform sampler2D tMap;
+uniform vec2 uMapSize;
+uniform vec2 uResolution;
+uniform float uProgress;
+uniform float uTransitionCount;
+uniform float uTransitionSmoothness;
+uniform float uDarkness;
+uniform vec3 uDarknessColor;
+uniform float uSaturation;
+
+varying vec2 vUv;
+
+vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 size) {
+  vec2 s = size;
+  vec2 i = imgSize;
+  float rs = s.x / s.y;
+  float ri = i.x / i.y;
+  vec2 newSize = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
+  vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
+  vec2 uv = ouv * s / newSize + newOffset;
+  return texture2D(tex, uv);
+}
+
+vec3 saturateColor(vec3 color, float amount) {
+  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  return mix(vec3(gray), color, amount);
+}
+
+vec4 transition(vec4 color1, vec4 color2, float progress, vec2 uv) {
+  float pr = smoothstep(-uTransitionSmoothness, 0.0, uv.y - progress * (1.0 + uTransitionSmoothness));
+  float s = step(pr, fract(uTransitionCount * uv.y));
+  return mix(color1, color2, s);
+}
+
+void main() {
+  vec4 map = coverTexture(tMap, uMapSize, vUv, uResolution);
+  vec4 fallback = vec4(vUv.x, vUv.y, 0.0, 1.0);
+  vec4 mixed = transition(map, fallback, 1.0 - uProgress, vUv);
+  mixed.rgb = saturateColor(mixed.rgb, uSaturation);
+  mixed.rgb = mix(mixed.rgb, uDarknessColor, uDarkness);
+  gl_FragColor = vec4(mixed.rgb, 1.0);
+}
+`;
+
+const backgroundVertex = `
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`;
+
+const backgroundFragment = `
+precision highp float;
+
+uniform float uTime;
+uniform float uRatio;
+uniform float uFluidStrength;
+uniform float uProgress;
+uniform vec3 uBgColor;
+uniform vec3 uActiveColor;
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+
+varying vec2 vUv;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+float fbm(vec2 p) {
+  float f = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 5; i++) {
+    f += a * noise(p);
+    p = p * 2.02 + 13.17;
+    a *= 0.5;
+  }
+  return f;
+}
+
+float vignette(vec2 uv, float inner, float outer) {
+  vec2 p = uv - 0.5;
+  p.x *= uRatio;
+  return smoothstep(outer, inner, length(p));
+}
+
+void main() {
+  vec2 uv = vUv;
+  vec2 p = uv - 0.5;
+  p.x *= uRatio;
+
+  float flowA = fbm(p * 2.3 + vec2(uTime * -0.035 + uProgress, uTime * -0.018));
+  float flowB = fbm(p * 5.0 + vec2(uTime * 0.02, uTime * -0.03));
+  float fluid = mix(flowA, flowB, 0.38);
+  float rings = abs(1.0 / (sin(pow(length(p) * 0.9, 0.25) - uTime * 0.35 + sin(length(p) * 0.8 - 1.6)) * 10.8)) - 0.1;
+
+  vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.65);
+  vec3 accent = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.4) * 0.28);
+  vec3 color = deep;
+  color = mix(color, accent, 0.22 + fluid * 0.34);
+  color += accent * rings * 0.095 * uFluidStrength;
+  color += vec3(flowB) * 0.05;
+
+  float v = vignette(uv, 0.05, 0.84);
+  color *= 0.52 + v * 0.98;
+  color += accent * pow(max(0.0, 1.0 - length(p * vec2(0.8, 1.15))), 3.0) * 0.2;
+
+  gl_FragColor = vec4(color, 1.0);
+}
+`;
+
+const floorFragment = `
+precision highp float;
+
+uniform float uTime;
+uniform vec3 uActiveColor;
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+
+varying vec2 vUv;
+
+float random(vec2 st) {
+  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+void main() {
+  vec2 uv = vUv;
+  float horizon = smoothstep(1.0, 0.18, uv.y);
+  float edge = smoothstep(0.0, 0.22, uv.x) * smoothstep(1.0, 0.78, uv.x);
+  float scan = random(floor(vec2(uv.x * 70.0, uv.y * 8.0 + uTime * 0.4))) * 0.08;
+  vec3 base = vec3(0.024, 0.025, 0.027);
+  vec3 reflection = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.0));
+  vec3 color = mix(base, reflection, horizon * 0.22 + scan);
+  float alpha = horizon * edge * 0.34;
+  gl_FragColor = vec4(color, alpha);
+}
+`;
+
+const environmentFragment = `
+precision highp float;
+
+uniform float uTime;
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+
+varying vec2 vUv;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+void main() {
+  vec2 uv = vUv;
+  float band = smoothstep(1.0, 0.2, uv.y) * smoothstep(0.0, 0.25, uv.y);
+  float flow = noise(vec2(uv.x * 4.0 - uTime * 0.018, uv.y * 1.6));
+  vec3 color = mix(vec3(0.012, 0.013, 0.016), uAmbientColor, 0.12 + flow * 0.18 * clamp(uAmbientIntensity, 0.0, 1.0));
+  gl_FragColor = vec4(color, band * 0.22);
+}
+`;
+
+function normalizeColor(value?: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith("#") || trimmed.startsWith("rgb")) return trimmed;
+  if (/^[0-9a-f]{3,8}$/i.test(trimmed)) return `#${trimmed}`;
+  return trimmed;
+}
+
+function colorFrom(value?: string, fallback = DEFAULT_COLOR) {
+  return new Color(normalizeColor(value) ?? fallback);
+}
+
+function numeric(value: string | number | undefined, fallback: number) {
+  if (value === undefined || value === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function seededRandom(index: number, projectIndex: number, salt: number) {
+  const value = Math.sin(index * 12.9898 + projectIndex * 78.233 + salt * 37.719) * 43758.5453123;
+  return value - Math.floor(value);
+}
+
+function makePlaceholderTexture(color = [20, 20, 20, 255]) {
+  const texture = new DataTexture(new Uint8Array(color), 1, 1, RGBAFormat);
+  texture.needsUpdate = true;
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+function setTextureQuality(texture: Texture, renderer: WebGLRenderer) {
+  texture.colorSpace = SRGBColorSpace;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+}
+
+function tweenColor(target: Color, value?: string, duration = 1.6) {
+  const next = colorFrom(value, `#${target.getHexString()}`);
+  gsap.to(target, {
+    r: next.r,
+    g: next.g,
+    b: next.b,
+    duration,
+    ease: "expo.out",
+  });
+}
 
 export class WebGLBackdrop {
   private root: HTMLElement;
   private renderer: WebGLRenderer;
-  private scene = new Scene();
-  private camera = new PerspectiveCamera(45, 1, 0.1, 100);
-  private group = new Group();
-  private material: MeshStandardMaterial;
+  private backgroundScene = new Scene();
+  private homeScene = new Scene();
+  private thumbScene = new Scene();
+  private mediaScene = new Scene();
+  private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private homeCamera = new PerspectiveCamera(55, 1, 0.1, 2000);
+  private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+  private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
+  private sceneWrap = new Group();
+  private thumbWrap = new Group();
+  private workItems: WorkItem[] = [];
+  private mediaPlanes: MediaPlane[] = [];
+  private loader = new TextureLoader();
+  private textureCache = new Map<string, Texture>();
+  private placeholder = makePlaceholderTexture();
+  private backgroundMaterial: ShaderMaterial;
+  private projectionMaterial: ShaderMaterial;
+  private projectionPlane: Mesh<PlaneGeometry, ShaderMaterial>;
+  private floorMaterial: ShaderMaterial;
+  private floorPlane: Mesh<PlaneGeometry, ShaderMaterial>;
+  private environmentMaterial: ShaderMaterial;
+  private environmentPlane: Mesh<PlaneGeometry, ShaderMaterial>;
+  private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
+  private particles: Points;
+  private raycaster = new Raycaster();
+  private mousePlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private raf = 0;
   private pointer = new Vector2();
-  private targetColor = new Color("#79dbff");
+  private targetPointer = new Vector2();
+  private galleryProgress = 0;
+  private sceneRotation = 0;
+  private zoom = 0;
+  private activeSlug = "";
+  private mouseFactor = 0;
+  private revealSpread = 0;
+  private currentAmbientIntensity = 0.5;
+  private mediaBackground = colorFrom(DEFAULT_BG);
+  private mediaSceneOpacity = 0;
+  private radius = 8;
 
   constructor(root: HTMLElement) {
     this.root = root;
     this.renderer = new WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
     this.renderer.outputColorSpace = SRGBColorSpace;
+    this.renderer.autoClear = false;
+    this.renderer.domElement.className = "gl-canvas";
     this.root.appendChild(this.renderer.domElement);
+    document.body.classList.add("has-webgl");
 
-    this.camera.position.set(0, 0, 8);
-    this.scene.add(this.group);
+    this.homeCamera.position.set(0, 0, 5.5);
+    this.thumbCamera.position.set(0, 0, 1);
+    this.mediaCamera.position.set(0, 0, 1000);
+    this.backgroundMaterial = this.createBackgroundMaterial();
+    this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
+    this.projectionMaterial = this.createProjectionMaterial();
+    this.projectionPlane = new Mesh(new PlaneGeometry(3.9, 2.72), this.projectionMaterial);
+    this.projectionPlane.position.set(0, 0, 0.42);
+    this.floorMaterial = this.createFloorMaterial();
+    this.floorPlane = new Mesh(new PlaneGeometry(8.2, 2.2), this.floorMaterial);
+    this.floorPlane.position.set(0, -1.65, -2.1);
+    this.floorPlane.rotation.x = MathUtils.degToRad(-62);
+    this.environmentMaterial = this.createEnvironmentMaterial();
+    this.environmentPlane = new Mesh(new PlaneGeometry(10, 4), this.environmentMaterial);
+    this.environmentPlane.position.set(0, -2.8, -7.5);
+    this.homeScene.add(this.sceneWrap);
+    this.sceneWrap.add(this.floorPlane);
+    this.sceneWrap.add(this.environmentPlane);
+    this.homeScene.add(this.projectionPlane);
+    this.thumbScene.background = colorFrom("#222222");
+    this.thumbScene.add(this.thumbWrap);
 
-    this.material = new MeshStandardMaterial({
-      color: this.targetColor,
-      roughness: 0.48,
-      metalness: 0.14,
-      transparent: true,
-      opacity: 0.26,
-      wireframe: true,
-    });
+    this.createWorkScene();
+    this.mousePlane = this.createMousePlane();
+    this.particles = this.createParticles();
+    this.homeScene.add(this.particles);
+    this.createMediaPlanes();
 
-    this.addLights();
-    this.addGeometry();
-    this.loadModel();
     this.resize();
     this.bind();
+    gsap.to(this, { mouseFactor: 1, duration: 3, ease: "none" });
     this.tick();
   }
 
-  setProject(payload: PreviewPayload) {
-    if (!payload.color) return;
-    this.targetColor.set(payload.color);
-    gsap.to(this.material.color, {
-      r: this.targetColor.r,
-      g: this.targetColor.g,
-      b: this.targetColor.b,
-      duration: 0.8,
-      ease: "power2.out",
+  setProject(payload: ProjectPayload) {
+    const ambientIntensity = numeric(payload.ambient, 0.5);
+    const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
+    this.activeSlug = payload.slug ?? this.activeSlug;
+    this.setMainColor(payload.color);
+    this.setAmbientLight(ambientColor, ambientIntensity);
+    this.setDarken(numeric(payload.darkness, document.body.classList.contains("is-project") ? 0.25 : 0.1));
+    this.setSaturation(numeric(payload.saturation, 1));
+    this.setContrast(numeric(payload.contrast, 1.15));
+    this.setMediaBackground(payload.mediaColor ?? payload.color);
+    this.setThumbDarknessColor(payload.darknessColor ?? "#000000");
+    this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
+    this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
+    this.setRevealSpread(0);
+
+    if (payload.slug) this.setActiveSlug(payload.slug);
+    if (document.body.classList.contains("is-project")) this.mediaAnimateIn();
+  }
+
+  setActiveSlug(slug: string) {
+    this.activeSlug = slug;
+    const active = this.workItems.find((item) => item.slug === slug);
+    if (active) this.setProjectBlockReveal(active);
+  }
+
+  setGalleryProgress(progress: number, velocity = 0) {
+    this.galleryProgress = progress;
+    const targetRotation = MathUtils.degToRad(progress * 360 + 180);
+    this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * 0.08;
+    this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * 0.08;
+    this.sceneWrap.rotation.y = targetRotation;
+    this.sceneWrap.rotation.z = MathUtils.degToRad(this.sceneRotation);
+    this.homeScene.position.z = this.sceneWrap.rotation.z - this.zoom;
+    this.updateThumbGallery(-progress);
+  }
+
+  setPreviewMode(enabled: boolean) {
+    gsap.to(this, {
+      mouseFactor: enabled ? 0.25 : 1,
+      duration: 3,
+      ease: "none",
+      onUpdate: () => {
+        this.workItems.forEach((item) => {
+          item.material.uniforms.uMouseFactor.value = this.mouseFactor;
+        });
+      },
     });
+  }
+
+  mediaAnimateIn() {
+    this.setMediaOpacity(1, 1.6, "expo.out", 0.25);
+    this.mediaPlanes.forEach((plane) => {
+      gsap.to(plane.translation, {
+        y: 0,
+        duration: 1.6,
+        delay: 0.25,
+        ease: "expo.out",
+      });
+    });
+  }
+
+  refreshMedia() {
+    this.createMediaPlanes();
+    this.resize();
   }
 
   destroy() {
     cancelAnimationFrame(this.raf);
     window.removeEventListener("resize", this.resize);
+    window.removeEventListener("pointermove", this.onPointerMove);
+    window.removeEventListener("scroll", this.onScroll);
+    this.textureCache.forEach((texture) => texture.dispose());
+    this.mediaPlanes.forEach((plane) => {
+      plane.video?.pause();
+      plane.texture?.dispose();
+      plane.mesh.geometry.dispose();
+      plane.material.dispose();
+    });
+    this.workItems.forEach((item) => {
+      item.mesh.geometry.dispose();
+      item.material.dispose();
+      item.thumb.geometry.dispose();
+      item.thumb.material.dispose();
+    });
+    this.backgroundMaterial.dispose();
+    this.projectionPlane.geometry.dispose();
+    this.projectionMaterial.dispose();
+    this.floorPlane.geometry.dispose();
+    this.floorMaterial.dispose();
+    this.environmentPlane.geometry.dispose();
+    this.environmentMaterial.dispose();
+    this.mousePlane.geometry.dispose();
+    this.mousePlane.material.dispose();
+    this.thumbTarget.dispose();
     this.renderer.dispose();
     this.root.replaceChildren();
   }
 
-  private addLights() {
-    this.scene.add(new AmbientLight("#ffffff", 1.4));
-    const key = new DirectionalLight("#ffffff", 2.2);
-    key.position.set(3, 4, 5);
-    this.scene.add(key);
-  }
-
-  private addGeometry() {
-    const count = 14;
-    for (let i = 0; i < count; i++) {
-      const geo = i % 3 === 0 ? new TetrahedronGeometry(0.32, 0) : new BoxGeometry(0.42, 0.42, 0.42);
-      const mesh = new Mesh(geo, this.material);
-      const angle = (i / count) * Math.PI * 2;
-      const radius = 2.2 + (i % 5) * 0.38;
-      mesh.position.set(Math.cos(angle) * radius, Math.sin(angle * 1.7) * 1.1, Math.sin(angle) * radius * 0.35);
-      mesh.rotation.set(i * 0.3, i * 0.5, i * 0.17);
-      this.group.add(mesh);
+  private createWorkScene() {
+    const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-project-card]"));
+    if (!cards.length) {
+      this.sceneWrap.visible = false;
+      return;
     }
+
+    const count = cards.length;
+    const theta = 360 / count;
+    const itemWidth = 6.5;
+    this.radius = Math.round(itemWidth / 2 / Math.tan(Math.PI / count));
+    this.sceneWrap.position.set(0, 0, this.radius - 0.3);
+    this.sceneWrap.rotation.y = Math.PI;
+
+    cards.forEach((card, index) => {
+      const payload = this.payloadFromElement(card);
+      const material = this.createWorkBlockMaterial(payload, card.classList.contains("is-active") ? 1 : 0);
+      const mesh = this.createBlockMesh(material, index);
+      const thumb = this.createThumbPlane(payload);
+      const group = new Group();
+      group.add(mesh);
+      group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius;
+      group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
+      group.lookAt(0, 0, 0);
+      this.sceneWrap.add(group);
+      this.thumbWrap.add(thumb);
+      this.workItems.push({
+        slug: card.dataset.slug ?? String(index),
+        payload,
+        group,
+        material,
+        mesh,
+        thumb,
+        reveal: card.classList.contains("is-active") ? 1 : 0,
+      });
+      if (payload.thumb) this.loadTexture(payload.thumb, (texture) => {
+        thumb.material.uniforms.tMap.value = texture;
+        const image = texture.image as HTMLImageElement | undefined;
+        if (image?.naturalWidth && image?.naturalHeight) {
+          thumb.material.uniforms.uMapSize.value.set(image.naturalWidth, image.naturalHeight);
+        }
+      });
+    });
   }
 
-  private loadModel() {
-    const loader = new GLTFLoader();
-    loader.load(
-      "/models/me/me.gltf",
-      (gltf) => {
-        gltf.scene.traverse((child) => {
-          if (child instanceof Mesh) {
-            child.material = this.material;
+  private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
+    return new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      uniforms: {
+        tThumb: { value: this.thumbTarget.texture },
+        uMapSize: { value: new Vector2(1600, 1200) },
+        uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, GRID_LAYERS) },
+        uTint: { value: colorFrom(payload.color) },
+        uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
+        uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
+        uReveal: { value: reveal },
+        uRevealProject: { value: 1 },
+        uRevealSides: { value: 1 },
+        uRevealSpread: { value: 0 },
+        uRevealSpreadSides: { value: 1 },
+        uDarkness: { value: numeric(payload.darkness, 0.18) },
+        uSaturation: { value: numeric(payload.saturation, 1) },
+        uContrast: { value: numeric(payload.contrast, 1.15) },
+        uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
+        uMouseFactor: { value: this.mouseFactor },
+        uPointer: { value: this.pointer },
+        uTime: { value: 0 },
+      },
+      vertexShader: workBlockVertex,
+      fragmentShader: workBlockFragment,
+    });
+  }
+
+  private createBlockMesh(material: ShaderMaterial, projectIndex: number) {
+    const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 2, 0.05);
+    const count = GRID_COLS * GRID_ROWS * GRID_LAYERS;
+    const matrices = new Array<Matrix4>(count);
+    const gridOffsets = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const alphas = new Float32Array(count);
+    const dummy = new Object3D();
+    const cell = GRID_CUBE_SIZE + GRID_SPACING;
+    const width = (GRID_COLS - 1) * cell;
+    const height = (GRID_ROWS - 1) * cell;
+    const depth = (GRID_LAYERS - 1) * cell;
+    let index = 0;
+
+    for (let z = 0; z < GRID_LAYERS; z++) {
+      for (let x = 0; x < GRID_COLS; x++) {
+        for (let y = 0; y < GRID_ROWS; y++) {
+          dummy.position.set(x * cell - width / 2, y * cell - height / 2, z * cell - depth / 2);
+          dummy.scale.setScalar(1);
+          dummy.rotation.set(0, 0, 0);
+          dummy.updateMatrix();
+          matrices[index] = dummy.matrix.clone();
+          gridOffsets[index * 3] = x / GRID_COLS;
+          gridOffsets[index * 3 + 1] = y / GRID_ROWS;
+          gridOffsets[index * 3 + 2] = z / GRID_LAYERS;
+          colors[index * 3] = seededRandom(index, projectIndex, 1);
+          colors[index * 3 + 1] = seededRandom(index, projectIndex, 2);
+          colors[index * 3 + 2] = seededRandom(index, projectIndex, 3);
+          alphas[index] = seededRandom(index, projectIndex, 4);
+          index++;
+        }
+      }
+    }
+
+    const mesh = new InstancedMesh(geometry, material, count);
+    matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
+    geometry.setAttribute("instanceGrid", new InstancedBufferAttribute(gridOffsets, 3));
+    geometry.setAttribute("instanceAlpha", new InstancedBufferAttribute(alphas, 1));
+    geometry.setAttribute("instanceColor", new InstancedBufferAttribute(colors, 3));
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.scale.setScalar(GRID_SCALE);
+    return mesh;
+  }
+
+  private createThumbPlane(payload: ProjectPayload) {
+    const material = new ShaderMaterial({
+      transparent: false,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tMap: { value: this.placeholder },
+        uMapSize: { value: new Vector2(1, 1) },
+        uResolution: { value: new Vector2(1, 1) },
+        uProgress: { value: 1 },
+        uTransitionCount: { value: 150 },
+        uTransitionSmoothness: { value: 0.2 },
+        uDarkness: { value: numeric(payload.darkness, 0) },
+        uDarknessColor: { value: colorFrom(payload.darknessColor ?? "#000000", "#000000") },
+        uSaturation: { value: numeric(payload.saturation, 1) },
+      },
+      vertexShader: thumbVertex,
+      fragmentShader: thumbFragment,
+    });
+    const mesh = new Mesh(new PlaneGeometry(1, 1), material);
+    mesh.scale.set(2, 2, 2);
+    mesh.visible = false;
+    return mesh;
+  }
+
+  private createBackgroundMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uRatio: { value: 1 },
+        uFluidStrength: { value: 0.5 },
+        uProgress: { value: 0 },
+        uBgColor: { value: colorFrom("#1f1f1f") },
+        uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
+        uAmbientColor: { value: colorFrom("#414652") },
+        uAmbientIntensity: { value: 0.5 },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: backgroundFragment,
+    });
+  }
+
+  private createProjectionMaterial() {
+    return new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      blending: AdditiveBlending,
+      uniforms: {
+        tThumb: { value: this.thumbTarget.texture },
+        uTint: { value: colorFrom(DEFAULT_COLOR) },
+        uReveal: { value: 1 },
+        uOpacity: { value: 0.18 },
+      },
+      vertexShader: thumbVertex,
+      fragmentShader: projectionFragment,
+    });
+  }
+
+  private createFloorMaterial() {
+    return new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
+        uAmbientColor: { value: colorFrom("#414652") },
+        uAmbientIntensity: { value: 0.5 },
+      },
+      vertexShader: thumbVertex,
+      fragmentShader: floorFragment,
+    });
+  }
+
+  private createEnvironmentMaterial() {
+    return new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uAmbientColor: { value: colorFrom("#414652") },
+        uAmbientIntensity: { value: 0.5 },
+      },
+      vertexShader: thumbVertex,
+      fragmentShader: environmentFragment,
+    });
+  }
+
+  private createMousePlane() {
+    const material = new MeshBasicMaterial({ visible: false });
+    const mesh = new Mesh(new PlaneGeometry(GRID_COLS * 1.3 * GRID_SCALE, GRID_ROWS * 1.3 * GRID_SCALE), material);
+    mesh.position.set(0, 0, 0.01);
+    this.homeScene.add(mesh);
+    return mesh;
+  }
+
+  private createParticles() {
+    const geometry = new PlaneGeometry(1, 1);
+    const positions: number[] = [];
+    for (let i = 0; i < 160; i++) {
+      const angle = i * 2.399963;
+      const radius = 1.6 + (i % 37) * 0.075;
+      positions.push(Math.cos(angle) * radius, Math.sin(angle * 0.73) * 2.3, -3.8 + Math.sin(i * 0.61) * 2.1);
+    }
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    const material = new PointsMaterial({
+      color: DEFAULT_COLOR,
+      size: 0.018,
+      transparent: true,
+      opacity: 0.16,
+      depthWrite: false,
+      blending: AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    return new Points(geometry, material);
+  }
+
+  private createMediaPlanes() {
+    const existing = new Set(this.mediaPlanes.map((plane) => plane.track));
+    const tracks = Array.from(document.querySelectorAll<HTMLElement>("[data-media][data-media-src]")).filter(
+      (track) => !existing.has(track),
+    );
+
+    tracks.forEach((track) => {
+      const material = this.createMediaMaterial();
+      const mesh = new Mesh(new PlaneGeometry(1, 1), material);
+      const plane: MediaPlane = {
+        track,
+        mesh,
+        material,
+        src: track.dataset.mediaSrc ?? "",
+        type: track.dataset.mediaType ?? track.dataset.mediaSrc?.split(".").pop() ?? "",
+        translation: new Vector2(0, -100),
+        offset: new Vector2(),
+        loaded: false,
+      };
+      material.uniforms.uMapSize.value.set(
+        numeric(track.dataset.mediaWidth, 1600),
+        numeric(track.dataset.mediaHeight, 1200),
+      );
+      this.mediaScene.add(mesh);
+      this.mediaPlanes.push(plane);
+      this.observeMediaPlane(plane);
+    });
+  }
+
+  private createMediaMaterial() {
+    return new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tMap: { value: this.placeholder },
+        uContainerSize: { value: new Vector2(1, 1) },
+        uMapSize: { value: new Vector2(1600, 1200) },
+        uCameraDistance: { value: 0 },
+        uRadius: { value: 0 },
+        uBackgroundColor: { value: this.mediaBackground.clone() },
+        uReveal: { value: 0 },
+        uSceneOpacity: { value: 0 },
+      },
+      vertexShader: projectMediaVertex,
+      fragmentShader: projectMediaFragment,
+    });
+  }
+
+  private observeMediaPlane(plane: MediaPlane) {
+    if (!("IntersectionObserver" in window)) {
+      this.loadMediaPlane(plane);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.target !== plane.track) return;
+          if (entry.isIntersecting) {
+            this.loadMediaPlane(plane);
+            void plane.video?.play();
+          } else {
+            plane.video?.pause();
           }
         });
-        gltf.scene.scale.setScalar(0.68);
-        gltf.scene.position.set(2.8, -1.2, -0.6);
-        this.group.add(gltf.scene);
       },
-      undefined,
-      () => undefined,
+      { rootMargin: "20% 0px", threshold: 0 },
     );
+    observer.observe(plane.track);
+  }
+
+  private loadMediaPlane(plane: MediaPlane) {
+    if (plane.loaded || !plane.src) return;
+    plane.loaded = true;
+    if (plane.type === "video" || /\.(mp4|mov|webm)$/i.test(plane.src)) {
+      const video = Object.assign(document.createElement("video"), {
+        crossOrigin: "anonymous",
+        muted: true,
+        loop: true,
+        playsInline: true,
+        preload: "metadata",
+        src: plane.src,
+      });
+      plane.video = video;
+      video.addEventListener("loadedmetadata", () => {
+        plane.material.uniforms.uMapSize.value.set(video.videoWidth || 1600, video.videoHeight || 1200);
+        const texture = new VideoTexture(video);
+        setTextureQuality(texture, this.renderer);
+        plane.texture = texture;
+        plane.material.uniforms.tMap.value = texture;
+        this.showMediaPlane(plane);
+        void video.play();
+      });
+      video.load();
+      return;
+    }
+
+    this.loader.load(plane.src, (texture) => {
+      setTextureQuality(texture, this.renderer);
+      const image = texture.image as HTMLImageElement | undefined;
+      if (image?.naturalWidth && image?.naturalHeight) {
+        plane.material.uniforms.uMapSize.value.set(image.naturalWidth, image.naturalHeight);
+      }
+      plane.texture = texture;
+      plane.material.uniforms.tMap.value = texture;
+      this.showMediaPlane(plane);
+    });
+  }
+
+  private showMediaPlane(plane: MediaPlane) {
+    gsap.fromTo(plane.material.uniforms.uReveal, { value: 0 }, { value: 1, duration: 0.5, ease: "none" });
+  }
+
+  private setProjectBlockReveal(active: WorkItem) {
+    this.workItems.forEach((item) => {
+      const isActive = item === active;
+      item.reveal = isActive ? 1 : 0;
+      gsap.to(item.material.uniforms.uReveal, {
+        value: isActive ? 1 : 0,
+        delay: isActive ? 0.2 : 0,
+        duration: isActive ? 4 : 1.6,
+        ease: "power4.out",
+      });
+      gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" });
+      if (isActive) {
+        tweenColor(item.material.uniforms.uTint.value as Color, active.payload.color, 1.6);
+        tweenColor(this.projectionMaterial.uniforms.uTint.value as Color, active.payload.color, 1.6);
+        tweenColor(item.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
+        tweenColor(item.material.uniforms.uBlockColor.value as Color, active.payload.blocks ?? active.payload.mediaColor ?? DEFAULT_BG, 1.6);
+        gsap.to(item.material.uniforms.uDarkness, { value: numeric(active.payload.darkness, 0.18), duration: 1.6, ease: "expo.out" });
+        gsap.to(item.material.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
+        gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" });
+        gsap.to(item.material.uniforms.uMouseLightness, { value: numeric(active.payload.mouseLightness, 1), duration: 1.6, ease: "expo.out" });
+        gsap.to(item.thumb.material.uniforms.uDarkness, { value: numeric(active.payload.darkness, 0), duration: 1.6, ease: "expo.out" });
+        tweenColor(item.thumb.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
+        gsap.to(item.thumb.material.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
+      }
+    });
+  }
+
+  private setMainColor(color?: string) {
+    const elements = document.querySelectorAll<HTMLElement>(".c-color");
+    const next = colorFrom(color);
+    tweenColor(this.backgroundMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
+    tweenColor(this.floorMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
+    elements.forEach((element) => {
+      gsap.to(element, {
+        color: `rgb(${Math.round(next.r * 255)}, ${Math.round(next.g * 255)}, ${Math.round(next.b * 255)})`,
+        duration: 1.6,
+        ease: "expo.out",
+      });
+    });
+    const particleMaterial = this.particles.material as PointsMaterial;
+    tweenColor(particleMaterial.color, color, 1.6);
+  }
+
+  private setAmbientLight(color?: string, intensity = 0.5) {
+    this.currentAmbientIntensity = intensity;
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uTint.value as Color, color, 1.6);
+    });
+    tweenColor(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
+    tweenColor(this.floorMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
+    tweenColor(this.environmentMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
+    gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
+      value: intensity,
+      duration: 1.6,
+      ease: "expo.out",
+    });
+    gsap.to(this.floorMaterial.uniforms.uAmbientIntensity, {
+      value: intensity,
+      duration: 1.6,
+      ease: "expo.out",
+    });
+    gsap.to(this.environmentMaterial.uniforms.uAmbientIntensity, {
+      value: intensity,
+      duration: 1.6,
+      ease: "expo.out",
+    });
+    gsap.to(this.particles.material as PointsMaterial, {
+      opacity: MathUtils.clamp(0.06 + intensity * 0.12, 0.05, 0.24),
+      duration: 1.6,
+      ease: "expo.out",
+    });
+  }
+
+  private setDarken(value: number) {
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uDarkness, { value, duration: 1.6, ease: "expo.out" });
+    });
+  }
+
+  private setSaturation(value: number) {
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
+    });
+  }
+
+  private setContrast(value: number) {
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
+    });
+  }
+
+  private setThumbDarknessColor(value?: string) {
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uDarknessColor.value as Color, value, 1.6);
+      if (item.slug === this.activeSlug) tweenColor(item.thumb.material.uniforms.uDarknessColor.value as Color, value ?? "#000000", 1.6);
+    });
+  }
+
+  private setThumbMouseLightness(value: number) {
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uMouseLightness, { value, duration: 1.6, ease: "expo.out" });
+    });
+  }
+
+  private setMediaBackground(value?: string) {
+    this.mediaBackground = colorFrom(value, DEFAULT_BG);
+    this.mediaPlanes.forEach((plane) => tweenColor(plane.material.uniforms.uBackgroundColor.value as Color, value, 1.6));
+  }
+
+  private setBlocksColor(value?: string) {
+    this.workItems.forEach((item) => {
+      if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uBlockColor.value as Color, value ?? DEFAULT_BG, 1.6);
+    });
+  }
+
+  private setRevealSpread(value: number, duration = 1.6, ease = "power4.out") {
+    gsap.to(this, {
+      revealSpread: value,
+      duration,
+      ease,
+      onUpdate: () => {
+        this.workItems.forEach((item) => {
+          item.material.uniforms.uRevealSpread.value = this.revealSpread;
+        });
+      },
+    });
+  }
+
+  private setMediaOpacity(value: number, duration = 1.6, ease = "expo.out", delay = 0.25) {
+    gsap.to(this, {
+      mediaSceneOpacity: value,
+      duration,
+      ease,
+      delay,
+      onUpdate: () => {
+        this.mediaPlanes.forEach((plane) => {
+          plane.material.uniforms.uSceneOpacity.value = this.mediaSceneOpacity;
+        });
+      },
+    });
+  }
+
+  private loadTexture(src: string, onLoad: (texture: Texture) => void) {
+    const cached = this.textureCache.get(src);
+    if (cached) {
+      onLoad(cached);
+      return;
+    }
+    this.loader.load(src, (texture) => {
+      setTextureQuality(texture, this.renderer);
+      this.textureCache.set(src, texture);
+      onLoad(texture);
+    });
+  }
+
+  private payloadFromElement(element: HTMLElement): ProjectPayload {
+    return {
+      slug: element.dataset.slug ?? element.dataset.project,
+      color: element.dataset.color,
+      secondary: element.dataset.secondary,
+      invert: element.dataset.invert,
+      mediaColor: element.dataset.mediaColor,
+      thumb: element.dataset.thumb,
+      blocks: element.dataset.blocks,
+      ambient: element.dataset.ambient,
+      darkness: element.dataset.darkness,
+      darknessColor: element.dataset.darknessColor,
+      saturation: element.dataset.saturation,
+      contrast: element.dataset.contrast,
+      mouseLightness: element.dataset.mouseLightness,
+    };
   }
 
   private bind() {
-    this.resize = this.resize.bind(this);
     window.addEventListener("resize", this.resize);
-    window.addEventListener("pointermove", (event) => {
-      this.pointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
-      this.pointer.y = (event.clientY / window.innerHeight - 0.5) * 2;
+    window.addEventListener("pointermove", this.onPointerMove, { passive: true });
+    window.addEventListener("scroll", this.onScroll, { passive: true });
+  }
+
+  private onPointerMove = (event: PointerEvent) => {
+    this.targetPointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
+    this.targetPointer.y = -(event.clientY / window.innerHeight - 0.5) * 2;
+  };
+
+  private onScroll = () => {
+    this.updateMediaPlanePositions();
+  };
+
+  private resize = () => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio, 1.6);
+    this.renderer.setSize(width, height, false);
+    this.homeCamera.aspect = width / height;
+    this.homeCamera.updateProjectionMatrix();
+    this.backgroundMaterial.uniforms.uRatio.value = width / height;
+    const thumbSize = Math.max(512, Math.round(height * dpr));
+    this.thumbTarget.setSize(thumbSize, thumbSize);
+
+    const distance = 1000;
+    this.mediaCamera.fov = MathUtils.radToDeg(2 * Math.atan(height / (2 * distance)));
+    this.mediaCamera.aspect = width / height;
+    this.mediaCamera.position.set(0, 0, distance);
+    this.mediaCamera.updateProjectionMatrix();
+
+    const mobile = width < BREAKPOINT_LG;
+    this.sceneWrap.visible = !mobile && this.workItems.length > 0;
+    this.projectionPlane.visible = this.sceneWrap.visible;
+    this.mediaPlanes.forEach((plane) => {
+      plane.mesh.visible = !mobile;
+      const rect = plane.track.getBoundingClientRect();
+      const style = window.getComputedStyle(plane.track);
+      plane.offset.set(-width / 2 + rect.width / 2 + rect.left, height / 2 - rect.height / 2 - (rect.top + window.scrollY));
+      plane.mesh.scale.set(rect.width, rect.height, 1);
+      plane.material.uniforms.uContainerSize.value.set(Math.max(1, rect.width), Math.max(1, rect.height));
+      plane.material.uniforms.uRadius.value = parseFloat(style.borderRadius) || 0;
+      plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
+    });
+    this.updateMediaPlanePositions();
+  };
+
+  private updateMediaPlanePositions() {
+    const scroll = window.scrollY;
+    this.mediaPlanes.forEach((plane) => {
+      plane.mesh.position.x = plane.offset.x + plane.translation.x;
+      plane.mesh.position.y = plane.offset.y + plane.translation.y + scroll;
+      plane.material.uniforms.uCameraDistance.value =
+        plane.track.dataset.mediaParallax === "top" ? -scroll : -plane.mesh.position.y;
     });
   }
 
-  private resize() {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height, false);
+  private updateThumbGallery(progress: number) {
+    if (!this.workItems.length) return;
+    const itemWidth = 2;
+    const totalWidth = this.workItems.length * itemWidth;
+    const thumbProgress = progress * totalWidth;
+    this.workItems.forEach((item, index) => {
+      const hook = itemWidth * index;
+      let x = (hook + thumbProgress + totalWidth * 67890) % totalWidth;
+      if (x > totalWidth / 2) x -= totalWidth;
+      item.thumb.position.set(x, 0, 0);
+      item.thumb.visible = x >= -1.5 && x <= 1.5;
+      item.thumb.material.uniforms.uProgress.value = item.slug === this.activeSlug ? 1 : 0.35;
+    });
+  }
+
+  private updatePointerProjection() {
+    if (!this.sceneWrap.visible) return;
+    this.raycaster.setFromCamera(this.pointer, this.homeCamera);
+    const hit = this.raycaster.intersectObject(this.mousePlane, false)[0];
+    if (!hit) return;
+    const x = MathUtils.clamp(hit.point.x / (GRID_COLS * GRID_SCALE * 0.5) * 0.5 + 0.5, 0, 1);
+    const y = MathUtils.clamp(hit.point.y / (GRID_ROWS * GRID_SCALE * 0.5) * 0.5 + 0.5, 0, 1);
+    this.workItems.forEach((item) => {
+      item.material.uniforms.uPointer.value.set(x * 2 - 1, y * 2 - 1);
+    });
   }
 
   private tick = () => {
-    const t = performance.now() * 0.00035;
-    this.group.rotation.y += 0.0025;
-    this.group.rotation.x += (this.pointer.y * 0.16 - this.group.rotation.x) * 0.03;
-    this.group.position.x += (this.pointer.x * 0.32 - this.group.position.x) * 0.04;
-    this.group.children.forEach((child, index) => {
-      child.rotation.x += 0.004 + index * 0.00004;
-      child.rotation.y += 0.006;
-      child.position.y += Math.sin(t + index) * 0.0008;
+    const time = performance.now() * 0.001;
+    this.pointer.lerp(this.targetPointer, 0.055);
+    this.updatePointerProjection();
+    this.workItems.forEach((item) => {
+      item.material.uniforms.uTime.value = time;
+      item.material.uniforms.uMouseFactor.value = this.mouseFactor;
+      const world = new Vector3();
+      item.group.getWorldPosition(world);
+      item.group.visible = !(world.x > 5.5 || world.x < -5.5 || world.z > 5);
+      const sideReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 0, 5, 0, 1), 0, 1);
+      const sideSpreadReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 2, 6, 0, 1), 0, 1);
+      item.material.uniforms.uRevealSides.value = sideReveal;
+      item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
     });
-    this.renderer.render(this.scene, this.camera);
+    this.sceneWrap.rotation.x += (this.pointer.y * 0.035 - this.sceneWrap.rotation.x) * 0.04;
+    this.particles.rotation.z = time * 0.015 + this.galleryProgress * Math.PI * 0.2;
+    this.particles.position.x = this.pointer.x * 0.1;
+    this.particles.position.y = this.pointer.y * 0.08;
+    this.backgroundMaterial.uniforms.uTime.value = time;
+    this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
+    this.floorMaterial.uniforms.uTime.value = time;
+    this.environmentMaterial.uniforms.uTime.value = time;
+    this.updateMediaPlanePositions();
+
+    this.renderer.clear();
+    this.renderer.setRenderTarget(this.thumbTarget);
+    this.renderer.clear();
+    this.renderer.render(this.thumbScene, this.thumbCamera);
+    this.renderer.setRenderTarget(null);
+    if (this.sceneWrap.visible || this.mediaPlanes.some((plane) => plane.mesh.visible)) {
+      this.renderer.render(this.backgroundScene, this.backgroundCamera);
+    }
+    if (this.sceneWrap.visible) this.renderer.render(this.homeScene, this.homeCamera);
+    if (this.mediaPlanes.some((plane) => plane.mesh.visible)) this.renderer.render(this.mediaScene, this.mediaCamera);
     this.raf = requestAnimationFrame(this.tick);
   };
 }
