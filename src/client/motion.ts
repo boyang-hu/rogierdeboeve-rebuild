@@ -115,7 +115,7 @@ function initIntroAnimations() {
         stagger: 0.03,
         ease: "expo.out",
         delay: 0,
-        clearProps: "transform,opacity",
+        clearProps: "opacity",
       },
     );
   }
