@@ -91,6 +91,7 @@ const SOURCE_LOW_RES_GRID_LAYERS = 4;
 const GRID_CUBE_SIZE = 1.25;
 const GRID_SPACING = 0.1;
 const GRID_SCALE = 0.09;
+const MOUSE_SIM_SCALE = 4;
 
 const projectMediaVertex = `
 varying vec2 vUv;
@@ -228,8 +229,10 @@ void main() {
   transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
   transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
+  vec3 spotTransformed = transformed / max(0.001, 1.0 - mouse * 0.2);
   vec4 mvPosition = instanceMatrix * vec4(transformed, 1.0);
-  vec4 worldPosition = modelMatrix * mvPosition;
+  vec4 spotMvPosition = instanceMatrix * vec4(spotTransformed, 1.0);
+  vec4 worldPosition = modelMatrix * spotMvPosition;
   vec3 lightDir = normalize(uSpotLightTarget - uSpotLightPosition);
   vec3 fromLight = worldPosition.xyz - uSpotLightPosition;
   float lightDepth = max(0.001, dot(fromLight, lightDir));
@@ -341,9 +344,11 @@ void main() {
   color *= 0.78 + mouseLight * 0.18;
   color = mix(color, color * vec3(mouseF), 1.0 - uMouseLightness);
 
-  vec2 gridUv = floor(uv * vec2(35.0, 23.0));
-  vec2 gridUv2 = floor(vec2(uv.y * 23.0, uv.x * 23.0));
-  float alpha = random(gridUv) * random(gridUv2) * vAlpha;
+  vec2 gridUv = vec2(floor(uv.x * 35.0), floor(uv.y * 23.0));
+  vec2 gridUv2 = vec2(floor(uv.y * 23.0), floor(uv.x * 23.0));
+  float alpha1 = mix(random(gridUv * vAlpha), random(gridUv), 1.0);
+  float alpha2 = mix(random(gridUv2 * vAlpha), random(gridUv2), 1.0);
+  float alpha = alpha1 * alpha2 * vAlpha;
   float revealCombined = clamp(vReveal, 0.0, 1.0);
   float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
   float centerAlpha = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
@@ -351,7 +356,6 @@ void main() {
   if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
   alpha += centerAlpha * 0.1;
   alpha -= 1.0 - revealAlpha;
-  alpha = max(alpha, logoMask * revealCombined * 0.16);
   alpha *= uRevealSides;
 
   gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.9));
@@ -2356,13 +2360,12 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
-    const simWidth = Math.max(1, Math.round(renderWidth / 10));
-    const simHeight = Math.max(1, Math.round(renderHeight / 10));
+    const simWidth = Math.max(1, Math.round(width / MOUSE_SIM_SCALE));
+    const simHeight = Math.max(1, Math.round(height / MOUSE_SIM_SCALE));
     this.screenMouseSimulationTargets.forEach((target) => target.setSize(simWidth, simHeight));
     this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(simWidth, simHeight);
-    const meshSimWidth = Math.max(1, Math.round(simWidth * (GRID_COLS / GRID_ROWS)));
-    this.mouseSimulationTargets.forEach((target) => target.setSize(meshSimWidth, simHeight));
-    this.mouseSimulationMaterial.uniforms.uCoords.value.set(meshSimWidth, simHeight);
+    this.mouseSimulationTargets.forEach((target) => target.setSize(simWidth, simHeight));
+    this.mouseSimulationMaterial.uniforms.uCoords.value.set(simWidth, simHeight);
     const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
