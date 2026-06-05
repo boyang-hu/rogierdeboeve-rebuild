@@ -121,8 +121,12 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
   clearWorkPreview(webgl);
   document.documentElement.classList.add("is-work-gallery-leaving");
   if (!prefersReducedMotion()) {
-    gsap.to(".ui-header-description .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
-    gsap.to(".ui-header-availability .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
+    const descriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
+    const availabilityTargets = gsap.utils.toArray<HTMLElement>(".ui-header-availability .ui-header-part-inner");
+    gsap.killTweensOf(descriptionTargets);
+    gsap.killTweensOf(availabilityTargets);
+    gsap.to(descriptionTargets, { opacity: 0, duration: 0.5, ease: "none" });
+    gsap.to(availabilityTargets, { opacity: 0, duration: 0.5, ease: "none" });
   }
   webgl?.hideWorkScene?.();
 }
@@ -225,6 +229,7 @@ function initMenu() {
   const nav = document.querySelector<HTMLElement>(".ui-nav-mobile");
   const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
   const links = Array.from(nav?.querySelectorAll<HTMLAnchorElement>(".ui-nav-mobile-a") ?? []);
+  const cleanupCallbacks: Array<() => void> = [];
   const close = () => {
     nav?.classList.remove("is-active");
     document.documentElement.classList.remove("is-nav-mobile-open");
@@ -238,23 +243,33 @@ function initMenu() {
     gsap.fromTo(nav, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "none" });
   }
 
-  toggle?.addEventListener("click", () => {
+  const onToggleClick = () => {
     const active = nav?.classList.toggle("is-active") ?? false;
     document.documentElement.classList.toggle("is-nav-mobile-open", active);
-    toggle.setAttribute("aria-expanded", String(active));
-  });
+    toggle?.setAttribute("aria-expanded", String(active));
+  };
+  toggle?.addEventListener("click", onToggleClick);
+  cleanupCallbacks.push(() => toggle?.removeEventListener("click", onToggleClick));
 
-  links.forEach((link) =>
-    link.addEventListener("click", () => {
+  links.forEach((link) => {
+    const onClick = () => {
       window.setTimeout(() => {
         setActive(link.dataset.slug);
         close();
       }, 300);
-    }),
-  );
-  window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") close();
+    };
+    link.addEventListener("click", onClick);
+    cleanupCallbacks.push(() => link.removeEventListener("click", onClick));
   });
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") close();
+  };
+  window.addEventListener("keydown", onKeyDown);
+  cleanupCallbacks.push(() => window.removeEventListener("keydown", onKeyDown));
+  return () => {
+    cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
+    close();
+  };
 }
 
 function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
@@ -982,8 +997,8 @@ function boot() {
     }
   });
 
-  initMenu();
   initSoundToggle();
+  cleanupCallbacks.push(initMenu() ?? (() => {}));
   cleanupCallbacks.push(initButtons());
   cleanupCallbacks.push(initWorkPreview(() => webgl));
   cleanupCallbacks.push(initProjectMedia());

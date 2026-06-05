@@ -28,84 +28,116 @@ function initLenis() {
 }
 
 function initIntroAnimations() {
-  if (prefersReducedMotion()) return;
-
   const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary");
   const contentTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro > *, .c-list-section");
   const navInnerTargets = gsap.utils.toArray<HTMLElement>(".ui-nav-a-inner");
+  const navLinkTargets = gsap.utils.toArray<HTMLElement>(".ui-nav-a");
   const headerDescriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
   const headerAvailabilityTargets = gsap.utils.toArray<HTMLElement>(".ui-header-availability .ui-header-part-inner");
   const titleTargets = gsap.utils.toArray<HTMLElement>(".ui-title-inner");
   const footerSocialTargets = gsap.utils.toArray<HTMLElement>(".social-a > span");
   const footerContactTargets = gsap.utils.toArray<HTMLElement>(".ui-footer-contact a > span");
+  const tweens: gsap.core.Tween[] = [];
+
+  if (prefersReducedMotion()) {
+    navLinkTargets.forEach((link) => {
+      link.style.pointerEvents = "auto";
+    });
+    navInnerTargets.forEach((target) => {
+      target.style.opacity = "1";
+      target.style.transform = "translate3d(0, 0, 0)";
+    });
+    return () => {
+      navLinkTargets.forEach((link) => {
+        link.style.pointerEvents = "";
+      });
+      navInnerTargets.forEach((target) => {
+        target.style.opacity = "";
+        target.style.transform = "";
+      });
+    };
+  }
 
   if (chromeTargets.length) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       chromeTargets,
       { y: 18, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: "expo.out" },
-    );
+    ));
   }
 
   if (navInnerTargets.length) {
-    gsap.fromTo(
+    navLinkTargets.forEach((link) => {
+      link.style.pointerEvents = "none";
+    });
+    tweens.push(gsap.to(
       navInnerTargets,
-      { y: "102%", opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.8, stagger: 0.01, ease: "expo.out", clearProps: "transform,opacity" },
-    );
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1.8,
+        stagger: 0.01,
+        ease: "expo.out",
+        onStart: () => {
+          navLinkTargets.forEach((link) => {
+            link.style.pointerEvents = "all";
+          });
+        },
+      },
+    ));
   }
 
   if (contentTargets.length) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       contentTargets,
       { y: 26, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.15, stagger: 0.045, ease: "expo.out", delay: 0.2 },
-    );
+    ));
   }
 
   if (headerDescriptionTargets.length) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       headerDescriptionTargets,
       { y: "130%", opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.8, ease: "expo.out", clearProps: "transform,opacity" },
-    );
+      { y: 0, opacity: 1, duration: 1.8, ease: "expo.out" },
+    ));
   }
 
   if (headerAvailabilityTargets.length) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       headerAvailabilityTargets,
       { y: "130%", opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.8, ease: "expo.out", clearProps: "transform,opacity" },
-    );
+      { y: 0, opacity: 1, duration: 1.8, ease: "expo.out" },
+    ));
   }
 
   if (titleTargets.length) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       titleTargets,
       { y: "102%" },
-      { y: 0, duration: 1.8, stagger: 0.01, ease: "expo.out", clearProps: "transform" },
-    );
+      { y: 0, duration: 1.8, stagger: 0.01, ease: "expo.out" },
+    ));
   }
 
   if (footerSocialTargets.length) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       footerSocialTargets,
       { y: "102%" },
-      { y: 0, duration: 1.8, stagger: 0.06, ease: "expo.out", delay: 0.4, clearProps: "transform" },
-    );
+      { y: 0, duration: 1.8, stagger: 0.06, ease: "expo.out", delay: 0.4 },
+    ));
   }
 
   if (footerContactTargets.length) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       footerContactTargets,
       { y: "102%" },
-      { y: 0, duration: 1.8, stagger: 0.06, ease: "expo.out", delay: 0.5, clearProps: "transform" },
-    );
+      { y: 0, duration: 1.8, stagger: 0.06, ease: "expo.out", delay: 0.5 },
+    ));
   }
 
   const workLinks = gsap.utils.toArray<HTMLElement>(".ui-work-a > span");
   if (workLinks.length && window.matchMedia("(min-width: 1000px)").matches) {
-    gsap.fromTo(
+    tweens.push(gsap.fromTo(
       workLinks,
       { y: "102%", opacity: 0 },
       {
@@ -117,8 +149,15 @@ function initIntroAnimations() {
         delay: 0,
         clearProps: "opacity",
       },
-    );
+    ));
   }
+
+  return () => {
+    tweens.forEach((tween) => tween.kill());
+    navLinkTargets.forEach((link) => {
+      link.style.pointerEvents = "";
+    });
+  };
 }
 
 function initProjectHeaderAnimation() {
@@ -197,10 +236,11 @@ function initMediaReveals() {
 export function initMotion() {
   const cleanupLenis = initLenis();
   const cleanupFooter = initFooterContactLabel();
-  initIntroAnimations();
+  const cleanupIntro = initIntroAnimations();
   initProjectHeaderAnimation();
   initMediaReveals();
   return () => {
+    cleanupIntro();
     cleanupLenis();
     cleanupFooter();
   };

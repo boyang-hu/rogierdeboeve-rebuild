@@ -259,8 +259,7 @@ body.has-entered .gl {
 }
 
 .ui-header a,
-.ui-header button,
-.ui-nav a {
+.ui-header button {
   pointer-events: auto;
 }
 
@@ -334,7 +333,7 @@ body.has-entered .gl {
   padding-left: 1.25rem;
   margin-left: -1.25rem;
   opacity: 0.45;
-  pointer-events: auto;
+  pointer-events: none;
   overflow: hidden;
   transition: opacity 0.3s ease-in-out;
 }
