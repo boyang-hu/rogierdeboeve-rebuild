@@ -1237,7 +1237,6 @@ function numeric(value: string | number | undefined, fallback: number) {
 function makePlaceholderTexture(color = [20, 20, 20, 255]) {
   const texture = new DataTexture(new Uint8Array(color), 1, 1, RGBAFormat);
   texture.needsUpdate = true;
-  texture.colorSpace = SRGBColorSpace;
   return texture;
 }
 
@@ -1252,13 +1251,7 @@ function makeSimulationTarget() {
 }
 
 function makeSourceRenderTarget(depthBuffer = false) {
-  const target = new WebGLRenderTarget(1, 1, { depthBuffer, stencilBuffer: false });
-  target.texture.generateMipmaps = false;
-  target.texture.minFilter = LinearFilter;
-  target.texture.magFilter = LinearFilter;
-  target.texture.wrapS = ClampToEdgeWrapping;
-  target.texture.wrapT = ClampToEdgeWrapping;
-  return target;
+  return new WebGLRenderTarget(1, 1, { depthBuffer, stencilBuffer: false });
 }
 
 function setTextureQuality(texture: Texture, renderer: WebGLRenderer) {

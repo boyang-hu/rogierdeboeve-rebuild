@@ -119,6 +119,32 @@ Measured luma again shows this is a source-correct cleanup, not the main brightn
 
 Decision: keep the `VA` tail bridge because it removes a source-proven Three 0.184 output-tail deviation. The next batch should audit `S1-13` render-target/color-space assumptions before attempting the riskier full `VA` shader replacement.
 
+### S1-13 Render-Target Defaults Result
+
+The first focused render-target/color-space audit is now implemented:
+
+- `makeSourceRenderTarget()` now uses the source-shaped `new WebGLRenderTarget(1, 1, { depthBuffer, stencilBuffer:false })` default path instead of restating clone defaults locally.
+- Placeholder `DataTexture` objects no longer force `SRGBColorSpace`, matching the source render-target/default-texture assumptions more closely.
+- Loaded image textures and cube textures still keep explicit `SRGBColorSpace` for now because those assets are external color images under Three 0.184; broad removal needs stronger source evidence and visual QA.
+
+Verification passed:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s113` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma confirms this cleanup is not the main brightness fix:
+
+| Capture | Original luma | Rebuild luma after S1-13 | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.011` | Essentially unchanged from the sky/VA-tail batches. |
+| Home mobile | `0.056` | `0.012` | Essentially unchanged. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project composite remains stable. |
+
+Decision: keep the render-target default cleanup because it removes a rebuild-only assumption and did not regress project pages. The next high-value path is either a tightly isolated full `VA` shader replacement or a shared `A1/C1/OA` color/composite audit, because luma remains low across both home and project captures.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |
