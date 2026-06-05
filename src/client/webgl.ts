@@ -349,7 +349,7 @@ diffuseColor.a *= material.transmissionAlpha;
 vec3 sourceColor = outgoingLight;
 vec2 sourceUv = vLocalUv / uGridSize.xy + vThumbUv;
 vec2 projectedUv = (sourceUv - 0.5) * 0.48 + 0.5;
-vec3 gridThumb = mix(texture2D(tThumb, sourceUv).rgb, texture2D(tThumb, projectedUv).rgb, 0.22);
+vec3 gridThumb = mix(texture2D(tThumb, sourceUv).rgb, texture2D(tThumb, projectedUv).rgb, 0.12);
 vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
 float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
 vec3 thumb = mix(gridThumb, spotThumb, spotMask * uSpotMapIntensity);
@@ -358,12 +358,12 @@ thumb = sourceSaturateColor(thumb, uSaturation);
 float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
 float centerMask = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
 float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.6) * spotMask;
-float centeredLum = lum * (0.3 + centerMask * 0.45 + spotCenter * 0.65 * uSpotMapIntensity);
+float centeredLum = lum * (0.24 + centerMask * 0.32 + spotCenter * 0.42 * uSpotMapIntensity);
 float lightMask = smoothstep(0.14, 0.66, centeredLum);
-lightMask *= (0.07 + centerMask * 0.14 + spotCenter * 0.2) * uSpotMapIntensity;
-vec3 projection = mix(uTint * 0.08, thumb, 0.16 + spotMask * 0.05);
-sourceColor = mix(sourceColor, sourceColor + projection * (0.025 + spotMask * 0.035), lightMask);
-sourceColor += thumb * spotMask * 0.015 * uSpotMapIntensity;
+lightMask *= (0.04 + centerMask * 0.08 + spotCenter * 0.12) * uSpotMapIntensity;
+vec3 projection = mix(uTint * 0.05, thumb, 0.1 + spotMask * 0.03);
+sourceColor = mix(sourceColor, sourceColor + projection * (0.014 + spotMask * 0.02), lightMask);
+sourceColor += thumb * spotMask * 0.006 * uSpotMapIntensity;
 sourceColor = mix(sourceColor, uDarknessColor, uDarkness * 0.08);
 
 vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
@@ -1586,7 +1586,7 @@ export class WebGLBackdrop {
       uRoughness: { value: SOURCE_WORK_ROUGHNESS },
       uMetalness: { value: SOURCE_WORK_METALNESS },
       uEnvMapIntensity: { value: SOURCE_WORK_ENVMAP_INTENSITY },
-      uSpotMapIntensity: { value: 0.35 },
+      uSpotMapIntensity: { value: 0.18 },
       uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
       uReveal: { value: reveal },
       uRevealProject: { value: 1 },
