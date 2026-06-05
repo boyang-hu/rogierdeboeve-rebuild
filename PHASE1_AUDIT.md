@@ -65,6 +65,34 @@ This audit table records the next source-proven differences to address after the
 | S1-15 | `a1/o1/i1` floor material | Source floor is a dedicated material chain and participates in the same environment/reflection feel beneath the cubes. | Rebuild floor is an approximation using a reflection target and local scan/reflection math. | Medium. It may contribute to lower-viewport darkness but is less likely than missing `V1` to explain the full-screen luma gap. | Defer until after sky/environment measurement. Keep as an isolated batch. |
 | S1-16 | Shared project composite/background darkness | Source project luma is also higher (`/gc-2026/` about `0.140` original vs `0.039` rebuild), suggesting part of the issue may be shared `A1/C1` or media-background handling, not only home cubes. | Project media markers and WebGL planes remain stable, but background/composite appears darker. | Medium. Project pages are closer and should stay regression checks; changing shared composite can regress them. | Keep project pages in every full QA pass. Do not tune project visuals separately until home `V1/tSky` and render-target assumptions are narrowed. |
 
+### S1-10/S1-11 Implementation Result
+
+The source-shaped sky/environment bridge is now implemented:
+
+- Added a dedicated offscreen `skyScene` with `#666666.convertLinearToSRGB()` background.
+- Added a `z1/B1`-shaped sky composite pass and `height * .75` square render targets.
+- Set the sky composite texture to repeat wrapping and feed it to `environmentMaterial.uniforms.tSky`.
+- Stopped assigning raw `/images/textures/blue-noise.png` directly to the environment `tSky`; blue-noise remains scoped to pre-composite and mouse simulation.
+- Moved the environment fragment closer to source `l1` by removing the rebuild-only low-alpha transparent band and outputting the source-style full environment color path.
+
+Verification passed:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-sky-env-full` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma shows this source gap was real but not the main brightness fix:
+
+| Capture | Original luma | Rebuild luma after S1-10/S1-11 | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.011` | Slight improvement from `~0.010`, still far too dark. |
+| Home mobile | `0.056` | `0.012` | Essentially unchanged. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project composite remains in the previous range. |
+
+Decision: keep the sky/environment bridge because it removes a source-proven architecture gap, but do not continue tuning this path blindly. The next implementation batch should target `S1-12` (`VA` full fragment/tone-mapping path) or `S1-13` (render-target/color-space assumptions).
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |

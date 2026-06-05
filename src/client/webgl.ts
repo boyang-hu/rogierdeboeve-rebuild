@@ -939,6 +939,72 @@ void main() {
 }
 `;
 
+const skyCompositeFragment = `
+precision highp float;
+
+uniform sampler2D tScene;
+uniform float uTime;
+uniform float uShader1Speed;
+
+varying vec2 vUv;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+float fbm(vec2 p) {
+  float f = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 5; i++) {
+    f += a * noise(p);
+    p = p * 2.03 + 17.13;
+    a *= 0.5;
+  }
+  return f;
+}
+
+vec3 contrastColor(vec3 color, float amount) {
+  return (color - 0.5) * amount + 0.5;
+}
+
+vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
+  vec3 mixed = vec3(
+    blend.r == 1.0 ? blend.r : min(base.r * base.r / (1.0 - blend.r), 1.0),
+    blend.g == 1.0 ? blend.g : min(base.g * base.g / (1.0 - blend.g), 1.0),
+    blend.b == 1.0 ? blend.b : min(base.b * base.b / (1.0 - blend.b), 1.0)
+  );
+  return mix(base, mixed, opacity);
+}
+
+void main() {
+  vec2 pos = vUv.xy * 4.0;
+  pos.x *= 1.5;
+
+  float n1 = fbm(pos + vec2(uTime * uShader1Speed * 0.01, 0.0));
+  float n2 = fbm(pos * 2.0 + vec2(11.7, uTime * uShader1Speed * -0.008));
+  float n3 = fbm(pos * 4.0 + vec2(uTime * uShader1Speed * 0.004, 5.3));
+  vec3 procedural = vec3(n1, n2, n3);
+  vec4 diffuseColor = texture2D(tScene, vUv);
+
+  diffuseColor.rgb = blendReflect(diffuseColor.rgb, procedural, 0.5);
+  diffuseColor.rgb = contrastColor(diffuseColor.rgb, 2.0);
+  diffuseColor.rgb *= 2.0;
+
+  gl_FragColor = vec4(0.9 - diffuseColor.rgb, 1.0);
+}
+`;
+
 const displacementFragment = `
 precision highp float;
 
@@ -1053,17 +1119,25 @@ vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
   return mix(base, base * blend, opacity);
 }
 
+vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
+  vec3 mixed = vec3(
+    blend.r == 1.0 ? blend.r : min(base.r * base.r / (1.0 - blend.r), 1.0),
+    blend.g == 1.0 ? blend.g : min(base.g * base.g / (1.0 - blend.g), 1.0),
+    blend.b == 1.0 ? blend.b : min(base.b * base.b / (1.0 - blend.b), 1.0)
+  );
+  return mix(base, mixed, opacity);
+}
+
 float smoothMask(float coord, float center, float spread) {
   return (1.0 - smoothstep(coord, center, center - spread)) + (1.0 - smoothstep(coord, center, center + spread));
 }
 
 void main() {
   vec2 uv = vUv;
-  float band = smoothstep(1.0, 0.2, uv.y) * smoothstep(0.0, 0.25, uv.y);
   vec2 skyUv = uv;
   vec2 skyUv2 = uv;
-  skyUv.x += 0.5 + uTime * uShader1Speed * 0.005;
-  skyUv2.x -= 0.75 - uTime * uShader3Speed * 0.005;
+  skyUv.x += 0.5;
+  skyUv2.x -= 0.75;
 
   vec4 noise1 = texture2D(tSky, skyUv * max(0.001, uMultiplier));
   vec4 noise2 = texture2D(tSky, skyUv2);
@@ -1075,23 +1149,22 @@ void main() {
   m = clamp(m, 0.0, 1.0);
   vec3 noiseMixed = mix(noise1.rgb, noise2.rgb, m);
 
-  vec3 color = vec3(0.03);
-  color = blendScreen(color, noiseMixed, 0.5 * uShader1Alpha);
+  vec3 color = vec3(1.0);
+  color = blendReflect(color, noiseMixed, 0.5 * uShader1Alpha);
   vec2 skyMaskUv = uv;
   skyMaskUv.y -= 0.1;
   float skyMask = mod(skyMaskUv.y * 5.0, 1.0);
   skyMask = max(skyMask, step(0.6, skyMaskUv.y));
-  color = blendMultiply(color, noiseMixed, skyMask * uShader1Mix3 * 0.35);
-  color += vec3(smoothstep(uv.y, 0.45, 0.595)) * 0.28;
+  color = blendScreen(color, noiseMixed, skyMask * uShader1Mix3);
+  color += vec3(smoothstep(uv.y, 0.45, 0.595));
 
   float skyMask2 = mod(skyMaskUv.y * 2.5, 1.0);
   skyMask2 = max(skyMask, step(0.6, skyMaskUv.y));
   color = mix(vec3(1.0), color, skyMask2 * 1.5);
   color *= 1.15;
   color *= clamp(color, vec3(0.0), vec3(1.0));
-  color = blendMultiply(color, uDarkenColor, clamp(uDarken, 0.0, 1.0));
-  color = mix(vec3(0.012, 0.013, 0.016), color, clamp(uShader1Alpha + uShader2Alpha + uShader3Alpha, 0.15, 1.0));
-  gl_FragColor = vec4(color, band * 0.22);
+  color = blendReflect(color, uDarkenColor, clamp(uDarken, 0.0, 1.0));
+  gl_FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -1105,6 +1178,10 @@ function normalizeColor(value?: string) {
 
 function colorFrom(value?: string, fallback = DEFAULT_COLOR) {
   return new Color(normalizeColor(value) ?? fallback);
+}
+
+function sourceLinearToSrgbColor(value?: string, fallback = DEFAULT_COLOR) {
+  return colorFrom(value, fallback).convertLinearToSRGB();
 }
 
 function sourceRgbColor(value?: string, fallback = DEFAULT_COLOR) {
@@ -1217,6 +1294,7 @@ export class WebGLBackdrop {
   private renderer: WebGLRenderer;
   private backgroundScene = new Scene();
   private homeScene = new Scene();
+  private skyScene = new Scene();
   private thumbScene = new Scene();
   private mediaScene = new Scene();
   private screenMouseSimulationScene = new Scene();
@@ -1242,6 +1320,10 @@ export class WebGLBackdrop {
   private renderSettings = SOURCE_HOME_RENDER_SETTINGS;
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
+  private skyCompositeMaterial: ShaderMaterial;
+  private skyCompositeScene = new Scene();
+  private skyRawTarget = makeSourceRenderTarget(false);
+  private skyCompositeTarget = makeSourceRenderTarget(false);
   private backgroundMaterial: ShaderMaterial;
   private compositeMaterial: ShaderMaterial;
   private compositeScene = new Scene();
@@ -1392,6 +1474,7 @@ export class WebGLBackdrop {
     this.characterCamera.position.set(0, 0, 12);
     this.characterCamera.lookAt(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
+    this.skyScene.background = sourceLinearToSrgbColor("#666666", "#666666");
     this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = colorFrom(SOURCE_WORK_BG);
     this.spotLight.position.copy(this.spotLightPosition);
@@ -1405,6 +1488,10 @@ export class WebGLBackdrop {
     this.homeScene.add(this.spotLight);
     this.homeScene.add(this.spotLight.target);
     this.homeScene.add(this.directionalLight);
+    this.skyCompositeMaterial = this.createSkyCompositeMaterial();
+    this.skyCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.skyCompositeMaterial));
+    this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
+    this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
@@ -2394,7 +2481,6 @@ export class WebGLBackdrop {
         item.mouseMaterial.uniforms.uNoiseTexture.value = texture;
       });
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
-      this.environmentMaterial.uniforms.tSky.value = texture;
     });
     this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
       this.preCompositeMaterial.uniforms.tPerlin.value = texture;
@@ -2425,6 +2511,28 @@ export class WebGLBackdrop {
         );
       },
     );
+  }
+
+  private createSkyCompositeMaterial() {
+    return new ShaderMaterial({
+      toneMapped: false,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      blending: NormalBlending,
+      uniforms: {
+        tScene: { value: this.skyRawTarget.texture },
+        uTime: { value: 0 },
+        uShader1Alpha: { value: 0.5 },
+        uShader1Speed: { value: 0.5 },
+        uShader2Speed: { value: 0 },
+        uShader1Scale: { value: 5.5 },
+        uShader2Scale: { value: 0 },
+        uShaderMix: { value: 1.5 },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: skyCompositeFragment,
+    });
   }
 
   private createDisplacementMaterial() {
@@ -2588,9 +2696,11 @@ export class WebGLBackdrop {
 
   private createEnvironmentMaterial() {
     return new ShaderMaterial({
-      transparent: true,
+      toneMapped: false,
+      transparent: false,
       depthWrite: false,
       depthTest: false,
+      blending: NormalBlending,
       uniforms: {
         uTime: { value: 0 },
         uDarkenColor: { value: colorFrom("#414652") },
@@ -2605,7 +2715,7 @@ export class WebGLBackdrop {
         uShader3Speed: { value: 0 },
         uShader3Scale: { value: 0 },
         uShader1Mix3: { value: 1.5 },
-        tSky: { value: this.noiseTexture },
+        tSky: { value: this.skyCompositeTarget.texture },
       },
       vertexShader: thumbVertex,
       fragmentShader: environmentFragment,
@@ -3184,6 +3294,9 @@ export class WebGLBackdrop {
       this.bloomTarget.setSize(quarterMipWidth, quarterMipHeight);
       this.resizeBloomMipChain(this.bloomHorizontalTargets, this.bloomVerticalTargets, quarterMipWidth, quarterMipHeight);
     }
+    const skySize = Math.max(1, Math.round(height * 0.75));
+    this.skyRawTarget.setSize(skySize, skySize);
+    this.skyCompositeTarget.setSize(skySize, skySize);
     this.homeCamera.aspect = width / height;
     this.homeCamera.updateProjectionMatrix();
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
@@ -3558,6 +3671,17 @@ export class WebGLBackdrop {
     this.renderer.setRenderTarget(previousTarget);
   }
 
+  private renderSkyTarget(time: number) {
+    this.skyCompositeMaterial.uniforms.uTime.value = sourceLowRes() ? 0 : time;
+    this.renderer.setRenderTarget(this.skyRawTarget);
+    this.renderer.clear();
+    this.renderer.render(this.skyScene, this.backgroundCamera);
+    this.renderer.setRenderTarget(this.skyCompositeTarget);
+    this.renderer.clear();
+    this.renderer.render(this.skyCompositeScene, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
+  }
+
   private renderDisplacementTarget(time: number) {
     this.displacementMaterial.uniforms.uTime.value = time;
     this.renderer.setRenderTarget(this.displacementTarget);
@@ -3722,6 +3846,7 @@ export class WebGLBackdrop {
       this.renderer.render(this.backgroundScene, this.backgroundCamera);
     }
     if (hasHome) {
+      this.renderSkyTarget(time);
       this.renderFloorReflection();
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();

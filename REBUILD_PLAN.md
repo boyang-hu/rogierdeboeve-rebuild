@@ -194,6 +194,7 @@ Last updated: 2026-06-05
 | `current batch` | Phase 1 Audit/QA Harness | Added configurable source comparison captures, recorded the first full post-preloader difference table, and rejected two non-source brightness/reveal experiments: `VA.envMapIntensity` remains `.75`, and scene reveal remains owned by `C1/A1` rather than final `OA`. |
 | `current batch` | Home WebGL | Aligned source runtime color semantics for `Se`-owned setters by parsing project colors as raw `sr()` RGB channels, and matched the source thumb-composite `toneMapped:false` flag. Full QA passed, but the luma gap remains, pointing the next batch toward `VA` full shader/lighting and render-target color-space behavior. |
 | `uncommitted` | Phase 1 Audit | Added a next-difference attribution table tying the remaining brightness gap to source `V1/H1/z1/B1` sky render-target ownership, `h1/u1/l1` environment material parity, `VA` shader risk, render-target color-space assumptions, and project-page regression checks. |
+| `uncommitted` | Home WebGL | Implemented the source-shaped `V1/H1/z1/B1` sky render-target bridge and moved environment `tSky` from raw blue-noise to the sky composite target; also removed the rebuild-only low-alpha environment band. Full QA passed, but home luma only improved slightly, so the next batch should move to `VA` fragment/tone-mapping or render-target color-space assumptions. |
 
 ## Current Focus
 
@@ -201,7 +202,7 @@ Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. 
 
 Immediate source targets:
 
-- `V1/H1/z1/B1` and `h1/u1/l1`: highest-priority next implementation path. Source renders a dedicated sky scene (`#666666.convertLinearToSRGB()`, target size `height * .75`, `z1/B1` composite) and assigns its composite texture to `workScene.env.material.customUniforms.tSky`. The rebuild currently feeds raw blue-noise directly into the environment shader, which is now the clearest source-proven explanation for the full home environment and cube field reading too dark.
+- `V1/H1/z1/B1` and `h1/u1/l1`: source-shaped sky render-target ownership is now implemented and verified, but it only moved home desktop luma from roughly `0.010` to `0.011` versus original `0.106`. Keep the bridge; do not continue blind tuning on this path until `VA` and color-space assumptions are audited.
 - `p1`: validate route-specific visibility and spotlight-map ownership for about/floating blocks, now that the source-shaped auxiliary block objects can be activated on the about route and the about spotlight map renders the local GLTF character target.
 - `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, source material flags including dithering, and a cleaner source-shaped custom-uniform surface. Full source shader override is documented as a high-risk deviation pending real WebGL QA evidence.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
@@ -225,11 +226,11 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Implement a focused source-shaped `V1/H1/z1/B1` sky render-target bridge: offscreen ortho scene, `#666666` background, source-like composite material, `height * .75` square target, repeat wrapping, and `environmentMaterial.uniforms.tSky` fed from that target instead of raw blue noise.
-2. Measure whether the sky target closes the home luma gap before attempting a full `VA` shader replacement. Keep the current source-supported `toneMapped:false` and raw initial emissive correction only if QA shows no regression.
-3. If the sky pass improves global brightness but cubes remain too dark, run a separate 3-5 point `VA` shader batch focused on full-fragment parity and Three 0.184 tonemapping/color-space side effects.
-4. Keep project detail pages as regression checks because the darker project composite may share `A1/C1` or media-background ownership with home.
-5. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with accepted deviations or new source-proven fixes.
+1. Run a focused `S1-12` batch around `VA` full fragment parity: compare the source full fragment tail against the current chunk-injection bridge, especially `opaque_fragment`, omitted `tonemapping_fragment`, alpha/reveal order, and how Three `SpotLight.map` contributes after the source world-position correction.
+2. In parallel with that audit, inspect `S1-13` render-target/color-space assumptions only where the `VA` pass depends on them; avoid broad renderer color-management changes without source evidence.
+3. Keep project detail pages as regression checks because the darker project composite may share `A1/C1` or media-background ownership with home.
+4. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with accepted deviations or new source-proven fixes.
+5. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.
 
 ## Verification Baseline
 
