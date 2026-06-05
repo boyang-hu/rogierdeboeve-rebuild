@@ -198,7 +198,7 @@ void main() {
 }
 `;
 
-const workBlockVertex = `
+const workBlockVertexPars = `
 attribute vec3 instanceGrid;
 attribute float instanceIndex;
 attribute float instanceAlpha;
@@ -220,7 +220,6 @@ uniform float uRevealSides;
 uniform float uRevealSpread;
 uniform float uRevealSpreadSides;
 uniform float uMouseFactor;
-uniform vec2 uPointer;
 uniform vec2 uMouseUvOffset;
 uniform float uMouseUvScale;
 uniform sampler2D tMouseSim;
@@ -233,101 +232,83 @@ uniform vec3 uSpotLightUp;
 uniform float uSpotConeTan;
 uniform float uSpotIntensity;
 uniform float uTime;
-
-void main() {
-  vec3 transformed = position;
-  vec4 instancePos = instanceMatrix[3];
-  float revealMask = uReveal * uRevealProject;
-  float toCenter = length(instancePos.xy);
-
-  float fadeScale = (revealMask * 5.75) - (toCenter * (revealMask / 5.75));
-  float fade = clamp(fadeScale, 0.0, 1.05);
-  float fadeDisplacementScale = (revealMask * 4.85) - (toCenter * (revealMask / 4.85));
-  float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
-  vec4 displacementMap = texture2D(tDisplacement, instanceGrid.xy);
-  vec4 perlinMap = texture2D(tPerlin, instanceGrid.xy * 0.75 - uTime * 0.05);
-  float perlinHeight = 10.0;
-  float perlinDisplacement = perlinMap.r * perlinHeight;
-  perlinDisplacement *= fade;
-
-  vec3 perlinDisplaced = transformed;
-  perlinDisplaced.z += perlinDisplacement - perlinHeight * 0.5;
-  perlinDisplaced *= min(1.0, 1.0 - (perlinDisplacement - perlinHeight * 0.5) * 0.1);
-  transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
-  transformed *= fade * uRevealSides;
-
-  vec2 mouseUv = (instanceGrid.xy + uMouseUvOffset) / uMouseUvScale;
-  float mouse = texture2D(tMouseSim, mouseUv).r;
-  float displacement = displacementMap.r;
-  transformed *= 1.0 - mouse * 0.05;
-  transformed.z -= 1.5;
-  transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
-  transformed.z += mouse * 15.0 * uMouseFactor;
-  transformed *= 1.0 - displacement * 0.1;
-
-  vec3 transformedSpread = transformed;
-  float spread = 3.0;
-  transformedSpread.x -= instanceColor.x * spread;
-  transformedSpread.x += spread * 0.5;
-  transformedSpread.y -= instanceColor.y * spread;
-  transformedSpread.y += spread * 0.5;
-  transformedSpread.z -= instanceColor.z * spread;
-  transformedSpread.z += spread * 0.5;
-  transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
-  transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
-
-  vec3 spotTransformed = transformed / max(0.001, 1.0 - mouse * 0.2);
-  vec4 mvPosition = instanceMatrix * vec4(transformed, 1.0);
-  vec4 spotMvPosition = instanceMatrix * vec4(spotTransformed, 1.0);
-  vec4 worldPosition = modelMatrix * spotMvPosition;
-  vec3 lightDir = normalize(uSpotLightTarget - uSpotLightPosition);
-  vec3 fromLight = worldPosition.xyz - uSpotLightPosition;
-  float lightDepth = max(0.001, dot(fromLight, lightDir));
-  vec2 lightPlane = vec2(dot(fromLight, uSpotLightRight), dot(fromLight, uSpotLightUp));
-  vec2 spotUv = lightPlane / (lightDepth * uSpotConeTan) * 0.5 + 0.5;
-  vec2 spotDelta = spotUv - 0.5;
-  float spotRadius = length(spotDelta);
-  float coneMask = 1.0 - smoothstep(0.45, 0.5, spotRadius);
-  float depthMask = smoothstep(0.0, 0.9, lightDepth) * (1.0 - smoothstep(12.0, 17.0, lightDepth));
-  mvPosition = modelViewMatrix * mvPosition;
-  gl_Position = projectionMatrix * mvPosition;
-
-  vThumbUv = instanceGrid.xy;
-  vLocalUv = uv;
-  vAlpha = instanceAlpha;
-  vReveal = revealMask;
-  vColorSeed = instanceColor;
-  vLocalNormal = normalize(normal);
-  vSpotUv = spotUv;
-  vSpotMask = coneMask * depthMask * uSpotIntensity;
-}
 `;
 
-const workBlockFragment = `
-precision highp float;
+const workBlockBeginVertexChunk = `
+vec3 transformed = vec3(position);
+vec4 instancePos = instanceMatrix[3];
+float revealMask = uReveal * uRevealProject;
+float toCenter = length(instancePos.xy);
 
+float fadeScale = (revealMask * 5.75) - (toCenter * (revealMask / 5.75));
+float fade = clamp(fadeScale, 0.0, 1.05);
+float fadeDisplacementScale = (revealMask * 4.85) - (toCenter * (revealMask / 4.85));
+float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
+vec4 displacementMap = texture2D(tDisplacement, instanceGrid.xy);
+vec4 perlinMap = texture2D(tPerlin, instanceGrid.xy * 0.75 - uTime * 0.05);
+float perlinHeight = 10.0;
+float perlinDisplacement = perlinMap.r * perlinHeight;
+perlinDisplacement *= fade;
+
+vec3 perlinDisplaced = transformed;
+perlinDisplaced.z += perlinDisplacement - perlinHeight * 0.5;
+perlinDisplaced *= min(1.0, 1.0 - (perlinDisplacement - perlinHeight * 0.5) * 0.1);
+transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
+transformed *= fade * uRevealSides;
+
+vec2 mouseUv = (instanceGrid.xy + uMouseUvOffset) / uMouseUvScale;
+float mouse = texture2D(tMouseSim, mouseUv).r;
+float displacement = displacementMap.r;
+transformed *= 1.0 - mouse * 0.05;
+transformed.z -= 1.5;
+transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
+transformed.z += mouse * 15.0 * uMouseFactor;
+transformed *= 1.0 - displacement * 0.1;
+
+vec3 transformedSpread = transformed;
+float spread = 3.0;
+transformedSpread.x -= instanceColor.x * spread;
+transformedSpread.x += spread * 0.5;
+transformedSpread.y -= instanceColor.y * spread;
+transformedSpread.y += spread * 0.5;
+transformedSpread.z -= instanceColor.z * spread;
+transformedSpread.z += spread * 0.5;
+transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
+transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
+
+vec3 spotTransformed = transformed / max(0.001, 1.0 - mouse * 0.2);
+vec4 spotWorldPosition = modelMatrix * instanceMatrix * vec4(spotTransformed, 1.0);
+vec3 lightDir = normalize(uSpotLightTarget - uSpotLightPosition);
+vec3 fromLight = spotWorldPosition.xyz - uSpotLightPosition;
+float lightDepth = max(0.001, dot(fromLight, lightDir));
+vec2 lightPlane = vec2(dot(fromLight, uSpotLightRight), dot(fromLight, uSpotLightUp));
+vec2 spotUv = lightPlane / (lightDepth * uSpotConeTan) * 0.5 + 0.5;
+vec2 spotDelta = spotUv - 0.5;
+float spotRadius = length(spotDelta);
+float coneMask = 1.0 - smoothstep(0.45, 0.5, spotRadius);
+float depthMask = smoothstep(0.0, 0.9, lightDepth) * (1.0 - smoothstep(12.0, 17.0, lightDepth));
+
+vThumbUv = instanceGrid.xy;
+vLocalUv = uv;
+vAlpha = instanceAlpha;
+vReveal = revealMask;
+vColorSeed = instanceColor;
+vLocalNormal = normalize(normal);
+vSpotUv = spotUv;
+vSpotMask = coneMask * depthMask * uSpotIntensity;
+`;
+
+const workBlockFragmentPars = `
 uniform sampler2D tThumb;
-uniform vec2 uMapSize;
 uniform vec3 uGridSize;
 uniform vec3 uTint;
-uniform vec3 uBlockColor;
-uniform vec3 uDiffuseColor;
-uniform vec3 uEmissiveColor;
 uniform vec3 uDarknessColor;
-uniform float uEmissiveIntensity;
-uniform float uRoughness;
-uniform float uMetalness;
-uniform float uEnvMapIntensity;
 uniform float uSpotMapIntensity;
 uniform float uDarkness;
 uniform float uSaturation;
 uniform float uContrast;
-uniform float uMouseSpeed;
 uniform float uMouseLightness;
-uniform float uRevealSides;
 uniform float uMouseFactor;
-uniform vec2 uPointer;
-uniform sampler2D tMouseSim;
 uniform sampler2D tMouseSim2;
 uniform vec2 uCoords;
 
@@ -340,17 +321,13 @@ varying vec3 vLocalNormal;
 varying vec2 vSpotUv;
 varying float vSpotMask;
 
-vec3 saturateColor(vec3 color, float amount) {
+vec3 sourceSaturateColor(vec3 color, float amount) {
   float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
   return mix(vec3(gray), color, amount);
 }
 
-float random(vec2 st) {
+float sourceRandom(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-}
-
-float vignette(vec2 uv, vec2 center, float inner, float outer) {
-  return smoothstep(outer, inner, distance(uv, center));
 }
 
 float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, float vignfade, float fstop) {
@@ -358,57 +335,57 @@ float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, floa
   dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
   return clamp(dist, 0.0, 1.0);
 }
+`;
 
-void main() {
-  vec2 uv = vLocalUv / uGridSize.xy + vThumbUv;
-  vec2 projectedUv = (uv - 0.5) * 0.48 + 0.5;
-  vec3 gridThumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.22);
-  vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
-  float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
-  vec3 thumb = mix(gridThumb, spotThumb, spotMask * uSpotMapIntensity);
-  thumb = (thumb - 0.5) * uContrast + 0.5;
-  thumb = saturateColor(thumb, uSaturation);
-  float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
-  float centerMask = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-  float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.6) * spotMask;
-  float centeredLum = lum * (0.3 + centerMask * 0.45 + spotCenter * 0.65 * uSpotMapIntensity);
-  float lightMask = smoothstep(0.14, 0.66, centeredLum);
-  lightMask *= (0.07 + centerMask * 0.14 + spotCenter * 0.2) * uSpotMapIntensity;
+const workBlockOpaqueFragmentChunk = `
+#ifdef OPAQUE
+diffuseColor.a = 1.0;
+#endif
 
-  float directional = dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5;
-  float roughLight = mix(1.0, directional, clamp(1.0 - uRoughness, 0.0, 1.0));
-  float envLight = 0.52 + 0.28 * uEnvMapIntensity;
-  float metalLight = mix(1.0, 0.9 + directional * 0.2, clamp(uMetalness, 0.0, 1.0));
-  float faceLight = clamp(envLight * roughLight * metalLight, 0.45, 1.05);
-  vec3 litDiffuse = uDiffuseColor * faceLight;
-  vec3 emissive = uEmissiveColor * uEmissiveIntensity;
-  vec3 projection = mix(uTint * 0.08, thumb, 0.16 + spotMask * 0.05);
-  vec3 color = litDiffuse + emissive;
-  color = mix(color, color + projection * (0.025 + spotMask * 0.035), lightMask);
-  color += thumb * spotMask * 0.015 * uSpotMapIntensity;
-  color = mix(color, uDarknessColor, uDarkness * 0.08);
+#ifdef USE_TRANSMISSION
+diffuseColor.a *= material.transmissionAlpha;
+#endif
 
-  vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
-  float simLight = texture2D(tMouseSim2, screenUv).r;
-  float mouseF = 1.0 - simLight;
-  color = mix(color, color * vec3(mouseF), 1.0 - uMouseLightness);
+vec3 sourceColor = outgoingLight;
+vec2 sourceUv = vLocalUv / uGridSize.xy + vThumbUv;
+vec2 projectedUv = (sourceUv - 0.5) * 0.48 + 0.5;
+vec3 gridThumb = mix(texture2D(tThumb, sourceUv).rgb, texture2D(tThumb, projectedUv).rgb, 0.22);
+vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
+float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
+vec3 thumb = mix(gridThumb, spotThumb, spotMask * uSpotMapIntensity);
+thumb = (thumb - 0.5) * uContrast + 0.5;
+thumb = sourceSaturateColor(thumb, uSaturation);
+float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
+float centerMask = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.6) * spotMask;
+float centeredLum = lum * (0.3 + centerMask * 0.45 + spotCenter * 0.65 * uSpotMapIntensity);
+float lightMask = smoothstep(0.14, 0.66, centeredLum);
+lightMask *= (0.07 + centerMask * 0.14 + spotCenter * 0.2) * uSpotMapIntensity;
+vec3 projection = mix(uTint * 0.08, thumb, 0.16 + spotMask * 0.05);
+sourceColor = mix(sourceColor, sourceColor + projection * (0.025 + spotMask * 0.035), lightMask);
+sourceColor += thumb * spotMask * 0.015 * uSpotMapIntensity;
+sourceColor = mix(sourceColor, uDarknessColor, uDarkness * 0.08);
 
-  vec2 gridUv = vec2(floor(uv.x * uGridSize.x), floor(uv.y * uGridSize.y));
-  vec2 gridUv2 = vec2(floor(uv.y * uGridSize.y), floor(uv.x * uGridSize.y));
-  float alpha1 = mix(random(gridUv * vAlpha), random(gridUv), 1.0);
-  float alpha2 = mix(random(gridUv2 * vAlpha), random(gridUv2), 1.0);
-  float alpha = alpha1 * alpha2 * vAlpha;
-  float revealCombined = clamp(vReveal, 0.0, 1.0);
-  float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
-  float centerAlpha = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-  float revealAlpha = sourceVignette(uv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-  if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
-  alpha += centerAlpha * 0.1;
-  alpha -= 1.0 - revealAlpha;
-  alpha *= uRevealSides;
+vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
+float simLight = texture2D(tMouseSim2, screenUv).r;
+float mouseF = 1.0 - simLight;
+sourceColor = mix(sourceColor, sourceColor * vec3(mouseF), 1.0 - uMouseLightness);
 
-  gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.9));
-}
+vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
+vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
+float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
+float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
+float alpha = alpha1 * alpha2 * vAlpha;
+float revealCombined = clamp(vReveal, 0.0, 1.0);
+float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
+float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
+alpha += centerAlpha * 0.1;
+alpha -= 1.0 - revealAlpha;
+alpha *= uRevealSides;
+
+gl_FragColor = vec4(sourceColor, clamp(alpha, 0.0, 0.9) * diffuseColor.a);
 `;
 
 const homeCompositeFragment = `
@@ -1652,10 +1629,14 @@ export class WebGLBackdrop {
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
-      shader.vertexShader = workBlockVertex;
-      shader.fragmentShader = workBlockFragment;
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
+        .replace("#include <begin_vertex>", workBlockBeginVertexChunk);
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
+        .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
     };
-    material.customProgramCacheKey = () => "source-va-work-block";
+    material.customProgramCacheKey = () => "source-va-work-block-chunks";
     return material;
   }
 
