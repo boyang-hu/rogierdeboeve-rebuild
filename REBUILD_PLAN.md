@@ -43,7 +43,8 @@ Last updated: 2026-06-05
 | `f7531e4` | Home DOM | Aligned work title click behavior with source `vD`: project titles select the active project while the CTA remains the detail-page entry point. |
 | `66c6970` | Home DOM | Added source-style `gD` CTA text and opacity animate-in/out when the active work item changes. |
 | `71f2403` | Home DOM | Aligned touch gallery movement with source `yD` virtual-scroll deltas by driving project changes during touchmove instead of only on touchend. |
-| this commit | Home DOM | Matched source `Ou` footer contact resize behavior by shortening the mobile contact label to `E-mail`. |
+| `a0d4955` | Home DOM | Matched source `Ou` footer contact resize behavior by shortening the mobile contact label to `E-mail`. |
+| this commit | Home WebGL | Moved gallery velocity roll from the rotating project ring to the work scene container to better match source `yD.updateScene`. |
 
 ## Current Focus
 

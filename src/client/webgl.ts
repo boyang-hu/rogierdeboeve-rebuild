@@ -985,8 +985,8 @@ export class WebGLBackdrop {
     this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * 0.08;
     this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * 0.08;
     this.sceneWrap.rotation.y = targetRotation;
-    this.sceneWrap.rotation.z = MathUtils.degToRad(this.sceneRotation);
-    this.homeScene.position.z = this.sceneWrap.rotation.z - this.zoom;
+    this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation);
+    this.homeScene.position.z = this.homeScene.rotation.z - this.zoom;
     this.updateThumbGallery(-progress);
   }
 
