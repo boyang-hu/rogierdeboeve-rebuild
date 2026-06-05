@@ -1,5 +1,9 @@
 import gsap from "gsap";
 
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 type WebGLLike = {
   setProject(payload: {
     slug?: string;
@@ -92,6 +96,10 @@ function initCtaMagnet(cta: HTMLElement) {
 }
 
 function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
+  if (!prefersReducedMotion()) {
+    gsap.to(".ui-header-description .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
+    gsap.to(".ui-header-availability .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
+  }
   webgl?.hideWorkScene?.();
   window.setTimeout(() => {
     window.location.href = url;
