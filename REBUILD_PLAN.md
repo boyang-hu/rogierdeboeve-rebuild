@@ -110,7 +110,7 @@ Immediate source targets:
 
 ## Verification Baseline
 
-Run after each completed step:
+Run after each completed batch of roughly five source-alignment steps, unless a risky shader, navigation, or media change needs an earlier quick check:
 
 ```sh
 ASTRO_TELEMETRY_DISABLED=1 npm run build
