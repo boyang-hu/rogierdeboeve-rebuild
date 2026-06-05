@@ -101,6 +101,32 @@ function dispatchSoundMode(enabled: boolean) {
   window.dispatchEvent(new CustomEvent("rd:sound-mode", { detail: { enabled } }));
 }
 
+function formatButton(button: HTMLElement) {
+  const background = button.querySelector<HTMLElement>(".c-button-bg");
+  const svg = background?.querySelector<SVGSVGElement>("svg");
+  const rectStatic = svg?.querySelector<SVGRectElement>(".c-button-bg-static");
+  const rectHover = svg?.querySelector<SVGRectElement>(".c-button-bg-hover");
+  if (!background || !svg || !rectStatic || !rectHover) return;
+
+  const width = Math.max(1, Math.round(background.offsetWidth));
+  const height = Math.max(1, Math.round(background.offsetHeight));
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", String(height));
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  rectStatic.setAttribute("width", String(width));
+  rectStatic.setAttribute("height", String(Math.max(1, height - 2)));
+  rectHover.setAttribute("width", String(width));
+  rectHover.setAttribute("height", String(Math.max(1, height - 2)));
+}
+
+function initButtons() {
+  const buttons = Array.from(document.querySelectorAll<HTMLElement>(".c-button"));
+  if (!buttons.length) return;
+  const formatAll = () => buttons.forEach(formatButton);
+  requestAnimationFrame(formatAll);
+  window.addEventListener("resize", formatAll);
+}
+
 function initPreloader() {
   const preloader = document.querySelector<HTMLElement>("[data-preloader]");
   const percent = document.querySelector<HTMLElement>("[data-preloader-percent]");
@@ -544,6 +570,7 @@ function boot() {
 
   initMenu();
   initSoundToggle();
+  initButtons();
   initWorkPreview(() => webgl);
   initProjectMedia();
   initScrollState();
