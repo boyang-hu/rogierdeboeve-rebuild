@@ -234,7 +234,9 @@ function initMenu() {
   const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
   const links = Array.from(nav?.querySelectorAll<HTMLAnchorElement>(".ui-nav-mobile-a") ?? []);
   const cleanupCallbacks: Array<() => void> = [];
+  let closeTimer = 0;
   const close = () => {
+    window.clearTimeout(closeTimer);
     nav?.classList.remove("is-active");
     document.documentElement.classList.remove("is-nav-mobile-open");
     toggle?.setAttribute("aria-expanded", "false");
@@ -257,7 +259,8 @@ function initMenu() {
 
   links.forEach((link) => {
     const onClick = () => {
-      window.setTimeout(() => {
+      window.clearTimeout(closeTimer);
+      closeTimer = window.setTimeout(() => {
         setActive(link.dataset.slug);
         close();
       }, 300);
@@ -271,6 +274,7 @@ function initMenu() {
   window.addEventListener("keydown", onKeyDown);
   cleanupCallbacks.push(() => window.removeEventListener("keydown", onKeyDown));
   return () => {
+    window.clearTimeout(closeTimer);
     cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
     close();
   };

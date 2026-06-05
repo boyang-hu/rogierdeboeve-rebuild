@@ -37,7 +37,7 @@ const pathname = Astro.url.pathname;
   </div>
 
   <nav class="ui-nav-mobile c-color" aria-label="Mobile navigation">
-    <button class="ui-nav-mobile-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-menu-toggle>
+    <button class="ui-nav-mobile-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-menu-toggle data-sound-click>
       <span class="ui-nav-mobile-toggle-icon-lines" aria-hidden="true">
         <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-1"></span>
         <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-2"></span>
@@ -47,10 +47,10 @@ const pathname = Astro.url.pathname;
     <div class="ui-nav-mobile-content-bg"></div>
     <div class="ui-nav-mobile-content">
       <div class="ui-nav-mobile-content-main wrap">
-        <a class={`ui-nav-mobile-a ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work">
+        <a class={`ui-nav-mobile-a ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work" data-sound data-sound-click>
           <span class="ui-nav-mobile-a-inner">Work</span>
         </a>
-        <a class={`ui-nav-mobile-a ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about">
+        <a class={`ui-nav-mobile-a ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about" data-sound data-sound-click>
           <span class="ui-nav-mobile-a-inner">About</span>
         </a>
       </div>
@@ -68,7 +68,7 @@ const pathname = Astro.url.pathname;
   <div class="wrap">
     <ul>
       <li>
-        <a class={`ui-nav-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work">
+        <a class={`ui-nav-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work" data-sound data-sound-click>
           <span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span>
           <span class="ui-nav-a-inner">
             <span class="ui-nav-a-title">Work</span>
@@ -76,7 +76,7 @@ const pathname = Astro.url.pathname;
         </a>
       </li>
       <li>
-        <a class={`ui-nav-a c-color ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about">
+        <a class={`ui-nav-a c-color ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about" data-sound data-sound-click>
           <span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span>
           <span class="ui-nav-a-inner">
             <span class="ui-nav-a-title">About</span>
