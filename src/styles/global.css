@@ -1703,7 +1703,4 @@ html.is-scrolled .c-scroll-cta {
     animation-iteration-count: 1 !important;
   }
 
-  .gl {
-    display: none;
-  }
 }

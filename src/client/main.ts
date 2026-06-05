@@ -965,23 +965,15 @@ function initViewLifecycle() {
   };
 }
 
-function shouldInitWebGL(root: HTMLElement) {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
-  if (!window.matchMedia("(min-width: 760px)").matches) return false;
+function shouldInitWebGL() {
   const probe = document.createElement("canvas");
   if (!probe.getContext("webgl2") && !probe.getContext("webgl")) return false;
-  const nav = navigator as Navigator & {
-    connection?: { saveData?: boolean };
-    deviceMemory?: number;
-  };
-  if (nav.connection?.saveData) return false;
-  if (nav.deviceMemory && nav.deviceMemory < 4) return false;
   return true;
 }
 
 async function initWebGL() {
   const root = document.querySelector<HTMLElement>("[data-webgl-root]");
-  if (!root || !shouldInitWebGL(root)) return undefined;
+  if (!root || !shouldInitWebGL()) return undefined;
   try {
     const { WebGLBackdrop } = await import("./webgl");
     return new WebGLBackdrop(root);
