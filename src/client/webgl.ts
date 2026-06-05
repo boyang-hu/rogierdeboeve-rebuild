@@ -488,6 +488,7 @@ void main() {
   vec4 glowY = texture2D(tWork, uv + vec2(0.0, 0.006)) + texture2D(tWork, uv - vec2(0.0, 0.006));
   vec3 glow = max(vec3(0.0), (glowX.rgb + glowY.rgb) * 0.25 - vec3(0.22));
   vec3 bloom = texture2D(tBloom, uv).rgb;
+  vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), 0.005).rgb;
   vec3 work = mix(workShift.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
 
   vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.68);
@@ -501,7 +502,8 @@ void main() {
   color = mix(color, work, workMask);
   color += glow * (0.24 + uFluidStrength * 0.18);
   color += rgbshift(tWork, sourceUv, -1.5, 0.02).rgb * 0.08;
-  color += bloom * 0.15;
+  color += bloom;
+  color += bloomShift;
   color += sampledMouse.rgb * 0.065;
   color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
   color = blendAdd(color, perlinMap.rgb, (1.0 - displacementVignette + sampledMouse.r * 0.5) * 0.05);

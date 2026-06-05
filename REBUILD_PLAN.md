@@ -78,10 +78,11 @@ Last updated: 2026-06-05
 | `e93e165` | Home WebGL | Matched source `p1.setLights()` spotlight cone by using `angle = PI / 4` for the shader thumb-map projection instead of the narrower half-angle approximation. |
 | `c183c76` | Home WebGL | Made the auxiliary thumb projection plane follow source-style scene reveal/out timing instead of staying permanently visible outside the spotlight-map lifecycle. |
 | `15b1ad9` | Home WebGL | Moved the lightweight home bloom pass closer to source `kA` by adding a `uRadius` uniform set to source bloom radius `1.5` for luminosity blur offsets. |
+| `pending` | Home WebGL | Moved final home bloom compositing closer to source `OA` by adding `tBloom` directly and adding a shifted bloom sample instead of attenuating bloom a second time. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `OA/kA` composite and bloom behavior while preserving the recent spotlight work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `OA/kA` final composite bloom behavior while preserving the recent spotlight work.
 
 Immediate source targets:
 
@@ -93,7 +94,7 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Continue Phase 1 `OA/kA` composite and bloom/luminosity fidelity, especially multi-mip blur approximation and luminosity smoothing.
+1. Continue Phase 1 `OA/kA` composite and bloom/luminosity fidelity, especially multi-mip blur approximation and shifted bloom tuning.
 2. Continue `p1/SD/T1` spotlight and thumb projection comparison, especially reducing the auxiliary projection-plane approximation in favor of source spotlight-map behavior.
 3. Compare CTA navigation timing and click-sound/soft-woosh behavior against source `gD` and `yD.onWorkGalleryOut()`.
 4. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
