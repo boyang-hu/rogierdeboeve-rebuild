@@ -412,7 +412,8 @@ body.is-project .ui-header-description {
   overflow: hidden;
 }
 
-.ui-work-content {
+.ui-work .ui-work-container,
+.ui-work .ui-work-content {
   position: fixed;
   inset: 0;
   min-height: 100vh;
@@ -1493,7 +1494,7 @@ html.is-scrolled .c-scroll-cta {
     opacity: 1;
   }
 
-  .ui-work-content {
+  .ui-work .ui-work-content {
     align-items: stretch;
     padding-top: 0;
     padding-bottom: 0;

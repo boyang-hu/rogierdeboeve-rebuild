@@ -12,49 +12,51 @@ const colorValue = (value?: string) => {
 
 <BaseLayout>
   <section data-view="home" class="ui-work">
-    <div class="ui-work-content">
-      <div class="wrap">
-        <div class="grid grid-cols-24 gap-24">
-          <div class="col-span-10 col-start-15 work-index">
-            <div class="ui-title ts-m c-color"><span class="ui-title-inner">Index</span></div>
-            <ul class="ui-work-ul">
-              {activeProjects.map((project, index) => (
-                <li
-                  class={index === 0 ? "c-color is-active" : "c-color"}
-                  data-project-card
-                  data-slug={project.data.slug}
-                  data-color={colorValue(project.data.colors.primary)}
-                  data-secondary={colorValue(project.data.colors.secondary)}
-                  data-invert={colorValue(project.data.colors.invert)}
-                  data-media-color={colorValue(project.data.colors.media)}
-                  data-blocks={colorValue(project.data.colors.blocks)}
-                  data-thumb={thumbSrc(project)}
-                  data-darkness={project.data.darkenOverview}
-                  data-overview-darkness={project.data.darkenOverview}
-                  data-thumb-darkness={project.data.thumbnail.darkness}
-                  data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
-                  data-saturation={project.data.thumbnail.saturation ?? project.data.saturation}
-                  data-contrast={project.data.contrast}
-                  data-mouse-lightness={project.data.thumbnail.mouseLightness}
-                  data-ambient={project.data.ambient}
-                  data-spotlight={project.data.spotlight}
-                >
-                  <a class="ui-work-a" href={`/${project.data.slug}/`} data-sound data-sound-click>
-                    <span>{project.data.title}</span>
-                  </a>
-                  <a href={`/${project.data.slug}/`} class="ui-work-cta">
-                    <Button text="View project" />
-                  </a>
-                </li>
-              ))}
-            </ul>
+    <div class="ui-work-container">
+      <div class="ui-work-content">
+        <div class="wrap">
+          <div class="grid grid-cols-24 gap-24">
+            <div class="col-span-10 col-start-15 work-index">
+              <div class="ui-title ts-m c-color"><span class="ui-title-inner">Index</span></div>
+              <ul class="ui-work-ul">
+                {activeProjects.map((project, index) => (
+                  <li
+                    class={index === 0 ? "c-color is-active" : "c-color"}
+                    data-project-card
+                    data-slug={project.data.slug}
+                    data-color={colorValue(project.data.colors.primary)}
+                    data-secondary={colorValue(project.data.colors.secondary)}
+                    data-invert={colorValue(project.data.colors.invert)}
+                    data-media-color={colorValue(project.data.colors.media)}
+                    data-blocks={colorValue(project.data.colors.blocks)}
+                    data-thumb={thumbSrc(project)}
+                    data-darkness={project.data.darkenOverview}
+                    data-overview-darkness={project.data.darkenOverview}
+                    data-thumb-darkness={project.data.thumbnail.darkness}
+                    data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
+                    data-saturation={project.data.thumbnail.saturation ?? project.data.saturation}
+                    data-contrast={project.data.contrast}
+                    data-mouse-lightness={project.data.thumbnail.mouseLightness}
+                    data-ambient={project.data.ambient}
+                    data-spotlight={project.data.spotlight}
+                  >
+                    <a class="ui-work-a" href={`/${project.data.slug}/`} data-sound data-sound-click>
+                      <span>{project.data.title}</span>
+                    </a>
+                    <a href={`/${project.data.slug}/`} class="ui-work-cta">
+                      <Button text="View project" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="work-preview" aria-hidden="true">
-        <div class="work-preview-frame">
-          <img data-work-preview src={thumbSrc(activeProjects[0])} alt="" />
+        <div class="work-preview" aria-hidden="true">
+          <div class="work-preview-frame">
+            <img data-work-preview src={thumbSrc(activeProjects[0])} alt="" />
+          </div>
         </div>
       </div>
     </div>
