@@ -1,7 +1,9 @@
 import {
+  AmbientLight,
   Color,
   CubeTextureLoader,
   DataTexture,
+  DirectionalLight,
   Fog,
   Group,
   InstancedBufferAttribute,
@@ -275,7 +277,6 @@ uniform float uDarkness;
 uniform float uSaturation;
 uniform float uContrast;
 uniform float uMouseLightness;
-uniform float uDirectionalLightIntensity;
 uniform float uRevealSides;
 uniform float uMouseFactor;
 uniform vec2 uPointer;
@@ -328,7 +329,7 @@ void main() {
   lightMask *= 0.12 + centerMask * 0.22 + spotCenter * 0.46;
 
   float directional = dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5;
-  float faceLight = mix(0.86, clamp(directional, 0.55, 1.08), clamp(uDirectionalLightIntensity / 1.5, 0.0, 1.0));
+  float faceLight = mix(0.86, clamp(directional, 0.55, 1.08), 1.0);
   vec3 litDiffuse = uDiffuseColor * faceLight;
   vec3 emissive = uEmissiveColor * uEmissiveIntensity;
   vec3 projection = mix(uTint * 0.2, thumb, 0.32 + spotMask * 0.12);
@@ -1177,6 +1178,9 @@ export class WebGLBackdrop {
   private mediaSceneOpacity = 0;
   private gridLayers = SOURCE_GRID_LAYERS;
   private radius = 8;
+  private ambientLight = new AmbientLight(colorFrom("#414652"), 0.5);
+  private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
+  private directionalLight2 = new DirectionalLight(colorFrom("white"), 1);
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -1194,6 +1198,10 @@ export class WebGLBackdrop {
     this.mediaCamera.position.set(0, 0, 1000);
     this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = colorFrom(SOURCE_WORK_BG);
+    this.directionalLight.position.set(10.5, 10, 1);
+    this.directionalLight2.position.set(-10.5, 5, -1);
+    this.homeScene.add(this.ambientLight);
+    this.homeScene.add(this.directionalLight);
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
@@ -1549,7 +1557,6 @@ export class WebGLBackdrop {
         uSaturation: { value: 1 },
         uContrast: { value: numeric(payload.contrast, 1.15) },
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
-        uDirectionalLightIntensity: { value: this.directionalLightIntensity },
         uMouseFactor: { value: this.mouseFactor },
         uPointer: { value: this.pointer },
         uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
@@ -2082,6 +2089,8 @@ export class WebGLBackdrop {
     this.currentAmbientIntensity = intensity;
     const next = colorFrom(color, "#414652");
     if (duration <= 0) {
+      this.ambientLight.color.copy(next);
+      this.ambientLight.intensity = intensity;
       this.backgroundMaterial.uniforms.uAmbientColor.value.copy(next);
       this.floorMaterial.uniforms.uAmbientColor.value.copy(next);
       this.environmentMaterial.uniforms.uDarkenColor.value.copy(next);
@@ -2089,6 +2098,8 @@ export class WebGLBackdrop {
       this.floorMaterial.uniforms.uAmbientIntensity.value = intensity;
       return;
     }
+    this.ambientTweens.push(gsap.to(this.ambientLight.color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    this.ambientTweens.push(gsap.to(this.ambientLight, { intensity, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.floorMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uDarkenColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
@@ -2281,21 +2292,18 @@ export class WebGLBackdrop {
 
   private setDirectionalLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
     this.directionalLightTween?.kill();
-    const update = () => {
-      this.workItems.forEach((item) => {
-        item.material.uniforms.uDirectionalLightIntensity.value = this.directionalLightIntensity;
-      });
-    };
     if (duration <= 0) {
       this.directionalLightIntensity = value;
-      update();
+      this.directionalLight.intensity = value;
       return;
     }
     this.directionalLightTween = gsap.to(this, {
       directionalLightIntensity: value,
       duration,
       ease,
-      onUpdate: update,
+      onUpdate: () => {
+        this.directionalLight.intensity = this.directionalLightIntensity;
+      },
     });
   }
 
@@ -2540,7 +2548,6 @@ export class WebGLBackdrop {
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
-      item.material.uniforms.uDirectionalLightIntensity.value = this.directionalLightIntensity;
       item.material.uniforms.uSpotLightPosition.value.copy(this.spotLightPosition);
       item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
       item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
