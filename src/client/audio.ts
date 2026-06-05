@@ -8,6 +8,7 @@ let plucks: Howl | null = null;
 let softWoosh: Howl | null = null;
 let woosh: Howl | null = null;
 let enabled = true;
+let homePlucksPlayed = false;
 
 export function initAudio() {
   click = new Howl({
@@ -74,9 +75,11 @@ export function initAudio() {
   window.addEventListener("rd:plucks", () => {
     if (enabled) plucks?.play();
   });
-  if (document.body.classList.contains("is-home")) {
+  window.addEventListener("rd:home-gallery-in", () => {
+    if (homePlucksPlayed) return;
+    homePlucksPlayed = true;
     window.dispatchEvent(new CustomEvent("rd:plucks"));
-  }
+  });
 
   document.querySelectorAll<HTMLElement>("[data-sound]").forEach((element) => {
     element.addEventListener("mouseenter", () => enabled && hover?.play());

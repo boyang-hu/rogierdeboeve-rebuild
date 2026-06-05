@@ -274,7 +274,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     progress: 0,
     remainder: 0,
     velocity: 0,
-    active: true,
+    active: false,
   };
   try {
     const restored = JSON.parse(sessionStorage.getItem(stateKey) ?? "null") as
@@ -326,7 +326,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
   const lerp = (current: number, target: number, factor: number, delta: number) =>
-    current + (target - current) * Math.min(1, factor * delta);
+    current + (target - current) * (1 - Math.exp(-factor * delta));
 
   const setIndexState = (index: number) => {
     activeIndex = index < 0 ? totalItems : index > totalItems ? 0 : index;
@@ -450,6 +450,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const handleGalleryDelta = (delta: number) => {
+    if (!scroll.active) return false;
     if (Math.abs(delta) < 0.01) return false;
     window.clearTimeout(snapTimeout);
     snap = true;
@@ -492,11 +493,17 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     getWebgl()?.setPreviewMode?.(enabled);
   };
 
+  const enterWorkGallery = () => {
+    scroll.active = true;
+    getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
+  };
+
   window.addEventListener("pageshow", () => {
     document.documentElement.classList.remove("is-work-gallery-leaving");
     previewWork(false);
   });
   window.addEventListener("rd:work-gallery-out", () => runWorkGalleryOut(getWebgl()));
+  window.addEventListener("rd:home-gallery-in", enterWorkGallery);
 
   cardsArray.forEach((card, index) => {
     card.addEventListener("mouseenter", () => {
@@ -663,7 +670,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
         targetHook = index * step + scroll.remainder;
       }
     }
-    getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
+    if (scroll.active) getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
     raf = requestAnimationFrame(tick);
   };
 
@@ -746,9 +753,13 @@ async function initWebGL() {
 function boot() {
   document.body.classList.add("is-ready");
   let webgl: WebGLLike | undefined;
+  let homeGalleryEntered = false;
 
   initPreloader();
-  void import("./audio").then(({ initAudio }) => initAudio());
+  void import("./audio").then(({ initAudio }) => {
+    initAudio();
+    if (homeGalleryEntered) window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
+  });
   void import("./motion").then(({ initMotion }) => initMotion());
   void initWebGL().then((instance) => {
     webgl = instance;
@@ -761,6 +772,8 @@ function boot() {
       webgl?.setCameraControllerSettings?.({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
       webgl?.animateWorkMouseIn?.();
       webgl?.showScene?.();
+      homeGalleryEntered = true;
+      window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
     }
   });
 
