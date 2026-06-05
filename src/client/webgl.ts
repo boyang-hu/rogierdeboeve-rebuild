@@ -210,6 +210,7 @@ varying vec2 vLocalUv;
 varying float vAlpha;
 
 uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
 uniform float uReveal;
 uniform float uRevealProject;
 uniform float uRevealSides;
@@ -273,10 +274,11 @@ vAlpha = instanceAlpha;
 
 const workBlockFragmentPars = `
 uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
 uniform float uReveal;
 uniform float uRevealProject;
 uniform float uRevealSides;
-uniform float uScrollOpacity;
+uniform float uMouseSpeed;
 uniform float uMouseLightness;
 uniform float uMouseFactor;
 uniform sampler2D tMouseSim2;
@@ -328,7 +330,7 @@ alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
 alpha *= uRevealSides;
 
-gl_FragColor = vec4(sourceColor, alpha * uScrollOpacity * diffuseColor.a);
+gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 `;
 
 const homeCompositeFragment = `
@@ -1515,6 +1517,7 @@ export class WebGLBackdrop {
     const uniforms = {
       uMapSize: { value: new Vector2(1600, 1200) },
       uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
+      uGridOffset: { value: new Vector3(0, 0, 0) },
       uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
       uDiffuseColor: { value: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE) },
       uEmissiveColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
@@ -1527,7 +1530,6 @@ export class WebGLBackdrop {
       uRevealSides: { value: 0 },
       uRevealSpread: { value: 0 },
       uRevealSpreadSides: { value: 0 },
-      uScrollOpacity: { value: 1 },
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
