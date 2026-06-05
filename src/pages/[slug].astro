@@ -85,7 +85,7 @@ const nextProjectMedia = colorValue(nextProject.data.colors.media) ?? nextProjec
           <div class="ui-project-content-header">
             <div class="grid grid-cols-20 gap-24">
               <div class="col-span-6">
-                <h1 class="ts-2 c-color">{project.data.title}</h1>
+                <h1 class="ts-2 c-color"><span>{project.data.title}</span></h1>
               </div>
               <div class="col-span-12 col-start-7">
                 <p class="ts-p c-color" set:html={project.data.description}></p>

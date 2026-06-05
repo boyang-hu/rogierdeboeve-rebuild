@@ -1097,6 +1097,16 @@ body.has-entered .ui-sound-toggle {
   color: var(--project-color);
 }
 
+.ui-project-content-header .ts-2,
+.ui-project-info-item {
+  overflow: hidden;
+}
+
+.ui-project-content-header .ts-2 > span,
+.ui-project-info-item span {
+  display: block;
+}
+
 .ui-project-content .ts-p {
   opacity: 0.6;
 }
