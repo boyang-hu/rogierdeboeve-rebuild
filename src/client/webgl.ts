@@ -315,6 +315,7 @@ uniform float uEmissiveIntensity;
 uniform float uRoughness;
 uniform float uMetalness;
 uniform float uEnvMapIntensity;
+uniform float uSpotMapIntensity;
 uniform float uDarkness;
 uniform float uSaturation;
 uniform float uContrast;
@@ -361,15 +362,15 @@ void main() {
   vec3 gridThumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.22);
   vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
   float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
-  vec3 thumb = mix(gridThumb, spotThumb, spotMask * 0.38);
+  vec3 thumb = mix(gridThumb, spotThumb, spotMask * uSpotMapIntensity);
   thumb = (thumb - 0.5) * uContrast + 0.5;
   thumb = saturateColor(thumb, uSaturation);
   float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
   float centerMask = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
   float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.6) * spotMask;
-  float centeredLum = lum * (0.3 + centerMask * 0.55 + spotCenter * 1.1);
+  float centeredLum = lum * (0.3 + centerMask * 0.45 + spotCenter * 0.65 * uSpotMapIntensity);
   float lightMask = smoothstep(0.14, 0.66, centeredLum);
-  lightMask *= 0.12 + centerMask * 0.22 + spotCenter * 0.46;
+  lightMask *= (0.07 + centerMask * 0.14 + spotCenter * 0.2) * uSpotMapIntensity;
 
   float directional = dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5;
   float roughLight = mix(1.0, directional, clamp(1.0 - uRoughness, 0.0, 1.0));
@@ -378,11 +379,11 @@ void main() {
   float faceLight = clamp(envLight * roughLight * metalLight, 0.45, 1.05);
   vec3 litDiffuse = uDiffuseColor * faceLight;
   vec3 emissive = uEmissiveColor * uEmissiveIntensity;
-  vec3 projection = mix(uTint * 0.12, thumb, 0.24 + spotMask * 0.08);
+  vec3 projection = mix(uTint * 0.08, thumb, 0.16 + spotMask * 0.05);
   vec3 color = litDiffuse + emissive;
-  color = mix(color, color + projection * (0.045 + spotMask * 0.07), lightMask);
-  color += thumb * spotMask * 0.035;
-  color = mix(color, uDarknessColor, uDarkness * (0.06 + (1.0 - lum) * 0.16));
+  color = mix(color, color + projection * (0.025 + spotMask * 0.035), lightMask);
+  color += thumb * spotMask * 0.015 * uSpotMapIntensity;
+  color = mix(color, uDarknessColor, uDarkness * 0.08);
 
   vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
   float simLight = texture2D(tMouseSim2, screenUv).r;
@@ -1609,6 +1610,7 @@ export class WebGLBackdrop {
         uRoughness: { value: SOURCE_WORK_ROUGHNESS },
         uMetalness: { value: SOURCE_WORK_METALNESS },
         uEnvMapIntensity: { value: SOURCE_WORK_ENVMAP_INTENSITY },
+        uSpotMapIntensity: { value: 0.35 },
         uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
         uReveal: { value: reveal },
         uRevealProject: { value: 1 },

@@ -158,7 +158,8 @@ Last updated: 2026-06-05
 | `a7b665f` | Home WebGL | Batched source `GA/VA` shader-interface alignment: replaced remaining hard-coded work-grid dimensions in the cube fragment with `uGridSize`, added source-compatible `uMouseSpeed`, and damped the mesh mouse-simulation speed with the source `10` factor before writing it to visible work blocks. |
 | `9d22513` | Home WebGL | Batched source `OA/kA` composite-interface alignment: renamed the final composite scene input to source-style `tScene`, added source-compatible `tBlur`, `boolFluid`, `boolLuminosity`, and `boolFxaa` uniforms, and synchronized those render-manager flags before the final composite pass while keeping current default behavior unchanged. |
 | `b484da5` | Home WebGL | Batched source `Lu/kA/OA` render-manager settings alignment: added a source-shaped home render settings object, routed composite/luminosity/bloom flags and factors through it, kept source bloom kernels `[3,5,7,9,11]`, and made the render loop follow the source settings-gated luminosity/bloom/mousesim branches while preserving current home defaults. |
-| `current batch` | Home WebGL | Batched source `GA/VA/p1` material and spotlight-map alignment: added source standard-material constants for work blocks, reset reveal-side defaults to source `VA` values, reduced non-source thumbnail projection compensation, added a real Three `SpotLight` with `thumbCompositeTarget` as its map, and synchronized spotlight position/target/intensity with the shader path. |
+| `c33641f` | Home WebGL | Batched source `GA/VA/p1` material and spotlight-map alignment: added source standard-material constants for work blocks, reset reveal-side defaults to source `VA` values, reduced non-source thumbnail projection compensation, added a real Three `SpotLight` with `thumbCompositeTarget` as its map, and synchronized spotlight position/target/intensity with the shader path. |
+| `current batch` | Home WebGL | Batched source `VA` fragment-path alignment: treated source standard lighting as the material baseline, added an explicit transitional `uSpotMapIntensity`, reduced thumbnail sampling so it no longer dominates base work-block color/darkness, and kept the source alpha/mouse-lightness/reveal logic as the primary fragment tail. |
 
 ## Current Focus
 
@@ -183,7 +184,7 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue `GA/VA` source-standard-material migration where it can be proven from the bundle, especially replacing the remaining simplified fragment lighting while preserving source alpha/reveal logic.
+1. Continue `GA/VA` source-standard-material migration where it can be proven from the bundle, especially replacing the remaining simplified fragment lighting with actual Three standard-material shader injection while preserving source alpha/reveal logic.
 2. Continue source `p1/GA` render visibility, spotlight map, and lighting review after the real spotlight-map scene path has been restored.
 3. Continue `Lu/A1/OA` only where the source settings model exposes material behavior gaps, especially optional blur/fxaa/fluid placeholders that can be no-op aligned safely.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
