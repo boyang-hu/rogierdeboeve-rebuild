@@ -70,10 +70,11 @@ Last updated: 2026-06-05
 | `5ac8713` | Home WebGL | Matched source `p1.resize` mobile behavior by keeping the work WebGL scene active below `LG` and shifting `sceneWrap.position.y` to `.3` below source `MD=800`. |
 | `2af884f` | Home DOM | Moved work gallery pointer gating closer to source `yD.checkSpeed()` by tracking pointer activity and last deltas, then toggling `.is-dragging` from the RAF loop instead of using a fixed timeout for every gallery delta. |
 | `452bf21` | Home DOM | Matched source `yD.onVirtualScroll` snap state more closely by only easing `scroll.diff` back toward zero after gallery input has enabled the snap flag and by clearing/restarting the 100ms snap timeout on each delta. |
+| `pending` | Home DOM | Extended the session-backed work gallery state toward source `Qe.workState` by preserving `index.current/prev/next`, `activeHook`, and `targetHook` alongside scroll state. |
 
 ## Current Focus
 
-Continue Phase 2, Home DOM and interaction parity, while keeping Phase 1 WebGL and the project detail media system stable.
+Continue Phase 2, Home DOM and interaction parity, while keeping Phase 1 WebGL and the project detail media system stable. The current pass is aligning source `yD` work-gallery state restoration before returning to page-level `SD` transitions and Phase 1 composite details.
 
 Immediate source targets:
 
@@ -85,7 +86,7 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Continue comparing source `yD` against `initWorkGallery`, especially snap timeout state, transition locks, and active hook updates.
+1. Compare source `SD` page-level init/animate-in/out against current scene reveal, description, and availability wiring.
 2. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
 3. Improve home animate-in/animate-out sequencing for nav/title/footer/CTA to better match `SD/vD/gD`.
 4. Return to Phase 1 `OA/kA/p1/GA/T1` after the next DOM interaction pass lands.

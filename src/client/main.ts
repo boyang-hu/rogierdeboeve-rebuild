@@ -230,6 +230,13 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const totalItems = cardsArray.length - 1;
   const step = 1000;
   const limit = cardsArray.length * step;
+  const indexState = {
+    current: activeIndex,
+    prev: activeIndex === 0 ? totalItems : activeIndex - 1,
+    next: activeIndex === totalItems ? 0 : activeIndex + 1,
+  };
+  let activeHook = activeIndex * step;
+  let targetHook = activeHook;
   const scroll = {
     virtual: cardsArray.length * 100000,
     target: cardsArray.length * 100000,
@@ -245,18 +252,26 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const restored = JSON.parse(sessionStorage.getItem(stateKey) ?? "null") as
       | {
           slug?: string;
-          index?: number;
+          index?: Partial<typeof indexState>;
           scroll?: Partial<typeof scroll>;
+          activeHook?: number;
+          targetHook?: number;
         }
       | null;
     const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restored?.slug);
     if (restored && restoredIndex >= 0) {
       activeIndex = restoredIndex;
+      Object.assign(indexState, restored.index);
       Object.assign(scroll, restored.scroll);
+      activeHook = typeof restored.activeHook === "number" ? restored.activeHook : restoredIndex * step + scroll.remainder;
+      targetHook = typeof restored.targetHook === "number" ? restored.targetHook : activeHook;
     }
   } catch {
     sessionStorage.removeItem(stateKey);
   }
+  indexState.current = activeIndex;
+  indexState.prev = activeIndex === 0 ? totalItems : activeIndex - 1;
+  indexState.next = activeIndex === totalItems ? 0 : activeIndex + 1;
   let isTransitioning = false;
   let nextTransitioning = false;
   let prevTransitioning = false;
@@ -282,6 +297,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const setIndexState = (index: number) => {
     activeIndex = index < 0 ? totalItems : index > totalItems ? 0 : index;
+    indexState.current = activeIndex;
+    indexState.prev = activeIndex === 0 ? totalItems : activeIndex - 1;
+    indexState.next = activeIndex === totalItems ? 0 : activeIndex + 1;
   };
 
   const activateIndex = (index: number, emitScene = true) => {
@@ -345,7 +363,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const scrollToIndex = (index: number) => {
     isTransitioning = true;
-    const targetHook = finalScrollPosition(index);
+    targetHook = finalScrollPosition(index);
     window.dispatchEvent(new CustomEvent("rd:nav-click", { detail: { slug: cardsArray[index]?.dataset.slug } }));
     scrollTo(targetHook);
     activateIndex(index);
@@ -401,7 +419,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       stateKey,
       JSON.stringify({
         slug: card.dataset.slug,
-        index: activeIndex,
+        index: indexState,
         scroll: {
           virtual: scroll.virtual,
           target: scroll.target,
@@ -410,6 +428,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
           progress: scroll.progress,
           remainder: scroll.remainder,
         },
+        activeHook,
+        targetHook,
       }),
     );
   };
@@ -572,8 +592,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (!isTransitioning && scroll.active) {
       let index = Math.round(Math.abs((scroll.current % limit) / step));
       if (scroll.current > limit - step / 2) index = 0;
+      activeHook = index * step + scroll.remainder;
       if (cardsArray[index] && index !== activeIndex) {
         activateIndex(index);
+        targetHook = index * step + scroll.remainder;
       }
     }
     getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
