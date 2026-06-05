@@ -324,7 +324,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
           targetHook?: number;
           activeProject?: string;
           sceneRotation?: number;
-          zoom?: number;
         }
       | null;
     const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restored?.slug);
@@ -335,7 +334,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       activeHook = typeof restored.activeHook === "number" ? restored.activeHook : restoredIndex * step + scroll.remainder;
       targetHook = typeof restored.targetHook === "number" ? restored.targetHook : activeHook;
       sceneRotation = typeof restored.sceneRotation === "number" && Math.abs(restored.sceneRotation) <= 30 ? restored.sceneRotation : 0;
-      sceneZoom = typeof restored.zoom === "number" ? Math.max(0, Math.min(1, restored.zoom)) : 0;
       activeProjectId = restored.activeProject ?? restored.slug ?? cardsArray[restoredIndex]?.dataset.slug ?? "";
       scroll.active = false;
       scroll.current = wrap(scroll.animated || scroll.target || restoredIndex * step, limit);
@@ -535,7 +533,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
         activeHook,
         targetHook,
         sceneRotation,
-        zoom: sceneZoom,
       }),
     );
   };
@@ -547,7 +544,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const enterWorkGallery = () => {
     if (scroll.active) return;
-    getWebgl()?.restoreGalleryState?.(scroll.progress, sceneRotation, sceneZoom);
+    getWebgl()?.restoreGalleryState?.(scroll.progress, sceneRotation);
     getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
     getWebgl()?.enterWorkGallery?.(activeProjectId || cardsArray[activeIndex]?.dataset.slug);
     scroll.active = true;

@@ -1297,8 +1297,6 @@ export class WebGLBackdrop {
     this.projectRevealProjectTweens = [];
     this.setRevealSpread(1, 0.65, "power3.in");
     this.setSpotLightIntensity(0, 1, "none");
-    this.setFluidStrength(0.5, 0.5);
-    this.setMouseFactor(1, 0.5);
     gsap.to(this.projectionMaterial.uniforms.uReveal, { value: 0, duration: 0.5, ease: "none" });
     this.workItems.forEach((item) => {
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 0, duration: 0.5, ease: "none" }));
