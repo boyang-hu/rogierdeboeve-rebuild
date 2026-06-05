@@ -56,6 +56,7 @@ type WorkItem = {
   material: ShaderMaterial;
   mesh: InstancedMesh;
   thumb: Mesh<PlaneGeometry, ShaderMaterial>;
+  rayPlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
   reveal: number;
 };
 
@@ -648,34 +649,6 @@ void main() {
 }
 `;
 
-const projectionFragment = `
-precision highp float;
-
-uniform sampler2D tThumb;
-uniform vec3 uTint;
-uniform float uReveal;
-uniform float uOpacity;
-
-varying vec2 vUv;
-
-float vignette(vec2 uv, vec2 center, float inner, float outer) {
-  return smoothstep(outer, inner, distance(uv, center));
-}
-
-void main() {
-  vec2 sourceUv = (vUv - 0.5) * 0.34 + 0.5;
-  vec3 thumb = texture2D(tThumb, sourceUv).rgb;
-  float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
-  float neutral = 1.0 - smoothstep(0.04, 0.22, length(thumb - vec3(lum)));
-  float center = pow(vignette(vUv, vec2(0.5), 0.02, 0.52), 2.4);
-  float mask = max(smoothstep(0.36, 0.76, lum), neutral * smoothstep(0.28, 0.68, lum));
-  mask *= center * uReveal;
-  vec3 color = mix(uTint * 0.95, vec3(1.0), smoothstep(0.52, 0.86, lum));
-  color += thumb * 0.1;
-  gl_FragColor = vec4(color, clamp(mask * uOpacity, 0.0, 0.035));
-}
-`;
-
 const thumbVertex = `
 varying vec2 vUv;
 
@@ -1044,8 +1017,6 @@ export class WebGLBackdrop {
   private screenMouseSimulationIndex = 0;
   private thumbCompositeMaterial: ShaderMaterial;
   private thumbCompositeScene = new Scene();
-  private projectionMaterial: ShaderMaterial;
-  private projectionPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private floorMaterial: ShaderMaterial;
   private floorPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private environmentMaterial: ShaderMaterial;
@@ -1053,7 +1024,6 @@ export class WebGLBackdrop {
   private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private thumbCompositeTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private raycaster = new Raycaster();
-  private mousePlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private raf = 0;
   private pointer = new Vector2();
   private targetPointer = new Vector2();
@@ -1158,9 +1128,6 @@ export class WebGLBackdrop {
     this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
-    this.projectionMaterial = this.createProjectionMaterial();
-    this.projectionPlane = new Mesh(new PlaneGeometry(2.6, 1.82), this.projectionMaterial);
-    this.projectionPlane.position.set(0, 0, 0);
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
     this.floorPlane.position.y = -1.65;
@@ -1175,7 +1142,6 @@ export class WebGLBackdrop {
     this.thumbScene.add(this.thumbWrap);
 
     this.createWorkScene();
-    this.mousePlane = this.createMousePlane();
     this.createMediaPlanes();
     this.loadCompositeTextures();
 
@@ -1268,8 +1234,6 @@ export class WebGLBackdrop {
     this.spotLightPosition.set(0, 0, 3.7);
     this.spotLightTarget.set(0, 0, -8);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 0);
-    gsap.killTweensOf(this.projectionMaterial.uniforms.uReveal);
-    this.projectionMaterial.uniforms.uReveal.value = 1;
   }
 
   setPreviewMode(enabled: boolean) {
@@ -1300,7 +1264,6 @@ export class WebGLBackdrop {
     this.projectRevealProjectTweens = [];
     this.setRevealSpread(1, 0.65, "power3.in");
     this.setSpotLightIntensity(0, 1, "none");
-    gsap.to(this.projectionMaterial.uniforms.uReveal, { value: 0, duration: 0.5, ease: "none" });
     this.workItems.forEach((item) => {
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 0, duration: 0.5, ease: "none" }));
     });
@@ -1376,6 +1339,8 @@ export class WebGLBackdrop {
       item.material.dispose();
       item.thumb.geometry.dispose();
       item.thumb.material.dispose();
+      item.rayPlane.geometry.dispose();
+      item.rayPlane.material.dispose();
     });
     this.backgroundMaterial.dispose();
     this.workRawTarget.dispose();
@@ -1397,14 +1362,10 @@ export class WebGLBackdrop {
     this.screenMouseSimulationMaterial.dispose();
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
-    this.projectionPlane.geometry.dispose();
-    this.projectionMaterial.dispose();
     this.floorPlane.geometry.dispose();
     this.floorMaterial.dispose();
     this.environmentPlane.geometry.dispose();
     this.environmentMaterial.dispose();
-    this.mousePlane.geometry.dispose();
-    this.mousePlane.material.dispose();
     this.thumbTarget.dispose();
     this.renderer.dispose();
     this.root.replaceChildren();
@@ -1430,8 +1391,10 @@ export class WebGLBackdrop {
       const material = this.createWorkBlockMaterial(payload, card.classList.contains("is-active") ? 1 : 0);
       const mesh = this.createBlockMesh(material);
       const thumb = this.createThumbPlane(payload);
+      const rayPlane = this.createWorkRayPlane();
       const group = new Group();
       group.add(mesh);
+      group.add(rayPlane);
       if (payload.slug === "demorgen") rotationAdjustment = -theta * index;
       group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius;
       group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
@@ -1445,6 +1408,7 @@ export class WebGLBackdrop {
         material,
         mesh,
         thumb,
+        rayPlane,
         reveal: card.classList.contains("is-active") ? 1 : 0,
       });
       if (payload.thumb) this.loadTexture(payload.thumb, (texture) => {
@@ -1747,23 +1711,6 @@ export class WebGLBackdrop {
     });
   }
 
-  private createProjectionMaterial() {
-    return new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      depthTest: false,
-      blending: AdditiveBlending,
-      uniforms: {
-        tThumb: { value: this.thumbCompositeTarget.texture },
-        uTint: { value: colorFrom(DEFAULT_COLOR) },
-        uReveal: { value: 0 },
-        uOpacity: { value: 0.014 },
-      },
-      vertexShader: thumbVertex,
-      fragmentShader: projectionFragment,
-    });
-  }
-
   private createFloorMaterial() {
     return new ShaderMaterial({
       transparent: true,
@@ -1795,7 +1742,7 @@ export class WebGLBackdrop {
     });
   }
 
-  private createMousePlane() {
+  private createWorkRayPlane() {
     const material = new MeshBasicMaterial({ visible: false });
     const mesh = new Mesh(
       new PlaneGeometry(
@@ -1804,8 +1751,7 @@ export class WebGLBackdrop {
       ),
       material,
     );
-    mesh.position.set(0, 0, 0.01);
-    this.homeScene.add(mesh);
+    mesh.position.set(0, 0, GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE / 2 + 0.01);
     return mesh;
   }
 
@@ -1948,7 +1894,6 @@ export class WebGLBackdrop {
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
       if (isActive) {
         tweenColorOwned(item.material.uniforms.uTint.value as Color, active.payload.color, 1.6, this.projectBlockStateTweens);
-        tweenColorOwned(this.projectionMaterial.uniforms.uTint.value as Color, active.payload.color, 1.6, this.projectBlockStateTweens);
         tweenColorOwned(item.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6, this.projectBlockStateTweens);
         this.projectBlockStateTweens.push(gsap.to(item.material.uniforms.uDarkness, { value: numeric(thumbDarkness, 0.18), duration: 1.6, ease: "expo.out" }));
         this.projectBlockStateTweens.push(gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" }));
@@ -2350,7 +2295,6 @@ export class WebGLBackdrop {
     const mobile = width < BREAKPOINT_LG;
     this.sceneWrap.visible = this.workItems.length > 0;
     this.sceneWrap.position.y = width >= BREAKPOINT_MD ? 0 : 0.3;
-    this.projectionPlane.visible = this.sceneWrap.visible;
     this.mediaPlanes.forEach((plane) => {
       plane.mesh.visible = !mobile;
       const rect = plane.track.getBoundingClientRect();
@@ -2394,10 +2338,15 @@ export class WebGLBackdrop {
   private updatePointerProjection() {
     if (!this.sceneWrap.visible) return;
     this.raycaster.setFromCamera(this.pointer, this.homeCamera);
-    const hit = this.raycaster.intersectObject(this.mousePlane, false)[0];
+    const active = this.workItems.find((item) => item.slug === this.activeSlug && item.group.visible);
+    const rayPlanes = [
+      ...(active ? [active.rayPlane] : []),
+      ...this.workItems.filter((item) => item !== active && item.group.visible).map((item) => item.rayPlane),
+    ];
+    const hit = this.raycaster.intersectObjects(rayPlanes, false)[0];
     if (!hit) return;
-    const x = MathUtils.clamp(hit.point.x / (GRID_COLS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE) + 0.5, 0, 1);
-    const y = MathUtils.clamp(hit.point.y / (GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE) + 0.5, 0, 1);
+    const x = MathUtils.clamp(hit.uv?.x ?? 0.5, 0, 1);
+    const y = MathUtils.clamp(hit.uv?.y ?? 0.5, 0, 1);
     this.mouseSimTargetPos.set(x, y);
     this.workItems.forEach((item) => {
       item.material.uniforms.uPointer.value.set(x * 2 - 1, y * 2 - 1);
