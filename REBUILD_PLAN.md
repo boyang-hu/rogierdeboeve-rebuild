@@ -167,7 +167,8 @@ Last updated: 2026-06-05
 | `15337ea` | Home WebGL | Batched source `VA` fragment-tail alignment: removed the remaining transitional thumbnail/projection/color compensation from work blocks, deleted the non-source spotlight projection uniforms from the work-block shader interface, kept thumbnail influence on the real Three `SpotLight.map` path, and restored source-shaped fragment alpha/mouse-lightness behavior. |
 | `ddf3a49` | Home WebGL | Batched source `VA` alpha-tail parity: restored work-block fragment alpha to use `uReveal * uRevealProject`, `uRevealSides`, and the source `.5` mouse-simulation alpha boost, and removed unused transitional varyings left after the spotlight-map cleanup. |
 | `b67b94e` | Home WebGL | Batched source `VA` shader-interface correction: removed the over-broad `uScrollOpacity` addition from ordinary home work blocks, and restored source-shaped `uGridOffset` plus `uMouseSpeed` declarations/uniforms on the standard-material work-block shader path. |
-| `current batch` | Home WebGL | Batched source `A1/OA/Se.showScene` reveal ownership alignment: final `OA` no longer carries non-source `uReveal/uBgColor`; scene reveal now writes the pre-composite `A1/C1`-shaped material like source `Se.showScene`; and the final composite returns to the source darken/bloom/mouse-sim tail. |
+| `a10e685` | Home WebGL | Batched source `A1/OA/Se.showScene` reveal ownership alignment: final `OA` no longer carries non-source `uReveal/uBgColor`; scene reveal now writes the pre-composite `A1/C1`-shaped material like source `Se.showScene`; and the final composite returns to the source darken/bloom/mouse-sim tail. |
+| `current batch` | Home WebGL | Batched source `p1/Se/GA/VA` scene and shader-coordinate alignment: restored the source `sceneWrap -> blocksWrap -> GA` object hierarchy with hidden about/floating block containers, added source-shaped `Se` control paths for environment rotation and the second directional-light state without adding non-source lighting, and moved work-block displacement/perlin/mouse/alpha UVs from rebuild-only `instanceGrid` sampling to source-style `instanceOffset`/`newUv` coordinates. |
 
 ## Current Focus
 
@@ -175,8 +176,8 @@ Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. 
 
 Immediate source targets:
 
-- `p1`: work scene geometry, camera, spotlight, resize, ring state, floor/environment behavior.
-- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection and a real spotlight-map path; focus on removing remaining transitional thumbnail-color compensation only when visual/source evidence supports it.
+- `p1`: continue auditing about/floating block implementation details and route-specific visibility, now that the hidden source containers and `blocksWrap` hierarchy exist.
+- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, and source-style `instanceOffset`/`newUv` sampling.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa placeholders.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds.
@@ -188,12 +189,12 @@ Latest verification:
 - `git diff --check`
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
-- Chrome headless smoke with `--enable-unsafe-swiftshader --use-angle=swiftshader --use-gl=angle` on `/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `has-webgl=true`, `canvasLost=false`, expected project media counts, no filtered runtime/shader errors.
+- Chrome CDP smoke on the existing QA Chrome (`9222`) with SwiftShader on `/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `hasWebgl=true`, `canvasLost=false`, expected project media counts, no filtered runtime/shader errors.
 
 ## Next Candidate Steps
 
-1. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing whether any fragment-side thumbnail compensation remains necessary now that real `SpotLight.map` lighting is active.
-2. Continue source `p1/GA` render visibility, spotlight map, and lighting review with the real spotlight-map scene path and standard material pipeline now active.
+1. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing the remaining `gl_Position`/chunk-injection differences around source `newUv` now that `instanceOffset` drives the sampling path.
+2. Continue source `p1/GA` render visibility, spotlight map, and lighting review with the real spotlight-map scene path, `blocksWrap` hierarchy, and standard material pipeline now active.
 3. Continue `Lu/A1/OA` only where the source settings model exposes material behavior gaps, especially optional blur/fxaa/fluid placeholders that can be no-op aligned safely.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
 5. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.

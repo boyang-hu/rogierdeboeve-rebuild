@@ -200,12 +200,12 @@ void main() {
 `;
 
 const workBlockVertexPars = `
-attribute vec3 instanceGrid;
+attribute vec3 instanceOffset;
 attribute float instanceIndex;
 attribute float instanceAlpha;
 attribute vec3 instanceColor;
 
-varying vec2 vThumbUv;
+varying vec2 vNewUv;
 varying vec2 vLocalUv;
 varying float vAlpha;
 
@@ -217,8 +217,9 @@ uniform float uRevealSides;
 uniform float uRevealSpread;
 uniform float uRevealSpreadSides;
 uniform float uMouseFactor;
-uniform vec2 uMouseUvOffset;
-uniform float uMouseUvScale;
+uniform vec2 uCoords;
+uniform vec3 uUvOffset;
+uniform float uUvOffsetScale;
 uniform sampler2D tMouseSim;
 uniform sampler2D tDisplacement;
 uniform sampler2D tPerlin;
@@ -227,6 +228,13 @@ uniform float uTime;
 
 const workBlockBeginVertexChunk = `
 vec3 transformed = vec3(position);
+vec2 screenUv = position.xy / max(uCoords, vec2(1.0));
+vec2 newUv = screenUv;
+newUv.x /= uGridSize.x;
+newUv.y /= uGridSize.y;
+newUv += instanceOffset.xy;
+vec2 mouseUv = (newUv + uUvOffset.xy) / uUvOffsetScale;
+
 vec4 instancePos = instanceMatrix[3];
 float revealMask = uReveal * uRevealProject;
 float toCenter = length(instancePos.xy);
@@ -235,8 +243,8 @@ float fadeScale = (revealMask * 5.75) - (toCenter * (revealMask / 5.75));
 float fade = clamp(fadeScale, 0.0, 1.05);
 float fadeDisplacementScale = (revealMask * 4.85) - (toCenter * (revealMask / 4.85));
 float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
-vec4 displacementMap = texture2D(tDisplacement, instanceGrid.xy);
-vec4 perlinMap = texture2D(tPerlin, instanceGrid.xy * 0.75 - uTime * 0.05);
+vec4 displacementMap = texture2D(tDisplacement, newUv);
+vec4 perlinMap = texture2D(tPerlin, newUv * 0.75 - uTime * 0.05);
 float perlinHeight = 10.0;
 float perlinDisplacement = perlinMap.r * perlinHeight;
 perlinDisplacement *= fade;
@@ -247,7 +255,6 @@ perlinDisplaced *= min(1.0, 1.0 - (perlinDisplacement - perlinHeight * 0.5) * 0.
 transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
 transformed *= fade * uRevealSides;
 
-vec2 mouseUv = (instanceGrid.xy + uMouseUvOffset) / uMouseUvScale;
 float mouse = texture2D(tMouseSim, mouseUv).r;
 float displacement = displacementMap.r;
 transformed *= 1.0 - mouse * 0.05;
@@ -267,7 +274,7 @@ transformedSpread.z += spread * 0.5;
 transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
 transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
-vThumbUv = instanceGrid.xy;
+vNewUv = newUv;
 vLocalUv = uv;
 vAlpha = instanceAlpha;
 `;
@@ -284,7 +291,7 @@ uniform float uMouseFactor;
 uniform sampler2D tMouseSim2;
 uniform vec2 uCoords;
 
-varying vec2 vThumbUv;
+varying vec2 vNewUv;
 varying vec2 vLocalUv;
 varying float vAlpha;
 
@@ -309,7 +316,7 @@ diffuseColor.a *= material.transmissionAlpha;
 #endif
 
 vec3 sourceColor = outgoingLight;
-vec2 sourceUv = vLocalUv / uGridSize.xy + vThumbUv;
+vec2 sourceUv = vLocalUv / uGridSize.xy + vNewUv;
 
 vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
 float simLight = texture2D(tMouseSim2, screenUv).r;
@@ -1036,6 +1043,9 @@ export class WebGLBackdrop {
   private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private sceneWrap = new Group();
+  private blocksWrap = new Group();
+  private aboutBlocks = new Group();
+  private floatingBlocks = new Group();
   private thumbWrap = new Group();
   private workItems: WorkItem[] = [];
   private mediaPlanes: MediaPlane[] = [];
@@ -1130,6 +1140,8 @@ export class WebGLBackdrop {
   private sceneRevealTween?: gsap.core.Tween;
   private spotLightTween?: gsap.core.Tween;
   private directionalLightTween?: gsap.core.Tween;
+  private directionalLight2Tween?: gsap.core.Tween;
+  private envRotationTween?: gsap.core.Tween;
   private fluidStrengthTween?: gsap.core.Tween;
   private mediaOpacityTween?: gsap.core.Tween;
   private mediaTranslationTweens: gsap.core.Tween[] = [];
@@ -1141,6 +1153,7 @@ export class WebGLBackdrop {
   private spotLightRight = new Vector3(1, 0, 0);
   private spotLightUp = new Vector3(0, 1, 0);
   private fluidStrength = 0.5;
+  private envRotation = 0;
   private sceneReveal = 0;
   private revealSpread = 0;
   private projectRevealTweens: gsap.core.Tween[] = [];
@@ -1217,7 +1230,14 @@ export class WebGLBackdrop {
     this.environmentMaterial = this.createEnvironmentMaterial();
     this.environmentPlane = new Mesh(new PlaneGeometry(300, 10), this.environmentMaterial);
     this.environmentPlane.position.y = -12.65;
+    this.aboutBlocks.visible = false;
+    this.floatingBlocks.visible = false;
+    this.floatingBlocks.scale.set(3.5, 3.5, 3.5);
+    this.floatingBlocks.position.y = 4.65;
+    this.homeScene.add(this.aboutBlocks);
+    this.homeScene.add(this.floatingBlocks);
     this.homeScene.add(this.sceneWrap);
+    this.sceneWrap.add(this.blocksWrap);
     this.sceneWrap.add(this.floorPlane);
     this.sceneWrap.add(this.environmentPlane);
     this.thumbScene.background = colorFrom("#222222");
@@ -1250,6 +1270,8 @@ export class WebGLBackdrop {
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
     this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
     this.setDirectionalLightIntensity(1.5);
+    this.setDirectionalLight2Intensity(1);
+    this.setEnvRotation(0, 0);
     this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
     this.setRevealSpread(0);
     this.resetThumbOffsetY();
@@ -1487,7 +1509,7 @@ export class WebGLBackdrop {
       group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius;
       group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
       group.lookAt(0, 0, 0);
-      this.sceneWrap.add(group);
+      this.blocksWrap.add(group);
       this.thumbWrap.add(thumb);
       this.workItems.push({
         slug: card.dataset.slug ?? String(index),
@@ -1533,8 +1555,8 @@ export class WebGLBackdrop {
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
       uPointer: { value: this.pointer },
-      uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
-      uMouseUvScale: { value: 1.5 },
+      uUvOffset: { value: new Vector3(0.25, 0.25, 0) },
+      uUvOffsetScale: { value: 1.5 },
       tMouseSim: { value: this.mouseSimulationTexture },
       tMouseSim2: { value: this.screenMouseSimulationTexture },
       tDisplacement: { value: this.displacementTarget.texture },
@@ -1605,7 +1627,7 @@ export class WebGLBackdrop {
 
     const mesh = new InstancedMesh(geometry, material, count);
     matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
-    geometry.setAttribute("instanceGrid", new InstancedBufferAttribute(gridOffsets, 3));
+    geometry.setAttribute("instanceOffset", new InstancedBufferAttribute(gridOffsets, 3));
     geometry.setAttribute("instanceIndex", new InstancedBufferAttribute(instanceIndexes, 1));
     geometry.setAttribute("instanceAlpha", new InstancedBufferAttribute(alphas, 1));
     geometry.setAttribute("instanceColor", new InstancedBufferAttribute(colors, 3));
@@ -2275,6 +2297,37 @@ export class WebGLBackdrop {
       onUpdate: () => {
         this.directionalLight.intensity = this.directionalLightIntensity;
       },
+    });
+  }
+
+  private setDirectionalLight2Intensity(value: number, duration = 1.6, ease = "expo.out") {
+    this.directionalLight2Tween?.kill();
+    if (duration <= 0) {
+      this.directionalLight2.intensity = value;
+      return;
+    }
+    this.directionalLight2Tween = gsap.to(this.directionalLight2, {
+      intensity: value,
+      duration,
+      ease,
+    });
+  }
+
+  private setEnvRotation(value: number, duration = 5.6, ease = "expo.inOut") {
+    this.envRotationTween?.kill();
+    const update = () => {
+      this.sceneWrap.rotation.x = this.envRotation;
+    };
+    if (duration <= 0) {
+      this.envRotation = value;
+      update();
+      return;
+    }
+    this.envRotationTween = gsap.to(this, {
+      envRotation: value,
+      duration,
+      ease,
+      onUpdate: update,
     });
   }
 
