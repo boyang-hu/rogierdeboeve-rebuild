@@ -58,7 +58,8 @@ Last updated: 2026-06-05
 | `41bbd7d` | Home DOM | Added source-style `.ui-work-container` around the home work content and aligned fixed container CSS with source `yD`/bundle styles. |
 | `0a77fdf` | Home DOM | Aligned work gallery virtual-scroll diff handling with source `yD` so sub-threshold deltas still feed scene inertia while only larger deltas trigger next/prev. |
 | `2bdb0ce` | Global DOM | Added source-style button SVG formatting from `gD.formatButton()` so `.c-button` background SVG/rect dimensions match rendered button size on init and resize. |
-| this commit | Home DOM | Added source-style mobile `touchstart` selection for work titles and progressbar items from `vD/_D`, with click dedupe to avoid double navigation. |
+| `8e65755` | Home DOM | Added source-style mobile `touchstart` selection for work titles and progressbar items from `vD/_D`, with click dedupe to avoid double navigation. |
+| this commit | Home DOM | Added session-backed work gallery state restoration as a local equivalent of source `Qe.workState` for active slug/index and virtual scroll position. |
 
 ## Current Focus
 

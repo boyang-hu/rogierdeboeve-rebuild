@@ -219,6 +219,7 @@ function initMenu() {
 }
 
 function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
+  const stateKey = "rd:work-state";
   const cards = document.querySelectorAll<HTMLElement>("[data-project-card]");
   const progressItems = document.querySelectorAll<HTMLElement>("[data-progress-slug]");
   const cardsArray = Array.from(cards);
@@ -240,6 +241,22 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     velocity: 0,
     active: true,
   };
+  try {
+    const restored = JSON.parse(sessionStorage.getItem(stateKey) ?? "null") as
+      | {
+          slug?: string;
+          index?: number;
+          scroll?: Partial<typeof scroll>;
+        }
+      | null;
+    const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restored?.slug);
+    if (restored && restoredIndex >= 0) {
+      activeIndex = restoredIndex;
+      Object.assign(scroll, restored.scroll);
+    }
+  } catch {
+    sessionStorage.removeItem(stateKey);
+  }
   let isTransitioning = false;
   let nextTransitioning = false;
   let prevTransitioning = false;
@@ -372,6 +389,26 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     return true;
   };
 
+  const saveWorkState = () => {
+    const card = cardsArray[activeIndex];
+    if (!card) return;
+    sessionStorage.setItem(
+      stateKey,
+      JSON.stringify({
+        slug: card.dataset.slug,
+        index: activeIndex,
+        scroll: {
+          virtual: scroll.virtual,
+          target: scroll.target,
+          animated: scroll.animated,
+          current: scroll.current,
+          progress: scroll.progress,
+          remainder: scroll.remainder,
+        },
+      }),
+    );
+  };
+
   cardsArray.forEach((card, index) => {
     card.addEventListener("mouseenter", () => {
       if (window.matchMedia("(max-width: 999px)").matches) return;
@@ -499,7 +536,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   activateIndex(activeIndex);
   raf = requestAnimationFrame(tick);
+  window.addEventListener("pagehide", saveWorkState);
   window.addEventListener("beforeunload", () => {
+    saveWorkState();
     window.clearTimeout(draggingTimeout);
     cancelAnimationFrame(raf);
   }, { once: true });
