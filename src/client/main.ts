@@ -280,6 +280,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     velocity: 0,
     active: false,
   };
+  const wrap = (value: number, max: number) => ((value % max) + max) % max;
   try {
     const restored = JSON.parse(sessionStorage.getItem(stateKey) ?? "null") as
       | {
@@ -304,6 +305,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       sceneZoom = typeof restored.zoom === "number" ? Math.max(0, Math.min(1, restored.zoom)) : 0;
       activeProjectId = restored.activeProject ?? restored.slug ?? cardsArray[restoredIndex]?.dataset.slug ?? "";
       scroll.active = false;
+      scroll.current = wrap(scroll.animated || scroll.target || restoredIndex * step, limit);
+      scroll.progress = scroll.current / limit;
+      scroll.remainder = scroll.target - (scroll.target % limit);
     }
   } catch {
     sessionStorage.removeItem(stateKey);
@@ -316,10 +320,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let prevTransitioning = false;
   let snap = false;
   let snapTimeout = 0;
+  let nextTimeout = 0;
+  let prevTimeout = 0;
+  let navClickTimeout = 0;
   let lastFrame = performance.now();
   let raf = 0;
   let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
   const ctaTimelines = new WeakMap<HTMLElement, gsap.core.Timeline>();
+  const cleanupCallbacks: Array<() => void> = [];
   const pointer = {
     active: false,
     x: 0,
@@ -332,7 +340,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
   let lastTouchSelect = 0;
 
-  const wrap = (value: number, max: number) => ((value % max) + max) % max;
   const lerp = (current: number, target: number, factor: number, delta: number) =>
     current + (target - current) * (1 - Math.exp(-factor * delta));
 
@@ -414,13 +421,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const scrollToIndex = (index: number) => {
     if (index === activeIndex && !isTransitioning) return;
+    window.clearTimeout(navClickTimeout);
     isTransitioning = true;
     pendingNavIndex = index;
     targetHook = finalScrollPosition(index);
     window.dispatchEvent(new CustomEvent("rd:nav-click", { detail: { slug: cardsArray[index]?.dataset.slug } }));
     scrollTo(targetHook);
     setDomActiveIndex(index);
-    window.setTimeout(() => {
+    navClickTimeout = window.setTimeout(() => {
       if (pendingNavIndex !== null) {
         activateIndex(pendingNavIndex);
         targetHook = pendingNavIndex * step + scroll.remainder;
@@ -432,18 +440,20 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const next = () => {
     if (nextTransitioning || prevTransitioning) return;
+    window.clearTimeout(nextTimeout);
     nextTransitioning = true;
     scrollTo(scroll.virtual + step);
-    window.setTimeout(() => {
+    nextTimeout = window.setTimeout(() => {
       nextTransitioning = false;
     }, 800);
   };
 
   const prev = () => {
     if (nextTransitioning || prevTransitioning) return;
+    window.clearTimeout(prevTimeout);
     prevTransitioning = true;
     scrollTo(scroll.virtual - step);
-    window.setTimeout(() => {
+    prevTimeout = window.setTimeout(() => {
       prevTransitioning = false;
     }, 800);
   };
@@ -459,6 +469,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const handleGalleryDelta = (delta: number) => {
     if (!scroll.active) return false;
+    if (nextTransitioning || prevTransitioning) return false;
     if (Math.abs(delta) < 0.01) return false;
     window.clearTimeout(snapTimeout);
     snap = true;
@@ -508,12 +519,19 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
   };
 
-  window.addEventListener("pageshow", () => {
+  const onPageShow = () => {
     document.documentElement.classList.remove("is-work-gallery-leaving");
     previewWork(false);
-  });
-  window.addEventListener("rd:work-gallery-out", () => runWorkGalleryOut(getWebgl()));
+  };
+  const onWorkGalleryOut = () => runWorkGalleryOut(getWebgl());
+  window.addEventListener("pageshow", onPageShow);
+  window.addEventListener("rd:work-gallery-out", onWorkGalleryOut);
   window.addEventListener("rd:home-gallery-in", enterWorkGallery);
+  cleanupCallbacks.push(() => {
+    window.removeEventListener("pageshow", onPageShow);
+    window.removeEventListener("rd:work-gallery-out", onWorkGalleryOut);
+    window.removeEventListener("rd:home-gallery-in", enterWorkGallery);
+  });
 
   cardsArray.forEach((card, index) => {
     card.addEventListener("mouseenter", () => {
@@ -574,21 +592,23 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     });
   });
 
-  window.addEventListener("wheel", (event) => {
+  const onWheel = (event: WheelEvent) => {
     if (!document.body.classList.contains("is-home")) return;
     const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
     if (!handleGalleryDelta(delta)) return;
     event.preventDefault();
-  }, { passive: false });
+  };
 
-  window.addEventListener("keydown", (event) => {
+  const onKeyDown = (event: KeyboardEvent) => {
     if (!document.body.classList.contains("is-home")) return;
+    if (!scroll.active) return;
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
     if (event.key === "ArrowRight" || event.key === "ArrowDown") next();
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") prev();
-  });
-  window.addEventListener("mousedown", (event) => {
+  };
+
+  const onMouseDown = (event: MouseEvent) => {
     if (!document.body.classList.contains("is-home")) return;
     pointer.active = true;
     pointer.x = event.clientX;
@@ -599,8 +619,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.lastDeltaY = 0;
     pointer.moved = false;
     event.preventDefault();
-  });
-  window.addEventListener("mousemove", (event) => {
+  };
+
+  const onMouseMove = (event: MouseEvent) => {
     if (!document.body.classList.contains("is-home") || !pointer.active) return;
     const deltaX = -(event.clientX - pointer.x);
     const deltaY = -(event.clientY - pointer.y);
@@ -610,20 +631,22 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.lastDeltaY = deltaY;
     const delta = Math.abs(deltaY) > Math.abs(deltaX) ? deltaY : deltaX;
     pointer.moved = handleGalleryDelta(delta) || pointer.moved;
-  }, { passive: true });
-  window.addEventListener("mouseup", () => {
+  };
+
+  const onPointerEnd = () => {
     pointer.active = false;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
-  });
-  window.addEventListener("blur", () => {
+  };
+
+  const onBlur = () => {
     pointer.active = false;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
     setDragging(false);
-  });
+  };
 
-  window.addEventListener("touchstart", (event) => {
+  const onTouchStart = (event: TouchEvent) => {
     const point = event.touches[0];
     pointer.active = true;
     pointer.x = point?.clientX ?? 0;
@@ -633,8 +656,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
     pointer.moved = false;
-  }, { passive: true });
-  window.addEventListener("touchmove", (event) => {
+  };
+
+  const onTouchMove = (event: TouchEvent) => {
     if (!document.body.classList.contains("is-home")) return;
     const point = event.touches[0];
     if (!point) return;
@@ -646,8 +670,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.lastDeltaY = deltaY;
     const delta = Math.abs(deltaY) > Math.abs(deltaX) ? deltaY : deltaX;
     pointer.moved = handleGalleryDelta(delta) || pointer.moved;
-  }, { passive: true });
-  window.addEventListener("touchend", (event) => {
+  };
+
+  const onTouchEnd = (event: TouchEvent) => {
     pointer.active = false;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
@@ -657,7 +682,28 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const delta = end - pointer.startX;
     if (Math.abs(delta) < 42) return;
     handleGalleryDelta(-delta);
-  }, { passive: true });
+  };
+
+  window.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("mousedown", onMouseDown);
+  window.addEventListener("mousemove", onMouseMove, { passive: true });
+  window.addEventListener("mouseup", onPointerEnd);
+  window.addEventListener("blur", onBlur);
+  window.addEventListener("touchstart", onTouchStart, { passive: true });
+  window.addEventListener("touchmove", onTouchMove, { passive: true });
+  window.addEventListener("touchend", onTouchEnd, { passive: true });
+  cleanupCallbacks.push(() => {
+    window.removeEventListener("wheel", onWheel);
+    window.removeEventListener("keydown", onKeyDown);
+    window.removeEventListener("mousedown", onMouseDown);
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onPointerEnd);
+    window.removeEventListener("blur", onBlur);
+    window.removeEventListener("touchstart", onTouchStart);
+    window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("touchend", onTouchEnd);
+  });
 
   const tick = (now: number) => {
     const delta = Math.min(0.05, Math.max(0.001, (now - lastFrame) / 1000));
@@ -688,14 +734,28 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     raf = requestAnimationFrame(tick);
   };
 
+  const cleanupWorkGallery = () => {
+    saveWorkState();
+    scrollToAnimation?.kill();
+    window.clearTimeout(snapTimeout);
+    window.clearTimeout(nextTimeout);
+    window.clearTimeout(prevTimeout);
+    window.clearTimeout(navClickTimeout);
+    cancelAnimationFrame(raf);
+    setDragging(false);
+    cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
+  };
+
   activateIndex(activeIndex, false);
   raf = requestAnimationFrame(tick);
-  window.addEventListener("pagehide", saveWorkState);
-  window.addEventListener("beforeunload", () => {
-    saveWorkState();
-    window.clearTimeout(snapTimeout);
-    cancelAnimationFrame(raf);
-  }, { once: true });
+  const onPageHide = () => saveWorkState();
+  const onBeforeUnload = () => cleanupWorkGallery();
+  window.addEventListener("pagehide", onPageHide, { once: true });
+  window.addEventListener("beforeunload", onBeforeUnload, { once: true });
+  cleanupCallbacks.push(() => {
+    window.removeEventListener("pagehide", onPageHide);
+    window.removeEventListener("beforeunload", onBeforeUnload);
+  });
 }
 
 function initScrollState() {
