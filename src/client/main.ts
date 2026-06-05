@@ -36,6 +36,8 @@ function projectPayloadFromElement(element?: HTMLElement | null) {
     blocks: element?.dataset.blocks,
     ambient: element?.dataset.ambient,
     darkness: element?.dataset.darkness,
+    overviewDarkness: element?.dataset.overviewDarkness,
+    thumbDarkness: element?.dataset.thumbDarkness,
     darknessColor: element?.dataset.darknessColor,
     saturation: element?.dataset.saturation,
     contrast: element?.dataset.contrast,
@@ -248,6 +250,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     animateCta(card, true);
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
+    window.dispatchEvent(new CustomEvent("rd:project-active", { detail: { slug: card.dataset.slug, payload } }));
     if (emitScene) getWebgl()?.setProject(payload);
   };
 
@@ -295,6 +298,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const scrollToIndex = (index: number) => {
     isTransitioning = true;
     const targetHook = finalScrollPosition(index);
+    window.dispatchEvent(new CustomEvent("rd:nav-click", { detail: { slug: cardsArray[index]?.dataset.slug } }));
     scrollTo(targetHook);
     activateIndex(index);
     window.setTimeout(() => {
