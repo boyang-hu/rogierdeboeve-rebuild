@@ -366,11 +366,15 @@ void main() {
 const homeCompositeFragment = `
 precision highp float;
 
-uniform sampler2D tWork;
+uniform sampler2D tScene;
 uniform sampler2D tBloom;
+uniform sampler2D tBlur;
 uniform sampler2D tFluid;
 uniform sampler2D tMouseSim;
 uniform bool boolBloom;
+uniform bool boolFluid;
+uniform bool boolLuminosity;
+uniform bool boolFxaa;
 uniform float uReveal;
 uniform float uDarken;
 uniform float uSaturation;
@@ -405,7 +409,7 @@ void main() {
   vec2 uv = vUv;
   vec4 fluid = texture2D(tFluid, uv);
   vec4 mouseSim = texture2D(tMouseSim, uv);
-  vec3 color = rgbshift(tWork, uv, -1.0, 0.0015).rgb;
+  vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
   if (boolBloom) {
     vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
     float amount = 0.001 * uBloomDistortion;
@@ -1675,11 +1679,15 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tWork: { value: this.compositeTarget.texture },
+        tScene: { value: this.compositeTarget.texture },
         tBloom: { value: this.bloomTarget.texture },
+        tBlur: { value: this.fluidPlaceholder },
         tFluid: { value: this.fluidPlaceholder },
         tMouseSim: { value: this.screenMouseSimulationTexture },
         boolBloom: { value: true },
+        boolFluid: { value: false },
+        boolLuminosity: { value: true },
+        boolFxaa: { value: false },
         uReveal: { value: 0 },
         uDarken: { value: 0.1 },
         uSaturation: { value: 1.15 },
@@ -2765,8 +2773,15 @@ export class WebGLBackdrop {
       this.renderer.clear();
       this.renderer.render(this.bloomCompositeScene, this.backgroundCamera);
       this.renderer.setRenderTarget(null);
+      this.compositeMaterial.uniforms.tScene.value = this.compositeTarget.texture;
       this.compositeMaterial.uniforms.tBloom.value = this.bloomTarget.texture;
+      this.compositeMaterial.uniforms.tBlur.value = this.fluidPlaceholder;
+      this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
+      this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
       this.compositeMaterial.uniforms.boolBloom.value = true;
+      this.compositeMaterial.uniforms.boolFluid.value = false;
+      this.compositeMaterial.uniforms.boolLuminosity.value = true;
+      this.compositeMaterial.uniforms.boolFxaa.value = false;
       this.renderer.render(this.compositeScene, this.backgroundCamera);
     }
     if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
