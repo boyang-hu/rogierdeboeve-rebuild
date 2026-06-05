@@ -218,7 +218,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const card = cardsArray[activeIndex];
     if (!card) return;
     cardsArray.forEach((item) => item.classList.remove("is-active"));
-    progressArray.forEach((item) => item.classList.toggle("is-active", item.dataset.progressSlug === card.dataset.slug));
+    progressArray.forEach((item) => item.classList.toggle("is-active", (item.dataset.slug ?? item.dataset.progressSlug) === card.dataset.slug));
     card.classList.add("is-active");
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
@@ -322,7 +322,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   progressArray.forEach((item) => {
     item.addEventListener("click", () => {
-      const index = cardsArray.findIndex((candidate) => candidate.dataset.slug === item.dataset.progressSlug);
+      const slug = item.dataset.slug ?? item.dataset.progressSlug;
+      const index = cardsArray.findIndex((candidate) => candidate.dataset.slug === slug);
       if (index >= 0) scrollToIndex(index);
     });
   });

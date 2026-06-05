@@ -37,7 +37,8 @@ Last updated: 2026-06-05
 | `7f35f97` | Home WebGL | Aligned mouse UV projection with source `uUvOffset/uUvOffsetScale` and enlarged ray plane mapping. |
 | `efe5786` | Home WebGL | Added lightweight work-scene bloom compensation based on source `kA/OA` luminosity and bloom settings. |
 | `9ff9453` | Home DOM | Added source-style work CTA magnet movement from source `gD`. |
-| pending | Home DOM | Added source-style temporary `is-dragging` state during gallery wheel/touch navigation to suppress accidental link interaction, matching source `yD` pointer gating. |
+| `ed80a14` | Home DOM | Added source-style temporary `is-dragging` state during gallery wheel/touch navigation to suppress accidental link interaction, matching source `yD` pointer gating. |
+| pending | Home DOM | Added source-compatible progressbar `data-slug` support while preserving existing `data-progress-slug` behavior from the rebuild. |
 
 ## Current Focus
 
@@ -54,10 +55,9 @@ Immediate source targets:
 ## Next Candidate Steps
 
 1. Continue comparing source `yD` against `src/client/main.ts` and align snap/transition timing where current behavior differs.
-2. Align progressbar dataset/event behavior with source `_D` while preserving current `data-progress-slug` markup or update markup if needed.
-3. Improve home animate-in/animate-out sequencing for nav/title/footer/CTA to better match `SD/vD/gD`.
-4. Revisit WebGL spotlight/thumb projection after DOM interaction parity no longer creates obvious mismatches.
-5. Start About page source analysis once home first-viewport behavior is closer.
+2. Improve home animate-in/animate-out sequencing for nav/title/footer/CTA to better match `SD/vD/gD`.
+3. Revisit WebGL spotlight/thumb projection after DOM interaction parity no longer creates obvious mismatches.
+4. Start About page source analysis once home first-viewport behavior is closer.
 
 ## Verification Baseline
 

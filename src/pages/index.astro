@@ -63,6 +63,7 @@ const colorValue = (value?: string) => {
           <button
             class={index === 0 ? "ui-progressbar-item is-active" : "ui-progressbar-item"}
             type="button"
+            data-slug={project.data.slug}
             data-progress-slug={project.data.slug}
             data-sound
           >
