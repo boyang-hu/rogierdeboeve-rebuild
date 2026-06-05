@@ -865,8 +865,18 @@ const environmentFragment = `
 precision highp float;
 
 uniform float uTime;
-uniform vec3 uAmbientColor;
-uniform float uAmbientIntensity;
+uniform vec3 uDarkenColor;
+uniform float uDarken;
+uniform float uMultiplier;
+uniform float uShader1Alpha;
+uniform float uShader1Speed;
+uniform float uShader1Scale;
+uniform float uShader2Alpha;
+uniform float uShader2Scale;
+uniform float uShader3Alpha;
+uniform float uShader3Speed;
+uniform float uShader3Scale;
+uniform float uShader1Mix3;
 
 varying vec2 vUv;
 
@@ -888,8 +898,14 @@ float noise(vec2 p) {
 void main() {
   vec2 uv = vUv;
   float band = smoothstep(1.0, 0.2, uv.y) * smoothstep(0.0, 0.25, uv.y);
-  float flow = noise(vec2(uv.x * 4.0 - uTime * 0.018, uv.y * 1.6));
-  vec3 color = mix(vec3(0.012, 0.013, 0.016), uAmbientColor, 0.12 + flow * 0.18 * clamp(uAmbientIntensity, 0.0, 1.0));
+  float shader1 = noise(vec2(uv.x * uShader1Scale - uTime * uShader1Speed * 0.08, uv.y * uShader1Scale * 0.32));
+  float shader2 = noise(vec2(uv.x * uShader2Scale + shader1 * 0.35, uv.y * uShader2Scale * 0.24));
+  float shader3 = noise(vec2(uv.x * max(0.001, uShader3Scale) + uTime * uShader3Speed * 0.04, uv.y * max(0.001, uShader3Scale) * 0.2));
+  float flow = shader1 * uShader1Alpha + shader2 * uShader2Alpha + shader3 * uShader3Alpha;
+  vec3 base = vec3(0.012, 0.013, 0.016);
+  vec3 color = mix(base, uDarkenColor, clamp(flow * uMultiplier * 0.18, 0.0, 0.42));
+  color = mix(color, color * uDarkenColor, clamp(uDarken, 0.0, 1.0));
+  color += uDarkenColor * shader1 * uShader1Mix3 * 0.025;
   gl_FragColor = vec4(color, band * 0.22);
 }
 `;
@@ -1734,8 +1750,18 @@ export class WebGLBackdrop {
       depthTest: false,
       uniforms: {
         uTime: { value: 0 },
-        uAmbientColor: { value: colorFrom("#414652") },
-        uAmbientIntensity: { value: 0.5 },
+        uDarkenColor: { value: colorFrom("#414652") },
+        uDarken: { value: 1 },
+        uMultiplier: { value: 2 },
+        uShader1Alpha: { value: 0.5 },
+        uShader1Speed: { value: 0.5 },
+        uShader1Scale: { value: 5.5 },
+        uShader2Alpha: { value: 0 },
+        uShader2Scale: { value: 13 },
+        uShader3Alpha: { value: 0 },
+        uShader3Speed: { value: 0 },
+        uShader3Scale: { value: 0 },
+        uShader1Mix3: { value: 1.5 },
       },
       vertexShader: thumbVertex,
       fragmentShader: environmentFragment,
@@ -1929,26 +1955,20 @@ export class WebGLBackdrop {
     if (duration <= 0) {
       this.backgroundMaterial.uniforms.uAmbientColor.value.copy(next);
       this.floorMaterial.uniforms.uAmbientColor.value.copy(next);
-      this.environmentMaterial.uniforms.uAmbientColor.value.copy(next);
+      this.environmentMaterial.uniforms.uDarkenColor.value.copy(next);
       this.backgroundMaterial.uniforms.uAmbientIntensity.value = intensity;
       this.floorMaterial.uniforms.uAmbientIntensity.value = intensity;
-      this.environmentMaterial.uniforms.uAmbientIntensity.value = intensity;
       return;
     }
     this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.floorMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
-    this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uDarkenColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
       duration,
       ease: "expo.out",
     }));
     this.ambientTweens.push(gsap.to(this.floorMaterial.uniforms.uAmbientIntensity, {
-      value: intensity,
-      duration,
-      ease: "expo.out",
-    }));
-    this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
       duration,
       ease: "expo.out",
