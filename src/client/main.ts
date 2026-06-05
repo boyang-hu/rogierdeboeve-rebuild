@@ -302,7 +302,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let activeHook = activeIndex * step;
   let targetHook = activeHook;
   let sceneRotation = 0;
-  let sceneZoom = 0;
   let activeProjectId = cardsArray[activeIndex]?.dataset.slug ?? "";
   const scroll = {
     virtual: cardsArray.length * 100000,
@@ -550,6 +549,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const enterWorkGallery = () => {
     if (scroll.active) return;
+    activateIndex(activeIndex, false, true, true);
     getWebgl()?.restoreGalleryState?.(scroll.progress, sceneRotation);
     getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
     getWebgl()?.enterWorkGallery?.(activeProjectId || cardsArray[activeIndex]?.dataset.slug);
@@ -640,15 +640,12 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   });
 
   const onWheel = (event: WheelEvent) => {
-    if (!document.body.classList.contains("is-home")) return;
     const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
     if (!handleGalleryDelta(delta)) return;
     event.preventDefault();
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (!document.body.classList.contains("is-home")) return;
-    if (!scroll.active) return;
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     event.preventDefault();
     if (event.key === "ArrowRight" || event.key === "ArrowDown") next();
@@ -656,7 +653,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const onMouseDown = (event: MouseEvent) => {
-    if (!document.body.classList.contains("is-home")) return;
     if (pointer.active) return;
     pointer.active = true;
     pointer.x = event.clientX;
@@ -670,7 +666,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const onMouseMove = (event: MouseEvent) => {
-    if (!document.body.classList.contains("is-home") || !pointer.active) return;
+    if (!pointer.active) return;
     const deltaX = -(event.clientX - pointer.x);
     const deltaY = -(event.clientY - pointer.y);
     pointer.x = event.clientX;
@@ -696,7 +692,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const onTouchStart = (event: TouchEvent) => {
     if (pointer.active) return;
-    if (!document.body.classList.contains("is-home")) return;
     const point = event.touches[0];
     pointer.active = true;
     pointer.x = point?.clientX ?? 0;
@@ -710,7 +705,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const onTouchMove = (event: TouchEvent) => {
-    if (!document.body.classList.contains("is-home")) return;
     const point = event.touches[0];
     if (!point) return;
     const deltaX = -(point.clientX - pointer.x);
@@ -774,9 +768,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     }
     if (scroll.active) getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
     const rollTarget = Math.max(-4, Math.min(4, scroll.velocity * -0.015));
-    const zoomTarget = Math.max(0, Math.min(1, Math.abs(scroll.velocity * 0.0015)));
     sceneRotation = lerp(sceneRotation, rollTarget, 5, delta);
-    sceneZoom = lerp(sceneZoom, zoomTarget, 5, delta);
     raf = requestAnimationFrame(tick);
   };
 
