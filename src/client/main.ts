@@ -52,6 +52,42 @@ function setWorkPreviewing(enabled: boolean) {
   document.documentElement.classList.toggle("is-work-previewing", enabled);
 }
 
+function initCtaMagnet(cta: HTMLElement) {
+  const button = cta.querySelector<HTMLElement>(".c-button");
+  if (!button || window.matchMedia("(max-width: 999px)").matches) return;
+
+  const state = { x: 0, y: 0, xLerp: 0, yLerp: 0 };
+  const render = () => {
+    state.xLerp += (state.x - state.xLerp) * 0.12;
+    state.yLerp += (state.y - state.yLerp) * 0.12;
+    button.style.transform = `translate3d(${state.xLerp}px, ${state.yLerp}px, 0)`;
+    if (Math.abs(state.x) + Math.abs(state.y) + Math.abs(state.xLerp) + Math.abs(state.yLerp) < 0.02) {
+      state.xLerp = 0;
+      state.yLerp = 0;
+      button.style.transform = "";
+      gsap.ticker.remove(render);
+    }
+  };
+  const move = (event: PointerEvent) => {
+    const bounds = cta.getBoundingClientRect();
+    state.x = (event.clientX - bounds.left - bounds.width / 2) * 0.5;
+    state.y = (event.clientY - bounds.top - bounds.height / 2) * 0.35;
+  };
+  const reset = () => {
+    state.x = 0;
+    state.y = 0;
+  };
+
+  cta.addEventListener("pointerenter", () => {
+    gsap.ticker.remove(render);
+    gsap.ticker.add(render);
+  });
+  cta.addEventListener("pointermove", move);
+  cta.addEventListener("pointerleave", reset);
+  cta.addEventListener("focusout", reset);
+  window.addEventListener("beforeunload", () => gsap.ticker.remove(render), { once: true });
+}
+
 function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
   webgl?.hideWorkScene?.();
   window.setTimeout(() => {
@@ -248,6 +284,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       navigateWithWorkSceneOut(href, getWebgl());
     });
     const cta = card.querySelector<HTMLElement>(".ui-work-cta");
+    if (cta) initCtaMagnet(cta);
     cta?.addEventListener("click", (event) => {
       event.preventDefault();
       scrollToIndex(index);
