@@ -61,7 +61,8 @@ Last updated: 2026-06-05
 | `8e65755` | Home DOM | Added source-style mobile `touchstart` selection for work titles and progressbar items from `vD/_D`, with click dedupe to avoid double navigation. |
 | `0ba12a7` | Home DOM | Added session-backed work gallery state restoration as a local equivalent of source `Qe.workState` for active slug/index and virtual scroll position. |
 | `31e3001` | Home DOM | Added source-style home gallery `mousedown` default suppression from `yD.onMouseDown`, scoped to the home view. |
-| this commit | Home WebGL | Restored source `GA` work-block displacement strength constants: Perlin reveal mix `10.25` and unrevealed wave depth `9.0`. |
+| `0c3c407` | Home WebGL | Restored source `GA` work-block displacement strength constants: Perlin reveal mix `10.25` and unrevealed wave depth `9.0`. |
+| this commit | Home WebGL | Split local cube mouse simulation from source-style screen-space `tMouseSim2`, so work-block fragment light/alpha and main composite sample screen mouse flow separately from vertex displacement. |
 
 ## Current Focus
 

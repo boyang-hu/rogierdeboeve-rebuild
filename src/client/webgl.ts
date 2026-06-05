@@ -267,6 +267,7 @@ uniform float uContrast;
 uniform float uMouseLightness;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
+uniform sampler2D tMouseSim2;
 uniform vec2 uCoords;
 
 varying vec2 vThumbUv;
@@ -329,7 +330,7 @@ void main() {
   vec2 pointerUv = uPointer * 0.5 + 0.5;
   vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
   float pointerLight = 1.0 - smoothstep(0.02, 0.58, distance(uv, pointerUv));
-  float simLight = texture2D(tMouseSim, screenUv).r;
+  float simLight = texture2D(tMouseSim2, screenUv).r;
   float mouseLight = max(pointerLight, simLight);
   color *= 0.72 + mouseLight * uMouseLightness * 0.24;
   color += pow(max(0.0, 1.0 - length(uv - 0.5) * 1.65), 2.0) * 0.12;
@@ -856,6 +857,8 @@ export class WebGLBackdrop {
   private placeholder = makePlaceholderTexture();
   private mouseSimTexture = makePlaceholderTexture([128, 128, 0, 255]);
   private mouseSimData = new Uint8Array(128 * 128 * 4);
+  private screenMouseSimTexture = makePlaceholderTexture([128, 128, 0, 255]);
+  private screenMouseSimData = new Uint8Array(128 * 128 * 4);
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private backgroundMaterial: ShaderMaterial;
@@ -885,6 +888,9 @@ export class WebGLBackdrop {
   private mouseSimNewPos = new Vector2(0.5, 0.5);
   private mouseSimTargetPos = new Vector2(0.5, 0.5);
   private mouseSimSpeed = 0;
+  private screenMouseSimOldPos = new Vector2(0.5, 0.5);
+  private screenMouseSimNewPos = new Vector2(0.5, 0.5);
+  private screenMouseSimTargetPos = new Vector2(0.5, 0.5);
   private lastTickTime = performance.now() * 0.001;
   private galleryProgress = 0;
   private sceneRotation = 0;
@@ -1041,6 +1047,7 @@ export class WebGLBackdrop {
     window.removeEventListener("scroll", this.onScroll);
     this.textureCache.forEach((texture) => texture.dispose());
     this.mouseSimTexture.dispose();
+    this.screenMouseSimTexture.dispose();
     this.noiseTexture.dispose();
     this.perlinTexture.dispose();
     this.mediaPlanes.forEach((plane) => {
@@ -1147,6 +1154,7 @@ export class WebGLBackdrop {
         uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
         uMouseUvScale: { value: 1.5 },
         tMouseSim: { value: this.mouseSimTexture },
+        tMouseSim2: { value: this.screenMouseSimTexture },
         tDisplacement: { value: this.displacementTarget.texture },
         tPerlin: { value: this.perlinTexture },
         uCoords: { value: new Vector2(1, 1) },
@@ -1251,7 +1259,7 @@ export class WebGLBackdrop {
       depthTest: false,
       uniforms: {
         tWork: { value: this.compositeTarget.texture },
-        tMouseSim: { value: this.mouseSimTexture },
+        tMouseSim: { value: this.screenMouseSimTexture },
         tNoise: { value: this.noiseTexture },
         tPerlin: { value: this.perlinTexture },
         uTime: { value: 0 },
@@ -1726,6 +1734,7 @@ export class WebGLBackdrop {
   private onPointerMove = (event: PointerEvent) => {
     this.targetPointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
     this.targetPointer.y = -(event.clientY / window.innerHeight - 0.5) * 2;
+    this.screenMouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
     this.mouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
   };
 
@@ -1811,18 +1820,25 @@ export class WebGLBackdrop {
     });
   }
 
-  private updateMouseSimulation(delta: number) {
+  private updateMouseBrush(
+    data: Uint8Array,
+    texture: Texture,
+    oldPos: Vector2,
+    newPos: Vector2,
+    targetPos: Vector2,
+    delta: number,
+    ratio: number,
+    strength: number,
+  ) {
     const size = 128;
     const lerpFactor = MathUtils.clamp(delta * 7.5, 0, 1);
-    this.mouseSimNewPos.lerp(this.mouseSimTargetPos, lerpFactor);
-    this.mouseSimSpeed = this.mouseSimNewPos.distanceTo(this.mouseSimOldPos);
-    const brushUv = this.mouseSimOldPos;
+    newPos.lerp(targetPos, lerpFactor);
+    const speed = newPos.distanceTo(oldPos);
+    const brushUv = oldPos;
     const sourcePersistence = Math.pow(0.85, delta * 10);
-    const ratio = GRID_COLS / GRID_ROWS;
-    const thickness = MathUtils.clamp(0.1 + this.mouseSimSpeed * 0.3, 0.0001, 0.2) * MathUtils.clamp(this.mouseFactor, 0.25, 1);
-    const data = this.mouseSimData;
-    const previousFlowX = (this.mouseSimNewPos.x - this.mouseSimOldPos.x) * 14;
-    const previousFlowY = (this.mouseSimNewPos.y - this.mouseSimOldPos.y) * 14;
+    const thickness = MathUtils.clamp(0.1 + speed * 0.3, 0.0001, 0.2) * strength;
+    const previousFlowX = (newPos.x - oldPos.x) * 14;
+    const previousFlowY = (newPos.y - oldPos.y) * 14;
 
     for (let y = 0; y < size; y++) {
       for (let x = 0; x < size; x++) {
@@ -1844,11 +1860,35 @@ export class WebGLBackdrop {
       }
     }
 
-    this.mouseSimOldPos.copy(this.mouseSimNewPos);
-    this.mouseSimTexture.image.data = data;
-    this.mouseSimTexture.image.width = size;
-    this.mouseSimTexture.image.height = size;
-    this.mouseSimTexture.needsUpdate = true;
+    oldPos.copy(newPos);
+    texture.image.data = data;
+    texture.image.width = size;
+    texture.image.height = size;
+    texture.needsUpdate = true;
+    return speed;
+  }
+
+  private updateMouseSimulation(delta: number) {
+    this.mouseSimSpeed = this.updateMouseBrush(
+      this.mouseSimData,
+      this.mouseSimTexture,
+      this.mouseSimOldPos,
+      this.mouseSimNewPos,
+      this.mouseSimTargetPos,
+      delta,
+      GRID_COLS / GRID_ROWS,
+      MathUtils.clamp(this.mouseFactor, 0.25, 1),
+    );
+    this.updateMouseBrush(
+      this.screenMouseSimData,
+      this.screenMouseSimTexture,
+      this.screenMouseSimOldPos,
+      this.screenMouseSimNewPos,
+      this.screenMouseSimTargetPos,
+      delta,
+      window.innerWidth / Math.max(1, window.innerHeight),
+      1,
+    );
   }
 
   private tick = () => {
