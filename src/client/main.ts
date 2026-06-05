@@ -73,7 +73,7 @@ function clearWorkPreview(webgl?: WebGLLike) {
 
 function initCtaMagnet(cta: HTMLElement) {
   const button = cta.querySelector<HTMLElement>(".c-button");
-  if (!button || window.matchMedia("(max-width: 999px)").matches) return;
+  if (!button || window.matchMedia("(max-width: 999px)").matches) return () => {};
 
   const state = { x: 0, y: 0, xLerp: 0, yLerp: 0 };
   const render = (_time: number, deltaTime: number) => {
@@ -99,14 +99,25 @@ function initCtaMagnet(cta: HTMLElement) {
     state.y = 0;
   };
 
-  cta.addEventListener("pointerenter", () => {
+  const enter = () => {
     gsap.ticker.remove(render);
     gsap.ticker.add(render);
-  });
+  };
+  const cleanup = () => gsap.ticker.remove(render);
+
+  cta.addEventListener("pointerenter", enter);
   cta.addEventListener("pointermove", move);
   cta.addEventListener("pointerleave", reset);
   cta.addEventListener("focusout", reset);
-  window.addEventListener("beforeunload", () => gsap.ticker.remove(render), { once: true });
+  window.addEventListener("beforeunload", cleanup, { once: true });
+  return () => {
+    cleanup();
+    cta.removeEventListener("pointerenter", enter);
+    cta.removeEventListener("pointermove", move);
+    cta.removeEventListener("pointerleave", reset);
+    cta.removeEventListener("focusout", reset);
+    window.removeEventListener("beforeunload", cleanup);
+  };
 }
 
 function runWorkGalleryOut(webgl?: WebGLLike) {
@@ -535,43 +546,59 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   });
 
   cardsArray.forEach((card, index) => {
-    card.addEventListener("mouseenter", () => {
+    const onCardMouseEnter = () => {
       if (window.matchMedia("(max-width: 999px)").matches) return;
       scrollToIndex(index);
-    });
-    card.addEventListener("focusin", () => scrollToIndex(index));
+    };
+    const onCardFocusIn = () => scrollToIndex(index);
     const workLink = card.querySelector<HTMLElement>(".ui-work-a");
-    workLink?.addEventListener("click", (event) => {
+    const onWorkLinkClick = (event: MouseEvent) => {
       event.preventDefault();
       if (performance.now() - lastTouchSelect < 500) return;
       scrollToIndex(index);
-    });
-    workLink?.addEventListener("touchstart", (event) => {
+    };
+    const onWorkLinkTouchStart = (event: TouchEvent) => {
       if (!window.matchMedia("(max-width: 999px)").matches) return;
       event.preventDefault();
       lastTouchSelect = performance.now();
       scrollToIndex(index);
-    });
+    };
     const cta = card.querySelector<HTMLElement>(".ui-work-cta");
-    if (cta) initCtaMagnet(cta);
-    cta?.addEventListener("click", (event) => {
+    const onCtaClick = (event: MouseEvent) => {
       event.preventDefault();
       if (performance.now() - lastTouchSelect < 500) return;
       scrollToIndex(index);
       navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl());
-    });
-    cta?.addEventListener("mouseenter", () => {
-      previewWork(true);
-    });
-    cta?.addEventListener("mouseleave", () => {
-      previewWork(false);
-    });
-    cta?.addEventListener("focusin", () => {
+    };
+    const onCtaMouseEnter = () => previewWork(true);
+    const onCtaMouseLeave = () => previewWork(false);
+    const onCtaFocusIn = () => {
       scrollToIndex(index);
       previewWork(true);
-    });
-    cta?.addEventListener("focusout", () => {
-      previewWork(false);
+    };
+    const onCtaFocusOut = () => previewWork(false);
+    const cleanupCtaMagnet = cta ? initCtaMagnet(cta) : undefined;
+
+    card.addEventListener("mouseenter", onCardMouseEnter);
+    card.addEventListener("focusin", onCardFocusIn);
+    workLink?.addEventListener("click", onWorkLinkClick);
+    workLink?.addEventListener("touchstart", onWorkLinkTouchStart);
+    cta?.addEventListener("click", onCtaClick);
+    cta?.addEventListener("mouseenter", onCtaMouseEnter);
+    cta?.addEventListener("mouseleave", onCtaMouseLeave);
+    cta?.addEventListener("focusin", onCtaFocusIn);
+    cta?.addEventListener("focusout", onCtaFocusOut);
+    cleanupCallbacks.push(() => {
+      card.removeEventListener("mouseenter", onCardMouseEnter);
+      card.removeEventListener("focusin", onCardFocusIn);
+      workLink?.removeEventListener("click", onWorkLinkClick);
+      workLink?.removeEventListener("touchstart", onWorkLinkTouchStart);
+      cta?.removeEventListener("click", onCtaClick);
+      cta?.removeEventListener("mouseenter", onCtaMouseEnter);
+      cta?.removeEventListener("mouseleave", onCtaMouseLeave);
+      cta?.removeEventListener("focusin", onCtaFocusIn);
+      cta?.removeEventListener("focusout", onCtaFocusOut);
+      cleanupCtaMagnet?.();
     });
   });
 
@@ -581,15 +608,21 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       const index = cardsArray.findIndex((candidate) => candidate.dataset.slug === slug);
       if (index >= 0) scrollToIndex(index);
     };
-    item.addEventListener("click", () => {
+    const onProgressClick = () => {
       if (performance.now() - lastTouchSelect < 500) return;
       selectProgressItem();
-    });
-    item.addEventListener("touchstart", (event) => {
+    };
+    const onProgressTouchStart = (event: TouchEvent) => {
       if (!window.matchMedia("(max-width: 999px)").matches) return;
       event.preventDefault();
       lastTouchSelect = performance.now();
       selectProgressItem();
+    };
+    item.addEventListener("click", onProgressClick);
+    item.addEventListener("touchstart", onProgressTouchStart);
+    cleanupCallbacks.push(() => {
+      item.removeEventListener("click", onProgressClick);
+      item.removeEventListener("touchstart", onProgressTouchStart);
     });
   });
 
@@ -740,6 +773,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     window.clearTimeout(prevTimeout);
     window.clearTimeout(navClickTimeout);
     cancelAnimationFrame(raf);
+    cardsArray.forEach((card) => {
+      const cta = card.querySelector<HTMLElement>(".ui-work-cta .c-button");
+      if (cta) ctaTimelines.get(cta)?.kill();
+    });
     setDragging(false);
     cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
   };
