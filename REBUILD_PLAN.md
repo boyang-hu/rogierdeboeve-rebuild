@@ -68,25 +68,26 @@ Last updated: 2026-06-05
 | `19cdcbb` | Home WebGL | Moved the home composite tail closer to source `OA`: final darken now uses screen-space `mouseSim.r`, applies source-style lighten blend with black, and finishes with saturation after darkening. |
 | `33b2c9e` | Home WebGL | Added a separate low-resolution home bloom pass so final composite samples `tBloom` like source `Lu/kA` instead of deriving all glow inline from `tWork`. |
 | `5ac8713` | Home WebGL | Matched source `p1.resize` mobile behavior by keeping the work WebGL scene active below `LG` and shifting `sceneWrap.position.y` to `.3` below source `MD=800`. |
+| this commit | Home DOM | Moved work gallery pointer gating closer to source `yD.checkSpeed()` by tracking pointer activity and last deltas, then toggling `.is-dragging` from the RAF loop instead of using a fixed timeout for every gallery delta. |
 
 ## Current Focus
 
-Continue Phase 1, Home WebGL source parity, while keeping the project detail media system stable.
+Continue Phase 2, Home DOM and interaction parity, while keeping Phase 1 WebGL and the project detail media system stable.
 
 Immediate source targets:
 
-- `A1/C1/OA/kA`: final home composite, bloom/luminosity pass behavior, mouse/fluid textures, and render-manager ordering.
-- `p1`: spotlight parallax and camera/light/floor/environment placement.
-- `GA`: work block mouse simulation, displacement, projection, material uniforms, and reveal behavior.
-- `T1/w1/E1`: thumb scene projection, transition uniforms, wrapping, visibility, and composite.
-- `Se`: global WebGL state setters for color, darken, saturation, contrast, fluid, media opacity, and project/detail transitions.
+- `yD`: work gallery virtual scroll, pointer/drag state, snap timing, keyboard/mouse/touch behavior.
+- `vD`: work title/nav click behavior and active project event flow.
+- `gD`: CTA formatting, magnet, animate in/out, and click sound behavior.
+- `_D`: progressbar click behavior and active state.
+- `SD`: page-level init/animate-in/out and source state wiring.
 
 ## Next Candidate Steps
 
-1. Continue comparing source `OA/kA/Lu` against `homeCompositeFragment` and the local render loop, especially bloom/luminosity and disabled fluid behavior.
-2. Revisit `p1` spotlight/thumb projection and camera/floor/environment placement using source constants rather than visual guessing.
-3. Continue `GA` material and mouse simulation parity, including `Ka` brush persistence, speed smoothing, and displacement texture wiring.
-4. Return to Phase 2 `yD/vD/gD/_D/SD` DOM interaction parity after the next WebGL render-manager pass lands.
+1. Continue comparing source `yD` against `initWorkGallery`, especially snap timeout state, transition locks, and active hook updates.
+2. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
+3. Improve home animate-in/animate-out sequencing for nav/title/footer/CTA to better match `SD/vD/gD`.
+4. Return to Phase 1 `OA/kA/p1/GA/T1` after the next DOM interaction pass lands.
 
 ## Verification Baseline
 

@@ -260,14 +260,16 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let isTransitioning = false;
   let nextTransitioning = false;
   let prevTransitioning = false;
-  let draggingTimeout = 0;
   let lastFrame = performance.now();
   let raf = 0;
   let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
   const ctaTimelines = new WeakMap<HTMLElement, gsap.core.Timeline>();
-  const touch = {
+  const pointer = {
+    active: false,
     x: 0,
     y: 0,
+    lastDeltaX: 0,
+    lastDeltaY: 0,
     moved: false,
   };
   let lastTouchSelect = 0;
@@ -353,7 +355,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const next = () => {
     if (nextTransitioning || prevTransitioning) return;
     nextTransitioning = true;
-    markDragging();
     scrollTo(scroll.virtual + step);
     window.setTimeout(() => {
       nextTransitioning = false;
@@ -363,7 +364,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const prev = () => {
     if (nextTransitioning || prevTransitioning) return;
     prevTransitioning = true;
-    markDragging();
     scrollTo(scroll.virtual - step);
     window.setTimeout(() => {
       prevTransitioning = false;
@@ -374,15 +374,13 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     document.querySelector<HTMLElement>("[data-view='home']")?.classList.toggle("is-dragging", enabled);
   };
 
-  const markDragging = () => {
-    setDragging(true);
-    window.clearTimeout(draggingTimeout);
-    draggingTimeout = window.setTimeout(() => setDragging(false), 800);
+  const checkSpeed = () => {
+    const moving = Math.abs(pointer.lastDeltaX) + Math.abs(pointer.lastDeltaY) * 0.001 > 0.2;
+    setDragging(pointer.active && moving);
   };
 
   const handleGalleryDelta = (delta: number) => {
     if (Math.abs(delta) < 0.01) return false;
-    markDragging();
     scroll.diff += delta;
     if (delta > 15) next();
     if (delta < -15) prev();
@@ -487,31 +485,67 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   });
   window.addEventListener("mousedown", (event) => {
     if (!document.body.classList.contains("is-home")) return;
+    pointer.active = true;
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.lastDeltaX = 0;
+    pointer.lastDeltaY = 0;
+    pointer.moved = false;
     event.preventDefault();
+  });
+  window.addEventListener("mousemove", (event) => {
+    if (!document.body.classList.contains("is-home") || !pointer.active) return;
+    const deltaX = -(event.clientX - pointer.x);
+    const deltaY = -(event.clientY - pointer.y);
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.lastDeltaX = deltaX;
+    pointer.lastDeltaY = deltaY;
+    const delta = Math.abs(deltaY) > Math.abs(deltaX) ? deltaY : deltaX;
+    pointer.moved = handleGalleryDelta(delta) || pointer.moved;
+  }, { passive: true });
+  window.addEventListener("mouseup", () => {
+    pointer.active = false;
+    pointer.lastDeltaX = 0;
+    pointer.lastDeltaY = 0;
+  });
+  window.addEventListener("blur", () => {
+    pointer.active = false;
+    pointer.lastDeltaX = 0;
+    pointer.lastDeltaY = 0;
+    setDragging(false);
   });
 
   window.addEventListener("touchstart", (event) => {
     const point = event.touches[0];
-    touch.x = point?.clientX ?? 0;
-    touch.y = point?.clientY ?? 0;
-    touch.moved = false;
+    pointer.active = true;
+    pointer.x = point?.clientX ?? 0;
+    pointer.y = point?.clientY ?? 0;
+    pointer.lastDeltaX = 0;
+    pointer.lastDeltaY = 0;
+    pointer.moved = false;
   }, { passive: true });
   window.addEventListener("touchmove", (event) => {
     if (!document.body.classList.contains("is-home")) return;
     const point = event.touches[0];
     if (!point) return;
-    const deltaX = -(point.clientX - touch.x);
-    const deltaY = -(point.clientY - touch.y);
-    touch.x = point.clientX;
-    touch.y = point.clientY;
+    const deltaX = -(point.clientX - pointer.x);
+    const deltaY = -(point.clientY - pointer.y);
+    pointer.x = point.clientX;
+    pointer.y = point.clientY;
+    pointer.lastDeltaX = deltaX;
+    pointer.lastDeltaY = deltaY;
     const delta = Math.abs(deltaY) > Math.abs(deltaX) ? deltaY : deltaX;
-    touch.moved = handleGalleryDelta(delta) || touch.moved;
+    pointer.moved = handleGalleryDelta(delta) || pointer.moved;
   }, { passive: true });
   window.addEventListener("touchend", (event) => {
+    pointer.active = false;
+    pointer.lastDeltaX = 0;
+    pointer.lastDeltaY = 0;
     if (!window.matchMedia("(max-width: 999px)").matches) return;
-    if (touch.moved) return;
-    const end = event.changedTouches[0]?.clientX ?? touch.x;
-    const delta = end - touch.x;
+    if (pointer.moved) return;
+    const end = event.changedTouches[0]?.clientX ?? pointer.x;
+    const delta = end - pointer.x;
     if (Math.abs(delta) < 42) return;
     handleGalleryDelta(-delta);
   }, { passive: true });
@@ -520,6 +554,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const delta = Math.min(0.05, Math.max(0.001, (now - lastFrame) / 1000));
     lastFrame = now;
     scroll.velocity = scroll.target - scroll.animated;
+    checkSpeed();
     scroll.diff = lerp(scroll.diff, 0, 5, delta);
     const targetPlusDiff = scroll.target + scroll.diff;
     scroll.remainder = scroll.target - (scroll.target % limit);
@@ -543,7 +578,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   window.addEventListener("pagehide", saveWorkState);
   window.addEventListener("beforeunload", () => {
     saveWorkState();
-    window.clearTimeout(draggingTimeout);
     cancelAnimationFrame(raf);
   }, { once: true });
 }
