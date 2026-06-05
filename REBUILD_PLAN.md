@@ -73,7 +73,7 @@ Last updated: 2026-06-05
 | `fd92af1` | Home DOM | Extended the session-backed work gallery state toward source `Qe.workState` by preserving `index.current/prev/next`, `activeHook`, and `targetHook` alongside scroll state. |
 | `8d99bdb` | Home DOM/WebGL | Added source-style `SD.animateIn -> Se.showScene()` wiring so the home composite `uReveal` animates in over 1.6s with `expo.out` after WebGL initialization. |
 | `489ca4c` | Home DOM | Added source-style `SD.onLeave -> Ki.animateDescriptionOut/animateAvailibilityOut` behavior to the home CTA transition path with 0.5s opacity fades. |
-| `pending` | Home WebGL | Matched source `yD.onWorkGalleryOut()` more closely by killing active work-block reveal tweens before running the gallery-out spread and project fade. |
+| `ec26bfe` | Home WebGL | Matched source `yD.onWorkGalleryOut()` more closely by killing active work-block reveal tweens before running the gallery-out spread and project fade. |
 
 ## Current Focus
 
