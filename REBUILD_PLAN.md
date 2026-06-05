@@ -150,7 +150,8 @@ Last updated: 2026-06-05
 | `921efda` | Home WebGL | Batched source `a1/o1/i1` floor-reflector alignment: added a source-style low-resolution floor reflection render target and mirrored camera pass, temporarily hides the floor while rendering the reflection texture, and reshaped the simplified floor shader around source `uReflectivity=.97`, `uMirror=1`, `uFloorMixStrength=15`, normal distortion, and Fresnel-style reflection mixing. |
 | `a8f7c2e` | Home WebGL | Batched source `u1/l1/c1` environment-shader alignment: routed the preloaded blue-noise texture into the environment as source-style `tSky`, set repeat wrapping like `Xt.blueNoise`, and reshaped the simplified environment fragment around source two-layer sky UV offsets, `smoothMask` vertical bands, sky-mask modulation, white mix, and `uDarkenColor/uDarken` final blending. |
 | `e098f4c` | Home WebGL | Batched source `Lu/kA` bloom-kernel alignment: replaced the rebuild-only fixed `blur13` bloom blur with source-style gaussian blur, and drove the five bloom mips with source kernel/sigma values `[3,5,7,9,11]` during horizontal and vertical blur passes. |
-| `current batch` | Home WebGL | Batched source `A1/C1` pre-composite uniform-shape alignment: added source-compatible disabled media/lensflare/blur uniforms, `uMediaReveal`, `uDisplacement`, `uDisplacementSize`, and `uContainerSize`, and restored the source-position media mix as a default no-op so home behavior stays unchanged while the shader interface matches the original render-manager contract more closely. |
+| `6f9c9e8` | Home WebGL | Batched source `A1/C1` pre-composite uniform-shape alignment: added source-compatible disabled media/lensflare/blur uniforms, `uMediaReveal`, `uDisplacement`, `uDisplacementSize`, and `uContainerSize`, and restored the source-position media mix as a default no-op so home behavior stays unchanged while the shader interface matches the original render-manager contract more closely. |
+| `current batch` | Home WebGL | Batched source `GA/VA` work-block material alignment: reshaped the local cube fragment away from rebuild-only logo/hot-mask amplification, added source-shaped `uDiffuseColor`, `uEmissiveColor`, and `uEmissiveIntensity` uniforms, kept diffuse at source `#808080`, and made `setBlocksColor()` animate the emissive path while preserving the old compatibility uniform. |
 
 ## Current Focus
 
@@ -171,7 +172,7 @@ Latest verification:
 - `git diff --check`
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
-- Chrome headless smoke with SwiftShader on `/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `has-webgl=true`, `canvasLost=false`, expected project media counts, no filtered runtime/shader errors. The remaining warning is the expected audio autoplay restriction in headless Chrome.
+- Chrome headless smoke with `--enable-unsafe-swiftshader --use-angle=swiftshader --use-gl=angle` on `/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `has-webgl=true`, `canvasLost=false`, expected project media counts, no filtered runtime/shader errors.
 
 ## Next Candidate Steps
 

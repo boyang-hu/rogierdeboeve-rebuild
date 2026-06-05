@@ -263,7 +263,10 @@ uniform sampler2D tThumb;
 uniform vec2 uMapSize;
 uniform vec3 uTint;
 uniform vec3 uBlockColor;
+uniform vec3 uDiffuseColor;
+uniform vec3 uEmissiveColor;
 uniform vec3 uDarknessColor;
+uniform float uEmissiveIntensity;
 uniform float uDarkness;
 uniform float uSaturation;
 uniform float uContrast;
@@ -316,32 +319,23 @@ void main() {
   float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
   float centerMask = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
   float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.6) * spotMask;
-  float neutral = 1.0 - smoothstep(0.04, 0.22, length(thumb - vec3(lum)));
   float centeredLum = lum * (0.3 + centerMask * 0.55 + spotCenter * 1.1);
   float lightMask = smoothstep(0.14, 0.66, centeredLum);
-  float logoMask = smoothstep(0.18, 0.56, lum) * neutral * max(centerMask, spotCenter * 0.8);
-  lightMask = max(lightMask * (0.18 + centerMask * 0.38 + spotCenter * 0.85), logoMask * 0.68);
-  float hotMask = max(smoothstep(0.52, 0.9, centeredLum), logoMask * 0.7);
+  lightMask *= 0.12 + centerMask * 0.22 + spotCenter * 0.46;
 
   float directional = dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5;
-  float faceLight = mix(1.0, clamp(directional, 0.45, 1.2), clamp(uDirectionalLightIntensity / 1.5, 0.0, 2.0));
-  vec3 base = mix(vec3(0.026, 0.031, 0.04), uBlockColor, 0.34);
-  vec3 projection = mix(uTint * (0.42 + lightMask * 0.72), thumb * (0.75 + spotMask * 0.38), 0.38 + spotMask * 0.18);
-  vec3 color = mix(base, projection, 0.34 + lightMask * 0.32);
-  color += thumb * (0.08 + lightMask * 0.34 + spotMask * 0.24);
-  color += vec3(1.0) * hotMask * 0.34;
-  color += uTint * pow(max(lightMask, 0.0), 1.65) * 0.22;
-  color = mix(color, uTint, 0.025 + lightMask * 0.045);
+  float faceLight = mix(0.86, clamp(directional, 0.55, 1.08), clamp(uDirectionalLightIntensity / 1.5, 0.0, 1.0));
+  vec3 litDiffuse = uDiffuseColor * faceLight;
+  vec3 emissive = uEmissiveColor * uEmissiveIntensity;
+  vec3 projection = mix(uTint * 0.2, thumb, 0.32 + spotMask * 0.12);
+  vec3 color = litDiffuse + emissive;
+  color = mix(color, color + projection * (0.08 + spotMask * 0.1), lightMask);
+  color += thumb * spotMask * 0.055;
   color = mix(color, uDarknessColor, uDarkness * (0.06 + (1.0 - lum) * 0.16));
-  color *= faceLight;
 
-  vec2 pointerUv = uPointer * 0.5 + 0.5;
   vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
-  float pointerLight = 1.0 - smoothstep(0.02, 0.58, distance(vThumbUv, pointerUv));
   float simLight = texture2D(tMouseSim2, screenUv).r;
-  float mouseLight = max(pointerLight, simLight);
   float mouseF = 1.0 - simLight;
-  color *= 0.78 + mouseLight * 0.18;
   color = mix(color, color * vec3(mouseF), 1.0 - uMouseLightness);
 
   vec2 gridUv = vec2(floor(uv.x * 35.0), floor(uv.y * 23.0));
@@ -1522,6 +1516,9 @@ export class WebGLBackdrop {
         uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
         uTint: { value: colorFrom(payload.color) },
         uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
+        uDiffuseColor: { value: colorFrom("#808080", "#808080") },
+        uEmissiveColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
+        uEmissiveIntensity: { value: 0.5 },
         uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
         uReveal: { value: reveal },
         uRevealProject: { value: 1 },
@@ -2189,9 +2186,11 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       if (duration <= 0) {
         item.material.uniforms.uBlockColor.value.copy(next);
+        item.material.uniforms.uEmissiveColor.value.copy(next);
         return;
       }
       this.blockColorTweens.push(gsap.to(item.material.uniforms.uBlockColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+      this.blockColorTweens.push(gsap.to(item.material.uniforms.uEmissiveColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     });
   }
 
