@@ -59,7 +59,8 @@ Last updated: 2026-06-05
 | `0a77fdf` | Home DOM | Aligned work gallery virtual-scroll diff handling with source `yD` so sub-threshold deltas still feed scene inertia while only larger deltas trigger next/prev. |
 | `2bdb0ce` | Global DOM | Added source-style button SVG formatting from `gD.formatButton()` so `.c-button` background SVG/rect dimensions match rendered button size on init and resize. |
 | `8e65755` | Home DOM | Added source-style mobile `touchstart` selection for work titles and progressbar items from `vD/_D`, with click dedupe to avoid double navigation. |
-| this commit | Home DOM | Added session-backed work gallery state restoration as a local equivalent of source `Qe.workState` for active slug/index and virtual scroll position. |
+| `0ba12a7` | Home DOM | Added session-backed work gallery state restoration as a local equivalent of source `Qe.workState` for active slug/index and virtual scroll position. |
+| this commit | Home DOM | Added source-style home gallery `mousedown` default suppression from `yD.onMouseDown`, scoped to the home view. |
 
 ## Current Focus
 

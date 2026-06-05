@@ -485,6 +485,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (event.key === "ArrowRight" || event.key === "ArrowDown") next();
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") prev();
   });
+  window.addEventListener("mousedown", (event) => {
+    if (!document.body.classList.contains("is-home")) return;
+    event.preventDefault();
+  });
 
   window.addEventListener("touchstart", (event) => {
     const point = event.touches[0];
