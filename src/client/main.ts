@@ -365,6 +365,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const ctaTimelines = new WeakMap<HTMLElement, gsap.core.Timeline>();
   const cleanupCallbacks: Array<() => void> = [];
   const mobileQuery = window.matchMedia("(max-width: 999px)");
+  const hasTouch = "ontouchstart" in window;
   const pointer = {
     active: false,
     x: 0,
@@ -472,7 +473,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const next = () => {
-    if (nextTransitioning || prevTransitioning) return;
     window.clearTimeout(nextTimeout);
     nextTransitioning = true;
     scrollTo(scroll.virtual + scroll.step);
@@ -482,7 +482,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const prev = () => {
-    if (nextTransitioning || prevTransitioning) return;
     window.clearTimeout(prevTimeout);
     prevTransitioning = true;
     scrollTo(scroll.virtual - scroll.step);
@@ -663,6 +662,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.lastDeltaY = 0;
     pointer.moved = false;
     event.preventDefault();
+    handleGalleryDelta(0, true);
   };
 
   const onMouseMove = (event: MouseEvent) => {
@@ -681,6 +681,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.active = false;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
+    handleGalleryDelta(0, true);
   };
 
   const onBlur = () => {
@@ -705,6 +706,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const onTouchMove = (event: TouchEvent) => {
+    if (!pointer.active) return;
     const point = event.touches[0];
     if (!point) return;
     const deltaX = -(point.clientX - pointer.x);
@@ -726,23 +728,29 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   window.addEventListener("wheel", onWheel, { passive: false });
   window.addEventListener("keydown", onKeyDown);
-  window.addEventListener("mousedown", onMouseDown);
-  window.addEventListener("mousemove", onMouseMove, { passive: true });
-  window.addEventListener("mouseup", onPointerEnd);
   window.addEventListener("blur", onBlur);
-  window.addEventListener("touchstart", onTouchStart, { passive: false });
-  window.addEventListener("touchmove", onTouchMove, { passive: false });
-  window.addEventListener("touchend", onTouchEnd, { passive: false });
+  if (hasTouch) {
+    window.addEventListener("touchstart", onTouchStart, { passive: false });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd, { passive: false });
+  } else {
+    window.addEventListener("mousedown", onMouseDown, { passive: false });
+    window.addEventListener("mousemove", onMouseMove, { passive: false });
+    window.addEventListener("mouseup", onPointerEnd, { passive: false });
+  }
   cleanupCallbacks.push(() => {
     window.removeEventListener("wheel", onWheel);
     window.removeEventListener("keydown", onKeyDown);
-    window.removeEventListener("mousedown", onMouseDown);
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onPointerEnd);
     window.removeEventListener("blur", onBlur);
-    window.removeEventListener("touchstart", onTouchStart);
-    window.removeEventListener("touchmove", onTouchMove);
-    window.removeEventListener("touchend", onTouchEnd);
+    if (hasTouch) {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    } else {
+      window.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onPointerEnd);
+    }
   });
 
   const tick = (now: number) => {
