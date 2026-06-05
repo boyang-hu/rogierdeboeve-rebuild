@@ -39,7 +39,8 @@ Last updated: 2026-06-05
 | `9ff9453` | Home DOM | Added source-style work CTA magnet movement from source `gD`. |
 | `ed80a14` | Home DOM | Added source-style temporary `is-dragging` state during gallery wheel/touch navigation to suppress accidental link interaction, matching source `yD` pointer gating. |
 | `2eaa8e5` | Home DOM | Added source-compatible progressbar `data-slug` support while preserving existing `data-progress-slug` behavior from the rebuild. |
-| this commit | Home DOM | Aligned homepage title/work/footer intro animation targets with source `Rg/vD/Ou` inner-element structure. |
+| `7f41fba` | Home DOM | Aligned homepage title/work/footer intro animation targets with source `Rg/vD/Ou` inner-element structure. |
+| this commit | Home DOM | Aligned work title click behavior with source `vD`: project titles select the active project while the CTA remains the detail-page entry point. |
 
 ## Current Focus
 

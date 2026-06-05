@@ -291,8 +291,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     card.querySelector<HTMLElement>(".ui-work-a")?.addEventListener("click", (event) => {
       event.preventDefault();
       scrollToIndex(index);
-      const href = (event.currentTarget as HTMLAnchorElement).href;
-      navigateWithWorkSceneOut(href, getWebgl());
     });
     const cta = card.querySelector<HTMLElement>(".ui-work-cta");
     if (cta) initCtaMagnet(cta);
