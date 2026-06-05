@@ -1167,6 +1167,7 @@ export class WebGLBackdrop {
   private directionalLightTween?: gsap.core.Tween;
   private directionalLight2Tween?: gsap.core.Tween;
   private envRotationTween?: gsap.core.Tween;
+  private auxiliaryRevealTweens: gsap.core.Tween[] = [];
   private fluidStrengthTween?: gsap.core.Tween;
   private mediaOpacityTween?: gsap.core.Tween;
   private mediaTranslationTweens: gsap.core.Tween[] = [];
@@ -1177,6 +1178,7 @@ export class WebGLBackdrop {
   private spotLightTarget = new Vector3(0, 0, -8);
   private spotLightRight = new Vector3(1, 0, 0);
   private spotLightUp = new Vector3(0, 1, 0);
+  private spotLightParallax = true;
   private fluidStrength = 0.5;
   private envRotation = 0;
   private sceneReveal = 0;
@@ -1424,6 +1426,85 @@ export class WebGLBackdrop {
     this.setContrast(numeric(payload.contrast, 1.15));
     this.setFluidStrength(1);
     this.mediaAnimateIn();
+  }
+
+  enterAboutVisualState(visual?: HTMLElement | null, floating?: HTMLElement | null) {
+    this.setMainColor(DEFAULT_COLOR, 0);
+    this.setDarken(0.2, 0.5);
+    this.setSaturation(0.35);
+    this.setContrast(1.1);
+    this.setMediaBackground(DEFAULT_COLOR);
+    this.setAmbientLight("#000000", 1);
+    this.setDirectionalLightIntensity(5);
+    this.spotLightParallax = false;
+    this.setSpotLightIntensity(0, 0);
+    if (this.aboutBlocks) {
+      this.aboutBlocks.track = visual ?? null;
+      this.aboutBlocks.group.visible = true;
+      this.aboutBlocks.material.uniforms.uReveal.value = 0;
+      this.aboutBlocks.material.uniforms.uRevealSpread.value = 1;
+      this.aboutBlocks.material.uniforms.uScrollOpacity.value = 1;
+    }
+    if (this.floatingBlocks) {
+      this.floatingBlocks.track = floating ?? null;
+      this.floatingBlocks.group.visible = true;
+      this.floatingBlocks.material.uniforms.uReveal.value = 0;
+      this.floatingBlocks.material.uniforms.uRevealSpread.value = 0;
+    }
+    this.resize();
+    this.updateAboutSpotlight();
+    this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
+    this.auxiliaryRevealTweens = [];
+    if (this.aboutBlocks) {
+      this.auxiliaryRevealTweens.push(gsap.to(this.aboutBlocks.material.uniforms.uReveal, {
+        value: 1,
+        delay: 0.3,
+        duration: 1.6,
+        ease: "expo.out",
+        onStart: () => this.setSpotLightIntensity(270),
+      }));
+      this.auxiliaryRevealTweens.push(gsap.to(this.aboutBlocks.material.uniforms.uRevealSpread, { value: 0, duration: 1.6, ease: "expo.out" }));
+    }
+    if (this.floatingBlocks) {
+      this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uReveal, { value: 1, duration: 1.6, ease: "expo.out" }));
+      this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uRevealSpread, { value: 1, duration: 1.6, ease: "none" }));
+    }
+  }
+
+  leaveAboutVisualState() {
+    this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
+    this.auxiliaryRevealTweens = [];
+    if (this.aboutBlocks) {
+      this.auxiliaryRevealTweens.push(gsap.to(this.aboutBlocks.material.uniforms.uReveal, {
+        value: 0,
+        duration: 1,
+        ease: "expo.out",
+        onComplete: () => {
+          if (this.aboutBlocks) {
+            this.aboutBlocks.group.visible = false;
+            this.aboutBlocks.track = null;
+          }
+        },
+      }));
+      this.auxiliaryRevealTweens.push(gsap.to(this.aboutBlocks.material.uniforms.uRevealSpread, { value: 1, duration: 1, ease: "none" }));
+    }
+    if (this.floatingBlocks) {
+      this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uReveal, {
+        value: 0,
+        duration: 1,
+        ease: "expo.out",
+        onComplete: () => {
+          if (this.floatingBlocks) {
+            this.floatingBlocks.group.visible = false;
+            this.floatingBlocks.track = null;
+          }
+        },
+      }));
+      this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uRevealSpread, { value: 0, duration: 1, ease: "none" }));
+    }
+    this.setSpotLightIntensity(0);
+    this.spotLightParallax = true;
+    this.spotLight.map = this.thumbCompositeTarget.texture;
   }
 
   setProjectScrollState(payload: ProjectPayload) {
@@ -2822,6 +2903,11 @@ export class WebGLBackdrop {
       item.group.position.y = item.offset.y + item.translation.y + (window.innerWidth >= BREAKPOINT_LG ? window.scrollY : 0) * item.trackScaleF;
     };
     updateShared(this.aboutBlocks);
+    if (this.aboutBlocks?.group.visible) {
+      this.aboutBlocks.material.uniforms.uScrollOpacity.value =
+        window.innerWidth >= BREAKPOINT_LG ? 1 : MathUtils.clamp(1 - window.scrollY / Math.max(1, window.innerHeight * 0.25), 0, 1);
+      this.updateAboutSpotlight();
+    }
     const item = this.floatingBlocks;
     if (!item?.group.visible) return;
     updateShared(item);
@@ -2853,7 +2939,6 @@ export class WebGLBackdrop {
       }
     }
     item.mesh.instanceMatrix.needsUpdate = true;
-    item.translationZ += 0.005 * Math.abs(delta * 60);
   }
 
   private updateMouseBrush(
@@ -2952,6 +3037,16 @@ export class WebGLBackdrop {
     this.spotLightUp.crossVectors(this.spotLightRight, direction).normalize();
   }
 
+  private updateAboutSpotlight() {
+    const item = this.aboutBlocks;
+    if (!item?.group.visible) return;
+    this.spotLightPosition.set(item.group.position.x - 0.5, item.group.position.y, item.group.position.z + 4.2);
+    this.spotLightTarget.set(item.group.position.x + 1.5, item.group.position.y, item.group.position.z - 8);
+    this.spotLight.position.copy(this.spotLightPosition);
+    this.spotLight.target.position.copy(this.spotLightTarget);
+    this.updateSpotLightBasis();
+  }
+
   private updateHomeCamera(delta: number) {
     const width = Math.max(1, window.innerWidth);
     const height = Math.max(1, window.innerHeight);
@@ -3005,9 +3100,13 @@ export class WebGLBackdrop {
     this.lastTickTime = time;
     this.pointer.lerp(this.targetPointer, 0.055);
     this.updateHomeCamera(delta);
-    this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
-    this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
-    this.spotLightPosition.z = 3.7;
+    if (this.spotLightParallax) {
+      this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
+      this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
+      this.spotLightPosition.z = 3.7;
+    } else {
+      this.updateAboutSpotlight();
+    }
     this.spotLight.position.copy(this.spotLightPosition);
     this.spotLight.target.position.copy(this.spotLightTarget);
     this.spotLight.map = this.thumbCompositeTarget.texture;

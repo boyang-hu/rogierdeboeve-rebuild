@@ -36,6 +36,8 @@ type WebGLLike = {
   enterProjectVisualState?(payload: ReturnType<typeof projectPayloadFromElement>): void;
   setProjectScrollState?(payload: ReturnType<typeof projectPayloadFromElement>): void;
   projectLeave?(): void;
+  enterAboutVisualState?(visual?: HTMLElement | null, floating?: HTMLElement | null): void;
+  leaveAboutVisualState?(): void;
   refreshMedia?(): void;
 };
 
@@ -1025,6 +1027,12 @@ function boot() {
       webgl?.showScene?.();
       homeGalleryEntered = true;
       window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
+    } else if (document.querySelector("[data-view='about']")) {
+      webgl?.enterAboutVisualState?.(
+        document.querySelector<HTMLElement>(".ui-about-hero-visual"),
+        document.querySelector<HTMLElement>(".ui-about-hero"),
+      );
+      cleanupCallbacks.push(() => webgl?.leaveAboutVisualState?.());
     } else if (project) {
       webgl?.enterProjectVisualState?.(payload);
     }
