@@ -1931,11 +1931,12 @@ export class WebGLBackdrop {
     };
     const material = new MeshStandardMaterial({
       color: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE),
-      emissive: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG),
+      emissive: sourceRgbColor(payload.blocks ?? DEFAULT_BG, DEFAULT_BG),
       emissiveIntensity: SOURCE_WORK_EMISSIVE_INTENSITY,
       roughness: SOURCE_WORK_ROUGHNESS,
       metalness: SOURCE_WORK_METALNESS,
       dithering: true,
+      toneMapped: false,
       transparent: true,
       depthWrite: false,
       depthTest: false,
@@ -2027,11 +2028,12 @@ export class WebGLBackdrop {
     };
     const material = new MeshStandardMaterial({
       color: colorFrom("#808080", "#808080"),
-      emissive: colorFrom("#000000", "#000000"),
+      emissive: sourceRgbColor("#000000", "#000000"),
       emissiveIntensity: SOURCE_WORK_EMISSIVE_INTENSITY,
       roughness: SOURCE_WORK_ROUGHNESS,
       metalness: SOURCE_WORK_METALNESS,
       dithering: true,
+      toneMapped: false,
       transparent: true,
       depthWrite: false,
       depthTest: false,
