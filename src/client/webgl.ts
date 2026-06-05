@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  ClampToEdgeWrapping,
   Color,
   CubeTextureLoader,
   DataTexture,
@@ -676,11 +677,7 @@ void main() {
   float dirX = (-0.5 + noise.g) * noise.r * 10.0;
   float dirY = (-0.5 + noise.b) * noise.r * 10.0;
   vec4 oldTexture = texture2D(uTexture, vUv);
-  float br = 1.0 - (oldTexture.r + oldTexture.g + oldTexture.b) / 3.0;
   vec4 col = oldTexture * (1.0 - uDiffusion);
-  float p2 = uDiffusion / 4.0;
-  col += texture2D(uTexture, vUv + vec2(dirX, dirY) * uDiffusionSize * br) * p2;
-  col += texture2D(uTexture, vUv + vec2(dirY, dirX) * uDiffusionSize * br) * p2;
   col.rgb *= uPersistance;
 
   if (uSpeed > 0.0) {
@@ -1036,6 +1033,8 @@ function makePlaceholderTexture(color = [20, 20, 20, 255]) {
 function makeSimulationTarget() {
   const target = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
   target.texture.generateMipmaps = false;
+  target.texture.wrapS = ClampToEdgeWrapping;
+  target.texture.wrapT = ClampToEdgeWrapping;
   target.texture.minFilter = LinearFilter;
   target.texture.magFilter = LinearFilter;
   return target;
@@ -2643,6 +2642,7 @@ export class WebGLBackdrop {
     oldPos: Vector2,
     newPos: Vector2,
     targetPos: Vector2,
+    time: number,
     delta: number,
     strength: number,
     persistance: number,
@@ -2658,7 +2658,7 @@ export class WebGLBackdrop {
     material.uniforms.uSpeed.value = Math.max(speed, 0.0001);
     material.uniforms.uPersistance.value = Math.pow(persistance, delta * 10);
     material.uniforms.uThickness.value = thickness * strength;
-    material.uniforms.uTime.value = performance.now() * 0.001;
+    material.uniforms.uTime.value = time;
     this.renderer.setRenderTarget(targets[outputIndex]);
     this.renderer.clear();
     this.renderer.render(scene, this.backgroundCamera);
@@ -2667,7 +2667,7 @@ export class WebGLBackdrop {
     return { speed, index: outputIndex };
   }
 
-  private updateMouseSimulation(delta: number) {
+  private updateMouseSimulation(time: number, delta: number) {
     if (!this.renderSettings.mousesim.enabled) return;
     const meshResult = this.updateMouseBrush(
       this.mouseSimulationMaterial,
@@ -2677,6 +2677,7 @@ export class WebGLBackdrop {
       this.mouseSimOldPos,
       this.mouseSimNewPos,
       this.mouseSimTargetPos,
+      time,
       delta,
       MathUtils.clamp(this.mouseFactor, 0.25, 1),
       0.85,
@@ -2692,6 +2693,7 @@ export class WebGLBackdrop {
       this.screenMouseSimOldPos,
       this.screenMouseSimNewPos,
       this.screenMouseSimTargetPos,
+      time,
       delta,
       1,
       0.85,
@@ -2790,7 +2792,7 @@ export class WebGLBackdrop {
     this.updateSpotLightBasis();
     this.updateVisibleWorkItems(time);
     this.updatePointerProjection();
-    this.updateMouseSimulation(delta);
+    this.updateMouseSimulation(time, delta);
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
