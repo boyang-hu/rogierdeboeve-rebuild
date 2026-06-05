@@ -79,6 +79,7 @@ type MediaPlane = {
 
 const BREAKPOINT_LG = 1000;
 const BREAKPOINT_MD = 800;
+const SOURCE_MAX_DPR = 1.5;
 const SOURCE_WORK_BG = "#1a1a1a";
 const SOURCE_COMPOSITE_BG = "#1f1f1f";
 const DEFAULT_BG = SOURCE_WORK_BG;
@@ -963,6 +964,10 @@ function floorPowerOfTwo(value: number) {
   return Math.pow(2, Math.floor(Math.log(Math.max(1, value)) / Math.LN2));
 }
 
+function sourceDpr() {
+  return Math.min(window.devicePixelRatio || 1, SOURCE_MAX_DPR);
+}
+
 function tweenColorOwned(target: Color, value?: string, duration = 1.6, tweens?: gsap.core.Tween[], fallback?: string) {
   const next = colorFrom(value, fallback ?? `#${target.getHexString()}`);
   if (duration <= 0) {
@@ -989,7 +994,7 @@ export class WebGLBackdrop {
   private mouseSimulationScene = new Scene();
   private screenMouseSimulationScene = new Scene();
   private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  private homeCamera = new PerspectiveCamera(55, 1, 0.1, 2000);
+  private homeCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private sceneWrap = new Group();
@@ -1106,7 +1111,7 @@ export class WebGLBackdrop {
     this.root = root;
     this.renderer = new WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     this.renderer.setClearColor(colorFrom(SOURCE_WORK_BG), 0);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
+    this.renderer.setPixelRatio(sourceDpr());
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.autoClear = false;
     this.renderer.domElement.className = "gl-canvas";
@@ -2291,7 +2296,8 @@ export class WebGLBackdrop {
   private resize = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio, 1.6);
+    const dpr = sourceDpr();
+    this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
     const renderWidth = Math.max(1, Math.round(width * dpr));
     const renderHeight = Math.max(1, Math.round(height * dpr));
@@ -2345,7 +2351,7 @@ export class WebGLBackdrop {
       plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
     });
     this.workItems.forEach((item) => {
-      item.material.uniforms.uCoords.value.set(Math.max(1, Math.round(width * dpr)), Math.max(1, Math.round(height * dpr)));
+      item.material.uniforms.uCoords.value.set(renderWidth, renderHeight);
     });
     this.updateMediaPlanePositions();
   };
