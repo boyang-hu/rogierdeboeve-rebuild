@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  Box3,
   BoxGeometry,
   ClampToEdgeWrapping,
   Color,
@@ -35,8 +36,10 @@ import {
   WebGLRenderer,
   WebGLRenderTarget,
   RepeatWrapping,
+  type Material,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import gsap from "gsap";
 
 type ProjectPayload = {
@@ -1195,7 +1198,10 @@ export class WebGLBackdrop {
   private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private homeCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private characterCamera = new PerspectiveCamera(30, 1, 0.1, 100);
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
+  private characterAmbientLight = new AmbientLight(colorFrom("white"), 1.2);
+  private characterDirectionalLight = new DirectionalLight(colorFrom("white"), 2.5);
   private sceneWrap = new Group();
   private blocksWrap = new Group();
   private aboutBlocks?: AuxiliaryBlockItem;
@@ -1257,6 +1263,8 @@ export class WebGLBackdrop {
   private thumbCompositeScene = new Scene();
   private characterMaterial: ShaderMaterial;
   private characterScene = new Scene();
+  private characterModelRoot = new Group();
+  private characterFallbackMesh: Mesh<PlaneGeometry, ShaderMaterial>;
   private characterTarget = makeSourceRenderTarget(false);
   private floorMaterial: ShaderMaterial;
   private floorPlane: Mesh<PlaneGeometry, ShaderMaterial>;
@@ -1356,6 +1364,8 @@ export class WebGLBackdrop {
 
     this.homeCamera.position.set(0, 0, 5.5);
     this.thumbCamera.position.set(0, 0, 0);
+    this.characterCamera.position.set(0, 0, 12);
+    this.characterCamera.lookAt(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
     this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = colorFrom(SOURCE_WORK_BG);
@@ -1414,7 +1424,12 @@ export class WebGLBackdrop {
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
     this.characterMaterial = this.createCharacterMaterial();
-    this.characterScene.add(new Mesh(new PlaneGeometry(2, 2), this.characterMaterial));
+    this.characterFallbackMesh = new Mesh(new PlaneGeometry(2, 2), this.characterMaterial);
+    this.characterDirectionalLight.position.set(2, 3, 5);
+    this.characterScene.add(this.characterFallbackMesh);
+    this.characterScene.add(this.characterModelRoot);
+    this.characterScene.add(this.characterAmbientLight);
+    this.characterScene.add(this.characterDirectionalLight);
     [this.thumbTarget, this.thumbCompositeTarget].forEach((target) => {
       target.texture.generateMipmaps = false;
       target.texture.minFilter = LinearFilter;
@@ -1794,6 +1809,7 @@ export class WebGLBackdrop {
     this.screenMouseSimulationMaterial.dispose();
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
+    this.disposeCharacterModel();
     this.characterTarget.dispose();
     this.characterMaterial.dispose();
     this.floorPlane.geometry.dispose();
@@ -2362,6 +2378,7 @@ export class WebGLBackdrop {
     this.loadTexture("/models/me/model_T.jpg", (texture) => {
       this.characterMaterial.uniforms.tMap.value = texture;
     });
+    this.loadCharacterModel();
     const cubeExt = "webp";
     const cubeBase = "/images/cubemaps/01";
     this.cubeLoader.load(
@@ -2458,6 +2475,65 @@ export class WebGLBackdrop {
       vertexShader: backgroundVertex,
       fragmentShader: characterCompositeFragment,
     });
+  }
+
+  private loadCharacterModel() {
+    const loader = new GLTFLoader();
+    loader.load(
+      "/models/me/me.gltf",
+      (gltf) => {
+        this.characterModelRoot.clear();
+        const model = gltf.scene;
+        model.rotation.set(0, Math.PI, 0);
+        model.updateMatrixWorld(true);
+        const box = new Box3().setFromObject(model);
+        const size = new Vector3();
+        box.getSize(size);
+        const maxSize = Math.max(size.x, size.y, size.z);
+        if (maxSize > 0) model.scale.multiplyScalar(4.8 / maxSize);
+        model.updateMatrixWorld(true);
+        const centeredBox = new Box3().setFromObject(model);
+        const center = new Vector3();
+        centeredBox.getCenter(center);
+        model.position.sub(center);
+        model.position.y -= 0.15;
+        model.traverse((child) => {
+          if (!(child instanceof Mesh)) return;
+          child.frustumCulled = false;
+          if (Array.isArray(child.material)) {
+            child.material.forEach((material) => {
+              material.depthWrite = true;
+              material.depthTest = true;
+            });
+          } else {
+            child.material.depthWrite = true;
+            child.material.depthTest = true;
+          }
+        });
+        this.characterFallbackMesh.visible = false;
+        this.characterModelRoot.add(model);
+        this.renderCharacterTarget();
+      },
+      undefined,
+      () => {
+        this.characterFallbackMesh.visible = true;
+      },
+    );
+  }
+
+  private disposeCharacterModel() {
+    this.characterModelRoot.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+      child.geometry?.dispose();
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((material: Material) => {
+        Object.values(material).forEach((value) => {
+          if (value instanceof Texture) value.dispose();
+        });
+        material.dispose();
+      });
+    });
+    this.characterModelRoot.clear();
   }
 
   private createFloorMaterial() {
@@ -3475,7 +3551,8 @@ export class WebGLBackdrop {
   private renderCharacterTarget() {
     this.renderer.setRenderTarget(this.characterTarget);
     this.renderer.clear();
-    this.renderer.render(this.characterScene, this.backgroundCamera);
+    if (this.characterFallbackMesh.visible) this.renderer.render(this.characterScene, this.backgroundCamera);
+    else this.renderer.render(this.characterScene, this.characterCamera);
     this.renderer.setRenderTarget(null);
   }
 
