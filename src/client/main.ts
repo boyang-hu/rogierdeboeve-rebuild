@@ -930,13 +930,20 @@ function boot() {
   document.body.classList.add("is-ready");
   let webgl: WebGLLike | undefined;
   let homeGalleryEntered = false;
+  let cleanupMotion: (() => void) | undefined;
+  const cleanupPageMotion = () => {
+    cleanupMotion?.();
+    cleanupMotion = undefined;
+  };
 
   initPreloader();
   void import("./audio").then(({ initAudio }) => {
     initAudio();
     if (homeGalleryEntered) window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
   });
-  void import("./motion").then(({ initMotion }) => initMotion());
+  void import("./motion").then(({ initMotion }) => {
+    cleanupMotion = initMotion();
+  });
   void initWebGL().then((instance) => {
     webgl = instance;
     const active = document.querySelector<HTMLElement>("[data-project-card].is-active");
@@ -961,6 +968,8 @@ function boot() {
   initProjectNextState(() => webgl);
   initProjectLeave(() => webgl);
   initScrollState();
+  window.addEventListener("pagehide", cleanupPageMotion, { once: true });
+  window.addEventListener("beforeunload", cleanupPageMotion, { once: true });
 }
 
 if (document.readyState === "loading") {

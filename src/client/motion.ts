@@ -6,7 +6,7 @@ function prefersReducedMotion() {
 }
 
 function initLenis() {
-  if (prefersReducedMotion()) return;
+  if (prefersReducedMotion()) return () => {};
 
   const lenis = new Lenis({
     lerp: 0.09,
@@ -14,12 +14,17 @@ function initLenis() {
     touchMultiplier: 1.2,
   });
 
+  let rafId = 0;
   function raf(time: number) {
     lenis.raf(time);
-    requestAnimationFrame(raf);
+    rafId = requestAnimationFrame(raf);
   }
 
-  requestAnimationFrame(raf);
+  rafId = requestAnimationFrame(raf);
+  return () => {
+    cancelAnimationFrame(rafId);
+    lenis.destroy();
+  };
 }
 
 function initIntroAnimations() {
@@ -78,7 +83,7 @@ function initIntroAnimations() {
     gsap.fromTo(
       titleTargets,
       { y: "102%" },
-      { y: 0, duration: 1.8, stagger: 0.03, ease: "expo.out", clearProps: "transform" },
+      { y: 0, duration: 1.8, stagger: 0.01, ease: "expo.out", clearProps: "transform" },
     );
   }
 
@@ -149,14 +154,18 @@ function initProjectHeaderAnimation() {
 
 function initFooterContactLabel() {
   const contact = document.querySelector<HTMLElement>(".ui-footer-contact a > span");
-  if (!contact) return;
+  if (!contact) return () => {};
 
   const update = () => {
     contact.textContent = window.matchMedia("(min-width: 1000px)").matches ? "hello@rogierdeboeve.com" : "E-mail";
   };
 
-  update();
+  const timer = window.setTimeout(update, 200);
   window.addEventListener("resize", update, { passive: true });
+  return () => {
+    window.clearTimeout(timer);
+    window.removeEventListener("resize", update);
+  };
 }
 
 function initMediaReveals() {
@@ -186,9 +195,13 @@ function initMediaReveals() {
 }
 
 export function initMotion() {
-  initLenis();
-  initFooterContactLabel();
+  const cleanupLenis = initLenis();
+  const cleanupFooter = initFooterContactLabel();
   initIntroAnimations();
   initProjectHeaderAnimation();
   initMediaReveals();
+  return () => {
+    cleanupLenis();
+    cleanupFooter();
+  };
 }
