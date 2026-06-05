@@ -65,7 +65,8 @@ Last updated: 2026-06-05
 | `9021b23` | Home WebGL | Split local cube mouse simulation from source-style screen-space `tMouseSim2`, so work-block fragment light/alpha and main composite sample screen mouse flow separately from vertex displacement. |
 | `e076340` | Home DOM/WebGL | Passed gallery frame delta into `setGalleryProgress` and matched source `yD.updateScene` delta-based smoothing for work-scene roll and zoom. |
 | `fdaeff0` | Home WebGL | Matched source `w1.updateGalleryProgress` by keeping thumb `uProgress` at its default value during gallery wrapping instead of dimming non-active thumbs. |
-| this commit | Home WebGL | Moved the home composite tail closer to source `OA`: final darken now uses screen-space `mouseSim.r`, applies source-style lighten blend with black, and finishes with saturation after darkening. |
+| `19cdcbb` | Home WebGL | Moved the home composite tail closer to source `OA`: final darken now uses screen-space `mouseSim.r`, applies source-style lighten blend with black, and finishes with saturation after darkening. |
+| this commit | Home WebGL | Added a separate low-resolution home bloom pass so final composite samples `tBloom` like source `Lu/kA` instead of deriving all glow inline from `tWork`. |
 
 ## Current Focus
 
