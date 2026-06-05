@@ -1216,7 +1216,7 @@ export class WebGLBackdrop {
         tPerlin: { value: this.perlinTexture },
         uCoords: { value: new Vector2(1, 1) },
         uSpotLightPosition: { value: this.spotLightPosition },
-        uSpotConeTan: { value: Math.tan(Math.PI / 8) },
+        uSpotConeTan: { value: Math.tan(Math.PI / 4) },
         uSpotIntensity: { value: this.spotLightIntensity },
         uTime: { value: 0 },
       },
