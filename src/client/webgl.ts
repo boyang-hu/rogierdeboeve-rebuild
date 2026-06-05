@@ -232,6 +232,7 @@ attribute vec3 instanceColor;
 
 varying vec2 vLocalUv;
 varying vec2 vOffset;
+varying float vMouseSim;
 varying float vAlpha;
 
 uniform vec3 uGridSize;
@@ -253,12 +254,12 @@ uniform float uTime;
 
 const workBlockBeginVertexChunk = `
 vec3 transformed = vec3(position);
-vec2 screenUv = vec2(0.0);
-vec2 newUv = screenUv;
+vec2 newUv = uv;
 newUv.x /= uGridSize.x;
 newUv.y /= uGridSize.y;
 newUv += instanceOffset.xy;
 vec2 mouseUv = (newUv + uUvOffset.xy) / uUvOffsetScale;
+float mouse = texture2D(tMouseSim, mouseUv).r;
 
 vec4 instancePos = instanceMatrix[3];
 float revealMask = uReveal * uRevealProject;
@@ -280,7 +281,6 @@ perlinDisplaced *= min(1.0, 1.0 - (perlinDisplacement - perlinHeight * 0.5) * 0.
 transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
 transformed *= fade * uRevealSides;
 
-float mouse = texture2D(tMouseSim, mouseUv).r;
 float displacement = displacementMap.r;
 transformed *= 1.0 - mouse * 0.05;
 transformed.z -= 1.5;
@@ -301,7 +301,25 @@ transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
 vLocalUv = uv;
 vOffset = instanceOffset.xy;
+vMouseSim = mouse;
 vAlpha = instanceAlpha;
+#ifdef USE_ALPHAHASH
+  vPosition = vec3(position);
+#endif
+`;
+
+const workBlockWorldPositionChunk = `
+#if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined ( USE_SHADOWMAP ) || defined ( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0
+  vec3 sourceWorldTransformed = transformed / max(1.0 - vMouseSim * 0.2, 0.0001);
+  vec4 worldPosition = vec4(sourceWorldTransformed, 1.0);
+  #ifdef USE_BATCHING
+    worldPosition = batchingMatrix * worldPosition;
+  #endif
+  #ifdef USE_INSTANCING
+    worldPosition = instanceMatrix * worldPosition;
+  #endif
+  worldPosition = modelMatrix * worldPosition;
+#endif
 `;
 
 const workBlockFragmentPars = `
@@ -318,6 +336,7 @@ uniform vec2 uCoords;
 
 varying vec2 vLocalUv;
 varying vec2 vOffset;
+varying float vMouseSim;
 varying float vAlpha;
 
 float sourceRandom(vec2 st) {
@@ -1091,6 +1110,14 @@ function sourceLowRes() {
   return Boolean(nav.connection?.saveData || (nav.deviceMemory && nav.deviceMemory < 4));
 }
 
+function sourceMouseUvOffset() {
+  const planeWidth = GRID_COLS * MOUSE_PLANE_SCALE;
+  const planeHeight = GRID_ROWS * MOUSE_PLANE_SCALE;
+  const rayWidth = planeWidth * MOUSE_RAY_SCALE;
+  const rayHeight = planeHeight * MOUSE_RAY_SCALE;
+  return new Vector3((rayWidth - planeWidth) / 2 / planeWidth, (rayHeight - planeHeight) / 2 / planeHeight, 0);
+}
+
 function tweenColorOwned(target: Color, value?: string, duration = 1.6, tweens?: gsap.core.Tween[], fallback?: string) {
   const next = colorFrom(value, fallback ?? `#${target.getHexString()}`);
   if (duration <= 0) {
@@ -1742,8 +1769,8 @@ export class WebGLBackdrop {
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
-      uUvOffset: { value: new Vector3(0.25, 0.25, 0) },
-      uUvOffsetScale: { value: 1.5 },
+      uUvOffset: { value: sourceMouseUvOffset() },
+      uUvOffsetScale: { value: MOUSE_RAY_SCALE },
       tMouseSim: { value: this.mouseSimulationTexture },
       tMouseSim2: { value: this.screenMouseSimulationTexture },
       tDisplacement: { value: this.displacementTarget.texture },
@@ -1767,7 +1794,8 @@ export class WebGLBackdrop {
       Object.assign(shader.uniforms, uniforms);
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-        .replace("#include <begin_vertex>", workBlockBeginVertexChunk);
+        .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
+        .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
       shader.fragmentShader = shader.fragmentShader
         .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
         .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
@@ -1861,7 +1889,8 @@ export class WebGLBackdrop {
       Object.assign(shader.uniforms, uniforms);
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-        .replace("#include <begin_vertex>", workBlockBeginVertexChunk);
+        .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
+        .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
       shader.fragmentShader = shader.fragmentShader
         .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
         .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
