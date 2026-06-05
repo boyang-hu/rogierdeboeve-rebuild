@@ -432,7 +432,7 @@ void main() {
     perlinCoords += perlinMap.b * uPerlin;
     perlinCoords -= uPerlin * 0.065;
   }
-  vec2 flowVector = vec2(mouseSim.g - 0.5, mouseSim.b - 0.5);
+  vec2 flowVector = mouseSim.rg;
   vec2 fluidUv = uv + flowVector * -0.2 * uFluidStrength;
   vec2 sourceUv = fluidUv;
 
@@ -541,6 +541,61 @@ void main() {
   color += texture2D(tBloom4, vUv).rgb * uFactor4;
   color += texture2D(tBloom5, vUv).rgb * uFactor5;
   gl_FragColor = vec4(color, 1.0);
+}
+`;
+
+const mouseSimulationFragment = `
+precision highp float;
+
+uniform sampler2D uTexture;
+uniform sampler2D uNoiseTexture;
+uniform vec2 uPosOld;
+uniform vec2 uPosNew;
+uniform vec2 uCoords;
+uniform float uSpeed;
+uniform float uPersistance;
+uniform float uThickness;
+uniform float uTime;
+uniform float uDiffusionSize;
+uniform float uDiffusion;
+uniform vec3 uColor;
+
+varying vec2 vUv;
+
+float circle(vec2 uv, vec2 center, float size) {
+  float circle = length(uv - center);
+  return 1.0 - smoothstep(0.0, size, circle);
+}
+
+void main() {
+  vec4 noise1 = texture2D(uNoiseTexture, vUv * 4.0 + vec2(uTime * 0.1, 0.0));
+  vec4 noise2 = texture2D(uNoiseTexture, vUv * 8.0 + vec2(0.0, uTime * 0.1) + noise1.rg * 0.5);
+  vec4 noise3 = texture2D(uNoiseTexture, vUv * 16.0 + vec2(-uTime * 0.05, 0.0) + noise2.rg * 0.5);
+  vec4 noise = (noise1 + noise2 * 0.5 + noise3 * 0.25) / 1.75;
+
+  float dirX = (-0.5 + noise.g) * noise.r * 10.0;
+  float dirY = (-0.5 + noise.b) * noise.r * 10.0;
+  vec4 oldTexture = texture2D(uTexture, vUv);
+  float br = 1.0 - (oldTexture.r + oldTexture.g + oldTexture.b) / 3.0;
+  vec4 col = oldTexture * (1.0 - uDiffusion);
+  float p2 = uDiffusion / 4.0;
+  col += texture2D(uTexture, vUv + vec2(dirX, dirY) * uDiffusionSize * br) * p2;
+  col += texture2D(uTexture, vUv + vec2(dirY, dirX) * uDiffusionSize * br) * p2;
+  col.rgb *= uPersistance;
+
+  if (uSpeed > 0.0) {
+    float th = clamp(uThickness + uSpeed * 0.3, 0.0001, 0.2);
+    vec2 newUv = vUv;
+    float ratio = uCoords.x / uCoords.y;
+    newUv.y /= ratio;
+    vec2 posOld = uPosOld;
+    posOld.y /= ratio;
+    float lineValue = circle(newUv, posOld, th);
+    col.rgb = mix(col.rgb, uColor, lineValue * 0.05);
+    col.rgb = clamp(col.rgb, vec3(0.0), vec3(1.0));
+  }
+
+  gl_FragColor = vec4(col.rgb, 1.0);
 }
 `;
 
@@ -847,6 +902,14 @@ function makePlaceholderTexture(color = [20, 20, 20, 255]) {
   return texture;
 }
 
+function makeSimulationTarget() {
+  const target = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
+  target.texture.generateMipmaps = false;
+  target.texture.minFilter = LinearFilter;
+  target.texture.magFilter = LinearFilter;
+  return target;
+}
+
 function setTextureQuality(texture: Texture, renderer: WebGLRenderer) {
   texture.colorSpace = SRGBColorSpace;
   texture.minFilter = LinearFilter;
@@ -876,6 +939,8 @@ export class WebGLBackdrop {
   private homeScene = new Scene();
   private thumbScene = new Scene();
   private mediaScene = new Scene();
+  private mouseSimulationScene = new Scene();
+  private screenMouseSimulationScene = new Scene();
   private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private homeCamera = new PerspectiveCamera(55, 1, 0.1, 2000);
   private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -887,10 +952,6 @@ export class WebGLBackdrop {
   private loader = new TextureLoader();
   private textureCache = new Map<string, Texture>();
   private placeholder = makePlaceholderTexture();
-  private mouseSimTexture = makePlaceholderTexture([128, 128, 0, 255]);
-  private mouseSimData = new Uint8Array(128 * 128 * 4);
-  private screenMouseSimTexture = makePlaceholderTexture([128, 128, 0, 255]);
-  private screenMouseSimData = new Uint8Array(128 * 128 * 4);
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private backgroundMaterial: ShaderMaterial;
@@ -910,6 +971,12 @@ export class WebGLBackdrop {
   private displacementMaterial: ShaderMaterial;
   private displacementScene = new Scene();
   private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
+  private mouseSimulationMaterial: ShaderMaterial;
+  private screenMouseSimulationMaterial: ShaderMaterial;
+  private mouseSimulationTargets: WebGLRenderTarget[] = [];
+  private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
+  private mouseSimulationIndex = 0;
+  private screenMouseSimulationIndex = 0;
   private thumbCompositeMaterial: ShaderMaterial;
   private thumbCompositeScene = new Scene();
   private projectionMaterial: ShaderMaterial;
@@ -990,6 +1057,12 @@ export class WebGLBackdrop {
     this.bloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomCompositeMaterial));
     this.displacementMaterial = this.createDisplacementMaterial();
     this.displacementScene.add(new Mesh(new PlaneGeometry(2, 2), this.displacementMaterial));
+    this.mouseSimulationMaterial = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.25);
+    this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight), 0.25);
+    this.mouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
+    this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
+    this.mouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.mouseSimulationMaterial));
+    this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
     this.projectionMaterial = this.createProjectionMaterial();
@@ -1131,8 +1204,6 @@ export class WebGLBackdrop {
     window.removeEventListener("pointermove", this.onPointerMove);
     window.removeEventListener("scroll", this.onScroll);
     this.textureCache.forEach((texture) => texture.dispose());
-    this.mouseSimTexture.dispose();
-    this.screenMouseSimTexture.dispose();
     this.noiseTexture.dispose();
     this.perlinTexture.dispose();
     this.mediaPlanes.forEach((plane) => {
@@ -1159,6 +1230,10 @@ export class WebGLBackdrop {
     this.bloomCompositeMaterial.dispose();
     this.displacementTarget.dispose();
     this.displacementMaterial.dispose();
+    this.mouseSimulationTargets.forEach((target) => target.dispose());
+    this.screenMouseSimulationTargets.forEach((target) => target.dispose());
+    this.mouseSimulationMaterial.dispose();
+    this.screenMouseSimulationMaterial.dispose();
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
     this.projectionPlane.geometry.dispose();
@@ -1246,8 +1321,8 @@ export class WebGLBackdrop {
         uPointer: { value: this.pointer },
         uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
         uMouseUvScale: { value: 1.5 },
-        tMouseSim: { value: this.mouseSimTexture },
-        tMouseSim2: { value: this.screenMouseSimTexture },
+        tMouseSim: { value: this.mouseSimulationTexture },
+        tMouseSim2: { value: this.screenMouseSimulationTexture },
         tDisplacement: { value: this.displacementTarget.texture },
         tPerlin: { value: this.perlinTexture },
         uCoords: { value: new Vector2(1, 1) },
@@ -1353,7 +1428,7 @@ export class WebGLBackdrop {
       uniforms: {
         tWork: { value: this.compositeTarget.texture },
         tBloom: { value: this.bloomTarget.texture },
-        tMouseSim: { value: this.screenMouseSimTexture },
+        tMouseSim: { value: this.screenMouseSimulationTexture },
         tNoise: { value: this.noiseTexture },
         tPerlin: { value: this.perlinTexture },
         uTime: { value: 0 },
@@ -1425,6 +1500,8 @@ export class WebGLBackdrop {
   private loadCompositeTextures() {
     this.loadTexture("/images/textures/blue-noise.png", (texture) => {
       this.compositeMaterial.uniforms.tNoise.value = texture;
+      this.mouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
+      this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
     });
     this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
       this.compositeMaterial.uniforms.tPerlin.value = texture;
@@ -1444,6 +1521,29 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: displacementFragment,
+    });
+  }
+
+  private createMouseSimulationMaterial(ratio: number, thickness: number) {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uTexture: { value: this.placeholder },
+        uNoiseTexture: { value: this.noiseTexture },
+        uCoords: { value: new Vector2(Math.max(1, Math.round(128 * ratio)), 128) },
+        uPersistance: { value: 0.75 },
+        uThickness: { value: thickness },
+        uDiffusion: { value: 0 },
+        uDiffusionSize: { value: 0 },
+        uTime: { value: 0 },
+        uPosOld: { value: new Vector2(0.5, 0.5) },
+        uPosNew: { value: new Vector2(0.5, 0.5) },
+        uSpeed: { value: 0 },
+        uColor: { value: new Color(0xffffff) },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: mouseSimulationFragment,
     });
   }
 
@@ -1882,6 +1982,14 @@ export class WebGLBackdrop {
     };
   }
 
+  private get mouseSimulationTexture() {
+    return this.mouseSimulationTargets[this.mouseSimulationIndex]?.texture ?? this.placeholder;
+  }
+
+  private get screenMouseSimulationTexture() {
+    return this.screenMouseSimulationTargets[this.screenMouseSimulationIndex]?.texture ?? this.placeholder;
+  }
+
   private bind() {
     window.addEventListener("resize", this.resize);
     window.addEventListener("pointermove", this.onPointerMove, { passive: true });
@@ -1924,6 +2032,13 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.compositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
+    const simWidth = Math.max(1, Math.round(renderWidth / 10));
+    const simHeight = Math.max(1, Math.round(renderHeight / 10));
+    this.screenMouseSimulationTargets.forEach((target) => target.setSize(simWidth, simHeight));
+    this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(simWidth, simHeight);
+    const meshSimWidth = Math.max(1, Math.round(simWidth * (GRID_COLS / GRID_ROWS)));
+    this.mouseSimulationTargets.forEach((target) => target.setSize(meshSimWidth, simHeight));
+    this.mouseSimulationMaterial.uniforms.uCoords.value.set(meshSimWidth, simHeight);
     const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
@@ -1992,74 +2107,66 @@ export class WebGLBackdrop {
   }
 
   private updateMouseBrush(
-    data: Uint8Array,
-    texture: Texture,
+    material: ShaderMaterial,
+    scene: Scene,
+    targets: WebGLRenderTarget[],
+    currentIndex: number,
     oldPos: Vector2,
     newPos: Vector2,
     targetPos: Vector2,
     delta: number,
-    ratio: number,
     strength: number,
   ) {
-    const size = 128;
     const lerpFactor = MathUtils.clamp(delta * 7.5, 0, 1);
     newPos.lerp(targetPos, lerpFactor);
     const speed = newPos.distanceTo(oldPos);
-    const brushUv = oldPos;
-    const sourcePersistence = Math.pow(0.85, delta * 10);
-    const thickness = MathUtils.clamp(0.1 + speed * 0.3, 0.0001, 0.2) * strength;
-    const previousFlowX = (newPos.x - oldPos.x) * 14;
-    const previousFlowY = (newPos.y - oldPos.y) * 14;
-
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const index = (y * size + x) * 4;
-        const uvx = (x + 0.5) / size;
-        const uvy = (y + 0.5) / size;
-        const dx = uvx - brushUv.x;
-        const dy = uvy / ratio - brushUv.y / ratio;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const lineValue = 1 - MathUtils.smoothstep(distance, 0, thickness);
-        const injection = lineValue * 0.05 * 255;
-        const red = MathUtils.clamp(data[index] * sourcePersistence + (255 - data[index]) * (injection / 255), 0, 255);
-        const flowX = 128 + MathUtils.clamp(previousFlowX, -1, 1) * red * 0.5;
-        const flowY = 128 + MathUtils.clamp(previousFlowY, -1, 1) * red * 0.5;
-        data[index] = red;
-        data[index + 1] = MathUtils.clamp(data[index + 1] * sourcePersistence + (flowX - 128) * 0.18 + 128 * (1 - sourcePersistence), 0, 255);
-        data[index + 2] = MathUtils.clamp(data[index + 2] * sourcePersistence + (flowY - 128) * 0.18 + 128 * (1 - sourcePersistence), 0, 255);
-        data[index + 3] = 255;
-      }
-    }
-
+    const outputIndex = 1 - currentIndex;
+    material.uniforms.uTexture.value = targets[currentIndex].texture;
+    material.uniforms.uPosNew.value.copy(newPos);
+    material.uniforms.uPosOld.value.copy(oldPos);
+    material.uniforms.uSpeed.value = Math.max(speed, 0.0001);
+    material.uniforms.uPersistance.value = Math.pow(0.75, delta * 10);
+    material.uniforms.uThickness.value = 0.25 * strength;
+    material.uniforms.uTime.value = performance.now() * 0.001;
+    this.renderer.setRenderTarget(targets[outputIndex]);
+    this.renderer.clear();
+    this.renderer.render(scene, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
     oldPos.copy(newPos);
-    texture.image.data = data;
-    texture.image.width = size;
-    texture.image.height = size;
-    texture.needsUpdate = true;
-    return speed;
+    return { speed, index: outputIndex };
   }
 
   private updateMouseSimulation(delta: number) {
-    this.mouseSimSpeed = this.updateMouseBrush(
-      this.mouseSimData,
-      this.mouseSimTexture,
+    const meshResult = this.updateMouseBrush(
+      this.mouseSimulationMaterial,
+      this.mouseSimulationScene,
+      this.mouseSimulationTargets,
+      this.mouseSimulationIndex,
       this.mouseSimOldPos,
       this.mouseSimNewPos,
       this.mouseSimTargetPos,
       delta,
-      GRID_COLS / GRID_ROWS,
       MathUtils.clamp(this.mouseFactor, 0.25, 1),
     );
-    this.updateMouseBrush(
-      this.screenMouseSimData,
-      this.screenMouseSimTexture,
+    this.mouseSimSpeed = meshResult.speed;
+    this.mouseSimulationIndex = meshResult.index;
+    const screenResult = this.updateMouseBrush(
+      this.screenMouseSimulationMaterial,
+      this.screenMouseSimulationScene,
+      this.screenMouseSimulationTargets,
+      this.screenMouseSimulationIndex,
       this.screenMouseSimOldPos,
       this.screenMouseSimNewPos,
       this.screenMouseSimTargetPos,
       delta,
-      window.innerWidth / Math.max(1, window.innerHeight),
       1,
     );
+    this.screenMouseSimulationIndex = screenResult.index;
+    this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+    this.workItems.forEach((item) => {
+      item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
+      item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
+    });
   }
 
   private updateHomeCamera(delta: number) {
