@@ -168,7 +168,8 @@ Last updated: 2026-06-05
 | `ddf3a49` | Home WebGL | Batched source `VA` alpha-tail parity: restored work-block fragment alpha to use `uReveal * uRevealProject`, `uRevealSides`, and the source `.5` mouse-simulation alpha boost, and removed unused transitional varyings left after the spotlight-map cleanup. |
 | `b67b94e` | Home WebGL | Batched source `VA` shader-interface correction: removed the over-broad `uScrollOpacity` addition from ordinary home work blocks, and restored source-shaped `uGridOffset` plus `uMouseSpeed` declarations/uniforms on the standard-material work-block shader path. |
 | `a10e685` | Home WebGL | Batched source `A1/OA/Se.showScene` reveal ownership alignment: final `OA` no longer carries non-source `uReveal/uBgColor`; scene reveal now writes the pre-composite `A1/C1`-shaped material like source `Se.showScene`; and the final composite returns to the source darken/bloom/mouse-sim tail. |
-| `current batch` | Home WebGL | Batched source `p1/Se/GA/VA` scene and shader-coordinate alignment: restored the source `sceneWrap -> blocksWrap -> GA` object hierarchy with hidden about/floating block containers, added source-shaped `Se` control paths for environment rotation and the second directional-light state without adding non-source lighting, and moved work-block displacement/perlin/mouse/alpha UVs from rebuild-only `instanceGrid` sampling to source-style `instanceOffset`/`newUv` coordinates. |
+| `8dd9e09` | Home WebGL | Batched source `p1/Se/GA/VA` scene and shader-coordinate alignment: restored the source `sceneWrap -> blocksWrap -> GA` object hierarchy with hidden about/floating block containers, added source-shaped `Se` control paths for environment rotation and the second directional-light state without adding non-source lighting, and moved work-block displacement/perlin/mouse/alpha UVs from rebuild-only `instanceGrid` sampling to source-style `instanceOffset`/`newUv` coordinates. |
+| `current batch` | Home WebGL | Batched source `GA/VA/Se` shader-interface cleanup: restored fragment alpha/vignette UV reconstruction from `vUv / uGridSize + vOffset`, removed the extra vertex-to-fragment `vNewUv` path, aligned vertex displacement/mouse sampling to the source `instanceOffset` baseline, deleted unused rebuild-only work-block uniforms so ordinary `VA` matches the source custom-uniform surface more closely, and removed non-source spotlight intensity clamping so `Se.setSpotLightIntensity()` writes real Three spotlight values. |
 
 ## Current Focus
 
@@ -177,7 +178,7 @@ Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. 
 Immediate source targets:
 
 - `p1`: continue auditing about/floating block implementation details and route-specific visibility, now that the hidden source containers and `blocksWrap` hierarchy exist.
-- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, and source-style `instanceOffset`/`newUv` sampling.
+- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, and a cleaner source-shaped custom-uniform surface.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa placeholders.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds.
@@ -193,7 +194,7 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing the remaining `gl_Position`/chunk-injection differences around source `newUv` now that `instanceOffset` drives the sampling path.
+1. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing whether the remaining chunk-injection compromise should become a fuller source shader override now that the custom-uniform surface is cleaner.
 2. Continue source `p1/GA` render visibility, spotlight map, and lighting review with the real spotlight-map scene path, `blocksWrap` hierarchy, and standard material pipeline now active.
 3. Continue `Lu/A1/OA` only where the source settings model exposes material behavior gaps, especially optional blur/fxaa/fluid placeholders that can be no-op aligned safely.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.

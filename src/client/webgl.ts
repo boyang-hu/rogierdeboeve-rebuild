@@ -205,8 +205,8 @@ attribute float instanceIndex;
 attribute float instanceAlpha;
 attribute vec3 instanceColor;
 
-varying vec2 vNewUv;
 varying vec2 vLocalUv;
+varying vec2 vOffset;
 varying float vAlpha;
 
 uniform vec3 uGridSize;
@@ -228,7 +228,7 @@ uniform float uTime;
 
 const workBlockBeginVertexChunk = `
 vec3 transformed = vec3(position);
-vec2 screenUv = position.xy / max(uCoords, vec2(1.0));
+vec2 screenUv = vec2(0.0);
 vec2 newUv = screenUv;
 newUv.x /= uGridSize.x;
 newUv.y /= uGridSize.y;
@@ -274,8 +274,8 @@ transformedSpread.z += spread * 0.5;
 transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
 transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
-vNewUv = newUv;
 vLocalUv = uv;
+vOffset = instanceOffset.xy;
 vAlpha = instanceAlpha;
 `;
 
@@ -291,8 +291,8 @@ uniform float uMouseFactor;
 uniform sampler2D tMouseSim2;
 uniform vec2 uCoords;
 
-varying vec2 vNewUv;
 varying vec2 vLocalUv;
+varying vec2 vOffset;
 varying float vAlpha;
 
 float sourceRandom(vec2 st) {
@@ -316,7 +316,7 @@ diffuseColor.a *= material.transmissionAlpha;
 #endif
 
 vec3 sourceColor = outgoingLight;
-vec2 sourceUv = vLocalUv / uGridSize.xy + vNewUv;
+vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
 
 vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
 float simLight = texture2D(tMouseSim2, screenUv).r;
@@ -1146,7 +1146,7 @@ export class WebGLBackdrop {
   private mediaOpacityTween?: gsap.core.Tween;
   private mediaTranslationTweens: gsap.core.Tween[] = [];
   private maxSpotLightIntensity = 220;
-  private spotLightIntensity = 1;
+  private spotLightIntensity = 220;
   private directionalLightIntensity = 1.5;
   private spotLightPosition = new Vector3(0, 0, 3.7);
   private spotLightTarget = new Vector3(0, 0, -8);
@@ -1536,16 +1536,8 @@ export class WebGLBackdrop {
 
   private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
     const uniforms = {
-      uMapSize: { value: new Vector2(1600, 1200) },
       uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
       uGridOffset: { value: new Vector3(0, 0, 0) },
-      uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
-      uDiffuseColor: { value: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE) },
-      uEmissiveColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
-      uEmissiveIntensity: { value: SOURCE_WORK_EMISSIVE_INTENSITY },
-      uRoughness: { value: SOURCE_WORK_ROUGHNESS },
-      uMetalness: { value: SOURCE_WORK_METALNESS },
-      uEnvMapIntensity: { value: SOURCE_WORK_ENVMAP_INTENSITY },
       uReveal: { value: reveal },
       uRevealProject: { value: 1 },
       uRevealSides: { value: 0 },
@@ -1554,7 +1546,6 @@ export class WebGLBackdrop {
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
-      uPointer: { value: this.pointer },
       uUvOffset: { value: new Vector3(0.25, 0.25, 0) },
       uUvOffsetScale: { value: 1.5 },
       tMouseSim: { value: this.mouseSimulationTexture },
@@ -2230,13 +2221,9 @@ export class WebGLBackdrop {
     const next = colorFrom(value ?? DEFAULT_BG, DEFAULT_BG);
     this.workItems.forEach((item) => {
       if (duration <= 0) {
-        item.material.uniforms.uBlockColor.value.copy(next);
-        item.material.uniforms.uEmissiveColor.value.copy(next);
         item.material.emissive.copy(next);
         return;
       }
-      this.blockColorTweens.push(gsap.to(item.material.uniforms.uBlockColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
-      this.blockColorTweens.push(gsap.to(item.material.uniforms.uEmissiveColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
       this.blockColorTweens.push(gsap.to(item.material.emissive, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     });
   }
@@ -2264,19 +2251,17 @@ export class WebGLBackdrop {
 
   private setSpotLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
     this.spotLightTween?.kill();
-    const target = MathUtils.clamp(value / this.maxSpotLightIntensity, 0, 1);
     const update = () => {
-      this.spotLight.intensity = this.spotLightIntensity * this.maxSpotLightIntensity;
+      this.spotLight.intensity = this.spotLightIntensity;
       this.updateSpotLightBasis();
     };
     if (duration <= 0) {
-      this.spotLightIntensity = target;
-      this.spotLight.intensity = value;
+      this.spotLightIntensity = value;
       update();
       return;
     }
     this.spotLightTween = gsap.to(this, {
-      spotLightIntensity: target,
+      spotLightIntensity: value,
       duration,
       ease,
       onUpdate: update,
@@ -2559,9 +2544,6 @@ export class WebGLBackdrop {
     const x = MathUtils.clamp(hit.uv?.x ?? 0.5, 0, 1);
     const y = MathUtils.clamp(hit.uv?.y ?? 0.5, 0, 1);
     this.mouseSimTargetPos.set(x, y);
-    this.workItems.forEach((item) => {
-      item.material.uniforms.uPointer.value.set(x * 2 - 1, y * 2 - 1);
-    });
   }
 
   private updateVisibleWorkItems(time: number) {
