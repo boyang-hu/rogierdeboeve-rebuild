@@ -164,6 +164,7 @@ uniform float uMouseFactor;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
 uniform sampler2D tDisplacement;
+uniform sampler2D tPerlin;
 uniform vec3 uSpotLightPosition;
 uniform float uSpotConeTan;
 uniform float uSpotIntensity;
@@ -195,7 +196,8 @@ void main() {
   float fadeDisplacementScale = (revealMask * 4.85) - (toCenter * (revealMask / 4.85));
   float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
   vec4 displacementMap = texture2D(tDisplacement, instanceGrid.xy);
-  float perlin = noise(instanceGrid.xy * 12.0 - uTime * 0.05);
+  vec4 perlinMap = texture2D(tPerlin, instanceGrid.xy * 0.75 - uTime * 0.05);
+  float perlin = mix(noise(instanceGrid.xy * 12.0 - uTime * 0.05), perlinMap.r, 0.72);
   float wave = sin(instanceGrid.x * 24.0 + instanceGrid.y * 13.0 - uTime * 0.8) * 0.5 + 0.5;
   float displacement = mix(mix(perlin, wave, 0.35), displacementMap.r, 0.58);
   float perlinHeight = 10.0;
@@ -207,12 +209,11 @@ void main() {
   transformed *= fade * uRevealSides;
 
   vec2 mouseUv = instanceGrid.xy;
-  vec2 pointerUv = uPointer * 0.5 + 0.5;
-  float pointerMouse = 1.0 - smoothstep(0.0, 0.38, distance(mouseUv, pointerUv));
-  float mouse = max(pointerMouse, texture2D(tMouseSim, mouseUv).r);
+  float mouse = texture2D(tMouseSim, mouseUv).r;
+  transformed *= 1.0 - mouse * 0.05;
   transformed.z -= 1.5;
   transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
-  transformed.z += mouse * 2.35 * uMouseFactor;
+  transformed.z += mouse * 15.0 * uMouseFactor;
   transformed *= 1.0 - displacement * 0.1;
 
   vec3 transformedSpread = transformed;
@@ -1122,6 +1123,7 @@ export class WebGLBackdrop {
         uPointer: { value: this.pointer },
         tMouseSim: { value: this.mouseSimTexture },
         tDisplacement: { value: this.displacementTarget.texture },
+        tPerlin: { value: this.perlinTexture },
         uResolution: { value: new Vector2(1, 1) },
         uSpotLightPosition: { value: this.spotLightPosition },
         uSpotConeTan: { value: Math.tan(Math.PI / 8) },
@@ -1251,6 +1253,9 @@ export class WebGLBackdrop {
     });
     this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
       this.compositeMaterial.uniforms.tPerlin.value = texture;
+      this.workItems.forEach((item) => {
+        item.material.uniforms.tPerlin.value = texture;
+      });
     });
   }
 
