@@ -25,6 +25,7 @@ import {
   VideoTexture,
   WebGLRenderer,
   WebGLRenderTarget,
+  RepeatWrapping,
 } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import gsap from "gsap";
@@ -903,35 +904,57 @@ uniform float uShader3Alpha;
 uniform float uShader3Speed;
 uniform float uShader3Scale;
 uniform float uShader1Mix3;
+uniform sampler2D tSky;
 
 varying vec2 vUv;
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+vec3 blendScreen(vec3 base, vec3 blend, float opacity) {
+  vec3 mixed = 1.0 - (1.0 - base) * (1.0 - blend);
+  return mix(base, mixed, opacity);
 }
 
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-    u.y
-  );
+vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
+  return mix(base, base * blend, opacity);
+}
+
+float smoothMask(float coord, float center, float spread) {
+  return (1.0 - smoothstep(coord, center, center - spread)) + (1.0 - smoothstep(coord, center, center + spread));
 }
 
 void main() {
   vec2 uv = vUv;
   float band = smoothstep(1.0, 0.2, uv.y) * smoothstep(0.0, 0.25, uv.y);
-  float shader1 = noise(vec2(uv.x * uShader1Scale - uTime * uShader1Speed * 0.08, uv.y * uShader1Scale * 0.32));
-  float shader2 = noise(vec2(uv.x * uShader2Scale + shader1 * 0.35, uv.y * uShader2Scale * 0.24));
-  float shader3 = noise(vec2(uv.x * max(0.001, uShader3Scale) + uTime * uShader3Speed * 0.04, uv.y * max(0.001, uShader3Scale) * 0.2));
-  float flow = shader1 * uShader1Alpha + shader2 * uShader2Alpha + shader3 * uShader3Alpha;
-  vec3 base = vec3(0.012, 0.013, 0.016);
-  vec3 color = mix(base, uDarkenColor, clamp(flow * uMultiplier * 0.18, 0.0, 0.42));
-  color = mix(color, color * uDarkenColor, clamp(uDarken, 0.0, 1.0));
-  color += uDarkenColor * shader1 * uShader1Mix3 * 0.025;
+  vec2 skyUv = uv;
+  vec2 skyUv2 = uv;
+  skyUv.x += 0.5 + uTime * uShader1Speed * 0.005;
+  skyUv2.x -= 0.75 - uTime * uShader3Speed * 0.005;
+
+  vec4 noise1 = texture2D(tSky, skyUv * max(0.001, uMultiplier));
+  vec4 noise2 = texture2D(tSky, skyUv2);
+  float m = 0.0;
+  m = max(m, 1.0 - smoothstep(uv.x, 0.00, 0.015));
+  m = max(m, 1.0 - smoothstep(uv.x, 1.015, 0.985));
+  m = max(m, smoothMask(uv.x, 0.5, 0.01));
+  m = m * 1.0 - smoothMask(uv.x, 0.75, 0.02);
+  m = clamp(m, 0.0, 1.0);
+  vec3 noiseMixed = mix(noise1.rgb, noise2.rgb, m);
+
+  vec3 color = vec3(0.03);
+  color = blendScreen(color, noiseMixed, 0.5 * uShader1Alpha);
+  vec2 skyMaskUv = uv;
+  skyMaskUv.y -= 0.1;
+  float skyMask = mod(skyMaskUv.y * 5.0, 1.0);
+  skyMask = max(skyMask, step(0.6, skyMaskUv.y));
+  color = blendMultiply(color, noiseMixed, skyMask * uShader1Mix3 * 0.35);
+  color += vec3(smoothstep(uv.y, 0.45, 0.595)) * 0.28;
+
+  float skyMask2 = mod(skyMaskUv.y * 2.5, 1.0);
+  skyMask2 = max(skyMask, step(0.6, skyMaskUv.y));
+  color = mix(vec3(1.0), color, skyMask2 * 1.5);
+  color *= 1.15;
+  color *= clamp(color, vec3(0.0), vec3(1.0));
+  color = blendMultiply(color, uDarkenColor, clamp(uDarken, 0.0, 1.0));
+  color = mix(vec3(0.012, 0.013, 0.016), color, clamp(uShader1Alpha + uShader2Alpha + uShader3Alpha, 0.15, 1.0));
   gl_FragColor = vec4(color, band * 0.22);
 }
 `;
@@ -1696,9 +1719,12 @@ export class WebGLBackdrop {
 
   private loadCompositeTextures() {
     this.loadTexture("/images/textures/blue-noise.png", (texture) => {
+      texture.wrapS = RepeatWrapping;
+      texture.wrapT = RepeatWrapping;
       this.preCompositeMaterial.uniforms.tNoise.value = texture;
       this.mouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
+      this.environmentMaterial.uniforms.tSky.value = texture;
     });
     this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
       this.preCompositeMaterial.uniforms.tPerlin.value = texture;
@@ -1800,6 +1826,7 @@ export class WebGLBackdrop {
         uShader3Speed: { value: 0 },
         uShader3Scale: { value: 0 },
         uShader1Mix3: { value: 1.5 },
+        tSky: { value: this.noiseTexture },
       },
       vertexShader: thumbVertex,
       fragmentShader: environmentFragment,
