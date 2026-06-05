@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  BoxGeometry,
   ClampToEdgeWrapping,
   Color,
   CubeTextureLoader,
@@ -72,6 +73,28 @@ type WorkItem = {
 
 type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
 
+type AuxiliaryBlockItem = {
+  kind: "about" | "floating";
+  group: Group;
+  scaleWrap: Group;
+  rotationWrap: Group;
+  material: WorkBlockMaterial;
+  mesh: InstancedMesh;
+  rayPlane?: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  gridSize: Vector3;
+  colors: Float32Array;
+  translation: Vector2;
+  translationZ: number;
+  track?: HTMLElement | null;
+  bounds?: DOMRect;
+  offset: Vector2;
+  trackScaleF: number;
+  mouseTarget: Vector2;
+  mouseOld: Vector2;
+  mouseNew: Vector2;
+  mouseSpeed: number;
+};
+
 type MediaPlane = {
   track: HTMLElement;
   mesh: Mesh<PlaneGeometry, ShaderMaterial>;
@@ -108,6 +131,8 @@ const GRID_SCALE = 0.09;
 const MOUSE_PLANE_SCALE = 1.3;
 const MOUSE_RAY_SCALE = 1.5;
 const SCREEN_MOUSE_SIM_SCALE = 10;
+const ABOUT_TRACK_SCALE = 0.005;
+const AUX_BLOCK_SCALE = 0.09;
 const SOURCE_BLOOM_KERNELS = [3, 5, 7, 9, 11];
 
 type SourceRenderSettings = {
@@ -1044,8 +1069,8 @@ export class WebGLBackdrop {
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private sceneWrap = new Group();
   private blocksWrap = new Group();
-  private aboutBlocks = new Group();
-  private floatingBlocks = new Group();
+  private aboutBlocks?: AuxiliaryBlockItem;
+  private floatingBlocks?: AuxiliaryBlockItem;
   private thumbWrap = new Group();
   private workItems: WorkItem[] = [];
   private mediaPlanes: MediaPlane[] = [];
@@ -1230,12 +1255,6 @@ export class WebGLBackdrop {
     this.environmentMaterial = this.createEnvironmentMaterial();
     this.environmentPlane = new Mesh(new PlaneGeometry(300, 10), this.environmentMaterial);
     this.environmentPlane.position.y = -12.65;
-    this.aboutBlocks.visible = false;
-    this.floatingBlocks.visible = false;
-    this.floatingBlocks.scale.set(3.5, 3.5, 3.5);
-    this.floatingBlocks.position.y = 4.65;
-    this.homeScene.add(this.aboutBlocks);
-    this.homeScene.add(this.floatingBlocks);
     this.homeScene.add(this.sceneWrap);
     this.sceneWrap.add(this.blocksWrap);
     this.sceneWrap.add(this.floorPlane);
@@ -1244,6 +1263,7 @@ export class WebGLBackdrop {
     this.thumbScene.add(this.thumbWrap);
 
     this.createWorkScene();
+    this.createAuxiliaryBlocks();
     this.createMediaPlanes();
     this.loadCompositeTextures();
 
@@ -1451,6 +1471,12 @@ export class WebGLBackdrop {
       item.rayPlane.geometry.dispose();
       item.rayPlane.material.dispose();
     });
+    [this.aboutBlocks, this.floatingBlocks].forEach((item) => {
+      item?.mesh.geometry.dispose();
+      item?.material.dispose();
+      item?.rayPlane?.geometry.dispose();
+      item?.rayPlane?.material.dispose();
+    });
     this.backgroundMaterial.dispose();
     this.workRawTarget.dispose();
     this.preCompositeMaterial.dispose();
@@ -1625,6 +1651,209 @@ export class WebGLBackdrop {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.scale.setScalar(GRID_SCALE);
     return mesh;
+  }
+
+  private createAuxiliaryBlockMaterial(kind: "about" | "floating") {
+    const uniforms = {
+      uGridSize: { value: kind === "about" ? new Vector3(23, 23, this.gridLayers) : new Vector3(30, 30, 1) },
+      uGridOffset: { value: new Vector3(0, 0, 0) },
+      uReveal: { value: 0 },
+      uRevealProject: { value: 1 },
+      uRevealSides: { value: 1 },
+      uRevealSpread: { value: kind === "about" ? 1 : 10 },
+      uRevealSpreadSides: { value: 1 },
+      uMouseSpeed: { value: 0 },
+      uMouseLightness: { value: 1 },
+      uMouseFactor: { value: 1 },
+      uUvOffset: { value: new Vector3(0, 0, 0) },
+      uUvOffsetScale: { value: 1.5 },
+      uScrollOpacity: { value: 1 },
+      tMouseSim: { value: this.mouseSimulationTexture },
+      tMouseSim2: { value: this.screenMouseSimulationTexture },
+      tDisplacement: { value: this.displacementTarget.texture },
+      tPerlin: { value: this.perlinTexture },
+      uCoords: { value: new Vector2(1, 1) },
+      uTime: { value: 0 },
+    };
+    const material = new MeshStandardMaterial({
+      color: colorFrom("#808080", "#808080"),
+      emissive: colorFrom("#000000", "#000000"),
+      emissiveIntensity: SOURCE_WORK_EMISSIVE_INTENSITY,
+      roughness: SOURCE_WORK_ROUGHNESS,
+      metalness: SOURCE_WORK_METALNESS,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+    }) as WorkBlockMaterial;
+    material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
+    material.uniforms = uniforms;
+    material.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, uniforms);
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
+        .replace("#include <begin_vertex>", workBlockBeginVertexChunk);
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
+        .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
+    };
+    material.customProgramCacheKey = () => `source-${kind}-aux-block-chunks`;
+    return material;
+  }
+
+  private createAuxiliaryBlocks() {
+    this.aboutBlocks = this.createAboutBlocks();
+    this.floatingBlocks = this.createFloatingBlocks();
+    this.aboutBlocks.group.visible = false;
+    this.floatingBlocks.group.visible = false;
+    this.floatingBlocks.group.scale.set(3.5, 3.5, 3.5);
+    this.floatingBlocks.group.position.y = 4.65;
+    this.homeScene.add(this.aboutBlocks.group);
+    this.homeScene.add(this.floatingBlocks.group);
+  }
+
+  private createAboutBlocks(): AuxiliaryBlockItem {
+    const xNum = 23;
+    const yNum = 23;
+    const zNum = sourceLowRes() ? 4 : 4;
+    const material = this.createAuxiliaryBlockMaterial("about");
+    material.uniforms.uGridSize.value.set(xNum, yNum, zNum);
+    const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 1, 0.05);
+    const maxCount = xNum * yNum * zNum;
+    const mesh = new InstancedMesh(geometry, material, maxCount);
+    const rotationWrap = new Group();
+    const scaleWrap = new Group();
+    const group = new Group();
+    const rayPlane = new Mesh(new PlaneGeometry(xNum, yNum), new MeshBasicMaterial({ visible: false }));
+    const colors = new Float32Array(maxCount * 3);
+    const alphas = new Float32Array(maxCount);
+    const offsets = new Float32Array(maxCount * 3);
+    const indexes = new Float32Array(maxCount);
+    const dummy = new Object3D();
+    const cell = GRID_CUBE_SIZE + GRID_SPACING;
+    const radius = Math.min(xNum, yNum) * cell / 2;
+    const width = (xNum - 1) * cell;
+    const height = (yNum - 1) * cell;
+    const depth = (zNum - 1) * cell;
+    let index = 0;
+    for (let z = 0; z < zNum; z++) {
+      for (let x = 0; x < xNum; x++) {
+        for (let y = 0; y < yNum; y++) {
+          const px = x * cell - width / 2;
+          const py = y * cell - height / 2;
+          if (px * px + py * py > radius * radius) continue;
+          dummy.position.set(px, py, z * cell - depth / 2);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(index, dummy.matrix);
+          offsets[index * 3] = x / xNum;
+          offsets[index * 3 + 1] = y / yNum;
+          offsets[index * 3 + 2] = z / zNum;
+          indexes[index] = index;
+          colors[index * 3] = Math.random();
+          colors[index * 3 + 1] = Math.random();
+          colors[index * 3 + 2] = Math.random();
+          alphas[index] = Math.random();
+          index++;
+        }
+      }
+    }
+    mesh.count = index;
+    geometry.setAttribute("instanceOffset", new InstancedBufferAttribute(offsets, 3));
+    geometry.setAttribute("instanceIndex", new InstancedBufferAttribute(indexes, 1));
+    geometry.setAttribute("instanceAlpha", new InstancedBufferAttribute(alphas, 1));
+    geometry.setAttribute("instanceColor", new InstancedBufferAttribute(colors, 3));
+    mesh.instanceMatrix.needsUpdate = true;
+    rotationWrap.add(mesh);
+    rotationWrap.add(rayPlane);
+    rotationWrap.scale.setScalar(AUX_BLOCK_SCALE);
+    scaleWrap.add(rotationWrap);
+    scaleWrap.scale.setScalar(0.35);
+    group.add(scaleWrap);
+    return {
+      kind: "about",
+      group,
+      scaleWrap,
+      rotationWrap,
+      material,
+      mesh,
+      rayPlane,
+      gridSize: new Vector3(xNum, yNum, zNum),
+      colors,
+      translation: new Vector2(),
+      translationZ: 0,
+      offset: new Vector2(),
+      trackScaleF: ABOUT_TRACK_SCALE,
+      mouseTarget: new Vector2(0.5, 0.5),
+      mouseOld: new Vector2(0.5, 0.5),
+      mouseNew: new Vector2(0.5, 0.5),
+      mouseSpeed: 0,
+    };
+  }
+
+  private createFloatingBlocks(): AuxiliaryBlockItem {
+    const xNum = 30;
+    const yNum = 30;
+    const zNum = 1;
+    const material = this.createAuxiliaryBlockMaterial("floating");
+    material.uniforms.uGridSize.value.set(xNum, yNum, zNum);
+    const geometry = new BoxGeometry(0.5, 0.5, 0.5);
+    const count = xNum * yNum * zNum;
+    const mesh = new InstancedMesh(geometry, material, count);
+    const group = new Group();
+    const rotationWrap = new Group();
+    const scaleWrap = new Group();
+    const colors = new Float32Array(count * 3);
+    const alphas = new Float32Array(count);
+    const offsets = new Float32Array(count * 3);
+    const indexes = new Float32Array(count);
+    const dummy = new Object3D();
+    const cell = 0.5 + 0.3;
+    const width = (xNum - 1) * cell;
+    const height = (yNum - 1) * cell;
+    let index = 0;
+    for (let z = 0; z < zNum; z++) {
+      for (let x = 0; x < xNum; x++) {
+        for (let y = 0; y < yNum; y++) {
+          dummy.position.set(x * cell - width / 2, y * cell - height / 2, 0);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(index, dummy.matrix);
+          offsets[index * 3] = x / xNum;
+          offsets[index * 3 + 1] = y / yNum;
+          offsets[index * 3 + 2] = z / zNum;
+          indexes[index] = index;
+          colors[index * 3] = Math.random();
+          colors[index * 3 + 1] = Math.random();
+          colors[index * 3 + 2] = Math.random();
+          alphas[index] = Math.random();
+          index++;
+        }
+      }
+    }
+    geometry.setAttribute("instanceOffset", new InstancedBufferAttribute(offsets, 3));
+    geometry.setAttribute("instanceIndex", new InstancedBufferAttribute(indexes, 1));
+    geometry.setAttribute("instanceAlpha", new InstancedBufferAttribute(alphas, 1));
+    geometry.setAttribute("instanceColor", new InstancedBufferAttribute(colors, 3));
+    mesh.instanceMatrix.needsUpdate = true;
+    scaleWrap.add(mesh);
+    scaleWrap.scale.setScalar(0.3);
+    group.add(scaleWrap);
+    return {
+      kind: "floating",
+      group,
+      scaleWrap,
+      rotationWrap,
+      material,
+      mesh,
+      gridSize: new Vector3(xNum, yNum, zNum),
+      colors,
+      translation: new Vector2(),
+      translationZ: 0,
+      offset: new Vector2(),
+      trackScaleF: ABOUT_TRACK_SCALE,
+      mouseTarget: new Vector2(0.5, 0.5),
+      mouseOld: new Vector2(0.5, 0.5),
+      mouseNew: new Vector2(0.5, 0.5),
+      mouseSpeed: 0,
+    };
   }
 
   private createThumbPlane(payload: ProjectPayload) {
@@ -2491,6 +2720,7 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       item.material.uniforms.uCoords.value.set(renderWidth, renderHeight);
     });
+    this.resizeAuxiliaryBlocks(width, height, dpr);
     this.updateMediaPlanePositions();
   };
 
@@ -2563,6 +2793,67 @@ export class WebGLBackdrop {
       item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
     });
+  }
+
+  private resizeAuxiliaryBlocks(width: number, height: number, dpr: number) {
+    const updateTracked = (item?: AuxiliaryBlockItem) => {
+      if (!item) return;
+      item.material.uniforms.uCoords.value.set(Math.round(width * dpr), Math.round(height * dpr));
+      if (!item.track) return;
+      const rect = item.track.getBoundingClientRect();
+      item.bounds = rect;
+      item.offset.set(
+        (-width / 2 + rect.width / 2 + rect.left) * item.trackScaleF,
+        (height / 2 - rect.height / 2 - (rect.top + window.scrollY)) * item.trackScaleF,
+      );
+      item.group.scale.setScalar(rect.width * item.trackScaleF);
+    };
+    updateTracked(this.aboutBlocks);
+    updateTracked(this.floatingBlocks);
+  }
+
+  private updateAuxiliaryBlocks(time: number, delta: number) {
+    const updateShared = (item?: AuxiliaryBlockItem) => {
+      if (!item?.group.visible) return;
+      item.material.uniforms.uTime.value = time;
+      item.material.uniforms.tDisplacement.value = this.displacementTarget.texture;
+      item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
+      item.group.position.x = item.offset.x + item.translation.x;
+      item.group.position.y = item.offset.y + item.translation.y + (window.innerWidth >= BREAKPOINT_LG ? window.scrollY : 0) * item.trackScaleF;
+    };
+    updateShared(this.aboutBlocks);
+    const item = this.floatingBlocks;
+    if (!item?.group.visible) return;
+    updateShared(item);
+    const dummy = new Object3D();
+    const xNum = item.gridSize.x;
+    const yNum = item.gridSize.y;
+    const zNum = item.gridSize.z;
+    const cell = 0.5 + 0.3;
+    const width = (xNum - 1) * cell;
+    const height = (yNum - 1) * cell;
+    const depthRange = 500;
+    let index = 0;
+    for (let z = 0; z < zNum; z++) {
+      for (let x = 0; x < xNum; x++) {
+        for (let y = 0; y < yNum; y++) {
+          const px = x * cell - width / 2;
+          const py = y * cell - height / 2;
+          const colorSeed = item.colors[index * 3] || 0;
+          let pz = z * (cell + depthRange * colorSeed) + colorSeed * depthRange - depthRange / 2;
+          pz -= time * MathUtils.clamp((item.colors[index * 2] || colorSeed) * 15, 5, 50);
+          pz -= item.translationZ;
+          pz = ((pz % (depthRange / 2)) + depthRange / 2) % (depthRange / 2) + 10;
+          if (px > -3.5 && px < 3.5 && py < 5) dummy.position.set(-10000, -10000, -10000);
+          else dummy.position.set(px, py, pz);
+          dummy.updateMatrix();
+          item.mesh.setMatrixAt(index, dummy.matrix);
+          index++;
+        }
+      }
+    }
+    item.mesh.instanceMatrix.needsUpdate = true;
+    item.translationZ += 0.005 * Math.abs(delta * 60);
   }
 
   private updateMouseBrush(
@@ -2722,6 +3013,7 @@ export class WebGLBackdrop {
     this.spotLight.map = this.thumbCompositeTarget.texture;
     this.updateSpotLightBasis();
     this.updateVisibleWorkItems(time);
+    this.updateAuxiliaryBlocks(time, delta);
     this.updatePointerProjection();
     this.updateMouseSimulation(time, delta);
     this.backgroundMaterial.uniforms.uTime.value = time;

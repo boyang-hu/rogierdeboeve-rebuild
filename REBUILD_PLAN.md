@@ -169,7 +169,8 @@ Last updated: 2026-06-05
 | `b67b94e` | Home WebGL | Batched source `VA` shader-interface correction: removed the over-broad `uScrollOpacity` addition from ordinary home work blocks, and restored source-shaped `uGridOffset` plus `uMouseSpeed` declarations/uniforms on the standard-material work-block shader path. |
 | `a10e685` | Home WebGL | Batched source `A1/OA/Se.showScene` reveal ownership alignment: final `OA` no longer carries non-source `uReveal/uBgColor`; scene reveal now writes the pre-composite `A1/C1`-shaped material like source `Se.showScene`; and the final composite returns to the source darken/bloom/mouse-sim tail. |
 | `8dd9e09` | Home WebGL | Batched source `p1/Se/GA/VA` scene and shader-coordinate alignment: restored the source `sceneWrap -> blocksWrap -> GA` object hierarchy with hidden about/floating block containers, added source-shaped `Se` control paths for environment rotation and the second directional-light state without adding non-source lighting, and moved work-block displacement/perlin/mouse/alpha UVs from rebuild-only `instanceGrid` sampling to source-style `instanceOffset`/`newUv` coordinates. |
-| `current batch` | Home WebGL | Batched source `GA/VA/Se` shader-interface cleanup: restored fragment alpha/vignette UV reconstruction from `vUv / uGridSize + vOffset`, removed the extra vertex-to-fragment `vNewUv` path, aligned vertex displacement/mouse sampling to the source `instanceOffset` baseline, deleted unused rebuild-only work-block uniforms so ordinary `VA` matches the source custom-uniform surface more closely, and removed non-source spotlight intensity clamping so `Se.setSpotLightIntensity()` writes real Three spotlight values. |
+| `51a23a0` | Home WebGL | Batched source `GA/VA/Se` shader-interface cleanup: restored fragment alpha/vignette UV reconstruction from `vUv / uGridSize + vOffset`, removed the extra vertex-to-fragment `vNewUv` path, aligned vertex displacement/mouse sampling to the source `instanceOffset` baseline, deleted unused rebuild-only work-block uniforms so ordinary `VA` matches the source custom-uniform surface more closely, and removed non-source spotlight intensity clamping so `Se.setSpotLightIntensity()` writes real Three spotlight values. |
+| `current batch` | Home WebGL | Batched source `p1/$A/ZA` auxiliary-scene structure alignment: replaced empty hidden about/floating groups with source-shaped instanced block objects, added about circular `23x23x4` rounded-cube layout, added floating `30x30x1` box-grid layout with source-style z drift/hole masking, wired default hidden visibility, resize, update, and disposal lifecycle so the `p1` scene graph now carries the same auxiliary block structure without changing the visible home gallery. |
 
 ## Current Focus
 
@@ -177,7 +178,7 @@ Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. 
 
 Immediate source targets:
 
-- `p1`: continue auditing about/floating block implementation details and route-specific visibility, now that the hidden source containers and `blocksWrap` hierarchy exist.
+- `p1`: continue auditing route-specific visibility and spotlight ownership for about/floating blocks, now that the hidden source-shaped auxiliary block objects and `blocksWrap` hierarchy exist.
 - `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, and a cleaner source-shaped custom-uniform surface.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa placeholders.
@@ -190,12 +191,12 @@ Latest verification:
 - `git diff --check`
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
-- Chrome CDP smoke on the existing QA Chrome (`9222`) with SwiftShader on `/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `hasWebgl=true`, `canvasLost=false`, expected project media counts, no filtered runtime/shader errors.
+- Chrome CDP smoke on the existing QA Chrome (`9222`) with SwiftShader on `/?skip-preloader`, `/about/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `hasWebgl=true`, `canvasLost=false`, expected project media counts/about view marker, no filtered runtime/shader errors.
 
 ## Next Candidate Steps
 
 1. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing whether the remaining chunk-injection compromise should become a fuller source shader override now that the custom-uniform surface is cleaner.
-2. Continue source `p1/GA` render visibility, spotlight map, and lighting review with the real spotlight-map scene path, `blocksWrap` hierarchy, and standard material pipeline now active.
+2. Continue source `p1/GA/$A/ZA` render visibility, spotlight map, and lighting review with the real spotlight-map scene path, `blocksWrap` hierarchy, auxiliary block objects, and standard material pipeline now active.
 3. Continue `Lu/A1/OA` only where the source settings model exposes material behavior gaps, especially optional blur/fxaa/fluid placeholders that can be no-op aligned safely.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
 5. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.
