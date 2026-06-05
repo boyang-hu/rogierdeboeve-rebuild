@@ -72,7 +72,7 @@ Last updated: 2026-06-05
 | `452bf21` | Home DOM | Matched source `yD.onVirtualScroll` snap state more closely by only easing `scroll.diff` back toward zero after gallery input has enabled the snap flag and by clearing/restarting the 100ms snap timeout on each delta. |
 | `fd92af1` | Home DOM | Extended the session-backed work gallery state toward source `Qe.workState` by preserving `index.current/prev/next`, `activeHook`, and `targetHook` alongside scroll state. |
 | `8d99bdb` | Home DOM/WebGL | Added source-style `SD.animateIn -> Se.showScene()` wiring so the home composite `uReveal` animates in over 1.6s with `expo.out` after WebGL initialization. |
-| `pending` | Home DOM | Added source-style `SD.onLeave -> Ki.animateDescriptionOut/animateAvailibilityOut` behavior to the home CTA transition path with 0.5s opacity fades. |
+| `489ca4c` | Home DOM | Added source-style `SD.onLeave -> Ki.animateDescriptionOut/animateAvailibilityOut` behavior to the home CTA transition path with 0.5s opacity fades. |
 
 ## Current Focus
 
