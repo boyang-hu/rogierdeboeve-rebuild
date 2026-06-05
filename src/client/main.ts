@@ -63,12 +63,7 @@ function applyActiveColor(color?: string) {
   if (color) document.documentElement.style.setProperty("--active-color", color);
 }
 
-function setWorkPreviewing(enabled: boolean) {
-  document.documentElement.classList.toggle("is-work-previewing", enabled);
-}
-
 function clearWorkPreview(webgl?: WebGLLike) {
-  setWorkPreviewing(false);
   webgl?.setPreviewMode?.(false);
 }
 
@@ -390,7 +385,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     activeProjectId = nextProjectId;
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
-    window.dispatchEvent(new CustomEvent("rd:project-active", { detail: { slug: nextProjectId, payload } }));
+    window.dispatchEvent(new CustomEvent("rd:project-active", { detail: nextProjectId }));
+    window.dispatchEvent(new CustomEvent("rd:project-active-payload", { detail: { slug: nextProjectId, payload } }));
     if (changedProject) window.dispatchEvent(new CustomEvent("rd:woosh"));
     if (emitScene) getWebgl()?.setProject(payload);
   };
@@ -525,7 +521,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const previewWork = (enabled: boolean) => {
     if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
-    setWorkPreviewing(enabled);
     getWebgl()?.setPreviewMode?.(enabled);
   };
 
@@ -612,7 +607,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const selectProgressItem = () => {
       const slug = item.dataset.slug ?? item.dataset.progressSlug;
       const index = cardsArray.findIndex((candidate) => candidate.dataset.slug === slug);
-      if (index >= 0) scrollToIndex(index);
+      if (index >= 0) {
+        scrollToIndex(index);
+        setDomActiveIndex(index);
+      }
     };
     const onProgressClick = () => {
       if (performance.now() - lastTouchSelect < 500) return;
