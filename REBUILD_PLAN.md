@@ -82,7 +82,7 @@ Last updated: 2026-06-05
 | `32ef9ec` | Global Audio | Split CTA click audio from gallery-out soft-woosh behavior using source `gD`/`yD` Howler assets and playback rates. |
 | `f200c8f` | Home DOM/WebGL | Cleared local CTA preview state before work-gallery leave so the source-style `yD.onWorkGalleryOut()` transition is not tinted by hover/focus preview leftovers. |
 | `7a49018` | Global Audio | Split source-style hover and gallery-enter plucks cues so `yD.animateIn()` can play plucks without reusing the hover sound. |
-| `pending` | Global Audio | Moved the source-style home gallery plucks trigger behind audio listener initialization so dynamic import ordering cannot drop `yD.animateIn()` audio. |
+| `7ead336` | Global Audio | Moved the source-style home gallery plucks trigger behind audio listener initialization so dynamic import ordering cannot drop `yD.animateIn()` audio. |
 
 ## Current Focus
 
