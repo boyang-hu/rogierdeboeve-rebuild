@@ -33,6 +33,7 @@ type WebGLLike = {
   showScene?(): void;
   hideWorkScene?(): void;
   mediaAnimateIn?(): void;
+  enterProjectVisualState?(payload: ReturnType<typeof projectPayloadFromElement>): void;
   setProjectScrollState?(payload: ReturnType<typeof projectPayloadFromElement>): void;
   projectLeave?(): void;
   refreshMedia?(): void;
@@ -1017,13 +1018,15 @@ function boot() {
     const project = document.querySelector<HTMLElement>("[data-webgl-project]");
     const payload = projectPayloadFromElement(active ?? project);
     applyActiveColor(payload.color);
-    webgl?.setProject(payload);
     if (document.querySelector("[data-view='home']")) {
+      webgl?.setProject(payload);
       webgl?.setCameraControllerSettings?.({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
       webgl?.initHomeSpotlight?.();
       webgl?.showScene?.();
       homeGalleryEntered = true;
       window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
+    } else if (project) {
+      webgl?.enterProjectVisualState?.(payload);
     }
   });
 
