@@ -205,6 +205,11 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let raf = 0;
   let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
   const ctaTimelines = new WeakMap<HTMLElement, gsap.core.Timeline>();
+  const touch = {
+    x: 0,
+    y: 0,
+    moved: false,
+  };
 
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
   const lerp = (current: number, target: number, factor: number, delta: number) =>
@@ -310,6 +315,15 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     draggingTimeout = window.setTimeout(() => setDragging(false), 220);
   };
 
+  const handleGalleryDelta = (delta: number) => {
+    if (Math.abs(delta) < 15) return false;
+    markDragging();
+    scroll.diff += delta;
+    if (delta > 15) next();
+    if (delta < -15) prev();
+    return true;
+  };
+
   cardsArray.forEach((card, index) => {
     card.addEventListener("mouseenter", () => {
       if (window.matchMedia("(max-width: 999px)").matches) return;
@@ -357,12 +371,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   window.addEventListener("wheel", (event) => {
     if (!document.body.classList.contains("is-home")) return;
     const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    if (Math.abs(delta) < 15) return;
+    if (!handleGalleryDelta(delta)) return;
     event.preventDefault();
-    markDragging();
-    scroll.diff += delta;
-    if (delta > 15) next();
-    if (delta < -15) prev();
   }, { passive: false });
 
   window.addEventListener("keydown", (event) => {
@@ -373,18 +383,30 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") prev();
   });
 
-  let touchStart = 0;
   window.addEventListener("touchstart", (event) => {
-    touchStart = event.touches[0]?.clientX ?? 0;
+    const point = event.touches[0];
+    touch.x = point?.clientX ?? 0;
+    touch.y = point?.clientY ?? 0;
+    touch.moved = false;
+  }, { passive: true });
+  window.addEventListener("touchmove", (event) => {
+    if (!document.body.classList.contains("is-home")) return;
+    const point = event.touches[0];
+    if (!point) return;
+    const deltaX = -(point.clientX - touch.x);
+    const deltaY = -(point.clientY - touch.y);
+    touch.x = point.clientX;
+    touch.y = point.clientY;
+    const delta = Math.abs(deltaY) > Math.abs(deltaX) ? deltaY : deltaX;
+    touch.moved = handleGalleryDelta(delta) || touch.moved;
   }, { passive: true });
   window.addEventListener("touchend", (event) => {
     if (!window.matchMedia("(max-width: 999px)").matches) return;
-    const end = event.changedTouches[0]?.clientX ?? touchStart;
-    const delta = end - touchStart;
+    if (touch.moved) return;
+    const end = event.changedTouches[0]?.clientX ?? touch.x;
+    const delta = end - touch.x;
     if (Math.abs(delta) < 42) return;
-    markDragging();
-    if (delta < 0) next();
-    else prev();
+    handleGalleryDelta(-delta);
   }, { passive: true });
 
   const tick = (now: number) => {

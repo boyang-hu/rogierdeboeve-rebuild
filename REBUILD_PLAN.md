@@ -41,7 +41,8 @@ Last updated: 2026-06-05
 | `2eaa8e5` | Home DOM | Added source-compatible progressbar `data-slug` support while preserving existing `data-progress-slug` behavior from the rebuild. |
 | `7f41fba` | Home DOM | Aligned homepage title/work/footer intro animation targets with source `Rg/vD/Ou` inner-element structure. |
 | `f7531e4` | Home DOM | Aligned work title click behavior with source `vD`: project titles select the active project while the CTA remains the detail-page entry point. |
-| this commit | Home DOM | Added source-style `gD` CTA text and opacity animate-in/out when the active work item changes. |
+| `66c6970` | Home DOM | Added source-style `gD` CTA text and opacity animate-in/out when the active work item changes. |
+| this commit | Home DOM | Aligned touch gallery movement with source `yD` virtual-scroll deltas by driving project changes during touchmove instead of only on touchend. |
 
 ## Current Focus
 
