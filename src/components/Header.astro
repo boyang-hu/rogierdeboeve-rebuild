@@ -52,8 +52,22 @@ const pathname = Astro.url.pathname;
 <nav class="ui-nav" aria-label="Main navigation">
   <div class="wrap">
     <ul>
-      <li><a class={`ui-nav-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/"><span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span><span class="ui-nav-a-title">Work</span></a></li>
-      <li><a class={`ui-nav-a c-color ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/"><span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span><span class="ui-nav-a-title">About</span></a></li>
+      <li>
+        <a class={`ui-nav-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work">
+          <span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span>
+          <span class="ui-nav-a-inner">
+            <span class="ui-nav-a-title">Work</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a class={`ui-nav-a c-color ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about">
+          <span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span>
+          <span class="ui-nav-a-inner">
+            <span class="ui-nav-a-title">About</span>
+          </span>
+        </a>
+      </li>
     </ul>
   </div>
 </nav>

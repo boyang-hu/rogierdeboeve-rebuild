@@ -45,7 +45,8 @@ Last updated: 2026-06-05
 | `71f2403` | Home DOM | Aligned touch gallery movement with source `yD` virtual-scroll deltas by driving project changes during touchmove instead of only on touchend. |
 | `a0d4955` | Home DOM | Matched source `Ou` footer contact resize behavior by shortening the mobile contact label to `E-mail`. |
 | `f9840d9` | Home WebGL | Moved gallery velocity roll from the rotating project ring to the work scene container to better match source `yD.updateScene`. |
-| this commit | Home DOM | Added source-style header description and availability inner-line animation targets from `Ki/SD.animateIn`. |
+| `e8a811d` | Home DOM | Added source-style header description and availability inner-line animation targets from `Ki/SD.animateIn`. |
+| this commit | Home DOM | Added source-style `.ui-nav-a-inner` targets and nav animate-in timing from source `Tr`. |
 
 ## Current Focus
 

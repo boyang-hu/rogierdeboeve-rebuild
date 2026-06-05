@@ -360,6 +360,12 @@ html.is-work-previewing .c-color {
   letter-spacing: 0;
 }
 
+.ui-nav-a-inner {
+  display: flex;
+  transform: translateY(102%);
+  opacity: 0;
+}
+
 .ui-nav-a.is-active,
 .ui-nav-a:hover {
   opacity: 1;

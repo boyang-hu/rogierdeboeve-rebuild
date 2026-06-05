@@ -25,8 +25,9 @@ function initLenis() {
 function initIntroAnimations() {
   if (prefersReducedMotion()) return;
 
-  const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary, .ui-nav");
+  const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary");
   const contentTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro > *, .c-list-section, .ui-project-content-header > *");
+  const navInnerTargets = gsap.utils.toArray<HTMLElement>(".ui-nav-a-inner");
   const headerDescriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
   const headerAvailabilityTargets = gsap.utils.toArray<HTMLElement>(".ui-header-availability .ui-header-part-inner");
   const titleTargets = gsap.utils.toArray<HTMLElement>(".ui-title-inner");
@@ -38,6 +39,14 @@ function initIntroAnimations() {
       chromeTargets,
       { y: 18, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: "expo.out" },
+    );
+  }
+
+  if (navInnerTargets.length) {
+    gsap.fromTo(
+      navInnerTargets,
+      { y: "102%", opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.8, stagger: 0.01, ease: "expo.out", clearProps: "transform,opacity" },
     );
   }
 
