@@ -413,6 +413,104 @@ void main() {
 }
 `;
 
+const homePreCompositeFragment = `
+precision highp float;
+
+uniform sampler2D tWork;
+uniform sampler2D tMouseSim;
+uniform sampler2D tNoise;
+uniform sampler2D tPerlin;
+uniform float uTime;
+uniform float uRatio;
+uniform float uTransformX;
+uniform float uFluidStrength;
+uniform float uPerlin;
+uniform float uContrast;
+uniform vec3 uBgColor;
+
+varying vec2 vUv;
+
+vec3 contrast(vec3 color, float amount) {
+  return (color - 0.5) * amount + 0.5;
+}
+
+vec3 saturation(vec3 color, float amount) {
+  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  return mix(vec3(gray), color, amount);
+}
+
+vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
+  return max(blend, base) * opacity + base * (1.0 - opacity);
+}
+
+vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
+  return min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity);
+}
+
+vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
+  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
+  float r = texture2D(tex, uv + offset).r;
+  float g = texture2D(tex, uv).g;
+  float b = texture2D(tex, uv - offset).b;
+  float a = texture2D(tex, uv).a;
+  return vec4(r, g, b, a);
+}
+
+float vignette(vec2 uv, float inner, float outer) {
+  vec2 p = uv - 0.5;
+  p.x *= uRatio;
+  return smoothstep(outer, inner, length(p));
+}
+
+void main() {
+  vec2 uv = vUv;
+  vec2 perlinUv = uv * 0.25;
+  perlinUv -= 0.5;
+  perlinUv.x *= uRatio;
+  perlinUv += 0.5;
+  perlinUv.x -= uTime * 0.01;
+  perlinUv.y -= uTime * 0.005;
+  perlinUv.x += uTransformX;
+
+  vec4 perlin = texture2D(tPerlin, perlinUv);
+  perlin.rgb = contrast(perlin.rgb, 5.0);
+
+  vec4 fluid = texture2D(tMouseSim, uv);
+  vec2 fluidUv = uv + fluid.rg * -0.2 * uFluidStrength;
+  vec2 perlinCoords = uv;
+  if (uPerlin > 0.0) {
+    perlinCoords += perlin.b * uPerlin;
+    perlinCoords -= uPerlin * 0.065;
+  }
+
+  vec4 mouseSim = texture2D(tMouseSim, mix(perlinCoords, fluidUv, 2.5));
+  mouseSim.rgb = contrast(mouseSim.rgb, 1.0);
+
+  float perlinVignette = vignette(perlinCoords, 0.1, 0.35);
+  float displacementVignette = vignette(fluidUv, 0.1, 0.5);
+  vec4 sceneDisplaced = rgbshift(tWork, fluidUv, -1.0, 0.005);
+  vec4 scene = rgbshift(tWork, fluidUv, -1.0, 0.0005 + 0.1 * length(fluid.xy) * uFluidStrength);
+  vec3 color = mix(scene.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
+  color += mouseSim.rgb * 0.065;
+  color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
+  color = blendAdd(color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
+  color = contrast(color, uContrast);
+  color *= uContrast;
+  color = saturation(color, 1.15);
+  color = blendLighten(color, uBgColor, 0.85);
+
+  vec2 noiseUv = uv - 0.5;
+  noiseUv.x *= uRatio;
+  noiseUv += 0.5;
+  noiseUv *= 15.0;
+  vec3 noise = texture2D(tNoise, noiseUv).rgb;
+  color = mix(color * noise, color, 0.75);
+  color = mix(color * noise, color, 1.5);
+
+  gl_FragColor = vec4(color, 1.0);
+}
+`;
+
 const homeLuminosityFragment = `
 precision highp float;
 
@@ -897,6 +995,9 @@ export class WebGLBackdrop {
   private backgroundMaterial: ShaderMaterial;
   private compositeMaterial: ShaderMaterial;
   private compositeScene = new Scene();
+  private workRawTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
+  private preCompositeMaterial: ShaderMaterial;
+  private preCompositeScene = new Scene();
   private compositeTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
   private luminosityMaterial: ShaderMaterial;
   private luminosityScene = new Scene();
@@ -988,6 +1089,8 @@ export class WebGLBackdrop {
     this.homeScene.background = colorFrom(SOURCE_WORK_BG);
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
+    this.preCompositeMaterial = this.createPreCompositeMaterial();
+    this.preCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.preCompositeMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
     this.compositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial));
     this.bloomHorizontalTargets = Array.from({ length: 5 }, () => new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false }));
@@ -1068,6 +1171,7 @@ export class WebGLBackdrop {
 
   setGalleryProgress(progress: number, velocity = 0, delta = 1 / 60) {
     this.galleryProgress = progress;
+    this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     const targetRotation = MathUtils.degToRad(progress * 360 + 180);
     const lerpFactor = 1 - Math.exp(-5 * Math.max(0.001, delta));
     this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * lerpFactor;
@@ -1082,6 +1186,7 @@ export class WebGLBackdrop {
     this.galleryProgress = progress;
     this.sceneRotation = sceneRotation;
     this.zoom = zoom;
+    this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     this.sceneWrap.rotation.y = MathUtils.degToRad(progress * 360 + 180);
     this.homeScene.rotation.z = MathUtils.degToRad(sceneRotation);
     this.homeScene.position.z = this.homeScene.rotation.z - zoom;
@@ -1171,6 +1276,8 @@ export class WebGLBackdrop {
       item.thumb.material.dispose();
     });
     this.backgroundMaterial.dispose();
+    this.workRawTarget.dispose();
+    this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
     this.compositeMaterial.dispose();
     this.bloomBrightTarget.dispose();
@@ -1394,6 +1501,28 @@ export class WebGLBackdrop {
     });
   }
 
+  private createPreCompositeMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tWork: { value: this.workRawTarget.texture },
+        tMouseSim: { value: this.screenMouseSimulationTexture },
+        tNoise: { value: this.noiseTexture },
+        tPerlin: { value: this.perlinTexture },
+        uTime: { value: 0 },
+        uRatio: { value: 1 },
+        uTransformX: { value: 0 },
+        uFluidStrength: { value: this.fluidStrength },
+        uPerlin: { value: 0.1 },
+        uContrast: { value: 1.1 },
+        uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: homePreCompositeFragment,
+    });
+  }
+
   private createLuminosityMaterial() {
     return new ShaderMaterial({
       depthWrite: false,
@@ -1445,11 +1574,12 @@ export class WebGLBackdrop {
 
   private loadCompositeTextures() {
     this.loadTexture("/images/textures/blue-noise.png", (texture) => {
+      this.preCompositeMaterial.uniforms.tNoise.value = texture;
       this.mouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
     });
     this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
-      this.compositeMaterial.uniforms.tPerlin.value = texture;
+      this.preCompositeMaterial.uniforms.tPerlin.value = texture;
       this.workItems.forEach((item) => {
         item.material.uniforms.tPerlin.value = texture;
       });
@@ -1795,6 +1925,7 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
     });
+    gsap.to(this.preCompositeMaterial.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
   }
 
   private setThumbDarknessColor(value?: string) {
@@ -1876,6 +2007,9 @@ export class WebGLBackdrop {
       fluidStrength: value,
       duration,
       ease: "none",
+      onUpdate: () => {
+        this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
+      },
     });
   }
 
@@ -1960,6 +2094,7 @@ export class WebGLBackdrop {
     this.renderer.setSize(width, height, false);
     const renderWidth = Math.max(1, Math.round(width * dpr));
     const renderHeight = Math.max(1, Math.round(height * dpr));
+    this.workRawTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
     let mipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 4));
     let mipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 4));
@@ -1975,6 +2110,7 @@ export class WebGLBackdrop {
     this.homeCamera.updateProjectionMatrix();
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
+    this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
     const simWidth = Math.max(1, Math.round(renderWidth / 10));
     const simHeight = Math.max(1, Math.round(renderHeight / 10));
@@ -2178,6 +2314,8 @@ export class WebGLBackdrop {
     this.particles.position.y = this.pointer.y * 0.08;
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
+    this.preCompositeMaterial.uniforms.uTime.value = time;
+    this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
     this.displacementMaterial.uniforms.uTime.value = time;
     this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
@@ -2200,9 +2338,14 @@ export class WebGLBackdrop {
       this.renderer.render(this.backgroundScene, this.backgroundCamera);
     }
     if (hasHome) {
-      this.renderer.setRenderTarget(this.compositeTarget);
+      this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
+      this.preCompositeMaterial.uniforms.tWork.value = this.workRawTarget.texture;
+      this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+      this.renderer.setRenderTarget(this.compositeTarget);
+      this.renderer.clear();
+      this.renderer.render(this.preCompositeScene, this.backgroundCamera);
       this.luminosityMaterial.uniforms.tScene.value = this.compositeTarget.texture;
       this.renderer.setRenderTarget(this.bloomBrightTarget);
       this.renderer.clear();
