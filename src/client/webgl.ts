@@ -376,6 +376,7 @@ precision highp float;
 
 uniform sampler2D tWork;
 uniform sampler2D tBloom;
+uniform sampler2D tFluid;
 uniform sampler2D tMouseSim;
 uniform float uReveal;
 uniform float uDarken;
@@ -408,13 +409,14 @@ vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
 
 void main() {
   vec2 uv = vUv;
+  vec4 fluid = texture2D(tFluid, uv);
   vec4 mouseSim = texture2D(tMouseSim, uv);
   vec3 color = rgbshift(tWork, uv, -1.0, 0.0015).rgb;
   vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
   vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), 0.005).rgb;
   color += bloom;
   color += bloomShift;
-  color += length(mouseSim.xy) * 0.015;
+  color += length(fluid.xy) * 0.015;
   color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
   color = blendLighten(color, vec3(0.095), 1.0);
   color = saturation(color, uSaturation);
@@ -428,6 +430,7 @@ const homePreCompositeFragment = `
 precision highp float;
 
 uniform sampler2D tWork;
+uniform sampler2D tFluid;
 uniform sampler2D tMouseSim;
 uniform sampler2D tNoise;
 uniform sampler2D tPerlin;
@@ -486,7 +489,7 @@ void main() {
   vec4 perlin = texture2D(tPerlin, perlinUv);
   perlin.rgb = contrast(perlin.rgb, 5.0);
 
-  vec4 fluid = texture2D(tMouseSim, uv);
+  vec4 fluid = texture2D(tFluid, uv);
   vec2 fluidUv = uv + fluid.rg * -0.2 * uFluidStrength;
   vec2 perlinCoords = uv;
   if (uPerlin > 0.0) {
@@ -1018,6 +1021,7 @@ export class WebGLBackdrop {
   private loader = new TextureLoader();
   private textureCache = new Map<string, Texture>();
   private placeholder = makePlaceholderTexture();
+  private fluidPlaceholder = makePlaceholderTexture([0, 0, 0, 255]);
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private backgroundMaterial: ShaderMaterial;
@@ -1273,7 +1277,6 @@ export class WebGLBackdrop {
   }
 
   setPreviewMode(enabled: boolean) {
-    this.setFluidStrength(enabled ? 0.35 : 0.5, 0.5);
     this.setMouseFactor(enabled ? 0.25 : 1, 3);
   }
 
@@ -1352,6 +1355,7 @@ export class WebGLBackdrop {
     window.removeEventListener("scroll", this.onScroll);
     this.textureCache.forEach((texture) => texture.dispose());
     this.noiseTexture.dispose();
+    this.fluidPlaceholder.dispose();
     this.perlinTexture.dispose();
     this.mediaPlanes.forEach((plane) => {
       plane.video?.pause();
@@ -1581,6 +1585,7 @@ export class WebGLBackdrop {
       uniforms: {
         tWork: { value: this.compositeTarget.texture },
         tBloom: { value: this.bloomTarget.texture },
+        tFluid: { value: this.fluidPlaceholder },
         tMouseSim: { value: this.screenMouseSimulationTexture },
         uReveal: { value: 0 },
         uDarken: { value: 0.1 },
@@ -1598,6 +1603,7 @@ export class WebGLBackdrop {
       depthTest: false,
       uniforms: {
         tWork: { value: this.workRawTarget.texture },
+        tFluid: { value: this.fluidPlaceholder },
         tMouseSim: { value: this.screenMouseSimulationTexture },
         tNoise: { value: this.noiseTexture },
         tPerlin: { value: this.perlinTexture },
@@ -2509,6 +2515,7 @@ export class WebGLBackdrop {
       0.1,
     );
     this.screenMouseSimulationIndex = screenResult.index;
+    this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     this.workItems.forEach((item) => {
       item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
@@ -2610,6 +2617,7 @@ export class WebGLBackdrop {
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
       this.preCompositeMaterial.uniforms.tWork.value = this.workRawTarget.texture;
+      this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
       this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
       this.renderer.setRenderTarget(this.compositeTarget);
       this.renderer.clear();
