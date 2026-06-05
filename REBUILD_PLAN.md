@@ -146,7 +146,8 @@ Last updated: 2026-06-05
 | `8045258` | Home WebGL | Batched source `Ka/Lu/GA` mouse-simulation sizing alignment: split screen-space composite mouse simulation from cube-local mesh simulation, resized the screen simulation from the render target at source `/10`, resized the cube-local simulation from the source work-grid plane dimensions, and centralized the source `1.3` plane scale plus `1.5` ray expansion constants used by local pointer projection. |
 | `ccd9ce1` | Home WebGL | Batched source `SD/p1/GA/Ka` spotlight and pointer-projection cleanup: removed the rebuild-only auxiliary thumb projection overlay path so thumbnail lighting is carried by the cube shader/spotlight-map path, and replaced the global mouse ray plane with per-work-block hidden ray planes so cube-local mouse simulation uses source-style block-local UV intersections. |
 | `6675877` | Home WebGL | Batched source `A1/k1/GA` render-target and shader-coordinate alignment: restored A1 pre-composite noise sampling to original `vUv` space instead of fluid-warped UVs, resized the work displacement target to source `k1`'s height-based square target, and scaled the per-block ray-plane z offset through the work-block scale like the source `GA.rotationWrap`. |
-| `current batch` | Home WebGL | Batched source `Se/h1/u1` environment-state alignment: reshaped the simplified environment shader around source-style `uDarkenColor`, `uDarken`, and shader-pattern constants, and narrowed ambient updates so the environment layer follows `Se.setAmbientColor()`'s darken-color path instead of a rebuild-only ambient-intensity tint. |
+| `60ad21f` | Home WebGL | Batched source `Se/h1/u1` environment-state alignment: reshaped the simplified environment shader around source-style `uDarkenColor`, `uDarken`, and shader-pattern constants, and narrowed ambient updates so the environment layer follows `Se.setAmbientColor()`'s darken-color path instead of a rebuild-only ambient-intensity tint. |
+| `current batch` | Home WebGL | Batched source `a1/o1/i1` floor-reflector alignment: added a source-style low-resolution floor reflection render target and mirrored camera pass, temporarily hides the floor while rendering the reflection texture, and reshaped the simplified floor shader around source `uReflectivity=.97`, `uMirror=1`, `uFloorMixStrength=15`, normal distortion, and Fresnel-style reflection mixing. |
 
 ## Current Focus
 
@@ -167,11 +168,11 @@ Latest verification:
 - `git diff --check`
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
-- Chrome headless smoke with SwiftShader on `/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `has-webgl=true`, expected project media counts, no filtered runtime/shader errors.
+- Chrome headless smoke with SwiftShader on `/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `has-webgl=true`, expected project media counts, no filtered runtime/shader errors. A follow-up 11s home probe kept `gl.isContextLost() === false`; the remaining `CONTEXT_LOST_WEBGL` warning appears tied to headless/SwiftShader lifecycle noise.
 
 ## Next Candidate Steps
 
-1. Continue Phase 1 source review around source `u1/l1/c1` and floor reflector `o1/s1/r1`; decide whether the simplified floor/environment layers need a larger material rewrite or only parameter-level alignment.
+1. Continue Phase 1 source review around source `u1/l1/c1` and floor reflector `o1/s1/r1`; decide whether the simplified environment layer still needs a larger material rewrite or only parameter-level alignment.
 2. Continue source `A1/OA/kA` render-manager ordering review, especially optional media/lensflare uniforms only if home visual QA indicates that layer is still materially off.
 3. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
 4. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.

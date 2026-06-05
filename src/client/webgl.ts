@@ -841,6 +841,12 @@ uniform float uTime;
 uniform vec3 uActiveColor;
 uniform vec3 uAmbientColor;
 uniform float uAmbientIntensity;
+uniform sampler2D tReflect;
+uniform float uReflectivity;
+uniform float uMirror;
+uniform float uFloorMixStrength;
+uniform float uNormalDistortionStrength;
+uniform vec2 uNormalScale;
 
 varying vec2 vUv;
 
@@ -848,15 +854,35 @@ float random(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(random(i + vec2(0.0, 0.0)), random(i + vec2(1.0, 0.0)), u.x),
+    mix(random(i + vec2(0.0, 1.0)), random(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
 void main() {
   vec2 uv = vUv;
   float horizon = smoothstep(1.0, 0.18, uv.y);
   float edge = smoothstep(0.0, 0.22, uv.x) * smoothstep(1.0, 0.78, uv.x);
   float scan = random(floor(vec2(uv.x * 70.0, uv.y * 8.0 + uTime * 0.4))) * 0.08;
-  vec3 base = vec3(0.024, 0.025, 0.027);
+  float n1 = noise(uv * uNormalScale + vec2(uTime * 0.015, 0.0));
+  float n2 = noise(uv.yx * uNormalScale * 0.73 + vec2(0.0, -uTime * 0.012));
+  vec2 normal = (vec2(n1, n2) - 0.5) * uNormalDistortionStrength * 0.018;
+  vec2 reflectUv = vec2(uv.x, 1.0 - uv.y) + normal;
+  reflectUv.y = mix(reflectUv.y, pow(clamp(reflectUv.y, 0.0, 1.0), 1.35), 0.45);
+  vec3 reflectColor = texture2D(tReflect, clamp(reflectUv, vec2(0.0), vec2(1.0))).rgb;
+  float fresnel = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow(uv.y, 5.0), 1.0));
+  reflectColor = mix(vec3(0.0), reflectColor, fresnel);
+  vec3 base = vec3(0.070, 0.070, 0.070);
   vec3 reflection = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.0));
-  vec3 color = mix(base, reflection, horizon * 0.22 + scan);
-  float alpha = horizon * edge * 0.34;
+  vec3 color = base * ((1.0 - min(1.0, uMirror)) + reflectColor * uFloorMixStrength);
+  color = mix(color, reflection, scan * 0.18);
+  float alpha = horizon * edge * 0.42;
   gl_FragColor = vec4(color, alpha);
 }
 `;
@@ -1025,6 +1051,8 @@ export class WebGLBackdrop {
   private displacementMaterial: ShaderMaterial;
   private displacementScene = new Scene();
   private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
+  private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false });
+  private floorReflectionCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private mouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationMaterial: ShaderMaterial;
   private mouseSimulationTargets: WebGLRenderTarget[] = [];
@@ -1136,6 +1164,9 @@ export class WebGLBackdrop {
     this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
     this.displacementScene.add(new Mesh(new PlaneGeometry(2, 2), this.displacementMaterial));
+    this.floorReflectionTarget.texture.generateMipmaps = false;
+    this.floorReflectionTarget.texture.minFilter = LinearFilter;
+    this.floorReflectionTarget.texture.magFilter = LinearFilter;
     this.mouseSimulationMaterial = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight), 0.1, 0.85);
     this.mouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
@@ -1371,6 +1402,7 @@ export class WebGLBackdrop {
     this.bloomBlurMaterial.dispose();
     this.bloomCompositeMaterial.dispose();
     this.displacementTarget.dispose();
+    this.floorReflectionTarget.dispose();
     this.displacementMaterial.dispose();
     this.mouseSimulationTargets.forEach((target) => target.dispose());
     this.screenMouseSimulationTargets.forEach((target) => target.dispose());
@@ -1737,6 +1769,12 @@ export class WebGLBackdrop {
         uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
         uAmbientColor: { value: colorFrom("#414652") },
         uAmbientIntensity: { value: 0.5 },
+        tReflect: { value: this.floorReflectionTarget.texture },
+        uReflectivity: { value: 0.97 },
+        uMirror: { value: 1 },
+        uFloorMixStrength: { value: 15 },
+        uNormalDistortionStrength: { value: 2.5 },
+        uNormalScale: { value: new Vector2(45, 45) },
       },
       vertexShader: thumbVertex,
       fragmentShader: floorFragment,
@@ -2296,6 +2334,10 @@ export class WebGLBackdrop {
     this.displacementMaterial.uniforms.uRatio.value = width / height;
     const displacementSize = Math.max(1, Math.round(height / 10));
     this.displacementTarget.setSize(displacementSize, displacementSize);
+    this.floorReflectionTarget.setSize(
+      Math.max(1, Math.round(renderWidth * 0.75)),
+      Math.max(1, Math.round(renderHeight * 0.75)),
+    );
     const screenSimWidth = Math.max(1, Math.round(renderWidth / SCREEN_MOUSE_SIM_SCALE));
     const screenSimHeight = Math.max(1, Math.round(renderHeight / SCREEN_MOUSE_SIM_SCALE));
     this.screenMouseSimulationTargets.forEach((target) => target.setSize(screenSimWidth, screenSimHeight));
@@ -2476,6 +2518,29 @@ export class WebGLBackdrop {
     this.homeCamera.rotation.z += (this.cameraRoll - this.homeCamera.rotation.z) * cameraLerp;
   }
 
+  private renderFloorReflection() {
+    if (!this.sceneWrap.visible) return;
+    const previousTarget = this.renderer.getRenderTarget();
+    const floorY = this.floorPlane.getWorldPosition(new Vector3()).y;
+    this.floorReflectionCamera.copy(this.homeCamera);
+    this.floorReflectionCamera.position.y = floorY - (this.homeCamera.position.y - floorY);
+    this.floorReflectionCamera.up.copy(this.homeCamera.up);
+    this.floorReflectionCamera.up.y *= -1;
+    const reflectedLookAt = this.cameraLookAt.clone();
+    reflectedLookAt.y = floorY - (reflectedLookAt.y - floorY);
+    this.floorReflectionCamera.lookAt(reflectedLookAt);
+    this.floorReflectionCamera.projectionMatrix.copy(this.homeCamera.projectionMatrix);
+    this.floorReflectionCamera.updateMatrixWorld();
+
+    const wasVisible = this.floorPlane.visible;
+    this.floorPlane.visible = false;
+    this.renderer.setRenderTarget(this.floorReflectionTarget);
+    this.renderer.clear();
+    this.renderer.render(this.homeScene, this.floorReflectionCamera);
+    this.floorPlane.visible = wasVisible;
+    this.renderer.setRenderTarget(previousTarget);
+  }
+
   private tick = () => {
     const time = performance.now() * 0.001;
     const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
@@ -2532,6 +2597,7 @@ export class WebGLBackdrop {
       this.renderer.render(this.backgroundScene, this.backgroundCamera);
     }
     if (hasHome) {
+      this.renderFloorReflection();
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
