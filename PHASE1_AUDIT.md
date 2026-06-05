@@ -22,13 +22,13 @@ Primary source areas:
 
 ## Current Phase 1 Status
 
-Phase 1 is QA-ready, but not complete enough to declare 1:1 until source-vs-rebuild visual QA is reviewed.
+Phase 1 is in the source-vs-rebuild audit stage. The known source-proven architecture gaps are mostly closed, but visual parity is not ready to call 1:1 because the first valid comparison pass still shows material WebGL/composite differences.
 
 Estimated status:
 
-- Architecture parity: 80-85%
+- Architecture parity: 85%
 - Shader/render-manager parity: 70-75%
-- Final home visual parity: 65-70%
+- Final home visual parity: 60-70%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
 The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with shader chunk injection, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, floor/environment layers, and about/floating auxiliary blocks.
@@ -46,6 +46,8 @@ This checkpoint narrows Phase 1 from a broad rebuild target into a short source-
 | `Fg` floating scroll velocity | `Fg.onRaf(e)` calls `floatingBlocks.update(e)` and then adds `.005 * abs(this.page.scroll.velocity)` to `floatingBlocks.translationZ`. | Floating z positions use time, source-shaped `translationZ`, and now accumulate `.005 * abs(scrollVelocity)` while the about floating blocks are visible. | Implemented, pending real route/WebGL QA. |
 | `ZA` floating block z/hole behavior | `positionOnUpdate(e)` subtracts `translationZ`, wraps z into a 250-unit band plus `10`, and hides the center hole when `x > -3.5 && x < 3.5 && y < 5`. | Rebuild follows the same z wrapping, `translationZ` subtraction, scroll-velocity feed, and center-hole hide logic. | Implemented, pending real route/WebGL QA. |
 | `P1-07` character scene | Source about spotlight map is rendered by the real character scene/render manager and rotatable character mesh. | Rebuild now renders `public/models/me/me.gltf` into the about spotlight target with a dedicated character camera and lights, while keeping the previous `model_T.jpg` composite plane as a fallback. | Implemented as a controlled source-aligned bridge; full source rotatable-character event handling/render-manager parity still needs real visual QA before deciding whether to expand scope. |
+| `A1/C1` scene reveal ownership | Source `C1` pre-composite owns `uReveal` and blends `mixed.rgb` toward `uBgColor`; source `OA` final composite does not define `uReveal`. | Rebuild remains aligned with `uReveal` on the pre-composite material. A short-lived local experiment moving reveal into final `OA` was rejected because it conflicts with the source shader. | Keep source `C1/A1` ownership; do not treat final-composite reveal as a fix candidate. |
+| `VA` material constants | Source `VA` sets `envMapIntensity = .75`, `roughness = 1`, `transparent = true`, `depthTest = false`, and `depthWrite = false`. | Rebuild work/auxiliary block materials use the same `.75` env-map intensity and source-shaped material flags. | Treat `.75` as the source value; do not brighten blocks by changing env-map intensity without new source evidence. |
 
 ## Completed Source-Aligned Areas
 
@@ -102,6 +104,21 @@ This unblocks real source-vs-rebuild visual auditing. It does not complete Phase
 
 Decision: continue with source visual QA before more WebGL tuning. Changes should target only differences that can be tied back to source code paths in `p1`, `GA/VA`, `T1/w1/E1`, `A1/OA/kA/Lu`, `Ka`, or `Se`.
 
+A longer full comparison pass was then run with `CAPTURE_WAIT=4200` over home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`. Both original and rebuild reached post-preloader full-canvas states with no runtime exceptions. The contact sheet at `/tmp/rogier-compare-phase1-full/contact.png` showed the clearest remaining Phase 1 issues:
+
+| Route/view | Observed difference | Current classification | Next source path |
+| --- | --- | --- | --- |
+| Home desktop/mobile | Original WebGL cubes/thumb media read substantially brighter and more present; rebuild blocks remain very dark. An 8s home-only wait did not remove the difference, so this is not only entry timing. | WebGL/render-manager difference, not a timing-only issue. | Audit `VA` fragment tail, real `SpotLight.map` contribution, `p1` lighting/environment, and source-vs-rebuild color-space assumptions. |
+| Project pages | Media planes are present, but original background/composite reads brighter and more integrated; rebuild composite/background remains darker. | Shared composite/media-background difference. | Audit `A1/C1` pre-composite media/background path and `Se.setMediaBackground`/`setMediaOpacity` order. |
+| About page | Runtime loads and character spotlight target exists, but source character spotlight projection/interaction has not been visually accepted. | Accepted temporary bridge until visual review proves otherwise. | Compare source `characterScene.renderManager` and `rotatableMesh` behavior only if about visual mismatch is material. |
+
+Rejected non-source fixes from this audit:
+
+- Do not change `SOURCE_WORK_ENVMAP_INTENSITY` from `.75` to `1`; source `VA` uses `.75`.
+- Do not move `uReveal` from `C1/A1` pre-composite to final `OA`; source `OA` has only `uDarken/uSaturation` among those visual-state uniforms.
+
+The capture harness now supports `CAPTURE_WAIT` and `CAPTURE_SET=home|full`. A follow-up home-only audit run at `/tmp/rogier-compare-phase1-audit-home` passed with both original and rebuild reaching post-preloader full-canvas desktop/mobile states and reporting no failed network requests or runtime exceptions.
+
 ### Implemented, Needs Real WebGL QA
 
 | ID | Source area | Implemented state | Remaining evidence needed |
@@ -146,6 +163,8 @@ Recommended cadence:
 - Medium-risk shader changes: 5-8 differences per batch.
 - High-risk render order, render target, or material replacement changes: 3-5 differences per batch.
 - Per-block `Ka` simulation or full `VA` replacement: isolate into a dedicated batch with browser smoke and visual inspection.
+
+Current recommendation: do not attempt the rest of Phase 1 in one unverified pass. The next batch should be a focused 5-8 point audit/implementation pass around one rendering chain, preferably `VA`/spotlight lighting first because that maps directly to the dark home cubes/thumb projection difference. If the changes stay in constants/ownership/documentation, 8-10 points is acceptable; if shader code changes, keep it closer to 5.
 
 ## Next Batches
 

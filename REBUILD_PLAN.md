@@ -191,11 +191,11 @@ Last updated: 2026-06-05
 | `2eda7e7` | Home WebGL | Batched source `VA` material-flag audit: work and auxiliary block materials now set source `dithering=true`, while full shader override remains a documented high-risk deviation because chunk injection preserves current Three lighting/color-space/fog/env/spotlight compatibility. |
 | `0cf78b1` | Home WebGL | Batched source `TD/Fg/ZA` auxiliary scroll alignment: floating blocks now accumulate source-style scroll-velocity z drift while visible on the about route, with entry/destroy resets to prevent cross-route carryover. |
 | `6b8c626` | Home WebGL | Batched source `characterScene/TD` spotlight-map alignment: about spotlight now renders `public/models/me/me.gltf` into a dedicated character target with camera/lights and keeps the previous `model_T.jpg` composite plane as a fallback. |
-| `current batch` | QA Harness | Added a source comparison content fallback for the mirrored bundle's missing Astro collection JSON and upgraded the capture script to use SwiftShader plus basic network/runtime diagnostics. |
+| `current batch` | Phase 1 Audit/QA Harness | Added configurable source comparison captures, recorded the first full post-preloader difference table, and rejected two non-source brightness/reveal experiments: `VA.envMapIntensity` remains `.75`, and scene reveal remains owned by `C1/A1` rather than final `OA`. |
 
 ## Current Focus
 
-Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. The current pass has cleared the known source-proven Must Fix list in `PHASE1_AUDIT.md`; Phase 1 now needs real browser/WebGL visual QA before it can be declared complete.
+Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. The current pass has cleared the known source-proven architecture Must Fix list in `PHASE1_AUDIT.md`, and Phase 1 is now in a source-vs-rebuild difference attribution stage.
 
 Immediate source targets:
 
@@ -216,14 +216,15 @@ Latest verification:
 - About character resources loaded during WebGL smoke: `/models/me/me.gltf`, `/models/me/me.bin`, and `/models/me/model_T.jpg`.
 - Source-vs-rebuild visual QA now has a QA-only content JSON fallback: run the mirror service with `ENABLE_CONTENT_JSON_FALLBACK=1` so the original bundle's missing `/src/content/**` and `/opt/build/repo/src/content/**` collection JSON requests are synthesized from `src/data/projects.json` and `src/data/awards.json`.
 - With that fallback and Chrome SwiftShader, the mirrored original naturally reaches post-preloader state on home and `/gc-2026/`; home and project both report full-viewport canvases and no runtime exceptions in the diagnostic pass.
-- The first valid contact sheet shows likely Phase 1 review targets rather than immediate fixes: rebuild home currently has a stronger centered WebGL vignette/scene field and visible CTA timing compared with the captured original; project media/composite parity still needs a longer page-specific capture pass.
+- A longer full pass with `CAPTURE_WAIT=4200` and `CAPTURE_SET=full` captured home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/` for both original and rebuild. Both sides reached post-preloader full-canvas states with no runtime exceptions. The contact sheet at `/tmp/rogier-compare-phase1-full/contact.png` shows the main remaining Phase 1 differences: original home cubes/thumb media are much brighter and more present than rebuild; project media exists but the rebuild composite/background is darker. An 8s home-only pass did not remove the home brightness gap.
+- Source audit correction from this pass: `VA.envMapIntensity` is `.75` in the source and should stay `.75`; `uReveal` belongs to the source `C1/A1` pre-composite material, while `OA` final composite has no `uReveal`.
 
 ## Next Candidate Steps
 
-1. Run a longer source-vs-rebuild visual pass for home, about, `/gc-2026/`, and `/hashgraph-vc/` using the QA content fallback and the updated capture diagnostics.
-2. Build a small Phase 1 difference table from valid post-preloader captures, separating DOM/timing differences from WebGL/render-manager differences.
-3. For each WebGL difference, trace the responsible source path before coding: likely first candidates are `A1/OA/kA/Lu` brightness/composite order, `Se.showScene()`/CTA timing, and `T1/w1/E1` spotlight-map projection intensity.
-4. Compare about spotlight projection after the GLTF character target against the source behavior; decide whether source `rotatableMesh` event handling/render-manager parity must be ported or can remain accepted.
+1. Run a focused 5-8 point source audit/implementation batch around the home cube brightness path: `VA` fragment tail, real `SpotLight.map` contribution, `p1` lighting/environment, and Three color-space/material assumptions.
+2. Keep project detail pages as regression checks because the darker project composite may share `A1/C1` or media-background ownership with home.
+3. Compare about spotlight projection after the GLTF character target against the source behavior; decide whether source `rotatableMesh` event handling/render-manager parity must be ported or can remain accepted.
+4. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with accepted deviations or new source-proven fixes.
 5. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.
 
 ## Verification Baseline
@@ -245,7 +246,7 @@ For source comparison QA:
 
 ```sh
 PORT=5175 SERVE_ROOT=legacy-mirror/public FALLBACK_ROOT=public ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
-CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-compare node scripts/capture.mjs
+CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-compare CAPTURE_WAIT=4200 CAPTURE_SET=full node scripts/capture.mjs
 ```
 
 Open:

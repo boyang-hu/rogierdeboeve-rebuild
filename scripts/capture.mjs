@@ -18,6 +18,8 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-compare");
 const port = Number(process.env.CDP_PORT || 9227);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const originalUrl = process.env.ORIGINAL_URL || "http://127.0.0.1:5175";
+const captureWait = Number(process.env.CAPTURE_WAIT || 3000);
+const captureSet = process.env.CAPTURE_SET || "full";
 const viewports = {
   desktop: { width: 1440, height: 900 },
   mobile: { width: 390, height: 844 },
@@ -79,7 +81,7 @@ async function connectWs(url) {
   return ws;
 }
 
-async function capture({ name, url, viewportName = "desktop", clickEnter = false, waitAfter = 1400 }) {
+async function capture({ name, url, viewportName = "desktop", clickEnter = false, waitAfter = captureWait }) {
   const viewport = viewports[viewportName];
   const failures = [];
   const exceptions = [];
@@ -171,8 +173,14 @@ try {
   results.push(await capture({ name: "rebuild-home-desktop", url: `${rebuildUrl}/?skip-preloader` }));
   results.push(await capture({ name: "original-home-mobile", url: `${originalUrl}/`, viewportName: "mobile", clickEnter: true }));
   results.push(await capture({ name: "rebuild-home-mobile", url: `${rebuildUrl}/?skip-preloader`, viewportName: "mobile" }));
-  results.push(await capture({ name: "original-project-desktop", url: `${originalUrl}/gc-2026/`, clickEnter: true }));
-  results.push(await capture({ name: "rebuild-project-desktop", url: `${rebuildUrl}/gc-2026/?skip-preloader` }));
+  if (captureSet === "full") {
+    results.push(await capture({ name: "original-about-desktop", url: `${originalUrl}/about/`, clickEnter: true }));
+    results.push(await capture({ name: "rebuild-about-desktop", url: `${rebuildUrl}/about/?skip-preloader` }));
+    results.push(await capture({ name: "original-gc-2026-desktop", url: `${originalUrl}/gc-2026/`, clickEnter: true }));
+    results.push(await capture({ name: "rebuild-gc-2026-desktop", url: `${rebuildUrl}/gc-2026/?skip-preloader` }));
+    results.push(await capture({ name: "original-hashgraph-vc-desktop", url: `${originalUrl}/hashgraph-vc/`, clickEnter: true }));
+    results.push(await capture({ name: "rebuild-hashgraph-vc-desktop", url: `${rebuildUrl}/hashgraph-vc/?skip-preloader` }));
+  }
   console.log(JSON.stringify(results, null, 2));
 } finally {
   chrome.kill("SIGTERM");
