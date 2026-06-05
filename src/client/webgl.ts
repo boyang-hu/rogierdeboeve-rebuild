@@ -267,7 +267,7 @@ uniform float uContrast;
 uniform float uMouseLightness;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
-uniform vec2 uResolution;
+uniform vec2 uCoords;
 
 varying vec2 vThumbUv;
 varying float vAlpha;
@@ -327,7 +327,7 @@ void main() {
   color *= faceLight;
 
   vec2 pointerUv = uPointer * 0.5 + 0.5;
-  vec2 screenUv = gl_FragCoord.xy / max(uResolution, vec2(1.0));
+  vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
   float pointerLight = 1.0 - smoothstep(0.02, 0.58, distance(uv, pointerUv));
   float simLight = texture2D(tMouseSim, screenUv).r;
   float mouseLight = max(pointerLight, simLight);
@@ -1149,7 +1149,7 @@ export class WebGLBackdrop {
         tMouseSim: { value: this.mouseSimTexture },
         tDisplacement: { value: this.displacementTarget.texture },
         tPerlin: { value: this.perlinTexture },
-        uResolution: { value: new Vector2(1, 1) },
+        uCoords: { value: new Vector2(1, 1) },
         uSpotLightPosition: { value: this.spotLightPosition },
         uSpotConeTan: { value: Math.tan(Math.PI / 8) },
         uSpotIntensity: { value: this.spotLightIntensity },
@@ -1768,7 +1768,7 @@ export class WebGLBackdrop {
       plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
     });
     this.workItems.forEach((item) => {
-      item.material.uniforms.uResolution.value.set(Math.max(1, Math.round(width * dpr)), Math.max(1, Math.round(height * dpr)));
+      item.material.uniforms.uCoords.value.set(Math.max(1, Math.round(width * dpr)), Math.max(1, Math.round(height * dpr)));
     });
     this.updateMediaPlanePositions();
   };

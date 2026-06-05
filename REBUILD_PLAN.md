@@ -51,7 +51,8 @@ Last updated: 2026-06-05
 | `44f341b` | Home DOM | Rebuilt the mobile nav shell closer to source `Ar`, including `.ui-nav-mobile-content`, `.ui-nav-mobile-content-bg`, footer links, toggle-line state, fade-in, and delayed link active/close timing. |
 | `3fbf535` | Home WebGL | Matched source `Se.setThumbMouseLightness` propagation by animating `uMouseLightness` on every work block instead of only the active block. |
 | `e710154` | Home WebGL | Split source-style overview/detail darken from thumbnail darkness so main composite uses `darkenOverview`/`darkenDetail` while thumb composite and block projection use `thumbnail.darkness`. |
-| this commit | Home WebGL | Moved work spotlight parallax closer to source `p1.update` by deriving spotlight x/y from the camera position instead of directly from pointer coordinates. |
+| `1cac355` | Home WebGL | Moved work spotlight parallax closer to source `p1.update` by deriving spotlight x/y from the camera position instead of directly from pointer coordinates. |
+| this commit | Home WebGL | Renamed the work block screen-coordinate uniform to source-compatible `uCoords` while keeping thumb-plane `uResolution` aligned with source `E1`. |
 
 ## Current Focus
 
