@@ -101,11 +101,12 @@ Last updated: 2026-06-05
 | `e07db5d` | Home WebGL | Batched source `OA/kA` composite alignment: reduced the home final composite to the source `OA` scene/bloom/mouseSim tail, removed local noise/perlin/contrast/background-lighten compensation from the composite pass, kept the existing source-style bloom mip chain, changed fluid contribution to `length(mouseSim.xy) * .015`, and removed stale composite uniforms/update paths. |
 | `1e4fd91` | Home WebGL | Batched source `A1/C1` pre-composite alignment: added a separate A1-style pre-composite pass before the final OA pass, restored source perlin/noise/mouseSim/contrast preprocessing in that layer, kept bloom in the source OA/kA branch to avoid double bloom, routed raw home scene through `workRawTarget -> preCompositeTarget -> finalComposite`, and fixed stale `tPerlin` writes after the previous OA cleanup. |
 | `c7cf4ac` | Home WebGL | Batched source `GA/p1` work-block material and spotlight-map alignment: moved cube fragment UVs back toward source `vUv / uGridSize + instanceOffset`, restored the source-style random grid alpha formula without local seed offsets, reduced non-source thumb/projection color amplification, softened spotlight-map contribution so it behaves more like projected map lighting, and clamped local normalized spotlight intensity to the source max-intensity range. |
-| `current batch` | Home DOM | Batched source `yD` lifecycle and input-state alignment: normalized restored gallery scroll/progress/remainder before first frame, added source-style timeout ownership for nav/next/prev transitions, blocked wheel/touch deltas during next/prev transition windows, gated keyboard navigation behind active gallery state, and added cleanup paths for global gallery listeners/timers while preserving `pagehide` state saves. |
+| `0757011` | Home DOM | Batched source `yD` lifecycle and input-state alignment: normalized restored gallery scroll/progress/remainder before first frame, added source-style timeout ownership for nav/next/prev transitions, blocked wheel/touch deltas during next/prev transition windows, gated keyboard navigation behind active gallery state, and added cleanup paths for global gallery listeners/timers while preserving `pagehide` state saves. |
+| `current batch` | Project DOM/WebGL | Batched source `OD/CD` project-state alignment: added next-project color payloads to project pages, implemented source-style next-project scroll threshold switching for main color/ambient/media background/saturation/contrast, exposed a narrow WebGL project-scroll state setter, added project-leave media opacity/fluid reset, and preserved project media track counts during smoke checks. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `yD` lifecycle and input-state semantics while preserving recent GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `OD/CD` project-state semantics while preserving recent yD input lifecycle, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
 
 Immediate source targets:
 
@@ -117,7 +118,7 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Revisit project-route entry/leave now that home composite, projection, and gallery input changes have not regressed project media smoke checks.
+1. Continue source `RD/ND` project header/media reveal details, especially desktop header line targets and mobile DOM media reveal timing.
 2. Continue source `yD` nav-click active-project timing only if manual QA shows title/progress selection still feels off.
 3. Continue source `I1/C1` review around optional media/lensflare uniforms only if home visual QA indicates that layer is still materially off.
 4. Start Phase 4 about/auxiliary-page parity once project-route transition parity is stable.

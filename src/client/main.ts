@@ -30,6 +30,8 @@ type WebGLLike = {
   showScene?(): void;
   hideWorkScene?(): void;
   mediaAnimateIn?(): void;
+  setProjectScrollState?(payload: ReturnType<typeof projectPayloadFromElement>): void;
+  projectLeave?(): void;
   refreshMedia?(): void;
 };
 
@@ -796,6 +798,73 @@ function initProjectMedia() {
   });
 }
 
+function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
+  const project = document.querySelector<HTMLElement>("[data-webgl-project]");
+  const next = document.querySelector<HTMLElement>(".ui-project-next[data-project-slug]");
+  if (!project || !next) return;
+
+  const currentPayload = projectPayloadFromElement(project);
+  const nextPayload = projectPayloadFromElement(next);
+  let nextActive = false;
+  let nextHeight = next.clientHeight;
+  let viewportHeight = window.innerHeight;
+
+  const apply = (payload: ReturnType<typeof projectPayloadFromElement>) => {
+    applyActiveColor(payload.color);
+    getWebgl()?.setProjectScrollState?.(payload);
+  };
+
+  const resize = () => {
+    nextHeight = next.clientHeight;
+    viewportHeight = window.innerHeight;
+  };
+
+  const update = () => {
+    const scrollHeight = document.documentElement.scrollHeight;
+    const endScroll = scrollHeight - viewportHeight;
+    const start = endScroll - nextHeight / 2;
+    const progress = Math.min(1, Math.max(0, (window.scrollY - start) / Math.max(1, endScroll - start)));
+    if (progress >= 0.01) {
+      if (!nextActive) {
+        nextActive = true;
+        apply(nextPayload);
+      }
+      return;
+    }
+    if (nextActive) {
+      nextActive = false;
+      apply(currentPayload);
+    }
+  };
+
+  resize();
+  update();
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", () => {
+    resize();
+    update();
+  });
+  window.addEventListener("pagehide", () => apply(currentPayload), { once: true });
+}
+
+function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
+  const project = document.querySelector<HTMLElement>("[data-webgl-project]");
+  if (!project) return;
+
+  project.querySelectorAll<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
+      const target = new URL(link.href, window.location.href);
+      if (target.origin !== window.location.origin || target.href === window.location.href) return;
+      event.preventDefault();
+      getWebgl()?.projectLeave?.();
+      window.setTimeout(() => {
+        window.location.href = target.href;
+      }, 500);
+    });
+  });
+}
+
 function shouldInitWebGL(root: HTMLElement) {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
   if (!window.matchMedia("(min-width: 760px)").matches) return false;
@@ -856,6 +925,8 @@ function boot() {
   initButtons();
   initWorkPreview(() => webgl);
   initProjectMedia();
+  initProjectNextState(() => webgl);
+  initProjectLeave(() => webgl);
   initScrollState();
 }
 

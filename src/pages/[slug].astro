@@ -27,6 +27,9 @@ const projectColor = colorValue(project.data.colors.primary) ?? "#bcbcbc";
 const projectSecondary = colorValue(project.data.colors.secondary) ?? projectColor;
 const projectMedia = colorValue(project.data.colors.media) ?? projectColor;
 const projectBlocks = colorValue(project.data.colors.blocks);
+const nextProjectColor = colorValue(nextProject.data.colors.primary) ?? "#bcbcbc";
+const nextProjectSecondary = colorValue(nextProject.data.colors.secondary) ?? nextProjectColor;
+const nextProjectMedia = colorValue(nextProject.data.colors.media) ?? nextProjectColor;
 ---
 
 <BaseLayout title={`${project.data.title} - Rogier de Boevé`} description={project.data.description.replace(/<[^>]+>/g, "")}>
@@ -116,7 +119,17 @@ const projectBlocks = colorValue(project.data.colors.blocks);
             ))}
           </div>
 
-          <div class="ui-project-next" data-project-slug={nextProject.data.slug}>
+          <div
+            class="ui-project-next"
+            data-project-slug={nextProject.data.slug}
+            data-color={nextProjectColor}
+            data-secondary={nextProjectSecondary}
+            data-invert={colorValue(nextProject.data.colors.invert)}
+            data-media-color={nextProjectMedia}
+            data-saturation={nextProject.data.saturation}
+            data-contrast={nextProject.data.contrast}
+            data-ambient={nextProject.data.ambient}
+          >
             <a href={`/${nextProject.data.slug}/`} class="ui-project-next-link c-color">
               <span class="ts-m">Next project</span>
               <h2 class="ts-3">{nextProject.data.title}</h2>

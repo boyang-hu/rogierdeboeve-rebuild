@@ -1252,6 +1252,21 @@ export class WebGLBackdrop {
     });
   }
 
+  setProjectScrollState(payload: ProjectPayload) {
+    const ambientIntensity = numeric(payload.ambient, 0.5);
+    const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
+    this.setMainColor(payload.color);
+    this.setAmbientLight(ambientColor, ambientIntensity);
+    this.setMediaBackground(payload.mediaColor ?? payload.color);
+    this.setSaturation(numeric(payload.saturation, 1));
+    this.setContrast(numeric(payload.contrast, 1.15));
+  }
+
+  projectLeave() {
+    this.setMediaOpacity(0, 0.5, "none", 0);
+    this.setFluidStrength(0.5, 0.5);
+  }
+
   refreshMedia() {
     this.createMediaPlanes();
     this.resize();
