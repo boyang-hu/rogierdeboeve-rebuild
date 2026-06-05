@@ -99,11 +99,12 @@ Last updated: 2026-06-05
 | `78838b6` | Home DOM/WebGL | Batched source `yD/SD` home-entry and gallery-scroll alignment: delayed work-gallery scroll activation until home entry, moved scroll smoothing to source `Yi` exponential damping, gated gallery input and WebGL progress updates behind active state, matched WebGL roll/zoom damping to source `updateScene`, and tied plucks playback to the gallery entry event with import-order protection. |
 | `5a9d6a6` | Home DOM/WebGL | Batched source `yD/Qe.workState` restoration alignment: restored active project identity before first gallery tick, prevented restored pages from replaying duplicate active-project scene transitions, preserved source-style scene roll/zoom state separately from carousel progress, reset restored `scroll.active` until home entry, and added a narrow WebGL gallery-state restore hook for scene rotation/thumb progress. |
 | `e07db5d` | Home WebGL | Batched source `OA/kA` composite alignment: reduced the home final composite to the source `OA` scene/bloom/mouseSim tail, removed local noise/perlin/contrast/background-lighten compensation from the composite pass, kept the existing source-style bloom mip chain, changed fluid contribution to `length(mouseSim.xy) * .015`, and removed stale composite uniforms/update paths. |
-| `current batch` | Home WebGL | Batched source `A1/C1` pre-composite alignment: added a separate A1-style pre-composite pass before the final OA pass, restored source perlin/noise/mouseSim/contrast preprocessing in that layer, kept bloom in the source OA/kA branch to avoid double bloom, routed raw home scene through `workRawTarget -> preCompositeTarget -> finalComposite`, and fixed stale `tPerlin` writes after the previous OA cleanup. |
+| `1e4fd91` | Home WebGL | Batched source `A1/C1` pre-composite alignment: added a separate A1-style pre-composite pass before the final OA pass, restored source perlin/noise/mouseSim/contrast preprocessing in that layer, kept bloom in the source OA/kA branch to avoid double bloom, routed raw home scene through `workRawTarget -> preCompositeTarget -> finalComposite`, and fixed stale `tPerlin` writes after the previous OA cleanup. |
+| `current batch` | Home WebGL | Batched source `GA/p1` work-block material and spotlight-map alignment: moved cube fragment UVs back toward source `vUv / uGridSize + instanceOffset`, restored the source-style random grid alpha formula without local seed offsets, reduced non-source thumb/projection color amplification, softened spotlight-map contribution so it behaves more like projected map lighting, and clamped local normalized spotlight intensity to the source max-intensity range. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `A1/C1` pre-composite semantics while preserving recent OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, spotlight-map, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `GA/p1` work-block material and spotlight-map semantics while preserving recent A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
 
 Immediate source targets:
 
@@ -115,10 +116,10 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Continue visual/source comparison of `GA` block material lighting against the source spotlight-map behavior now that projection direction is closer.
-2. Revisit project-route entry/leave only after confirming the home composite changes do not regress project media pages.
-3. Audit remaining source `yD` keyboard/virtual-scroll timing edge cases around next/prev timeouts.
-4. Continue source `I1/C1` review around optional media/lensflare uniforms only if home visual QA indicates that layer is still materially off.
+1. Continue source `yD` keyboard/virtual-scroll timing edge cases around next/prev timeouts and restored state.
+2. Revisit project-route entry/leave only after confirming the home composite and projection changes do not regress project media pages.
+3. Continue source `I1/C1` review around optional media/lensflare uniforms only if home visual QA indicates that layer is still materially off.
+4. Start Phase 4 about/auxiliary-page parity once the next home interaction batch lands cleanly.
 
 ## Verification Baseline
 

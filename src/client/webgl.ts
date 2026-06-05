@@ -152,6 +152,7 @@ attribute float instanceAlpha;
 attribute vec3 instanceColor;
 
 varying vec2 vThumbUv;
+varying vec2 vLocalUv;
 varying float vAlpha;
 varying float vReveal;
 varying vec3 vColorSeed;
@@ -246,12 +247,13 @@ void main() {
   vec2 spotUv = lightPlane / (lightDepth * uSpotConeTan) * 0.5 + 0.5;
   vec2 spotDelta = spotUv - 0.5;
   float spotRadius = length(spotDelta);
-  float coneMask = 1.0 - smoothstep(0.42, 0.5, spotRadius);
+  float coneMask = 1.0 - smoothstep(0.45, 0.5, spotRadius);
   float depthMask = smoothstep(0.0, 0.9, lightDepth) * (1.0 - smoothstep(12.0, 17.0, lightDepth));
   mvPosition = modelViewMatrix * mvPosition;
   gl_Position = projectionMatrix * mvPosition;
 
   vThumbUv = instanceGrid.xy;
+  vLocalUv = uv;
   vAlpha = instanceAlpha;
   vReveal = revealMask;
   vColorSeed = instanceColor;
@@ -279,6 +281,7 @@ uniform sampler2D tMouseSim2;
 uniform vec2 uCoords;
 
 varying vec2 vThumbUv;
+varying vec2 vLocalUv;
 varying float vAlpha;
 varying float vReveal;
 varying vec3 vColorSeed;
@@ -306,57 +309,56 @@ float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, floa
 }
 
 void main() {
-  vec2 uv = vThumbUv;
-  vec2 projectedUv = (uv - 0.5) * 0.36 + 0.5;
-  vec3 gridThumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.52);
+  vec2 uv = vLocalUv / vec2(35.0, 23.0) + vThumbUv;
+  vec2 projectedUv = (uv - 0.5) * 0.48 + 0.5;
+  vec3 gridThumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.22);
   vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
   float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
-  vec3 thumb = mix(gridThumb, spotThumb, spotMask * 0.82);
+  vec3 thumb = mix(gridThumb, spotThumb, spotMask * 0.58);
   thumb = (thumb - 0.5) * uContrast + 0.5;
   thumb = saturateColor(thumb, uSaturation);
   float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
-  float centerMask = pow(vignette(uv, vec2(0.5), 0.02, 0.72), 1.45);
-  float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.8) * spotMask;
+  float centerMask = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+  float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.6) * spotMask;
   float neutral = 1.0 - smoothstep(0.04, 0.22, length(thumb - vec3(lum)));
-  float centeredLum = lum * (0.28 + centerMask * 1.15 + spotCenter * 2.35);
+  float centeredLum = lum * (0.3 + centerMask * 0.55 + spotCenter * 1.1);
   float lightMask = smoothstep(0.14, 0.66, centeredLum);
-  float logoMask = smoothstep(0.18, 0.56, lum) * neutral * max(centerMask, spotCenter);
-  lightMask = max(lightMask * (0.16 + centerMask * 0.72 + spotCenter * 1.45), logoMask * 1.25);
-  float hotMask = max(smoothstep(0.38, 0.82, centeredLum), logoMask);
+  float logoMask = smoothstep(0.18, 0.56, lum) * neutral * max(centerMask, spotCenter * 0.8);
+  lightMask = max(lightMask * (0.18 + centerMask * 0.38 + spotCenter * 0.85), logoMask * 0.68);
+  float hotMask = max(smoothstep(0.52, 0.9, centeredLum), logoMask * 0.7);
 
   float faceLight = clamp(dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5, 0.45, 1.2);
-  vec3 base = mix(vec3(0.026, 0.031, 0.04), uBlockColor, 0.26);
-  vec3 projection = mix(uTint * (0.38 + lightMask * 1.8), thumb * (1.65 + spotMask * 0.9), 0.45 + spotMask * 0.22);
-  vec3 color = mix(base, projection, 0.42 + lightMask * 0.52);
-  color += thumb * (0.14 + lightMask * 1.12 + spotMask * 0.72);
-  color += vec3(1.0) * hotMask * 1.25;
-  color += uTint * pow(max(lightMask, 0.0), 1.65) * 0.58;
-  color = mix(color, uTint, 0.035 + lightMask * 0.08);
+  vec3 base = mix(vec3(0.026, 0.031, 0.04), uBlockColor, 0.34);
+  vec3 projection = mix(uTint * (0.42 + lightMask * 0.72), thumb * (0.75 + spotMask * 0.38), 0.38 + spotMask * 0.18);
+  vec3 color = mix(base, projection, 0.34 + lightMask * 0.32);
+  color += thumb * (0.08 + lightMask * 0.34 + spotMask * 0.24);
+  color += vec3(1.0) * hotMask * 0.34;
+  color += uTint * pow(max(lightMask, 0.0), 1.65) * 0.22;
+  color = mix(color, uTint, 0.025 + lightMask * 0.045);
   color = mix(color, uDarknessColor, uDarkness * (0.06 + (1.0 - lum) * 0.16));
   color *= faceLight;
 
   vec2 pointerUv = uPointer * 0.5 + 0.5;
   vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
-  float pointerLight = 1.0 - smoothstep(0.02, 0.58, distance(uv, pointerUv));
+  float pointerLight = 1.0 - smoothstep(0.02, 0.58, distance(vThumbUv, pointerUv));
   float simLight = texture2D(tMouseSim2, screenUv).r;
   float mouseLight = max(pointerLight, simLight);
-  color *= 0.72 + mouseLight * uMouseLightness * 0.24;
-  color += pow(max(0.0, 1.0 - length(uv - 0.5) * 1.65), 2.0) * 0.12;
+  color *= 0.78 + mouseLight * uMouseLightness * 0.18;
 
   vec2 gridUv = floor(uv * vec2(35.0, 23.0));
-  vec2 gridUv2 = floor(uv.yx * vec2(23.0, 35.0));
-  float alpha = random(gridUv + vColorSeed.xy) * random(gridUv2 + vColorSeed.yz) * vAlpha;
+  vec2 gridUv2 = floor(vec2(uv.y * 23.0, uv.x * 23.0));
+  float alpha = random(gridUv) * random(gridUv2) * vAlpha;
   float revealCombined = clamp(vReveal, 0.0, 1.0);
   float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
   float centerAlpha = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
   float revealAlpha = sourceVignette(uv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
   alpha += centerAlpha * 0.1;
   alpha -= 1.0 - revealAlpha;
-  alpha += clamp(mouseLight * uMouseLightness * 0.08, 0.0, 0.18);
-  alpha = max(alpha, logoMask * revealCombined * 0.32);
-  alpha *= revealCombined * clamp(vAlpha + 0.35, 0.0, 1.0);
+  alpha += clamp(mouseLight * uMouseLightness * 0.055, 0.0, 0.15);
+  alpha = max(alpha, logoMask * revealCombined * 0.16);
+  alpha *= revealCombined;
 
-  gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.92));
+  gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.9));
 }
 `;
 
@@ -1987,7 +1989,7 @@ export class WebGLBackdrop {
 
   private setSpotLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
     gsap.to(this, {
-      spotLightIntensity: MathUtils.clamp(value / this.maxSpotLightIntensity, 0, 1.35),
+      spotLightIntensity: MathUtils.clamp(value / this.maxSpotLightIntensity, 0, 1),
       duration,
       ease,
       onUpdate: () => {
