@@ -67,6 +67,14 @@ function applyActiveColor(color?: string) {
   if (color) document.documentElement.style.setProperty("--active-color", color);
 }
 
+function hasPageEntered() {
+  return document.body.classList.contains("has-entered");
+}
+
+function emitPageEntered() {
+  window.dispatchEvent(new CustomEvent("rd:page-entered"));
+}
+
 function clearWorkPreview(webgl?: WebGLLike) {
   webgl?.setPreviewMode?.(false);
 }
@@ -194,6 +202,7 @@ function initPreloader() {
     document.body.classList.remove("is-preloading");
     document.body.classList.add("has-entered");
     preloader?.classList.add("is-hidden");
+    emitPageEntered();
     window.setTimeout(() => preloader?.remove(), 850);
   };
 
@@ -1035,6 +1044,13 @@ function boot() {
       cleanupCallbacks.push(() => webgl?.leaveAboutVisualState?.());
     } else if (project) {
       webgl?.enterProjectVisualState?.(payload);
+      const revealProjectMedia = () => webgl?.mediaAnimateIn?.();
+      if (hasPageEntered()) {
+        revealProjectMedia();
+      } else {
+        window.addEventListener("rd:page-entered", revealProjectMedia, { once: true });
+        cleanupCallbacks.push(() => window.removeEventListener("rd:page-entered", revealProjectMedia));
+      }
     }
   });
 

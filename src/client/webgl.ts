@@ -1469,7 +1469,6 @@ export class WebGLBackdrop {
     this.resetThumbOffsetY();
 
     if (payload.slug) this.setActiveSlug(payload.slug);
-    if (document.body.classList.contains("is-project")) this.mediaAnimateIn();
   }
 
   setActiveSlug(slug: string) {
@@ -1591,13 +1590,13 @@ export class WebGLBackdrop {
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
     this.activeSlug = payload.slug ?? this.activeSlug;
     this.setMainColor(payload.color);
+    this.setMediaOpacity(0, 0, "none", 0);
     this.setDarken(numeric(payload.darkness, 0.25));
     this.setAmbientLight(ambientColor, ambientIntensity);
     this.setMediaBackground(payload.mediaColor ?? payload.color);
     this.setSaturation(numeric(payload.saturation, 1));
     this.setContrast(numeric(payload.contrast, 1.15));
     this.setFluidStrength(1);
-    this.mediaAnimateIn();
   }
 
   enterAboutVisualState(visual?: HTMLElement | null, floating?: HTMLElement | null) {

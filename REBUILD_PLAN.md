@@ -182,7 +182,8 @@ Last updated: 2026-06-05
 | `efdefaf` | Planning | Documented the Phase 1 source-parity audit, completion criteria, remaining must-fix areas, risk tiers, and recommended batch strategy. |
 | `5d1f1b1` | Home WebGL | Batched source `GA/Ka` local simulation ownership alignment: each work item now owns its own local mouse simulation material, scene, ping-pong targets, UV target state, and mouse-speed state; ray-plane hits update the matching work item while shared screen-space `tMouseSim2` remains render-manager owned. |
 | `863fcd9` | Home WebGL | Batched source `A1/OA` blend-call alignment: A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for the modes used by the original shaders (`1`, `11`, `15`) instead of direct local helper calls. |
-| `current batch` | Home WebGL | Batched source `Se` setter ownership alignment: `showScene()` follows source state tween behavior, `darken/saturation/contrast/media background/directionalLight2` now tween local source-shaped state before writing uniforms/lights, and composite defaults read from those state fields. |
+| `57ff4bc` | Home WebGL | Batched source `Se` setter ownership alignment: `showScene()` follows source state tween behavior, `darken/saturation/contrast/media background/directionalLight2` now tween local source-shaped state before writing uniforms/lights, and composite defaults read from those state fields. |
+| `current batch` | Home WebGL/Project WebGL | Batched source `OD/Se` project-entry order alignment: project WebGL visual init now resets media opacity to `0`, media reveal is deferred to the page-enter boundary like source `OD.animateIn`, and home `setProject()` no longer carries a project-page media reveal side effect. |
 
 ## Current Focus
 
@@ -195,7 +196,7 @@ Immediate source targets:
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain and routes active blend modes through source-shaped mode dispatchers.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
-- `Se`: source-style visual-state setter ownership without non-source side effects; core setter state ownership is now closer, and route-specific call ordering remains the next audit target.
+- `Se`: source-style visual-state setter ownership without non-source side effects; core setter state ownership and project entry order are now closer, while home/about route-specific call ordering remains the next audit target.
 
 Latest verification:
 
@@ -207,7 +208,7 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue the remaining `Se` route entry/leave order audit from `PHASE1_AUDIT.md` Batch C, especially `setProject()`, about entry/leave, project entry/leave, and gallery leave.
+1. Continue the remaining `Se` route entry/leave order audit from `PHASE1_AUDIT.md` Batch C, especially home gallery leave, home entry active-project ordering, and about `TD/Fg` entry/leave timing.
 2. Continue deeper `A1/OA` shader parity only where source evidence shows behavior differences beyond the now source-shaped mode calls.
 3. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing whether the remaining chunk-injection compromise should become a fuller source shader override.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
