@@ -20,6 +20,7 @@ type WebGLLike = {
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number): void;
   setPreviewMode?(enabled: boolean): void;
+  hideWorkScene?(): void;
   mediaAnimateIn?(): void;
   refreshMedia?(): void;
 };
@@ -49,6 +50,13 @@ function applyActiveColor(color?: string) {
 
 function setWorkPreviewing(enabled: boolean) {
   document.documentElement.classList.toggle("is-work-previewing", enabled);
+}
+
+function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
+  webgl?.hideWorkScene?.();
+  window.setTimeout(() => {
+    window.location.href = url;
+  }, 500);
 }
 
 function dispatchSoundMode(enabled: boolean) {
@@ -236,8 +244,15 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     card.querySelector<HTMLElement>(".ui-work-a")?.addEventListener("click", (event) => {
       event.preventDefault();
       scrollToIndex(index);
+      const href = (event.currentTarget as HTMLAnchorElement).href;
+      navigateWithWorkSceneOut(href, getWebgl());
     });
     const cta = card.querySelector<HTMLElement>(".ui-work-cta");
+    cta?.addEventListener("click", (event) => {
+      event.preventDefault();
+      scrollToIndex(index);
+      navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl());
+    });
     cta?.addEventListener("mouseenter", () => {
       setWorkPreviewing(true);
       getWebgl()?.setPreviewMode?.(true);

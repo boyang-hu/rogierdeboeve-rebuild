@@ -352,6 +352,7 @@ uniform sampler2D tMouseSim;
 uniform float uTime;
 uniform float uRatio;
 uniform float uProgress;
+uniform float uTransformX;
 uniform float uFluidStrength;
 uniform float uContrast;
 uniform vec3 uBgColor;
@@ -424,13 +425,16 @@ void main() {
   perlinUv += 0.5;
   perlinUv.x -= uTime * 0.01;
   perlinUv.y -= uTime * 0.005;
-  perlinUv.x += uProgress * 0.15;
+  perlinUv.x += uTransformX;
 
   float perlin = fbm(perlinUv * 6.0);
-  float flow = fbm(p * 2.3 + vec2(uTime * -0.035 + uProgress, uTime * -0.018));
+  float flow = fbm(p * 2.3 + vec2(uTime * -0.035 + uTransformX, uTime * -0.018));
   float rings = abs(1.0 / (sin(pow(length(p) * 0.9, 0.25) - uTime * 0.35 + sin(length(p) * 0.8 - 1.6)) * 10.8)) - 0.1;
   vec4 workBase = texture2D(tWork, uv);
   vec4 workShift = rgbshift(tWork, fluidUv, -1.0, 0.0005 + 0.024 * mouseSim.r * uFluidStrength);
+  vec4 glowX = texture2D(tWork, uv + vec2(0.006, 0.0)) + texture2D(tWork, uv - vec2(0.006, 0.0));
+  vec4 glowY = texture2D(tWork, uv + vec2(0.0, 0.006)) + texture2D(tWork, uv - vec2(0.0, 0.006));
+  vec3 glow = max(vec3(0.0), (glowX.rgb + glowY.rgb) * 0.25 - vec3(0.22));
   vec3 work = mix(workBase.rgb, workShift.rgb, 0.65);
 
   vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.68);
@@ -442,6 +446,7 @@ void main() {
 
   float workMask = clamp(workBase.a * 1.25, 0.0, 1.0);
   color = mix(color, work, workMask);
+  color += glow * (0.24 + uFluidStrength * 0.18);
   color += mouseSim.rgb * 0.065;
   color = mix(color, color * 5.0, (1.0 - vignette(uv + perlin * 0.015, 0.1, 0.35)) * 0.055);
   color = mix(color, color * vec3(0.94 + perlin * 0.12), 0.25);
@@ -772,6 +777,7 @@ export class WebGLBackdrop {
   private maxSpotLightIntensity = 220;
   private spotLightIntensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
+  private fluidStrength = 0.5;
   private revealSpread = 0;
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
@@ -839,6 +845,7 @@ export class WebGLBackdrop {
     this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
     this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
+    this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
     this.setRevealSpread(0);
 
     if (payload.slug) this.setActiveSlug(payload.slug);
@@ -853,6 +860,7 @@ export class WebGLBackdrop {
 
   setGalleryProgress(progress: number, velocity = 0) {
     this.galleryProgress = progress;
+    this.compositeMaterial.uniforms.uTransformX.value = progress;
     const targetRotation = MathUtils.degToRad(progress * 360 + 180);
     this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * 0.08;
     this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * 0.08;
@@ -863,6 +871,7 @@ export class WebGLBackdrop {
   }
 
   setPreviewMode(enabled: boolean) {
+    this.setFluidStrength(enabled ? 0.35 : 0.5, 0.5);
     gsap.to(this, {
       mouseFactor: enabled ? 0.25 : 1,
       duration: 3,
@@ -872,6 +881,15 @@ export class WebGLBackdrop {
           item.material.uniforms.uMouseFactor.value = this.mouseFactor;
         });
       },
+    });
+  }
+
+  hideWorkScene() {
+    this.setRevealSpread(1, 0.65, "power3.in");
+    this.setSpotLightIntensity(0, 1, "none");
+    this.setFluidStrength(0.5, 0.5);
+    this.workItems.forEach((item) => {
+      gsap.to(item.material.uniforms.uRevealProject, { value: 0, duration: 0.5, ease: "none" });
     });
   }
 
@@ -1105,7 +1123,8 @@ export class WebGLBackdrop {
         uTime: { value: 0 },
         uRatio: { value: 1 },
         uProgress: { value: 0 },
-        uFluidStrength: { value: 0.5 },
+        uTransformX: { value: 0 },
+        uFluidStrength: { value: this.fluidStrength },
         uContrast: { value: 1.1 },
         uBgColor: { value: colorFrom("#1f1f1f") },
         uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
@@ -1457,6 +1476,17 @@ export class WebGLBackdrop {
     });
   }
 
+  private setFluidStrength(value: number, duration = 0.5) {
+    gsap.to(this, {
+      fluidStrength: value,
+      duration,
+      ease: "none",
+      onUpdate: () => {
+        this.compositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
+      },
+    });
+  }
+
   private setMediaOpacity(value: number, duration = 1.6, ease = "expo.out", delay = 0.25) {
     gsap.to(this, {
       mediaSceneOpacity: value,
@@ -1649,7 +1679,7 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.compositeMaterial.uniforms.uTime.value = time;
     this.compositeMaterial.uniforms.uProgress.value = this.galleryProgress;
-    this.compositeMaterial.uniforms.uFluidStrength.value = MathUtils.clamp(0.35 + this.mouseFactor * 0.35, 0.2, 0.8);
+    this.compositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
     this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
     this.updateMediaPlanePositions();
