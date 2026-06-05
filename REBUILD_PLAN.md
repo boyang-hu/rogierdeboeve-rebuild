@@ -57,7 +57,8 @@ Last updated: 2026-06-05
 | `9930ced` | Home DOM/WebGL | Added source-style work gallery event semantics with `rd:nav-click`/`rd:project-active` and carried split darkness payload fields through active project changes. |
 | `41bbd7d` | Home DOM | Added source-style `.ui-work-container` around the home work content and aligned fixed container CSS with source `yD`/bundle styles. |
 | `0a77fdf` | Home DOM | Aligned work gallery virtual-scroll diff handling with source `yD` so sub-threshold deltas still feed scene inertia while only larger deltas trigger next/prev. |
-| this commit | Global DOM | Added source-style button SVG formatting from `gD.formatButton()` so `.c-button` background SVG/rect dimensions match rendered button size on init and resize. |
+| `2bdb0ce` | Global DOM | Added source-style button SVG formatting from `gD.formatButton()` so `.c-button` background SVG/rect dimensions match rendered button size on init and resize. |
+| this commit | Home DOM | Added source-style mobile `touchstart` selection for work titles and progressbar items from `vD/_D`, with click dedupe to avoid double navigation. |
 
 ## Current Focus
 

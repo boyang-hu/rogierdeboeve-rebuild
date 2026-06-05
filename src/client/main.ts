@@ -253,6 +253,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     y: 0,
     moved: false,
   };
+  let lastTouchSelect = 0;
 
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
   const lerp = (current: number, target: number, factor: number, delta: number) =>
@@ -377,8 +378,16 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       scrollToIndex(index);
     });
     card.addEventListener("focusin", () => scrollToIndex(index));
-    card.querySelector<HTMLElement>(".ui-work-a")?.addEventListener("click", (event) => {
+    const workLink = card.querySelector<HTMLElement>(".ui-work-a");
+    workLink?.addEventListener("click", (event) => {
       event.preventDefault();
+      if (performance.now() - lastTouchSelect < 500) return;
+      scrollToIndex(index);
+    });
+    workLink?.addEventListener("touchstart", (event) => {
+      if (!window.matchMedia("(max-width: 999px)").matches) return;
+      event.preventDefault();
+      lastTouchSelect = performance.now();
       scrollToIndex(index);
     });
     const cta = card.querySelector<HTMLElement>(".ui-work-cta");
@@ -408,10 +417,20 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   });
 
   progressArray.forEach((item) => {
-    item.addEventListener("click", () => {
+    const selectProgressItem = () => {
       const slug = item.dataset.slug ?? item.dataset.progressSlug;
       const index = cardsArray.findIndex((candidate) => candidate.dataset.slug === slug);
       if (index >= 0) scrollToIndex(index);
+    };
+    item.addEventListener("click", () => {
+      if (performance.now() - lastTouchSelect < 500) return;
+      selectProgressItem();
+    });
+    item.addEventListener("touchstart", (event) => {
+      if (!window.matchMedia("(max-width: 999px)").matches) return;
+      event.preventDefault();
+      lastTouchSelect = performance.now();
+      selectProgressItem();
     });
   });
 
