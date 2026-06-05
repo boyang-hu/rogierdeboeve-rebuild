@@ -547,25 +547,34 @@ precision highp float;
 uniform sampler2D tMap;
 uniform vec2 uResolution;
 uniform vec2 uDirection;
+uniform int uKernelRadius;
+uniform float uSigma;
 
 varying vec2 vUv;
 
-vec4 blur13(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
-  vec2 off1 = vec2(1.411764705882353) * direction / resolution;
-  vec2 off2 = vec2(3.2941176470588234) * direction / resolution;
-  vec2 off3 = vec2(5.176470588235294) * direction / resolution;
-  vec4 color = texture2D(image, uv) * 0.1964825501511404;
-  color += texture2D(image, uv + off1) * 0.2969069646728344;
-  color += texture2D(image, uv - off1) * 0.2969069646728344;
-  color += texture2D(image, uv + off2) * 0.09447039785044732;
-  color += texture2D(image, uv - off2) * 0.09447039785044732;
-  color += texture2D(image, uv + off3) * 0.010381362401148057;
-  color += texture2D(image, uv - off3) * 0.010381362401148057;
-  return color;
+float gaussianPdf(float x, float sigma) {
+  return 0.39894 * exp(-0.5 * x * x / (sigma * sigma)) / sigma;
+}
+
+vec4 gaussianBlur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
+  vec2 invSize = 1.0 / resolution;
+  float weightSum = gaussianPdf(0.0, uSigma);
+  vec3 diffuseSum = texture2D(image, uv).rgb * weightSum;
+  for (int i = 1; i < 12; i++) {
+    if (i >= uKernelRadius) break;
+    float x = float(i);
+    float weight = gaussianPdf(x, uSigma);
+    vec2 uvOffset = direction * invSize * x;
+    vec3 sample1 = texture2D(image, uv + uvOffset).rgb;
+    vec3 sample2 = texture2D(image, uv - uvOffset).rgb;
+    diffuseSum += (sample1 + sample2) * weight;
+    weightSum += 2.0 * weight;
+  }
+  return vec4(diffuseSum / weightSum, 1.0);
 }
 
 void main() {
-  gl_FragColor = blur13(tMap, vUv, uResolution, uDirection);
+  gl_FragColor = gaussianBlur(tMap, vUv, uResolution, uDirection);
 }
 `;
 
@@ -1690,6 +1699,8 @@ export class WebGLBackdrop {
         tMap: { value: this.bloomBrightTarget.texture },
         uResolution: { value: new Vector2(1, 1) },
         uDirection: { value: new Vector2(1, 0) },
+        uKernelRadius: { value: 3 },
+        uSigma: { value: 3 },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeBloomBlurFragment,
@@ -2641,15 +2652,20 @@ export class WebGLBackdrop {
       let bloomSource = this.bloomBrightTarget;
       this.bloomHorizontalTargets.forEach((horizontalTarget, index) => {
         const verticalTarget = this.bloomVerticalTargets[index];
+        const kernelRadius = 3 + index * 2;
         this.bloomBlurMaterial.uniforms.tMap.value = bloomSource.texture;
         this.bloomBlurMaterial.uniforms.uResolution.value.set(horizontalTarget.width, horizontalTarget.height);
         this.bloomBlurMaterial.uniforms.uDirection.value.set(1, 0);
+        this.bloomBlurMaterial.uniforms.uKernelRadius.value = kernelRadius;
+        this.bloomBlurMaterial.uniforms.uSigma.value = kernelRadius;
         this.renderer.setRenderTarget(horizontalTarget);
         this.renderer.clear();
         this.renderer.render(this.bloomBlurScene, this.backgroundCamera);
         this.bloomBlurMaterial.uniforms.tMap.value = horizontalTarget.texture;
         this.bloomBlurMaterial.uniforms.uResolution.value.set(verticalTarget.width, verticalTarget.height);
         this.bloomBlurMaterial.uniforms.uDirection.value.set(0, 1);
+        this.bloomBlurMaterial.uniforms.uKernelRadius.value = kernelRadius;
+        this.bloomBlurMaterial.uniforms.uSigma.value = kernelRadius;
         this.renderer.setRenderTarget(verticalTarget);
         this.renderer.clear();
         this.renderer.render(this.bloomBlurScene, this.backgroundCamera);
