@@ -433,6 +433,19 @@ float vignette(vec2 uv, float inner, float outer) {
   return smoothstep(outer, inner, length(p));
 }
 
+vec3 brightBloom(sampler2D tex, vec2 uv, vec2 texel) {
+  vec3 bloom = vec3(0.0);
+  bloom += max(texture2D(tex, uv + texel * vec2(4.0, 0.0)).rgb - 0.18, vec3(0.0)) * 0.18;
+  bloom += max(texture2D(tex, uv - texel * vec2(4.0, 0.0)).rgb - 0.18, vec3(0.0)) * 0.18;
+  bloom += max(texture2D(tex, uv + texel * vec2(0.0, 4.0)).rgb - 0.18, vec3(0.0)) * 0.18;
+  bloom += max(texture2D(tex, uv - texel * vec2(0.0, 4.0)).rgb - 0.18, vec3(0.0)) * 0.18;
+  bloom += max(texture2D(tex, uv + texel * vec2(9.0, 6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
+  bloom += max(texture2D(tex, uv + texel * vec2(-9.0, 6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
+  bloom += max(texture2D(tex, uv + texel * vec2(9.0, -6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
+  bloom += max(texture2D(tex, uv + texel * vec2(-9.0, -6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
+  return bloom;
+}
+
 void main() {
   vec2 uv = vUv;
   vec2 p = uv - 0.5;
@@ -468,6 +481,7 @@ void main() {
   vec4 glowX = texture2D(tWork, uv + vec2(0.006, 0.0)) + texture2D(tWork, uv - vec2(0.006, 0.0));
   vec4 glowY = texture2D(tWork, uv + vec2(0.0, 0.006)) + texture2D(tWork, uv - vec2(0.0, 0.006));
   vec3 glow = max(vec3(0.0), (glowX.rgb + glowY.rgb) * 0.25 - vec3(0.22));
+  vec3 bloom = brightBloom(tWork, sourceUv, vec2(1.0 / 900.0, 1.0 / 900.0));
   vec3 work = mix(workShift.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
 
   vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.68);
@@ -480,6 +494,8 @@ void main() {
   float workMask = clamp(workBase.a * 1.25, 0.0, 1.0);
   color = mix(color, work, workMask);
   color += glow * (0.24 + uFluidStrength * 0.18);
+  color += rgbshift(tWork, sourceUv, -1.5, 0.02).rgb * 0.08;
+  color += bloom * 0.15;
   color += sampledMouse.rgb * 0.065;
   color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
   color = blendAdd(color, perlinMap.rgb, (1.0 - displacementVignette + sampledMouse.r * 0.5) * 0.05);
