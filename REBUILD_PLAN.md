@@ -187,7 +187,8 @@ Last updated: 2026-06-05
 | `1a4c280` | Home WebGL | Batched source `SD/TD/Fg` entry-timing alignment: home `showScene()` and gallery entry now wait for the page-enter boundary like source `SD.animateIn`, and about auxiliary visual setup is separated from `TD/Fg` reveal animation so about blocks reveal at page enter instead of during WebGL boot. |
 | `a6fdde2` | Home WebGL | Batched source `TD/Fg` leave/destroy timing alignment: about route links now trigger auxiliary reveal-out before navigation, while page cleanup uses immediate destroy-style track/visibility/parallax reset instead of running a long leave animation during teardown. |
 | `64867c8` | Home WebGL | Batched source `BD/zD/yD` home-route leave alignment: internal home links outside the work gallery now route through the work-gallery-out transition so header/nav leaves run the same soft-woosh, scene fade, reveal-spread, spotlight fade, and block reveal-project animation path as CTA leaves. |
-| `current batch` | Home WebGL | Batched source `OA/C1/Lu` material-flag alignment: final `OA` keeps source-owned `uDarken/uSaturation` and now uses source-shaped `toneMapped:false`, `transparent:true`, and normal blending; A1/C1 pre-composite and Lu screen-pass materials now explicitly align proven tone/blending flags. |
+| `33cdcdd` | Home WebGL | Batched source `OA/C1/Lu` material-flag alignment: final `OA` keeps source-owned `uDarken/uSaturation` and now uses source-shaped `toneMapped:false`, `transparent:true`, and normal blending; A1/C1 pre-composite and Lu screen-pass materials now explicitly align proven tone/blending flags. |
+| `current batch` | Home WebGL | Batched source `VA` material-flag audit: work and auxiliary block materials now set source `dithering=true`, while full shader override remains a documented high-risk deviation because chunk injection preserves current Three lighting/color-space/fog/env/spotlight compatibility. |
 
 ## Current Focus
 
@@ -196,7 +197,7 @@ Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. 
 Immediate source targets:
 
 - `p1`: continue auditing route-specific visibility and spotlight-map ownership for about/floating blocks, now that the source-shaped auxiliary block objects can be activated on the about route and the about spotlight map has a source-shaped character render target.
-- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, and a cleaner source-shaped custom-uniform surface.
+- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, source material flags including dithering, and a cleaner source-shaped custom-uniform surface. Full source shader override is documented as a high-risk deviation pending real WebGL QA evidence.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain, routes active blend modes through source-shaped mode dispatchers, and aligns proven material tone/blending flags.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
@@ -212,9 +213,9 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing whether the remaining chunk-injection compromise should become a fuller source shader override.
+1. Audit `TD/Fg` scroll lifecycle only if source evidence shows behavior gaps beyond the current entry/leave cleanup shape.
 2. Continue deeper `A1/OA` shader parity only if source evidence or browser QA shows behavior differences beyond the now source-shaped mode calls and material flags.
-3. Audit `TD/Fg` scroll lifecycle only if source evidence shows behavior gaps beyond the current entry/leave cleanup shape.
+3. Continue `GA/VA` full shader replacement only if real WebGL QA identifies a specific mismatch that cannot be solved through low-risk chunk/material parity.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
 5. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.
 
