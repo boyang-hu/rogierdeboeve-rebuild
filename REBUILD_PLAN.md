@@ -42,7 +42,8 @@ Last updated: 2026-06-05
 | `7f41fba` | Home DOM | Aligned homepage title/work/footer intro animation targets with source `Rg/vD/Ou` inner-element structure. |
 | `f7531e4` | Home DOM | Aligned work title click behavior with source `vD`: project titles select the active project while the CTA remains the detail-page entry point. |
 | `66c6970` | Home DOM | Added source-style `gD` CTA text and opacity animate-in/out when the active work item changes. |
-| this commit | Home DOM | Aligned touch gallery movement with source `yD` virtual-scroll deltas by driving project changes during touchmove instead of only on touchend. |
+| `71f2403` | Home DOM | Aligned touch gallery movement with source `yD` virtual-scroll deltas by driving project changes during touchmove instead of only on touchend. |
+| this commit | Home DOM | Matched source `Ou` footer contact resize behavior by shortening the mobile contact label to `E-mail`. |
 
 ## Current Focus
 

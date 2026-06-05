@@ -89,6 +89,18 @@ function initIntroAnimations() {
   }
 }
 
+function initFooterContactLabel() {
+  const contact = document.querySelector<HTMLElement>(".ui-footer-contact a > span");
+  if (!contact) return;
+
+  const update = () => {
+    contact.textContent = window.matchMedia("(min-width: 1000px)").matches ? "hello@rogierdeboeve.com" : "E-mail";
+  };
+
+  update();
+  window.addEventListener("resize", update, { passive: true });
+}
+
 function initMediaReveals() {
   const blocks = document.querySelectorAll<HTMLElement>("[data-mobile-media]");
   if (!blocks.length) return;
@@ -117,6 +129,7 @@ function initMediaReveals() {
 
 export function initMotion() {
   initLenis();
+  initFooterContactLabel();
   initIntroAnimations();
   initMediaReveals();
 }
