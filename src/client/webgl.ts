@@ -1870,9 +1870,11 @@ export class WebGLBackdrop {
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
     });
-    this.sceneWrap.rotation.x += (this.pointer.y * 0.035 - this.sceneWrap.rotation.x) * 0.04;
-    this.spotLightPosition.x += (this.pointer.x * 0.18 - this.spotLightPosition.x) * 0.08;
-    this.spotLightPosition.y += (this.pointer.y * 0.18 - this.spotLightPosition.y) * 0.08;
+    this.homeCamera.position.x += (this.pointer.x * 0.25 - this.homeCamera.position.x) * 0.08;
+    this.homeCamera.position.y += (this.pointer.y * 0.25 - this.homeCamera.position.y) * 0.08;
+    this.homeCamera.lookAt(0, 0, 0);
+    this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
+    this.spotLightPosition.y = this.homeCamera.position.y * 0.175;
     this.spotLightPosition.z = 3.7;
     this.particles.rotation.z = time * 0.015 + this.galleryProgress * Math.PI * 0.2;
     this.particles.position.x = this.pointer.x * 0.1;
