@@ -74,7 +74,7 @@ Last updated: 2026-06-05
 | `8d99bdb` | Home DOM/WebGL | Added source-style `SD.animateIn -> Se.showScene()` wiring so the home composite `uReveal` animates in over 1.6s with `expo.out` after WebGL initialization. |
 | `489ca4c` | Home DOM | Added source-style `SD.onLeave -> Ki.animateDescriptionOut/animateAvailibilityOut` behavior to the home CTA transition path with 0.5s opacity fades. |
 | `ec26bfe` | Home WebGL | Matched source `yD.onWorkGalleryOut()` more closely by killing active work-block reveal tweens before running the gallery-out spread and project fade. |
-| `pending` | Home WebGL | Matched source `p1.update()` mobile spotlight parallax by adding the `.3` y-offset below `MD=800` while keeping camera-derived spotlight movement. |
+| `1cb6a6b` | Home WebGL | Matched source `p1.update()` mobile spotlight parallax by adding the `.3` y-offset below `MD=800` while keeping camera-derived spotlight movement. |
 
 ## Current Focus
 
