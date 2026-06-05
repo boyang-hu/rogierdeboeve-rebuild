@@ -55,7 +55,8 @@ Last updated: 2026-06-05
 | `53e7e31` | Home WebGL | Renamed the work block screen-coordinate uniform to source-compatible `uCoords` while keeping thumb-plane `uResolution` aligned with source `E1`. |
 | `cc52ec8` | Home DOM | Kept work gallery pointer gating closer to source `yD` by holding `is-dragging` through the snap window and marking keyboard-driven gallery steps too. |
 | `9930ced` | Home DOM/WebGL | Added source-style work gallery event semantics with `rd:nav-click`/`rd:project-active` and carried split darkness payload fields through active project changes. |
-| this commit | Home DOM | Added source-style `.ui-work-container` around the home work content and aligned fixed container CSS with source `yD`/bundle styles. |
+| `41bbd7d` | Home DOM | Added source-style `.ui-work-container` around the home work content and aligned fixed container CSS with source `yD`/bundle styles. |
+| this commit | Home DOM | Aligned work gallery virtual-scroll diff handling with source `yD` so sub-threshold deltas still feed scene inertia while only larger deltas trigger next/prev. |
 
 ## Current Focus
 

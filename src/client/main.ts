@@ -337,7 +337,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const handleGalleryDelta = (delta: number) => {
-    if (Math.abs(delta) < 15) return false;
+    if (Math.abs(delta) < 0.01) return false;
     markDragging();
     scroll.diff += delta;
     if (delta > 15) next();
