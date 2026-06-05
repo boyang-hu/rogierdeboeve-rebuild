@@ -45,7 +45,7 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | Spotlight map ownership | Home uses thumb composite target; about switches to character target; parallax ownership is source-shaped. | Medium-high |
 | Thumb scene | Source camera shape, square render target sizing, scale `(2,2,2)`, wrapping and visibility bounds. | Medium-high |
 | Render manager shape | A1 pre-composite and OA final composite are separated; bloom uses five source kernels. | Medium |
-| `Ka` simulation | Ping-pong render targets, source uniforms, source timing, screen-vs-local ownership split. | Medium |
+| `Ka` simulation | Ping-pong render targets, source uniforms, source timing, shared screen-space simulation, and per-work-item local `GA` simulation targets. | Medium-high |
 | About/floating blocks | Source-shaped block grids and route activation are present. | Medium |
 | Project detail media stability | Smoke checks continue to pass; should not be changed during Phase 1 unless required. | High |
 
@@ -55,13 +55,18 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 
 | ID | Source area | Difference | Impact | Risk | Suggested batch |
 | --- | --- | --- | --- | --- | --- |
-| P1-01 | `p1.update` / `GA.update` | Source calls each visible `GA.update()`, which owns its local `Ka` update and `tMouseSim`; rebuild centralizes local simulation into one shared mesh simulation. | Active and side blocks may share one mouse field instead of per-block fields. This can affect cube displacement and alpha feel. | High | Dedicated 3-5 item batch |
-| P1-02 | `GA.createPlane` / `Ka` | Source creates a plane and ray plane per `GA`, with per-instance `mouseSim`. Rebuild has per-block ray planes but still one local simulation buffer. | Projection UV ownership is closer now, but simulation texture ownership is not exact. | High | Same as P1-01 |
 | P1-03 | `VA` shader injection | Source replaces full `vertexShader` and `fragmentShader` on MeshStandardMaterial. Rebuild injects chunks into modern Three standard material. | Chunk injection preserves current Three pipeline but may differ from source material ordering, varyings, fog, and lighting side effects. | High | Audit first, implement only if proven worth risk |
 | P1-04 | `A1` blend functions | Source A1 uses a numbered `blend(1, ...)` and `blend(11, ...)` implementation. Rebuild approximates these with local `blendAdd` and `blendLighten`. | Color response, perlin/noise blending, and background blend can be visibly off. | Medium-high | 5-8 shader-only batch |
 | P1-05 | `OA` final composite | Source OA is small: fluid-warped `tScene`, optional bloom, fluid length, output. Rebuild still adds darken/saturation in the final pass for visual state. | Some visual state may be in source `Se`/composite settings, but final shader may still carry rebuild-specific compensation. | Medium-high | Pair with Se ownership audit |
 | P1-06 | `Se` setter ownership | Several setters are closer now, but not all have a strict source mapping audit: `setProject`, route entry, about, project page, media opacity, reveal spread, darken/saturation/contrast. | Cross-route state may look right locally but still differ from source transitions. | Medium | 8-10 low-risk ownership batch |
 | P1-07 | Character scene | Source about spotlight map comes from a real character scene/render manager; rebuild uses a lightweight texture composite target from `model_T.jpg`. | About spotlight projection can only approximate the original character render. | Medium-high | Risky; needs visual QA before full GLTF work |
+
+### Implemented, Needs Real WebGL QA
+
+| ID | Source area | Implemented state | Remaining evidence needed |
+| --- | --- | --- | --- |
+| P1-01 | `p1.update` / `GA.update` | Each `WorkItem` now owns local mouse simulation material, scene, ping-pong targets, UV target state, speed state, and visible-item update. | Real WebGL browser QA should confirm mouse interaction/performance, because the current headless Chrome environment failed WebGL probe creation. |
+| P1-02 | `GA.createPlane` / `Ka` | Per-block ray-plane hits now update the matching work item's local `Ka` target, while shared screen-space `tMouseSim2` remains render-manager owned. | Same real WebGL QA as P1-01. |
 
 ### Should Fix If Source-Proven
 
@@ -100,6 +105,8 @@ Recommended cadence:
 
 ### Batch A: `Ka/GA` Local Simulation Ownership
 
+Status: implemented in code, pending real WebGL visual/performance QA.
+
 Goal: decide whether to implement source per-`GA` local mouse simulation.
 
 Tasks:
@@ -110,7 +117,7 @@ Tasks:
 4. Preserve current per-block ray-plane UV projection.
 5. Add a fallback path or guard if target allocation is too expensive.
 
-This is the highest source-parity gain left for `GA/Ka`, but also one of the highest runtime-risk changes.
+This was the highest source-parity gain left for `GA/Ka`, but it remains one of the highest runtime-risk changes until tested in a browser with a working WebGL context.
 
 ### Batch B: `A1/OA` Shader Blend Audit
 
@@ -157,4 +164,3 @@ Phase 1 should be considered complete only when:
 - Browser smoke passes home, about, and at least two project pages.
 - Project media pages retain desktop WebGL tracks and mobile media fallback.
 - A final visual QA pass confirms no obvious regressions in home WebGL, thumb projection, mouse interaction, about visual, and project media pages.
-

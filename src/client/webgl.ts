@@ -68,6 +68,14 @@ type WorkItem = {
   thumbXHook: number;
   thumbYHook: number;
   rayPlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  mouseMaterial: ShaderMaterial;
+  mouseScene: Scene;
+  mouseTargets: WebGLRenderTarget[];
+  mouseIndex: number;
+  mouseTarget: Vector2;
+  mouseOld: Vector2;
+  mouseNew: Vector2;
+  mouseSpeed: number;
   reveal: number;
 };
 
@@ -1170,7 +1178,6 @@ export class WebGLBackdrop {
   private homeScene = new Scene();
   private thumbScene = new Scene();
   private mediaScene = new Scene();
-  private mouseSimulationScene = new Scene();
   private screenMouseSimulationScene = new Scene();
   private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private homeCamera = new PerspectiveCamera(55, 1, 1, 2000);
@@ -1230,11 +1237,8 @@ export class WebGLBackdrop {
   private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
   private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false });
   private floorReflectionCamera = new PerspectiveCamera(55, 1, 1, 2000);
-  private mouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationMaterial: ShaderMaterial;
-  private mouseSimulationTargets: WebGLRenderTarget[] = [];
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
-  private mouseSimulationIndex = 0;
   private screenMouseSimulationIndex = 0;
   private thumbCompositeMaterial: ShaderMaterial;
   private thumbCompositeScene = new Scene();
@@ -1254,10 +1258,6 @@ export class WebGLBackdrop {
   private pointerPixels = new Vector2(document.documentElement.clientWidth / 2, document.documentElement.clientHeight / 2);
   private lastPointerPixels = this.pointerPixels.clone();
   private pointerDeltaPixels = new Vector2();
-  private mouseSimOldPos = new Vector2(0.5, 0.5);
-  private mouseSimNewPos = new Vector2(0.5, 0.5);
-  private mouseSimTargetPos = new Vector2(0.5, 0.5);
-  private mouseSimSpeed = 0;
   private screenMouseSimOldPos = new Vector2(0.5, 0.5);
   private screenMouseSimNewPos = new Vector2(0.5, 0.5);
   private screenMouseSimTargetPos = new Vector2(0.5, 0.5);
@@ -1389,11 +1389,8 @@ export class WebGLBackdrop {
     this.floorReflectionTarget.texture.generateMipmaps = false;
     this.floorReflectionTarget.texture.minFilter = LinearFilter;
     this.floorReflectionTarget.texture.magFilter = LinearFilter;
-    this.mouseSimulationMaterial = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
-    this.mouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
-    this.mouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.mouseSimulationMaterial));
     this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
@@ -1710,6 +1707,8 @@ export class WebGLBackdrop {
       item.thumb.material.dispose();
       item.rayPlane.geometry.dispose();
       item.rayPlane.material.dispose();
+      item.mouseTargets.forEach((target) => target.dispose());
+      item.mouseMaterial.dispose();
     });
     [this.aboutBlocks, this.floatingBlocks].forEach((item) => {
       item?.mesh.geometry.dispose();
@@ -1744,9 +1743,7 @@ export class WebGLBackdrop {
     this.displacementTarget.dispose();
     this.floorReflectionTarget.dispose();
     this.displacementMaterial.dispose();
-    this.mouseSimulationTargets.forEach((target) => target.dispose());
     this.screenMouseSimulationTargets.forEach((target) => target.dispose());
-    this.mouseSimulationMaterial.dispose();
     this.screenMouseSimulationMaterial.dispose();
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
@@ -1782,6 +1779,7 @@ export class WebGLBackdrop {
       const mesh = this.createBlockMesh(material);
       const thumb = this.createThumbPlane(payload);
       const rayPlane = this.createWorkRayPlane();
+      const mouseSimulation = this.createWorkMouseSimulation();
       const group = new Group();
       group.add(mesh);
       group.add(rayPlane);
@@ -1801,6 +1799,14 @@ export class WebGLBackdrop {
         thumbXHook: 0,
         thumbYHook: 0,
         rayPlane,
+        mouseMaterial: mouseSimulation.material,
+        mouseScene: mouseSimulation.scene,
+        mouseTargets: mouseSimulation.targets,
+        mouseIndex: 0,
+        mouseTarget: new Vector2(0.5, 0.5),
+        mouseOld: new Vector2(0.5, 0.5),
+        mouseNew: new Vector2(0.5, 0.5),
+        mouseSpeed: 0,
         reveal: card.classList.contains("is-active") ? 1 : 0,
       });
       if (payload.thumb) this.loadTexture(payload.thumb, (texture) => {
@@ -1828,7 +1834,7 @@ export class WebGLBackdrop {
       uMouseFactor: { value: this.mouseFactor },
       uUvOffset: { value: sourceMouseUvOffset() },
       uUvOffsetScale: { value: MOUSE_RAY_SCALE },
-      tMouseSim: { value: this.mouseSimulationTexture },
+      tMouseSim: { value: this.placeholder },
       tMouseSim2: { value: this.screenMouseSimulationTexture },
       tDisplacement: { value: this.displacementTarget.texture },
       tPerlin: { value: this.perlinTexture },
@@ -1923,7 +1929,7 @@ export class WebGLBackdrop {
       uUvOffset: { value: new Vector3(0, 0, 0) },
       uUvOffsetScale: { value: 1.5 },
       uScrollOpacity: { value: 1 },
-      tMouseSim: { value: this.mouseSimulationTexture },
+      tMouseSim: { value: this.placeholder },
       tMouseSim2: { value: this.screenMouseSimulationTexture },
       tDisplacement: { value: this.displacementTarget.texture },
       tPerlin: { value: this.perlinTexture },
@@ -2284,7 +2290,9 @@ export class WebGLBackdrop {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
       this.preCompositeMaterial.uniforms.tNoise.value = texture;
-      this.mouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
+      this.workItems.forEach((item) => {
+        item.mouseMaterial.uniforms.uNoiseTexture.value = texture;
+      });
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
       this.environmentMaterial.uniforms.tSky.value = texture;
     });
@@ -2352,6 +2360,17 @@ export class WebGLBackdrop {
       vertexShader: backgroundVertex,
       fragmentShader: mouseSimulationFragment,
     });
+  }
+
+  private createWorkMouseSimulation() {
+    const material = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
+    const scene = new Scene();
+    scene.add(new Mesh(new PlaneGeometry(2, 2), material));
+    return {
+      material,
+      scene,
+      targets: Array.from({ length: 2 }, makeSimulationTarget),
+    };
   }
 
   private createThumbCompositeMaterial() {
@@ -2912,10 +2931,6 @@ export class WebGLBackdrop {
     };
   }
 
-  private get mouseSimulationTexture() {
-    return this.mouseSimulationTargets[this.mouseSimulationIndex]?.texture ?? this.placeholder;
-  }
-
   private get screenMouseSimulationTexture() {
     return this.screenMouseSimulationTargets[this.screenMouseSimulationIndex]?.texture ?? this.placeholder;
   }
@@ -2994,8 +3009,10 @@ export class WebGLBackdrop {
     const meshSimWidth = Math.max(1, Math.round(GRID_COLS * MOUSE_PLANE_SCALE));
     const meshSimHeight = Math.max(1, Math.round(GRID_ROWS * MOUSE_PLANE_SCALE));
     if (this.renderSettings.mousesim.enabled) {
-      this.mouseSimulationTargets.forEach((target) => target.setSize(meshSimWidth, meshSimHeight));
-      this.mouseSimulationMaterial.uniforms.uCoords.value.set(meshSimWidth, meshSimHeight);
+      this.workItems.forEach((item) => {
+        item.mouseTargets.forEach((target) => target.setSize(meshSimWidth, meshSimHeight));
+        item.mouseMaterial.uniforms.uCoords.value.set(meshSimWidth, meshSimHeight);
+      });
     }
     const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
@@ -3087,15 +3104,17 @@ export class WebGLBackdrop {
     if (!this.sceneWrap.visible) return;
     this.raycaster.setFromCamera(this.pointer, this.homeCamera);
     const active = this.workItems.find((item) => item.slug === this.activeSlug && item.group.visible);
-    const rayPlanes = [
-      ...(active ? [active.rayPlane] : []),
-      ...this.workItems.filter((item) => item !== active && item.group.visible).map((item) => item.rayPlane),
+    const orderedItems = [
+      ...(active ? [active] : []),
+      ...this.workItems.filter((item) => item !== active && item.group.visible),
     ];
-    const hit = this.raycaster.intersectObjects(rayPlanes, false)[0];
+    const hit = this.raycaster.intersectObjects(orderedItems.map((item) => item.rayPlane), false)[0];
     if (!hit) return;
+    const item = orderedItems.find((candidate) => candidate.rayPlane === hit.object);
+    if (!item) return;
     const x = MathUtils.clamp(hit.uv?.x ?? 0.5, 0, 1);
     const y = MathUtils.clamp(hit.uv?.y ?? 0.5, 0, 1);
-    this.mouseSimTargetPos.set(x, y);
+    item.mouseTarget.set(x, y);
   }
 
   private updateVisibleWorkItems(time: number) {
@@ -3112,7 +3131,7 @@ export class WebGLBackdrop {
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
-      item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
+      item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
     });
   }
@@ -3217,22 +3236,25 @@ export class WebGLBackdrop {
 
   private updateMouseSimulation(time: number, delta: number) {
     if (!this.renderSettings.mousesim.enabled) return;
-    const meshResult = this.updateMouseBrush(
-      this.mouseSimulationMaterial,
-      this.mouseSimulationScene,
-      this.mouseSimulationTargets,
-      this.mouseSimulationIndex,
-      this.mouseSimOldPos,
-      this.mouseSimNewPos,
-      this.mouseSimTargetPos,
-      time,
-      delta,
-      1,
-      0.85,
-      0.1,
-    );
-    this.mouseSimSpeed = MathUtils.damp(this.mouseSimSpeed, meshResult.speed, 10, delta);
-    this.mouseSimulationIndex = meshResult.index;
+    this.workItems.forEach((item) => {
+      if (!item.group.visible) return;
+      const meshResult = this.updateMouseBrush(
+        item.mouseMaterial,
+        item.mouseScene,
+        item.mouseTargets,
+        item.mouseIndex,
+        item.mouseOld,
+        item.mouseNew,
+        item.mouseTarget,
+        time,
+        delta,
+        1,
+        0.85,
+        0.1,
+      );
+      item.mouseSpeed = MathUtils.damp(item.mouseSpeed, meshResult.speed, 10, delta);
+      item.mouseIndex = meshResult.index;
+    });
     const screenResult = this.updateMouseBrush(
       this.screenMouseSimulationMaterial,
       this.screenMouseSimulationScene,
@@ -3252,9 +3274,9 @@ export class WebGLBackdrop {
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     this.workItems.forEach((item) => {
       if (!item.group.visible) return;
-      item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
+      item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
-      item.material.uniforms.uMouseSpeed.value = this.mouseSimSpeed;
+      item.material.uniforms.uMouseSpeed.value = item.mouseSpeed;
     });
   }
 
