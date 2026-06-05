@@ -1115,7 +1115,6 @@ export class WebGLBackdrop {
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
   private projectBlockStateTweens: gsap.core.Tween[] = [];
-  private projectThumbStateTweens: gsap.core.Tween[] = [];
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
   private mediaSceneOpacity = 0;
@@ -1931,19 +1930,11 @@ export class WebGLBackdrop {
     this.projectRevealTweens.forEach((tween) => tween.kill());
     this.projectRevealProjectTweens.forEach((tween) => tween.kill());
     this.projectBlockStateTweens.forEach((tween) => tween.kill());
-    this.projectThumbStateTweens.forEach((tween) => tween.kill());
     this.contrastBlockTweens.forEach((tween) => tween.kill());
-    this.thumbDarknessTweens.forEach((tween) => tween.kill());
-    this.thumbDarknessColorTweens.forEach((tween) => tween.kill());
-    this.thumbSaturationTweens.forEach((tween) => tween.kill());
     this.projectRevealTweens = [];
     this.projectRevealProjectTweens = [];
     this.projectBlockStateTweens = [];
-    this.projectThumbStateTweens = [];
     this.contrastBlockTweens = [];
-    this.thumbDarknessTweens = [];
-    this.thumbDarknessColorTweens = [];
-    this.thumbSaturationTweens = [];
     this.workItems.forEach((item) => {
       const isActive = item === active;
       item.reveal = isActive ? 1 : 0;
@@ -1961,9 +1952,6 @@ export class WebGLBackdrop {
         tweenColorOwned(item.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6, this.projectBlockStateTweens);
         this.projectBlockStateTweens.push(gsap.to(item.material.uniforms.uDarkness, { value: numeric(thumbDarkness, 0.18), duration: 1.6, ease: "expo.out" }));
         this.projectBlockStateTweens.push(gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" }));
-        this.projectThumbStateTweens.push(gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value: numeric(thumbDarkness, 0), duration: 1.6, ease: "expo.out" }));
-        tweenColorOwned(this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6, this.projectThumbStateTweens);
-        this.projectThumbStateTweens.push(gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value: numeric(active.payload.thumbSaturation, 1), duration: 1.6, ease: "expo.out" }));
       }
     });
   }
@@ -2102,15 +2090,6 @@ export class WebGLBackdrop {
   private setThumbDarknessColor(value?: string, duration = 1.6) {
     this.thumbDarknessColorTweens.forEach((tween) => tween.kill());
     this.thumbDarknessColorTweens = [];
-    const next = colorFrom(value ?? "#000000", "#000000");
-    this.workItems.forEach((item) => {
-      if (item.slug !== this.activeSlug) return;
-      if (duration <= 0) {
-        item.material.uniforms.uDarknessColor.value.copy(next);
-        return;
-      }
-      tweenColorOwned(item.material.uniforms.uDarknessColor.value as Color, value, duration, this.thumbDarknessColorTweens, "#000000");
-    });
     tweenColorOwned(this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color, value ?? "#000000", duration, this.thumbDarknessColorTweens, "#000000");
   }
 
