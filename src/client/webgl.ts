@@ -76,6 +76,7 @@ type MediaPlane = {
 };
 
 const BREAKPOINT_LG = 1000;
+const BREAKPOINT_MD = 800;
 const DEFAULT_BG = "#141414";
 const DEFAULT_COLOR = "#bcbcbc";
 const GRID_COLS = 35;
@@ -1823,7 +1824,8 @@ export class WebGLBackdrop {
     this.mediaCamera.updateProjectionMatrix();
 
     const mobile = width < BREAKPOINT_LG;
-    this.sceneWrap.visible = !mobile && this.workItems.length > 0;
+    this.sceneWrap.visible = this.workItems.length > 0;
+    this.sceneWrap.position.y = width >= BREAKPOINT_MD ? 0 : 0.3;
     this.projectionPlane.visible = this.sceneWrap.visible;
     this.mediaPlanes.forEach((plane) => {
       plane.mesh.visible = !mobile;
