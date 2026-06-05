@@ -150,6 +150,8 @@ varying float vAlpha;
 varying float vReveal;
 varying vec3 vColorSeed;
 varying vec3 vLocalNormal;
+varying vec2 vSpotUv;
+varying float vSpotMask;
 
 uniform vec3 uGridSize;
 uniform float uReveal;
@@ -160,6 +162,8 @@ uniform float uRevealSpreadSides;
 uniform float uMouseFactor;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
+uniform vec3 uSpotLightPosition;
+uniform float uSpotConeTan;
 uniform float uTime;
 
 float hash(vec2 p) {
@@ -219,6 +223,14 @@ void main() {
   transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
   vec4 mvPosition = instanceMatrix * vec4(transformed, 1.0);
+  vec4 worldPosition = modelMatrix * mvPosition;
+  vec3 fromLight = worldPosition.xyz - uSpotLightPosition;
+  float lightDepth = max(0.001, -fromLight.z);
+  vec2 spotUv = fromLight.xy / (lightDepth * uSpotConeTan) * 0.5 + 0.5;
+  vec2 spotDelta = spotUv - 0.5;
+  float spotRadius = length(spotDelta);
+  float coneMask = 1.0 - smoothstep(0.42, 0.5, spotRadius);
+  float depthMask = smoothstep(0.0, 0.9, lightDepth) * (1.0 - smoothstep(12.0, 17.0, lightDepth));
   mvPosition = modelViewMatrix * mvPosition;
   gl_Position = projectionMatrix * mvPosition;
 
@@ -227,6 +239,8 @@ void main() {
   vReveal = revealMask;
   vColorSeed = instanceColor;
   vLocalNormal = normalize(normal);
+  vSpotUv = spotUv;
+  vSpotMask = coneMask * depthMask;
 }
 `;
 
@@ -251,6 +265,8 @@ varying float vAlpha;
 varying float vReveal;
 varying vec3 vColorSeed;
 varying vec3 vLocalNormal;
+varying vec2 vSpotUv;
+varying float vSpotMask;
 
 vec3 saturateColor(vec3 color, float amount) {
   float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
@@ -274,23 +290,27 @@ float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, floa
 void main() {
   vec2 uv = vThumbUv;
   vec2 projectedUv = (uv - 0.5) * 0.36 + 0.5;
-  vec3 thumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.72);
+  vec3 gridThumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.52);
+  vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
+  float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
+  vec3 thumb = mix(gridThumb, spotThumb, spotMask * 0.82);
   thumb = (thumb - 0.5) * uContrast + 0.5;
   thumb = saturateColor(thumb, uSaturation);
   float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
   float centerMask = pow(vignette(uv, vec2(0.5), 0.02, 0.72), 1.45);
+  float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.8) * spotMask;
   float neutral = 1.0 - smoothstep(0.04, 0.22, length(thumb - vec3(lum)));
-  float centeredLum = lum * (0.34 + centerMask * 1.95);
+  float centeredLum = lum * (0.28 + centerMask * 1.15 + spotCenter * 2.35);
   float lightMask = smoothstep(0.14, 0.66, centeredLum);
-  float logoMask = smoothstep(0.18, 0.56, lum) * neutral * centerMask;
-  lightMask = max(lightMask * (0.18 + centerMask * 1.1), logoMask * 1.25);
+  float logoMask = smoothstep(0.18, 0.56, lum) * neutral * max(centerMask, spotCenter);
+  lightMask = max(lightMask * (0.16 + centerMask * 0.72 + spotCenter * 1.45), logoMask * 1.25);
   float hotMask = max(smoothstep(0.38, 0.82, centeredLum), logoMask);
 
   float faceLight = clamp(dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5, 0.45, 1.2);
   vec3 base = mix(vec3(0.026, 0.031, 0.04), uBlockColor, 0.26);
-  vec3 projection = mix(uTint * (0.38 + lightMask * 1.8), thumb * 2.15, 0.45);
+  vec3 projection = mix(uTint * (0.38 + lightMask * 1.8), thumb * (1.65 + spotMask * 0.9), 0.45 + spotMask * 0.22);
   vec3 color = mix(base, projection, 0.42 + lightMask * 0.52);
-  color += thumb * (0.2 + lightMask * 1.55);
+  color += thumb * (0.14 + lightMask * 1.12 + spotMask * 0.72);
   color += vec3(1.0) * hotMask * 1.25;
   color += uTint * pow(max(lightMask, 0.0), 1.65) * 0.58;
   color = mix(color, uTint, 0.035 + lightMask * 0.08);
@@ -971,6 +991,8 @@ export class WebGLBackdrop {
         uPointer: { value: this.pointer },
         tMouseSim: { value: this.mouseSimTexture },
         uResolution: { value: new Vector2(1, 1) },
+        uSpotLightPosition: { value: new Vector3(0, 0, 3.7) },
+        uSpotConeTan: { value: Math.tan(Math.PI / 8) },
         uTime: { value: 0 },
       },
       vertexShader: workBlockVertex,
@@ -1098,7 +1120,7 @@ export class WebGLBackdrop {
         tThumb: { value: this.thumbTarget.texture },
         uTint: { value: colorFrom(DEFAULT_COLOR) },
         uReveal: { value: 1 },
-        uOpacity: { value: 0.18 },
+        uOpacity: { value: 0.065 },
       },
       vertexShader: thumbVertex,
       fragmentShader: projectionFragment,
