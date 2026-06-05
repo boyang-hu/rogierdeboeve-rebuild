@@ -59,6 +59,8 @@ type WorkItem = {
   material: ShaderMaterial;
   mesh: InstancedMesh;
   thumb: Mesh<PlaneGeometry, ShaderMaterial>;
+  thumbXHook: number;
+  thumbYHook: number;
   rayPlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
   reveal: number;
 };
@@ -1122,6 +1124,11 @@ export class WebGLBackdrop {
   private screenMouseSimTargetPos = new Vector2(0.5, 0.5);
   private lastTickTime = performance.now() * 0.001;
   private galleryProgress = 0;
+  private thumbProgress = 0;
+  private thumbItemWidth = 2;
+  private thumbTotalItems = 0;
+  private thumbOffsetY = 0;
+  private thumbIsTransitioning = false;
   private sceneRotation = 0;
   private zoom = 0;
   private cameraOrigin = new Vector3(0, 0, 5.5);
@@ -1257,6 +1264,7 @@ export class WebGLBackdrop {
     this.setDirectionalLightIntensity(1.5);
     this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
     this.setRevealSpread(0);
+    this.resetThumbOffsetY();
 
     if (payload.slug) this.setActiveSlug(payload.slug);
     if (document.body.classList.contains("is-project")) this.mediaAnimateIn();
@@ -1286,6 +1294,8 @@ export class WebGLBackdrop {
     this.projectRevealProjectTweens.forEach((tween) => tween.kill());
     this.projectRevealTweens = [];
     this.projectRevealProjectTweens = [];
+    this.setThumbTransitioning(false);
+    this.resetThumbOffsetY();
     this.setMouseFactor(0, 0);
     this.setMouseFactor(1, 3);
     this.workItems.forEach((item) => {
@@ -1300,6 +1310,8 @@ export class WebGLBackdrop {
     this.galleryProgress = progress;
     this.sceneRotation = sceneRotation;
     this.zoom = 0;
+    this.setThumbTransitioning(false);
+    this.resetThumbOffsetY();
     this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     this.sceneWrap.rotation.y = MathUtils.degToRad(progress * 360 + 180);
     this.homeScene.rotation.z = MathUtils.degToRad(sceneRotation);
@@ -1496,6 +1508,8 @@ export class WebGLBackdrop {
         material,
         mesh,
         thumb,
+        thumbXHook: 0,
+        thumbYHook: 0,
         rayPlane,
         reveal: card.classList.contains("is-active") ? 1 : 0,
       });
@@ -1505,6 +1519,8 @@ export class WebGLBackdrop {
         thumb.material.uniforms.uResolution.value.set(1, 1);
       });
     });
+    this.thumbTotalItems = this.workItems.length;
+    this.calcThumbItemWidth();
     this.environmentPlane.rotation.y = -MathUtils.degToRad(rotationAdjustment);
   }
 
@@ -2428,6 +2444,7 @@ export class WebGLBackdrop {
     const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
+    this.calcThumbItemWidth();
 
     const distance = 1000;
     this.mediaCamera.fov = MathUtils.radToDeg(2 * Math.atan(height / (2 * distance)));
@@ -2464,16 +2481,29 @@ export class WebGLBackdrop {
     });
   }
 
+  private calcThumbItemWidth() {
+    this.thumbItemWidth = this.workItems[0]?.thumb.scale.x ?? 2;
+  }
+
+  private resetThumbOffsetY() {
+    this.thumbOffsetY = 0;
+  }
+
+  private setThumbTransitioning(value: boolean) {
+    this.thumbIsTransitioning = value;
+  }
+
   private updateThumbGallery(progress: number) {
-    if (!this.workItems.length) return;
-    const itemWidth = 2;
-    const totalWidth = this.workItems.length * itemWidth;
-    const thumbProgress = progress * totalWidth;
+    if (!this.workItems.length || this.thumbIsTransitioning) return;
+    const itemWidth = this.thumbItemWidth;
+    const totalWidth = this.thumbTotalItems * itemWidth;
+    this.thumbProgress = progress * totalWidth;
     this.workItems.forEach((item, index) => {
       const hook = itemWidth * index;
-      let x = (hook + thumbProgress + totalWidth * 67890) % totalWidth;
+      item.thumbXHook = hook;
+      let x = (hook + this.thumbProgress + totalWidth * 67890) % totalWidth;
       if (x > totalWidth / 2) x -= totalWidth;
-      item.thumb.position.set(x, 0, 0);
+      item.thumb.position.set(x, item.thumbYHook + this.thumbOffsetY, 0);
       item.thumb.visible = x >= -1.5 && x <= 1.5;
     });
   }
