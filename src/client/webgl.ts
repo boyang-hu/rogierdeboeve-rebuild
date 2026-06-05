@@ -531,6 +531,7 @@ precision highp float;
 
 uniform sampler2D tScene;
 uniform vec2 uTexel;
+uniform float uRadius;
 
 varying vec2 vUv;
 
@@ -543,12 +544,12 @@ vec3 thresholdBloom(vec2 uv) {
 
 void main() {
   vec3 color = thresholdBloom(vUv) * 0.24;
-  color += thresholdBloom(vUv + uTexel * vec2(1.0, 0.0)) * 0.16;
-  color += thresholdBloom(vUv - uTexel * vec2(1.0, 0.0)) * 0.16;
-  color += thresholdBloom(vUv + uTexel * vec2(0.0, 1.0)) * 0.16;
-  color += thresholdBloom(vUv - uTexel * vec2(0.0, 1.0)) * 0.16;
-  color += thresholdBloom(vUv + uTexel * vec2(2.0, 1.5)) * 0.08;
-  color += thresholdBloom(vUv + uTexel * vec2(-2.0, 1.5)) * 0.08;
+  color += thresholdBloom(vUv + uTexel * vec2(uRadius, 0.0)) * 0.16;
+  color += thresholdBloom(vUv - uTexel * vec2(uRadius, 0.0)) * 0.16;
+  color += thresholdBloom(vUv + uTexel * vec2(0.0, uRadius)) * 0.16;
+  color += thresholdBloom(vUv - uTexel * vec2(0.0, uRadius)) * 0.16;
+  color += thresholdBloom(vUv + uTexel * vec2(2.0, 1.5) * uRadius) * 0.08;
+  color += thresholdBloom(vUv + uTexel * vec2(-2.0, 1.5) * uRadius) * 0.08;
   color *= 0.15;
   gl_FragColor = vec4(color, 1.0);
 }
@@ -1348,6 +1349,7 @@ export class WebGLBackdrop {
       uniforms: {
         tScene: { value: this.compositeTarget.texture },
         uTexel: { value: new Vector2(1, 1) },
+        uRadius: { value: 1.5 },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeBloomFragment,
