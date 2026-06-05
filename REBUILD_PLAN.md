@@ -104,11 +104,12 @@ Last updated: 2026-06-05
 | `0757011` | Home DOM | Batched source `yD` lifecycle and input-state alignment: normalized restored gallery scroll/progress/remainder before first frame, added source-style timeout ownership for nav/next/prev transitions, blocked wheel/touch deltas during next/prev transition windows, gated keyboard navigation behind active gallery state, and added cleanup paths for global gallery listeners/timers while preserving `pagehide` state saves. |
 | `cfbf96b` | Project DOM/WebGL | Batched source `OD/CD` project-state alignment: added next-project color payloads to project pages, implemented source-style next-project scroll threshold switching for main color/ambient/media background/saturation/contrast, exposed a narrow WebGL project-scroll state setter, added project-leave media opacity/fluid reset, and preserved project media track counts during smoke checks. |
 | `7ca3a77` | Project DOM | Batched source `RD/ND` project reveal alignment: added source-compatible title span structure for `.ts-2 > span`, split project header intro animation from the generic content fade so title/info/link targets follow source `RD.animateIn`, added overflow/display guards for project title and info spans, and moved mobile DOM media reveal timing closer to source project animation duration while keeping desktop WebGL media tracks stable. |
-| `current batch` | Project WebGL | Batched source `FD/ND` project media-plane alignment: cached source-style `parallaxTop` state per media plane, updated desktop media `uCameraDistance` to use `mediaCamera.position.y - plane.position.y` like source `FD.update`, preserved top-parallax override as `-scroll`, and forced a media-plane position refresh before reveal tweens start. |
+| `88c7db0` | Project WebGL | Batched source `FD/ND` project media-plane alignment: cached source-style `parallaxTop` state per media plane, updated desktop media `uCameraDistance` to use `mediaCamera.position.y - plane.position.y` like source `FD.update`, preserved top-parallax override as `-scroll`, and forced a media-plane position refresh before reveal tweens start. |
+| `current batch` | Home DOM | Batched source `yD/vD` gallery nav activation alignment: title/progress nav clicks now immediately activate the selected project scene and state like source `yD.onNavClick`, while preserving the 1200ms transition lock. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `FD/ND` project media-plane semantics while preserving recent RD/ND project reveal timing, OD/CD project-state switching, yD input lifecycle, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `yD/vD` nav activation semantics while preserving recent FD/ND project media-plane semantics, RD/ND project reveal timing, OD/CD project-state switching, yD input lifecycle, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
 
 Immediate source targets:
 
@@ -120,10 +121,10 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Continue source `yD` nav-click active-project timing only if manual QA shows title/progress selection still feels off.
+1. Run a broader browser QA pass across home plus two project pages before declaring Phase 2 project detail parity stable.
 2. Continue source `I1/C1` review around optional media/lensflare uniforms only if home visual QA indicates that layer is still materially off.
 3. Start Phase 4 about/auxiliary-page parity once project-route transition parity is stable.
-4. Run a broader browser QA pass across home plus two project pages before declaring Phase 2 project detail parity stable.
+4. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.
 
 ## Verification Baseline
 

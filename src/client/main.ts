@@ -269,7 +269,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let targetHook = activeHook;
   let sceneRotation = 0;
   let sceneZoom = 0;
-  let pendingNavIndex: number | null = null;
   let activeProjectId = cardsArray[activeIndex]?.dataset.slug ?? "";
   const scroll = {
     virtual: cardsArray.length * 100000,
@@ -425,17 +424,12 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (index === activeIndex && !isTransitioning) return;
     window.clearTimeout(navClickTimeout);
     isTransitioning = true;
-    pendingNavIndex = index;
     targetHook = finalScrollPosition(index);
     window.dispatchEvent(new CustomEvent("rd:nav-click", { detail: { slug: cardsArray[index]?.dataset.slug } }));
     scrollTo(targetHook);
-    setDomActiveIndex(index);
+    activateIndex(index);
+    targetHook = index * step + scroll.remainder;
     navClickTimeout = window.setTimeout(() => {
-      if (pendingNavIndex !== null) {
-        activateIndex(pendingNavIndex);
-        targetHook = pendingNavIndex * step + scroll.remainder;
-        pendingNavIndex = null;
-      }
       isTransitioning = false;
     }, 1200);
   };
