@@ -157,7 +157,8 @@ Last updated: 2026-06-05
 | `789f25e` | Home WebGL | Batched source `p1/Se/VA` light-setter alignment: added real source-style ambient and directional lights to the home scene, made `setAmbientLight()` update the actual ambient light as well as existing simplified material uniforms, made `setDirectionalLightIntensity()` drive the real directional light, and removed the rebuild-only per-block directional-light uniform from the work-block shader path. |
 | `a7b665f` | Home WebGL | Batched source `GA/VA` shader-interface alignment: replaced remaining hard-coded work-grid dimensions in the cube fragment with `uGridSize`, added source-compatible `uMouseSpeed`, and damped the mesh mouse-simulation speed with the source `10` factor before writing it to visible work blocks. |
 | `9d22513` | Home WebGL | Batched source `OA/kA` composite-interface alignment: renamed the final composite scene input to source-style `tScene`, added source-compatible `tBlur`, `boolFluid`, `boolLuminosity`, and `boolFxaa` uniforms, and synchronized those render-manager flags before the final composite pass while keeping current default behavior unchanged. |
-| `current batch` | Home WebGL | Batched source `Lu/kA/OA` render-manager settings alignment: added a source-shaped home render settings object, routed composite/luminosity/bloom flags and factors through it, kept source bloom kernels `[3,5,7,9,11]`, and made the render loop follow the source settings-gated luminosity/bloom/mousesim branches while preserving current home defaults. |
+| `b484da5` | Home WebGL | Batched source `Lu/kA/OA` render-manager settings alignment: added a source-shaped home render settings object, routed composite/luminosity/bloom flags and factors through it, kept source bloom kernels `[3,5,7,9,11]`, and made the render loop follow the source settings-gated luminosity/bloom/mousesim branches while preserving current home defaults. |
+| `current batch` | Home WebGL | Batched source `GA/VA/p1` material and spotlight-map alignment: added source standard-material constants for work blocks, reset reveal-side defaults to source `VA` values, reduced non-source thumbnail projection compensation, added a real Three `SpotLight` with `thumbCompositeTarget` as its map, and synchronized spotlight position/target/intensity with the shader path. |
 
 ## Current Focus
 
@@ -166,7 +167,7 @@ Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. 
 Immediate source targets:
 
 - `p1`: work scene geometry, camera, spotlight, resize, ring state, floor/environment behavior.
-- `GA/VA`: work-block material, vertex displacement, alpha, projection, and mouse-simulation uniforms.
+- `GA/VA`: remaining source-standard-material gaps, especially replacing more hand-written lighting with Three standard material behavior without regressing projection and alpha.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa placeholders.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds.
@@ -182,8 +183,8 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Revisit `GA/VA` only for source-standard-material gaps that still materially affect the home cube lighting/projection after the floor/environment/composite/render-manager changes.
-2. Continue source `p1/GA` render visibility and lighting review, especially where local shader approximations still replace Three standard material lighting.
+1. Continue `GA/VA` source-standard-material migration where it can be proven from the bundle, especially replacing the remaining simplified fragment lighting while preserving source alpha/reveal logic.
+2. Continue source `p1/GA` render visibility, spotlight map, and lighting review after the real spotlight-map scene path has been restored.
 3. Continue `Lu/A1/OA` only where the source settings model exposes material behavior gaps, especially optional blur/fxaa/fluid placeholders that can be no-op aligned safely.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
 5. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.

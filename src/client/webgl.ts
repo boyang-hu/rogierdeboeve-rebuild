@@ -21,6 +21,7 @@ import {
   Raycaster,
   Scene,
   ShaderMaterial,
+  SpotLight,
   SRGBColorSpace,
   Texture,
   TextureLoader,
@@ -88,6 +89,11 @@ const SOURCE_WORK_BG = "#1a1a1a";
 const SOURCE_COMPOSITE_BG = "#1f1f1f";
 const DEFAULT_BG = SOURCE_WORK_BG;
 const DEFAULT_COLOR = "#bcbcbc";
+const SOURCE_WORK_DIFFUSE = "#808080";
+const SOURCE_WORK_ENVMAP_INTENSITY = 0.75;
+const SOURCE_WORK_ROUGHNESS = 1;
+const SOURCE_WORK_METALNESS = 1;
+const SOURCE_WORK_EMISSIVE_INTENSITY = 0.5;
 const GRID_COLS = 35;
 const GRID_ROWS = 23;
 const SOURCE_GRID_LAYERS = 7;
@@ -306,6 +312,9 @@ uniform vec3 uDiffuseColor;
 uniform vec3 uEmissiveColor;
 uniform vec3 uDarknessColor;
 uniform float uEmissiveIntensity;
+uniform float uRoughness;
+uniform float uMetalness;
+uniform float uEnvMapIntensity;
 uniform float uDarkness;
 uniform float uSaturation;
 uniform float uContrast;
@@ -352,7 +361,7 @@ void main() {
   vec3 gridThumb = mix(texture2D(tThumb, uv).rgb, texture2D(tThumb, projectedUv).rgb, 0.22);
   vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
   float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
-  vec3 thumb = mix(gridThumb, spotThumb, spotMask * 0.58);
+  vec3 thumb = mix(gridThumb, spotThumb, spotMask * 0.38);
   thumb = (thumb - 0.5) * uContrast + 0.5;
   thumb = saturateColor(thumb, uSaturation);
   float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
@@ -363,13 +372,16 @@ void main() {
   lightMask *= 0.12 + centerMask * 0.22 + spotCenter * 0.46;
 
   float directional = dot(normalize(vLocalNormal), normalize(vec3(-0.35, 0.62, 0.72))) * 0.5 + 0.5;
-  float faceLight = mix(0.86, clamp(directional, 0.55, 1.08), 1.0);
+  float roughLight = mix(1.0, directional, clamp(1.0 - uRoughness, 0.0, 1.0));
+  float envLight = 0.52 + 0.28 * uEnvMapIntensity;
+  float metalLight = mix(1.0, 0.9 + directional * 0.2, clamp(uMetalness, 0.0, 1.0));
+  float faceLight = clamp(envLight * roughLight * metalLight, 0.45, 1.05);
   vec3 litDiffuse = uDiffuseColor * faceLight;
   vec3 emissive = uEmissiveColor * uEmissiveIntensity;
-  vec3 projection = mix(uTint * 0.2, thumb, 0.32 + spotMask * 0.12);
+  vec3 projection = mix(uTint * 0.12, thumb, 0.24 + spotMask * 0.08);
   vec3 color = litDiffuse + emissive;
-  color = mix(color, color + projection * (0.08 + spotMask * 0.1), lightMask);
-  color += thumb * spotMask * 0.055;
+  color = mix(color, color + projection * (0.045 + spotMask * 0.07), lightMask);
+  color += thumb * spotMask * 0.035;
   color = mix(color, uDarknessColor, uDarkness * (0.06 + (1.0 - lum) * 0.16));
 
   vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
@@ -1218,6 +1230,7 @@ export class WebGLBackdrop {
   private gridLayers = SOURCE_GRID_LAYERS;
   private radius = 8;
   private ambientLight = new AmbientLight(colorFrom("#414652"), 0.5);
+  private spotLight = new SpotLight(colorFrom("white"), 220);
   private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
   private directionalLight2 = new DirectionalLight(colorFrom("white"), 1);
 
@@ -1237,9 +1250,16 @@ export class WebGLBackdrop {
     this.mediaCamera.position.set(0, 0, 1000);
     this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = colorFrom(SOURCE_WORK_BG);
+    this.spotLight.position.copy(this.spotLightPosition);
+    this.spotLight.target.position.copy(this.spotLightTarget);
+    this.spotLight.angle = Math.PI / 4;
+    this.spotLight.penumbra = 0.95;
+    this.spotLight.map = this.thumbCompositeTarget.texture;
     this.directionalLight.position.set(10.5, 10, 1);
     this.directionalLight2.position.set(-10.5, 5, -1);
     this.homeScene.add(this.ambientLight);
+    this.homeScene.add(this.spotLight);
+    this.homeScene.add(this.spotLight.target);
     this.homeScene.add(this.directionalLight);
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
@@ -1583,15 +1603,18 @@ export class WebGLBackdrop {
         uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
         uTint: { value: colorFrom(payload.color) },
         uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
-        uDiffuseColor: { value: colorFrom("#808080", "#808080") },
+        uDiffuseColor: { value: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE) },
         uEmissiveColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
-        uEmissiveIntensity: { value: 0.5 },
+        uEmissiveIntensity: { value: SOURCE_WORK_EMISSIVE_INTENSITY },
+        uRoughness: { value: SOURCE_WORK_ROUGHNESS },
+        uMetalness: { value: SOURCE_WORK_METALNESS },
+        uEnvMapIntensity: { value: SOURCE_WORK_ENVMAP_INTENSITY },
         uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
         uReveal: { value: reveal },
         uRevealProject: { value: 1 },
-        uRevealSides: { value: 1 },
+        uRevealSides: { value: 0 },
         uRevealSpread: { value: 0 },
-        uRevealSpreadSides: { value: 1 },
+        uRevealSpreadSides: { value: 0 },
         uDarkness: { value: numeric(thumbDarkness, 0.18) },
         uSaturation: { value: 1 },
         uContrast: { value: numeric(payload.contrast, 1.15) },
@@ -2316,6 +2339,7 @@ export class WebGLBackdrop {
     this.spotLightTween?.kill();
     const target = MathUtils.clamp(value / this.maxSpotLightIntensity, 0, 1);
     const update = () => {
+      this.spotLight.intensity = this.spotLightIntensity * this.maxSpotLightIntensity;
       this.updateSpotLightBasis();
       this.workItems.forEach((item) => {
         item.material.uniforms.uSpotIntensity.value = this.spotLightIntensity;
@@ -2326,6 +2350,7 @@ export class WebGLBackdrop {
     };
     if (duration <= 0) {
       this.spotLightIntensity = target;
+      this.spotLight.intensity = value;
       update();
       return;
     }
@@ -2759,6 +2784,9 @@ export class WebGLBackdrop {
     this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
     this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
     this.spotLightPosition.z = 3.7;
+    this.spotLight.position.copy(this.spotLightPosition);
+    this.spotLight.target.position.copy(this.spotLightTarget);
+    this.spotLight.map = this.thumbCompositeTarget.texture;
     this.updateSpotLightBasis();
     this.updateVisibleWorkItems(time);
     this.updatePointerProjection();
