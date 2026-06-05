@@ -1609,7 +1609,7 @@ export class WebGLBackdrop {
 
   private setThumbMouseLightness(value: number) {
     this.workItems.forEach((item) => {
-      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uMouseLightness, { value, duration: 1.6, ease: "expo.out" });
+      gsap.to(item.material.uniforms.uMouseLightness, { value, duration: 1.6, ease: "expo.out" });
     });
   }
 
