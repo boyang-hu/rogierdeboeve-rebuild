@@ -1390,7 +1390,7 @@ export class WebGLBackdrop {
     this.floorReflectionTarget.texture.minFilter = LinearFilter;
     this.floorReflectionTarget.texture.magFilter = LinearFilter;
     this.mouseSimulationMaterial = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
-    this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight), 0.1, 0.85);
+    this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.mouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.mouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.mouseSimulationMaterial));
@@ -2931,7 +2931,6 @@ export class WebGLBackdrop {
     this.targetPointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
     this.targetPointer.y = -(event.clientY / window.innerHeight - 0.5) * 2;
     this.screenMouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
-    this.mouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
   };
 
   private onScroll = () => {
@@ -3228,7 +3227,7 @@ export class WebGLBackdrop {
       this.mouseSimTargetPos,
       time,
       delta,
-      MathUtils.clamp(this.mouseFactor, 0.25, 1),
+      1,
       0.85,
       0.1,
     );
@@ -3245,8 +3244,8 @@ export class WebGLBackdrop {
       time,
       delta,
       1,
-      0.85,
-      0.1,
+      0.75,
+      0.25,
     );
     this.screenMouseSimulationIndex = screenResult.index;
     this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
