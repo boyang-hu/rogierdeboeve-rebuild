@@ -80,7 +80,7 @@ Last updated: 2026-06-05
 | `15b1ad9` | Home WebGL | Moved the lightweight home bloom pass closer to source `kA` by adding a `uRadius` uniform set to source bloom radius `1.5` for luminosity blur offsets. |
 | `95ebb65` | Home WebGL | Moved final home bloom compositing closer to source `OA` by adding `tBloom` directly and adding a shifted bloom sample instead of attenuating bloom a second time. |
 | `32ef9ec` | Global Audio | Split CTA click audio from gallery-out soft-woosh behavior using source `gD`/`yD` Howler assets and playback rates. |
-| `pending` | Home DOM/WebGL | Cleared local CTA preview state before work-gallery leave so the source-style `yD.onWorkGalleryOut()` transition is not tinted by hover/focus preview leftovers. |
+| `f200c8f` | Home DOM/WebGL | Cleared local CTA preview state before work-gallery leave so the source-style `yD.onWorkGalleryOut()` transition is not tinted by hover/focus preview leftovers. |
 
 ## Current Focus
 
