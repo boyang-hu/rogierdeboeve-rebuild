@@ -20,8 +20,8 @@ Last updated: 2026-06-05
 
 ## Phase Status
 
-1. Home WebGL source parity: in progress.
-2. Home DOM and interaction parity: in progress.
+1. Home WebGL source parity: in progress, current priority.
+2. Home DOM and interaction parity: paused until Phase 1 is complete.
 3. Project detail media system: stable, monitor for regressions.
 4. About and auxiliary pages: pending.
 5. Global transitions, state, audio, Lenis lifecycle: pending.
@@ -141,20 +141,21 @@ Last updated: 2026-06-05
 | `d7f4dcc` | Project WebGL | Batched source `OD/Se` project-entry visual-state parity: project-route boot now enters source-shaped project visual state without running the full home `setProject()` path, avoiding home thumb/block/spotlight/reveal-spread writes on project pages while preserving project main color, darken, ambient light, media background, saturation, contrast, fluid strength, and media animate-in behavior. |
 | `cdaa177` | Home DOM/WebGL | Batched source `SD/yD/Cg` home-gallery entry and input lifecycle parity: gallery entry now emits the current active-project state before restoring/entering WebGL, keyboard and pointer listeners rely on the home component lifecycle instead of duplicate `body.is-home` gates, keyboard next/prev follows source gallery handler timing more closely, and stale local scene-zoom bookkeeping was removed from the DOM controller. |
 | `31c5f99` | Home DOM | Batched source `Cg/yD` virtual-scroll input branch parity: home gallery input now follows the source touch-vs-mouse listener split, pointer moves are ignored unless the source-style pointer is active, mouse start/end emit zero-delta gallery scroll events like `Cg`, keyboard next/prev can issue direct gallery steps without the virtual-scroll transition guard, and passive mouse listener options were aligned with the source virtual-scroll implementation. |
-| `current batch` | Home WebGL | Batched source `Se` visual-state responsibility parity: `setMainColor` now stays scoped to DOM `.c-color` updates instead of tinting rebuild-only background, floor, and particle materials; `setAmbientLight` no longer mutates active work-block tint or particle opacity, leaving block coloration to the source-shaped `setBlocksColor` and project-reveal paths while retaining ambient environment uniforms. |
+| `390fec5` | Home WebGL | Batched source `Se` visual-state responsibility parity: `setMainColor` now stays scoped to DOM `.c-color` updates instead of tinting rebuild-only background, floor, and particle materials; `setAmbientLight` no longer mutates active work-block tint or particle opacity, leaving block coloration to the source-shaped `setBlocksColor` and project-reveal paths while retaining ambient environment uniforms. |
+| `current batch` | Home WebGL | Refocused active rebuild work on Phase 1 Home WebGL source parity before returning to Phase 2 DOM/interaction cleanup, and removed the rebuild-only work-scene particles layer so the home scene composition stays closer to source `p1`, which adds blocks, floor, environment, about blocks, and floating blocks but no standalone points particle system. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `Se` visual-state responsibility parity while preserving recent Cg/yD virtual-scroll input branch work, SD/yD/Cg home-gallery entry work, OD/Se project-entry state separation, Tr/Ar nav audio lifecycle, SD home-entry spotlight parity, yD gallery-out/work-state parity, bootstrap/mobile WebGL lifecycle parity, Se shared thumb-state ownership parity, A1/OA/kA composite-shader parity, sl/SD view lifecycle parity, GA/p1/Ka alpha/projection/mouse-simulation parity, page chrome lifecycle parity, work-list CSS parity, Se shared visual-state alignment, yD scroll lifecycle work, event semantics cleanup, GA vertex displacement semantics, GA/VA geometry/material semantics, vD/_D/gD selection events, A1/OA/kA/gD fluid/preview semantics, GA/T1/E1/Ka shader/simulation work, preview/event semantics, home-entry/input lifecycle, GA/p1/Ka work-block simulation, directional-light state, resize/projection scale, component destroy/lifecycle cleanup, yD active-project lifecycle, Se/OD/yD tween ownership, Rg/Ou/SD page chrome lifecycle, vD/_D/gD component lifecycle, Cg/yD input lifecycle, Se/p1 visual-state control, Se/yD payload separation, yD/vD nav activation semantics, FD/ND project media-plane semantics, RD/ND project reveal timing, OD/CD project-state switching, GA/p1 spotlight projection, A1/C1 pre-composite, OA/kA final composite cleanup, WebGL mouse simulation, camera-controller, bloom mip chain, CTA/gallery-out, home-entry lifecycle, and work-state restoration work.
+Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. The current pass is focused on source `p1/GA/T1/w1/E1/Se/A1/OA/kA/Ka` evidence from the mirrored JS bundle, while preserving recent Se visual-state responsibility cleanup, Cg/yD virtual-scroll input branch work, SD/yD/Cg home-gallery entry work, OD/Se project-entry state separation, Tr/Ar nav audio lifecycle, SD home-entry spotlight parity, yD gallery-out/work-state parity, bootstrap/mobile WebGL lifecycle parity, Se shared thumb-state ownership parity, A1/OA/kA composite-shader parity, sl/SD view lifecycle parity, GA/p1/Ka alpha/projection/mouse-simulation parity, page chrome lifecycle parity, work-list CSS parity, and project detail media stability.
 
 Immediate source targets:
 
-- `Cg/yD`: work gallery virtual scroll, pointer/drag state, snap timing, keyboard/mouse/touch behavior.
-- `vD`: work title/nav click behavior and active project event flow.
-- `gD`: CTA formatting, magnet, animate in/out, and click sound behavior.
-- `_D`: progressbar click behavior and active state.
-- `SD`: page-level init/animate-in/out and source state wiring.
-- `Se`: keep project-level and thumbnail-level visual settings separate, with source-style tween ownership for shared visual state.
+- `p1`: work scene geometry, camera, spotlight, resize, ring state, floor/environment behavior.
+- `GA/VA`: work-block material, vertex displacement, alpha, projection, and mouse-simulation uniforms.
+- `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path.
+- `A1/OA/kA`: pre-composite, final composite, bloom chain, fluid/mouseSim inputs, and render-manager ordering.
+- `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds.
+- `Se`: source-style visual-state setter ownership without non-source side effects.
 
 ## Next Candidate Steps
 

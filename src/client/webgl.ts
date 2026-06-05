@@ -1,8 +1,6 @@
 import {
-  AdditiveBlending,
   Color,
   DataTexture,
-  Float32BufferAttribute,
   Group,
   InstancedBufferAttribute,
   InstancedMesh,
@@ -15,8 +13,6 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
   PlaneGeometry,
-  Points,
-  PointsMaterial,
   RGBAFormat,
   Raycaster,
   Scene,
@@ -1054,7 +1050,6 @@ export class WebGLBackdrop {
   private environmentPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private thumbCompositeTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
-  private particles: Points;
   private raycaster = new Raycaster();
   private mousePlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
   private raf = 0;
@@ -1179,8 +1174,6 @@ export class WebGLBackdrop {
 
     this.createWorkScene();
     this.mousePlane = this.createMousePlane();
-    this.particles = this.createParticles();
-    this.homeScene.add(this.particles);
     this.createMediaPlanes();
     this.loadCompositeTextures();
 
@@ -1806,27 +1799,6 @@ export class WebGLBackdrop {
     mesh.position.set(0, 0, 0.01);
     this.homeScene.add(mesh);
     return mesh;
-  }
-
-  private createParticles() {
-    const geometry = new PlaneGeometry(1, 1);
-    const positions: number[] = [];
-    for (let i = 0; i < 160; i++) {
-      const angle = i * 2.399963;
-      const radius = 1.6 + (i % 37) * 0.075;
-      positions.push(Math.cos(angle) * radius, Math.sin(angle * 0.73) * 2.3, -3.8 + Math.sin(i * 0.61) * 2.1);
-    }
-    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-    const material = new PointsMaterial({
-      color: DEFAULT_COLOR,
-      size: 0.018,
-      transparent: true,
-      opacity: 0.16,
-      depthWrite: false,
-      blending: AdditiveBlending,
-      sizeAttenuation: true,
-    });
-    return new Points(geometry, material);
   }
 
   private createMediaPlanes() {
@@ -2553,9 +2525,6 @@ export class WebGLBackdrop {
       item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
       item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
     });
-    this.particles.rotation.z = time * 0.015 + this.galleryProgress * Math.PI * 0.2;
-    this.particles.position.x = this.pointer.x * 0.1;
-    this.particles.position.y = this.pointer.y * 0.08;
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
