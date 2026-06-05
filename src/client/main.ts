@@ -988,6 +988,27 @@ function initAboutLeave(getWebgl: () => WebGLLike | undefined) {
   return () => cleanups.splice(0).forEach((cleanup) => cleanup());
 }
 
+function initHomeRouteLeave(getWebgl: () => WebGLLike | undefined) {
+  const home = document.querySelector<HTMLElement>("[data-view='home']");
+  if (!home) return () => {};
+
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])"));
+  const cleanups: Array<() => void> = [];
+  links.forEach((link) => {
+    if (link.closest(".ui-work-content")) return;
+    const onClick = (event: MouseEvent) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
+      const target = new URL(link.href, window.location.href);
+      if (target.origin !== window.location.origin || target.href === window.location.href) return;
+      event.preventDefault();
+      navigateWithWorkSceneOut(target.href, getWebgl());
+    };
+    link.addEventListener("click", onClick);
+    cleanups.push(() => link.removeEventListener("click", onClick));
+  });
+  return () => cleanups.splice(0).forEach((cleanup) => cleanup());
+}
+
 function initViewLifecycle() {
   const view = document.querySelector<HTMLElement>("[data-view]");
   if (!view) return () => {};
@@ -1096,6 +1117,7 @@ function boot() {
   cleanupCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
   cleanupCallbacks.push(initProjectLeave(() => webgl));
   cleanupCallbacks.push(initAboutLeave(() => webgl));
+  cleanupCallbacks.push(initHomeRouteLeave(() => webgl));
   cleanupCallbacks.push(initScrollState());
   window.addEventListener("pagehide", cleanupPage, { once: true });
   window.addEventListener("beforeunload", cleanupPage, { once: true });
