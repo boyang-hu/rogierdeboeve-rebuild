@@ -29,7 +29,9 @@ const colorValue = (value?: string) => {
                   data-media-color={colorValue(project.data.colors.media)}
                   data-blocks={colorValue(project.data.colors.blocks)}
                   data-thumb={thumbSrc(project)}
-                  data-darkness={project.data.thumbnail.darkness ?? project.data.darkenOverview}
+                  data-darkness={project.data.darkenOverview}
+                  data-overview-darkness={project.data.darkenOverview}
+                  data-thumb-darkness={project.data.thumbnail.darkness}
                   data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
                   data-saturation={project.data.thumbnail.saturation ?? project.data.saturation}
                   data-contrast={project.data.contrast}

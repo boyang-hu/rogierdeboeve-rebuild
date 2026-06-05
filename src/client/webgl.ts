@@ -42,6 +42,8 @@ type ProjectPayload = {
   thumb?: string;
   ambient?: string | number;
   darkness?: string | number;
+  overviewDarkness?: string | number;
+  thumbDarkness?: string | number;
   darknessColor?: string;
   saturation?: string | number;
   contrast?: string | number;
@@ -954,13 +956,15 @@ export class WebGLBackdrop {
   setProject(payload: ProjectPayload) {
     const ambientIntensity = numeric(payload.ambient, 0.5);
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
+    const sceneDarkness = payload.overviewDarkness ?? payload.darkness;
     this.activeSlug = payload.slug ?? this.activeSlug;
     this.setMainColor(payload.color);
     this.setAmbientLight(ambientColor, ambientIntensity);
-    this.setDarken(numeric(payload.darkness, document.body.classList.contains("is-project") ? 0.25 : 0.1));
+    this.setDarken(numeric(sceneDarkness, document.body.classList.contains("is-project") ? 0.25 : 0.1));
     this.setSaturation(numeric(payload.saturation, 1));
     this.setContrast(numeric(payload.contrast, 1.15));
     this.setMediaBackground(payload.mediaColor ?? payload.color);
+    this.setThumbDarknessIntensity(numeric(payload.thumbDarkness ?? payload.darkness, 0));
     this.setThumbDarknessColor(payload.darknessColor ?? "#000000");
     this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
@@ -1117,6 +1121,7 @@ export class WebGLBackdrop {
   }
 
   private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
+    const thumbDarkness = payload.thumbDarkness ?? payload.darkness;
     return new ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -1133,7 +1138,7 @@ export class WebGLBackdrop {
         uRevealSides: { value: 1 },
         uRevealSpread: { value: 0 },
         uRevealSpreadSides: { value: 1 },
-        uDarkness: { value: numeric(payload.darkness, 0.18) },
+        uDarkness: { value: numeric(thumbDarkness, 0.18) },
         uSaturation: { value: numeric(payload.saturation, 1) },
         uContrast: { value: numeric(payload.contrast, 1.15) },
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
@@ -1499,6 +1504,7 @@ export class WebGLBackdrop {
   }
 
   private setProjectBlockReveal(active: WorkItem) {
+    const thumbDarkness = active.payload.thumbDarkness ?? active.payload.darkness;
     this.workItems.forEach((item) => {
       const isActive = item === active;
       item.reveal = isActive ? 1 : 0;
@@ -1514,11 +1520,11 @@ export class WebGLBackdrop {
         tweenColor(this.projectionMaterial.uniforms.uTint.value as Color, active.payload.color, 1.6);
         tweenColor(item.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
         tweenColor(item.material.uniforms.uBlockColor.value as Color, active.payload.blocks ?? active.payload.mediaColor ?? DEFAULT_BG, 1.6);
-        gsap.to(item.material.uniforms.uDarkness, { value: numeric(active.payload.darkness, 0.18), duration: 1.6, ease: "expo.out" });
+        gsap.to(item.material.uniforms.uDarkness, { value: numeric(thumbDarkness, 0.18), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uMouseLightness, { value: numeric(active.payload.mouseLightness, 1), duration: 1.6, ease: "expo.out" });
-        gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value: numeric(active.payload.darkness, 0), duration: 1.6, ease: "expo.out" });
+        gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value: numeric(thumbDarkness, 0), duration: 1.6, ease: "expo.out" });
         tweenColor(this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
         gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
       }
@@ -1579,10 +1585,11 @@ export class WebGLBackdrop {
   }
 
   private setDarken(value: number) {
-    this.workItems.forEach((item) => {
-      if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uDarkness, { value, duration: 1.6, ease: "expo.out" });
-    });
     gsap.to(this.compositeMaterial.uniforms.uDarken, { value, duration: 1.6, ease: "expo.out" });
+  }
+
+  private setThumbDarknessIntensity(value: number) {
+    gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value, duration: 1.6, ease: "expo.out" });
   }
 
   private setSaturation(value: number) {
@@ -1700,6 +1707,8 @@ export class WebGLBackdrop {
       blocks: element.dataset.blocks,
       ambient: element.dataset.ambient,
       darkness: element.dataset.darkness,
+      overviewDarkness: element.dataset.overviewDarkness,
+      thumbDarkness: element.dataset.thumbDarkness,
       darknessColor: element.dataset.darknessColor,
       saturation: element.dataset.saturation,
       contrast: element.dataset.contrast,

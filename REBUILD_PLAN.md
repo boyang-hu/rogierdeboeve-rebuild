@@ -49,7 +49,8 @@ Last updated: 2026-06-05
 | `e7997ec` | Home DOM | Added source-style `.ui-nav-a-inner` targets and nav animate-in timing from source `Tr`. |
 | `833594d` | Home DOM | Aligned mobile nav link/state structure with source `Ar` using `.ui-nav-mobile-a`, inner spans, `data-slug`, and `html.is-nav-mobile-open`. |
 | `44f341b` | Home DOM | Rebuilt the mobile nav shell closer to source `Ar`, including `.ui-nav-mobile-content`, `.ui-nav-mobile-content-bg`, footer links, toggle-line state, fade-in, and delayed link active/close timing. |
-| this commit | Home WebGL | Matched source `Se.setThumbMouseLightness` propagation by animating `uMouseLightness` on every work block instead of only the active block. |
+| `3fbf535` | Home WebGL | Matched source `Se.setThumbMouseLightness` propagation by animating `uMouseLightness` on every work block instead of only the active block. |
+| this commit | Home WebGL | Split source-style overview/detail darken from thumbnail darkness so main composite uses `darkenOverview`/`darkenDetail` while thumb composite and block projection use `thumbnail.darkness`. |
 
 ## Current Focus
 
