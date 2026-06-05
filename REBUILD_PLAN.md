@@ -190,7 +190,8 @@ Last updated: 2026-06-05
 | `33cdcdd` | Home WebGL | Batched source `OA/C1/Lu` material-flag alignment: final `OA` keeps source-owned `uDarken/uSaturation` and now uses source-shaped `toneMapped:false`, `transparent:true`, and normal blending; A1/C1 pre-composite and Lu screen-pass materials now explicitly align proven tone/blending flags. |
 | `2eda7e7` | Home WebGL | Batched source `VA` material-flag audit: work and auxiliary block materials now set source `dithering=true`, while full shader override remains a documented high-risk deviation because chunk injection preserves current Three lighting/color-space/fog/env/spotlight compatibility. |
 | `0cf78b1` | Home WebGL | Batched source `TD/Fg/ZA` auxiliary scroll alignment: floating blocks now accumulate source-style scroll-velocity z drift while visible on the about route, with entry/destroy resets to prevent cross-route carryover. |
-| `current batch` | Home WebGL | Batched source `characterScene/TD` spotlight-map alignment: about spotlight now renders `public/models/me/me.gltf` into a dedicated character target with camera/lights and keeps the previous `model_T.jpg` composite plane as a fallback. |
+| `6b8c626` | Home WebGL | Batched source `characterScene/TD` spotlight-map alignment: about spotlight now renders `public/models/me/me.gltf` into a dedicated character target with camera/lights and keeps the previous `model_T.jpg` composite plane as a fallback. |
+| `current batch` | QA Harness | Added a source comparison content fallback for the mirrored bundle's missing Astro collection JSON and upgraded the capture script to use SwiftShader plus basic network/runtime diagnostics. |
 
 ## Current Focus
 
@@ -213,14 +214,16 @@ Latest verification:
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 - Browser WebGL smoke with Chrome `--use-gl=swiftshader --enable-unsafe-swiftshader`: home, about, `/gc-2026/`, and `/hashgraph-vc/` initialized WebGL, displayed visible full-viewport `.gl-canvas` screenshots, reported no failed network requests, and retained the expected home/project markers.
 - About character resources loaded during WebGL smoke: `/models/me/me.gltf`, `/models/me/me.bin`, and `/models/me/model_T.jpg`.
-- Source-vs-rebuild visual QA was attempted against `legacy-mirror/public` plus `public/` fallback assets. The mirror still lacks baked content JSON paths requested by the original bundle, so it does not naturally complete the preloader/`ANIMATE_IN` flow in local headless runs. Forced-entry screenshots are useful diagnostics but not sufficient evidence for final Phase 1 visual parity.
+- Source-vs-rebuild visual QA now has a QA-only content JSON fallback: run the mirror service with `ENABLE_CONTENT_JSON_FALLBACK=1` so the original bundle's missing `/src/content/**` and `/opt/build/repo/src/content/**` collection JSON requests are synthesized from `src/data/projects.json` and `src/data/awards.json`.
+- With that fallback and Chrome SwiftShader, the mirrored original naturally reaches post-preloader state on home and `/gc-2026/`; home and project both report full-viewport canvases and no runtime exceptions in the diagnostic pass.
+- The first valid contact sheet shows likely Phase 1 review targets rather than immediate fixes: rebuild home currently has a stronger centered WebGL vignette/scene field and visible CTA timing compared with the captured original; project media/composite parity still needs a longer page-specific capture pass.
 
 ## Next Candidate Steps
 
-1. Build a reliable source visual QA harness by satisfying or stubbing the original bundle's missing `/src/content/**` and `/opt/build/repo/src/content/**` JSON requests without modifying `legacy-mirror/`.
-2. Rerun source-vs-rebuild visual QA for home, about, and at least two project pages only after the original mirror reaches its natural post-loader state.
-3. Compare about spotlight projection after the GLTF character target against the source behavior; decide whether source `rotatableMesh` event handling/render-manager parity must be ported or can remain accepted.
-4. Continue deeper `A1/OA`, `GA/VA`, or `T1/w1/E1` work only if reliable source visual QA identifies a specific mismatch that cannot be solved through lower-risk source-shaped bridges.
+1. Run a longer source-vs-rebuild visual pass for home, about, `/gc-2026/`, and `/hashgraph-vc/` using the QA content fallback and the updated capture diagnostics.
+2. Build a small Phase 1 difference table from valid post-preloader captures, separating DOM/timing differences from WebGL/render-manager differences.
+3. For each WebGL difference, trace the responsible source path before coding: likely first candidates are `A1/OA/kA/Lu` brightness/composite order, `Se.showScene()`/CTA timing, and `T1/w1/E1` spotlight-map projection intensity.
+4. Compare about spotlight projection after the GLTF character target against the source behavior; decide whether source `rotatableMesh` event handling/render-manager parity must be ported or can remain accepted.
 5. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.
 
 ## Verification Baseline
@@ -236,6 +239,13 @@ For local smoke:
 
 ```sh
 PORT=5173 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
+```
+
+For source comparison QA:
+
+```sh
+PORT=5175 SERVE_ROOT=legacy-mirror/public FALLBACK_ROOT=public ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
+CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-compare node scripts/capture.mjs
 ```
 
 Open:

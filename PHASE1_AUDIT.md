@@ -78,22 +78,29 @@ Chrome headless with SwiftShader enabled was used as the available local WebGL Q
 
 This proves the local runtime smoke gate, not exact source visual parity. Remaining Phase 1 evidence should come from comparing the rendered home/about/project visuals against the mirrored source behavior.
 
-### Source Comparison QA Attempt
+### Source Comparison QA Harness
 
-A local source-vs-rebuild screenshot pass was attempted with:
+A local source-vs-rebuild screenshot pass is now possible with a controlled QA-only content fallback:
 
 - original: `legacy-mirror/public` served on port `5175`
 - rebuild: `dist` served on port `5173`
 - fallback assets: `public/`
-- pages: home, about, `/gc-2026/`, and `/hashgraph-vc/`
+- content fallback: `ENABLE_CONTENT_JSON_FALLBACK=1` on `scripts/serve.mjs`
 
-The source mirror can create a canvas and render WebGL, but the captured mirror is not a reliable final-state visual oracle yet:
+The fallback synthesizes Astro-style collection JSON for the original bundle's missing baked content requests, including `/src/content/projects/*.json`, `/src/content/awards/*.json`, `/opt/build/repo/src/content/projects/*.json`, and `/opt/build/repo/src/content/awards/*.json`. It reads from the rebuild's existing `src/data/projects.json` and `src/data/awards.json`, and it is disabled unless the environment variable is explicitly set.
 
-- The mirrored bundle requests baked content JSON paths such as `/src/content/projects/*.json` and `/opt/build/repo/src/content/projects/*.json`; these are not present in either `legacy-mirror/public` or `public`.
-- Without QA intervention, the original mirror does not naturally complete the preloader/`LOAD_COMPLETE -> ANIMATE_IN` flow in headless local runs.
-- Forcing `has-entered` and hiding `.preloader` produces screenshots, but those screenshots do not represent the original page's normal post-loader state because source entry animations and scene state are bypassed.
+After enabling the fallback and using Chrome SwiftShader, the mirrored original can naturally reach the post-preloader state on home and `/gc-2026/` by waiting for the source preloader CTA and clicking it. The diagnostic run reported:
 
-Result: no new code change should be made from those forced screenshots. The next source visual QA step should either complete the mirror resource set/QA harness or use a trusted browser session where the original mirror reaches its natural post-loader state.
+- original home: preloader removed, full-viewport canvas present, no failed network requests, no runtime exceptions.
+- original `/gc-2026/`: preloader removed, full-viewport canvas present, no runtime exceptions, only canceled media requests from video/image lifecycle cleanup.
+
+This unblocks real source-vs-rebuild visual auditing. It does not complete Phase 1 by itself, because the first valid contact sheet still shows review-worthy differences:
+
+- Home desktop: rebuild has a stronger centered WebGL vignette/scene glow and visible CTA while original is flatter/darker at the same capture time.
+- Home mobile: rebuild shows a stronger central WebGL field than original.
+- Project desktop: original and rebuild can now both be captured post-preloader, but media/composite timing still needs a longer page-specific pass before declaring parity.
+
+Decision: continue with source visual QA before more WebGL tuning. Changes should target only differences that can be tied back to source code paths in `p1`, `GA/VA`, `T1/w1/E1`, `A1/OA/kA/Lu`, `Ka`, or `Se`.
 
 ### Implemented, Needs Real WebGL QA
 

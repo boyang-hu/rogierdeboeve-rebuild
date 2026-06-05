@@ -1,11 +1,19 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import net from "node:net";
 
 const chromePath = process.env.CHROME_PATH
-  || "/Users/boyang/Library/Caches/ms-playwright/chromium-1217/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing";
+  || [
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/Users/boyang/Library/Caches/ms-playwright/chromium-1217/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+  ].find((candidate) => existsSync(candidate));
+
+if (!chromePath) {
+  throw new Error("Chrome executable not found. Set CHROME_PATH to a Chrome/Chromium binary.");
+}
 const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-compare");
 const port = Number(process.env.CDP_PORT || 9227);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
@@ -73,10 +81,22 @@ async function connectWs(url) {
 
 async function capture({ name, url, viewportName = "desktop", clickEnter = false, waitAfter = 1400 }) {
   const viewport = viewports[viewportName];
+  const failures = [];
+  const exceptions = [];
   const newTarget = await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent("about:blank")}`, { method: "PUT" }).then((res) => res.json());
   const ws = await connectWs(newTarget.webSocketDebuggerUrl);
+  ws.addEventListener("message", (event) => {
+    const message = JSON.parse(event.data);
+    if (message.method === "Network.loadingFailed") {
+      failures.push(message.params);
+    }
+    if (message.method === "Runtime.exceptionThrown") {
+      exceptions.push(message.params.exceptionDetails?.text || "Runtime exception");
+    }
+  });
   await send(ws, "Page.enable");
   await send(ws, "Runtime.enable");
+  await send(ws, "Network.enable");
   await send(ws, "Emulation.setDeviceMetricsOverride", {
     width: viewport.width,
     height: viewport.height,
@@ -90,7 +110,7 @@ async function capture({ name, url, viewportName = "desktop", clickEnter = false
   if (clickEnter) {
     for (let i = 0; i < 60; i++) {
       const ready = await send(ws, "Runtime.evaluate", {
-        expression: "!!document.querySelector('.preloader-cta.is-active, [data-preloader-enter].is-active')",
+        expression: "!!document.querySelector('.preloader-cta.is-active, .preloader-cta-2.is-active, [data-preloader-enter].is-active')",
         returnByValue: true,
       });
       if (ready.result.value) break;
@@ -109,6 +129,10 @@ async function capture({ name, url, viewportName = "desktop", clickEnter = false
       body: document.body.className,
       html: document.documentElement.className,
       preloader: !!document.querySelector('[data-preloader], .preloader'),
+      canvas: [...document.querySelectorAll('canvas')].map((canvas) => {
+        const rect = canvas.getBoundingClientRect();
+        return { width: canvas.width, height: canvas.height, rectWidth: rect.width, rectHeight: rect.height };
+      }),
       active: document.querySelector('[data-project-card].is-active')?.dataset.slug || null,
       text: document.body.innerText.slice(0, 300)
     })`,
@@ -118,7 +142,14 @@ async function capture({ name, url, viewportName = "desktop", clickEnter = false
   const file = path.join(outDir, `${name}.png`);
   writeFileSync(file, Buffer.from(screenshot.data, "base64"));
   ws.close();
-  return { file, info: JSON.parse(info.result.value) };
+  return {
+    file,
+    info: JSON.parse(info.result.value),
+    failures: failures
+      .filter((failure) => !failure.canceled)
+      .map((failure) => ({ type: failure.type, errorText: failure.errorText })),
+    exceptions,
+  };
 }
 
 mkdirSync(outDir, { recursive: true });
@@ -126,7 +157,8 @@ mkdirSync(outDir, { recursive: true });
 const chrome = spawn(chromePath, [
   `--remote-debugging-port=${port}`,
   "--headless=new",
-  "--disable-gpu",
+  "--use-gl=swiftshader",
+  "--enable-unsafe-swiftshader",
   "--no-first-run",
   "--no-default-browser-check",
   `--user-data-dir=${path.join(tmpdir(), `rogier-cdp-${port}`)}`,
