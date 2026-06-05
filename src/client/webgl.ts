@@ -173,6 +173,9 @@ uniform sampler2D tMouseSim;
 uniform sampler2D tDisplacement;
 uniform sampler2D tPerlin;
 uniform vec3 uSpotLightPosition;
+uniform vec3 uSpotLightTarget;
+uniform vec3 uSpotLightRight;
+uniform vec3 uSpotLightUp;
 uniform float uSpotConeTan;
 uniform float uSpotIntensity;
 uniform float uTime;
@@ -236,9 +239,11 @@ void main() {
 
   vec4 mvPosition = instanceMatrix * vec4(transformed, 1.0);
   vec4 worldPosition = modelMatrix * mvPosition;
+  vec3 lightDir = normalize(uSpotLightTarget - uSpotLightPosition);
   vec3 fromLight = worldPosition.xyz - uSpotLightPosition;
-  float lightDepth = max(0.001, -fromLight.z);
-  vec2 spotUv = fromLight.xy / (lightDepth * uSpotConeTan) * 0.5 + 0.5;
+  float lightDepth = max(0.001, dot(fromLight, lightDir));
+  vec2 lightPlane = vec2(dot(fromLight, uSpotLightRight), dot(fromLight, uSpotLightUp));
+  vec2 spotUv = lightPlane / (lightDepth * uSpotConeTan) * 0.5 + 0.5;
   vec2 spotDelta = spotUv - 0.5;
   float spotRadius = length(spotDelta);
   float coneMask = 1.0 - smoothstep(0.42, 0.5, spotRadius);
@@ -614,7 +619,7 @@ float vignette(vec2 uv, vec2 center, float inner, float outer) {
 }
 
 void main() {
-  vec2 sourceUv = (vUv - 0.5) * 0.42 + 0.5;
+  vec2 sourceUv = (vUv - 0.5) * 0.34 + 0.5;
   vec3 thumb = texture2D(tThumb, sourceUv).rgb;
   float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
   float neutral = 1.0 - smoothstep(0.04, 0.22, length(thumb - vec3(lum)));
@@ -623,7 +628,7 @@ void main() {
   mask *= center * uReveal;
   vec3 color = mix(uTint * 0.95, vec3(1.0), smoothstep(0.52, 0.86, lum));
   color += thumb * 0.1;
-  gl_FragColor = vec4(color, clamp(mask * uOpacity, 0.0, 0.08));
+  gl_FragColor = vec4(color, clamp(mask * uOpacity, 0.0, 0.035));
 }
 `;
 
@@ -1019,6 +1024,9 @@ export class WebGLBackdrop {
   private maxSpotLightIntensity = 220;
   private spotLightIntensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
+  private spotLightTarget = new Vector3(0, 0, -8);
+  private spotLightRight = new Vector3(1, 0, 0);
+  private spotLightUp = new Vector3(0, 1, 0);
   private fluidStrength = 0.5;
   private sceneReveal = 0;
   private revealSpread = 0;
@@ -1066,7 +1074,7 @@ export class WebGLBackdrop {
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
     this.projectionMaterial = this.createProjectionMaterial();
-    this.projectionPlane = new Mesh(new PlaneGeometry(3.2, 2.24), this.projectionMaterial);
+    this.projectionPlane = new Mesh(new PlaneGeometry(2.6, 1.82), this.projectionMaterial);
     this.projectionPlane.position.set(0, 0, 0);
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
@@ -1327,6 +1335,9 @@ export class WebGLBackdrop {
         tPerlin: { value: this.perlinTexture },
         uCoords: { value: new Vector2(1, 1) },
         uSpotLightPosition: { value: this.spotLightPosition },
+        uSpotLightTarget: { value: this.spotLightTarget },
+        uSpotLightRight: { value: this.spotLightRight },
+        uSpotLightUp: { value: this.spotLightUp },
         uSpotConeTan: { value: Math.tan(Math.PI / 4) },
         uSpotIntensity: { value: this.spotLightIntensity },
         uTime: { value: 0 },
@@ -1572,7 +1583,7 @@ export class WebGLBackdrop {
         tThumb: { value: this.thumbCompositeTarget.texture },
         uTint: { value: colorFrom(DEFAULT_COLOR) },
         uReveal: { value: 0 },
-        uOpacity: { value: 0.032 },
+        uOpacity: { value: 0.014 },
       },
       vertexShader: thumbVertex,
       fragmentShader: projectionFragment,
@@ -1916,8 +1927,12 @@ export class WebGLBackdrop {
       duration,
       ease,
       onUpdate: () => {
+        this.updateSpotLightBasis();
         this.workItems.forEach((item) => {
           item.material.uniforms.uSpotIntensity.value = this.spotLightIntensity;
+          item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
+          item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
+          item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
         });
       },
     });
@@ -2169,6 +2184,13 @@ export class WebGLBackdrop {
     });
   }
 
+  private updateSpotLightBasis() {
+    const direction = this.spotLightTarget.clone().sub(this.spotLightPosition).normalize();
+    this.spotLightRight.crossVectors(direction, new Vector3(0, 1, 0)).normalize();
+    if (this.spotLightRight.lengthSq() < 0.0001) this.spotLightRight.set(1, 0, 0);
+    this.spotLightUp.crossVectors(this.spotLightRight, direction).normalize();
+  }
+
   private updateHomeCamera(delta: number) {
     const width = Math.max(1, window.innerWidth);
     const height = Math.max(1, window.innerHeight);
@@ -2216,6 +2238,12 @@ export class WebGLBackdrop {
     this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
     this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
     this.spotLightPosition.z = 3.7;
+    this.updateSpotLightBasis();
+    this.workItems.forEach((item) => {
+      item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
+      item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
+      item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
+    });
     this.particles.rotation.z = time * 0.015 + this.galleryProgress * Math.PI * 0.2;
     this.particles.position.x = this.pointer.x * 0.1;
     this.particles.position.y = this.pointer.y * 0.08;
