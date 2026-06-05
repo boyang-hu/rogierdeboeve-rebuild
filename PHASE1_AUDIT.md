@@ -56,7 +56,6 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | ID | Source area | Difference | Impact | Risk | Suggested batch |
 | --- | --- | --- | --- | --- | --- |
 | P1-03 | `VA` shader injection | Source replaces full `vertexShader` and `fragmentShader` on MeshStandardMaterial. Rebuild injects chunks into modern Three standard material. | Chunk injection preserves current Three pipeline but may differ from source material ordering, varyings, fog, and lighting side effects. | High | Audit first, implement only if proven worth risk |
-| P1-04 | `A1` blend functions | Source A1 uses a numbered `blend(1, ...)` and `blend(11, ...)` implementation. Rebuild approximates these with local `blendAdd` and `blendLighten`. | Color response, perlin/noise blending, and background blend can be visibly off. | Medium-high | 5-8 shader-only batch |
 | P1-05 | `OA` final composite | Source OA is small: fluid-warped `tScene`, optional bloom, fluid length, output. Rebuild still adds darken/saturation in the final pass for visual state. | Some visual state may be in source `Se`/composite settings, but final shader may still carry rebuild-specific compensation. | Medium-high | Pair with Se ownership audit |
 | P1-06 | `Se` setter ownership | Several setters are closer now, but not all have a strict source mapping audit: `setProject`, route entry, about, project page, media opacity, reveal spread, darken/saturation/contrast. | Cross-route state may look right locally but still differ from source transitions. | Medium | 8-10 low-risk ownership batch |
 | P1-07 | Character scene | Source about spotlight map comes from a real character scene/render manager; rebuild uses a lightweight texture composite target from `model_T.jpg`. | About spotlight projection can only approximate the original character render. | Medium-high | Risky; needs visual QA before full GLTF work |
@@ -67,6 +66,7 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | --- | --- | --- | --- |
 | P1-01 | `p1.update` / `GA.update` | Each `WorkItem` now owns local mouse simulation material, scene, ping-pong targets, UV target state, speed state, and visible-item update. | Real WebGL browser QA should confirm mouse interaction/performance, because the current headless Chrome environment failed WebGL probe creation. |
 | P1-02 | `GA.createPlane` / `Ka` | Per-block ray-plane hits now update the matching work item's local `Ka` target, while shared screen-space `tMouseSim2` remains render-manager owned. | Same real WebGL QA as P1-01. |
+| P1-04 | `A1` / `OA` blend functions | A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for modes `1`, `11`, and `15` instead of direct local helper calls. | Output should be equivalent, but real WebGL QA should confirm no shader/runtime differences and future work may still port the full source blend-mode table if needed. |
 
 ### Should Fix If Source-Proven
 
@@ -120,6 +120,8 @@ Tasks:
 This was the highest source-parity gain left for `GA/Ka`, but it remains one of the highest runtime-risk changes until tested in a browser with a working WebGL context.
 
 ### Batch B: `A1/OA` Shader Blend Audit
+
+Status: partially implemented. The currently used source modes are routed through a source-shaped dispatcher; full unused blend-mode table is not ported.
 
 Goal: reduce remaining composite shader approximations.
 

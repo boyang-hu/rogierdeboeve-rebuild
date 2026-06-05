@@ -180,7 +180,8 @@ Last updated: 2026-06-05
 | `7c7d4aa` | Home WebGL | Batched source `I1/C1/A1` and `Lu/kA/OA` bloom-chain separation: added a dedicated half-resolution A1 pre-composite bloom chain fed by `workRawTarget`, kept the existing quarter-resolution OA bloom chain fed by the pre-composited scene, and shared the source gaussian mip/composite helpers without merging their render-target ownership. |
 | `cc3c077` | Home WebGL | Batched source `Ka/GA/Lu` mouse-simulation ownership alignment: restored screen-space render-manager `Ka` defaults to `persistance=.75` and `thickness=.25`, kept mesh-local `GA` simulation on `.85/.1`, stopped global pointer movement from writing mesh-local UVs directly, and left `mouseFactor` scoped to the `VA` shader path instead of changing the simulation brush. |
 | `efdefaf` | Planning | Documented the Phase 1 source-parity audit, completion criteria, remaining must-fix areas, risk tiers, and recommended batch strategy. |
-| `current batch` | Home WebGL | Batched source `GA/Ka` local simulation ownership alignment: each work item now owns its own local mouse simulation material, scene, ping-pong targets, UV target state, and mouse-speed state; ray-plane hits update the matching work item while shared screen-space `tMouseSim2` remains render-manager owned. |
+| `5d1f1b1` | Home WebGL | Batched source `GA/Ka` local simulation ownership alignment: each work item now owns its own local mouse simulation material, scene, ping-pong targets, UV target state, and mouse-speed state; ray-plane hits update the matching work item while shared screen-space `tMouseSim2` remains render-manager owned. |
+| `current batch` | Home WebGL | Batched source `A1/OA` blend-call alignment: A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for the modes used by the original shaders (`1`, `11`, `15`) instead of direct local helper calls. |
 
 ## Current Focus
 
@@ -191,7 +192,7 @@ Immediate source targets:
 - `p1`: continue auditing route-specific visibility and spotlight-map ownership for about/floating blocks, now that the source-shaped auxiliary block objects can be activated on the about route and the about spotlight map has a source-shaped character render target.
 - `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, and a cleaner source-shaped custom-uniform surface.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
-- `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain.
+- `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain and routes active blend modes through source-shaped mode dispatchers.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
 - `Se`: source-style visual-state setter ownership without non-source side effects.
 
@@ -207,8 +208,8 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue `A1/OA` shader blend parity from `PHASE1_AUDIT.md` Batch B, especially source `blend(1, ...)` and `blend(11, ...)`.
-2. Continue `Se` route/setter ownership from Batch C after the composite shader blend audit.
+1. Continue `Se` route/setter ownership from `PHASE1_AUDIT.md` Batch C after the active A1/OA blend-call alignment.
+2. Continue deeper `A1/OA` shader parity only where source evidence shows behavior differences beyond the now source-shaped mode calls.
 3. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing whether the remaining chunk-injection compromise should become a fuller source shader override.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
 5. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.

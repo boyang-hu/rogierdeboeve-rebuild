@@ -423,6 +423,12 @@ vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
   return base * blend * opacity + base * (1.0 - opacity);
 }
 
+vec3 sourceBlend(int mode, vec3 base, vec3 blend, float opacity) {
+  if (mode == 11) return blendLighten(base, blend, opacity);
+  if (mode == 15) return blendMultiply(base, blend, opacity);
+  return base;
+}
+
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   vec2 offset = vec2(cos(angle), sin(angle)) * amount;
   float r = texture2D(tex, uv + offset).r;
@@ -445,8 +451,8 @@ void main() {
     color += bloomShift;
   }
   color += length(fluid.xy) * 0.015;
-  color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
-  color = blendLighten(color, vec3(0.095), 1.0);
+  color = sourceBlend(15, color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
+  color = sourceBlend(11, color, vec3(0.095), 1.0);
   color = saturation(color, uSaturation);
 
   gl_FragColor = vec4(color, 1.0);
@@ -501,6 +507,12 @@ vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
   return min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity);
 }
 
+vec3 sourceBlend(int mode, vec3 base, vec3 blend, float opacity) {
+  if (mode == 1) return blendAdd(base, blend, opacity);
+  if (mode == 11) return blendLighten(base, blend, opacity);
+  return base;
+}
+
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   vec2 offset = vec2(cos(angle), sin(angle)) * amount;
   float r = texture2D(tex, uv + offset).r;
@@ -550,7 +562,7 @@ void main() {
   color = mix(uBgColor, color, 1.0);
   color += mouseSim.rgb * 0.065;
   color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
-  color = blendAdd(color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
+  color = sourceBlend(1, color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
   if (boolBloom) {
     vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
     float amount = 0.001 * 2.5;
@@ -560,7 +572,7 @@ void main() {
   color = contrast(color, uContrast);
   color *= uContrast;
   color = saturation(color, 1.15);
-  color = blendLighten(color, uBgColor, 0.85);
+  color = sourceBlend(11, color, uBgColor, 0.85);
 
   vec4 media = rgbshift(tMedia, fluidUv, length(fluidUv + 2.5), 0.15 * length(fluid.xy) * uFluidStrength);
   color = mix(color, media.rgb, media.a * uMediaReveal);
