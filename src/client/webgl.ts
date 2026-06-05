@@ -552,7 +552,32 @@ void main() {
   color += thresholdBloom(vUv - uTexel * vec2(0.0, uRadius)) * 0.16;
   color += thresholdBloom(vUv + uTexel * vec2(2.0, 1.5) * uRadius) * 0.08;
   color += thresholdBloom(vUv + uTexel * vec2(-2.0, 1.5) * uRadius) * 0.08;
-  color *= 0.15;
+  gl_FragColor = vec4(color, 1.0);
+}
+`;
+
+const homeBloomCompositeFragment = `
+precision highp float;
+
+uniform sampler2D tBloom1;
+uniform sampler2D tBloom2;
+uniform sampler2D tBloom3;
+uniform sampler2D tBloom4;
+uniform sampler2D tBloom5;
+uniform float uFactor1;
+uniform float uFactor2;
+uniform float uFactor3;
+uniform float uFactor4;
+uniform float uFactor5;
+
+varying vec2 vUv;
+
+void main() {
+  vec3 color = texture2D(tBloom1, vUv).rgb * uFactor1;
+  color += texture2D(tBloom2, vUv).rgb * uFactor2;
+  color += texture2D(tBloom3, vUv).rgb * uFactor3;
+  color += texture2D(tBloom4, vUv).rgb * uFactor4;
+  color += texture2D(tBloom5, vUv).rgb * uFactor5;
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -905,6 +930,9 @@ export class WebGLBackdrop {
   private bloomMaterial: ShaderMaterial;
   private bloomScene = new Scene();
   private bloomTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
+  private bloomMipTargets: WebGLRenderTarget[] = [];
+  private bloomCompositeMaterial: ShaderMaterial;
+  private bloomCompositeScene = new Scene();
   private displacementMaterial: ShaderMaterial;
   private displacementScene = new Scene();
   private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
@@ -967,8 +995,11 @@ export class WebGLBackdrop {
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
     this.compositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial));
+    this.bloomMipTargets = Array.from({ length: 5 }, () => new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false }));
     this.bloomMaterial = this.createBloomMaterial();
     this.bloomScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomMaterial));
+    this.bloomCompositeMaterial = this.createBloomCompositeMaterial();
+    this.bloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomCompositeMaterial));
     this.displacementMaterial = this.createDisplacementMaterial();
     this.displacementScene.add(new Mesh(new PlaneGeometry(2, 2), this.displacementMaterial));
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
@@ -1126,7 +1157,9 @@ export class WebGLBackdrop {
     this.compositeTarget.dispose();
     this.compositeMaterial.dispose();
     this.bloomTarget.dispose();
+    this.bloomMipTargets.forEach((target) => target.dispose());
     this.bloomMaterial.dispose();
+    this.bloomCompositeMaterial.dispose();
     this.displacementTarget.dispose();
     this.displacementMaterial.dispose();
     this.thumbCompositeTarget.dispose();
@@ -1358,6 +1391,27 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeBloomFragment,
+    });
+  }
+
+  private createBloomCompositeMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tBloom1: { value: this.bloomMipTargets[0].texture },
+        tBloom2: { value: this.bloomMipTargets[1].texture },
+        tBloom3: { value: this.bloomMipTargets[2].texture },
+        tBloom4: { value: this.bloomMipTargets[3].texture },
+        tBloom5: { value: this.bloomMipTargets[4].texture },
+        uFactor1: { value: -0.03 },
+        uFactor2: { value: 0.03 },
+        uFactor3: { value: 0.09 },
+        uFactor4: { value: 0.15 },
+        uFactor5: { value: 0.21 },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: homeBloomCompositeFragment,
     });
   }
 
@@ -1837,7 +1891,13 @@ export class WebGLBackdrop {
     const bloomWidth = Math.max(1, Math.round(renderWidth / 4));
     const bloomHeight = Math.max(1, Math.round(renderHeight / 4));
     this.bloomTarget.setSize(bloomWidth, bloomHeight);
-    this.bloomMaterial.uniforms.uTexel.value.set(1 / bloomWidth, 1 / bloomHeight);
+    let mipWidth = bloomWidth;
+    let mipHeight = bloomHeight;
+    this.bloomMipTargets.forEach((target) => {
+      target.setSize(mipWidth, mipHeight);
+      mipWidth = Math.max(1, Math.round(mipWidth / 2));
+      mipHeight = Math.max(1, Math.round(mipHeight / 2));
+    });
     this.homeCamera.aspect = width / height;
     this.homeCamera.updateProjectionMatrix();
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
@@ -2039,9 +2099,18 @@ export class WebGLBackdrop {
       this.renderer.setRenderTarget(this.compositeTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
+      let bloomSource = this.compositeTarget.texture;
+      this.bloomMipTargets.forEach((target) => {
+        this.bloomMaterial.uniforms.tScene.value = bloomSource;
+        this.bloomMaterial.uniforms.uTexel.value.set(1 / target.width, 1 / target.height);
+        this.renderer.setRenderTarget(target);
+        this.renderer.clear();
+        this.renderer.render(this.bloomScene, this.backgroundCamera);
+        bloomSource = target.texture;
+      });
       this.renderer.setRenderTarget(this.bloomTarget);
       this.renderer.clear();
-      this.renderer.render(this.bloomScene, this.backgroundCamera);
+      this.renderer.render(this.bloomCompositeScene, this.backgroundCamera);
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.compositeScene, this.backgroundCamera);
     }

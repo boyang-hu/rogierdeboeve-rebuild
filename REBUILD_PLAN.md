@@ -84,10 +84,11 @@ Last updated: 2026-06-05
 | `7a49018` | Global Audio | Split source-style hover and gallery-enter plucks cues so `yD.animateIn()` can play plucks without reusing the hover sound. |
 | `7ead336` | Global Audio | Moved the source-style home gallery plucks trigger behind audio listener initialization so dynamic import ordering cannot drop `yD.animateIn()` audio. |
 | `a0fcfe7` | Home WebGL | Aligned the source-style `p1` floor and environment planes to the original large geometries, y offsets, floor rotation, and demorgen environment rotation adjustment. |
+| `pending` | Home WebGL | Moved the home bloom pass closer to source `Lu/kA` by rendering five downsampled bloom mips and recombining them with source-style bloom radius factors before final `OA` compositing. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `p1` floor/environment placement while preserving the recent WebGL composite and spotlight work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `Lu/kA` multi-mip bloom behavior while preserving the recent spotlight and floor/environment work.
 
 Immediate source targets:
 
