@@ -344,6 +344,7 @@ uniform float uMouseSpeed;
 uniform float uMouseLightness;
 uniform float uMouseFactor;
 uniform sampler2D tMouseSim2;
+uniform sampler2D tDisplacement;
 uniform vec2 uCoords;
 
 varying vec2 vLocalUv;
@@ -376,8 +377,10 @@ vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
 
 vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
 float simLight = texture2D(tMouseSim2, screenUv).r;
+vec4 sourceDisplacement = texture2D(tDisplacement, sourceUv);
 float mouseF = 1.0 - simLight;
 sourceColor = mix(sourceColor, sourceColor * vec3(mouseF), 1.0 - uMouseLightness);
+sourceColor += sourceDisplacement.rgb * 0.0;
 
 vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
 vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
@@ -395,6 +398,22 @@ alpha *= uRevealSides;
 
 gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 `;
+
+function patchWorkBlockShader(shader: { uniforms: Record<string, any>; vertexShader: string; fragmentShader: string }, uniforms: Record<string, any>) {
+  Object.assign(shader.uniforms, uniforms);
+  shader.vertexShader = shader.vertexShader
+    .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
+    .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
+    .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
+  shader.fragmentShader = shader.fragmentShader
+    .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
+    .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk)
+    .replace("#include <tonemapping_fragment>", "// source VA omits tonemapping_fragment")
+    .replace("#include <colorspace_fragment>", "// source VA omits colorspace_fragment")
+    .replace("#include <fog_fragment>", "// source VA omits fog_fragment")
+    .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
+    .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
+}
 
 const homeCompositeFragment = `
 precision highp float;
@@ -2031,14 +2050,7 @@ export class WebGLBackdrop {
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, uniforms);
-      shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-        .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
-        .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
-      shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
-        .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
+      patchWorkBlockShader(shader, uniforms);
     };
     material.customProgramCacheKey = () => "source-va-work-block-chunks";
     return material;
@@ -2128,14 +2140,7 @@ export class WebGLBackdrop {
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, uniforms);
-      shader.vertexShader = shader.vertexShader
-        .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-        .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
-        .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
-      shader.fragmentShader = shader.fragmentShader
-        .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
-        .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
+      patchWorkBlockShader(shader, uniforms);
     };
     material.customProgramCacheKey = () => `source-${kind}-aux-block-chunks`;
     return material;

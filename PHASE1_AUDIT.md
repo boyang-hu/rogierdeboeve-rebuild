@@ -93,6 +93,32 @@ Measured luma shows this source gap was real but not the main brightness fix:
 
 Decision: keep the sky/environment bridge because it removes a source-proven architecture gap, but do not continue tuning this path blindly. The next implementation batch should target `S1-12` (`VA` full fragment/tone-mapping path) or `S1-13` (render-target/color-space assumptions).
 
+### S1-12 VA Tail Bridge Result
+
+The `VA` chunk-injection bridge is now closer to the source full shader without taking the high-risk full replacement step:
+
+- Work and auxiliary block materials now share one `patchWorkBlockShader()` path, reducing divergence between ordinary `VA` blocks and about/floating auxiliary blocks.
+- The fragment interface now declares and samples `tDisplacement` like source `zA`, keeping the source fragment surface aligned even though the displacement sample remains non-mutating in the current bridge.
+- The source `opaque_fragment` replacement is followed by explicit removal of Three 0.184 `tonemapping_fragment`, `colorspace_fragment`, `fog_fragment`, `premultiplied_alpha_fragment`, and `dithering_fragment`, matching the source `VA` tail where `tonemapping_fragment` is commented out and no color-space/fog/premultiply tail follows.
+- The source alpha/reveal/mouse-lightness tail remains the owner of final `gl_FragColor.a` and RGB mouse darkening.
+
+Verification passed:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+- Home/project dist markers stayed stable.
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-va-tail-full` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma again shows this is a source-correct cleanup, not the main brightness fix:
+
+| Capture | Original luma | Rebuild luma after VA tail bridge | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.011` | Essentially unchanged from the sky/environment batch. |
+| Home mobile | `0.055` | `0.012` | Essentially unchanged. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project composite remains stable. |
+
+Decision: keep the `VA` tail bridge because it removes a source-proven Three 0.184 output-tail deviation. The next batch should audit `S1-13` render-target/color-space assumptions before attempting the riskier full `VA` shader replacement.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |

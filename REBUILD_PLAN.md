@@ -195,6 +195,7 @@ Last updated: 2026-06-05
 | `current batch` | Home WebGL | Aligned source runtime color semantics for `Se`-owned setters by parsing project colors as raw `sr()` RGB channels, and matched the source thumb-composite `toneMapped:false` flag. Full QA passed, but the luma gap remains, pointing the next batch toward `VA` full shader/lighting and render-target color-space behavior. |
 | `uncommitted` | Phase 1 Audit | Added a next-difference attribution table tying the remaining brightness gap to source `V1/H1/z1/B1` sky render-target ownership, `h1/u1/l1` environment material parity, `VA` shader risk, render-target color-space assumptions, and project-page regression checks. |
 | `uncommitted` | Home WebGL | Implemented the source-shaped `V1/H1/z1/B1` sky render-target bridge and moved environment `tSky` from raw blue-noise to the sky composite target; also removed the rebuild-only low-alpha environment band. Full QA passed, but home luma only improved slightly, so the next batch should move to `VA` fragment/tone-mapping or render-target color-space assumptions. |
+| `uncommitted` | Home WebGL | Tightened the `VA` chunk-injection bridge by sharing one work/aux shader patch, aligning the source fragment `tDisplacement` surface, and removing Three 0.184 output tail chunks that the source `VA` omits. Full QA passed, but luma remained unchanged, so the next batch should prioritize render-target/color-space assumptions before a full shader replacement. |
 
 ## Current Focus
 
@@ -204,7 +205,7 @@ Immediate source targets:
 
 - `V1/H1/z1/B1` and `h1/u1/l1`: source-shaped sky render-target ownership is now implemented and verified, but it only moved home desktop luma from roughly `0.010` to `0.011` versus original `0.106`. Keep the bridge; do not continue blind tuning on this path until `VA` and color-space assumptions are audited.
 - `p1`: validate route-specific visibility and spotlight-map ownership for about/floating blocks, now that the source-shaped auxiliary block objects can be activated on the about route and the about spotlight map renders the local GLTF character target.
-- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, source material flags including dithering, and a cleaner source-shaped custom-uniform surface. Full source shader override is documented as a high-risk deviation pending real WebGL QA evidence.
+- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, source material flags including dithering, source-shaped output-tail removal, and a cleaner shared custom-uniform surface. Full source shader override is still documented as a high-risk deviation because the safer tail bridge did not move the brightness gap.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain, routes active blend modes through source-shaped mode dispatchers, aligns proven material tone/blending flags, and has confirmed that runtime color payload parsing alone is not enough to close the brightness gap.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
@@ -226,8 +227,8 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Run a focused `S1-12` batch around `VA` full fragment parity: compare the source full fragment tail against the current chunk-injection bridge, especially `opaque_fragment`, omitted `tonemapping_fragment`, alpha/reveal order, and how Three `SpotLight.map` contributes after the source world-position correction.
-2. In parallel with that audit, inspect `S1-13` render-target/color-space assumptions only where the `VA` pass depends on them; avoid broad renderer color-management changes without source evidence.
+1. Run a focused `S1-13` batch around render-target/color-space assumptions: compare source `Lu/I1` default render-target clones, source `toneMapped:false` screen materials, bundled Three color-management defaults, and rebuild `SRGBColorSpace`/target texture handling.
+2. If `S1-13` does not explain the luma gap, isolate the full `VA` shader replacement as a high-risk batch with an immediate browser shader smoke test.
 3. Keep project detail pages as regression checks because the darker project composite may share `A1/C1` or media-background ownership with home.
 4. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with accepted deviations or new source-proven fixes.
 5. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.
