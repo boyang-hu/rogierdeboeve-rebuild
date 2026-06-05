@@ -211,8 +211,6 @@ varying float vAlpha;
 varying float vReveal;
 varying vec3 vColorSeed;
 varying vec3 vLocalNormal;
-varying vec2 vSpotUv;
-varying float vSpotMask;
 
 uniform vec3 uGridSize;
 uniform float uReveal;
@@ -226,12 +224,6 @@ uniform float uMouseUvScale;
 uniform sampler2D tMouseSim;
 uniform sampler2D tDisplacement;
 uniform sampler2D tPerlin;
-uniform vec3 uSpotLightPosition;
-uniform vec3 uSpotLightTarget;
-uniform vec3 uSpotLightRight;
-uniform vec3 uSpotLightUp;
-uniform float uSpotConeTan;
-uniform float uSpotIntensity;
 uniform float uTime;
 `;
 
@@ -277,37 +269,16 @@ transformedSpread.z += spread * 0.5;
 transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
 transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
-vec3 spotTransformed = transformed / max(0.001, 1.0 - mouse * 0.2);
-vec4 spotWorldPosition = modelMatrix * instanceMatrix * vec4(spotTransformed, 1.0);
-vec3 lightDir = normalize(uSpotLightTarget - uSpotLightPosition);
-vec3 fromLight = spotWorldPosition.xyz - uSpotLightPosition;
-float lightDepth = max(0.001, dot(fromLight, lightDir));
-vec2 lightPlane = vec2(dot(fromLight, uSpotLightRight), dot(fromLight, uSpotLightUp));
-vec2 spotUv = lightPlane / (lightDepth * uSpotConeTan) * 0.5 + 0.5;
-vec2 spotDelta = spotUv - 0.5;
-float spotRadius = length(spotDelta);
-float coneMask = 1.0 - smoothstep(0.45, 0.5, spotRadius);
-float depthMask = smoothstep(0.0, 0.9, lightDepth) * (1.0 - smoothstep(12.0, 17.0, lightDepth));
-
 vThumbUv = instanceGrid.xy;
 vLocalUv = uv;
 vAlpha = instanceAlpha;
 vReveal = revealMask;
 vColorSeed = instanceColor;
 vLocalNormal = normalize(normal);
-vSpotUv = spotUv;
-vSpotMask = coneMask * depthMask * uSpotIntensity;
 `;
 
 const workBlockFragmentPars = `
-uniform sampler2D tThumb;
 uniform vec3 uGridSize;
-uniform vec3 uTint;
-uniform vec3 uDarknessColor;
-uniform float uSpotMapIntensity;
-uniform float uDarkness;
-uniform float uSaturation;
-uniform float uContrast;
 uniform float uMouseLightness;
 uniform float uMouseFactor;
 uniform sampler2D tMouseSim2;
@@ -319,13 +290,6 @@ varying float vAlpha;
 varying float vReveal;
 varying vec3 vColorSeed;
 varying vec3 vLocalNormal;
-varying vec2 vSpotUv;
-varying float vSpotMask;
-
-vec3 sourceSaturateColor(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
-  return mix(vec3(gray), color, amount);
-}
 
 float sourceRandom(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
@@ -349,23 +313,6 @@ diffuseColor.a *= material.transmissionAlpha;
 
 vec3 sourceColor = outgoingLight;
 vec2 sourceUv = vLocalUv / uGridSize.xy + vThumbUv;
-vec2 projectedUv = (sourceUv - 0.5) * 0.48 + 0.5;
-vec3 gridThumb = mix(texture2D(tThumb, sourceUv).rgb, texture2D(tThumb, projectedUv).rgb, 0.12);
-vec3 spotThumb = texture2D(tThumb, vSpotUv).rgb;
-float spotMask = vSpotMask * smoothstep(0.0, 0.08, vSpotUv.x) * smoothstep(1.0, 0.92, vSpotUv.x) * smoothstep(0.0, 0.08, vSpotUv.y) * smoothstep(1.0, 0.92, vSpotUv.y);
-vec3 thumb = mix(gridThumb, spotThumb, spotMask * uSpotMapIntensity);
-thumb = (thumb - 0.5) * uContrast + 0.5;
-thumb = sourceSaturateColor(thumb, uSaturation);
-float lum = dot(thumb, vec3(0.2126, 0.7152, 0.0722));
-float centerMask = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-float spotCenter = pow(1.0 - smoothstep(0.0, 0.5, length(vSpotUv - 0.5)), 1.6) * spotMask;
-float centeredLum = lum * (0.24 + centerMask * 0.32 + spotCenter * 0.42 * uSpotMapIntensity);
-float lightMask = smoothstep(0.14, 0.66, centeredLum);
-lightMask *= (0.04 + centerMask * 0.08 + spotCenter * 0.12) * uSpotMapIntensity;
-vec3 projection = mix(uTint * 0.05, thumb, 0.1 + spotMask * 0.03);
-sourceColor = mix(sourceColor, sourceColor + projection * (0.014 + spotMask * 0.02), lightMask);
-sourceColor += thumb * spotMask * 0.006 * uSpotMapIntensity;
-sourceColor = mix(sourceColor, uDarknessColor, uDarkness * 0.08);
 
 vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
 float simLight = texture2D(tMouseSim2, screenUv).r;
@@ -377,16 +324,15 @@ vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSiz
 float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
 float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
 float alpha = alpha1 * alpha2 * vAlpha;
-float revealCombined = clamp(vReveal, 0.0, 1.0);
-float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
+float revealCombined = 1.0;
+float revealRadius = 2.0 * pow(revealCombined, 0.25);
 float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
 float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.15), 0.0, 1.0);
 alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
-alpha *= uRevealSides;
 
-gl_FragColor = vec4(sourceColor, clamp(alpha, 0.0, 0.9) * diffuseColor.a);
+gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 `;
 
 const homeCompositeFragment = `
@@ -1177,7 +1123,6 @@ export class WebGLBackdrop {
   private mediaBackgroundTweens: gsap.core.Tween[] = [];
   private saturationTween?: gsap.core.Tween;
   private contrastTween?: gsap.core.Tween;
-  private contrastBlockTweens: gsap.core.Tween[] = [];
   private blockColorTweens: gsap.core.Tween[] = [];
   private thumbDarknessTweens: gsap.core.Tween[] = [];
   private thumbDarknessColorTweens: gsap.core.Tween[] = [];
@@ -1203,7 +1148,6 @@ export class WebGLBackdrop {
   private revealSpread = 0;
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
-  private projectBlockStateTweens: gsap.core.Tween[] = [];
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
   private mediaSceneOpacity = 0;
@@ -1572,12 +1516,9 @@ export class WebGLBackdrop {
   }
 
   private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
-    const thumbDarkness = payload.thumbDarkness ?? payload.darkness;
     const uniforms = {
-      tThumb: { value: this.thumbCompositeTarget.texture },
       uMapSize: { value: new Vector2(1600, 1200) },
       uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
-      uTint: { value: colorFrom(payload.color) },
       uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
       uDiffuseColor: { value: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE) },
       uEmissiveColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
@@ -1585,16 +1526,11 @@ export class WebGLBackdrop {
       uRoughness: { value: SOURCE_WORK_ROUGHNESS },
       uMetalness: { value: SOURCE_WORK_METALNESS },
       uEnvMapIntensity: { value: SOURCE_WORK_ENVMAP_INTENSITY },
-      uSpotMapIntensity: { value: 0.18 },
-      uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
       uReveal: { value: reveal },
       uRevealProject: { value: 1 },
       uRevealSides: { value: 0 },
       uRevealSpread: { value: 0 },
       uRevealSpreadSides: { value: 0 },
-      uDarkness: { value: numeric(thumbDarkness, 0.18) },
-      uSaturation: { value: 1 },
-      uContrast: { value: numeric(payload.contrast, 1.15) },
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
@@ -1606,12 +1542,6 @@ export class WebGLBackdrop {
       tDisplacement: { value: this.displacementTarget.texture },
       tPerlin: { value: this.perlinTexture },
       uCoords: { value: new Vector2(1, 1) },
-      uSpotLightPosition: { value: this.spotLightPosition },
-      uSpotLightTarget: { value: this.spotLightTarget },
-      uSpotLightRight: { value: this.spotLightRight },
-      uSpotLightUp: { value: this.spotLightUp },
-      uSpotConeTan: { value: Math.tan(Math.PI / 4) },
-      uSpotIntensity: { value: this.spotLightIntensity },
       uTime: { value: 0 },
     };
     const material = new MeshStandardMaterial({
@@ -2101,15 +2031,10 @@ export class WebGLBackdrop {
   }
 
   private setProjectBlockReveal(active: WorkItem) {
-    const thumbDarkness = active.payload.thumbDarkness ?? active.payload.darkness;
     this.projectRevealTweens.forEach((tween) => tween.kill());
     this.projectRevealProjectTweens.forEach((tween) => tween.kill());
-    this.projectBlockStateTweens.forEach((tween) => tween.kill());
-    this.contrastBlockTweens.forEach((tween) => tween.kill());
     this.projectRevealTweens = [];
     this.projectRevealProjectTweens = [];
-    this.projectBlockStateTweens = [];
-    this.contrastBlockTweens = [];
     this.workItems.forEach((item) => {
       const isActive = item === active;
       item.reveal = isActive ? 1 : 0;
@@ -2121,12 +2046,6 @@ export class WebGLBackdrop {
       });
       this.projectRevealTweens.push(revealTween);
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
-      if (isActive) {
-        tweenColorOwned(item.material.uniforms.uTint.value as Color, active.payload.color, 1.6, this.projectBlockStateTweens);
-        tweenColorOwned(item.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6, this.projectBlockStateTweens);
-        this.projectBlockStateTweens.push(gsap.to(item.material.uniforms.uDarkness, { value: numeric(thumbDarkness, 0.18), duration: 1.6, ease: "expo.out" }));
-        this.projectBlockStateTweens.push(gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" }));
-      }
     });
   }
 
@@ -2222,16 +2141,6 @@ export class WebGLBackdrop {
 
   private setContrast(value: number, duration = 1.6) {
     this.contrastTween?.kill();
-    this.contrastBlockTweens.forEach((tween) => tween.kill());
-    this.contrastBlockTweens = [];
-    this.workItems.forEach((item) => {
-      if (item.slug !== this.activeSlug) return;
-      if (duration <= 0) {
-        item.material.uniforms.uContrast.value = value;
-        return;
-      }
-      this.contrastBlockTweens.push(gsap.to(item.material.uniforms.uContrast, { value, duration, ease: "expo.out" }));
-    });
     if (duration <= 0) {
       this.preCompositeMaterial.uniforms.uContrast.value = value;
       return;
@@ -2340,12 +2249,6 @@ export class WebGLBackdrop {
     const update = () => {
       this.spotLight.intensity = this.spotLightIntensity * this.maxSpotLightIntensity;
       this.updateSpotLightBasis();
-      this.workItems.forEach((item) => {
-        item.material.uniforms.uSpotIntensity.value = this.spotLightIntensity;
-        item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
-        item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
-        item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
-      });
     };
     if (duration <= 0) {
       this.spotLightIntensity = target;
@@ -2625,10 +2528,6 @@ export class WebGLBackdrop {
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
-      item.material.uniforms.uSpotLightPosition.value.copy(this.spotLightPosition);
-      item.material.uniforms.uSpotLightTarget.value.copy(this.spotLightTarget);
-      item.material.uniforms.uSpotLightRight.value.copy(this.spotLightRight);
-      item.material.uniforms.uSpotLightUp.value.copy(this.spotLightUp);
       item.material.uniforms.tMouseSim.value = this.mouseSimulationTexture;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
     });
