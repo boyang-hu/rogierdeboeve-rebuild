@@ -121,6 +121,9 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
   clearWorkPreview(webgl);
   document.documentElement.classList.add("is-work-gallery-leaving");
   if (!prefersReducedMotion()) {
+    gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
+  }
+  if (!prefersReducedMotion()) {
     const descriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
     const availabilityTargets = gsap.utils.toArray<HTMLElement>(".ui-header-availability .ui-header-part-inner");
     gsap.killTweensOf(descriptionTargets);
@@ -920,6 +923,9 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
       const target = new URL(link.href, window.location.href);
       if (target.origin !== window.location.origin || target.href === window.location.href) return;
       event.preventDefault();
+      if (!prefersReducedMotion()) {
+        gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
+      }
       getWebgl()?.projectLeave?.();
       window.setTimeout(() => {
         window.location.href = target.href;
@@ -929,6 +935,34 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
     cleanups.push(() => link.removeEventListener("click", onClick));
   });
   return () => cleanups.splice(0).forEach((cleanup) => cleanup());
+}
+
+function initViewLifecycle() {
+  const view = document.querySelector<HTMLElement>("[data-view]");
+  if (!view) return () => {};
+
+  const viewClass = `is-${view.dataset.view}`;
+  document.documentElement.classList.add(viewClass);
+  document.querySelector<HTMLElement>(".ui-header-name")?.style.setProperty("pointer-events", "all");
+
+  if (prefersReducedMotion()) {
+    view.style.opacity = "1";
+    return () => {
+      document.documentElement.classList.remove(viewClass);
+      view.style.opacity = "";
+      document.querySelector<HTMLElement>(".ui-header-name")?.style.removeProperty("pointer-events");
+    };
+  }
+
+  gsap.killTweensOf(view);
+  gsap.fromTo(view, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "linear" });
+
+  return () => {
+    gsap.killTweensOf(view);
+    document.documentElement.classList.remove(viewClass);
+    view.style.opacity = "";
+    document.querySelector<HTMLElement>(".ui-header-name")?.style.removeProperty("pointer-events");
+  };
 }
 
 function shouldInitWebGL(root: HTMLElement) {
@@ -975,6 +1009,7 @@ function boot() {
   };
 
   initPreloader();
+  cleanupCallbacks.push(initViewLifecycle());
   void import("./audio").then(({ initAudio }) => {
     initAudio();
     if (homeGalleryEntered) window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));

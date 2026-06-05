@@ -153,6 +153,14 @@ body.has-entered .gl {
   z-index: 2;
 }
 
+[data-view] {
+  opacity: 0;
+}
+
+body.is-ready [data-view] {
+  opacity: 1;
+}
+
 .wrap {
   width: 100%;
   padding-inline: var(--px);
