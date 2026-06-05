@@ -251,6 +251,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
   let activeHook = activeIndex * step;
   let targetHook = activeHook;
+  let pendingNavIndex: number | null = null;
   const scroll = {
     virtual: cardsArray.length * 100000,
     target: cardsArray.length * 100000,
@@ -301,6 +302,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     active: false,
     x: 0,
     y: 0,
+    startX: 0,
+    startY: 0,
     lastDeltaX: 0,
     lastDeltaY: 0,
     moved: false,
@@ -319,13 +322,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     indexState.next = activeIndex === totalItems ? 0 : activeIndex + 1;
   };
 
-  const activateIndex = (index: number, emitScene = true) => {
+  const setDomActiveIndex = (index: number) => {
     setIndexState(index);
     const card = cardsArray[activeIndex];
     if (!card) return;
-    const nextProjectId = card.dataset.slug ?? "";
-    const changedProject = nextProjectId !== activeProjectId;
-    activeProjectId = nextProjectId;
     cardsArray.forEach((item) => {
       const wasActive = item.classList.contains("is-active");
       item.classList.remove("is-active");
@@ -334,6 +334,15 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     progressArray.forEach((item) => item.classList.toggle("is-active", (item.dataset.slug ?? item.dataset.progressSlug) === card.dataset.slug));
     card.classList.add("is-active");
     animateCta(card, true);
+  };
+
+  const activateIndex = (index: number, emitScene = true) => {
+    setDomActiveIndex(index);
+    const card = cardsArray[activeIndex];
+    if (!card) return;
+    const nextProjectId = card.dataset.slug ?? "";
+    const changedProject = nextProjectId !== activeProjectId;
+    activeProjectId = nextProjectId;
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
     window.dispatchEvent(new CustomEvent("rd:project-active", { detail: { slug: card.dataset.slug, payload } }));
@@ -385,11 +394,17 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const scrollToIndex = (index: number) => {
     if (index === activeIndex && !isTransitioning) return;
     isTransitioning = true;
+    pendingNavIndex = index;
     targetHook = finalScrollPosition(index);
     window.dispatchEvent(new CustomEvent("rd:nav-click", { detail: { slug: cardsArray[index]?.dataset.slug } }));
     scrollTo(targetHook);
-    activateIndex(index);
+    setDomActiveIndex(index);
     window.setTimeout(() => {
+      if (pendingNavIndex !== null) {
+        activateIndex(pendingNavIndex);
+        targetHook = pendingNavIndex * step + scroll.remainder;
+        pendingNavIndex = null;
+      }
       isTransitioning = false;
     }, 1200);
   };
@@ -539,6 +554,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.active = true;
     pointer.x = event.clientX;
     pointer.y = event.clientY;
+    pointer.startX = event.clientX;
+    pointer.startY = event.clientY;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
     pointer.moved = false;
@@ -572,6 +589,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.active = true;
     pointer.x = point?.clientX ?? 0;
     pointer.y = point?.clientY ?? 0;
+    pointer.startX = pointer.x;
+    pointer.startY = pointer.y;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
     pointer.moved = false;
@@ -596,7 +615,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (!window.matchMedia("(max-width: 999px)").matches) return;
     if (pointer.moved) return;
     const end = event.changedTouches[0]?.clientX ?? pointer.x;
-    const delta = end - pointer.x;
+    const delta = end - pointer.startX;
     if (Math.abs(delta) < 42) return;
     handleGalleryDelta(-delta);
   }, { passive: true });

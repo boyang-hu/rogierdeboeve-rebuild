@@ -92,11 +92,12 @@ Last updated: 2026-06-05
 | `aa8a85f` | Home WebGL | Batched source `Lu/kA` bloom pipeline alignment: split luminosity threshold into a bright target, added source-style horizontal/vertical bloom render targets for five mips, matched floor-power-of-two quarter sizing, and fed vertically blurred mips into the existing source-factor bloom composite. |
 | `4210264` | Home WebGL | Batched source `T1/w1/E1/SD/p1` thumb projection alignment: matched thumb camera near/far and square render-target sizing, reset thumb map metadata to source `1x1`, changed thumb composite darkening to multiply, reduced the auxiliary projection overlay, and moved it closer to the spotlight-map path. |
 | `d378e2f` | Home WebGL | Batched source `A1/C1/OA/p1` composite alignment: removed local procedural/background/glow compensation from the main composite, restored texture-driven `uPerlin=.1` displacement, shifted bloom sampling through fluid UVs, fixed source work/composite background colors, and removed stale composite color uniforms. |
-| `current batch` | Home WebGL | Batched source `Ka/Lu/A1` mouse-simulation alignment: replaced CPU `DataTexture` brush updates with source-style low-resolution ping-pong render targets, added the original mouse simulation shader inputs, resized simulation targets from render resolution like `Lu`, fed both mesh and screen mouse textures through the WebGL render path, and restored source-style `mouseSim.rg` composite flow sampling. |
+| `e95069f` | Home WebGL | Batched source `Ka/Lu/A1` mouse-simulation alignment: replaced CPU `DataTexture` brush updates with source-style low-resolution ping-pong render targets, added the original mouse simulation shader inputs, resized simulation targets from render resolution like `Lu`, fed both mesh and screen mouse textures through the WebGL render path, and restored source-style `mouseSim.rg` composite flow sampling. |
+| `current batch` | Home DOM | Batched source `vD/_D/yD` nav semantics alignment: split immediate DOM active/CTA updates from scene project activation during nav/progress clicks, delayed scene activation until the source-style transition window completes, preserved keyboard navigation as direct next/prev gallery motion, and fixed mobile touch-end delta tracking from the original touch start point. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `Ka/Lu/A1` mouse-simulation semantics while preserving the recent gallery audio/state, camera-controller, bloom, composite, and thumb-projection work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `vD/_D/yD` nav and gallery input semantics while preserving the recent WebGL mouse simulation, camera-controller, bloom, composite, and thumb-projection work.
 
 Immediate source targets:
 
@@ -108,10 +109,10 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Continue source `Ka/Lu` mouse simulation and render-manager fidelity, especially replacing the CPU texture brush approximation with a closer ping-pong simulation path.
-2. Continue `p1/SD/T1` spotlight and thumb projection comparison, especially reducing the auxiliary projection-plane approximation in favor of source spotlight-map behavior.
-3. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
-4. Continue source `gD` CTA navigation timing comparison beyond audio, especially leave delay and preview-state cleanup.
+1. Continue `p1/SD/T1` spotlight and thumb projection comparison, especially reducing the auxiliary projection-plane approximation in favor of source spotlight-map behavior.
+2. Continue source `gD` CTA navigation timing comparison beyond audio, especially leave delay and preview-state cleanup.
+3. Continue `yD` virtual-scroll parity around pointer speed gating and snap state after nav transitions.
+4. Audit `SD` home lifecycle against project-route entry/leave so WebGL reveal, header availability, and work-state restoration stay source-derived.
 
 ## Verification Baseline
 
