@@ -81,10 +81,11 @@ Last updated: 2026-06-05
 | `95ebb65` | Home WebGL | Moved final home bloom compositing closer to source `OA` by adding `tBloom` directly and adding a shifted bloom sample instead of attenuating bloom a second time. |
 | `32ef9ec` | Global Audio | Split CTA click audio from gallery-out soft-woosh behavior using source `gD`/`yD` Howler assets and playback rates. |
 | `f200c8f` | Home DOM/WebGL | Cleared local CTA preview state before work-gallery leave so the source-style `yD.onWorkGalleryOut()` transition is not tinted by hover/focus preview leftovers. |
+| `pending` | Global Audio | Split source-style hover and gallery-enter plucks cues so `yD.animateIn()` can play plucks without reusing the hover sound. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source CTA/gallery-out leave behavior while preserving the recent WebGL composite and spotlight work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `yD.animateIn()` audio behavior while preserving the recent WebGL composite and spotlight work.
 
 Immediate source targets:
 
