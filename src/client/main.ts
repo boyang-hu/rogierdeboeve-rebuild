@@ -25,6 +25,7 @@ type WebGLLike = {
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number, delta?: number): void;
   restoreGalleryState?(progress: number, sceneRotation?: number, zoom?: number): void;
+  enterWorkGallery?(activeSlug?: string): void;
   setCameraControllerSettings?(lookAt?: { x: number; y: number; z: number }, targetXY?: { x: number; y: number }, rotateAngle?: number): void;
   setPreviewMode?(enabled: boolean): void;
   animateWorkMouseIn?(): void;
@@ -530,9 +531,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const enterWorkGallery = () => {
     if (scroll.active) return;
-    scroll.active = true;
     getWebgl()?.restoreGalleryState?.(scroll.progress, sceneRotation, sceneZoom);
     getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
+    getWebgl()?.enterWorkGallery?.(activeProjectId || cardsArray[activeIndex]?.dataset.slug);
+    scroll.active = true;
   };
 
   const onPageShow = () => {
@@ -571,7 +573,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const onCtaClick = (event: MouseEvent) => {
       event.preventDefault();
       if (performance.now() - lastTouchSelect < 500) return;
-      scrollToIndex(index);
+      setDomActiveIndex(index);
       navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl());
     };
     const onCtaMouseEnter = () => previewWork(true);
@@ -687,6 +689,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const onTouchStart = (event: TouchEvent) => {
     if (pointer.active) return;
+    if (!document.body.classList.contains("is-home")) return;
     const point = event.touches[0];
     pointer.active = true;
     pointer.x = point?.clientX ?? 0;
@@ -696,6 +699,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
     pointer.moved = false;
+    handleGalleryDelta(0);
   };
 
   const onTouchMove = (event: TouchEvent) => {
@@ -712,7 +716,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.moved = handleGalleryDelta(delta) || pointer.moved;
   };
 
-  const onTouchEnd = (event: TouchEvent) => {
+  const onTouchEnd = () => {
     pointer.active = false;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
@@ -986,7 +990,6 @@ function boot() {
     webgl?.setProject(payload);
     if (document.querySelector("[data-view='home']")) {
       webgl?.setCameraControllerSettings?.({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
-      webgl?.animateWorkMouseIn?.();
       webgl?.showScene?.();
       homeGalleryEntered = true;
       window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));

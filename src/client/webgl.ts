@@ -1236,6 +1236,21 @@ export class WebGLBackdrop {
     this.updateThumbGallery(-progress);
   }
 
+  enterWorkGallery(activeSlug = this.activeSlug) {
+    this.projectRevealTweens.forEach((tween) => tween.kill());
+    this.projectRevealProjectTweens.forEach((tween) => tween.kill());
+    this.projectRevealTweens = [];
+    this.projectRevealProjectTweens = [];
+    this.setMouseFactor(0, 0);
+    this.setMouseFactor(1, 3);
+    this.workItems.forEach((item) => {
+      item.material.uniforms.uReveal.value = 0;
+      this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
+    });
+    const active = this.workItems.find((item) => item.slug === activeSlug) ?? this.workItems[0];
+    if (active) this.setProjectBlockReveal(active);
+  }
+
   restoreGalleryState(progress: number, sceneRotation = 0, zoom = 0) {
     this.galleryProgress = progress;
     this.sceneRotation = sceneRotation;
