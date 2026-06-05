@@ -149,7 +149,8 @@ Last updated: 2026-06-05
 | `60ad21f` | Home WebGL | Batched source `Se/h1/u1` environment-state alignment: reshaped the simplified environment shader around source-style `uDarkenColor`, `uDarken`, and shader-pattern constants, and narrowed ambient updates so the environment layer follows `Se.setAmbientColor()`'s darken-color path instead of a rebuild-only ambient-intensity tint. |
 | `921efda` | Home WebGL | Batched source `a1/o1/i1` floor-reflector alignment: added a source-style low-resolution floor reflection render target and mirrored camera pass, temporarily hides the floor while rendering the reflection texture, and reshaped the simplified floor shader around source `uReflectivity=.97`, `uMirror=1`, `uFloorMixStrength=15`, normal distortion, and Fresnel-style reflection mixing. |
 | `a8f7c2e` | Home WebGL | Batched source `u1/l1/c1` environment-shader alignment: routed the preloaded blue-noise texture into the environment as source-style `tSky`, set repeat wrapping like `Xt.blueNoise`, and reshaped the simplified environment fragment around source two-layer sky UV offsets, `smoothMask` vertical bands, sky-mask modulation, white mix, and `uDarkenColor/uDarken` final blending. |
-| `current batch` | Home WebGL | Batched source `Lu/kA` bloom-kernel alignment: replaced the rebuild-only fixed `blur13` bloom blur with source-style gaussian blur, and drove the five bloom mips with source kernel/sigma values `[3,5,7,9,11]` during horizontal and vertical blur passes. |
+| `e098f4c` | Home WebGL | Batched source `Lu/kA` bloom-kernel alignment: replaced the rebuild-only fixed `blur13` bloom blur with source-style gaussian blur, and drove the five bloom mips with source kernel/sigma values `[3,5,7,9,11]` during horizontal and vertical blur passes. |
+| `current batch` | Home WebGL | Batched source `A1/C1` pre-composite uniform-shape alignment: added source-compatible disabled media/lensflare/blur uniforms, `uMediaReveal`, `uDisplacement`, `uDisplacementSize`, and `uContainerSize`, and restored the source-position media mix as a default no-op so home behavior stays unchanged while the shader interface matches the original render-manager contract more closely. |
 
 ## Current Focus
 
@@ -174,8 +175,8 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue source `A1/C1` pre-composite review around optional media/lensflare uniforms and confirm whether disabled branches should remain placeholders or need a closer source-compatible no-op path.
-2. Revisit `GA/VA` only for source-standard-material gaps that still materially affect the home cube lighting/projection after the floor/environment/composite changes.
+1. Revisit `GA/VA` only for source-standard-material gaps that still materially affect the home cube lighting/projection after the floor/environment/composite changes.
+2. Continue source `p1/GA` render visibility and lighting review, especially where local shader approximations still replace Three standard material lighting.
 3. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
 4. Keep future batches around five source-alignment steps before the next verification/documentation/commit cycle.
 

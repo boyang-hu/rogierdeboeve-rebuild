@@ -430,13 +430,20 @@ uniform sampler2D tFluid;
 uniform sampler2D tMouseSim;
 uniform sampler2D tNoise;
 uniform sampler2D tPerlin;
+uniform sampler2D tMedia;
+uniform sampler2D tBlur;
+uniform sampler2D tLensflare;
 uniform float uTime;
 uniform float uRatio;
 uniform float uTransformX;
 uniform float uFluidStrength;
+uniform float uMediaReveal;
+uniform float uDisplacement;
 uniform float uPerlin;
 uniform float uContrast;
 uniform vec3 uBgColor;
+uniform vec2 uDisplacementSize;
+uniform vec2 uContainerSize;
 
 varying vec2 vUv;
 
@@ -511,6 +518,9 @@ void main() {
   color *= uContrast;
   color = saturation(color, 1.15);
   color = blendLighten(color, uBgColor, 0.85);
+
+  vec4 media = rgbshift(tMedia, fluidUv, length(fluidUv + 2.5), 0.15 * length(fluid.xy) * uFluidStrength);
+  color = mix(color, media.rgb, media.a * uMediaReveal);
 
   vec2 noiseUv = baseUv - 0.5;
   noiseUv.x *= uRatio;
@@ -1664,13 +1674,20 @@ export class WebGLBackdrop {
         tMouseSim: { value: this.screenMouseSimulationTexture },
         tNoise: { value: this.noiseTexture },
         tPerlin: { value: this.perlinTexture },
+        tMedia: { value: this.fluidPlaceholder },
+        tBlur: { value: this.fluidPlaceholder },
+        tLensflare: { value: this.fluidPlaceholder },
         uTime: { value: 0 },
         uRatio: { value: 1 },
         uTransformX: { value: 0 },
         uFluidStrength: { value: this.fluidStrength },
+        uMediaReveal: { value: 0 },
+        uDisplacement: { value: 0.1 },
         uPerlin: { value: 0.1 },
         uContrast: { value: 1.1 },
         uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
+        uDisplacementSize: { value: new Vector2(1, 1) },
+        uContainerSize: { value: new Vector2(1, 1) },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homePreCompositeFragment,
@@ -2369,9 +2386,11 @@ export class WebGLBackdrop {
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
+    this.preCompositeMaterial.uniforms.uContainerSize.value.set(renderWidth, renderHeight);
     this.displacementMaterial.uniforms.uRatio.value = width / height;
     const displacementSize = Math.max(1, Math.round(height / 10));
     this.displacementTarget.setSize(displacementSize, displacementSize);
+    this.preCompositeMaterial.uniforms.uDisplacementSize.value.set(displacementSize, displacementSize);
     this.floorReflectionTarget.setSize(
       Math.max(1, Math.round(renderWidth * 0.75)),
       Math.max(1, Math.round(renderHeight * 0.75)),
