@@ -940,6 +940,7 @@ export class WebGLBackdrop {
   private fluidStrength = 0.5;
   private sceneReveal = 0;
   private revealSpread = 0;
+  private projectRevealTweens: gsap.core.Tween[] = [];
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
   private mediaSceneOpacity = 0;
@@ -1067,6 +1068,8 @@ export class WebGLBackdrop {
   }
 
   hideWorkScene() {
+    this.projectRevealTweens.forEach((tween) => tween.kill());
+    this.projectRevealTweens = [];
     this.setRevealSpread(1, 0.65, "power3.in");
     this.setSpotLightIntensity(0, 1, "none");
     this.setFluidStrength(0.5, 0.5);
@@ -1582,15 +1585,18 @@ export class WebGLBackdrop {
 
   private setProjectBlockReveal(active: WorkItem) {
     const thumbDarkness = active.payload.thumbDarkness ?? active.payload.darkness;
+    this.projectRevealTweens.forEach((tween) => tween.kill());
+    this.projectRevealTweens = [];
     this.workItems.forEach((item) => {
       const isActive = item === active;
       item.reveal = isActive ? 1 : 0;
-      gsap.to(item.material.uniforms.uReveal, {
+      const revealTween = gsap.to(item.material.uniforms.uReveal, {
         value: isActive ? 1 : 0,
         delay: isActive ? 0.2 : 0,
         duration: isActive ? 4 : 1.6,
         ease: "power4.out",
       });
+      this.projectRevealTweens.push(revealTween);
       gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" });
       if (isActive) {
         tweenColor(item.material.uniforms.uTint.value as Color, active.payload.color, 1.6);
