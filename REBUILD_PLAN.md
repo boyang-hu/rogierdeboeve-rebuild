@@ -77,7 +77,7 @@ Last updated: 2026-06-05
 | `1cb6a6b` | Home WebGL | Matched source `p1.update()` mobile spotlight parallax by adding the `.3` y-offset below `MD=800` while keeping camera-derived spotlight movement. |
 | `e93e165` | Home WebGL | Matched source `p1.setLights()` spotlight cone by using `angle = PI / 4` for the shader thumb-map projection instead of the narrower half-angle approximation. |
 | `c183c76` | Home WebGL | Made the auxiliary thumb projection plane follow source-style scene reveal/out timing instead of staying permanently visible outside the spotlight-map lifecycle. |
-| `pending` | Home WebGL | Moved the lightweight home bloom pass closer to source `kA` by adding a `uRadius` uniform set to source bloom radius `1.5` for luminosity blur offsets. |
+| `15b1ad9` | Home WebGL | Moved the lightweight home bloom pass closer to source `kA` by adding a `uRadius` uniform set to source bloom radius `1.5` for luminosity blur offsets. |
 
 ## Current Focus
 
