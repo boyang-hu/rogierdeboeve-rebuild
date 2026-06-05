@@ -85,10 +85,11 @@ Last updated: 2026-06-05
 | `7ead336` | Global Audio | Moved the source-style home gallery plucks trigger behind audio listener initialization so dynamic import ordering cannot drop `yD.animateIn()` audio. |
 | `a0fcfe7` | Home WebGL | Aligned the source-style `p1` floor and environment planes to the original large geometries, y offsets, floor rotation, and demorgen environment rotation adjustment. |
 | `c68adb6` | Home WebGL | Moved the home bloom pass closer to source `Lu/kA` by rendering five downsampled bloom mips and recombining them with source-style bloom radius factors before final `OA` compositing. |
+| `pending` | Home DOM/Audio | Batched Phase 2 source alignment for `vD/_D/yD`: click audio now only binds `data-sound-click`, project changes emit source-style woosh, redundant active project selections short-circuit, and session work state stores `activeProject`/`sceneRotation`. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `Lu/kA` multi-mip bloom behavior while preserving the recent spotlight and floor/environment work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `vD/_D/yD` gallery audio and state semantics while preserving the recent WebGL bloom, spotlight, and floor/environment work.
 
 Immediate source targets:
 

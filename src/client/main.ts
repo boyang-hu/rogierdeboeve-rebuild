@@ -268,6 +268,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
           scroll?: Partial<typeof scroll>;
           activeHook?: number;
           targetHook?: number;
+          activeProject?: string;
+          sceneRotation?: number;
         }
       | null;
     const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restored?.slug);
@@ -302,6 +304,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     moved: false,
   };
   let lastTouchSelect = 0;
+  let activeProjectId = cardsArray[activeIndex]?.dataset.slug ?? "";
 
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
   const lerp = (current: number, target: number, factor: number, delta: number) =>
@@ -318,6 +321,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     setIndexState(index);
     const card = cardsArray[activeIndex];
     if (!card) return;
+    const nextProjectId = card.dataset.slug ?? "";
+    const changedProject = nextProjectId !== activeProjectId;
+    activeProjectId = nextProjectId;
     cardsArray.forEach((item) => {
       const wasActive = item.classList.contains("is-active");
       item.classList.remove("is-active");
@@ -329,6 +335,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
     window.dispatchEvent(new CustomEvent("rd:project-active", { detail: { slug: card.dataset.slug, payload } }));
+    if (changedProject) window.dispatchEvent(new CustomEvent("rd:woosh"));
     if (emitScene) getWebgl()?.setProject(payload);
   };
 
@@ -374,6 +381,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
 
   const scrollToIndex = (index: number) => {
+    if (index === activeIndex && !isTransitioning) return;
     isTransitioning = true;
     targetHook = finalScrollPosition(index);
     window.dispatchEvent(new CustomEvent("rd:nav-click", { detail: { slug: cardsArray[index]?.dataset.slug } }));
@@ -431,6 +439,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       stateKey,
       JSON.stringify({
         slug: card.dataset.slug,
+        activeProject: card.dataset.slug,
         index: indexState,
         scroll: {
           virtual: scroll.virtual,
@@ -442,6 +451,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
         },
         activeHook,
         targetHook,
+        sceneRotation: scroll.progress * 360 + 180,
       }),
     );
   };

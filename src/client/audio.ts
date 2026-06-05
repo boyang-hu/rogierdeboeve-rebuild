@@ -6,6 +6,7 @@ let click: Howl | null = null;
 let hover: Howl | null = null;
 let plucks: Howl | null = null;
 let softWoosh: Howl | null = null;
+let woosh: Howl | null = null;
 let enabled = true;
 
 export function initAudio() {
@@ -26,6 +27,11 @@ export function initAudio() {
   softWoosh = new Howl({
     src: ["/audio/soft-woosh.webm", "/audio/soft-woosh.ogg", "/audio/soft-woosh.mp3"],
     volume: 0.25,
+    rate: 1.5,
+  });
+  woosh = new Howl({
+    src: ["/audio/woosh.webm", "/audio/woosh.ogg", "/audio/woosh.mp3"],
+    volume: 0.2,
     rate: 1.5,
   });
   ambient = new Howl({
@@ -62,6 +68,9 @@ export function initAudio() {
   window.addEventListener("rd:soft-woosh", () => {
     if (enabled) softWoosh?.play();
   });
+  window.addEventListener("rd:woosh", () => {
+    if (enabled) woosh?.play();
+  });
   window.addEventListener("rd:plucks", () => {
     if (enabled) plucks?.play();
   });
@@ -71,6 +80,8 @@ export function initAudio() {
 
   document.querySelectorAll<HTMLElement>("[data-sound]").forEach((element) => {
     element.addEventListener("mouseenter", () => enabled && hover?.play());
+  });
+  document.querySelectorAll<HTMLElement>("[data-sound-click]").forEach((element) => {
     element.addEventListener("click", () => enabled && click?.play());
   });
 }
