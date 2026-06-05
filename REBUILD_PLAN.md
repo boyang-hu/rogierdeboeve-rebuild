@@ -89,10 +89,11 @@ Last updated: 2026-06-05
 | `e3195db` | Home DOM/Audio | Batched Phase 2 source alignment for `vD/_D/yD`: click audio now only binds `data-sound-click`, project changes emit source-style woosh, redundant active project selections short-circuit, and session work state stores `activeProject`/`sceneRotation`. |
 | `bd18bda` | Home WebGL/DOM | Batched source `yD/gD` mouse-factor lifecycle alignment: centralized mouse-factor tween ownership, removed constructor auto-start, made home entry explicitly animate mouse factor from 0 to 1, reused the same path for CTA preview enter/leave, and reset mouse factor on gallery leave. |
 | `342bb68` | Home WebGL | Batched source `IT/p1/yD` camera-controller alignment: added source-style camera controller settings, pixel-space pointer tracking, mobile camera-origin z behavior, delta-driven camera roll, and home entry wiring for `targetXY=(1,.5)` with `rotateAngle=20`. |
+| `pending` | Home WebGL | Batched source `Lu/kA` bloom pipeline alignment: split luminosity threshold into a bright target, added source-style horizontal/vertical bloom render targets for five mips, matched floor-power-of-two quarter sizing, and fed vertically blurred mips into the existing source-factor bloom composite. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `IT/p1/yD` camera-controller semantics while preserving the recent gallery audio/state and WebGL bloom work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `Lu/kA` bloom pipeline semantics while preserving the recent gallery audio/state and camera-controller work.
 
 Immediate source targets:
 
