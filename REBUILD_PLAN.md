@@ -67,7 +67,7 @@ Last updated: 2026-06-05
 | `fdaeff0` | Home WebGL | Matched source `w1.updateGalleryProgress` by keeping thumb `uProgress` at its default value during gallery wrapping instead of dimming non-active thumbs. |
 | `19cdcbb` | Home WebGL | Moved the home composite tail closer to source `OA`: final darken now uses screen-space `mouseSim.r`, applies source-style lighten blend with black, and finishes with saturation after darkening. |
 | `33b2c9e` | Home WebGL | Added a separate low-resolution home bloom pass so final composite samples `tBloom` like source `Lu/kA` instead of deriving all glow inline from `tWork`. |
-| this commit | Home WebGL | Matched source `p1.resize` mobile behavior by keeping the work WebGL scene active below `LG` and shifting `sceneWrap.position.y` to `.3` below source `MD=800`. |
+| `5ac8713` | Home WebGL | Matched source `p1.resize` mobile behavior by keeping the work WebGL scene active below `LG` and shifting `sceneWrap.position.y` to `.3` below source `MD=800`. |
 
 ## Current Focus
 
