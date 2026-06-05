@@ -97,6 +97,8 @@ function initCtaMagnet(cta: HTMLElement) {
 
 function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
   window.dispatchEvent(new CustomEvent("rd:soft-woosh"));
+  setWorkPreviewing(false);
+  webgl?.setPreviewMode?.(false);
   if (!prefersReducedMotion()) {
     gsap.to(".ui-header-description .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
     gsap.to(".ui-header-availability .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
