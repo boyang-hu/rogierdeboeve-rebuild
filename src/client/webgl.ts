@@ -1250,6 +1250,13 @@ export class WebGLBackdrop {
     this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
+    [this.thumbTarget, this.thumbCompositeTarget].forEach((target) => {
+      target.texture.generateMipmaps = false;
+      target.texture.minFilter = LinearFilter;
+      target.texture.magFilter = LinearFilter;
+      target.texture.wrapS = ClampToEdgeWrapping;
+      target.texture.wrapT = ClampToEdgeWrapping;
+    });
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
     this.floorPlane.position.y = -1.65;
@@ -1362,6 +1369,8 @@ export class WebGLBackdrop {
   }
 
   initHomeSpotlight() {
+    this.spotLightParallax = true;
+    this.spotLight.map = this.thumbCompositeTarget.texture;
     this.spotLightPosition.set(0, 0, 3.7);
     this.spotLightTarget.set(0, 0, -8);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 0);
@@ -2160,6 +2169,7 @@ export class WebGLBackdrop {
 
   private createThumbCompositeMaterial() {
     return new ShaderMaterial({
+      transparent: true,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3094,6 +3104,24 @@ export class WebGLBackdrop {
     this.renderer.setRenderTarget(previousTarget);
   }
 
+  private renderDisplacementTarget(time: number) {
+    this.displacementMaterial.uniforms.uTime.value = time;
+    this.renderer.setRenderTarget(this.displacementTarget);
+    this.renderer.clear();
+    this.renderer.render(this.displacementScene, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
+  }
+
+  private renderThumbTargets() {
+    this.renderer.setRenderTarget(this.thumbTarget);
+    this.renderer.clear();
+    this.renderer.render(this.thumbScene, this.thumbCamera);
+    this.renderer.setRenderTarget(this.thumbCompositeTarget);
+    this.renderer.clear();
+    this.renderer.render(this.thumbCompositeScene, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
+  }
+
   private tick = () => {
     const time = performance.now() * 0.001;
     const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
@@ -3109,7 +3137,6 @@ export class WebGLBackdrop {
     }
     this.spotLight.position.copy(this.spotLightPosition);
     this.spotLight.target.position.copy(this.spotLightTarget);
-    this.spotLight.map = this.thumbCompositeTarget.texture;
     this.updateSpotLightBasis();
     this.updateVisibleWorkItems(time);
     this.updateAuxiliaryBlocks(time, delta);
@@ -3119,22 +3146,11 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
-    this.displacementMaterial.uniforms.uTime.value = time;
     this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
     this.updateMediaPlanePositions();
 
     this.renderer.clear();
-    this.renderer.setRenderTarget(this.displacementTarget);
-    this.renderer.clear();
-    this.renderer.render(this.displacementScene, this.backgroundCamera);
-    this.renderer.setRenderTarget(this.thumbTarget);
-    this.renderer.clear();
-    this.renderer.render(this.thumbScene, this.thumbCamera);
-    this.renderer.setRenderTarget(this.thumbCompositeTarget);
-    this.renderer.clear();
-    this.renderer.render(this.thumbCompositeScene, this.backgroundCamera);
-    this.renderer.setRenderTarget(null);
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     if (!hasHome && hasMedia) {
@@ -3188,6 +3204,8 @@ export class WebGLBackdrop {
       this.syncHomeCompositeUniforms();
       this.renderer.render(this.compositeScene, this.backgroundCamera);
     }
+    this.renderThumbTargets();
+    this.renderDisplacementTarget(time);
     if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
     this.raf = requestAnimationFrame(this.tick);
   };
