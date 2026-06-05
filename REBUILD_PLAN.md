@@ -181,7 +181,8 @@ Last updated: 2026-06-05
 | `cc3c077` | Home WebGL | Batched source `Ka/GA/Lu` mouse-simulation ownership alignment: restored screen-space render-manager `Ka` defaults to `persistance=.75` and `thickness=.25`, kept mesh-local `GA` simulation on `.85/.1`, stopped global pointer movement from writing mesh-local UVs directly, and left `mouseFactor` scoped to the `VA` shader path instead of changing the simulation brush. |
 | `efdefaf` | Planning | Documented the Phase 1 source-parity audit, completion criteria, remaining must-fix areas, risk tiers, and recommended batch strategy. |
 | `5d1f1b1` | Home WebGL | Batched source `GA/Ka` local simulation ownership alignment: each work item now owns its own local mouse simulation material, scene, ping-pong targets, UV target state, and mouse-speed state; ray-plane hits update the matching work item while shared screen-space `tMouseSim2` remains render-manager owned. |
-| `current batch` | Home WebGL | Batched source `A1/OA` blend-call alignment: A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for the modes used by the original shaders (`1`, `11`, `15`) instead of direct local helper calls. |
+| `863fcd9` | Home WebGL | Batched source `A1/OA` blend-call alignment: A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for the modes used by the original shaders (`1`, `11`, `15`) instead of direct local helper calls. |
+| `current batch` | Home WebGL | Batched source `Se` setter ownership alignment: `showScene()` follows source state tween behavior, `darken/saturation/contrast/media background/directionalLight2` now tween local source-shaped state before writing uniforms/lights, and composite defaults read from those state fields. |
 
 ## Current Focus
 
@@ -194,7 +195,7 @@ Immediate source targets:
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain and routes active blend modes through source-shaped mode dispatchers.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
-- `Se`: source-style visual-state setter ownership without non-source side effects.
+- `Se`: source-style visual-state setter ownership without non-source side effects; core setter state ownership is now closer, and route-specific call ordering remains the next audit target.
 
 Latest verification:
 
@@ -202,13 +203,11 @@ Latest verification:
 - `git diff --check`
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
-- Chrome CDP smoke on the existing QA Chrome (`9222`) with SwiftShader on `/?skip-preloader`, `/about/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `hasWebgl=true`, `canvasLost=false`, expected project media counts/about view marker, no filtered runtime/shader errors.
-- Latest local smoke for the current batch used `PORT=5174 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs` because `5173` was already occupied; Chrome CDP on `9222` passed the same four-page WebGL/runtime checks.
-- Current local Chrome/SwiftShader attempts on this machine could not create a WebGL probe context, so browser WebGL smoke for the per-work-item `Ka` batch is pending real WebGL QA; build, diff, and marker checks passed.
+- Browser WebGL smoke for the current local machine remains pending because local Chrome/SwiftShader could not create the initial WebGL probe context; build, diff, and marker checks passed.
 
 ## Next Candidate Steps
 
-1. Continue `Se` route/setter ownership from `PHASE1_AUDIT.md` Batch C after the active A1/OA blend-call alignment.
+1. Continue the remaining `Se` route entry/leave order audit from `PHASE1_AUDIT.md` Batch C, especially `setProject()`, about entry/leave, project entry/leave, and gallery leave.
 2. Continue deeper `A1/OA` shader parity only where source evidence shows behavior differences beyond the now source-shaped mode calls.
 3. Continue `GA/VA` source-standard-material parity where it can be proven from the bundle, especially auditing whether the remaining chunk-injection compromise should become a fuller source shader override.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.

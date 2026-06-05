@@ -57,7 +57,6 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | --- | --- | --- | --- | --- | --- |
 | P1-03 | `VA` shader injection | Source replaces full `vertexShader` and `fragmentShader` on MeshStandardMaterial. Rebuild injects chunks into modern Three standard material. | Chunk injection preserves current Three pipeline but may differ from source material ordering, varyings, fog, and lighting side effects. | High | Audit first, implement only if proven worth risk |
 | P1-05 | `OA` final composite | Source OA is small: fluid-warped `tScene`, optional bloom, fluid length, output. Rebuild still adds darken/saturation in the final pass for visual state. | Some visual state may be in source `Se`/composite settings, but final shader may still carry rebuild-specific compensation. | Medium-high | Pair with Se ownership audit |
-| P1-06 | `Se` setter ownership | Several setters are closer now, but not all have a strict source mapping audit: `setProject`, route entry, about, project page, media opacity, reveal spread, darken/saturation/contrast. | Cross-route state may look right locally but still differ from source transitions. | Medium | 8-10 low-risk ownership batch |
 | P1-07 | Character scene | Source about spotlight map comes from a real character scene/render manager; rebuild uses a lightweight texture composite target from `model_T.jpg`. | About spotlight projection can only approximate the original character render. | Medium-high | Risky; needs visual QA before full GLTF work |
 
 ### Implemented, Needs Real WebGL QA
@@ -67,6 +66,7 @@ The remaining risk is mostly in fine-grained shader behavior, render pass orderi
 | P1-01 | `p1.update` / `GA.update` | Each `WorkItem` now owns local mouse simulation material, scene, ping-pong targets, UV target state, speed state, and visible-item update. | Real WebGL browser QA should confirm mouse interaction/performance, because the current headless Chrome environment failed WebGL probe creation. |
 | P1-02 | `GA.createPlane` / `Ka` | Per-block ray-plane hits now update the matching work item's local `Ka` target, while shared screen-space `tMouseSim2` remains render-manager owned. | Same real WebGL QA as P1-01. |
 | P1-04 | `A1` / `OA` blend functions | A1 perlin/background blend and OA darken/lighten now call a source-shaped `sourceBlend(mode, ...)` dispatcher for modes `1`, `11`, and `15` instead of direct local helper calls. | Output should be equivalent, but real WebGL QA should confirm no shader/runtime differences and future work may still port the full source blend-mode table if needed. |
+| P1-06 | `Se` setter ownership | `showScene()` now follows source state tween behavior without a forced local reset; `setDarken`, `setSaturation`, `setContrast`, `setMediaBackground`, and `setDirectionalLight2Intensity` now tween local source-shaped state before writing uniforms/lights; composite uniform defaults are initialized from those state fields. | Browser QA should confirm no cross-route visual regressions; route entry/leave order still needs a final audit against `SD`, `DD`, `OD`, and transition classes. |
 
 ### Should Fix If Source-Proven
 
@@ -135,15 +135,17 @@ Tasks:
 
 ### Batch C: `Se` Route/Setter Ownership
 
+Status: partially implemented. Core setter ownership is source-shaped; route-specific call ordering still needs a final pass.
+
 Goal: make visual state setters source-owned instead of rebuild-compensated.
 
 Tasks:
 
 1. Audit `Se.setProject()` against rebuild `setProject()`.
-2. Audit `Se.showScene()` / `hideWorkScene()`.
+2. Audit `Se.showScene()` / `hideWorkScene()`. `showScene()` source-state tween ownership is implemented; `hideWorkScene()` still needs a final source-order audit with gallery leave.
 3. Audit about route entry/leave setter order.
 4. Audit project route entry/leave setter order without regressing media pages.
-5. Remove or document any remaining rebuild-only side effects.
+5. Remove or document any remaining rebuild-only side effects. Core `darken/saturation/contrast/media background/directionalLight2` setter state ownership is implemented.
 
 ### Batch D: Auxiliary Visuals
 

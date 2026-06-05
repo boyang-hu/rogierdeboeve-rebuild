@@ -1315,12 +1315,16 @@ export class WebGLBackdrop {
   private maxSpotLightIntensity = 220;
   private spotLightIntensity = 220;
   private directionalLightIntensity = 1.5;
+  private directionalLight2Intensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
   private spotLightTarget = new Vector3(0, 0, -8);
   private spotLightRight = new Vector3(1, 0, 0);
   private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
   private fluidStrength = 0.5;
+  private darken = 0.1;
+  private saturation = 1.15;
+  private contrast = 1.1;
   private envRotation = 0;
   private sceneReveal = 0;
   private revealSpread = 0;
@@ -1328,6 +1332,7 @@ export class WebGLBackdrop {
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
+  private mediaBackgroundState = colorFrom(DEFAULT_BG);
   private mediaSceneOpacity = 0;
   private gridLayers = SOURCE_GRID_LAYERS;
   private radius = 8;
@@ -2186,8 +2191,8 @@ export class WebGLBackdrop {
         boolFluid: { value: settings.fluid.enabled },
         boolLuminosity: { value: settings.luminosity.enabled },
         boolFxaa: { value: settings.fxaa.enabled },
-        uDarken: { value: 0.1 },
-        uSaturation: { value: 1.15 },
+        uDarken: { value: this.darken },
+        uSaturation: { value: this.saturation },
         uBloomDistortion: { value: 2.5 },
       },
       vertexShader: backgroundVertex,
@@ -2221,7 +2226,7 @@ export class WebGLBackdrop {
         uDisplacement: { value: 0.1 },
         uPerlin: { value: 0.1 },
         uReveal: { value: 0 },
-        uContrast: { value: 1.1 },
+        uContrast: { value: this.contrast },
         uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
         uDisplacementSize: { value: new Vector2(1, 1) },
         uContainerSize: { value: new Vector2(1, 1) },
@@ -2665,11 +2670,20 @@ export class WebGLBackdrop {
 
   private setDarken(value: number, duration = 0.5) {
     this.darkenTween?.kill();
+    const update = () => {
+      this.compositeMaterial.uniforms.uDarken.value = this.darken;
+    };
     if (duration <= 0) {
-      this.compositeMaterial.uniforms.uDarken.value = value;
+      this.darken = value;
+      update();
       return;
     }
-    this.darkenTween = gsap.to(this.compositeMaterial.uniforms.uDarken, { value, duration, ease: "none" });
+    this.darkenTween = gsap.to(this, {
+      darken: value,
+      duration: 0.5,
+      ease: "none",
+      onUpdate: update,
+    });
   }
 
   private setThumbDarknessIntensity(value: number, duration = 1.6) {
@@ -2684,11 +2698,20 @@ export class WebGLBackdrop {
 
   private setSaturation(value: number, duration = 1.6) {
     this.saturationTween?.kill();
+    const update = () => {
+      this.compositeMaterial.uniforms.uSaturation.value = this.saturation;
+    };
     if (duration <= 0) {
-      this.compositeMaterial.uniforms.uSaturation.value = value;
+      this.saturation = value;
+      update();
       return;
     }
-    this.saturationTween = gsap.to(this.compositeMaterial.uniforms.uSaturation, { value, duration, ease: "expo.out" });
+    this.saturationTween = gsap.to(this, {
+      saturation: value,
+      duration,
+      ease: "expo.out",
+      onUpdate: update,
+    });
   }
 
   private setThumbSaturation(value: number, duration = 1.6) {
@@ -2703,11 +2726,20 @@ export class WebGLBackdrop {
 
   private setContrast(value: number, duration = 1.6) {
     this.contrastTween?.kill();
+    const update = () => {
+      this.preCompositeMaterial.uniforms.uContrast.value = this.contrast;
+    };
     if (duration <= 0) {
-      this.preCompositeMaterial.uniforms.uContrast.value = value;
+      this.contrast = value;
+      update();
       return;
     }
-    this.contrastTween = gsap.to(this.preCompositeMaterial.uniforms.uContrast, { value, duration, ease: "expo.out" });
+    this.contrastTween = gsap.to(this, {
+      contrast: value,
+      duration,
+      ease: "expo.out",
+      onUpdate: update,
+    });
   }
 
   private setThumbDarknessColor(value?: string, duration = 1.6) {
@@ -2751,20 +2783,26 @@ export class WebGLBackdrop {
   private setMediaBackground(value?: string, duration = 1.6) {
     this.mediaBackgroundTweens.forEach((tween) => tween.kill());
     this.mediaBackgroundTweens = [];
-    this.mediaBackground = colorFrom(value, DEFAULT_BG);
-    this.mediaPlanes.forEach((plane) => {
-      if (duration <= 0) {
-        plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
-        return;
-      }
-      this.mediaBackgroundTweens.push(gsap.to(plane.material.uniforms.uBackgroundColor.value as Color, {
-        r: this.mediaBackground.r,
-        g: this.mediaBackground.g,
-        b: this.mediaBackground.b,
-        duration,
-        ease: "expo.out",
-      }));
-    });
+    const next = colorFrom(value, DEFAULT_BG);
+    const update = () => {
+      this.mediaBackground.copy(this.mediaBackgroundState);
+      this.mediaPlanes.forEach((plane) => {
+        plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackgroundState);
+      });
+    };
+    if (duration <= 0) {
+      this.mediaBackgroundState.copy(next);
+      update();
+      return;
+    }
+    this.mediaBackgroundTweens.push(gsap.to(this.mediaBackgroundState, {
+      r: next.r,
+      g: next.g,
+      b: next.b,
+      duration,
+      ease: "expo.out",
+      onUpdate: update,
+    }));
   }
 
   private setBlocksColor(value?: string, duration = 1.6) {
@@ -2840,13 +2878,17 @@ export class WebGLBackdrop {
   private setDirectionalLight2Intensity(value: number, duration = 1.6, ease = "expo.out") {
     this.directionalLight2Tween?.kill();
     if (duration <= 0) {
+      this.directionalLight2Intensity = value;
       this.directionalLight2.intensity = value;
       return;
     }
-    this.directionalLight2Tween = gsap.to(this.directionalLight2, {
-      intensity: value,
+    this.directionalLight2Tween = gsap.to(this, {
+      directionalLight2Intensity: value,
       duration,
       ease,
+      onUpdate: () => {
+        this.directionalLight2.intensity = this.directionalLight2Intensity;
+      },
     });
   }
 
