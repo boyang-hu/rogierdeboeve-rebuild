@@ -952,6 +952,9 @@ export class WebGLBackdrop {
   private raf = 0;
   private pointer = new Vector2();
   private targetPointer = new Vector2();
+  private pointerPixels = new Vector2(document.documentElement.clientWidth / 2, document.documentElement.clientHeight / 2);
+  private lastPointerPixels = this.pointerPixels.clone();
+  private pointerDeltaPixels = new Vector2();
   private mouseSimOldPos = new Vector2(0.5, 0.5);
   private mouseSimNewPos = new Vector2(0.5, 0.5);
   private mouseSimTargetPos = new Vector2(0.5, 0.5);
@@ -963,6 +966,12 @@ export class WebGLBackdrop {
   private galleryProgress = 0;
   private sceneRotation = 0;
   private zoom = 0;
+  private cameraOrigin = new Vector3(0, 0, 5.5);
+  private cameraTarget = new Vector3(0, 0, 5.5);
+  private cameraLookAt = new Vector3(0, 0, 0);
+  private cameraTargetXY = new Vector2(1, 0.5);
+  private cameraRoll = 0;
+  private cameraRotateAngle = MathUtils.degToRad(20);
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
@@ -1074,6 +1083,16 @@ export class WebGLBackdrop {
     this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation);
     this.homeScene.position.z = this.homeScene.rotation.z - this.zoom;
     this.updateThumbGallery(-progress);
+  }
+
+  setCameraControllerSettings(
+    lookAt: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 },
+    targetXY: { x: number; y: number } = { x: 0.25, y: 0.25 },
+    rotateAngle = 10,
+  ) {
+    this.cameraLookAt.set(lookAt.x, lookAt.y, lookAt.z);
+    this.cameraTargetXY.set(targetXY.x, targetXY.y);
+    this.cameraRotateAngle = MathUtils.degToRad(rotateAngle);
   }
 
   setPreviewMode(enabled: boolean) {
@@ -1887,6 +1906,7 @@ export class WebGLBackdrop {
   }
 
   private onPointerMove = (event: PointerEvent) => {
+    this.pointerPixels.set(event.clientX, event.clientY);
     this.targetPointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
     this.targetPointer.y = -(event.clientY / window.innerHeight - 0.5) * 2;
     this.screenMouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
@@ -1917,6 +1937,7 @@ export class WebGLBackdrop {
     });
     this.homeCamera.aspect = width / height;
     this.homeCamera.updateProjectionMatrix();
+    this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.compositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
@@ -2058,6 +2079,30 @@ export class WebGLBackdrop {
     );
   }
 
+  private updateHomeCamera(delta: number) {
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
+    const fps = 1 / delta;
+    const cameraLerp = Math.min(Math.round(2 / (fps / 60)), 2) * 0.01 || 0.01;
+    this.pointerDeltaPixels.subVectors(this.pointerPixels, this.lastPointerPixels);
+    this.lastPointerPixels.copy(this.pointerPixels);
+
+    const mouseX = MathUtils.mapLinear(this.pointerPixels.x, 0, width, -1, 1);
+    const mouseY = MathUtils.mapLinear(this.pointerPixels.y, 0, height, 1, -1);
+    this.cameraTarget.set(
+      this.cameraOrigin.x + this.cameraTargetXY.x * mouseX,
+      this.cameraOrigin.y + this.cameraTargetXY.y * mouseY,
+      this.cameraOrigin.z + this.cameraTargetXY.y * (mouseY * 1.25),
+    );
+    this.homeCamera.position.lerp(this.cameraTarget, cameraLerp);
+    this.homeCamera.lookAt(this.cameraLookAt);
+
+    const rollInput = MathUtils.mapLinear(Math.abs(this.pointerDeltaPixels.x) / width, 0, 0.02, 0, 0.5);
+    const rollTarget = this.cameraRotateAngle * rollInput * Math.sign(this.pointerDeltaPixels.x);
+    this.cameraRoll += (rollTarget - this.cameraRoll) * cameraLerp;
+    this.homeCamera.rotation.z += (this.cameraRoll - this.homeCamera.rotation.z) * cameraLerp;
+  }
+
   private tick = () => {
     const time = performance.now() * 0.001;
     const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
@@ -2077,9 +2122,7 @@ export class WebGLBackdrop {
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
     });
-    this.homeCamera.position.x += (this.pointer.x * 0.25 - this.homeCamera.position.x) * 0.08;
-    this.homeCamera.position.y += (this.pointer.y * 0.25 - this.homeCamera.position.y) * 0.08;
-    this.homeCamera.lookAt(0, 0, 0);
+    this.updateHomeCamera(delta);
     this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
     this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
     this.spotLightPosition.z = 3.7;
