@@ -94,11 +94,12 @@ Last updated: 2026-06-05
 | `d378e2f` | Home WebGL | Batched source `A1/C1/OA/p1` composite alignment: removed local procedural/background/glow compensation from the main composite, restored texture-driven `uPerlin=.1` displacement, shifted bloom sampling through fluid UVs, fixed source work/composite background colors, and removed stale composite color uniforms. |
 | `e95069f` | Home WebGL | Batched source `Ka/Lu/A1` mouse-simulation alignment: replaced CPU `DataTexture` brush updates with source-style low-resolution ping-pong render targets, added the original mouse simulation shader inputs, resized simulation targets from render resolution like `Lu`, fed both mesh and screen mouse textures through the WebGL render path, and restored source-style `mouseSim.rg` composite flow sampling. |
 | `c312ef6` | Home DOM | Batched source `vD/_D/yD` nav semantics alignment: split immediate DOM active/CTA updates from scene project activation during nav/progress clicks, delayed scene activation until the source-style transition window completes, preserved keyboard navigation as direct next/prev gallery motion, and fixed mobile touch-end delta tracking from the original touch start point. |
-| `current batch` | Home WebGL | Batched source `p1/SD/T1` spotlight-map alignment: projected thumb sampling from source-style spotlight position and target `(0,0,-8)`, added per-frame spotlight basis uniforms, synchronized spotlight target/right/up during intensity changes, and further reduced the auxiliary projection-plane overlay so cube shading carries the thumb-map projection. |
+| `f844355` | Home WebGL | Batched source `p1/SD/T1` spotlight-map alignment: projected thumb sampling from source-style spotlight position and target `(0,0,-8)`, added per-frame spotlight basis uniforms, synchronized spotlight target/right/up during intensity changes, and further reduced the auxiliary projection-plane overlay so cube shading carries the thumb-map projection. |
+| `current batch` | Home DOM | Batched source `gD/yD/SD` gallery-out interaction alignment: moved CTA magnet smoothing to source `yf(..., 2.5, delta)` exponential damping, centralized CTA preview cleanup, introduced a source-style `rd:work-gallery-out` event consumer for leave animation, guarded duplicate gallery leaves, and reset stale leave state on restored home pages. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `p1/SD/T1` spotlight-map projection semantics while preserving recent WebGL mouse simulation, camera-controller, bloom, composite, and Phase 2 nav work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `gD/yD/SD` CTA and gallery-out interaction semantics while preserving recent WebGL mouse simulation, camera-controller, bloom, composite, and spotlight-map work.
 
 Immediate source targets:
 
@@ -110,10 +111,10 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Continue source `gD` CTA navigation timing comparison beyond audio, especially leave delay and preview-state cleanup.
-2. Continue `yD` virtual-scroll parity around pointer speed gating and snap state after nav transitions.
-3. Audit `SD` home lifecycle against project-route entry/leave so WebGL reveal, header availability, and work-state restoration stay source-derived.
-4. Continue visual/source comparison of `GA` block material lighting against the source spotlight-map behavior now that projection direction is closer.
+1. Continue source `yD` virtual-scroll parity around pointer speed gating and snap state after nav transitions.
+2. Audit `SD` home lifecycle against project-route entry/leave so WebGL reveal, header availability, and work-state restoration stay source-derived.
+3. Continue visual/source comparison of `GA` block material lighting against the source spotlight-map behavior now that projection direction is closer.
+4. Continue source `A1/OA/kA` composite review after the current DOM interaction batch lands.
 
 ## Verification Baseline
 

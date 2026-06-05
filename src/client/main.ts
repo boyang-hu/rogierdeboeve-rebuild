@@ -61,14 +61,21 @@ function setWorkPreviewing(enabled: boolean) {
   document.documentElement.classList.toggle("is-work-previewing", enabled);
 }
 
+function clearWorkPreview(webgl?: WebGLLike) {
+  setWorkPreviewing(false);
+  webgl?.setPreviewMode?.(false);
+}
+
 function initCtaMagnet(cta: HTMLElement) {
   const button = cta.querySelector<HTMLElement>(".c-button");
   if (!button || window.matchMedia("(max-width: 999px)").matches) return;
 
   const state = { x: 0, y: 0, xLerp: 0, yLerp: 0 };
-  const render = () => {
-    state.xLerp += (state.x - state.xLerp) * 0.12;
-    state.yLerp += (state.y - state.yLerp) * 0.12;
+  const render = (_time: number, deltaTime: number) => {
+    const delta = Math.min(0.05, Math.max(0.001, deltaTime / 1000));
+    const factor = 1 - Math.exp(-2.5 * delta);
+    state.xLerp += (state.x - state.xLerp) * factor;
+    state.yLerp += (state.y - state.yLerp) * factor;
     button.style.transform = `translate3d(${state.xLerp}px, ${state.yLerp}px, 0)`;
     if (Math.abs(state.x) + Math.abs(state.y) + Math.abs(state.xLerp) + Math.abs(state.yLerp) < 0.02) {
       state.xLerp = 0;
@@ -97,15 +104,20 @@ function initCtaMagnet(cta: HTMLElement) {
   window.addEventListener("beforeunload", () => gsap.ticker.remove(render), { once: true });
 }
 
-function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
+function runWorkGalleryOut(webgl?: WebGLLike) {
   window.dispatchEvent(new CustomEvent("rd:soft-woosh"));
-  setWorkPreviewing(false);
-  webgl?.setPreviewMode?.(false);
+  clearWorkPreview(webgl);
+  document.documentElement.classList.add("is-work-gallery-leaving");
   if (!prefersReducedMotion()) {
     gsap.to(".ui-header-description .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
     gsap.to(".ui-header-availability .ui-header-part-inner", { opacity: 0, duration: 0.5, ease: "none" });
   }
   webgl?.hideWorkScene?.();
+}
+
+function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
+  if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
+  window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
   window.setTimeout(() => {
     window.location.href = url;
   }, 500);
@@ -233,6 +245,7 @@ function initMenu() {
 }
 
 function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
+  document.documentElement.classList.remove("is-work-gallery-leaving");
   const stateKey = "rd:work-state";
   const cards = document.querySelectorAll<HTMLElement>("[data-project-card]");
   const progressItems = document.querySelectorAll<HTMLElement>("[data-progress-slug]");
@@ -473,6 +486,18 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     );
   };
 
+  const previewWork = (enabled: boolean) => {
+    if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
+    setWorkPreviewing(enabled);
+    getWebgl()?.setPreviewMode?.(enabled);
+  };
+
+  window.addEventListener("pageshow", () => {
+    document.documentElement.classList.remove("is-work-gallery-leaving");
+    previewWork(false);
+  });
+  window.addEventListener("rd:work-gallery-out", () => runWorkGalleryOut(getWebgl()));
+
   cardsArray.forEach((card, index) => {
     card.addEventListener("mouseenter", () => {
       if (window.matchMedia("(max-width: 999px)").matches) return;
@@ -495,25 +520,22 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (cta) initCtaMagnet(cta);
     cta?.addEventListener("click", (event) => {
       event.preventDefault();
+      if (performance.now() - lastTouchSelect < 500) return;
       scrollToIndex(index);
       navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl());
     });
     cta?.addEventListener("mouseenter", () => {
-      setWorkPreviewing(true);
-      getWebgl()?.setPreviewMode?.(true);
+      previewWork(true);
     });
     cta?.addEventListener("mouseleave", () => {
-      setWorkPreviewing(false);
-      getWebgl()?.setPreviewMode?.(false);
+      previewWork(false);
     });
     cta?.addEventListener("focusin", () => {
       scrollToIndex(index);
-      setWorkPreviewing(true);
-      getWebgl()?.setPreviewMode?.(true);
+      previewWork(true);
     });
     cta?.addEventListener("focusout", () => {
-      setWorkPreviewing(false);
-      getWebgl()?.setPreviewMode?.(false);
+      previewWork(false);
     });
   });
 
