@@ -806,6 +806,24 @@ void main() {
 }
 `;
 
+const characterCompositeFragment = `
+precision highp float;
+
+uniform sampler2D tMap;
+uniform vec3 uBackgroundColor;
+uniform float uReveal;
+
+varying vec2 vUv;
+
+void main() {
+  vec2 uv = vUv;
+  vec4 map = texture2D(tMap, uv);
+  float mask = smoothstep(0.04, 0.35, map.r + map.g + map.b);
+  vec3 color = mix(uBackgroundColor, map.rgb, mask);
+  gl_FragColor = vec4(color * uReveal, 1.0);
+}
+`;
+
 const backgroundVertex = `
 varying vec2 vUv;
 
@@ -1201,6 +1219,9 @@ export class WebGLBackdrop {
   private screenMouseSimulationIndex = 0;
   private thumbCompositeMaterial: ShaderMaterial;
   private thumbCompositeScene = new Scene();
+  private characterMaterial: ShaderMaterial;
+  private characterScene = new Scene();
+  private characterTarget = makeSourceRenderTarget(false);
   private floorMaterial: ShaderMaterial;
   private floorPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private environmentMaterial: ShaderMaterial;
@@ -1351,6 +1372,8 @@ export class WebGLBackdrop {
     this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
+    this.characterMaterial = this.createCharacterMaterial();
+    this.characterScene.add(new Mesh(new PlaneGeometry(2, 2), this.characterMaterial));
     [this.thumbTarget, this.thumbCompositeTarget].forEach((target) => {
       target.texture.generateMipmaps = false;
       target.texture.minFilter = LinearFilter;
@@ -1547,6 +1570,7 @@ export class WebGLBackdrop {
     this.setAmbientLight("#000000", 1);
     this.setDirectionalLightIntensity(5);
     this.spotLightParallax = false;
+    this.spotLight.map = this.characterTarget.texture;
     this.setSpotLightIntensity(0, 0);
     if (this.aboutBlocks) {
       this.aboutBlocks.track = visual ?? null;
@@ -1695,6 +1719,8 @@ export class WebGLBackdrop {
     this.screenMouseSimulationMaterial.dispose();
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
+    this.characterTarget.dispose();
+    this.characterMaterial.dispose();
     this.floorPlane.geometry.dispose();
     this.floorMaterial.dispose();
     this.environmentPlane.geometry.dispose();
@@ -2232,6 +2258,9 @@ export class WebGLBackdrop {
         item.material.uniforms.tPerlin.value = texture;
       });
     });
+    this.loadTexture("/models/me/model_T.jpg", (texture) => {
+      this.characterMaterial.uniforms.tMap.value = texture;
+    });
     const cubeExt = "webp";
     const cubeBase = "/images/cubemaps/01";
     this.cubeLoader.load(
@@ -2302,6 +2331,20 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: thumbCompositeFragment,
+    });
+  }
+
+  private createCharacterMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tMap: { value: this.placeholder },
+        uBackgroundColor: { value: colorFrom("#000000") },
+        uReveal: { value: 1 },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: characterCompositeFragment,
     });
   }
 
@@ -2921,6 +2964,8 @@ export class WebGLBackdrop {
     const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
+    this.characterTarget.setSize(thumbSize, thumbSize);
+    this.renderCharacterTarget();
     this.calcThumbItemWidth();
 
     const distance = 1000;
@@ -3256,6 +3301,13 @@ export class WebGLBackdrop {
     this.renderer.setRenderTarget(null);
   }
 
+  private renderCharacterTarget() {
+    this.renderer.setRenderTarget(this.characterTarget);
+    this.renderer.clear();
+    this.renderer.render(this.characterScene, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
+  }
+
   private renderHomeBlurPass() {
     this.blurHorizontalMaterial.uniforms.tMap.value = this.compositeTarget.texture;
     this.renderer.setRenderTarget(this.blurTargetA);
@@ -3371,6 +3423,7 @@ export class WebGLBackdrop {
       this.renderHomeCompositePass(sceneSourceTarget);
     }
     this.renderThumbTargets();
+    if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
     this.renderDisplacementTarget(time);
     if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
     this.raf = requestAnimationFrame(this.tick);
