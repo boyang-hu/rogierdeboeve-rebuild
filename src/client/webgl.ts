@@ -159,6 +159,7 @@ uniform float uRevealSpread;
 uniform float uRevealSpreadSides;
 uniform float uMouseFactor;
 uniform vec2 uPointer;
+uniform sampler2D tMouseSim;
 uniform float uTime;
 
 float hash(vec2 p) {
@@ -199,7 +200,8 @@ void main() {
 
   vec2 mouseUv = instanceGrid.xy;
   vec2 pointerUv = uPointer * 0.5 + 0.5;
-  float mouse = 1.0 - smoothstep(0.0, 0.38, distance(mouseUv, pointerUv));
+  float pointerMouse = 1.0 - smoothstep(0.0, 0.38, distance(mouseUv, pointerUv));
+  float mouse = max(pointerMouse, texture2D(tMouseSim, mouseUv).r);
   transformed.z -= 1.5;
   transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
   transformed.z += mouse * 2.35 * uMouseFactor;
@@ -241,6 +243,8 @@ uniform float uSaturation;
 uniform float uContrast;
 uniform float uMouseLightness;
 uniform vec2 uPointer;
+uniform sampler2D tMouseSim;
+uniform vec2 uResolution;
 
 varying vec2 vThumbUv;
 varying float vAlpha;
@@ -294,7 +298,10 @@ void main() {
   color *= faceLight;
 
   vec2 pointerUv = uPointer * 0.5 + 0.5;
-  float mouseLight = 1.0 - smoothstep(0.02, 0.58, distance(uv, pointerUv));
+  vec2 screenUv = gl_FragCoord.xy / max(uResolution, vec2(1.0));
+  float pointerLight = 1.0 - smoothstep(0.02, 0.58, distance(uv, pointerUv));
+  float simLight = texture2D(tMouseSim, screenUv).r;
+  float mouseLight = max(pointerLight, simLight);
   color *= 0.72 + mouseLight * uMouseLightness * 0.24;
   color += pow(max(0.0, 1.0 - length(uv - 0.5) * 1.65), 2.0) * 0.12;
 
@@ -312,6 +319,117 @@ void main() {
   alpha *= revealCombined * clamp(vAlpha + 0.35, 0.0, 1.0);
 
   gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.92));
+}
+`;
+
+const homeCompositeFragment = `
+precision highp float;
+
+uniform sampler2D tWork;
+uniform sampler2D tMouseSim;
+uniform float uTime;
+uniform float uRatio;
+uniform float uProgress;
+uniform float uFluidStrength;
+uniform float uContrast;
+uniform vec3 uBgColor;
+uniform vec3 uActiveColor;
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+
+varying vec2 vUv;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+}
+
+float fbm(vec2 p) {
+  float f = 0.0;
+  float a = 0.5;
+  for (int i = 0; i < 5; i++) {
+    f += a * noise(p);
+    p = p * 2.02 + 13.17;
+    a *= 0.5;
+  }
+  return f;
+}
+
+vec3 contrast(vec3 color, float amount) {
+  return (color - 0.5) * amount + 0.5;
+}
+
+vec3 saturation(vec3 color, float amount) {
+  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  return mix(vec3(gray), color, amount);
+}
+
+vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
+  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
+  float r = texture2D(tex, uv + offset).r;
+  float g = texture2D(tex, uv).g;
+  float b = texture2D(tex, uv - offset).b;
+  float a = texture2D(tex, uv).a;
+  return vec4(r, g, b, a);
+}
+
+float vignette(vec2 uv, float inner, float outer) {
+  vec2 p = uv - 0.5;
+  p.x *= uRatio;
+  return smoothstep(outer, inner, length(p));
+}
+
+void main() {
+  vec2 uv = vUv;
+  vec2 p = uv - 0.5;
+  p.x *= uRatio;
+
+  vec4 mouseSim = texture2D(tMouseSim, uv);
+  vec2 fluidUv = uv + (mouseSim.rg - 0.5) * -0.18 * uFluidStrength;
+  vec2 perlinUv = uv * 0.25;
+  perlinUv -= 0.5;
+  perlinUv.x *= uRatio;
+  perlinUv += 0.5;
+  perlinUv.x -= uTime * 0.01;
+  perlinUv.y -= uTime * 0.005;
+  perlinUv.x += uProgress * 0.15;
+
+  float perlin = fbm(perlinUv * 6.0);
+  float flow = fbm(p * 2.3 + vec2(uTime * -0.035 + uProgress, uTime * -0.018));
+  float rings = abs(1.0 / (sin(pow(length(p) * 0.9, 0.25) - uTime * 0.35 + sin(length(p) * 0.8 - 1.6)) * 10.8)) - 0.1;
+  vec4 workBase = texture2D(tWork, uv);
+  vec4 workShift = rgbshift(tWork, fluidUv, -1.0, 0.0005 + 0.024 * mouseSim.r * uFluidStrength);
+  vec3 work = mix(workBase.rgb, workShift.rgb, 0.65);
+
+  vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.68);
+  vec3 accent = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.4) * 0.28);
+  vec3 color = deep;
+  color = mix(color, accent, 0.18 + flow * 0.26);
+  color += accent * rings * 0.08 * uFluidStrength;
+  color *= 0.52 + vignette(uv, 0.05, 0.84) * 0.98;
+
+  float workMask = clamp(workBase.a * 1.25, 0.0, 1.0);
+  color = mix(color, work, workMask);
+  color += mouseSim.rgb * 0.065;
+  color = mix(color, color * 5.0, (1.0 - vignette(uv + perlin * 0.015, 0.1, 0.35)) * 0.055);
+  color = mix(color, color * vec3(0.94 + perlin * 0.12), 0.25);
+  color = contrast(color, uContrast);
+  color *= uContrast;
+  color = saturation(color, 1.15);
+  color = mix(color * uBgColor, color, 0.85);
+  color = mix(color * vec3(0.92 + hash(floor(uv * vec2(uRatio, 1.0) * 900.0) + uTime) * 0.14), color, 0.72);
+
+  gl_FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -605,7 +723,12 @@ export class WebGLBackdrop {
   private loader = new TextureLoader();
   private textureCache = new Map<string, Texture>();
   private placeholder = makePlaceholderTexture();
+  private mouseSimTexture = makePlaceholderTexture([128, 128, 0, 255]);
+  private mouseSimData = new Uint8Array(128 * 128 * 4);
   private backgroundMaterial: ShaderMaterial;
+  private compositeMaterial: ShaderMaterial;
+  private compositeScene = new Scene();
+  private compositeTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
   private projectionMaterial: ShaderMaterial;
   private projectionPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private floorMaterial: ShaderMaterial;
@@ -646,6 +769,8 @@ export class WebGLBackdrop {
     this.mediaCamera.position.set(0, 0, 1000);
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
+    this.compositeMaterial = this.createCompositeMaterial();
+    this.compositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial));
     this.projectionMaterial = this.createProjectionMaterial();
     this.projectionPlane = new Mesh(new PlaneGeometry(3.9, 2.72), this.projectionMaterial);
     this.projectionPlane.position.set(0, 0, 0.42);
@@ -747,6 +872,7 @@ export class WebGLBackdrop {
     window.removeEventListener("pointermove", this.onPointerMove);
     window.removeEventListener("scroll", this.onScroll);
     this.textureCache.forEach((texture) => texture.dispose());
+    this.mouseSimTexture.dispose();
     this.mediaPlanes.forEach((plane) => {
       plane.video?.pause();
       plane.texture?.dispose();
@@ -760,6 +886,8 @@ export class WebGLBackdrop {
       item.thumb.material.dispose();
     });
     this.backgroundMaterial.dispose();
+    this.compositeTarget.dispose();
+    this.compositeMaterial.dispose();
     this.projectionPlane.geometry.dispose();
     this.projectionMaterial.dispose();
     this.floorPlane.geometry.dispose();
@@ -841,6 +969,8 @@ export class WebGLBackdrop {
         uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
         uMouseFactor: { value: this.mouseFactor },
         uPointer: { value: this.pointer },
+        tMouseSim: { value: this.mouseSimTexture },
+        uResolution: { value: new Vector2(1, 1) },
         uTime: { value: 0 },
       },
       vertexShader: workBlockVertex,
@@ -933,6 +1063,28 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: backgroundFragment,
+    });
+  }
+
+  private createCompositeMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tWork: { value: this.compositeTarget.texture },
+        tMouseSim: { value: this.mouseSimTexture },
+        uTime: { value: 0 },
+        uRatio: { value: 1 },
+        uProgress: { value: 0 },
+        uFluidStrength: { value: 0.5 },
+        uContrast: { value: 1.1 },
+        uBgColor: { value: colorFrom("#1f1f1f") },
+        uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
+        uAmbientColor: { value: colorFrom("#414652") },
+        uAmbientIntensity: { value: 0.5 },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: homeCompositeFragment,
     });
   }
 
@@ -1158,6 +1310,7 @@ export class WebGLBackdrop {
     const elements = document.querySelectorAll<HTMLElement>(".c-color");
     const next = colorFrom(color);
     tweenColor(this.backgroundMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
+    tweenColor(this.compositeMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
     tweenColor(this.floorMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
     elements.forEach((element) => {
       gsap.to(element, {
@@ -1176,9 +1329,15 @@ export class WebGLBackdrop {
       if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uTint.value as Color, color, 1.6);
     });
     tweenColor(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
+    tweenColor(this.compositeMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
     tweenColor(this.floorMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
     tweenColor(this.environmentMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
     gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
+      value: intensity,
+      duration: 1.6,
+      ease: "expo.out",
+    });
+    gsap.to(this.compositeMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
       duration: 1.6,
       ease: "expo.out",
@@ -1233,6 +1392,7 @@ export class WebGLBackdrop {
 
   private setMediaBackground(value?: string) {
     this.mediaBackground = colorFrom(value, DEFAULT_BG);
+    tweenColor(this.compositeMaterial.uniforms.uBgColor.value as Color, value ?? DEFAULT_BG, 1.6);
     this.mediaPlanes.forEach((plane) => tweenColor(plane.material.uniforms.uBackgroundColor.value as Color, value, 1.6));
   }
 
@@ -1320,9 +1480,11 @@ export class WebGLBackdrop {
     const height = window.innerHeight;
     const dpr = Math.min(window.devicePixelRatio, 1.6);
     this.renderer.setSize(width, height, false);
+    this.compositeTarget.setSize(Math.max(1, Math.round(width * dpr)), Math.max(1, Math.round(height * dpr)));
     this.homeCamera.aspect = width / height;
     this.homeCamera.updateProjectionMatrix();
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
+    this.compositeMaterial.uniforms.uRatio.value = width / height;
     const thumbSize = Math.max(512, Math.round(height * dpr));
     this.thumbTarget.setSize(thumbSize, thumbSize);
 
@@ -1344,6 +1506,9 @@ export class WebGLBackdrop {
       plane.material.uniforms.uContainerSize.value.set(Math.max(1, rect.width), Math.max(1, rect.height));
       plane.material.uniforms.uRadius.value = parseFloat(style.borderRadius) || 0;
       plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
+    });
+    this.workItems.forEach((item) => {
+      item.material.uniforms.uResolution.value.set(Math.max(1, Math.round(width * dpr)), Math.max(1, Math.round(height * dpr)));
     });
     this.updateMediaPlanePositions();
   };
@@ -1385,9 +1550,38 @@ export class WebGLBackdrop {
     });
   }
 
+  private updateMouseSimulation() {
+    const size = 128;
+    const pointerUv = new Vector2(this.pointer.x * 0.5 + 0.5, this.pointer.y * 0.5 + 0.5);
+    const data = this.mouseSimData;
+    const radius = Math.max(7, 17 * this.mouseFactor);
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const index = (y * size + x) * 4;
+        const dx = x + 0.5 - pointerUv.x * size;
+        const dy = y + 0.5 - pointerUv.y * size;
+        const falloff = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / radius);
+        const next = Math.max(data[index] * 0.88, Math.pow(falloff, 1.6) * 255);
+        const flowX = 128 + MathUtils.clamp(-dx / radius, -1, 1) * next * 0.35;
+        const flowY = 128 + MathUtils.clamp(-dy / radius, -1, 1) * next * 0.35;
+        data[index] = next;
+        data[index + 1] = flowX;
+        data[index + 2] = flowY;
+        data[index + 3] = 255;
+      }
+    }
+
+    this.mouseSimTexture.image.data = data;
+    this.mouseSimTexture.image.width = size;
+    this.mouseSimTexture.image.height = size;
+    this.mouseSimTexture.needsUpdate = true;
+  }
+
   private tick = () => {
     const time = performance.now() * 0.001;
     this.pointer.lerp(this.targetPointer, 0.055);
+    this.updateMouseSimulation();
     this.updatePointerProjection();
     this.workItems.forEach((item) => {
       item.material.uniforms.uTime.value = time;
@@ -1406,6 +1600,9 @@ export class WebGLBackdrop {
     this.particles.position.y = this.pointer.y * 0.08;
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
+    this.compositeMaterial.uniforms.uTime.value = time;
+    this.compositeMaterial.uniforms.uProgress.value = this.galleryProgress;
+    this.compositeMaterial.uniforms.uFluidStrength.value = MathUtils.clamp(0.35 + this.mouseFactor * 0.35, 0.2, 0.8);
     this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
     this.updateMediaPlanePositions();
@@ -1415,11 +1612,19 @@ export class WebGLBackdrop {
     this.renderer.clear();
     this.renderer.render(this.thumbScene, this.thumbCamera);
     this.renderer.setRenderTarget(null);
-    if (this.sceneWrap.visible || this.mediaPlanes.some((plane) => plane.mesh.visible)) {
+    const hasHome = this.sceneWrap.visible;
+    const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
+    if (!hasHome && hasMedia) {
       this.renderer.render(this.backgroundScene, this.backgroundCamera);
     }
-    if (this.sceneWrap.visible) this.renderer.render(this.homeScene, this.homeCamera);
-    if (this.mediaPlanes.some((plane) => plane.mesh.visible)) this.renderer.render(this.mediaScene, this.mediaCamera);
+    if (hasHome) {
+      this.renderer.setRenderTarget(this.compositeTarget);
+      this.renderer.clear();
+      this.renderer.render(this.homeScene, this.homeCamera);
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.compositeScene, this.backgroundCamera);
+    }
+    if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
     this.raf = requestAnimationFrame(this.tick);
   };
 }
