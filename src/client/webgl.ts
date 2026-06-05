@@ -1283,6 +1283,7 @@ export class WebGLBackdrop {
   private thumbIsTransitioning = false;
   private sceneRotation = 0;
   private zoom = 0;
+  private auxiliaryScrollLast = 0;
   private cameraOrigin = new Vector3(0, 0, 5.5);
   private cameraTarget = new Vector3(0, 0, 5.5);
   private cameraLookAt = new Vector3(0, 0, 0);
@@ -1623,9 +1624,11 @@ export class WebGLBackdrop {
     if (this.floatingBlocks) {
       this.floatingBlocks.track = floating ?? null;
       this.floatingBlocks.group.visible = true;
+      this.floatingBlocks.translationZ = 0;
       this.floatingBlocks.material.uniforms.uReveal.value = 0;
       this.floatingBlocks.material.uniforms.uRevealSpread.value = 0;
     }
+    this.auxiliaryScrollLast = window.scrollY;
     this.resize();
     this.updateAboutSpotlight();
   }
@@ -1695,7 +1698,9 @@ export class WebGLBackdrop {
     if (this.floatingBlocks) {
       this.floatingBlocks.group.visible = false;
       this.floatingBlocks.track = null;
+      this.floatingBlocks.translationZ = 0;
     }
+    this.auxiliaryScrollLast = window.scrollY;
     this.setSpotLightIntensity(0, 0);
     this.spotLightParallax = true;
     this.spotLight.map = this.thumbCompositeTarget.texture;
@@ -3260,6 +3265,9 @@ export class WebGLBackdrop {
     const item = this.floatingBlocks;
     if (!item?.group.visible) return;
     updateShared(item);
+    const scrollVelocity = window.scrollY - this.auxiliaryScrollLast;
+    this.auxiliaryScrollLast = window.scrollY;
+    item.translationZ += 0.005 * Math.abs(scrollVelocity);
     const dummy = new Object3D();
     const xNum = item.gridSize.x;
     const yNum = item.gridSize.y;
