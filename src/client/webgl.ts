@@ -1208,6 +1208,14 @@ export class WebGLBackdrop {
   private bloomVerticalTargets: WebGLRenderTarget[] = [];
   private bloomCompositeMaterial: ShaderMaterial;
   private bloomCompositeScene = new Scene();
+  private preBloomBrightTarget = makeSourceRenderTarget(false);
+  private preBloomTarget = makeSourceRenderTarget(false);
+  private preBloomHorizontalTargets: WebGLRenderTarget[] = [];
+  private preBloomVerticalTargets: WebGLRenderTarget[] = [];
+  private preBloomCompositeMaterial: ShaderMaterial;
+  private preBloomCompositeScene = new Scene();
+  private preBloomBlurMaterial: ShaderMaterial;
+  private preBloomBlurScene = new Scene();
   private blurHorizontalMaterial: ShaderMaterial;
   private blurHorizontalScene = new Scene();
   private blurVerticalMaterial: ShaderMaterial;
@@ -1351,12 +1359,18 @@ export class WebGLBackdrop {
     this.compositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial));
     this.bloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
     this.bloomVerticalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
+    this.preBloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
+    this.preBloomVerticalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
     this.luminosityMaterial = this.createLuminosityMaterial();
     this.luminosityScene.add(new Mesh(new PlaneGeometry(2, 2), this.luminosityMaterial));
     this.bloomBlurMaterial = this.createBloomBlurMaterial();
     this.bloomBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomBlurMaterial));
-    this.bloomCompositeMaterial = this.createBloomCompositeMaterial();
+    this.bloomCompositeMaterial = this.createBloomCompositeMaterial(this.bloomVerticalTargets);
     this.bloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomCompositeMaterial));
+    this.preBloomBlurMaterial = this.createBloomBlurMaterial();
+    this.preBloomBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.preBloomBlurMaterial));
+    this.preBloomCompositeMaterial = this.createBloomCompositeMaterial(this.preBloomVerticalTargets);
+    this.preBloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.preBloomCompositeMaterial));
     this.blurHorizontalMaterial = this.createBloomBlurMaterial();
     this.blurHorizontalMaterial.uniforms.uKernelRadius.value = this.renderSettings.blur.strength;
     this.blurHorizontalMaterial.uniforms.uSigma.value = this.renderSettings.blur.strength;
@@ -1712,9 +1726,15 @@ export class WebGLBackdrop {
     this.bloomTarget.dispose();
     this.bloomHorizontalTargets.forEach((target) => target.dispose());
     this.bloomVerticalTargets.forEach((target) => target.dispose());
+    this.preBloomBrightTarget.dispose();
+    this.preBloomTarget.dispose();
+    this.preBloomHorizontalTargets.forEach((target) => target.dispose());
+    this.preBloomVerticalTargets.forEach((target) => target.dispose());
     this.luminosityMaterial.dispose();
     this.bloomBlurMaterial.dispose();
     this.bloomCompositeMaterial.dispose();
+    this.preBloomBlurMaterial.dispose();
+    this.preBloomCompositeMaterial.dispose();
     this.blurHorizontalMaterial.dispose();
     this.blurVerticalMaterial.dispose();
     this.blurTargetA.dispose();
@@ -2224,17 +2244,17 @@ export class WebGLBackdrop {
     });
   }
 
-  private createBloomCompositeMaterial() {
+  private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[]) {
     const factors = sourceBloomFactors(this.renderSettings.bloom.strength, this.renderSettings.bloom.radius);
     return new ShaderMaterial({
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tBloom1: { value: this.bloomVerticalTargets[0].texture },
-        tBloom2: { value: this.bloomVerticalTargets[1].texture },
-        tBloom3: { value: this.bloomVerticalTargets[2].texture },
-        tBloom4: { value: this.bloomVerticalTargets[3].texture },
-        tBloom5: { value: this.bloomVerticalTargets[4].texture },
+        tBloom1: { value: verticalTargets[0].texture },
+        tBloom2: { value: verticalTargets[1].texture },
+        tBloom3: { value: verticalTargets[2].texture },
+        tBloom4: { value: verticalTargets[3].texture },
+        tBloom5: { value: verticalTargets[4].texture },
         uFactor1: { value: factors[0] },
         uFactor2: { value: factors[1] },
         uFactor3: { value: factors[2] },
@@ -2940,17 +2960,17 @@ export class WebGLBackdrop {
     }
     this.workRawTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
-    let mipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 4));
-    let mipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 4));
-    if (this.renderSettings.luminosity.enabled) this.bloomBrightTarget.setSize(mipWidth, mipHeight);
+    const halfMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 2));
+    const halfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
+    this.preBloomBrightTarget.setSize(halfMipWidth, halfMipHeight);
+    this.preBloomTarget.setSize(halfMipWidth, halfMipHeight);
+    this.resizeBloomMipChain(this.preBloomHorizontalTargets, this.preBloomVerticalTargets, halfMipWidth, halfMipHeight);
+    const quarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 4));
+    const quarterMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 4));
+    if (this.renderSettings.luminosity.enabled) this.bloomBrightTarget.setSize(quarterMipWidth, quarterMipHeight);
     if (this.renderSettings.bloom.enabled) {
-      this.bloomTarget.setSize(mipWidth, mipHeight);
-      this.bloomHorizontalTargets.forEach((target, index) => {
-        target.setSize(mipWidth, mipHeight);
-        this.bloomVerticalTargets[index].setSize(mipWidth, mipHeight);
-        mipWidth = Math.max(1, Math.round(mipWidth / 2));
-        mipHeight = Math.max(1, Math.round(mipHeight / 2));
-      });
+      this.bloomTarget.setSize(quarterMipWidth, quarterMipHeight);
+      this.resizeBloomMipChain(this.bloomHorizontalTargets, this.bloomVerticalTargets, quarterMipWidth, quarterMipHeight);
     }
     this.homeCamera.aspect = width / height;
     this.homeCamera.updateProjectionMatrix();
@@ -3010,6 +3030,22 @@ export class WebGLBackdrop {
     this.resizeAuxiliaryBlocks(width, height, dpr);
     this.updateMediaPlanePositions();
   };
+
+  private resizeBloomMipChain(
+    horizontalTargets: WebGLRenderTarget[],
+    verticalTargets: WebGLRenderTarget[],
+    startWidth: number,
+    startHeight: number,
+  ) {
+    let mipWidth = startWidth;
+    let mipHeight = startHeight;
+    horizontalTargets.forEach((target, index) => {
+      target.setSize(mipWidth, mipHeight);
+      verticalTargets[index].setSize(mipWidth, mipHeight);
+      mipWidth = Math.max(1, Math.round(mipWidth / 2));
+      mipHeight = Math.max(1, Math.round(mipHeight / 2));
+    });
+  }
 
   private updateMediaPlanePositions() {
     const scroll = window.scrollY;
@@ -3336,32 +3372,76 @@ export class WebGLBackdrop {
     this.renderer.render(this.blurVerticalScene, this.backgroundCamera);
   }
 
-  private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
-    let bloomSource = this.renderSettings.luminosity.enabled ? this.bloomBrightTarget : sourceTarget;
-    this.bloomHorizontalTargets.forEach((horizontalTarget, index) => {
-      const verticalTarget = this.bloomVerticalTargets[index];
+  private renderBloomChain(
+    sourceTarget: WebGLRenderTarget,
+    outputTarget: WebGLRenderTarget,
+    horizontalTargets: WebGLRenderTarget[],
+    verticalTargets: WebGLRenderTarget[],
+    blurMaterial: ShaderMaterial,
+    blurScene: Scene,
+    compositeScene: Scene,
+    brightTarget?: WebGLRenderTarget,
+  ) {
+    let bloomSource = brightTarget ?? sourceTarget;
+    horizontalTargets.forEach((horizontalTarget, index) => {
+      const verticalTarget = verticalTargets[index];
       const kernelRadius = SOURCE_BLOOM_KERNELS[index] ?? SOURCE_BLOOM_KERNELS[SOURCE_BLOOM_KERNELS.length - 1];
-      this.bloomBlurMaterial.uniforms.tMap.value = bloomSource.texture;
-      this.bloomBlurMaterial.uniforms.uResolution.value.set(horizontalTarget.width, horizontalTarget.height);
-      this.bloomBlurMaterial.uniforms.uDirection.value.set(1, 0);
-      this.bloomBlurMaterial.uniforms.uKernelRadius.value = kernelRadius;
-      this.bloomBlurMaterial.uniforms.uSigma.value = kernelRadius;
+      blurMaterial.uniforms.tMap.value = bloomSource.texture;
+      blurMaterial.uniforms.uResolution.value.set(horizontalTarget.width, horizontalTarget.height);
+      blurMaterial.uniforms.uDirection.value.set(1, 0);
+      blurMaterial.uniforms.uKernelRadius.value = kernelRadius;
+      blurMaterial.uniforms.uSigma.value = kernelRadius;
       this.renderer.setRenderTarget(horizontalTarget);
       this.renderer.clear();
-      this.renderer.render(this.bloomBlurScene, this.backgroundCamera);
-      this.bloomBlurMaterial.uniforms.tMap.value = horizontalTarget.texture;
-      this.bloomBlurMaterial.uniforms.uResolution.value.set(verticalTarget.width, verticalTarget.height);
-      this.bloomBlurMaterial.uniforms.uDirection.value.set(0, 1);
-      this.bloomBlurMaterial.uniforms.uKernelRadius.value = kernelRadius;
-      this.bloomBlurMaterial.uniforms.uSigma.value = kernelRadius;
+      this.renderer.render(blurScene, this.backgroundCamera);
+      blurMaterial.uniforms.tMap.value = horizontalTarget.texture;
+      blurMaterial.uniforms.uResolution.value.set(verticalTarget.width, verticalTarget.height);
+      blurMaterial.uniforms.uDirection.value.set(0, 1);
+      blurMaterial.uniforms.uKernelRadius.value = kernelRadius;
+      blurMaterial.uniforms.uSigma.value = kernelRadius;
       this.renderer.setRenderTarget(verticalTarget);
       this.renderer.clear();
-      this.renderer.render(this.bloomBlurScene, this.backgroundCamera);
+      this.renderer.render(blurScene, this.backgroundCamera);
       bloomSource = verticalTarget;
     });
-    this.renderer.setRenderTarget(this.bloomTarget);
+    this.renderer.setRenderTarget(outputTarget);
     this.renderer.clear();
-    this.renderer.render(this.bloomCompositeScene, this.backgroundCamera);
+    this.renderer.render(compositeScene, this.backgroundCamera);
+  }
+
+  private renderPreCompositeBloomPass(sourceTarget: WebGLRenderTarget) {
+    let brightTarget: WebGLRenderTarget | undefined;
+    if (this.renderSettings.luminosity.enabled) {
+      this.luminosityMaterial.uniforms.tScene.value = sourceTarget.texture;
+      this.renderer.setRenderTarget(this.preBloomBrightTarget);
+      this.renderer.clear();
+      this.renderer.render(this.luminosityScene, this.backgroundCamera);
+      brightTarget = this.preBloomBrightTarget;
+    }
+    this.renderBloomChain(
+      sourceTarget,
+      this.preBloomTarget,
+      this.preBloomHorizontalTargets,
+      this.preBloomVerticalTargets,
+      this.preBloomBlurMaterial,
+      this.preBloomBlurScene,
+      this.preBloomCompositeScene,
+      brightTarget,
+    );
+  }
+
+  private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
+    const brightTarget = this.renderSettings.luminosity.enabled ? this.bloomBrightTarget : undefined;
+    this.renderBloomChain(
+      sourceTarget,
+      this.bloomTarget,
+      this.bloomHorizontalTargets,
+      this.bloomVerticalTargets,
+      this.bloomBlurMaterial,
+      this.bloomBlurScene,
+      this.bloomCompositeScene,
+      brightTarget,
+    );
   }
 
   private renderHomeCompositePass(sceneSourceTarget: WebGLRenderTarget) {
@@ -3403,7 +3483,7 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
-    this.preCompositeMaterial.uniforms.tBloom.value = this.bloomTarget.texture;
+    this.preCompositeMaterial.uniforms.tBloom.value = this.preBloomTarget.texture;
     this.preCompositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled;
     this.preCompositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
     this.preCompositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
@@ -3423,9 +3503,13 @@ export class WebGLBackdrop {
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
+      if (this.renderSettings.bloom.enabled) {
+        this.renderPreCompositeBloomPass(this.workRawTarget);
+      }
       this.preCompositeMaterial.uniforms.tWork.value = this.workRawTarget.texture;
       this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
       this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+      this.preCompositeMaterial.uniforms.tBloom.value = this.preBloomTarget.texture;
       this.renderer.setRenderTarget(this.compositeTarget);
       this.renderer.clear();
       this.renderer.render(this.preCompositeScene, this.backgroundCamera);

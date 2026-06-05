@@ -176,7 +176,8 @@ Last updated: 2026-06-05
 | `839e480` | Home WebGL | Batched source `Lu/kA/OA` render-manager pipeline alignment: added source-shaped full-resolution FXAA target/material, optional blur A/B targets and horizontal/vertical blur passes, non-mipmapped linear/clamped render targets for the main composite chain, and a gated home render flow matching source order: scene, optional blur, luminosity, bloom mips, final composite, optional FXAA. |
 | `5340d11` | Home WebGL | Batched source `GA/VA/Ka` vertex mouse-coordinate alignment: moved the work-block vertex `newUv`/`mouseUv` baseline to source `vUv / uGridSize + instanceOffset`, replaced hard-coded ray-plane UV offset with the source ray-plane formula, carried `vMouseSim` through the standard-material chunk bridge, and injected the source `transformed /= 1. - mouseSim.r * .2` world-position correction before Three's shadow/spotlight coordinate calculation. |
 | `a1bd779` | Home WebGL | Batched source `TD/characterScene` spotlight-map ownership alignment: added a source-shaped offscreen character spotlight render target driven by `public/models/me/model_T.jpg`, renders it through a small character composite pass, sizes it with the square thumb/character target path, and switches the work spotlight map to that target on about entry while home entry keeps restoring the work-thumb target. |
-| `current batch` | Home WebGL | Batched source `Se/A1` media reveal and pre-composite bloom ownership alignment: `setMediaOpacity()` now writes the A1-shaped `uMediaReveal` uniform, the pre-composite shader exposes source-shaped `tBloom`/`boolBloom` plus render-manager bool flags, and the A1 layer samples previous-frame bloom before contrast like the original composite chain. |
+| `51209b6` | Home WebGL | Batched source `Se/A1` media reveal and pre-composite bloom ownership alignment: `setMediaOpacity()` now writes the A1-shaped `uMediaReveal` uniform, the pre-composite shader exposes source-shaped `tBloom`/`boolBloom` plus render-manager bool flags, and the A1 layer samples bloom before contrast like the original composite chain. |
+| `current batch` | Home WebGL | Batched source `I1/C1/A1` and `Lu/kA/OA` bloom-chain separation: added a dedicated half-resolution A1 pre-composite bloom chain fed by `workRawTarget`, kept the existing quarter-resolution OA bloom chain fed by the pre-composited scene, and shared the source gaussian mip/composite helpers without merging their render-target ownership. |
 
 ## Current Focus
 
@@ -187,7 +188,7 @@ Immediate source targets:
 - `p1`: continue auditing route-specific visibility and spotlight-map ownership for about/floating blocks, now that the source-shaped auxiliary block objects can be activated on the about route and the about spotlight map has a source-shaped character render target.
 - `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, and a cleaner source-shaped custom-uniform surface.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
-- `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now includes source-shaped FXAA/blur targets, gated pass order, and the A1 pre-composite bloom/media-reveal interface.
+- `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds.
 - `Se`: source-style visual-state setter ownership without non-source side effects.
 
@@ -198,6 +199,7 @@ Latest verification:
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project dist markers on `/gc-2026/`: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 - Chrome CDP smoke on the existing QA Chrome (`9222`) with SwiftShader on `/?skip-preloader`, `/about/?skip-preloader`, `/gc-2026/?skip-preloader`, and `/following-wildfire/?skip-preloader`: `.gl-canvas=true`, `hasWebgl=true`, `canvasLost=false`, expected project media counts/about view marker, no filtered runtime/shader errors.
+- Latest local smoke for the current batch used `PORT=5174 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs` because `5173` was already occupied; Chrome CDP on `9222` passed the same four-page WebGL/runtime checks.
 
 ## Next Candidate Steps
 
