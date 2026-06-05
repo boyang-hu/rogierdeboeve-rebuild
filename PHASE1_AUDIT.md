@@ -78,6 +78,23 @@ Chrome headless with SwiftShader enabled was used as the available local WebGL Q
 
 This proves the local runtime smoke gate, not exact source visual parity. Remaining Phase 1 evidence should come from comparing the rendered home/about/project visuals against the mirrored source behavior.
 
+### Source Comparison QA Attempt
+
+A local source-vs-rebuild screenshot pass was attempted with:
+
+- original: `legacy-mirror/public` served on port `5175`
+- rebuild: `dist` served on port `5173`
+- fallback assets: `public/`
+- pages: home, about, `/gc-2026/`, and `/hashgraph-vc/`
+
+The source mirror can create a canvas and render WebGL, but the captured mirror is not a reliable final-state visual oracle yet:
+
+- The mirrored bundle requests baked content JSON paths such as `/src/content/projects/*.json` and `/opt/build/repo/src/content/projects/*.json`; these are not present in either `legacy-mirror/public` or `public`.
+- Without QA intervention, the original mirror does not naturally complete the preloader/`LOAD_COMPLETE -> ANIMATE_IN` flow in headless local runs.
+- Forcing `has-entered` and hiding `.preloader` produces screenshots, but those screenshots do not represent the original page's normal post-loader state because source entry animations and scene state are bypassed.
+
+Result: no new code change should be made from those forced screenshots. The next source visual QA step should either complete the mirror resource set/QA harness or use a trusted browser session where the original mirror reaches its natural post-loader state.
+
 ### Implemented, Needs Real WebGL QA
 
 | ID | Source area | Implemented state | Remaining evidence needed |
@@ -189,4 +206,4 @@ Phase 1 should be considered complete only when:
 - Dist markers remain stable.
 - Browser smoke passes home, about, and at least two project pages. Current local Chrome/SwiftShader smoke passes this gate.
 - Project media pages retain desktop WebGL tracks and mobile media fallback.
-- A final visual QA pass confirms no obvious regressions in home WebGL, thumb projection, mouse interaction, about visual, and project media pages.
+- A final source-vs-rebuild visual QA pass confirms no obvious regressions in home WebGL, thumb projection, mouse interaction, about visual, and project media pages. Current forced-entry source screenshots are not sufficient evidence for this gate.
