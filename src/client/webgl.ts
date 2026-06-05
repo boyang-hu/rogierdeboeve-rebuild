@@ -622,8 +622,8 @@ void main() {
   float mask = max(smoothstep(0.36, 0.76, lum), neutral * smoothstep(0.28, 0.68, lum));
   mask *= center * uReveal;
   vec3 color = mix(uTint * 0.95, vec3(1.0), smoothstep(0.52, 0.86, lum));
-  color += thumb * 0.18;
-  gl_FragColor = vec4(color, clamp(mask * uOpacity, 0.0, 0.16));
+  color += thumb * 0.1;
+  gl_FragColor = vec4(color, clamp(mask * uOpacity, 0.0, 0.08));
 }
 `;
 
@@ -688,10 +688,14 @@ vec3 saturateColor(vec3 color, float amount) {
   return mix(vec3(gray), color, amount);
 }
 
+vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
+  return base * blend * opacity + base * (1.0 - opacity);
+}
+
 void main() {
   vec4 color = texture2D(tScene, vUv);
+  color.rgb = blendMultiply(color.rgb, uDarknessColor, uDarkness);
   color.rgb = saturateColor(color.rgb, uSaturation);
-  color.rgb = mix(color.rgb, uDarknessColor, uDarkness);
   gl_FragColor = vec4(color.rgb, 1.0);
 }
 `;
@@ -929,7 +933,7 @@ export class WebGLBackdrop {
   private mediaScene = new Scene();
   private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private homeCamera = new PerspectiveCamera(55, 1, 0.1, 2000);
-  private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 10);
+  private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private sceneWrap = new Group();
   private thumbWrap = new Group();
@@ -1024,7 +1028,7 @@ export class WebGLBackdrop {
     document.body.classList.add("has-webgl");
 
     this.homeCamera.position.set(0, 0, 5.5);
-    this.thumbCamera.position.set(0, 0, 1);
+    this.thumbCamera.position.set(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
@@ -1043,8 +1047,8 @@ export class WebGLBackdrop {
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
     this.projectionMaterial = this.createProjectionMaterial();
-    this.projectionPlane = new Mesh(new PlaneGeometry(3.9, 2.72), this.projectionMaterial);
-    this.projectionPlane.position.set(0, 0, 0.42);
+    this.projectionPlane = new Mesh(new PlaneGeometry(3.2, 2.24), this.projectionMaterial);
+    this.projectionPlane.position.set(0, 0, 0);
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
     this.floorPlane.position.y = -1.65;
@@ -1263,10 +1267,8 @@ export class WebGLBackdrop {
       });
       if (payload.thumb) this.loadTexture(payload.thumb, (texture) => {
         thumb.material.uniforms.tMap.value = texture;
-        const image = texture.image as HTMLImageElement | undefined;
-        if (image?.naturalWidth && image?.naturalHeight) {
-          thumb.material.uniforms.uMapSize.value.set(image.naturalWidth, image.naturalHeight);
-        }
+        thumb.material.uniforms.uMapSize.value.set(1, 1);
+        thumb.material.uniforms.uResolution.value.set(1, 1);
       });
     });
     this.environmentPlane.rotation.y = -MathUtils.degToRad(rotationAdjustment);
@@ -1526,7 +1528,7 @@ export class WebGLBackdrop {
         tThumb: { value: this.thumbCompositeTarget.texture },
         uTint: { value: colorFrom(DEFAULT_COLOR) },
         uReveal: { value: 0 },
-        uOpacity: { value: 0.065 },
+        uOpacity: { value: 0.032 },
       },
       vertexShader: thumbVertex,
       fragmentShader: projectionFragment,
@@ -1986,7 +1988,7 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.compositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
-    const thumbSize = Math.max(512, Math.round(height * dpr));
+    const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
 
