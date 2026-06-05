@@ -88,7 +88,7 @@ Last updated: 2026-06-05
 | `c68adb6` | Home WebGL | Moved the home bloom pass closer to source `Lu/kA` by rendering five downsampled bloom mips and recombining them with source-style bloom radius factors before final `OA` compositing. |
 | `e3195db` | Home DOM/Audio | Batched Phase 2 source alignment for `vD/_D/yD`: click audio now only binds `data-sound-click`, project changes emit source-style woosh, redundant active project selections short-circuit, and session work state stores `activeProject`/`sceneRotation`. |
 | `bd18bda` | Home WebGL/DOM | Batched source `yD/gD` mouse-factor lifecycle alignment: centralized mouse-factor tween ownership, removed constructor auto-start, made home entry explicitly animate mouse factor from 0 to 1, reused the same path for CTA preview enter/leave, and reset mouse factor on gallery leave. |
-| `d890d91` | Home WebGL | Batched source `IT/p1/yD` camera-controller alignment: added source-style camera controller settings, pixel-space pointer tracking, mobile camera-origin z behavior, delta-driven camera roll, and home entry wiring for `targetXY=(1,.5)` with `rotateAngle=20`. |
+| `342bb68` | Home WebGL | Batched source `IT/p1/yD` camera-controller alignment: added source-style camera controller settings, pixel-space pointer tracking, mobile camera-origin z behavior, delta-driven camera roll, and home entry wiring for `targetXY=(1,.5)` with `rotateAngle=20`. |
 
 ## Current Focus
 
