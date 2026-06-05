@@ -300,6 +300,18 @@ html.is-work-previewing .c-color {
   display: block;
 }
 
+.ui-header-part-outer {
+  display: block;
+  overflow: hidden;
+  padding: 0.1rem 0;
+  margin: -0.2rem 0;
+}
+
+.ui-header-part-inner {
+  display: block;
+  transform: translateY(130%);
+}
+
 .ui-nav {
   position: fixed;
   left: 0;

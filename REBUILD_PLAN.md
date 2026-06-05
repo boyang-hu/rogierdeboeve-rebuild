@@ -44,7 +44,8 @@ Last updated: 2026-06-05
 | `66c6970` | Home DOM | Added source-style `gD` CTA text and opacity animate-in/out when the active work item changes. |
 | `71f2403` | Home DOM | Aligned touch gallery movement with source `yD` virtual-scroll deltas by driving project changes during touchmove instead of only on touchend. |
 | `a0d4955` | Home DOM | Matched source `Ou` footer contact resize behavior by shortening the mobile contact label to `E-mail`. |
-| this commit | Home WebGL | Moved gallery velocity roll from the rotating project ring to the work scene container to better match source `yD.updateScene`. |
+| `f9840d9` | Home WebGL | Moved gallery velocity roll from the rotating project ring to the work scene container to better match source `yD.updateScene`. |
+| this commit | Home DOM | Added source-style header description and availability inner-line animation targets from `Ki/SD.animateIn`. |
 
 ## Current Focus
 

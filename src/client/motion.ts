@@ -27,6 +27,8 @@ function initIntroAnimations() {
 
   const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary, .ui-nav");
   const contentTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro > *, .c-list-section, .ui-project-content-header > *");
+  const headerDescriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
+  const headerAvailabilityTargets = gsap.utils.toArray<HTMLElement>(".ui-header-availability .ui-header-part-inner");
   const titleTargets = gsap.utils.toArray<HTMLElement>(".ui-title-inner");
   const footerSocialTargets = gsap.utils.toArray<HTMLElement>(".social-a > span");
   const footerContactTargets = gsap.utils.toArray<HTMLElement>(".ui-footer-contact a > span");
@@ -44,6 +46,22 @@ function initIntroAnimations() {
       contentTargets,
       { y: 26, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.15, stagger: 0.045, ease: "expo.out", delay: 0.2 },
+    );
+  }
+
+  if (headerDescriptionTargets.length) {
+    gsap.fromTo(
+      headerDescriptionTargets,
+      { y: "130%", opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.8, ease: "expo.out", clearProps: "transform,opacity" },
+    );
+  }
+
+  if (headerAvailabilityTargets.length) {
+    gsap.fromTo(
+      headerAvailabilityTargets,
+      { y: "130%", opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.8, ease: "expo.out", clearProps: "transform,opacity" },
     );
   }
 
