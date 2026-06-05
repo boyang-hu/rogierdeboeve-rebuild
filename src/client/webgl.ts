@@ -366,25 +366,12 @@ precision highp float;
 uniform sampler2D tWork;
 uniform sampler2D tBloom;
 uniform sampler2D tMouseSim;
-uniform sampler2D tNoise;
-uniform sampler2D tPerlin;
-uniform float uTime;
-uniform float uRatio;
-uniform float uProgress;
-uniform float uTransformX;
 uniform float uReveal;
-uniform float uFluidStrength;
-uniform float uPerlin;
-uniform float uContrast;
 uniform float uDarken;
 uniform float uSaturation;
 uniform vec3 uBgColor;
 
 varying vec2 vUv;
-
-vec3 contrast(vec3 color, float amount) {
-  return (color - 0.5) * amount + 0.5;
-}
 
 vec3 saturation(vec3 color, float amount) {
   float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
@@ -399,10 +386,6 @@ vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
   return base * blend * opacity + base * (1.0 - opacity);
 }
 
-vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
-  return min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity);
-}
-
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   vec2 offset = vec2(cos(angle), sin(angle)) * amount;
   float r = texture2D(tex, uv + offset).r;
@@ -412,63 +395,15 @@ vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   return vec4(r, g, b, a);
 }
 
-float vignette(vec2 uv, float inner, float outer) {
-  vec2 p = uv - 0.5;
-  p.x *= uRatio;
-  return smoothstep(outer, inner, length(p));
-}
-
 void main() {
   vec2 uv = vUv;
-
   vec4 mouseSim = texture2D(tMouseSim, uv);
-  vec2 perlinUv = uv * 0.25;
-  perlinUv -= 0.5;
-  perlinUv.x *= uRatio;
-  perlinUv += 0.5;
-  perlinUv.x -= uTime * 0.01;
-  perlinUv.y -= uTime * 0.005;
-  perlinUv.x += uTransformX;
-
-  vec4 perlinMap = texture2D(tPerlin, perlinUv);
-  perlinMap.rgb = contrast(perlinMap.rgb, 5.0);
-  vec2 perlinCoords = uv;
-  if (uPerlin > 0.0) {
-    perlinCoords += perlinMap.b * uPerlin;
-    perlinCoords -= uPerlin * 0.065;
-  }
-  vec2 flowVector = mouseSim.rg;
-  vec2 fluidUv = uv + flowVector * -0.2 * uFluidStrength;
-  vec2 sourceUv = fluidUv;
-
-  float perlinVignette = vignette(perlinCoords, 0.1, 0.35);
-  float displacementVignette = vignette(sourceUv, 0.1, 0.5);
-  vec4 sampledMouse = texture2D(tMouseSim, mix(perlinCoords, sourceUv, 2.5));
-  sampledMouse.rgb = contrast(sampledMouse.rgb, 1.0);
-  vec4 sceneDisplaced = rgbshift(tWork, sourceUv, -1.0, 0.005);
-  vec4 workShift = rgbshift(tWork, sourceUv, -1.0, 0.0005 + 0.1 * length(flowVector) * uFluidStrength);
-  vec3 bloom = rgbshift(tBloom, sourceUv, -1.5, 0.02).rgb;
-  vec3 bloomShift = rgbshift(tBloom, sourceUv, length(sourceUv + 0.5), 0.005).rgb;
-  vec3 work = mix(workShift.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
-
-  vec3 color = mix(uBgColor, work, 1.0);
+  vec3 color = rgbshift(tWork, uv, -1.0, 0.0015).rgb;
+  vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
+  vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), 0.005).rgb;
   color += bloom;
   color += bloomShift;
-  color += sampledMouse.rgb * 0.065;
-  color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
-  color = blendAdd(color, perlinMap.rgb, (1.0 - displacementVignette + sampledMouse.r * 0.5) * 0.05);
-  color = contrast(color, uContrast);
-  color *= uContrast;
-  color = saturation(color, uSaturation);
-  color = blendLighten(color, uBgColor, 0.85);
-
-  vec2 noiseUv = uv - 0.5;
-  noiseUv.x *= uRatio;
-  noiseUv += 0.5;
-  noiseUv *= 15.0;
-  vec3 noiseMap = texture2D(tNoise, noiseUv).rgb;
-  color = mix(color * noiseMap, color, 0.75);
-  color = mix(color * noiseMap, color, 1.5);
+  color += length(mouseSim.xy) * 0.015;
   color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
   color = blendLighten(color, vec3(0.095), 1.0);
   color = saturation(color, uSaturation);
@@ -1133,7 +1068,6 @@ export class WebGLBackdrop {
 
   setGalleryProgress(progress: number, velocity = 0, delta = 1 / 60) {
     this.galleryProgress = progress;
-    this.compositeMaterial.uniforms.uTransformX.value = progress;
     const targetRotation = MathUtils.degToRad(progress * 360 + 180);
     const lerpFactor = 1 - Math.exp(-5 * Math.max(0.001, delta));
     this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * lerpFactor;
@@ -1148,7 +1082,6 @@ export class WebGLBackdrop {
     this.galleryProgress = progress;
     this.sceneRotation = sceneRotation;
     this.zoom = zoom;
-    this.compositeMaterial.uniforms.uTransformX.value = progress;
     this.sceneWrap.rotation.y = MathUtils.degToRad(progress * 360 + 180);
     this.homeScene.rotation.z = MathUtils.degToRad(sceneRotation);
     this.homeScene.position.z = this.homeScene.rotation.z - zoom;
@@ -1451,16 +1384,7 @@ export class WebGLBackdrop {
         tWork: { value: this.compositeTarget.texture },
         tBloom: { value: this.bloomTarget.texture },
         tMouseSim: { value: this.screenMouseSimulationTexture },
-        tNoise: { value: this.noiseTexture },
-        tPerlin: { value: this.perlinTexture },
-        uTime: { value: 0 },
-        uRatio: { value: 1 },
-        uProgress: { value: 0 },
-        uTransformX: { value: 0 },
         uReveal: { value: 0 },
-        uFluidStrength: { value: this.fluidStrength },
-        uPerlin: { value: 0.1 },
-        uContrast: { value: 1.1 },
         uDarken: { value: 0.1 },
         uSaturation: { value: 1.15 },
         uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
@@ -1521,7 +1445,6 @@ export class WebGLBackdrop {
 
   private loadCompositeTextures() {
     this.loadTexture("/images/textures/blue-noise.png", (texture) => {
-      this.compositeMaterial.uniforms.tNoise.value = texture;
       this.mouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
     });
@@ -1872,7 +1795,6 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
     });
-    gsap.to(this.compositeMaterial.uniforms.uContrast, { value, duration: 1.6, ease: "expo.out" });
   }
 
   private setThumbDarknessColor(value?: string) {
@@ -1954,9 +1876,6 @@ export class WebGLBackdrop {
       fluidStrength: value,
       duration,
       ease: "none",
-      onUpdate: () => {
-        this.compositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
-      },
     });
   }
 
@@ -2056,7 +1975,6 @@ export class WebGLBackdrop {
     this.homeCamera.updateProjectionMatrix();
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
-    this.compositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
     const simWidth = Math.max(1, Math.round(renderWidth / 10));
     const simHeight = Math.max(1, Math.round(renderHeight / 10));
@@ -2260,9 +2178,6 @@ export class WebGLBackdrop {
     this.particles.position.y = this.pointer.y * 0.08;
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
-    this.compositeMaterial.uniforms.uTime.value = time;
-    this.compositeMaterial.uniforms.uProgress.value = this.galleryProgress;
-    this.compositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
     this.displacementMaterial.uniforms.uTime.value = time;
     this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
