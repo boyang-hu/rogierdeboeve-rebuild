@@ -86,7 +86,8 @@ const DEFAULT_BG = SOURCE_WORK_BG;
 const DEFAULT_COLOR = "#bcbcbc";
 const GRID_COLS = 35;
 const GRID_ROWS = 23;
-const GRID_LAYERS = 7;
+const SOURCE_GRID_LAYERS = 7;
+const SOURCE_LOW_RES_GRID_LAYERS = 4;
 const GRID_CUBE_SIZE = 1.25;
 const GRID_SPACING = 0.1;
 const GRID_SCALE = 0.09;
@@ -348,7 +349,9 @@ void main() {
   float pointerLight = 1.0 - smoothstep(0.02, 0.58, distance(vThumbUv, pointerUv));
   float simLight = texture2D(tMouseSim2, screenUv).r;
   float mouseLight = max(pointerLight, simLight);
-  color *= 0.78 + mouseLight * uMouseLightness * 0.18;
+  float mouseF = 1.0 - simLight;
+  color *= 0.78 + mouseLight * 0.18;
+  color = mix(color, color * vec3(mouseF), 1.0 - uMouseLightness);
 
   vec2 gridUv = floor(uv * vec2(35.0, 23.0));
   vec2 gridUv2 = floor(vec2(uv.y * 23.0, uv.x * 23.0));
@@ -357,9 +360,9 @@ void main() {
   float revealRadius = 2.0 * pow(max(revealCombined, 0.0001), 0.25);
   float centerAlpha = sourceVignette(uv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
   float revealAlpha = sourceVignette(uv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+  if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseLightness * 0.5), 0.0, 1.0);
   alpha += centerAlpha * 0.1;
   alpha -= 1.0 - revealAlpha;
-  alpha += clamp(mouseLight * uMouseLightness * 0.055, 0.0, 0.15);
   alpha = max(alpha, logoMask * revealCombined * 0.16);
   alpha *= revealCombined;
 
@@ -970,6 +973,14 @@ function sourceDpr() {
   return Math.min(window.devicePixelRatio || 1, SOURCE_MAX_DPR);
 }
 
+function sourceLowRes() {
+  const nav = navigator as Navigator & {
+    connection?: { saveData?: boolean };
+    deviceMemory?: number;
+  };
+  return Boolean(nav.connection?.saveData || (nav.deviceMemory && nav.deviceMemory < 4));
+}
+
 function tweenColorOwned(target: Color, value?: string, duration = 1.6, tweens?: gsap.core.Tween[], fallback?: string) {
   const next = colorFrom(value, fallback ?? `#${target.getHexString()}`);
   if (duration <= 0) {
@@ -1109,6 +1120,7 @@ export class WebGLBackdrop {
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
   private mediaSceneOpacity = 0;
+  private gridLayers = SOURCE_GRID_LAYERS;
   private radius = 8;
 
   constructor(root: HTMLElement) {
@@ -1140,9 +1152,10 @@ export class WebGLBackdrop {
     this.bloomBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomBlurMaterial));
     this.bloomCompositeMaterial = this.createBloomCompositeMaterial();
     this.bloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomCompositeMaterial));
+    this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
     this.displacementScene.add(new Mesh(new PlaneGeometry(2, 2), this.displacementMaterial));
-    this.mouseSimulationMaterial = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.25);
+    this.mouseSimulationMaterial = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight), 0.25);
     this.mouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
@@ -1425,7 +1438,7 @@ export class WebGLBackdrop {
       uniforms: {
         tThumb: { value: this.thumbCompositeTarget.texture },
         uMapSize: { value: new Vector2(1600, 1200) },
-        uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, GRID_LAYERS) },
+        uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
         uTint: { value: colorFrom(payload.color) },
         uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
         uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
@@ -1463,7 +1476,7 @@ export class WebGLBackdrop {
 
   private createBlockMesh(material: ShaderMaterial, projectIndex: number) {
     const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 2, 0.05);
-    const count = GRID_COLS * GRID_ROWS * GRID_LAYERS;
+    const count = GRID_COLS * GRID_ROWS * this.gridLayers;
     const matrices = new Array<Matrix4>(count);
     const gridOffsets = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
@@ -1472,10 +1485,10 @@ export class WebGLBackdrop {
     const cell = GRID_CUBE_SIZE + GRID_SPACING;
     const width = (GRID_COLS - 1) * cell;
     const height = (GRID_ROWS - 1) * cell;
-    const depth = (GRID_LAYERS - 1) * cell;
+    const depth = (this.gridLayers - 1) * cell;
     let index = 0;
 
-    for (let z = 0; z < GRID_LAYERS; z++) {
+    for (let z = 0; z < this.gridLayers; z++) {
       for (let x = 0; x < GRID_COLS; x++) {
         for (let y = 0; y < GRID_ROWS; y++) {
           dummy.position.set(x * cell - width / 2, y * cell - height / 2, z * cell - depth / 2);
@@ -1485,7 +1498,7 @@ export class WebGLBackdrop {
           matrices[index] = dummy.matrix.clone();
           gridOffsets[index * 3] = x / GRID_COLS;
           gridOffsets[index * 3 + 1] = y / GRID_ROWS;
-          gridOffsets[index * 3 + 2] = z / GRID_LAYERS;
+          gridOffsets[index * 3 + 2] = z / this.gridLayers;
           colors[index * 3] = seededRandom(index, projectIndex, 1);
           colors[index * 3 + 1] = seededRandom(index, projectIndex, 2);
           colors[index * 3 + 2] = seededRandom(index, projectIndex, 3);
@@ -1662,7 +1675,7 @@ export class WebGLBackdrop {
     });
   }
 
-  private createMouseSimulationMaterial(ratio: number, thickness: number) {
+  private createMouseSimulationMaterial(ratio: number, thickness: number, persistance = 0.75) {
     return new ShaderMaterial({
       depthWrite: false,
       depthTest: false,
@@ -1670,7 +1683,7 @@ export class WebGLBackdrop {
         uTexture: { value: this.placeholder },
         uNoiseTexture: { value: this.noiseTexture },
         uCoords: { value: new Vector2(Math.max(1, Math.round(128 * ratio)), 128) },
-        uPersistance: { value: 0.75 },
+        uPersistance: { value: persistance },
         uThickness: { value: thickness },
         uDiffusion: { value: 0 },
         uDiffusionSize: { value: 0 },
@@ -2429,6 +2442,8 @@ export class WebGLBackdrop {
     targetPos: Vector2,
     delta: number,
     strength: number,
+    persistance: number,
+    thickness: number,
   ) {
     const lerpFactor = MathUtils.clamp(delta * 7.5, 0, 1);
     newPos.lerp(targetPos, lerpFactor);
@@ -2438,8 +2453,8 @@ export class WebGLBackdrop {
     material.uniforms.uPosNew.value.copy(newPos);
     material.uniforms.uPosOld.value.copy(oldPos);
     material.uniforms.uSpeed.value = Math.max(speed, 0.0001);
-    material.uniforms.uPersistance.value = Math.pow(0.75, delta * 10);
-    material.uniforms.uThickness.value = 0.25 * strength;
+    material.uniforms.uPersistance.value = Math.pow(persistance, delta * 10);
+    material.uniforms.uThickness.value = thickness * strength;
     material.uniforms.uTime.value = performance.now() * 0.001;
     this.renderer.setRenderTarget(targets[outputIndex]);
     this.renderer.clear();
@@ -2460,6 +2475,8 @@ export class WebGLBackdrop {
       this.mouseSimTargetPos,
       delta,
       MathUtils.clamp(this.mouseFactor, 0.25, 1),
+      0.85,
+      0.1,
     );
     this.mouseSimSpeed = meshResult.speed;
     this.mouseSimulationIndex = meshResult.index;
@@ -2473,6 +2490,8 @@ export class WebGLBackdrop {
       this.screenMouseSimTargetPos,
       delta,
       1,
+      0.75,
+      0.25,
     );
     this.screenMouseSimulationIndex = screenResult.index;
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
