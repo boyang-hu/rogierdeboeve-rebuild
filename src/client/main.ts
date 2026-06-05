@@ -159,12 +159,14 @@ function initMenu() {
   const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
   const close = () => {
     nav?.classList.remove("is-active");
+    document.documentElement.classList.remove("is-nav-mobile-open");
     document.body.classList.remove("is-menu-open");
     toggle?.setAttribute("aria-expanded", "false");
   };
 
   toggle?.addEventListener("click", () => {
     const active = nav?.classList.toggle("is-active") ?? false;
+    document.documentElement.classList.toggle("is-nav-mobile-open", active);
     document.body.classList.toggle("is-menu-open", active);
     toggle.setAttribute("aria-expanded", String(active));
   });

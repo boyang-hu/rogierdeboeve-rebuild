@@ -88,6 +88,10 @@ body.is-menu-open {
   overflow: hidden;
 }
 
+html.is-nav-mobile-open {
+  overflow: hidden;
+}
+
 body.is-loading {
   cursor: progress;
 }
@@ -1403,14 +1407,18 @@ html.is-scrolled .c-scroll-cta {
     transform: translateY(0);
   }
 
-  .ui-nav-mobile-panel a {
+  .ui-nav-mobile-a {
     font-family: var(--font-sans);
     font-size: 2.35rem;
     letter-spacing: 0;
     opacity: 0.55;
   }
 
-  .ui-nav-mobile-panel a.is-active {
+  .ui-nav-mobile-a-inner {
+    display: block;
+  }
+
+  .ui-nav-mobile-a.is-active {
     opacity: 1;
   }
 

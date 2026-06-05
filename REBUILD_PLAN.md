@@ -46,7 +46,8 @@ Last updated: 2026-06-05
 | `a0d4955` | Home DOM | Matched source `Ou` footer contact resize behavior by shortening the mobile contact label to `E-mail`. |
 | `f9840d9` | Home WebGL | Moved gallery velocity roll from the rotating project ring to the work scene container to better match source `yD.updateScene`. |
 | `e8a811d` | Home DOM | Added source-style header description and availability inner-line animation targets from `Ki/SD.animateIn`. |
-| this commit | Home DOM | Added source-style `.ui-nav-a-inner` targets and nav animate-in timing from source `Tr`. |
+| `e7997ec` | Home DOM | Added source-style `.ui-nav-a-inner` targets and nav animate-in timing from source `Tr`. |
+| this commit | Home DOM | Aligned mobile nav link/state structure with source `Ar` using `.ui-nav-mobile-a`, inner spans, `data-slug`, and `html.is-nav-mobile-open`. |
 
 ## Current Focus
 

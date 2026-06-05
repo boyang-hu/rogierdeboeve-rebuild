@@ -43,8 +43,12 @@ const pathname = Astro.url.pathname;
       <span></span>
     </button>
     <div class="ui-nav-mobile-panel">
-      <a class={pathname === "/" ? "is-active" : ""} href="/">Work</a>
-      <a class={pathname.startsWith("/about") ? "is-active" : ""} href="/about/">About</a>
+      <a class={`ui-nav-mobile-a ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work">
+        <span class="ui-nav-mobile-a-inner">Work</span>
+      </a>
+      <a class={`ui-nav-mobile-a ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about">
+        <span class="ui-nav-mobile-a-inner">About</span>
+      </a>
     </div>
   </nav>
 </header>
