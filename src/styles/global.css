@@ -469,6 +469,11 @@ body.is-project .ui-header-description {
   opacity: 0.58;
 }
 
+.ui-work.is-dragging .ui-work-a,
+.ui-work.is-dragging .ui-work-cta {
+  pointer-events: none;
+}
+
 .work-preview-frame img {
   width: 100%;
   height: 100%;

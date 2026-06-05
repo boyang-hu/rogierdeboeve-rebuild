@@ -200,6 +200,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let isTransitioning = false;
   let nextTransitioning = false;
   let prevTransitioning = false;
+  let draggingTimeout = 0;
   let lastFrame = performance.now();
   let raf = 0;
   let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
@@ -271,6 +272,16 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     }, 800);
   };
 
+  const setDragging = (enabled: boolean) => {
+    document.querySelector<HTMLElement>("[data-view='home']")?.classList.toggle("is-dragging", enabled);
+  };
+
+  const markDragging = () => {
+    setDragging(true);
+    window.clearTimeout(draggingTimeout);
+    draggingTimeout = window.setTimeout(() => setDragging(false), 220);
+  };
+
   cardsArray.forEach((card, index) => {
     card.addEventListener("mouseenter", () => {
       if (window.matchMedia("(max-width: 999px)").matches) return;
@@ -321,6 +332,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
     if (Math.abs(delta) < 15) return;
     event.preventDefault();
+    markDragging();
     scroll.diff += delta;
     if (delta > 15) next();
     if (delta < -15) prev();
@@ -343,6 +355,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     const end = event.changedTouches[0]?.clientX ?? touchStart;
     const delta = end - touchStart;
     if (Math.abs(delta) < 42) return;
+    markDragging();
     if (delta < 0) next();
     else prev();
   }, { passive: true });
@@ -371,7 +384,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   activateIndex(activeIndex);
   raf = requestAnimationFrame(tick);
-  window.addEventListener("beforeunload", () => cancelAnimationFrame(raf), { once: true });
+  window.addEventListener("beforeunload", () => {
+    window.clearTimeout(draggingTimeout);
+    cancelAnimationFrame(raf);
+  }, { once: true });
 }
 
 function initScrollState() {
