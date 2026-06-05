@@ -260,6 +260,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   let isTransitioning = false;
   let nextTransitioning = false;
   let prevTransitioning = false;
+  let snap = false;
+  let snapTimeout = 0;
   let lastFrame = performance.now();
   let raf = 0;
   let scrollToAnimation: ReturnType<typeof gsap.to> | undefined;
@@ -381,9 +383,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const handleGalleryDelta = (delta: number) => {
     if (Math.abs(delta) < 0.01) return false;
+    window.clearTimeout(snapTimeout);
+    snap = true;
     scroll.diff += delta;
     if (delta > 15) next();
     if (delta < -15) prev();
+    snapTimeout = window.setTimeout(() => {
+      snap = true;
+    }, 100);
     return true;
   };
 
@@ -555,7 +562,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     lastFrame = now;
     scroll.velocity = scroll.target - scroll.animated;
     checkSpeed();
-    scroll.diff = lerp(scroll.diff, 0, 5, delta);
+    if (snap) scroll.diff = lerp(scroll.diff, 0, 5, delta);
     const targetPlusDiff = scroll.target + scroll.diff;
     scroll.remainder = scroll.target - (scroll.target % limit);
     scroll.animated = lerp(scroll.animated, targetPlusDiff, 5, delta);
@@ -578,6 +585,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   window.addEventListener("pagehide", saveWorkState);
   window.addEventListener("beforeunload", () => {
     saveWorkState();
+    window.clearTimeout(snapTimeout);
     cancelAnimationFrame(raf);
   }, { once: true });
 }

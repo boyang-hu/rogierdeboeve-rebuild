@@ -68,7 +68,8 @@ Last updated: 2026-06-05
 | `19cdcbb` | Home WebGL | Moved the home composite tail closer to source `OA`: final darken now uses screen-space `mouseSim.r`, applies source-style lighten blend with black, and finishes with saturation after darkening. |
 | `33b2c9e` | Home WebGL | Added a separate low-resolution home bloom pass so final composite samples `tBloom` like source `Lu/kA` instead of deriving all glow inline from `tWork`. |
 | `5ac8713` | Home WebGL | Matched source `p1.resize` mobile behavior by keeping the work WebGL scene active below `LG` and shifting `sceneWrap.position.y` to `.3` below source `MD=800`. |
-| this commit | Home DOM | Moved work gallery pointer gating closer to source `yD.checkSpeed()` by tracking pointer activity and last deltas, then toggling `.is-dragging` from the RAF loop instead of using a fixed timeout for every gallery delta. |
+| `2af884f` | Home DOM | Moved work gallery pointer gating closer to source `yD.checkSpeed()` by tracking pointer activity and last deltas, then toggling `.is-dragging` from the RAF loop instead of using a fixed timeout for every gallery delta. |
+| this commit | Home DOM | Matched source `yD.onVirtualScroll` snap state more closely by only easing `scroll.diff` back toward zero after gallery input has enabled the snap flag and by clearing/restarting the 100ms snap timeout on each delta. |
 
 ## Current Focus
 
