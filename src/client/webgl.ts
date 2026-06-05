@@ -13,6 +13,7 @@ import {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   Object3D,
   OrthographicCamera,
   PerspectiveCamera,
@@ -59,7 +60,7 @@ type WorkItem = {
   slug: string;
   payload: ProjectPayload;
   group: Group;
-  material: ShaderMaterial;
+  material: WorkBlockMaterial;
   mesh: InstancedMesh;
   thumb: Mesh<PlaneGeometry, ShaderMaterial>;
   thumbXHook: number;
@@ -67,6 +68,8 @@ type WorkItem = {
   rayPlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
   reveal: number;
 };
+
+type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
 
 type MediaPlane = {
   track: HTMLElement;
@@ -1594,57 +1597,69 @@ export class WebGLBackdrop {
 
   private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
     const thumbDarkness = payload.thumbDarkness ?? payload.darkness;
-    return new ShaderMaterial({
+    const uniforms = {
+      tThumb: { value: this.thumbCompositeTarget.texture },
+      uMapSize: { value: new Vector2(1600, 1200) },
+      uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
+      uTint: { value: colorFrom(payload.color) },
+      uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
+      uDiffuseColor: { value: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE) },
+      uEmissiveColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
+      uEmissiveIntensity: { value: SOURCE_WORK_EMISSIVE_INTENSITY },
+      uRoughness: { value: SOURCE_WORK_ROUGHNESS },
+      uMetalness: { value: SOURCE_WORK_METALNESS },
+      uEnvMapIntensity: { value: SOURCE_WORK_ENVMAP_INTENSITY },
+      uSpotMapIntensity: { value: 0.35 },
+      uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
+      uReveal: { value: reveal },
+      uRevealProject: { value: 1 },
+      uRevealSides: { value: 0 },
+      uRevealSpread: { value: 0 },
+      uRevealSpreadSides: { value: 0 },
+      uDarkness: { value: numeric(thumbDarkness, 0.18) },
+      uSaturation: { value: 1 },
+      uContrast: { value: numeric(payload.contrast, 1.15) },
+      uMouseSpeed: { value: 0 },
+      uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
+      uMouseFactor: { value: this.mouseFactor },
+      uPointer: { value: this.pointer },
+      uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
+      uMouseUvScale: { value: 1.5 },
+      tMouseSim: { value: this.mouseSimulationTexture },
+      tMouseSim2: { value: this.screenMouseSimulationTexture },
+      tDisplacement: { value: this.displacementTarget.texture },
+      tPerlin: { value: this.perlinTexture },
+      uCoords: { value: new Vector2(1, 1) },
+      uSpotLightPosition: { value: this.spotLightPosition },
+      uSpotLightTarget: { value: this.spotLightTarget },
+      uSpotLightRight: { value: this.spotLightRight },
+      uSpotLightUp: { value: this.spotLightUp },
+      uSpotConeTan: { value: Math.tan(Math.PI / 4) },
+      uSpotIntensity: { value: this.spotLightIntensity },
+      uTime: { value: 0 },
+    };
+    const material = new MeshStandardMaterial({
+      color: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE),
+      emissive: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG),
+      emissiveIntensity: SOURCE_WORK_EMISSIVE_INTENSITY,
+      roughness: SOURCE_WORK_ROUGHNESS,
+      metalness: SOURCE_WORK_METALNESS,
       transparent: true,
       depthWrite: false,
       depthTest: false,
-      uniforms: {
-        tThumb: { value: this.thumbCompositeTarget.texture },
-        uMapSize: { value: new Vector2(1600, 1200) },
-        uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
-        uTint: { value: colorFrom(payload.color) },
-        uBlockColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
-        uDiffuseColor: { value: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE) },
-        uEmissiveColor: { value: colorFrom(payload.blocks ?? DEFAULT_BG, DEFAULT_BG) },
-        uEmissiveIntensity: { value: SOURCE_WORK_EMISSIVE_INTENSITY },
-        uRoughness: { value: SOURCE_WORK_ROUGHNESS },
-        uMetalness: { value: SOURCE_WORK_METALNESS },
-        uEnvMapIntensity: { value: SOURCE_WORK_ENVMAP_INTENSITY },
-        uSpotMapIntensity: { value: 0.35 },
-        uDarknessColor: { value: colorFrom(payload.darknessColor ?? payload.mediaColor ?? DEFAULT_BG, DEFAULT_BG) },
-        uReveal: { value: reveal },
-        uRevealProject: { value: 1 },
-        uRevealSides: { value: 0 },
-        uRevealSpread: { value: 0 },
-        uRevealSpreadSides: { value: 0 },
-        uDarkness: { value: numeric(thumbDarkness, 0.18) },
-        uSaturation: { value: 1 },
-        uContrast: { value: numeric(payload.contrast, 1.15) },
-        uMouseSpeed: { value: 0 },
-        uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
-        uMouseFactor: { value: this.mouseFactor },
-        uPointer: { value: this.pointer },
-        uMouseUvOffset: { value: new Vector2(0.25, 0.25) },
-        uMouseUvScale: { value: 1.5 },
-        tMouseSim: { value: this.mouseSimulationTexture },
-        tMouseSim2: { value: this.screenMouseSimulationTexture },
-        tDisplacement: { value: this.displacementTarget.texture },
-        tPerlin: { value: this.perlinTexture },
-        uCoords: { value: new Vector2(1, 1) },
-        uSpotLightPosition: { value: this.spotLightPosition },
-        uSpotLightTarget: { value: this.spotLightTarget },
-        uSpotLightRight: { value: this.spotLightRight },
-        uSpotLightUp: { value: this.spotLightUp },
-        uSpotConeTan: { value: Math.tan(Math.PI / 4) },
-        uSpotIntensity: { value: this.spotLightIntensity },
-        uTime: { value: 0 },
-      },
-      vertexShader: workBlockVertex,
-      fragmentShader: workBlockFragment,
-    });
+    }) as WorkBlockMaterial;
+    material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
+    material.uniforms = uniforms;
+    material.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, uniforms);
+      shader.vertexShader = workBlockVertex;
+      shader.fragmentShader = workBlockFragment;
+    };
+    material.customProgramCacheKey = () => "source-va-work-block";
+    return material;
   }
 
-  private createBlockMesh(material: ShaderMaterial) {
+  private createBlockMesh(material: WorkBlockMaterial) {
     const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 1, 0.05);
     const count = GRID_COLS * GRID_ROWS * this.gridLayers;
     const matrices = new Array<Matrix4>(count);
@@ -2309,10 +2324,12 @@ export class WebGLBackdrop {
       if (duration <= 0) {
         item.material.uniforms.uBlockColor.value.copy(next);
         item.material.uniforms.uEmissiveColor.value.copy(next);
+        item.material.emissive.copy(next);
         return;
       }
       this.blockColorTweens.push(gsap.to(item.material.uniforms.uBlockColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
       this.blockColorTweens.push(gsap.to(item.material.uniforms.uEmissiveColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+      this.blockColorTweens.push(gsap.to(item.material.emissive, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     });
   }
 

@@ -159,7 +159,8 @@ Last updated: 2026-06-05
 | `9d22513` | Home WebGL | Batched source `OA/kA` composite-interface alignment: renamed the final composite scene input to source-style `tScene`, added source-compatible `tBlur`, `boolFluid`, `boolLuminosity`, and `boolFxaa` uniforms, and synchronized those render-manager flags before the final composite pass while keeping current default behavior unchanged. |
 | `b484da5` | Home WebGL | Batched source `Lu/kA/OA` render-manager settings alignment: added a source-shaped home render settings object, routed composite/luminosity/bloom flags and factors through it, kept source bloom kernels `[3,5,7,9,11]`, and made the render loop follow the source settings-gated luminosity/bloom/mousesim branches while preserving current home defaults. |
 | `c33641f` | Home WebGL | Batched source `GA/VA/p1` material and spotlight-map alignment: added source standard-material constants for work blocks, reset reveal-side defaults to source `VA` values, reduced non-source thumbnail projection compensation, added a real Three `SpotLight` with `thumbCompositeTarget` as its map, and synchronized spotlight position/target/intensity with the shader path. |
-| `current batch` | Home WebGL | Batched source `VA` fragment-path alignment: treated source standard lighting as the material baseline, added an explicit transitional `uSpotMapIntensity`, reduced thumbnail sampling so it no longer dominates base work-block color/darkness, and kept the source alpha/mouse-lightness/reveal logic as the primary fragment tail. |
+| `a41e642` | Home WebGL | Batched source `VA` fragment-path alignment: treated source standard lighting as the material baseline, added an explicit transitional `uSpotMapIntensity`, reduced thumbnail sampling so it no longer dominates base work-block color/darkness, and kept the source alpha/mouse-lightness/reveal logic as the primary fragment tail. |
+| `current batch` | Home WebGL | Batched source `VA extends MeshStandardMaterial` bridge: changed work blocks from local `ShaderMaterial` objects to `MeshStandardMaterial` instances with retained source-shaped custom uniforms, moved source roughness/metalness/emissive/env-map values onto the actual material, and kept `setBlocksColor()` synchronized with the real material emissive channel. |
 
 ## Current Focus
 
@@ -168,7 +169,7 @@ Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. 
 Immediate source targets:
 
 - `p1`: work scene geometry, camera, spotlight, resize, ring state, floor/environment behavior.
-- `GA/VA`: remaining source-standard-material gaps, especially replacing more hand-written lighting with Three standard material behavior without regressing projection and alpha.
+- `GA/VA`: continue the MeshStandardMaterial migration by moving vertex/fragment modifications from full shader replacement toward source-style chunk injection without regressing alpha/reveal/mouse simulation.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, and remaining optional blur/fxaa placeholders.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds.
@@ -184,7 +185,7 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue `GA/VA` source-standard-material migration where it can be proven from the bundle, especially replacing the remaining simplified fragment lighting with actual Three standard-material shader injection while preserving source alpha/reveal logic.
+1. Continue `GA/VA` source-standard-material migration where it can be proven from the bundle, especially replacing the current full shader override with actual Three standard-material chunk injection while preserving source alpha/reveal logic.
 2. Continue source `p1/GA` render visibility, spotlight map, and lighting review after the real spotlight-map scene path has been restored.
 3. Continue `Lu/A1/OA` only where the source settings model exposes material behavior gaps, especially optional blur/fxaa/fluid placeholders that can be no-op aligned safely.
 4. Defer Phase 2 DOM/interaction work until Phase 1 Home WebGL parity has stronger evidence.
