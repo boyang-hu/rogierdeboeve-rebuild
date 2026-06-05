@@ -87,7 +87,9 @@ const SOURCE_LOW_RES_GRID_LAYERS = 4;
 const GRID_CUBE_SIZE = 1.25;
 const GRID_SPACING = 0.1;
 const GRID_SCALE = 0.09;
-const MOUSE_SIM_SCALE = 4;
+const MOUSE_PLANE_SCALE = 1.3;
+const MOUSE_RAY_SCALE = 1.5;
+const SCREEN_MOUSE_SIM_SCALE = 10;
 
 const projectMediaVertex = `
 varying vec2 vUv;
@@ -1795,7 +1797,13 @@ export class WebGLBackdrop {
 
   private createMousePlane() {
     const material = new MeshBasicMaterial({ visible: false });
-    const mesh = new Mesh(new PlaneGeometry(GRID_COLS * 1.3 * GRID_SCALE * 1.5, GRID_ROWS * 1.3 * GRID_SCALE * 1.5), material);
+    const mesh = new Mesh(
+      new PlaneGeometry(
+        GRID_COLS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
+        GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
+      ),
+      material,
+    );
     mesh.position.set(0, 0, 0.01);
     this.homeScene.add(mesh);
     return mesh;
@@ -2321,12 +2329,14 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.displacementMaterial.uniforms.uRatio.value = width / height;
-    const simWidth = Math.max(1, Math.round(width / MOUSE_SIM_SCALE));
-    const simHeight = Math.max(1, Math.round(height / MOUSE_SIM_SCALE));
-    this.screenMouseSimulationTargets.forEach((target) => target.setSize(simWidth, simHeight));
-    this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(simWidth, simHeight);
-    this.mouseSimulationTargets.forEach((target) => target.setSize(simWidth, simHeight));
-    this.mouseSimulationMaterial.uniforms.uCoords.value.set(simWidth, simHeight);
+    const screenSimWidth = Math.max(1, Math.round(renderWidth / SCREEN_MOUSE_SIM_SCALE));
+    const screenSimHeight = Math.max(1, Math.round(renderHeight / SCREEN_MOUSE_SIM_SCALE));
+    this.screenMouseSimulationTargets.forEach((target) => target.setSize(screenSimWidth, screenSimHeight));
+    this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(screenSimWidth, screenSimHeight);
+    const meshSimWidth = Math.max(1, Math.round(GRID_COLS * MOUSE_PLANE_SCALE));
+    const meshSimHeight = Math.max(1, Math.round(GRID_ROWS * MOUSE_PLANE_SCALE));
+    this.mouseSimulationTargets.forEach((target) => target.setSize(meshSimWidth, meshSimHeight));
+    this.mouseSimulationMaterial.uniforms.uCoords.value.set(meshSimWidth, meshSimHeight);
     const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
@@ -2386,8 +2396,8 @@ export class WebGLBackdrop {
     this.raycaster.setFromCamera(this.pointer, this.homeCamera);
     const hit = this.raycaster.intersectObject(this.mousePlane, false)[0];
     if (!hit) return;
-    const x = MathUtils.clamp(hit.point.x / (GRID_COLS * 1.3 * GRID_SCALE * 1.5) + 0.5, 0, 1);
-    const y = MathUtils.clamp(hit.point.y / (GRID_ROWS * 1.3 * GRID_SCALE * 1.5) + 0.5, 0, 1);
+    const x = MathUtils.clamp(hit.point.x / (GRID_COLS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE) + 0.5, 0, 1);
+    const y = MathUtils.clamp(hit.point.y / (GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE) + 0.5, 0, 1);
     this.mouseSimTargetPos.set(x, y);
     this.workItems.forEach((item) => {
       item.material.uniforms.uPointer.value.set(x * 2 - 1, y * 2 - 1);
