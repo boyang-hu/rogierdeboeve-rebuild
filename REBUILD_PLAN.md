@@ -90,7 +90,7 @@ Last updated: 2026-06-05
 | `bd18bda` | Home WebGL/DOM | Batched source `yD/gD` mouse-factor lifecycle alignment: centralized mouse-factor tween ownership, removed constructor auto-start, made home entry explicitly animate mouse factor from 0 to 1, reused the same path for CTA preview enter/leave, and reset mouse factor on gallery leave. |
 | `342bb68` | Home WebGL | Batched source `IT/p1/yD` camera-controller alignment: added source-style camera controller settings, pixel-space pointer tracking, mobile camera-origin z behavior, delta-driven camera roll, and home entry wiring for `targetXY=(1,.5)` with `rotateAngle=20`. |
 | `aa8a85f` | Home WebGL | Batched source `Lu/kA` bloom pipeline alignment: split luminosity threshold into a bright target, added source-style horizontal/vertical bloom render targets for five mips, matched floor-power-of-two quarter sizing, and fed vertically blurred mips into the existing source-factor bloom composite. |
-| `pending` | Home WebGL | Batched source `T1/w1/E1/SD/p1` thumb projection alignment: matched thumb camera near/far and square render-target sizing, reset thumb map metadata to source `1x1`, changed thumb composite darkening to multiply, reduced the auxiliary projection overlay, and moved it closer to the spotlight-map path. |
+| `4210264` | Home WebGL | Batched source `T1/w1/E1/SD/p1` thumb projection alignment: matched thumb camera near/far and square render-target sizing, reset thumb map metadata to source `1x1`, changed thumb composite darkening to multiply, reduced the auxiliary projection overlay, and moved it closer to the spotlight-map path. |
 
 ## Current Focus
 
