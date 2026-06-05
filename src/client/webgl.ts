@@ -208,9 +208,6 @@ attribute vec3 instanceColor;
 varying vec2 vThumbUv;
 varying vec2 vLocalUv;
 varying float vAlpha;
-varying float vReveal;
-varying vec3 vColorSeed;
-varying vec3 vLocalNormal;
 
 uniform vec3 uGridSize;
 uniform float uReveal;
@@ -272,13 +269,14 @@ transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 vThumbUv = instanceGrid.xy;
 vLocalUv = uv;
 vAlpha = instanceAlpha;
-vReveal = revealMask;
-vColorSeed = instanceColor;
-vLocalNormal = normalize(normal);
 `;
 
 const workBlockFragmentPars = `
 uniform vec3 uGridSize;
+uniform float uReveal;
+uniform float uRevealProject;
+uniform float uRevealSides;
+uniform float uScrollOpacity;
 uniform float uMouseLightness;
 uniform float uMouseFactor;
 uniform sampler2D tMouseSim2;
@@ -287,9 +285,6 @@ uniform vec2 uCoords;
 varying vec2 vThumbUv;
 varying vec2 vLocalUv;
 varying float vAlpha;
-varying float vReveal;
-varying vec3 vColorSeed;
-varying vec3 vLocalNormal;
 
 float sourceRandom(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
@@ -324,15 +319,16 @@ vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSiz
 float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
 float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
 float alpha = alpha1 * alpha2 * vAlpha;
-float revealCombined = 1.0;
+float revealCombined = uReveal * uRevealProject;
 float revealRadius = 2.0 * pow(revealCombined, 0.25);
 float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
 float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.15), 0.0, 1.0);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
 alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
+alpha *= uRevealSides;
 
-gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
+gl_FragColor = vec4(sourceColor, alpha * uScrollOpacity * diffuseColor.a);
 `;
 
 const homeCompositeFragment = `
@@ -1531,6 +1527,7 @@ export class WebGLBackdrop {
       uRevealSides: { value: 0 },
       uRevealSpread: { value: 0 },
       uRevealSpreadSides: { value: 0 },
+      uScrollOpacity: { value: 1 },
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
