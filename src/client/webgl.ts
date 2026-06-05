@@ -227,7 +227,7 @@ void main() {
   float mouse = texture2D(tMouseSim, mouseUv).r;
   transformed *= 1.0 - mouse * 0.05;
   transformed.z -= 1.5;
-  transformed.z += displacement * 3.0 + 9.0 * (1.0 - revealMask);
+  transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
   transformed.z += mouse * 15.0 * uMouseFactor;
   transformed *= 1.0 - displacement * 0.1;
 
@@ -280,6 +280,7 @@ uniform float uSaturation;
 uniform float uContrast;
 uniform float uMouseLightness;
 uniform float uDirectionalLightIntensity;
+uniform float uRevealSides;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
 uniform sampler2D tMouseSim2;
@@ -364,7 +365,7 @@ void main() {
   alpha += centerAlpha * 0.1;
   alpha -= 1.0 - revealAlpha;
   alpha = max(alpha, logoMask * revealCombined * 0.16);
-  alpha *= revealCombined;
+  alpha *= uRevealSides;
 
   gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.9));
 }
@@ -715,9 +716,9 @@ vec4 transition(vec4 color1, vec4 color2, float progress, vec2 uv) {
 
 void main() {
   vec4 map = coverTexture(tMap, uMapSize, vUv, uResolution);
-  vec4 fallback = vec4(vUv.x, vUv.y, 0.0, 1.0);
+  vec4 fallback = vec4(vUv.x, vUv.y, 0.0, 0.0);
   vec4 mixed = transition(map, fallback, 1.0 - uProgress, vUv);
-  gl_FragColor = vec4(mixed.rgb, 1.0);
+  gl_FragColor = mixed;
 }
 `;
 
@@ -1156,7 +1157,7 @@ export class WebGLBackdrop {
     this.displacementMaterial = this.createDisplacementMaterial();
     this.displacementScene.add(new Mesh(new PlaneGeometry(2, 2), this.displacementMaterial));
     this.mouseSimulationMaterial = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
-    this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight), 0.25);
+    this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight), 0.1, 0.85);
     this.mouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.mouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.mouseSimulationMaterial));
@@ -1176,7 +1177,6 @@ export class WebGLBackdrop {
     this.homeScene.add(this.sceneWrap);
     this.sceneWrap.add(this.floorPlane);
     this.sceneWrap.add(this.environmentPlane);
-    this.homeScene.add(this.projectionPlane);
     this.thumbScene.background = colorFrom("#222222");
     this.thumbScene.add(this.thumbWrap);
 
@@ -2505,8 +2505,8 @@ export class WebGLBackdrop {
       this.screenMouseSimTargetPos,
       delta,
       1,
-      0.75,
-      0.25,
+      0.85,
+      0.1,
     );
     this.screenMouseSimulationIndex = screenResult.index;
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
