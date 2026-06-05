@@ -369,9 +369,11 @@ uniform sampler2D tWork;
 uniform sampler2D tBloom;
 uniform sampler2D tFluid;
 uniform sampler2D tMouseSim;
+uniform bool boolBloom;
 uniform float uReveal;
 uniform float uDarken;
 uniform float uSaturation;
+uniform float uBloomDistortion;
 uniform vec3 uBgColor;
 
 varying vec2 vUv;
@@ -403,10 +405,13 @@ void main() {
   vec4 fluid = texture2D(tFluid, uv);
   vec4 mouseSim = texture2D(tMouseSim, uv);
   vec3 color = rgbshift(tWork, uv, -1.0, 0.0015).rgb;
-  vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
-  vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), 0.005).rgb;
-  color += bloom;
-  color += bloomShift;
+  if (boolBloom) {
+    vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
+    float amount = 0.001 * uBloomDistortion;
+    vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), amount / 0.5).rgb;
+    color += bloom;
+    color += bloomShift;
+  }
   color += length(fluid.xy) * 0.015;
   color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
   color = blendLighten(color, vec3(0.095), 1.0);
@@ -469,6 +474,7 @@ float vignette(vec2 uv, float inner, float outer) {
 
 void main() {
   vec2 uv = vUv;
+  vec2 baseUv = vUv;
   vec2 perlinUv = uv * 0.25;
   perlinUv -= 0.5;
   perlinUv.x *= uRatio;
@@ -482,20 +488,22 @@ void main() {
 
   vec4 fluid = texture2D(tFluid, uv);
   vec2 fluidUv = uv + fluid.rg * -0.2 * uFluidStrength;
-  vec2 perlinCoords = uv;
+  uv = fluidUv;
+  vec2 perlinCoords = baseUv;
   if (uPerlin > 0.0) {
     perlinCoords += perlin.b * uPerlin;
     perlinCoords -= uPerlin * 0.065;
   }
 
-  vec4 mouseSim = texture2D(tMouseSim, mix(perlinCoords, fluidUv, 2.5));
+  vec4 mouseSim = texture2D(tMouseSim, mix(perlinCoords, uv, 2.5));
   mouseSim.rgb = contrast(mouseSim.rgb, 1.0);
 
   float perlinVignette = vignette(perlinCoords, 0.1, 0.35);
-  float displacementVignette = vignette(fluidUv, 0.1, 0.5);
-  vec4 sceneDisplaced = rgbshift(tWork, fluidUv, -1.0, 0.005);
-  vec4 scene = rgbshift(tWork, fluidUv, -1.0, 0.0005 + 0.1 * length(fluid.xy) * uFluidStrength);
+  float displacementVignette = vignette(uv, 0.1, 0.5);
+  vec4 sceneDisplaced = rgbshift(tWork, uv, -1.0, 0.005);
+  vec4 scene = rgbshift(tWork, uv, -1.0, 0.0005 + 0.1 * length(fluid.xy) * uFluidStrength);
   vec3 color = mix(scene.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
+  color = mix(uBgColor, color, 1.0);
   color += mouseSim.rgb * 0.065;
   color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
   color = blendAdd(color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
@@ -1013,7 +1021,7 @@ export class WebGLBackdrop {
   private backgroundMaterial: ShaderMaterial;
   private compositeMaterial: ShaderMaterial;
   private compositeScene = new Scene();
-  private workRawTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
+  private workRawTarget = new WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false });
   private preCompositeMaterial: ShaderMaterial;
   private preCompositeScene = new Scene();
   private compositeTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
@@ -1576,9 +1584,11 @@ export class WebGLBackdrop {
         tBloom: { value: this.bloomTarget.texture },
         tFluid: { value: this.fluidPlaceholder },
         tMouseSim: { value: this.screenMouseSimulationTexture },
+        boolBloom: { value: true },
         uReveal: { value: 0 },
         uDarken: { value: 0.1 },
         uSaturation: { value: 1.15 },
+        uBloomDistortion: { value: 2.5 },
         uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
       },
       vertexShader: backgroundVertex,
@@ -2627,6 +2637,8 @@ export class WebGLBackdrop {
       this.renderer.clear();
       this.renderer.render(this.bloomCompositeScene, this.backgroundCamera);
       this.renderer.setRenderTarget(null);
+      this.compositeMaterial.uniforms.tBloom.value = this.bloomTarget.texture;
+      this.compositeMaterial.uniforms.boolBloom.value = true;
       this.renderer.render(this.compositeScene, this.backgroundCamera);
     }
     if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
