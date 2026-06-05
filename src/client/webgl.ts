@@ -514,7 +514,9 @@ void main() {
   vec3 noiseMap = texture2D(tNoise, noiseUv).rgb;
   color = mix(color * noiseMap, color, 0.75);
   color = mix(color * noiseMap, color, 1.5);
-  color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + sampledMouse.r * 0.25 * uDarken);
+  color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
+  color = blendLighten(color, vec3(0.095), 1.0);
+  color = saturation(color, uSaturation);
 
   gl_FragColor = vec4(color, 1.0);
 }
