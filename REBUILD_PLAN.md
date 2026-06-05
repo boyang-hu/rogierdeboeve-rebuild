@@ -38,7 +38,8 @@ Last updated: 2026-06-05
 | `efe5786` | Home WebGL | Added lightweight work-scene bloom compensation based on source `kA/OA` luminosity and bloom settings. |
 | `9ff9453` | Home DOM | Added source-style work CTA magnet movement from source `gD`. |
 | `ed80a14` | Home DOM | Added source-style temporary `is-dragging` state during gallery wheel/touch navigation to suppress accidental link interaction, matching source `yD` pointer gating. |
-| pending | Home DOM | Added source-compatible progressbar `data-slug` support while preserving existing `data-progress-slug` behavior from the rebuild. |
+| `2eaa8e5` | Home DOM | Added source-compatible progressbar `data-slug` support while preserving existing `data-progress-slug` behavior from the rebuild. |
+| this commit | Home DOM | Aligned homepage title/work/footer intro animation targets with source `Rg/vD/Ou` inner-element structure. |
 
 ## Current Focus
 

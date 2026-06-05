@@ -375,6 +375,14 @@ body.is-project .ui-header-description {
   margin-bottom: 0;
   padding-top: var(--py);
   color: var(--muted);
+  overflow: hidden;
+}
+
+.ui-title-inner,
+.ui-work-a > span,
+.social-a > span,
+.ui-footer-contact a > span {
+  display: inline-block;
 }
 
 .ui-work {
@@ -910,6 +918,8 @@ body.has-entered .ui-sound-toggle {
 
 .social-a,
 .ui-footer-contact a {
+  display: inline-flex;
+  overflow: hidden;
   color: var(--muted);
 }
 

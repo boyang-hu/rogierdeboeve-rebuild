@@ -25,8 +25,11 @@ function initLenis() {
 function initIntroAnimations() {
   if (prefersReducedMotion()) return;
 
-  const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary, .ui-nav, .ui-title, .ui-footer");
+  const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary, .ui-nav");
   const contentTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro > *, .c-list-section, .ui-project-content-header > *");
+  const titleTargets = gsap.utils.toArray<HTMLElement>(".ui-title-inner");
+  const footerSocialTargets = gsap.utils.toArray<HTMLElement>(".social-a > span");
+  const footerContactTargets = gsap.utils.toArray<HTMLElement>(".ui-footer-contact a > span");
 
   if (chromeTargets.length) {
     gsap.fromTo(
@@ -44,18 +47,42 @@ function initIntroAnimations() {
     );
   }
 
-  const workLinks = gsap.utils.toArray<HTMLElement>(".ui-work-a");
+  if (titleTargets.length) {
+    gsap.fromTo(
+      titleTargets,
+      { y: "102%" },
+      { y: 0, duration: 1.8, stagger: 0.03, ease: "expo.out", clearProps: "transform" },
+    );
+  }
+
+  if (footerSocialTargets.length) {
+    gsap.fromTo(
+      footerSocialTargets,
+      { y: "102%" },
+      { y: 0, duration: 1.8, stagger: 0.06, ease: "expo.out", delay: 0.4, clearProps: "transform" },
+    );
+  }
+
+  if (footerContactTargets.length) {
+    gsap.fromTo(
+      footerContactTargets,
+      { y: "102%" },
+      { y: 0, duration: 1.8, stagger: 0.06, ease: "expo.out", delay: 0.5, clearProps: "transform" },
+    );
+  }
+
+  const workLinks = gsap.utils.toArray<HTMLElement>(".ui-work-a > span");
   if (workLinks.length && window.matchMedia("(min-width: 1000px)").matches) {
     gsap.fromTo(
       workLinks,
-      { y: 18, opacity: 0 },
+      { y: "102%", opacity: 0 },
       {
         y: 0,
         opacity: 1,
-        duration: 1.15,
-        stagger: 0.045,
+        duration: 1.8,
+        stagger: 0.03,
         ease: "expo.out",
-        delay: 0.2,
+        delay: 0,
         clearProps: "transform,opacity",
       },
     );
