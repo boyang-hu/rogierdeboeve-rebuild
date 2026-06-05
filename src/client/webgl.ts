@@ -365,6 +365,7 @@ uniform float uTime;
 uniform float uRatio;
 uniform float uProgress;
 uniform float uTransformX;
+uniform float uReveal;
 uniform float uFluidStrength;
 uniform float uContrast;
 uniform float uDarken;
@@ -519,6 +520,7 @@ void main() {
   color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
   color = blendLighten(color, vec3(0.095), 1.0);
   color = saturation(color, uSaturation);
+  color = mix(uBgColor, color, uReveal);
 
   gl_FragColor = vec4(color, 1.0);
 }
@@ -936,6 +938,7 @@ export class WebGLBackdrop {
   private spotLightIntensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
   private fluidStrength = 0.5;
+  private sceneReveal = 0;
   private revealSpread = 0;
   private currentAmbientIntensity = 0.5;
   private mediaBackground = colorFrom(DEFAULT_BG);
@@ -1048,6 +1051,17 @@ export class WebGLBackdrop {
         this.workItems.forEach((item) => {
           item.material.uniforms.uMouseFactor.value = this.mouseFactor;
         });
+      },
+    });
+  }
+
+  showScene() {
+    gsap.to(this, {
+      sceneReveal: 1,
+      duration: 1.6,
+      ease: "expo.out",
+      onUpdate: () => {
+        this.compositeMaterial.uniforms.uReveal.value = this.sceneReveal;
       },
     });
   }
@@ -1307,6 +1321,7 @@ export class WebGLBackdrop {
         uRatio: { value: 1 },
         uProgress: { value: 0 },
         uTransformX: { value: 0 },
+        uReveal: { value: 0 },
         uFluidStrength: { value: this.fluidStrength },
         uContrast: { value: 1.1 },
         uDarken: { value: 0.1 },
