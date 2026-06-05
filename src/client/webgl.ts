@@ -1144,6 +1144,17 @@ export class WebGLBackdrop {
     this.updateThumbGallery(-progress);
   }
 
+  restoreGalleryState(progress: number, sceneRotation = 0, zoom = 0) {
+    this.galleryProgress = progress;
+    this.sceneRotation = sceneRotation;
+    this.zoom = zoom;
+    this.compositeMaterial.uniforms.uTransformX.value = progress;
+    this.sceneWrap.rotation.y = MathUtils.degToRad(progress * 360 + 180);
+    this.homeScene.rotation.z = MathUtils.degToRad(sceneRotation);
+    this.homeScene.position.z = this.homeScene.rotation.z - zoom;
+    this.updateThumbGallery(-progress);
+  }
+
   setCameraControllerSettings(
     lookAt: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 },
     targetXY: { x: number; y: number } = { x: 0.25, y: 0.25 },

@@ -96,11 +96,12 @@ Last updated: 2026-06-05
 | `c312ef6` | Home DOM | Batched source `vD/_D/yD` nav semantics alignment: split immediate DOM active/CTA updates from scene project activation during nav/progress clicks, delayed scene activation until the source-style transition window completes, preserved keyboard navigation as direct next/prev gallery motion, and fixed mobile touch-end delta tracking from the original touch start point. |
 | `f844355` | Home WebGL | Batched source `p1/SD/T1` spotlight-map alignment: projected thumb sampling from source-style spotlight position and target `(0,0,-8)`, added per-frame spotlight basis uniforms, synchronized spotlight target/right/up during intensity changes, and further reduced the auxiliary projection-plane overlay so cube shading carries the thumb-map projection. |
 | `3306bf0` | Home DOM | Batched source `gD/yD/SD` gallery-out interaction alignment: moved CTA magnet smoothing to source `yf(..., 2.5, delta)` exponential damping, centralized CTA preview cleanup, introduced a source-style `rd:work-gallery-out` event consumer for leave animation, guarded duplicate gallery leaves, and reset stale leave state on restored home pages. |
-| `current batch` | Home DOM/WebGL | Batched source `yD/SD` home-entry and gallery-scroll alignment: delayed work-gallery scroll activation until home entry, moved scroll smoothing to source `Yi` exponential damping, gated gallery input and WebGL progress updates behind active state, matched WebGL roll/zoom damping to source `updateScene`, and tied plucks playback to the gallery entry event with import-order protection. |
+| `78838b6` | Home DOM/WebGL | Batched source `yD/SD` home-entry and gallery-scroll alignment: delayed work-gallery scroll activation until home entry, moved scroll smoothing to source `Yi` exponential damping, gated gallery input and WebGL progress updates behind active state, matched WebGL roll/zoom damping to source `updateScene`, and tied plucks playback to the gallery entry event with import-order protection. |
+| `current batch` | Home DOM/WebGL | Batched source `yD/Qe.workState` restoration alignment: restored active project identity before first gallery tick, prevented restored pages from replaying duplicate active-project scene transitions, preserved source-style scene roll/zoom state separately from carousel progress, reset restored `scroll.active` until home entry, and added a narrow WebGL gallery-state restore hook for scene rotation/thumb progress. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `yD/SD` home-entry and gallery-scroll lifecycle semantics while preserving recent WebGL mouse simulation, camera-controller, bloom, composite, spotlight-map, and CTA/gallery-out work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `yD/Qe.workState` restoration semantics while preserving recent WebGL mouse simulation, camera-controller, bloom, composite, spotlight-map, CTA/gallery-out, and home-entry lifecycle work.
 
 Immediate source targets:
 
@@ -112,10 +113,10 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Audit source `yD` index/state persistence after active entry so restored `Qe.workState` and local session state match more closely.
-2. Continue visual/source comparison of `GA` block material lighting against the source spotlight-map behavior now that projection direction is closer.
-3. Continue source `A1/OA/kA` composite review after the current lifecycle batch lands.
-4. Revisit project-route entry/leave only after confirming the home lifecycle changes do not regress project media pages.
+1. Continue visual/source comparison of `GA` block material lighting against the source spotlight-map behavior now that projection direction is closer.
+2. Continue source `A1/OA/kA` composite review after the current restoration batch lands.
+3. Revisit project-route entry/leave only after confirming the home lifecycle changes do not regress project media pages.
+4. Audit remaining source `yD` keyboard/virtual-scroll timing edge cases around next/prev timeouts.
 
 ## Verification Baseline
 

@@ -23,6 +23,7 @@ type WebGLLike = {
   }): void;
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number, delta?: number): void;
+  restoreGalleryState?(progress: number, sceneRotation?: number, zoom?: number): void;
   setCameraControllerSettings?(lookAt?: { x: number; y: number; z: number }, targetXY?: { x: number; y: number }, rotateAngle?: number): void;
   setPreviewMode?(enabled: boolean): void;
   animateWorkMouseIn?(): void;
@@ -264,7 +265,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   };
   let activeHook = activeIndex * step;
   let targetHook = activeHook;
+  let sceneRotation = 0;
+  let sceneZoom = 0;
   let pendingNavIndex: number | null = null;
+  let activeProjectId = cardsArray[activeIndex]?.dataset.slug ?? "";
   const scroll = {
     virtual: cardsArray.length * 100000,
     target: cardsArray.length * 100000,
@@ -286,6 +290,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
           targetHook?: number;
           activeProject?: string;
           sceneRotation?: number;
+          zoom?: number;
         }
       | null;
     const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restored?.slug);
@@ -295,6 +300,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       Object.assign(scroll, restored.scroll);
       activeHook = typeof restored.activeHook === "number" ? restored.activeHook : restoredIndex * step + scroll.remainder;
       targetHook = typeof restored.targetHook === "number" ? restored.targetHook : activeHook;
+      sceneRotation = typeof restored.sceneRotation === "number" && Math.abs(restored.sceneRotation) <= 30 ? restored.sceneRotation : 0;
+      sceneZoom = typeof restored.zoom === "number" ? Math.max(0, Math.min(1, restored.zoom)) : 0;
+      activeProjectId = restored.activeProject ?? restored.slug ?? cardsArray[restoredIndex]?.dataset.slug ?? "";
+      scroll.active = false;
     }
   } catch {
     sessionStorage.removeItem(stateKey);
@@ -322,7 +331,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     moved: false,
   };
   let lastTouchSelect = 0;
-  let activeProjectId = cardsArray[activeIndex]?.dataset.slug ?? "";
 
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
   const lerp = (current: number, target: number, factor: number, delta: number) =>
@@ -482,7 +490,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
         },
         activeHook,
         targetHook,
-        sceneRotation: scroll.progress * 360 + 180,
+        sceneRotation,
+        zoom: sceneZoom,
       }),
     );
   };
@@ -495,6 +504,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 
   const enterWorkGallery = () => {
     scroll.active = true;
+    getWebgl()?.restoreGalleryState?.(scroll.progress, sceneRotation, sceneZoom);
     getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
   };
 
@@ -671,10 +681,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       }
     }
     if (scroll.active) getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
+    const rollTarget = Math.max(-4, Math.min(4, scroll.velocity * -0.015));
+    const zoomTarget = Math.max(0, Math.min(1, Math.abs(scroll.velocity * 0.0015)));
+    sceneRotation = lerp(sceneRotation, rollTarget, 5, delta);
+    sceneZoom = lerp(sceneZoom, zoomTarget, 5, delta);
     raf = requestAnimationFrame(tick);
   };
 
-  activateIndex(activeIndex);
+  activateIndex(activeIndex, false);
   raf = requestAnimationFrame(tick);
   window.addEventListener("pagehide", saveWorkState);
   window.addEventListener("beforeunload", () => {
