@@ -376,7 +376,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     animateCta(card, true);
   };
 
-  const activateIndex = (index: number, emitScene = true, force = false) => {
+  const activateIndex = (index: number, emitScene = true, force = false, emitEvents = true) => {
     setDomActiveIndex(index);
     const card = cardsArray[activeIndex];
     if (!card) return;
@@ -386,9 +386,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     activeProjectId = nextProjectId;
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
-    window.dispatchEvent(new CustomEvent("rd:project-active", { detail: nextProjectId }));
-    window.dispatchEvent(new CustomEvent("rd:project-active-payload", { detail: { slug: nextProjectId, payload } }));
-    if (changedProject) window.dispatchEvent(new CustomEvent("rd:woosh"));
+    if (emitEvents) window.dispatchEvent(new CustomEvent("rd:project-active", { detail: nextProjectId }));
+    if (changedProject && emitEvents) window.dispatchEvent(new CustomEvent("rd:woosh"));
     if (emitScene) getWebgl()?.setProject(payload);
   };
 
@@ -439,7 +438,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     window.clearTimeout(navClickTimeout);
     isTransitioning = true;
     targetHook = finalScrollPosition(index);
-    window.dispatchEvent(new CustomEvent("rd:nav-click", { detail: { slug: cardsArray[index]?.dataset.slug } }));
     scrollTo(targetHook);
     activateIndex(index);
     targetHook = index * step + scroll.remainder;
@@ -776,7 +774,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
   };
 
-  activateIndex(activeIndex, false, true);
+  activateIndex(activeIndex, false, true, false);
   raf = requestAnimationFrame(tick);
   const onPageHide = () => saveWorkState();
   const onBeforeUnload = () => cleanupWorkGallery();
