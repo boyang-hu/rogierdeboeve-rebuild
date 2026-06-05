@@ -474,7 +474,9 @@ body.is-project .ui-header-description {
 }
 
 .ui-work.is-dragging .ui-work-a,
-.ui-work.is-dragging .ui-work-cta {
+.ui-work.is-dragging .ui-work-cta,
+.ui-work-content.is-dragging .ui-work-a,
+.ui-work-content.is-dragging .ui-work-cta {
   pointer-events: none;
 }
 

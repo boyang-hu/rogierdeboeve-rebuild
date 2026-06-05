@@ -287,10 +287,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     diff: 0,
     current: 0,
     progress: 0,
+    limit,
     remainder: 0,
+    step,
+    offset: 0,
     velocity: 0,
     active: false,
   };
+  const galleryElement = document.querySelector<HTMLElement>(".ui-work-content") ?? document.querySelector<HTMLElement>("[data-view='home']");
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
   try {
     const restored = JSON.parse(sessionStorage.getItem(stateKey) ?? "null") as
@@ -416,10 +420,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const finalScrollPosition = (index: number) => {
     const close = Math.abs(activeIndex - index) <= cardsArray.length / 2;
     const activePastHalf = activeIndex > cardsArray.length / 2;
-    const hook = index * step;
+    const hook = index * scroll.step;
     if (close) return hook + scroll.remainder;
-    if (activePastHalf) return hook + scroll.remainder + limit;
-    return hook + scroll.remainder - (scroll.virtual > scroll.target ? 0 : limit);
+    if (activePastHalf) return hook + scroll.remainder + scroll.limit;
+    return hook + scroll.remainder - (scroll.virtual > scroll.target ? 0 : scroll.limit);
   };
 
   const scrollTo = (position: number) => {
@@ -440,7 +444,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     targetHook = finalScrollPosition(index);
     scrollTo(targetHook);
     activateIndex(index);
-    targetHook = index * step + scroll.remainder;
+    targetHook = index * scroll.step + scroll.remainder;
     navClickTimeout = window.setTimeout(() => {
       isTransitioning = false;
     }, 1200);
@@ -450,7 +454,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (nextTransitioning || prevTransitioning) return;
     window.clearTimeout(nextTimeout);
     nextTransitioning = true;
-    scrollTo(scroll.virtual + step);
+    scrollTo(scroll.virtual + scroll.step);
     nextTimeout = window.setTimeout(() => {
       nextTransitioning = false;
     }, 800);
@@ -460,14 +464,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     if (nextTransitioning || prevTransitioning) return;
     window.clearTimeout(prevTimeout);
     prevTransitioning = true;
-    scrollTo(scroll.virtual - step);
+    scrollTo(scroll.virtual - scroll.step);
     prevTimeout = window.setTimeout(() => {
       prevTransitioning = false;
     }, 800);
   };
 
   const setDragging = (enabled: boolean) => {
-    document.querySelector<HTMLElement>("[data-view='home']")?.classList.toggle("is-dragging", enabled);
+    galleryElement?.classList.toggle("is-dragging", enabled);
   };
 
   const checkSpeed = () => {
@@ -475,10 +479,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     setDragging(pointer.active && moving);
   };
 
-  const handleGalleryDelta = (delta: number) => {
+  const handleGalleryDelta = (delta: number, allowZero = false) => {
     if (!scroll.active) return false;
     if (nextTransitioning || prevTransitioning) return false;
-    if (Math.abs(delta) < 0.01) return false;
+    if (!allowZero && Math.abs(delta) < 0.01) return false;
     window.clearTimeout(snapTimeout);
     snap = true;
     scroll.diff += delta;
@@ -506,9 +510,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
           current: scroll.current,
           progress: scroll.progress,
           remainder: scroll.remainder,
-          limit,
-          step,
-          offset: 0,
+          limit: scroll.limit,
+          step: scroll.step,
+          offset: scroll.offset,
         },
         activeHook,
         targetHook,
@@ -681,7 +685,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
     pointer.moved = false;
-    handleGalleryDelta(0);
+    handleGalleryDelta(0, true);
   };
 
   const onTouchMove = (event: TouchEvent) => {
@@ -702,7 +706,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     pointer.active = false;
     pointer.lastDeltaX = 0;
     pointer.lastDeltaY = 0;
-    handleGalleryDelta(0);
+    handleGalleryDelta(0, true);
   };
 
   window.addEventListener("wheel", onWheel, { passive: false });
@@ -733,18 +737,18 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     checkSpeed();
     if (snap) scroll.diff = lerp(scroll.diff, 0, 5, delta);
     const targetPlusDiff = scroll.target + scroll.diff;
-    scroll.remainder = scroll.target - (scroll.target % limit);
+    scroll.remainder = scroll.target - (scroll.target % scroll.limit);
     scroll.animated = lerp(scroll.animated, targetPlusDiff, 5, delta);
-    scroll.current = wrap(scroll.animated, limit);
-    scroll.progress = scroll.current / limit;
+    scroll.current = wrap(scroll.animated, scroll.limit);
+    scroll.progress = scroll.current / scroll.limit;
 
     if (!isTransitioning && scroll.active) {
-      let index = Math.round(Math.abs((scroll.current % limit) / step));
-      if (scroll.current > limit - step / 2) index = 0;
-      activeHook = index * step + scroll.remainder;
+      let index = Math.round(Math.abs((scroll.current % scroll.limit) / scroll.step));
+      if (scroll.current > scroll.limit - scroll.step / 2) index = 0;
+      activeHook = index * scroll.step + scroll.remainder;
       if (cardsArray[index] && index !== activeIndex) {
         activateIndex(index);
-        targetHook = index * step + scroll.remainder;
+        targetHook = index * scroll.step + scroll.remainder;
       }
     }
     if (scroll.active) getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
