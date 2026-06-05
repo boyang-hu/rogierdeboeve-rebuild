@@ -453,9 +453,14 @@ uniform sampler2D tFluid;
 uniform sampler2D tMouseSim;
 uniform sampler2D tNoise;
 uniform sampler2D tPerlin;
+uniform sampler2D tBloom;
 uniform sampler2D tMedia;
 uniform sampler2D tBlur;
 uniform sampler2D tLensflare;
+uniform bool boolBloom;
+uniform bool boolFluid;
+uniform bool boolLuminosity;
+uniform bool boolFxaa;
 uniform float uTime;
 uniform float uRatio;
 uniform float uTransformX;
@@ -538,6 +543,12 @@ void main() {
   color += mouseSim.rgb * 0.065;
   color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
   color = blendAdd(color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
+  if (boolBloom) {
+    vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
+    float amount = 0.001 * 2.5;
+    vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), amount / 0.5).rgb;
+    color += bloom + bloomShift;
+  }
   color = contrast(color, uContrast);
   color *= uContrast;
   color = saturation(color, 1.15);
@@ -2156,9 +2167,14 @@ export class WebGLBackdrop {
         tMouseSim: { value: this.screenMouseSimulationTexture },
         tNoise: { value: this.noiseTexture },
         tPerlin: { value: this.perlinTexture },
+        tBloom: { value: this.bloomTarget.texture },
         tMedia: { value: this.fluidPlaceholder },
         tBlur: { value: this.fluidPlaceholder },
         tLensflare: { value: this.fluidPlaceholder },
+        boolBloom: { value: this.renderSettings.bloom.enabled },
+        boolFluid: { value: this.renderSettings.fluid.enabled },
+        boolLuminosity: { value: this.renderSettings.luminosity.enabled },
+        boolFxaa: { value: this.renderSettings.fxaa.enabled },
         uTime: { value: 0 },
         uRatio: { value: 1 },
         uTransformX: { value: 0 },
@@ -2822,6 +2838,7 @@ export class WebGLBackdrop {
   private setMediaOpacity(value: number, duration = 1.6, ease = "expo.out", delay = 0.25) {
     this.mediaOpacityTween?.kill();
     const update = () => {
+      this.preCompositeMaterial.uniforms.uMediaReveal.value = this.mediaSceneOpacity;
       this.mediaPlanes.forEach((plane) => {
         plane.material.uniforms.uSceneOpacity.value = this.mediaSceneOpacity;
       });
@@ -3386,6 +3403,11 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
+    this.preCompositeMaterial.uniforms.tBloom.value = this.bloomTarget.texture;
+    this.preCompositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled;
+    this.preCompositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
+    this.preCompositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
+    this.preCompositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
     this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
     this.updateMediaPlanePositions();
