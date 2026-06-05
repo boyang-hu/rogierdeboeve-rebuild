@@ -145,6 +145,31 @@ Measured luma confirms this cleanup is not the main brightness fix:
 
 Decision: keep the render-target default cleanup because it removes a rebuild-only assumption and did not regress project pages. The next high-value path is either a tightly isolated full `VA` shader replacement or a shared `A1/C1/OA` color/composite audit, because luma remains low across both home and project captures.
 
+### S1-16 A1/C1 Shared Composite Cleanup Result
+
+The first focused shared-composite audit found two source-proven differences in the rebuild `A1/C1` bridge:
+
+- Source `A1` declares `uReveal` and `Se.showScene()` tweens it, but the source fragment output remains `FragColor = vec4(mixed.rgb, 1.)`. The rebuild had an extra final `mix(uBgColor, color, uReveal)` that is not present in the source fragment; it has been removed.
+- Source `C1` initializes `uBgColor` with `new Color("#1F1F1F").convertLinearToSRGB()`. The rebuild pre-composite default now uses the same `sourceLinearToSrgbColor(SOURCE_COMPOSITE_BG)` path.
+
+Verification passed:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-a1-shared` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma again shows this cleanup is source-correct but not the main brightness fix:
+
+| Capture | Original luma | Rebuild luma after A1/C1 cleanup | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.104` | `0.011` | Essentially unchanged. |
+| Home mobile | `0.055` | `0.012` | Essentially unchanged. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project composite remains stable. |
+
+Decision: keep the `A1/C1` cleanup because it removes rebuild-only shader behavior and aligns the pre-composite background default. Since the shared cleanup did not move luma, the next high-risk batch should inspect the source `Lu` render order/output target flow around `mainScene`, `workScene`, and project media, or isolate the full `VA` shader replacement with immediate shader smoke testing.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |

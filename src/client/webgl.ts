@@ -607,8 +607,6 @@ void main() {
   vec3 noise = texture2D(tNoise, noiseUv).rgb;
   color = mix(color * noise, color, 0.75);
   color = mix(color * noise, color, 1.5);
-  color = mix(uBgColor, color, uReveal);
-
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -2392,7 +2390,7 @@ export class WebGLBackdrop {
         uPerlin: { value: 0.1 },
         uReveal: { value: 0 },
         uContrast: { value: this.contrast },
-        uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
+        uBgColor: { value: sourceLinearToSrgbColor(SOURCE_COMPOSITE_BG) },
         uDisplacementSize: { value: new Vector2(1, 1) },
         uContainerSize: { value: new Vector2(1, 1) },
       },
