@@ -163,10 +163,11 @@ function formatButton(button: HTMLElement) {
 
 function initButtons() {
   const buttons = Array.from(document.querySelectorAll<HTMLElement>(".c-button"));
-  if (!buttons.length) return;
+  if (!buttons.length) return () => {};
   const formatAll = () => buttons.forEach(formatButton);
   requestAnimationFrame(formatAll);
   window.addEventListener("resize", formatAll);
+  return () => window.removeEventListener("resize", formatAll);
 }
 
 function initPreloader() {
@@ -268,7 +269,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   const cardsArray = Array.from(cards);
   const progressArray = Array.from(progressItems);
   let activeIndex = Math.max(0, Array.from(cards).findIndex((card) => card.classList.contains("is-active")));
-  if (!cards.length) return;
+  if (!cards.length) return () => {};
 
   const totalItems = cardsArray.length - 1;
   const step = 1000;
@@ -797,6 +798,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
     window.removeEventListener("pagehide", onPageHide);
     window.removeEventListener("beforeunload", onBeforeUnload);
   });
+  return cleanupWorkGallery;
 }
 
 function initScrollState() {
@@ -813,11 +815,15 @@ function initScrollState() {
   update();
   window.addEventListener("scroll", update, { passive: true });
   window.addEventListener("resize", update);
+  return () => {
+    window.removeEventListener("scroll", update);
+    window.removeEventListener("resize", update);
+  };
 }
 
 function initProjectMedia() {
   const videos = document.querySelectorAll<HTMLVideoElement>(".media-block video");
-  if (!videos.length) return;
+  if (!videos.length) return () => {};
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -835,6 +841,10 @@ function initProjectMedia() {
     video.playsInline = true;
     observer.observe(video);
   });
+  return () => {
+    observer.disconnect();
+    videos.forEach((video) => video.pause());
+  };
 }
 
 function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
@@ -876,22 +886,31 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
     }
   };
 
+  const onResize = () => {
+    resize();
+    update();
+  };
+  const onPageHide = () => apply(currentPayload);
+
   resize();
   update();
   window.addEventListener("scroll", update, { passive: true });
-  window.addEventListener("resize", () => {
-    resize();
-    update();
-  });
-  window.addEventListener("pagehide", () => apply(currentPayload), { once: true });
+  window.addEventListener("resize", onResize);
+  window.addEventListener("pagehide", onPageHide, { once: true });
+  return () => {
+    window.removeEventListener("scroll", update);
+    window.removeEventListener("resize", onResize);
+    window.removeEventListener("pagehide", onPageHide);
+  };
 }
 
 function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
   const project = document.querySelector<HTMLElement>("[data-webgl-project]");
-  if (!project) return;
+  if (!project) return () => {};
 
+  const cleanups: Array<() => void> = [];
   project.querySelectorAll<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])").forEach((link) => {
-    link.addEventListener("click", (event) => {
+    const onClick = (event: MouseEvent) => {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
       const target = new URL(link.href, window.location.href);
       if (target.origin !== window.location.origin || target.href === window.location.href) return;
@@ -900,8 +919,11 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
       window.setTimeout(() => {
         window.location.href = target.href;
       }, 500);
-    });
+    };
+    link.addEventListener("click", onClick);
+    cleanups.push(() => link.removeEventListener("click", onClick));
   });
+  return () => cleanups.splice(0).forEach((cleanup) => cleanup());
 }
 
 function shouldInitWebGL(root: HTMLElement) {
@@ -937,9 +959,14 @@ function boot() {
   let webgl: WebGLLike | undefined;
   let homeGalleryEntered = false;
   let cleanupMotion: (() => void) | undefined;
+  const cleanupCallbacks: Array<() => void> = [];
   const cleanupPageMotion = () => {
     cleanupMotion?.();
     cleanupMotion = undefined;
+  };
+  const cleanupPage = () => {
+    cleanupPageMotion();
+    cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
   };
 
   initPreloader();
@@ -968,14 +995,14 @@ function boot() {
 
   initMenu();
   initSoundToggle();
-  initButtons();
-  initWorkPreview(() => webgl);
-  initProjectMedia();
-  initProjectNextState(() => webgl);
-  initProjectLeave(() => webgl);
-  initScrollState();
-  window.addEventListener("pagehide", cleanupPageMotion, { once: true });
-  window.addEventListener("beforeunload", cleanupPageMotion, { once: true });
+  cleanupCallbacks.push(initButtons());
+  cleanupCallbacks.push(initWorkPreview(() => webgl));
+  cleanupCallbacks.push(initProjectMedia());
+  cleanupCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
+  cleanupCallbacks.push(initProjectLeave(() => webgl));
+  cleanupCallbacks.push(initScrollState());
+  window.addEventListener("pagehide", cleanupPage, { once: true });
+  window.addEventListener("beforeunload", cleanupPage, { once: true });
 }
 
 if (document.readyState === "loading") {
