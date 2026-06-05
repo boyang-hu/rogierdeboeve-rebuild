@@ -163,6 +163,7 @@ uniform float uRevealSpreadSides;
 uniform float uMouseFactor;
 uniform vec2 uPointer;
 uniform sampler2D tMouseSim;
+uniform sampler2D tDisplacement;
 uniform vec3 uSpotLightPosition;
 uniform float uSpotConeTan;
 uniform float uSpotIntensity;
@@ -193,9 +194,10 @@ void main() {
   float fade = clamp(fadeScale, 0.0, 1.05);
   float fadeDisplacementScale = (revealMask * 4.85) - (toCenter * (revealMask / 4.85));
   float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
+  vec4 displacementMap = texture2D(tDisplacement, instanceGrid.xy);
   float perlin = noise(instanceGrid.xy * 12.0 - uTime * 0.05);
   float wave = sin(instanceGrid.x * 24.0 + instanceGrid.y * 13.0 - uTime * 0.8) * 0.5 + 0.5;
-  float displacement = mix(perlin, wave, 0.35);
+  float displacement = mix(mix(perlin, wave, 0.35), displacementMap.r, 0.58);
   float perlinHeight = 10.0;
 
   vec3 perlinDisplaced = transformed;
@@ -637,6 +639,38 @@ void main() {
 }
 `;
 
+const displacementFragment = `
+precision highp float;
+
+uniform float uTime;
+uniform float uRatio;
+
+varying vec2 vUv;
+
+float vignette(vec2 uv, float inner, float outer) {
+  vec2 p = uv - 0.5;
+  p.x *= uRatio;
+  return smoothstep(outer, inner, length(p));
+}
+
+void main() {
+  vec2 uvOff = vUv;
+  uvOff.x -= 0.5;
+  uvOff.x *= uRatio;
+  uvOff.x += 0.5;
+
+  vec2 waveUv = uvOff;
+  waveUv -= 0.5;
+  waveUv *= 5.0;
+  waveUv += 0.5;
+
+  float strength = 1.0 - abs(sin(distance(waveUv, vec2(0.5)) - 0.5 - uTime));
+  float mask = 1.0 - vignette(uvOff, 0.01, 0.5);
+  float displacement = clamp(strength * mask, 0.0, 1.0);
+  gl_FragColor = vec4(vec3(displacement), 1.0);
+}
+`;
+
 const floorFragment = `
 precision highp float;
 
@@ -769,6 +803,9 @@ export class WebGLBackdrop {
   private compositeMaterial: ShaderMaterial;
   private compositeScene = new Scene();
   private compositeTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
+  private displacementMaterial: ShaderMaterial;
+  private displacementScene = new Scene();
+  private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
   private thumbCompositeMaterial: ShaderMaterial;
   private thumbCompositeScene = new Scene();
   private projectionMaterial: ShaderMaterial;
@@ -818,6 +855,8 @@ export class WebGLBackdrop {
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
     this.compositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial));
+    this.displacementMaterial = this.createDisplacementMaterial();
+    this.displacementScene.add(new Mesh(new PlaneGeometry(2, 2), this.displacementMaterial));
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
     this.projectionMaterial = this.createProjectionMaterial();
@@ -950,6 +989,8 @@ export class WebGLBackdrop {
     this.backgroundMaterial.dispose();
     this.compositeTarget.dispose();
     this.compositeMaterial.dispose();
+    this.displacementTarget.dispose();
+    this.displacementMaterial.dispose();
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
     this.projectionPlane.geometry.dispose();
@@ -1034,6 +1075,7 @@ export class WebGLBackdrop {
         uMouseFactor: { value: this.mouseFactor },
         uPointer: { value: this.pointer },
         tMouseSim: { value: this.mouseSimTexture },
+        tDisplacement: { value: this.displacementTarget.texture },
         uResolution: { value: new Vector2(1, 1) },
         uSpotLightPosition: { value: this.spotLightPosition },
         uSpotConeTan: { value: Math.tan(Math.PI / 8) },
@@ -1150,6 +1192,19 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeCompositeFragment,
+    });
+  }
+
+  private createDisplacementMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uRatio: { value: 1 },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: displacementFragment,
     });
   }
 
@@ -1591,6 +1646,7 @@ export class WebGLBackdrop {
     this.homeCamera.updateProjectionMatrix();
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.compositeMaterial.uniforms.uRatio.value = width / height;
+    this.displacementMaterial.uniforms.uRatio.value = width / height;
     const thumbSize = Math.max(512, Math.round(height * dpr));
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
@@ -1714,11 +1770,15 @@ export class WebGLBackdrop {
     this.compositeMaterial.uniforms.uTime.value = time;
     this.compositeMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.compositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
+    this.displacementMaterial.uniforms.uTime.value = time;
     this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
     this.updateMediaPlanePositions();
 
     this.renderer.clear();
+    this.renderer.setRenderTarget(this.displacementTarget);
+    this.renderer.clear();
+    this.renderer.render(this.displacementScene, this.backgroundCamera);
     this.renderer.setRenderTarget(this.thumbTarget);
     this.renderer.clear();
     this.renderer.render(this.thumbScene, this.thumbCamera);
