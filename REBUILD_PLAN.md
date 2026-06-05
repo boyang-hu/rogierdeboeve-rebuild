@@ -10,7 +10,8 @@ Last updated: 2026-06-05
 - Keep the stack: Astro, TypeScript, Three.js, GSAP, Lenis, Howler.
 - Audio must use Howler.
 - Do not delete `public/` or `legacy-mirror/`.
-- After each completed small step:
+- Work in batches of roughly five source-alignment steps unless a risky shader/navigation/media change needs a quick local check.
+- After each completed batch:
   - update this document,
   - run build and diff checks,
   - run a browser smoke/QA check when relevant,
@@ -86,10 +87,11 @@ Last updated: 2026-06-05
 | `a0fcfe7` | Home WebGL | Aligned the source-style `p1` floor and environment planes to the original large geometries, y offsets, floor rotation, and demorgen environment rotation adjustment. |
 | `c68adb6` | Home WebGL | Moved the home bloom pass closer to source `Lu/kA` by rendering five downsampled bloom mips and recombining them with source-style bloom radius factors before final `OA` compositing. |
 | `e3195db` | Home DOM/Audio | Batched Phase 2 source alignment for `vD/_D/yD`: click audio now only binds `data-sound-click`, project changes emit source-style woosh, redundant active project selections short-circuit, and session work state stores `activeProject`/`sceneRotation`. |
+| `pending` | Home WebGL/DOM | Batched source `yD/gD` mouse-factor lifecycle alignment: centralized mouse-factor tween ownership, removed constructor auto-start, made home entry explicitly animate mouse factor from 0 to 1, reused the same path for CTA preview enter/leave, and reset mouse factor on gallery leave. |
 
 ## Current Focus
 
-Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `vD/_D/yD` gallery audio and state semantics while preserving the recent WebGL bloom, spotlight, and floor/environment work.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is batching source `yD/gD` mouse-factor lifecycle semantics while preserving the recent gallery audio/state and WebGL bloom work.
 
 Immediate source targets:
 

@@ -965,6 +965,7 @@ export class WebGLBackdrop {
   private zoom = 0;
   private activeSlug = "";
   private mouseFactor = 0;
+  private mouseFactorTween?: gsap.core.Tween;
   private maxSpotLightIntensity = 220;
   private spotLightIntensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
@@ -1030,7 +1031,6 @@ export class WebGLBackdrop {
 
     this.resize();
     this.bind();
-    gsap.to(this, { mouseFactor: 1, duration: 3, ease: "none" });
     this.tick();
   }
 
@@ -1078,16 +1078,12 @@ export class WebGLBackdrop {
 
   setPreviewMode(enabled: boolean) {
     this.setFluidStrength(enabled ? 0.35 : 0.5, 0.5);
-    gsap.to(this, {
-      mouseFactor: enabled ? 0.25 : 1,
-      duration: 3,
-      ease: "none",
-      onUpdate: () => {
-        this.workItems.forEach((item) => {
-          item.material.uniforms.uMouseFactor.value = this.mouseFactor;
-        });
-      },
-    });
+    this.setMouseFactor(enabled ? 0.25 : 1, 3);
+  }
+
+  animateWorkMouseIn() {
+    this.setMouseFactor(0, 0);
+    this.setMouseFactor(1, 3);
   }
 
   showScene() {
@@ -1108,6 +1104,7 @@ export class WebGLBackdrop {
     this.setRevealSpread(1, 0.65, "power3.in");
     this.setSpotLightIntensity(0, 1, "none");
     this.setFluidStrength(0.5, 0.5);
+    this.setMouseFactor(1, 0.5);
     gsap.to(this.projectionMaterial.uniforms.uReveal, { value: 0, duration: 0.5, ease: "none" });
     this.workItems.forEach((item) => {
       gsap.to(item.material.uniforms.uRevealProject, { value: 0, duration: 0.5, ease: "none" });
@@ -1763,6 +1760,26 @@ export class WebGLBackdrop {
   private setThumbMouseLightness(value: number) {
     this.workItems.forEach((item) => {
       gsap.to(item.material.uniforms.uMouseLightness, { value, duration: 1.6, ease: "expo.out" });
+    });
+  }
+
+  private setMouseFactor(value: number, duration = 0, ease = "none") {
+    this.mouseFactorTween?.kill();
+    const updateUniforms = () => {
+      this.workItems.forEach((item) => {
+        item.material.uniforms.uMouseFactor.value = this.mouseFactor;
+      });
+    };
+    if (duration <= 0) {
+      this.mouseFactor = value;
+      updateUniforms();
+      return;
+    }
+    this.mouseFactorTween = gsap.to(this, {
+      mouseFactor: value,
+      duration,
+      ease,
+      onUpdate: updateUniforms,
     });
   }
 

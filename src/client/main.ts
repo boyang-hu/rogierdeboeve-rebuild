@@ -24,6 +24,7 @@ type WebGLLike = {
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number, delta?: number): void;
   setPreviewMode?(enabled: boolean): void;
+  animateWorkMouseIn?(): void;
   showScene?(): void;
   hideWorkScene?(): void;
   mediaAnimateIn?(): void;
@@ -714,7 +715,10 @@ function boot() {
     const payload = projectPayloadFromElement(active ?? project);
     applyActiveColor(payload.color);
     webgl?.setProject(payload);
-    if (document.querySelector("[data-view='home']")) webgl?.showScene?.();
+    if (document.querySelector("[data-view='home']")) {
+      webgl?.animateWorkMouseIn?.();
+      webgl?.showScene?.();
+    }
   });
 
   initMenu();
