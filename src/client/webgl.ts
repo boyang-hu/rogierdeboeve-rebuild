@@ -345,11 +345,9 @@ uniform bool boolBloom;
 uniform bool boolFluid;
 uniform bool boolLuminosity;
 uniform bool boolFxaa;
-uniform float uReveal;
 uniform float uDarken;
 uniform float uSaturation;
 uniform float uBloomDistortion;
-uniform vec3 uBgColor;
 
 varying vec2 vUv;
 
@@ -391,7 +389,6 @@ void main() {
   color = blendMultiply(color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
   color = blendLighten(color, vec3(0.095), 1.0);
   color = saturation(color, uSaturation);
-  color = mix(uBgColor, color, uReveal);
 
   gl_FragColor = vec4(color, 1.0);
 }
@@ -415,6 +412,7 @@ uniform float uFluidStrength;
 uniform float uMediaReveal;
 uniform float uDisplacement;
 uniform float uPerlin;
+uniform float uReveal;
 uniform float uContrast;
 uniform vec3 uBgColor;
 uniform vec2 uDisplacementSize;
@@ -504,6 +502,7 @@ void main() {
   vec3 noise = texture2D(tNoise, noiseUv).rgb;
   color = mix(color * noise, color, 0.75);
   color = mix(color * noise, color, 1.5);
+  color = mix(uBgColor, color, uReveal);
 
   gl_FragColor = vec4(color, 1.0);
 }
@@ -1340,7 +1339,7 @@ export class WebGLBackdrop {
       duration: 1.6,
       ease: "expo.out",
       onUpdate: () => {
-        this.compositeMaterial.uniforms.uReveal.value = this.sceneReveal;
+        this.preCompositeMaterial.uniforms.uReveal.value = this.sceneReveal;
       },
     });
   }
@@ -1671,11 +1670,9 @@ export class WebGLBackdrop {
         boolFluid: { value: settings.fluid.enabled },
         boolLuminosity: { value: settings.luminosity.enabled },
         boolFxaa: { value: settings.fxaa.enabled },
-        uReveal: { value: 0 },
         uDarken: { value: 0.1 },
         uSaturation: { value: 1.15 },
         uBloomDistortion: { value: 2.5 },
-        uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeCompositeFragment,
@@ -1702,6 +1699,7 @@ export class WebGLBackdrop {
         uMediaReveal: { value: 0 },
         uDisplacement: { value: 0.1 },
         uPerlin: { value: 0.1 },
+        uReveal: { value: 0 },
         uContrast: { value: 1.1 },
         uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
         uDisplacementSize: { value: new Vector2(1, 1) },
