@@ -506,9 +506,6 @@ uniform vec2 uResolution;
 uniform float uProgress;
 uniform float uTransitionCount;
 uniform float uTransitionSmoothness;
-uniform float uDarkness;
-uniform vec3 uDarknessColor;
-uniform float uSaturation;
 
 varying vec2 vUv;
 
@@ -523,11 +520,6 @@ vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 size) {
   return texture2D(tex, uv);
 }
 
-vec3 saturateColor(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
-  return mix(vec3(gray), color, amount);
-}
-
 vec4 transition(vec4 color1, vec4 color2, float progress, vec2 uv) {
   float pr = smoothstep(-uTransitionSmoothness, 0.0, uv.y - progress * (1.0 + uTransitionSmoothness));
   float s = step(pr, fract(uTransitionCount * uv.y));
@@ -538,9 +530,30 @@ void main() {
   vec4 map = coverTexture(tMap, uMapSize, vUv, uResolution);
   vec4 fallback = vec4(vUv.x, vUv.y, 0.0, 1.0);
   vec4 mixed = transition(map, fallback, 1.0 - uProgress, vUv);
-  mixed.rgb = saturateColor(mixed.rgb, uSaturation);
-  mixed.rgb = mix(mixed.rgb, uDarknessColor, uDarkness);
   gl_FragColor = vec4(mixed.rgb, 1.0);
+}
+`;
+
+const thumbCompositeFragment = `
+precision highp float;
+
+uniform sampler2D tScene;
+uniform float uDarkness;
+uniform vec3 uDarknessColor;
+uniform float uSaturation;
+
+varying vec2 vUv;
+
+vec3 saturateColor(vec3 color, float amount) {
+  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  return mix(vec3(gray), color, amount);
+}
+
+void main() {
+  vec4 color = texture2D(tScene, vUv);
+  color.rgb = saturateColor(color.rgb, uSaturation);
+  color.rgb = mix(color.rgb, uDarknessColor, uDarkness);
+  gl_FragColor = vec4(color.rgb, 1.0);
 }
 `;
 
@@ -756,6 +769,8 @@ export class WebGLBackdrop {
   private compositeMaterial: ShaderMaterial;
   private compositeScene = new Scene();
   private compositeTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
+  private thumbCompositeMaterial: ShaderMaterial;
+  private thumbCompositeScene = new Scene();
   private projectionMaterial: ShaderMaterial;
   private projectionPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private floorMaterial: ShaderMaterial;
@@ -763,6 +778,7 @@ export class WebGLBackdrop {
   private environmentMaterial: ShaderMaterial;
   private environmentPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
+  private thumbCompositeTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private particles: Points;
   private raycaster = new Raycaster();
   private mousePlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
@@ -802,6 +818,8 @@ export class WebGLBackdrop {
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
     this.compositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial));
+    this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
+    this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
     this.projectionMaterial = this.createProjectionMaterial();
     this.projectionPlane = new Mesh(new PlaneGeometry(3.9, 2.72), this.projectionMaterial);
     this.projectionPlane.position.set(0, 0, 0.42);
@@ -932,6 +950,8 @@ export class WebGLBackdrop {
     this.backgroundMaterial.dispose();
     this.compositeTarget.dispose();
     this.compositeMaterial.dispose();
+    this.thumbCompositeTarget.dispose();
+    this.thumbCompositeMaterial.dispose();
     this.projectionPlane.geometry.dispose();
     this.projectionMaterial.dispose();
     this.floorPlane.geometry.dispose();
@@ -996,7 +1016,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: true,
       uniforms: {
-        tThumb: { value: this.thumbTarget.texture },
+        tThumb: { value: this.thumbCompositeTarget.texture },
         uMapSize: { value: new Vector2(1600, 1200) },
         uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, GRID_LAYERS) },
         uTint: { value: colorFrom(payload.color) },
@@ -1081,9 +1101,6 @@ export class WebGLBackdrop {
         uProgress: { value: 1 },
         uTransitionCount: { value: 150 },
         uTransitionSmoothness: { value: 0.2 },
-        uDarkness: { value: numeric(payload.darkness, 0) },
-        uDarknessColor: { value: colorFrom(payload.darknessColor ?? "#000000", "#000000") },
-        uSaturation: { value: numeric(payload.saturation, 1) },
       },
       vertexShader: thumbVertex,
       fragmentShader: thumbFragment,
@@ -1136,6 +1153,21 @@ export class WebGLBackdrop {
     });
   }
 
+  private createThumbCompositeMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tScene: { value: this.thumbTarget.texture },
+        uDarkness: { value: 0 },
+        uDarknessColor: { value: colorFrom("#000000", "#000000") },
+        uSaturation: { value: 1 },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: thumbCompositeFragment,
+    });
+  }
+
   private createProjectionMaterial() {
     return new ShaderMaterial({
       transparent: true,
@@ -1143,7 +1175,7 @@ export class WebGLBackdrop {
       depthTest: false,
       blending: AdditiveBlending,
       uniforms: {
-        tThumb: { value: this.thumbTarget.texture },
+        tThumb: { value: this.thumbCompositeTarget.texture },
         uTint: { value: colorFrom(DEFAULT_COLOR) },
         uReveal: { value: 1 },
         uOpacity: { value: 0.065 },
@@ -1347,9 +1379,9 @@ export class WebGLBackdrop {
         gsap.to(item.material.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uContrast, { value: numeric(active.payload.contrast, 1.15), duration: 1.6, ease: "expo.out" });
         gsap.to(item.material.uniforms.uMouseLightness, { value: numeric(active.payload.mouseLightness, 1), duration: 1.6, ease: "expo.out" });
-        gsap.to(item.thumb.material.uniforms.uDarkness, { value: numeric(active.payload.darkness, 0), duration: 1.6, ease: "expo.out" });
-        tweenColor(item.thumb.material.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
-        gsap.to(item.thumb.material.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
+        gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value: numeric(active.payload.darkness, 0), duration: 1.6, ease: "expo.out" });
+        tweenColor(this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color, active.payload.darknessColor ?? "#000000", 1.6);
+        gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value: numeric(active.payload.saturation, 1), duration: 1.6, ease: "expo.out" });
       }
     });
   }
@@ -1417,6 +1449,7 @@ export class WebGLBackdrop {
     this.workItems.forEach((item) => {
       if (item.slug === this.activeSlug) gsap.to(item.material.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
     });
+    gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value, duration: 1.6, ease: "expo.out" });
   }
 
   private setContrast(value: number) {
@@ -1428,8 +1461,8 @@ export class WebGLBackdrop {
   private setThumbDarknessColor(value?: string) {
     this.workItems.forEach((item) => {
       if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uDarknessColor.value as Color, value, 1.6);
-      if (item.slug === this.activeSlug) tweenColor(item.thumb.material.uniforms.uDarknessColor.value as Color, value ?? "#000000", 1.6);
     });
+    tweenColor(this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color, value ?? "#000000", 1.6);
   }
 
   private setThumbMouseLightness(value: number) {
@@ -1560,6 +1593,7 @@ export class WebGLBackdrop {
     this.compositeMaterial.uniforms.uRatio.value = width / height;
     const thumbSize = Math.max(512, Math.round(height * dpr));
     this.thumbTarget.setSize(thumbSize, thumbSize);
+    this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
 
     const distance = 1000;
     this.mediaCamera.fov = MathUtils.radToDeg(2 * Math.atan(height / (2 * distance)));
@@ -1688,6 +1722,9 @@ export class WebGLBackdrop {
     this.renderer.setRenderTarget(this.thumbTarget);
     this.renderer.clear();
     this.renderer.render(this.thumbScene, this.thumbCamera);
+    this.renderer.setRenderTarget(this.thumbCompositeTarget);
+    this.renderer.clear();
+    this.renderer.render(this.thumbCompositeScene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
