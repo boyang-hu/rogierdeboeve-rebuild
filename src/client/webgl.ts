@@ -77,7 +77,9 @@ type MediaPlane = {
 
 const BREAKPOINT_LG = 1000;
 const BREAKPOINT_MD = 800;
-const DEFAULT_BG = "#141414";
+const SOURCE_WORK_BG = "#1a1a1a";
+const SOURCE_COMPOSITE_BG = "#1f1f1f";
+const DEFAULT_BG = SOURCE_WORK_BG;
 const DEFAULT_COLOR = "#bcbcbc";
 const GRID_COLS = 35;
 const GRID_ROWS = 23;
@@ -367,41 +369,13 @@ uniform float uProgress;
 uniform float uTransformX;
 uniform float uReveal;
 uniform float uFluidStrength;
+uniform float uPerlin;
 uniform float uContrast;
 uniform float uDarken;
 uniform float uSaturation;
 uniform vec3 uBgColor;
-uniform vec3 uActiveColor;
-uniform vec3 uAmbientColor;
-uniform float uAmbientIntensity;
 
 varying vec2 vUv;
-
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-}
-
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-    u.y
-  );
-}
-
-float fbm(vec2 p) {
-  float f = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 5; i++) {
-    f += a * noise(p);
-    p = p * 2.02 + 13.17;
-    a *= 0.5;
-  }
-  return f;
-}
 
 vec3 contrast(vec3 color, float amount) {
   return (color - 0.5) * amount + 0.5;
@@ -439,23 +413,8 @@ float vignette(vec2 uv, float inner, float outer) {
   return smoothstep(outer, inner, length(p));
 }
 
-vec3 brightBloom(sampler2D tex, vec2 uv, vec2 texel) {
-  vec3 bloom = vec3(0.0);
-  bloom += max(texture2D(tex, uv + texel * vec2(4.0, 0.0)).rgb - 0.18, vec3(0.0)) * 0.18;
-  bloom += max(texture2D(tex, uv - texel * vec2(4.0, 0.0)).rgb - 0.18, vec3(0.0)) * 0.18;
-  bloom += max(texture2D(tex, uv + texel * vec2(0.0, 4.0)).rgb - 0.18, vec3(0.0)) * 0.18;
-  bloom += max(texture2D(tex, uv - texel * vec2(0.0, 4.0)).rgb - 0.18, vec3(0.0)) * 0.18;
-  bloom += max(texture2D(tex, uv + texel * vec2(9.0, 6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
-  bloom += max(texture2D(tex, uv + texel * vec2(-9.0, 6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
-  bloom += max(texture2D(tex, uv + texel * vec2(9.0, -6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
-  bloom += max(texture2D(tex, uv + texel * vec2(-9.0, -6.0)).rgb - 0.12, vec3(0.0)) * 0.12;
-  return bloom;
-}
-
 void main() {
   vec2 uv = vUv;
-  vec2 p = uv - 0.5;
-  p.x *= uRatio;
 
   vec4 mouseSim = texture2D(tMouseSim, uv);
   vec2 perlinUv = uv * 0.25;
@@ -468,40 +427,26 @@ void main() {
 
   vec4 perlinMap = texture2D(tPerlin, perlinUv);
   perlinMap.rgb = contrast(perlinMap.rgb, 5.0);
-  float proceduralPerlin = fbm(perlinUv * 6.0);
-  float perlin = mix(proceduralPerlin, perlinMap.b, 0.72);
-  vec2 perlinCoords = uv + perlin * 0.1 - 0.0065;
+  vec2 perlinCoords = uv;
+  if (uPerlin > 0.0) {
+    perlinCoords += perlinMap.b * uPerlin;
+    perlinCoords -= uPerlin * 0.065;
+  }
   vec2 flowVector = vec2(mouseSim.g - 0.5, mouseSim.b - 0.5);
   vec2 fluidUv = uv + flowVector * -0.2 * uFluidStrength;
   vec2 sourceUv = fluidUv;
 
-  float flow = fbm(p * 2.3 + vec2(uTime * -0.035 + uTransformX, uTime * -0.018));
-  float rings = abs(1.0 / (sin(pow(length(p) * 0.9, 0.25) - uTime * 0.35 + sin(length(p) * 0.8 - 1.6)) * 10.8)) - 0.1;
   float perlinVignette = vignette(perlinCoords, 0.1, 0.35);
   float displacementVignette = vignette(sourceUv, 0.1, 0.5);
   vec4 sampledMouse = texture2D(tMouseSim, mix(perlinCoords, sourceUv, 2.5));
   sampledMouse.rgb = contrast(sampledMouse.rgb, 1.0);
-  vec4 workBase = texture2D(tWork, sourceUv);
   vec4 sceneDisplaced = rgbshift(tWork, sourceUv, -1.0, 0.005);
   vec4 workShift = rgbshift(tWork, sourceUv, -1.0, 0.0005 + 0.1 * length(flowVector) * uFluidStrength);
-  vec4 glowX = texture2D(tWork, uv + vec2(0.006, 0.0)) + texture2D(tWork, uv - vec2(0.006, 0.0));
-  vec4 glowY = texture2D(tWork, uv + vec2(0.0, 0.006)) + texture2D(tWork, uv - vec2(0.0, 0.006));
-  vec3 glow = max(vec3(0.0), (glowX.rgb + glowY.rgb) * 0.25 - vec3(0.22));
-  vec3 bloom = texture2D(tBloom, uv).rgb;
-  vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), 0.005).rgb;
+  vec3 bloom = rgbshift(tBloom, sourceUv, -1.5, 0.02).rgb;
+  vec3 bloomShift = rgbshift(tBloom, sourceUv, length(sourceUv + 0.5), 0.005).rgb;
   vec3 work = mix(workShift.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
 
-  vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.68);
-  vec3 accent = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.4) * 0.28);
-  vec3 color = deep;
-  color = mix(color, accent, 0.18 + flow * 0.26);
-  color += accent * rings * 0.08 * uFluidStrength;
-  color *= 0.52 + vignette(uv, 0.05, 0.84) * 0.98;
-
-  float workMask = clamp(workBase.a * 1.25, 0.0, 1.0);
-  color = mix(color, work, workMask);
-  color += glow * (0.24 + uFluidStrength * 0.18);
-  color += rgbshift(tWork, sourceUv, -1.5, 0.02).rgb * 0.08;
+  vec3 color = mix(uBgColor, work, 1.0);
   color += bloom;
   color += bloomShift;
   color += sampledMouse.rgb * 0.065;
@@ -1019,7 +964,7 @@ export class WebGLBackdrop {
   constructor(root: HTMLElement) {
     this.root = root;
     this.renderer = new WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
-    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.setClearColor(colorFrom(SOURCE_WORK_BG), 0);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6));
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.autoClear = false;
@@ -1030,6 +975,7 @@ export class WebGLBackdrop {
     this.homeCamera.position.set(0, 0, 5.5);
     this.thumbCamera.position.set(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
+    this.homeScene.background = colorFrom(SOURCE_WORK_BG);
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
@@ -1390,7 +1336,7 @@ export class WebGLBackdrop {
         uRatio: { value: 1 },
         uFluidStrength: { value: 0.5 },
         uProgress: { value: 0 },
-        uBgColor: { value: colorFrom("#1f1f1f") },
+        uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
         uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
         uAmbientColor: { value: colorFrom("#414652") },
         uAmbientIntensity: { value: 0.5 },
@@ -1416,13 +1362,11 @@ export class WebGLBackdrop {
         uTransformX: { value: 0 },
         uReveal: { value: 0 },
         uFluidStrength: { value: this.fluidStrength },
+        uPerlin: { value: 0.1 },
         uContrast: { value: 1.1 },
         uDarken: { value: 0.1 },
         uSaturation: { value: 1.15 },
-        uBgColor: { value: colorFrom("#1f1f1f") },
-        uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
-        uAmbientColor: { value: colorFrom("#414652") },
-        uAmbientIntensity: { value: 0.5 },
+        uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeCompositeFragment,
@@ -1744,7 +1688,6 @@ export class WebGLBackdrop {
     const elements = document.querySelectorAll<HTMLElement>(".c-color");
     const next = colorFrom(color);
     tweenColor(this.backgroundMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
-    tweenColor(this.compositeMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
     tweenColor(this.floorMaterial.uniforms.uActiveColor.value as Color, color, 1.6);
     elements.forEach((element) => {
       gsap.to(element, {
@@ -1763,15 +1706,9 @@ export class WebGLBackdrop {
       if (item.slug === this.activeSlug) tweenColor(item.material.uniforms.uTint.value as Color, color, 1.6);
     });
     tweenColor(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
-    tweenColor(this.compositeMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
     tweenColor(this.floorMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
     tweenColor(this.environmentMaterial.uniforms.uAmbientColor.value as Color, color, 1.6);
     gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
-      value: intensity,
-      duration: 1.6,
-      ease: "expo.out",
-    });
-    gsap.to(this.compositeMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
       duration: 1.6,
       ease: "expo.out",
@@ -1851,7 +1788,6 @@ export class WebGLBackdrop {
 
   private setMediaBackground(value?: string) {
     this.mediaBackground = colorFrom(value, DEFAULT_BG);
-    tweenColor(this.compositeMaterial.uniforms.uBgColor.value as Color, value ?? DEFAULT_BG, 1.6);
     this.mediaPlanes.forEach((plane) => tweenColor(plane.material.uniforms.uBackgroundColor.value as Color, value, 1.6));
   }
 
