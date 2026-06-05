@@ -1248,14 +1248,14 @@ export class WebGLBackdrop {
     if (active) this.setProjectBlockReveal(active);
   }
 
-  restoreGalleryState(progress: number, sceneRotation = 0, zoom = 0) {
+  restoreGalleryState(progress: number, sceneRotation = 0) {
     this.galleryProgress = progress;
     this.sceneRotation = sceneRotation;
-    this.zoom = zoom;
+    this.zoom = 0;
     this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     this.sceneWrap.rotation.y = MathUtils.degToRad(progress * 360 + 180);
     this.homeScene.rotation.z = MathUtils.degToRad(sceneRotation);
-    this.homeScene.position.z = this.homeScene.rotation.z - zoom;
+    this.homeScene.position.z = this.homeScene.rotation.z;
     this.updateThumbGallery(-progress);
   }
 
@@ -1267,6 +1267,14 @@ export class WebGLBackdrop {
     this.cameraLookAt.set(lookAt.x, lookAt.y, lookAt.z);
     this.cameraTargetXY.set(targetXY.x, targetXY.y);
     this.cameraRotateAngle = MathUtils.degToRad(rotateAngle);
+  }
+
+  initHomeSpotlight() {
+    this.spotLightPosition.set(0, 0, 3.7);
+    this.spotLightTarget.set(0, 0, -8);
+    this.setSpotLightIntensity(this.maxSpotLightIntensity, 0);
+    gsap.killTweensOf(this.projectionMaterial.uniforms.uReveal);
+    this.projectionMaterial.uniforms.uReveal.value = 1;
   }
 
   setPreviewMode(enabled: boolean) {

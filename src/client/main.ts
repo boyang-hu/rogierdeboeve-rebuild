@@ -24,9 +24,10 @@ type WebGLLike = {
   }): void;
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number, delta?: number): void;
-  restoreGalleryState?(progress: number, sceneRotation?: number, zoom?: number): void;
+  restoreGalleryState?(progress: number, sceneRotation?: number): void;
   enterWorkGallery?(activeSlug?: string): void;
   setCameraControllerSettings?(lookAt?: { x: number; y: number; z: number }, targetXY?: { x: number; y: number }, rotateAngle?: number): void;
+  initHomeSpotlight?(): void;
   setPreviewMode?(enabled: boolean): void;
   animateWorkMouseIn?(): void;
   showScene?(): void;
@@ -1015,6 +1016,7 @@ function boot() {
     webgl?.setProject(payload);
     if (document.querySelector("[data-view='home']")) {
       webgl?.setCameraControllerSettings?.({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
+      webgl?.initHomeSpotlight?.();
       webgl?.showScene?.();
       homeGalleryEntered = true;
       window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
