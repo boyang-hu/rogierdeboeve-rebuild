@@ -74,10 +74,11 @@ Last updated: 2026-06-05
 | `8d99bdb` | Home DOM/WebGL | Added source-style `SD.animateIn -> Se.showScene()` wiring so the home composite `uReveal` animates in over 1.6s with `expo.out` after WebGL initialization. |
 | `489ca4c` | Home DOM | Added source-style `SD.onLeave -> Ki.animateDescriptionOut/animateAvailibilityOut` behavior to the home CTA transition path with 0.5s opacity fades. |
 | `ec26bfe` | Home WebGL | Matched source `yD.onWorkGalleryOut()` more closely by killing active work-block reveal tweens before running the gallery-out spread and project fade. |
+| `pending` | Home WebGL | Matched source `p1.update()` mobile spotlight parallax by adding the `.3` y-offset below `MD=800` while keeping camera-derived spotlight movement. |
 
 ## Current Focus
 
-Continue Phase 2, Home DOM and interaction parity, while keeping Phase 1 WebGL and the project detail media system stable. The current pass is aligning source `yD` work-gallery-out behavior before returning to Phase 1 composite details.
+Continue Phase 1 Home WebGL source parity alongside Phase 2 DOM parity, while keeping the project detail media system stable. The current pass is aligning source `p1/SD` spotlight and projection behavior before returning to composite details.
 
 Immediate source targets:
 
@@ -89,10 +90,10 @@ Immediate source targets:
 
 ## Next Candidate Steps
 
-1. Compare CTA navigation timing and click-sound/soft-woosh behavior against source `gD` and `yD.onWorkGalleryOut()`.
-2. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
-3. Improve home animate-in/animate-out sequencing for nav/title/footer/CTA to better match `SD/vD/gD`.
-4. Return to Phase 1 `OA/kA/p1/GA/T1` after the next DOM interaction pass lands.
+1. Continue `p1/SD/T1` spotlight and thumb projection comparison, especially spotlight cone/map approximation and projection-plane contribution.
+2. Return to Phase 1 `OA/kA` composite and bloom/luminosity fidelity after the next projection pass lands.
+3. Compare CTA navigation timing and click-sound/soft-woosh behavior against source `gD` and `yD.onWorkGalleryOut()`.
+4. Compare `vD/_D` title and progressbar click/touch semantics against the current event flow.
 
 ## Verification Baseline
 
