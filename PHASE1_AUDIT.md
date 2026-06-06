@@ -82,6 +82,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 6 | S1-48 | Floor/environment/about bridge depth | Source floor reflector, environment shader, and about character manager have source-shaped bridges but not full byte-for-byte ports. | Prior probes show sky/floor are not the main brightness lever; about route is stable. | Medium | Keep as an open bridge-depth item until visual QA confirms it is indistinguishable enough or the user explicitly accepts the remaining difference. |
 | 7 | S1-68 | `VA/HA` vertex mouse projection under Three r164 | Source `HA` computes early vertex `screenUv = gl_Position.xy / uCoords.xy`, assigns `newUv = screenUv`, and applies the mouse displacement as `transformed / (1. - mouseSim.r * .2)`. | Production now uses those two source vertex paths by default, with query-only fallbacks `debug-va-vertex-uv=uv` and `debug-va-world=compat` for attribution. | Medium | Keep as source-correct. It improves shader-body parity but does not close Phase 1 because band analysis still shows the hard horizon/overbright mid-field gap. |
 | 8 | S1-69 | `VA/zA` fragment tail and ordinary material surface | Source `zA` writes `gl_FragColor` through `opaque_fragment`, then mutates `gl_FragColor.rgb` and `.a`; ordinary `VA` has no auxiliary reveal/scroll opacity branch and declares `uTime` in the fragment surface. | Production now defaults to the source-style fragment tail, keeps `debug-va-output-tail=compat` as a query-only fallback, restores ordinary alpha/reveal/mouse formulas, splits auxiliary-only fragment uniforms out of ordinary `VA`, and includes `uTime` in ordinary fragment pars. | Medium | Keep as source-correct. Remaining ordinary fragment residuals are r164 shader-lib physical macro declarations (`dispersion/anisotropy*`) and the broader hard horizon/overbright mid-field gap, so the next batch should move to `OA/CA` transfer or render-target attribution rather than more unsupported VA tuning. |
+| 9 | S1-70 | Source `a1` floor geometry | Source `class Tu extends Vt` is Three `CircleGeometry`; `a1.init()` creates `new Tu(60,32)`, rotates it by `-PI/2`, and attaches the reflector. The rebuild had incorrectly used `PlaneGeometry(60,32)`, creating a rectangular floor/reflection surface. | Production now uses `CircleGeometry(60,32)` for the floor mesh and the output probe reports floor/reflection scene state for future attribution. Desktop center-band delta moved to roughly `+0.001` against source and the previous mid-page floor/reflection collapse is gone. | Low-medium | Keep as source-correct. Continue Phase 1 from remaining mobile/background and cube/thumb projection deltas; do not reintroduce plane floor geometry. |
 
 ### Phase 1 Open Blocker Board
 
@@ -101,6 +102,26 @@ This board reflects the current active state after S1-46B through S1-50. Older r
 ### Current Recommendation
 
 Finish Phase 1 before opening Phase 2 work. The next implementation batch should not be a broad rendering rewrite. It should either find source evidence for `OA/CA` transfer that can be safely applied, or produce a focused visual QA package for the user to decide whether any remaining differences are acceptable. The agent should not independently mark the remaining brightness/projection gaps as accepted.
+
+### S1-70 Source Floor Circle Geometry
+
+This batch corrected a source-confirmed `a1` floor geometry mismatch rather than tuning brightness.
+
+Source/runtime evidence:
+
+- Source `Tu` is `CircleGeometry`; source `a1.init()` creates `new Tu(60,32)`, rotates the mesh by `-Math.PI/2`, attaches the reflector, and updates the reflector through the floor mesh render lifecycle.
+- The rebuild had used `PlaneGeometry(60,32)`, which made the floor/reflection surface rectangular and produced a non-source mid-field reflection boundary.
+- Production now uses `CircleGeometry(60,32)` and the debug probe exposes `reflectionState` for scene/floor/environment/camera/clip-state attribution.
+
+Verification from the source-vs-rebuild capture:
+
+| Measurement | Result | Meaning |
+| --- | ---: | --- |
+| Desktop center-band source/rebuild delta | `~+0.001` | The main desktop center brightness now lines up closely after the geometry correction. |
+| Desktop strongest horizontal delta difference | `~+0.0068` | The earlier hard collapse around mid-height is materially reduced. |
+| Project media probe | 5 visible tracks on `/gc-2026/` and `/hashgraph-vc/` | Project detail media did not regress. |
+
+Decision: keep the circle geometry correction. Phase 1 remains open because mobile background distribution and cube/thumb projection still need source-driven alignment.
 
 ### S1-54 Source Non-Fix Audit
 

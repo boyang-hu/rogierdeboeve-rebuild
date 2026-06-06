@@ -5,6 +5,7 @@ import {
   Box3,
   BoxGeometry,
   BufferGeometry,
+  CircleGeometry,
   ClampToEdgeWrapping,
   Color,
   CubeTextureLoader,
@@ -2320,7 +2321,7 @@ export class WebGLBackdrop {
   private floorMaterial: ShaderMaterial;
   private floorGroup = new Group();
   private floorReflector = new Object3D();
-  private floorPlane: Mesh<PlaneGeometry, ShaderMaterial>;
+  private floorPlane: Mesh<CircleGeometry, ShaderMaterial>;
   private environmentMaterial: EnvironmentMaterial;
   private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
   private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
@@ -2553,7 +2554,7 @@ export class WebGLBackdrop {
       this.thumbCompositeTarget.texture.colorSpace = SRGBColorSpace;
     }
     this.floorMaterial = this.createFloorMaterial();
-    this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
+    this.floorPlane = new Mesh(new CircleGeometry(60, 32), this.floorMaterial);
     this.floorPlane.rotation.x = -Math.PI / 2;
     this.floorPlane.add(this.floorReflector);
     this.floorPlane.onBeforeRender = () => {
@@ -5354,6 +5355,80 @@ export class WebGLBackdrop {
       spotlightProjection,
       mouseSimulation,
       mainFluid,
+      reflectionState: this.reflectionStateProbe(),
+    };
+  }
+
+  private reflectionStateProbe() {
+    const objectSummary = (object: Object3D) => ({
+      name: object.name || object.type,
+      type: object.type,
+      visible: object.visible,
+      renderOrder: object.renderOrder,
+      children: object.children.length,
+      position: object.position.toArray(),
+      rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
+    });
+    return {
+      scene: {
+        children: this.homeScene.children.map(objectSummary),
+        background: this.homeScene.background instanceof Color ? this.homeScene.background.toArray() : null,
+        fog: this.homeScene.fog ? {
+          type: this.homeScene.fog.type,
+          color: this.homeScene.fog.color.toArray(),
+          near: this.homeScene.fog.near,
+          far: this.homeScene.fog.far,
+        } : null,
+      },
+      sceneWrap: {
+        visible: this.sceneWrap.visible,
+        position: this.sceneWrap.position.toArray(),
+        rotation: [this.sceneWrap.rotation.x, this.sceneWrap.rotation.y, this.sceneWrap.rotation.z],
+        children: this.sceneWrap.children.map(objectSummary),
+      },
+      auxiliary: {
+        aboutVisible: this.aboutBlocks?.group.visible ?? null,
+        floatingVisible: this.floatingBlocks?.group.visible ?? null,
+      },
+      floor: {
+        group: objectSummary(this.floorGroup),
+        plane: objectSummary(this.floorPlane),
+        reflector: objectSummary(this.floorReflector),
+        material: {
+          transparent: this.floorMaterial.transparent,
+          depthWrite: this.floorMaterial.depthWrite,
+          depthTest: this.floorMaterial.depthTest,
+          blending: this.floorMaterial.blending,
+        },
+      },
+      environment: {
+        object: objectSummary(this.environmentPlane),
+        material: {
+          transparent: this.environmentMaterial.transparent,
+          depthWrite: this.environmentMaterial.depthWrite,
+          depthTest: this.environmentMaterial.depthTest,
+          blending: this.environmentMaterial.blending,
+          side: this.environmentMaterial.side,
+          toneMapped: this.environmentMaterial.toneMapped,
+        },
+      },
+      camera: {
+        position: this.floorReflectionCamera.position.toArray(),
+        target: this.floorReflectionTargetPosition.toArray(),
+        up: this.floorReflectionCamera.up.toArray(),
+        near: this.floorReflectionCamera.near,
+        far: this.floorReflectionCamera.far,
+        matrixWorldPosition: this.floorReflectionCameraWorldPosition.toArray(),
+        reflectorWorldPosition: this.floorReflectorWorldPosition.toArray(),
+        reflectorNormal: this.floorReflectorNormal.toArray(),
+        clipPlane: this.floorReflectionClipPlane.toArray(),
+        projectionRow3: [
+          this.floorReflectionCamera.projectionMatrix.elements[2],
+          this.floorReflectionCamera.projectionMatrix.elements[6],
+          this.floorReflectionCamera.projectionMatrix.elements[10],
+          this.floorReflectionCamera.projectionMatrix.elements[14],
+        ],
+      },
     };
   }
 
