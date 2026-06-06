@@ -210,6 +210,8 @@ Last updated: 2026-06-06
 
 Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. Phase 1 is not complete: the previous closeout language in `PHASE1_AUDIT.md` has been superseded because the current 1:1 target does not allow the remaining home visual gaps to be treated as accepted deviations.
 
+Current governance note: do not mark remaining `VA` bridge, spotlight-map transfer, final `OA/CA` transfer, project-media brightness, floor/environment, or about bridge depth as accepted deviations without explicit user visual review. If no source-backed runtime fix is found in a batch, update the audit with the evidence and keep Phase 1 open.
+
 Immediate source targets:
 
 - `V1/H1/z1/B1` and `h1/u1/l1`: source-shaped sky render-target ownership is implemented, the source `noiseShader`/`pattern` chain is ported, and `h1/u1` now uses the source icosahedron/backside/full-shader structure. The old wedge-shaped light was confirmed as a rebuild artifact. The current source-vs-rebuild screenshots now show full-screen fog coverage but rebuild is overbright and has a hard horizon/reflection boundary, so the next edit should target render-target/color-space/composite input instead of more environment geometry or invented color tuning.
