@@ -1281,7 +1281,7 @@ function boot() {
     const transition = link.dataset.transition;
     const mode: TransitionMode = transition === "project" || transition === "work"
       ? transition
-      : view?.dataset.view === "home" || view?.dataset.view === "project" || view?.dataset.view === "about"
+      : view?.dataset.view === "home" || view?.dataset.view === "about"
         ? view.dataset.view
         : "default";
     navigateTo(target.href, mode);

@@ -2113,6 +2113,9 @@ export class WebGLBackdrop {
     this.resetThumbOffsetY();
     this.setMouseFactor(0, 0);
     this.setMouseFactor(1, 3);
+    this.setRevealSpread(0);
+    this.setSpotLightIntensity(this.maxSpotLightIntensity, 1.6);
+    this.setFluidStrength(0.5, 0.5);
     this.workItems.forEach((item) => {
       item.material.uniforms.uReveal.value = 0;
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
