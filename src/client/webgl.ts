@@ -4839,10 +4839,10 @@ export class WebGLBackdrop {
   private resizeMainFluidPass(width: number, height: number) {
     const pass = this.mainFluidPass;
     if (!pass.enabled) return;
-    const fluidWidth = Math.max(1, Math.round(width * 0.005));
-    const fluidHeight = Math.max(1, Math.round(height * 0.005));
-    pass.fboSize.set(width, height);
-    pass.cellScale.set(1 / Math.max(1, width), 1 / Math.max(1, height));
+    const fluidWidth = Math.max(1, Math.round(width));
+    const fluidHeight = Math.max(1, Math.round(height));
+    pass.fboSize.set(fluidWidth, fluidHeight);
+    pass.cellScale.set(1 / fluidWidth, 1 / fluidHeight);
     Object.values(pass.targets).forEach((target) => target.setSize(fluidWidth, fluidHeight));
   }
 

@@ -2878,3 +2878,29 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-work-diffuse-full`.
 
 Decision: keep this source material-color correction. It reduces a clear `GA/VA` diffuse mismatch and lowers work-target brightness in the expected source-backed direction, but Phase 1 remains open because the hard horizon/fog-bed, exact `VA` shader bridge, and final target/output interpretation gaps are not fully closed.
+
+### S1-26 `I1/ag` Main Fluid Resize Ownership
+
+This batch fixed a source-backed main render-manager fluid target sizing bug found by the output probe after S1-24.
+
+Source evidence:
+
+- Source `I1.resize()` computes render-pixel dimensions, then uses half power-of-two bloom dimensions and calls `fluidSimulation.onResize(e / 3, t / 3)`.
+- Source `I1.initSettings()` enables main fluid on GPU tier 3, so when the local tier bridge resolves to `3`, the main fluid FBOs should be real offscreen targets, not placeholder-sized `1x1` textures.
+- Work `kA/OA` fluid remains disabled; this fix applies only to the main `I1/C1` fluid path.
+
+Runtime change:
+
+- `resizeMainFluidPass()` now treats the dimensions passed by the source-shaped `I1.resize()` bridge as the final fluid target size, instead of multiplying them by `.005` a second time.
+- Main fluid `fboSize`, `cellScale`, and all main fluid render targets now share the rounded source-derived dimensions.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-fluid-resize-probe`.
+- The output probe now reports `mainFluid.fboSize=[171,85]` and `mainFluid.targets.*.width/height=171x85` at a `1440x900` viewport, matching `floorPowerOfTwo(renderSize) / 2 / 3`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-fluid-resize-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-fluid-resize-full`.
+
+Decision: keep this source resize correction. It fixes a real `I1/ag` structural mismatch and makes the main fluid path operational on tier-3 devices, but Phase 1 remains open because the hard horizon/fog-bed, exact `VA` shader bridge, and final target/output interpretation gaps are still not fully closed.
