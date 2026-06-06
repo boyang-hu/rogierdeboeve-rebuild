@@ -891,11 +891,6 @@ uniform bool boolLuminosity;
 uniform bool boolFxaa;
 uniform float uDarken;
 uniform float uSaturation;
-uniform float uBloomDistortion;
-uniform int uDebugStage;
-uniform int uDebugDarkenMode;
-uniform int uDebugTransferMode;
-uniform int uDebugLightenMode;
 
 varying vec2 vUv;
 
@@ -932,29 +927,66 @@ void main() {
   vec4 fluid = texture2D(tFluid, uv);
   vec4 mouseSim = texture2D(tMouseSim, uv);
   vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
-  if (uDebugTransferMode == 1) color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
-  if (uDebugTransferMode == 2) color = pow(max(color, vec3(0.0)), vec3(2.2));
-  if (uDebugStage == 1) {
-    gl_FragColor = vec4(color, 1.0);
-    return;
-  }
   if (boolBloom) {
     vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
+    float uBloomDistortion = 2.5;
     float amount = 0.001 * uBloomDistortion;
     vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), amount / 0.5).rgb;
     color += bloom;
     color += bloomShift;
   }
+  color += length(fluid.xy) * 0.015;
+  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;
+  color = sourceBlend(15, color, vec3(0.095), darkenOpacity);
+  color = sourceBlend(11, color, vec3(0.095), 1.0);
+  color = saturation(color, uSaturation);
+
+  gl_FragColor = vec4(color, 1.0);
+  #include <tonemapping_fragment>
+}
+`;
+
+const homeCompositeDebugFragment = homeCompositeFragment
+  .replace(
+    "uniform float uSaturation;",
+    `uniform float uSaturation;
+uniform int uDebugStage;
+uniform int uDebugDarkenMode;
+uniform int uDebugTransferMode;
+uniform int uDebugLightenMode;`,
+  )
+  .replace(
+    "vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;",
+    `vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
+  if (uDebugTransferMode == 1) color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
+  if (uDebugTransferMode == 2) color = pow(max(color, vec3(0.0)), vec3(2.2));
+  if (uDebugStage == 1) {
+    gl_FragColor = vec4(color, 1.0);
+    return;
+  }`,
+  )
+  .replace(
+    "color += bloomShift;\n  }\n  color += length(fluid.xy) * 0.015;",
+    `color += bloomShift;
+  }
   if (uDebugStage == 2) {
     gl_FragColor = vec4(color, 1.0);
     return;
   }
-  color += length(fluid.xy) * 0.015;
+  color += length(fluid.xy) * 0.015;`,
+  )
+  .replace(
+    "color += length(fluid.xy) * 0.015;\n  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;",
+    `color += length(fluid.xy) * 0.015;
   if (uDebugStage == 3) {
     gl_FragColor = vec4(color, 1.0);
     return;
   }
-  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;
+  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;`,
+  )
+  .replace(
+    "float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;\n  color = sourceBlend(15, color, vec3(0.095), darkenOpacity);",
+    `float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;
   if (uDebugDarkenMode == 1) darkenOpacity = uDarken * 2.0;
   if (uDebugDarkenMode == 2) darkenOpacity = mouseSim.r * 0.25 * uDarken;
   if (uDebugDarkenMode == 3) darkenOpacity = 0.0;
@@ -962,20 +994,19 @@ void main() {
   if (uDebugStage == 4) {
     gl_FragColor = vec4(color, 1.0);
     return;
-  }
-  if (uDebugLightenMode != 1) {
+  }`,
+  )
+  .replace(
+    "color = sourceBlend(11, color, vec3(0.095), 1.0);\n  color = saturation(color, uSaturation);",
+    `if (uDebugLightenMode != 1) {
     color = sourceBlend(11, color, vec3(0.095), 1.0);
   }
   if (uDebugStage == 5) {
     gl_FragColor = vec4(color, 1.0);
     return;
   }
-  color = saturation(color, uSaturation);
-
-  gl_FragColor = vec4(color, 1.0);
-  #include <tonemapping_fragment>
-}
-`;
+  color = saturation(color, uSaturation);`,
+  );
 
 const homePreCompositeFragment = `
 precision highp float;
@@ -2301,6 +2332,11 @@ export class WebGLBackdrop {
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-transfer"), 0)), 0, 2) : 0;
   private debugCompositeLightenMode =
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-composite-lighten") === "off" ? 1 : 0;
+  private debugCompositeShader =
+    this.debugCompositeStage !== 0
+    || this.debugCompositeDarkenMode !== 0
+    || this.debugCompositeTransferMode !== 0
+    || this.debugCompositeLightenMode !== 0;
   private debugRendererOutput = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-renderer-output") : null;
   private debugMainFluid = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-main-fluid") : null;
   private thumbProbeLastUpdate = 0;
@@ -3311,32 +3347,35 @@ export class WebGLBackdrop {
   private createCompositeMaterial() {
     const settings = this.renderSettings;
     dumpShader("OA-work-composite", backgroundVertex, homeCompositeFragment);
+    const fragmentShader = this.debugCompositeShader ? homeCompositeDebugFragment : homeCompositeFragment;
+    const uniforms: Record<string, { value: any }> = {
+      tScene: { value: this.compositeTarget.texture },
+      tBloom: { value: this.bloomTarget.texture },
+      tBlur: { value: this.fluidPlaceholder },
+      tFluid: { value: this.fluidPlaceholder },
+      tMouseSim: { value: this.screenMouseSimulationTexture },
+      boolBloom: { value: settings.bloom.enabled },
+      boolFluid: { value: settings.fluid.enabled },
+      boolLuminosity: { value: settings.luminosity.enabled },
+      boolFxaa: { value: settings.fxaa.enabled },
+      uDarken: { value: this.darken },
+      uSaturation: { value: this.saturation },
+    };
+    if (this.debugCompositeShader) {
+      uniforms.uDebugStage = { value: this.debugCompositeStage };
+      uniforms.uDebugDarkenMode = { value: this.debugCompositeDarkenMode };
+      uniforms.uDebugTransferMode = { value: this.debugCompositeTransferMode };
+      uniforms.uDebugLightenMode = { value: this.debugCompositeLightenMode };
+    }
     return new ShaderMaterial({
       toneMapped: false,
       transparent: true,
       blending: NormalBlending,
       depthWrite: false,
       depthTest: false,
-      uniforms: {
-        tScene: { value: this.compositeTarget.texture },
-        tBloom: { value: this.bloomTarget.texture },
-        tBlur: { value: this.fluidPlaceholder },
-        tFluid: { value: this.fluidPlaceholder },
-        tMouseSim: { value: this.screenMouseSimulationTexture },
-        boolBloom: { value: settings.bloom.enabled },
-        boolFluid: { value: settings.fluid.enabled },
-        boolLuminosity: { value: settings.luminosity.enabled },
-        boolFxaa: { value: settings.fxaa.enabled },
-        uDarken: { value: this.darken },
-        uSaturation: { value: this.saturation },
-        uBloomDistortion: { value: 2.5 },
-        uDebugStage: { value: this.debugCompositeStage },
-        uDebugDarkenMode: { value: this.debugCompositeDarkenMode },
-        uDebugTransferMode: { value: this.debugCompositeTransferMode },
-        uDebugLightenMode: { value: this.debugCompositeLightenMode },
-      },
+      uniforms,
       vertexShader: backgroundVertex,
-      fragmentShader: homeCompositeFragment,
+      fragmentShader,
     });
   }
 
@@ -5110,10 +5149,10 @@ export class WebGLBackdrop {
         composite: {
           uDarken: darkenValue,
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
-          uDebugStage: this.compositeMaterial.uniforms.uDebugStage.value,
-          uDebugDarkenMode: this.compositeMaterial.uniforms.uDebugDarkenMode.value,
-          uDebugTransferMode: this.compositeMaterial.uniforms.uDebugTransferMode.value,
-          uDebugLightenMode: this.compositeMaterial.uniforms.uDebugLightenMode.value,
+          uDebugStage: this.compositeMaterial.uniforms.uDebugStage?.value ?? 0,
+          uDebugDarkenMode: this.compositeMaterial.uniforms.uDebugDarkenMode?.value ?? 0,
+          uDebugTransferMode: this.compositeMaterial.uniforms.uDebugTransferMode?.value ?? 0,
+          uDebugLightenMode: this.compositeMaterial.uniforms.uDebugLightenMode?.value ?? 0,
           estimatedDarkenOpacityFromMouseGrid: darkenValue * 2 + mouseSimRed * 0.25 * darkenValue,
           estimatedDarkenOpacityWithoutMouse: darkenValue * 2,
           estimatedDarkenOpacityMouseOnly: mouseSimRed * 0.25 * darkenValue,

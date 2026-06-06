@@ -2737,3 +2737,34 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-main-composite-surface-full`.
 
 Decision: keep this source-surface cleanup. It closes the obvious `Lu/aA` uniform residual without changing `OA/CA` behavior, but Phase 1 remains open because the visible hard horizon/fog-bed and render-target/output color interpretation gaps are still unresolved.
+
+### S1-21 `OA/CA` Production Shader Surface and Debug Isolation
+
+This batch aligned the default work-composite shader surface while preserving the composite attribution tooling behind explicit debug query parameters.
+
+Source evidence:
+
+- Source `OA` uniforms are `tScene`, `tBloom`, `tBlur`, `tFluid`, `tMouseSim`, `boolBloom`, `boolFluid`, `boolLuminosity`, `boolFxaa`, `uDarken`, and `uSaturation`.
+- Source `CA` declares `float uBloomDistortion = 2.5;` inside the bloom branch; it is not a material uniform.
+- Source `CA` has no `uDebugStage`, `uDebugDarkenMode`, `uDebugTransferMode`, or `uDebugLightenMode`; those are rebuild diagnostic controls only.
+
+Runtime/tooling changes:
+
+- Moved `uBloomDistortion` from a rebuild material uniform to the source-style local `float uBloomDistortion = 2.5;`.
+- Removed debug uniforms and debug branches from the default production `homeCompositeFragment`.
+- Added a derived `homeCompositeDebugFragment` that is used only when a `debug-composite-*` query parameter requests a non-default diagnostic mode.
+- Made `createCompositeMaterial()` create the extra debug uniforms only for that debug shader path.
+- Made the output probe report missing debug uniforms as default zero values so normal production probing does not require debug uniforms to exist.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-oa-prod-surface-shader`.
+- The dump now reports `OA-work-composite.fragmentUniformsOnlySource=[]` and `OA-work-composite.fragmentUniformsOnlyRebuild=[]` for the default production shader.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-oa-prod-surface-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks and non-zero media targets: `/tmp/rd-oa-prod-surface-project-media`.
+- Composite-stage diagnostics still compile and run through the query-only debug shader with no errors: `/tmp/rd-oa-prod-surface-composite-stages`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-oa-prod-surface-full`.
+
+Decision: keep this source-surface correction. It removes production shader pollution from diagnostic fields without losing the attribution tools, but Phase 1 remains open because the visible hard horizon/fog-bed and target/output color interpretation gaps are still unresolved.
