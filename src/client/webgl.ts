@@ -2066,7 +2066,7 @@ export class WebGLBackdrop {
       uTime: { value: 0 },
     };
     const material = new MeshStandardMaterial({
-      color: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE),
+      color: sourceRgbColor(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE),
       emissive: sourceRgbColor(payload.blocks ?? DEFAULT_BG, DEFAULT_BG),
       emissiveIntensity: SOURCE_WORK_EMISSIVE_INTENSITY,
       roughness: SOURCE_WORK_ROUGHNESS,

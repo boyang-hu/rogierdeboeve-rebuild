@@ -66,6 +66,36 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 Finish Phase 1 before opening Phase 2 work. The next implementation batch should stay in one rendering chain: ordinary `VA` color/light semantics plus spotlight contribution attribution. If the batch only changes initial color/material constants and documentation, it can include up to 6-10 source-proven differences. If it changes shader text, render targets, render order, or full material replacement, cap it at 3-5 differences and run browser QA immediately.
 
+### S1-08A VA Initial Diffuse Color Result
+
+The ordinary home `VA` material now follows the same raw-color semantics already used by source runtime setters:
+
+- Source `GA.createCube()` creates ordinary work blocks with `new VA({ color: new Color("#808080") })`.
+- Source `Se` color setters parse hex with `sr()` into raw channel values (`channel / 255`), which already required `sourceRgbColor()` in the rebuild.
+- Local Three 0.184 converts `new Color("#808080")` to linear `~0.216`; source raw channel semantics for `#808080` are `~0.502`.
+- Rebuild ordinary work-block diffuse color now uses `sourceRgbColor(SOURCE_WORK_DIFFUSE)`.
+- Auxiliary `XA/WA` blocks were intentionally left unchanged in this batch because they are a separate source material path and about/floating visuals should not be moved without a focused auxiliary audit.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s108a-raw-diffuse` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma moved slightly in the correct direction on home while project pages stayed stable:
+
+| Capture | Original luma | Rebuild luma after S1-08A | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.104` | `0.019` | Slight improvement from the previous `~0.018`; still not the main brightness fix. |
+| Home mobile | `0.055` | `0.020` | Slight improvement from the previous `~0.019`; still low. |
+| About desktop | `0.027` | `0.015` | Stable; auxiliary path was not changed. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the ordinary-`VA` raw diffuse change because it is source-proven, moves home luma in the right direction, and does not regress project or about captures. The remaining Phase 1 visual gap still points to deeper `VA` light/shader semantics or render-target/color-output assumptions, not only initial diffuse color.
+
 ### S1-06 T1/w1/E1 Thumb Closeout Result
 
 The remaining thumbnail-strip audit is now closed:
