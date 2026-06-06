@@ -29,6 +29,7 @@ const variants = [
   { label: "va-physical-source-fields", query: "&debug-va-physical-response=source-fields" },
   { label: "sky-off", query: "&debug-sky-target=off" },
   { label: "sky-raw", query: "&debug-sky-target=raw" },
+  { label: "texture-srgb-colorspace", query: "&debug-texture-colorspace=srgb" },
   { label: "darken-off", query: "&debug-composite-darken=3" },
   { label: "spotlight-map-off-darken-off", query: "&debug-spotlight-map=off&debug-composite-darken=3" },
 ];

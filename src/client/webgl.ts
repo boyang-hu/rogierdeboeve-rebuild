@@ -1581,8 +1581,8 @@ function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, s
   };
 }
 
-function setTextureQuality(texture: Texture, renderer: WebGLRenderer) {
-  texture.colorSpace = SRGBColorSpace;
+function setTextureQuality(texture: Texture, renderer: WebGLRenderer, colorSpace: typeof SRGBColorSpace | typeof NoColorSpace | "" = "") {
+  texture.colorSpace = colorSpace;
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
   texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -1779,6 +1779,7 @@ export class WebGLBackdrop {
   private spotLightParallax = true;
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
+  private debugTextureColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-texture-colorspace") : null;
   private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
   private debugOutputProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-output-probe");
@@ -1809,6 +1810,10 @@ export class WebGLBackdrop {
   private spotLight = new SpotLight(colorFrom("white"), 220);
   private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
   private directionalLight2 = new DirectionalLight(colorFrom("white"), 1);
+
+  private loadedTextureColorSpace() {
+    return this.debugTextureColorSpace === "srgb" ? SRGBColorSpace : "";
+  }
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -3183,7 +3188,7 @@ export class WebGLBackdrop {
       video.addEventListener("loadedmetadata", () => {
         plane.material.uniforms.uMapSize.value.set(video.videoWidth || 1600, video.videoHeight || 1200);
         const texture = new VideoTexture(video);
-        setTextureQuality(texture, this.renderer);
+        setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
         plane.texture = texture;
         plane.material.uniforms.tMap.value = texture;
         this.showMediaPlane(plane);
@@ -3194,7 +3199,7 @@ export class WebGLBackdrop {
     }
 
     this.loader.load(plane.src, (texture) => {
-      setTextureQuality(texture, this.renderer);
+      setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
       const image = texture.image as HTMLImageElement | undefined;
       if (image?.naturalWidth && image?.naturalHeight) {
         plane.material.uniforms.uMapSize.value.set(image.naturalWidth, image.naturalHeight);
@@ -3580,7 +3585,7 @@ export class WebGLBackdrop {
       return;
     }
     this.loader.load(src, (texture) => {
-      setTextureQuality(texture, this.renderer);
+      setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
       this.textureCache.set(src, texture);
       onLoad(texture);
     });

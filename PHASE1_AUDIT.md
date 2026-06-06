@@ -648,6 +648,48 @@ Important attribution:
 
 Decision: keep the sky probe and debug switch. Treat S1-10 as implemented and stop prioritizing sky target work for the main Phase 1 brightness gap. The next batch should return to the two remaining proven contributors: spotlight-map transfer/content and `OA/CA` `tScene` transfer.
 
+### S1-40 Loaded Texture ColorSpace Attribution Result
+
+Source evidence:
+
+- Source `Xt.loadTexture` and `Xt.loadImage` call the bundled Three r164 texture loader directly.
+- The bundled `Texture` default constructor uses empty `colorSpace` (`Gi = ""`), and the ordinary `Xt` image/texture path does not override it to sRGB.
+- Cube/environment textures and the floor normal map use separate paths and are not covered by this change.
+
+Rebuild change:
+
+- Ordinary loaded image/video textures now default to empty colorSpace, matching the source loader path.
+- `?debug-texture-colorspace=srgb` restores the previous rebuild behavior for attribution and rollback.
+- The floor normal map still forces `NoColorSpace`; cube/environment textures still explicitly use `SRGBColorSpace`.
+
+Diagnostic run before promoting the fix at `/tmp/rogier-home-brightness-s140-texture-colorspace`:
+
+| Variant | Screenshot luma | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb 9x9 | Thumb composite 9x9 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| previous default | `0.1572` | `0.1835` | `0.2292` | `0.0217` | `0.0752` | `0.0603` |
+| spotlight transfer | `0.2274` | `0.2199` | `0.3054` | `0.0528` | `0.0752` | `0.0603` |
+| source texture colorSpace | `0.2285` | `0.2160` | `0.3134` | `0.0543` | `0.2210` | `0.1767` |
+
+Decision: promote ordinary loaded texture colorSpace to the source default. This is the strongest source-proven contributor found in the current brightness audit: it materially raises the thumb and thumb-composite targets without changing source constants, spotlight intensity, sky target ownership, or BRDF code. The next Phase 1 batch should re-run the production matrix and then continue with `OA/CA` `tScene` transfer and final composite attribution.
+
+Production verification after promotion at `/tmp/rogier-home-brightness-s140-production`:
+
+| Variant | Screenshot luma | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb 9x9 | Thumb composite 9x9 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| default | `0.2253` | `0.2178` | `0.3162` | `0.0519` | `0.2210` | `0.1767` |
+| old sRGB texture behavior | `0.1533` | `0.1862` | `0.2365` | `0.0207` | `0.0752` | `0.0619` |
+| spotlight + scene transfer diagnostics | `0.3669` | `0.2459` | `0.3602` | `0.0731` | `0.2210` | `0.1772` |
+
+Verification passed:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-s140-texture-colorspace` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Next: continue with `OA/CA` `tScene` transfer and final composite attribution. The texture colorSpace fix removes a major thumb-map content error, but the remaining transfer diagnostics still show material headroom.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
