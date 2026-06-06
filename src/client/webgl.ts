@@ -103,6 +103,11 @@ type ShaderDumpWindow = Window & {
     vertexShader: string;
     fragmentShader: string;
   }>;
+  __rogierShaderDump?: Array<{
+    name: string;
+    vertexShader: string;
+    fragmentShader: string;
+  }>;
 };
 
 type OutputProbeWindow = Window & {
@@ -731,6 +736,12 @@ function patchWorkBlockShader(
       vertexShader: shader.vertexShader,
       fragmentShader: shader.fragmentShader,
     });
+    dumpWindow.__rogierShaderDump ??= [];
+    dumpWindow.__rogierShaderDump.push({
+      name: `VA-${variant}`,
+      vertexShader: shader.vertexShader,
+      fragmentShader: shader.fragmentShader,
+    });
   }
 }
 
@@ -940,6 +951,15 @@ function patchEnvironmentShader(
   Object.assign(shader.uniforms, uniforms);
   shader.vertexShader = environmentVertexShader;
   shader.fragmentShader = environmentFragmentShader;
+  dumpShader("u1-environment", shader.vertexShader, shader.fragmentShader);
+}
+
+function dumpShader(name: string, vertexShader: string, fragmentShader: string) {
+  if (typeof window === "undefined" || !new URLSearchParams(window.location.search).has("dump-va-shader")) return;
+  const dumpWindow = window as ShaderDumpWindow;
+  dumpWindow.__rogierShaderDump ??= [];
+  if (dumpWindow.__rogierShaderDump.some((entry) => entry.name === name)) return;
+  dumpWindow.__rogierShaderDump.push({ name, vertexShader, fragmentShader });
 }
 
 const homeCompositeFragment = `
@@ -3368,6 +3388,7 @@ export class WebGLBackdrop {
 
   private createCompositeMaterial() {
     const settings = this.renderSettings;
+    dumpShader("OA-work-composite", backgroundVertex, homeCompositeFragment);
     return new ShaderMaterial({
       toneMapped: false,
       transparent: true,
@@ -3398,6 +3419,7 @@ export class WebGLBackdrop {
   }
 
   private createPreCompositeMaterial() {
+    dumpShader("A1-pre-composite", backgroundVertex, homePreCompositeFragment);
     return new ShaderMaterial({
       toneMapped: false,
       blending: NormalBlending,
@@ -3437,6 +3459,7 @@ export class WebGLBackdrop {
 
   private createMainCompositeMaterial() {
     const settings = SOURCE_MAIN_RENDER_SETTINGS;
+    dumpShader("Lu-main-composite", backgroundVertex, mainCompositeFragment);
     return new ShaderMaterial({
       toneMapped: false,
       blending: NormalBlending,
@@ -3459,6 +3482,7 @@ export class WebGLBackdrop {
   }
 
   private createMediaCompositeMaterial() {
+    dumpShader("j1-media-composite", backgroundVertex, mediaCompositeFragment);
     return new ShaderMaterial({
       toneMapped: false,
       transparent: true,
@@ -3800,6 +3824,7 @@ export class WebGLBackdrop {
   }
 
   private createThumbCompositeMaterial() {
+    dumpShader("x1-thumb-composite", backgroundVertex, thumbCompositeFragment);
     return new ShaderMaterial({
       toneMapped: false,
       transparent: true,

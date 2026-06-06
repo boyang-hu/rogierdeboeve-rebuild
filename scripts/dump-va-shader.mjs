@@ -82,9 +82,19 @@ function extractSourceShader(bundle, name, terminator) {
   const start = bundle.indexOf(`${name}=\``);
   if (start < 0) throw new Error(`Unable to find source shader ${name}`);
   const bodyStart = start + name.length + 2;
-  const end = bundle.indexOf(terminator, bodyStart);
+  const end = terminator
+    ? bundle.indexOf(terminator, bodyStart)
+    : bundle.indexOf("`", bodyStart);
   if (end < 0) throw new Error(`Unable to find end of source shader ${name}`);
   return bundle.slice(bodyStart, end);
+}
+
+function tryExtractSourceShader(bundle, name, terminator) {
+  try {
+    return extractSourceShader(bundle, name, terminator);
+  } catch {
+    return null;
+  }
 }
 
 function summarizeShader(label, shader, sourceShader) {
@@ -360,13 +370,73 @@ function analyzeShaderChunk(name) {
   };
 }
 
+function summarizeGenericShader(sourceShader, rebuildShader) {
+  const sourceIncludes = sourceShader ? collectIncludes(sourceShader) : [];
+  const rebuildIncludes = collectIncludes(rebuildShader);
+  const sourceUniforms = sourceShader ? collectUniformNames(sourceShader) : [];
+  const rebuildUniforms = collectUniformNames(rebuildShader);
+  const keyChecks = [
+    "toneMapped",
+    "#include <tonemapping_fragment>",
+    "#include <colorspace_fragment>",
+    "convertLinearToSRGB",
+    "blend(4",
+    "blend(11",
+    "blend(15",
+    "blend(16",
+    "rgbshift",
+    "uReveal",
+    "uMediaReveal",
+    "uDarkenColor",
+    "uDarkenIntensity",
+    "uSaturation",
+    "tMouseSim",
+    "tFluid",
+    "tBloom",
+    "tSky",
+    "opaque_fragment",
+  ];
+  return {
+    lengths: {
+      source: sourceShader?.length ?? null,
+      rebuild: rebuildShader.length,
+      delta: sourceShader ? rebuildShader.length - sourceShader.length : null,
+    },
+    includes: sourceShader ? compareLists(sourceIncludes, rebuildIncludes) : { source: [], rebuild: unique(rebuildIncludes), onlySource: [], onlyRebuild: unique(rebuildIncludes) },
+    uniforms: sourceShader
+      ? {
+          onlySource: compareLists(sourceUniforms, rebuildUniforms).onlySource,
+          onlyRebuild: compareLists(sourceUniforms, rebuildUniforms).onlyRebuild,
+        }
+      : { onlySource: [], onlyRebuild: unique(rebuildUniforms) },
+    checks: Object.fromEntries(keyChecks.map((check) => [
+      check,
+      {
+        source: sourceShader ? sourceShader.includes(check) : null,
+        rebuild: rebuildShader.includes(check),
+      },
+    ])),
+  };
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
 const sourceZ = extractSourceShader(bundle, "zA", "`,HA=`");
 const sourceH = extractSourceShader(bundle, "HA", "`;class VA extends");
+const sourceShaders = {
+  "A1-pre-composite": tryExtractSourceShader(bundle, "A1"),
+  "Lu-main-composite": tryExtractSourceShader(bundle, "m1"),
+  "OA-work-composite": tryExtractSourceShader(bundle, "CA"),
+  "x1-thumb-composite": tryExtractSourceShader(bundle, "v1"),
+  "j1-media-composite": tryExtractSourceShader(bundle, "LD"),
+  "u1-environment": tryExtractSourceShader(bundle, "l1"),
+};
 writeFileSync(path.join(outDir, "source-HA.glsl"), sourceH);
 writeFileSync(path.join(outDir, "source-zA.glsl"), sourceZ);
+for (const [name, shader] of Object.entries(sourceShaders)) {
+  if (shader) writeFileSync(path.join(outDir, `source-${name}.glsl`), shader);
+}
 
 const chrome = spawn(chromePath, [
   `--remote-debugging-port=${port}`,
@@ -406,7 +476,7 @@ try {
   await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&dump-va-shader=1${extraQuery}` });
   await wait(Number(process.env.DUMP_WAIT || 5000));
   const result = await send(ws, "Runtime.evaluate", {
-    expression: "JSON.stringify({ body: document.body.className, dump: window.__rogierVaShaderDump || [] })",
+    expression: "JSON.stringify({ body: document.body.className, dump: window.__rogierVaShaderDump || [], shaderDump: window.__rogierShaderDump || [] })",
     returnByValue: true,
   });
   const parsed = JSON.parse(result.result.value);
@@ -416,6 +486,22 @@ try {
   }
   writeFileSync(path.join(outDir, "rebuild-work-vertex.glsl"), workDump.vertexShader);
   writeFileSync(path.join(outDir, "rebuild-work-fragment.glsl"), workDump.fragmentShader);
+  const genericShaderAnalysis = {};
+  for (const entry of parsed.shaderDump || []) {
+    const safeName = entry.name.replace(/[^A-Za-z0-9_.-]/g, "_");
+    writeFileSync(path.join(outDir, `rebuild-${safeName}-vertex.glsl`), entry.vertexShader);
+    writeFileSync(path.join(outDir, `rebuild-${safeName}-fragment.glsl`), entry.fragmentShader);
+    genericShaderAnalysis[entry.name] = {
+      vertex: summarizeGenericShader(sourceShaders[entry.name], entry.vertexShader),
+      fragment: summarizeGenericShader(sourceShaders[entry.name], entry.fragmentShader),
+      files: {
+        rebuildVertex: path.join(outDir, `rebuild-${safeName}-vertex.glsl`),
+        rebuildFragment: path.join(outDir, `rebuild-${safeName}-fragment.glsl`),
+        source: sourceShaders[entry.name] ? path.join(outDir, `source-${entry.name}.glsl`) : null,
+      },
+    };
+  }
+  writeFileSync(path.join(outDir, "shader-dump-summary.json"), JSON.stringify(genericShaderAnalysis, null, 2));
   const vertexAnalysis = analyzeVertex(sourceH, workDump.vertexShader);
   const fragmentAnalysis = analyzeFragment(sourceZ, workDump.fragmentShader);
   writeFileSync(path.join(outDir, "vertex-analysis.json"), JSON.stringify(vertexAnalysis, null, 2));
@@ -429,6 +515,7 @@ try {
   const summary = {
     body: parsed.body,
     dumpCount: parsed.dump.length,
+    shaderDumpCount: parsed.shaderDump?.length || 0,
     consoleMessages: consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message)),
     vertex: summarizeShader("work vertex", workDump.vertexShader, sourceH),
     fragment: summarizeShader("work fragment", workDump.fragmentShader, sourceZ),
@@ -460,6 +547,18 @@ try {
         checks: chunkAnalysis.opaqueFragment.checks,
       },
     },
+    genericShaders: Object.fromEntries(Object.entries(genericShaderAnalysis).map(([name, analysis]) => [
+      name,
+      {
+        vertexLengthDelta: analysis.vertex.lengths.delta,
+        fragmentLengthDelta: analysis.fragment.lengths.delta,
+        fragmentUniformsOnlySource: analysis.fragment.uniforms.onlySource,
+        fragmentUniformsOnlyRebuild: analysis.fragment.uniforms.onlyRebuild,
+        fragmentIncludesOnlySource: analysis.fragment.includes.onlySource,
+        fragmentIncludesOnlyRebuild: analysis.fragment.includes.onlyRebuild,
+        files: analysis.files,
+      },
+    ])),
     files: {
       sourceVertex: path.join(outDir, "source-HA.glsl"),
       sourceFragment: path.join(outDir, "source-zA.glsl"),
@@ -468,6 +567,7 @@ try {
       vertexAnalysis: path.join(outDir, "vertex-analysis.json"),
       fragmentAnalysis: path.join(outDir, "fragment-analysis.json"),
       threeChunkAnalysis: path.join(outDir, "three-chunk-analysis.json"),
+      shaderDumpSummary: path.join(outDir, "shader-dump-summary.json"),
     },
   };
   writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(summary, null, 2));

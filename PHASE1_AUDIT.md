@@ -2447,3 +2447,39 @@ Verification:
 - Full capture at `/tmp/rd-main-composite-full` passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions.
 
 Decision: keep this source-structure fix. Phase 1 remains open; the visible hard horizon/fog-bed and transfer/color gaps are not solved by the default main composite pass.
+
+### S1-11 Shader Dump / Setter Color Audit
+
+This batch expanded Phase 1 attribution without promoting unsupported visual tuning.
+
+Source-checked non-fixes:
+
+- Source `Se.formatColor()` parses project colors as raw RGB channels through `sr()`. The rebuild's `sourceRgbColor()` path for `setMainColor`, `setAmbientLight`, `setBlocksColor`, `setThumbDarknessColor`, and `setMediaBackground` matches that ownership shape.
+- Source `C1.uBgColor` is the special case initialized with `new Color("#1F1F1F").convertLinearToSRGB()`. The rebuild still uses `sourceLinearToSrgbColor(SOURCE_COMPOSITE_BG)` for `A1/C1` pre-composite background.
+- Source environment `uDarkenColor` follows the raw project/secondary color path, not the `C1.uBgColor` linear-to-sRGB path. The rebuild's environment setter remains on raw RGB.
+
+Tooling/runtime changes:
+
+- Extended the browser shader dump hook from only `VA` to a generic `window.__rogierShaderDump` covering `VA-work`, `VA-auxiliary`, `A1-pre-composite`, `OA-work-composite`, `Lu-main-composite`, `x1-thumb-composite`, `j1-media-composite`, and `u1-environment`.
+- Updated `scripts/dump-va-shader.mjs` to extract compressed source shader constants with a generic next-backtick parser and to write `shader-dump-summary.json` with include, uniform, length, and key-token residuals.
+- The new dump path is query-gated behind `dump-va-shader=1`; production rendering is unchanged.
+
+Evidence from `/tmp/rogier-phase1-shader-dump-s61b`:
+
+| Shader | Current read |
+| --- | --- |
+| `A1/C1` pre-composite | Fragment body is close; residual `tScene` is source-only and currently structural/inert in the visible path. |
+| `Lu/lA` main composite | Rebuild still exposes extra disabled render-manager uniforms, but source defaults keep bloom/luminosity/fxaa off and main fluid nearly static at rest. |
+| `OA/kA` work composite | Source includes `tonemapping_pars_fragment` / `tonemapping_fragment`; rebuild omits those while carrying debug-only uniforms. This is a real transfer/color-space audit target, but not proof for a gamma or brightness constant patch. |
+| `u1/l1` environment | Rebuild has the active visible formula bridge, but source still declares shader/noise uniform surface (`uMultiplier`, `uShader*`, `uTime`) not present locally. Earlier source audit showed those are not visibly used in the active path; keep open as bridge-depth, not a tuning license. |
+| `VA/HA/zA` | Source vertex and fragment-tail paths are active; residuals are mostly Three r164 chunk bridge differences and renamed modern specular/anisotropy uniforms. |
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rogier-phase1-shader-dump-s61b`.
+- Output probe passed with no failures or exceptions: `/tmp/rogier-phase1-shaderdump-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-shaderdump-full`.
+
+Decision: keep the dump tooling and color-setter non-fix record. Phase 1 remains open; the next production change should target source-backed `OA` tonemapping/transfer interpretation or a complete render-target color-space proof, not local brightness constants.
