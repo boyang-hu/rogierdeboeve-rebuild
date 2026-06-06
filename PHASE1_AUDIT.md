@@ -397,6 +397,26 @@ Verification:
 
 Decision: keep this as source-correct home spotlight ownership. It is not a Phase 1 visual closeout because centered static projection is mostly unchanged; the benefit is correct parallax/projection state and better future attribution.
 
+### S1-67 Three Runtime Version Alignment
+
+This batch aligned the rebuild's Three.js runtime generation with the mirrored source bundle. The original bundle identifies as Three r164, while the rebuild had been running Three `0.184.0` with `@types/three` `0.184.1`. That version gap was a structural source of shader chunk, lighting, spotlight-map, render-target, and color-transfer differences, especially for the `VA/GA` material bridge and `OA/CA` attribution work.
+
+Source-backed runtime changes:
+
+- Pinned `three` to `0.164.1`, matching the source bundle generation.
+- Pinned `@types/three` to `0.164.1` so runtime and type surface remain in the same Three generation.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed with Three `0.164.1`.
+- `git diff --check` passed.
+- Output probe at `/tmp/rd-three-r164-probe` passed with no failed requests, runtime exceptions, or WebGL console errors. It showed a material shift in work/light targets (`workRaw` and `workComposite` brighter), confirming that Three version semantics are part of the remaining rendering gap.
+- Home source-vs-rebuild capture at `/tmp/rd-three-r164-home` passed. Band analysis still shows the hard horizon/fog-bed gap remains open and the middle bands remain brighter than source.
+- Full capture at `/tmp/rd-three-r164-full` passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`; all rebuild pages reached full-canvas states with no failed requests or runtime exceptions, and project page content remained present.
+- Final output probe at `/tmp/rd-three-r164-final-probe` passed after also locking `@types/three`.
+
+Decision: keep the r164 dependency alignment. This is not a visual closeout by itself, but it removes a major non-source variable before further `VA/HA/zA`, spotlight-map, and final transfer work. The next Phase 1 batch should re-audit the remaining shader bridge and output-transfer gaps under r164 rather than continuing to compensate for Three 0.184 behavior.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.
@@ -405,7 +425,7 @@ This matrix is the working closeout audit for Phase 1. It converts the remaining
 | --- | --- | --- | --- | --- | --- |
 | F1 | `p1` hierarchy / scene ownership | Source home scene owns `sceneWrap`, `blocksWrap`, work blocks, thumb scene, floor, environment, about/floating blocks, route-specific toggles, and shared render manager wiring. | Broad ownership is ported and stable. Work count, active slug, full-canvas entry, route classes, and page-level state pass repeated source-vs-rebuild captures. | Close as source-shaped. Keep as regression gate only. | None unless a route-state mismatch appears during Phase 2 page work. |
 | F2 | `T1/w1/E1` thumb target and strip | Source renders a square thumb scene target, composites it through `_1/v1`, and assigns the composite target as the home `SpotLight.map`. | Target sizing, visible thumb count, composite uniforms, texture color-space fix, map assignment, and active-block projection coverage are attributed. | Close as source-shaped for Phase 1. Do not tune thumb darkness, saturation, target size, map assignment, or spotlight intensity. | Only revisit if Phase 2 interaction QA shows thumb strip motion or transition timing mismatch. |
-| F3 | `GA/VA` ordinary work blocks | Source `VA` replaces the standard material shaders with bundled `HA/zA` and relies on the source Three light chunks and spotlight-map semantics. | Rebuild uses a stable Three 0.184 shader bridge with source-aligned material flags, alpha tail, diffuse defaults, selected chunk cleanup, and diagnostics. Full `HA/zA` replacement was rejected after console-aware QA. | Keep open for visual/source review. Do not retry broad `HA/zA` replacement without a narrower failing subsection and browser proof. | Dedicated shader-port research should start from generated shader section diffs rather than wholesale replacement. |
+| F3 | `GA/VA` ordinary work blocks | Source `VA` replaces the standard material shaders with bundled `HA/zA` and relies on the source Three r164 light chunks and spotlight-map semantics. | Rebuild now runs Three r164, but still uses a stable shader bridge with source-aligned material flags, alpha tail, diffuse defaults, selected chunk cleanup, and diagnostics. Full `HA/zA` replacement was previously rejected before the runtime version was aligned. | Keep open for visual/source review. Re-audit generated shader deltas under r164 before retrying any broader `HA/zA` replacement. | Dedicated shader-port research should start from generated shader section diffs under r164 rather than wholesale replacement. |
 | F4 | `Se` visual state setter / project payloads | Source state setter pushes per-work visual values into block materials, thumb uniforms, darkness colors, active project ownership, and route transitions. | Rebuild payload extraction and visual state propagation are stable for home and project markers; source constants are preserved where attributed. | Close as source-shaped. Keep marker and active-slug checks in final QA. | Phase 2 may need deeper transition timing parity, not new state ownership. |
 | F5 | `Ka/GA` mouse and local fluid simulation | Source uses a screen mouse simulation and per-work local simulations with source-shaped UV offsets, persistence, thickness, and ping-pong targets. | Rebuild target sizes, active local UV, `uCoords`, offset/scale, and static contribution are source-shaped. At-rest brightness is not blocked by mouse simulation. | Close structurally. Do not tune brightness through mouse/fluid parameters. | Interactive feel QA remains useful after Phase 1, especially pointer velocity, inertia, and local wake/fade timing. |
 | F6 | `A1/C1` pre-composite formula | Source mixes work, media, noise, contrast, background, and reveal values through the main pre-composite path. | Home `A1` execution flow is semantically equivalent after excluding inert or relocated computations. Project detail pages use a stable direct media path after source-like offscreen routing regressed luma. | Close home `A1` flow. Accept current project media routing as a Phase 1 stability deviation. | Revisit project offscreen media routing only after transfer/color ownership is solved in a dedicated Phase 2 batch. |
