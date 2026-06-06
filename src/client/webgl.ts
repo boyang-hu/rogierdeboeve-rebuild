@@ -2112,7 +2112,14 @@ export class WebGLBackdrop {
 
   constructor(root: HTMLElement) {
     this.root = root;
-    this.renderer = new WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+    this.renderer = new WebGLRenderer({
+      alpha: true,
+      antialias: false,
+      preserveDrawingBuffer: false,
+      powerPreference: "high-performance",
+      stencil: false,
+      depth: false,
+    });
     this.renderer.setClearColor(colorFrom(SOURCE_WORK_BG), 0);
     this.renderer.setPixelRatio(sourceDpr());
     this.renderer.outputColorSpace = this.debugRendererOutput === "linear" ? LinearSRGBColorSpace : SRGBColorSpace;
@@ -4862,7 +4869,7 @@ export class WebGLBackdrop {
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
-      const preCompositeWorkTarget = this.debugPassOrder === "source-work-composite" ? this.workCompositeTarget : this.workRawTarget;
+      const preCompositeWorkTarget = this.debugPassOrder === "raw-work-composite" ? this.workRawTarget : this.workCompositeTarget;
       if (preCompositeWorkTarget === this.workCompositeTarget) {
         if (this.renderSettings.bloom.enabled) {
           this.renderHomeBloomPass(this.workRawTarget);
