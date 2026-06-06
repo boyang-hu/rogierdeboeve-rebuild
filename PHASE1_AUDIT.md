@@ -2971,3 +2971,45 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-floor-group-full`.
 
 Decision: keep this source hierarchy correction. It removes a real `a1/i1` ownership drift and keeps the S1-27 attribution stable, but Phase 1 remains open because the remaining hard horizon/fog-bed still needs source-backed draw-state/render-order or target-content evidence.
+
+### S1-29 `o1` Floor RawShaderMaterial / GLSL3 Surface
+
+This batch aligned the floor material shader surface with source `o1` after the S1-28 hierarchy correction.
+
+Source evidence:
+
+- Source `o1` extends material construction with `glslVersion: "300 es"`.
+- Source floor shaders use explicit GLSL3 attribute/uniform/varying declarations rather than relying on Three's injected `ShaderMaterial` declarations.
+- Source fragment precision is `mediump`, writes through an explicit output color, and samples textures with GLSL3 `texture(...)`.
+- Source floor material defines `USE_NORMALMAP` when the normal map is present.
+
+Runtime changes:
+
+- Changed the rebuild floor material from `ShaderMaterial` to `RawShaderMaterial`.
+- Added `glslVersion: GLSL3` and the source-shaped `USE_NORMALMAP` define.
+- Moved the floor vertex/fragment shaders to GLSL3 `in`/`out` syntax with explicit built-in uniforms.
+- Switched the floor fragment from `texture2D(...)` to `texture(...)` and from `gl_FragColor` to `FragColor`.
+
+Rejected implementation path:
+
+- A first `ShaderMaterial + GLSL3` attempt matched the source version flag but failed at runtime because Three injected declarations that collided with the source-style explicit declarations. `RawShaderMaterial` is therefore the safer source-shaped bridge for this material.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-floor-rawshader-final-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-floor-rawshader-final-project-media`.
+- Brightness attribution passed with no errors: `/tmp/rd-floor-rawshader-final-attribution`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-floor-rawshader-final-full`.
+
+Attribution snapshot:
+
+| Variant | Work raw 9x9 | Work composite 9x9 | Pre-composite 9x9 | Bloom 9x9 |
+| --- | ---: | ---: | ---: | ---: |
+| default | `0.2857` | `0.2211` | `0.2863` | `0.0220` |
+| `floor-off` | `0.3985` | `0.3589` | `0.5325` | `0.0819` |
+| `floor-reflection-off` | `0.2006` | `0.1802` | `0.2315` | `0.0174` |
+| `environment-off` | `0.1386` | `0.1123` | `0.1202` | `0.0039` |
+
+Decision: keep the RawShader/GLSL3 floor material change. This removes a real source-surface mismatch and preserves project-page stability, but it does not close Phase 1 visually. The attribution still says the remaining hard horizon/fog-bed gap is dominated by environment/floor/reflection target content and render-order interaction, not by unsupported color or brightness constants.

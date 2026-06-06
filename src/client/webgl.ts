@@ -13,6 +13,7 @@ import {
   Fog,
   FloatType,
   Float32BufferAttribute,
+  GLSL3,
   Group,
   IcosahedronGeometry,
   InstancedBufferAttribute,
@@ -33,6 +34,7 @@ import {
   Plane,
   PlaneGeometry,
   RGBAFormat,
+  RawShaderMaterial,
   Raycaster,
   Scene,
   ShaderMaterial,
@@ -1403,13 +1405,22 @@ void main() {
 `;
 
 const floorVertex = `
-varying vec2 vUv;
-varying vec4 vCoord;
-varying vec3 vNormal;
-varying vec3 vToEye;
+in vec3 position;
+in vec3 normal;
+in vec2 uv;
 
-uniform mat4 uMatrix;
+uniform mat4 modelMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
+uniform vec3 cameraPosition;
 uniform mat3 uMapTransform;
+uniform mat4 uMatrix;
+
+out vec2 vUv;
+out vec4 vCoord;
+out vec3 vNormal;
+out vec3 vToEye;
 
 void main() {
   vUv = (uMapTransform * vec3(uv, 1.0)).xy;
@@ -1870,7 +1881,7 @@ void main() {
 `;
 
 const floorFragment = `
-precision highp float;
+precision mediump float;
 
 uniform sampler2D tReflect;
 uniform vec3 uColor;
@@ -1881,14 +1892,16 @@ uniform float uNormalDistortionStrength;
 uniform vec2 uNormalScale;
 uniform sampler2D tNormalMap;
 
-varying vec2 vUv;
-varying vec4 vCoord;
-varying vec3 vNormal;
-varying vec3 vToEye;
+in vec2 vUv;
+in vec4 vCoord;
+in vec3 vNormal;
+in vec3 vToEye;
+
+out vec4 FragColor;
 
 void main() {
   vec4 color = vec4(uColor, 1.0);
-  vec4 normalColor = texture2D(tNormalMap, vUv * uNormalScale);
+  vec4 normalColor = texture(tNormalMap, vUv * uNormalScale);
   vec3 normal = normalize(vec3(
     normalColor.r * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0),
     normalColor.b,
@@ -1896,15 +1909,15 @@ void main() {
   ));
   vec3 coord = vCoord.xyz / vCoord.w;
   vec2 reflectUv = coord.xy + coord.z * normal.xz * 0.05;
-  vec4 reflectColor = texture2D(tReflect, reflectUv);
+  vec4 reflectColor = texture(tReflect, reflectUv);
 
   vec3 toEye = normalize(vToEye);
   float theta = max(dot(toEye, normal), 0.0);
   float reflectance = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow((1.0 - theta), 5.0), 1.0));
   reflectColor = mix(vec4(0.0), reflectColor, reflectance);
 
-  gl_FragColor.rgb = color.rgb * ((1.0 - min(1.0, uMirror)) + reflectColor.rgb * uFloorMixStrength);
-  gl_FragColor.a = 1.0;
+  FragColor.rgb = color.rgb * ((1.0 - min(1.0, uMirror)) + reflectColor.rgb * uFloorMixStrength);
+  FragColor.a = 1.0;
 }
 `;
 
@@ -3904,7 +3917,11 @@ export class WebGLBackdrop {
   }
 
   private createFloorMaterial() {
-    return new ShaderMaterial({
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
+      defines: {
+        USE_NORMALMAP: "",
+      },
       uniforms: {
         tReflect: { value: this.floorReflectionReadTarget.texture },
         uMapTransform: { value: new Matrix3().identity() },
