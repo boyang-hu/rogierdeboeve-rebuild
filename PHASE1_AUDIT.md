@@ -378,6 +378,24 @@ Verification passed:
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 
+### S1-31 OA/A1 Pass-Order Attribution Result
+
+A production-path experiment tested whether the home pass order should be rewired to match the source ownership suggested by `nD.init()`:
+
+- Source evidence: `mainScene.renderManager.compositeMaterial.uniforms.tWork.value = workScene.renderManager.renderTargetComposite.texture`, meaning the work scene render manager's `OA/CA` composite feeds the main scene `A1/C1` composite.
+- Experiment: render home work raw to `workRawTarget`, run the `OA/CA` home composite into `compositeTarget`, then feed that texture into `A1/C1` for the final screen pass with A1 bloom/luminosity disabled.
+- The experiment compiled and reached the ready state with no reported shader/runtime errors, but it moved the final home output in the wrong direction.
+
+Measured result from `/tmp/rogier-output-probe-s131-order`:
+
+| Target / output | Luma | Interpretation |
+| --- | ---: | --- |
+| `workRawTarget` 9x9 grid | `0.1855` | Upstream work scene remained bright enough. |
+| `compositeTarget` after `OA/CA` 9x9 grid | `0.1395` | The intermediate work composite was not black. |
+| final screenshot | `0.0225` | Worse than the current stable normal-path home baseline of about `0.031`. |
+
+Decision: reject this pass-order change for production and keep the stable current order while continuing source attribution. The result is useful because it proves that a broad structural rewiring can reduce visible parity even when the intermediate targets are healthy. The next `OA/CA` batch should be smaller: compare source `CA` formula, `uDarken` active value, bloom texture ownership, and target sampling one at a time instead of swapping the whole pass chain.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
