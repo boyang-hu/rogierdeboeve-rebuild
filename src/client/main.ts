@@ -148,9 +148,6 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
   clearWorkPreview(webgl);
   document.documentElement.classList.add("is-work-gallery-leaving");
   if (!prefersReducedMotion()) {
-    gsap.to(".ui-work-content, .ui-progressbar--work, .ui-work .ui-footer", { opacity: 0, duration: 0.5, ease: "linear" });
-  }
-  if (!prefersReducedMotion()) {
     const descriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
     const availabilityTargets = gsap.utils.toArray<HTMLElement>(".ui-header-availability .ui-header-part-inner");
     gsap.killTweensOf(descriptionTargets);
@@ -166,6 +163,14 @@ function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike, navigate?: App
   persistEnteredSession();
   window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
   navigate?.(url, "home") ?? window.setTimeout(() => window.location.assign(url), 500);
+}
+
+function animateCurrentViewOut() {
+  if (prefersReducedMotion()) return;
+  const view = document.querySelector<HTMLElement>("[data-view]");
+  if (!view) return;
+  gsap.killTweensOf(view);
+  gsap.to(view, { opacity: 0, duration: 0.5, ease: "linear" });
 }
 
 function dispatchSoundMode(enabled: boolean) {
@@ -642,11 +647,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     };
     const cta = card.querySelector<HTMLElement>(".ui-work-cta");
     const onCtaClick = (event: MouseEvent) => {
-      event.preventDefault();
       if (performance.now() - lastTouchSelect < 500) return;
       setDomActiveIndex(index);
       getWebgl()?.beginProjectTransition?.(projectPayloadFromElement(card));
-      navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl(), navigate);
     };
     const onCtaMouseEnter = () => previewWork(true);
     const onCtaMouseLeave = () => previewWork(false);
@@ -986,9 +989,7 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppN
       const target = new URL(link.href, window.location.href);
       if (target.origin !== window.location.origin || target.href === window.location.href) return;
       event.preventDefault();
-      if (!prefersReducedMotion()) {
-        gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
-      }
+      animateCurrentViewOut();
       getWebgl()?.projectLeave?.();
       navigate?.(target.href, "project") ?? window.setTimeout(() => window.location.assign(target.href), 500);
     };
@@ -1009,9 +1010,7 @@ function initAboutLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNav
       const target = new URL(link.href, window.location.href);
       if (target.origin !== window.location.origin || target.href === window.location.href) return;
       event.preventDefault();
-      if (!prefersReducedMotion()) {
-        gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
-      }
+      animateCurrentViewOut();
       getWebgl()?.animateAboutVisualOut?.();
       navigate?.(target.href, "about") ?? window.setTimeout(() => window.location.assign(target.href), 500);
     };
@@ -1108,6 +1107,7 @@ function boot() {
   };
   const cleanupApp = () => {
     cleanupPage();
+    document.removeEventListener("click", onRouterClick);
     window.removeEventListener("pagehide", cleanupApp);
     window.removeEventListener("beforeunload", cleanupApp);
   };
@@ -1217,6 +1217,10 @@ function boot() {
     const routeUrl = normalizeRouteUrl(url);
     const routePromise = loadRoute(routeUrl);
     const leavePromise = new Promise((resolve) => window.setTimeout(resolve, transitionDelay(mode)));
+    if (mode === "home" && !document.documentElement.classList.contains("is-work-gallery-leaving")) {
+      window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
+    }
+    animateCurrentViewOut();
     Promise.all([routePromise, leavePromise])
       .then(([nextDoc]) => {
         document.documentElement.classList.add("is-route-swapping");
@@ -1243,6 +1247,19 @@ function boot() {
         routing = false;
       });
   };
+  const onRouterClick = (event: MouseEvent) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
+    const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])");
+    if (!link) return;
+    const target = new URL(link.href, window.location.href);
+    if (target.origin !== window.location.origin || target.href === window.location.href) return;
+    event.preventDefault();
+    const view = document.querySelector<HTMLElement>("[data-view]");
+    const mode: "home" | "project" | "about" | "default" = view?.dataset.view === "home" || view?.dataset.view === "project" || view?.dataset.view === "about"
+      ? view.dataset.view
+      : "default";
+    navigateTo(target.href, mode);
+  };
 
   initPreloader();
   void import("./audio").then(({ initAudio }) => {
@@ -1257,6 +1274,7 @@ function boot() {
   initSoundToggle();
   initCurrentPage();
   preloadRoutes();
+  document.addEventListener("click", onRouterClick);
   window.addEventListener("popstate", () => navigateTo(window.location.href, "default", "replace"));
   window.addEventListener("pagehide", cleanupApp, { once: true });
   window.addEventListener("beforeunload", cleanupApp, { once: true });
