@@ -697,6 +697,18 @@ const environmentFragmentShader = `
 uniform float uDarken;
 uniform vec3 uDarkenColor;
 uniform sampler2D tSky;
+uniform float uTime;
+uniform float uMultiplier;
+uniform float uShader1Alpha;
+uniform float uShader1Speed;
+uniform float uShader1Scale;
+uniform float uShader2Alpha;
+uniform float uShader2Scale;
+uniform float uShader3Alpha;
+uniform float uShader3Speed;
+uniform float uShader3Scale;
+uniform float uShader1Mix2;
+uniform float uShader1Mix3;
 
 varying vec2 vUv;
 
@@ -1698,6 +1710,13 @@ precision highp float;
 uniform sampler2D tScene;
 uniform float uTime;
 uniform float uShader1Speed;
+uniform float uShader1Alpha;
+uniform float uShader1Scale;
+uniform float uShader2Speed;
+uniform float uShader2Scale;
+uniform float uShader1Mix3;
+uniform float uShader3Scale;
+uniform float uShaderMix;
 
 varying vec2 vUv;
 
@@ -1773,6 +1792,7 @@ void main() {
   diffuseColor.rgb *= 2.0;
 
   gl_FragColor = vec4(0.9 - diffuseColor.rgb, 1.0);
+  #include <tonemapping_fragment>
 }
 `;
 
@@ -3546,6 +3566,8 @@ export class WebGLBackdrop {
         uShader2Speed: { value: 0 },
         uShader1Scale: { value: 5.5 },
         uShader2Scale: { value: 0 },
+        uShader1Mix3: { value: 1.5 },
+        uShader3Scale: { value: 0 },
         uShaderMix: { value: 1.5 },
       },
       vertexShader: backgroundVertex,
@@ -3828,9 +3850,21 @@ export class WebGLBackdrop {
 
   private createEnvironmentMaterial() {
     const uniforms = {
+      uTime: { value: 0 },
+      uMultiplier: { value: 2 },
       uDarkenColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
       uDarken: { value: 1 },
       tSky: { value: this.environmentSkyTexture() },
+      uShader1Alpha: { value: 0.5 },
+      uShader1Speed: { value: 0.5 },
+      uShader1Scale: { value: 5.5 },
+      uShader2Alpha: { value: 0 },
+      uShader2Scale: { value: 13 },
+      uShader3Alpha: { value: 0 },
+      uShader3Speed: { value: 0 },
+      uShader3Scale: { value: 0 },
+      uShader1Mix2: { value: 0 },
+      uShader1Mix3: { value: 1.5 },
     };
     const material = new MeshStandardMaterial({
       side: BackSide,
@@ -5085,9 +5119,24 @@ export class WebGLBackdrop {
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
         },
         environment: {
+          uTime: this.environmentMaterial.uniforms.uTime.value,
+          uMultiplier: this.environmentMaterial.uniforms.uMultiplier.value,
           uDarken: this.environmentMaterial.uniforms.uDarken.value,
           uDarkenColor: (this.environmentMaterial.uniforms.uDarkenColor.value as Color).toArray(),
           tSkyIsComposite: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
+          tSkySource: this.debugSkyTarget === "off" ? "placeholder" : this.debugSkyTarget === "raw" ? "raw" : "composite",
+          shaderSurface: {
+            uShader1Alpha: this.environmentMaterial.uniforms.uShader1Alpha.value,
+            uShader1Speed: this.environmentMaterial.uniforms.uShader1Speed.value,
+            uShader1Scale: this.environmentMaterial.uniforms.uShader1Scale.value,
+            uShader2Alpha: this.environmentMaterial.uniforms.uShader2Alpha.value,
+            uShader2Scale: this.environmentMaterial.uniforms.uShader2Scale.value,
+            uShader3Alpha: this.environmentMaterial.uniforms.uShader3Alpha.value,
+            uShader3Speed: this.environmentMaterial.uniforms.uShader3Speed.value,
+            uShader3Scale: this.environmentMaterial.uniforms.uShader3Scale.value,
+            uShader1Mix2: this.environmentMaterial.uniforms.uShader1Mix2.value,
+            uShader1Mix3: this.environmentMaterial.uniforms.uShader1Mix3.value,
+          },
           sceneEnvironment: this.homeScene.environment ? {
             colorSpace: this.homeScene.environment.colorSpace,
             type: this.homeScene.environment.type,
@@ -5118,6 +5167,24 @@ export class WebGLBackdrop {
       },
       textures: {
         noise: { colorSpace: this.noiseTexture.colorSpace, type: this.noiseTexture.type, format: this.noiseTexture.format },
+        skyComposite: {
+          wrapS: this.skyCompositeTarget.texture.wrapS,
+          wrapT: this.skyCompositeTarget.texture.wrapT,
+          colorSpace: this.skyCompositeTarget.texture.colorSpace,
+          generateMipmaps: this.skyCompositeTarget.texture.generateMipmaps,
+          minFilter: this.skyCompositeTarget.texture.minFilter,
+          magFilter: this.skyCompositeTarget.texture.magFilter,
+          uniforms: {
+            uShader1Alpha: this.skyCompositeMaterial.uniforms.uShader1Alpha.value,
+            uShader1Speed: this.skyCompositeMaterial.uniforms.uShader1Speed.value,
+            uShader1Scale: this.skyCompositeMaterial.uniforms.uShader1Scale.value,
+            uShader2Speed: this.skyCompositeMaterial.uniforms.uShader2Speed.value,
+            uShader2Scale: this.skyCompositeMaterial.uniforms.uShader2Scale.value,
+            uShader1Mix3: this.skyCompositeMaterial.uniforms.uShader1Mix3.value,
+            uShader3Scale: this.skyCompositeMaterial.uniforms.uShader3Scale.value,
+            uShaderMix: this.skyCompositeMaterial.uniforms.uShaderMix.value,
+          },
+        },
         perlin: { colorSpace: this.perlinTexture.colorSpace, type: this.perlinTexture.type, format: this.perlinTexture.format },
         workPerlin: { colorSpace: this.workPerlinTexture.colorSpace, type: this.workPerlinTexture.type, format: this.workPerlinTexture.format },
         placeholder: { colorSpace: this.placeholder.colorSpace, type: this.placeholder.type, format: this.placeholder.format },
@@ -5407,6 +5474,7 @@ export class WebGLBackdrop {
     this.updatePointerProjection();
     this.updateMouseSimulation(time, delta);
     this.backgroundMaterial.uniforms.uTime.value = time;
+    this.environmentMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;

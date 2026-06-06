@@ -2593,3 +2593,31 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-va-surface-full`.
 
 Decision: keep this cleanup. It does not close Phase 1 visually, but it removes non-source shader toggles from the production path and narrows the remaining audit to real render-target, environment, and generated Three chunk differences.
+
+### S1-16 `V1/H1/z1` and `h1/u1/l1` Shader Surface
+
+This batch aligned narrow sky/environment shader-surface residuals in one source-backed group without changing visible constants or adding subjective brightness tuning.
+
+Source evidence:
+
+- Source `z1/B1` declares the full sky composite shader surface: `tScene`, `uTime`, `uShader1Speed`, `uShader1Alpha`, `uShader1Scale`, `uShader2Speed`, `uShader2Scale`, `uShader1Mix3`, `uShader3Scale`, and `uShaderMix`, and ends with `tonemapping_fragment`.
+- Source `u1/l1` declares the full environment shader surface: `uTime`, `uMultiplier`, `uDarken`, `uDarkenColor`, `tSky`, `uShader1Alpha`, `uShader1Speed`, `uShader1Scale`, `uShader2Alpha`, `uShader2Scale`, `uShader3Alpha`, `uShader3Speed`, `uShader3Scale`, `uShader1Mix2`, and `uShader1Mix3`.
+- Source `h1.update()` writes `uTime`, even though the currently active visible `l1` path does not use it for time-driven environment motion.
+
+Runtime/tooling changes:
+
+- Added the remaining source-declared sky composite uniforms and restored the source sky composite `tonemapping_fragment` tail.
+- Added the remaining source-declared environment uniforms to the JS material surface and to the generated fragment shader declaration surface.
+- Updated the environment material `uTime` every frame, matching source `h1.update()` ownership without introducing non-source animation.
+- Expanded `window.__rogierOutputProbe` to record environment shader-surface values, `tSky` source ownership, and sky composite texture/filter/wrap/uniform metadata.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-sky-env-surface3-shader`.
+- The dump now reports `u1-environment.fragmentUniformsOnlySource=[]` and `fragmentUniformsOnlyRebuild=[]`; `A1`, `OA`, and thumb-composite surface checks stayed clean.
+- Output probe passed with no failures or exceptions and records `environment.tSkySource="composite"` plus the source environment uniform surface: `/tmp/rd-sky-env-surface3-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-sky-env-surface3-full`.
+
+Decision: keep this source-surface alignment. It removes another low-level shader/probe residual from the sky/environment chain, but Phase 1 remains open because the visible hard horizon/fog-bed and transfer/color interpretation gaps are still not source-resolved.
