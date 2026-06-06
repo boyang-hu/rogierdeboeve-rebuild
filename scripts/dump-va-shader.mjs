@@ -275,7 +275,9 @@ function analyzeVertex(sourceShader, rebuildShader) {
   ];
   const checks = [
     "gl_Position.xy / uCoords.xy",
+    "vec2 screenUv = vec2(0.0)",
     "vec2 newUv = uv",
+    "vec2 newUv = screenUv",
     "texture2D(tMouseSim",
     "transformed *= 1.0 - mouse",
     "transformed /= 1. - mouseSim.r * .2",

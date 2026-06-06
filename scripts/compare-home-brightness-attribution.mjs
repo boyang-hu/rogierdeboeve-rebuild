@@ -31,6 +31,7 @@ const variants = [
   { label: "va-physical-direct", query: "&debug-va-physical-response=direct" },
   { label: "va-physical-source-fields", query: "&debug-va-physical-response=source-fields" },
   { label: "va-world-undo-source", query: "&debug-va-world-undo=source" },
+  { label: "va-vertex-uv-source-zero", query: "&debug-va-vertex-uv=source-zero" },
   { label: "sky-off", query: "&debug-sky-target=off" },
   { label: "sky-raw", query: "&debug-sky-target=raw" },
   { label: "texture-srgb-colorspace", query: "&debug-texture-colorspace=srgb" },

@@ -63,7 +63,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | S1-43 | Ordinary `VA` vertex/body residual diff | Source `VA` still fully assigns `HA/zA`; rebuild uses a stable chunk bridge. Recent evidence says fragment light chunks and physical response variants are low-impact, while the remaining vertex/body interface still differs around `screenUv`, `worldPosition`, and source's unclamped mouse undo. | Stable bridge is close and production-safe; full `HA` replacement was rejected by console-aware QA. | Medium-high | Add or extend diagnostics for generated-vs-source vertex/body sections. Only test one debug-gated runtime delta at a time, starting with world-position mouse undo clamp attribution. |
+| 1 | S1-43 | Ordinary `VA` vertex/body residual diff | Source `VA` still fully assigns `HA/zA`; rebuild uses a stable chunk bridge. Recent evidence says fragment light chunks, physical response variants, world-position unclamp, and source-like early vertex `screenUv` attribution are low-impact. | Stable bridge is close and production-safe; full `HA` replacement was rejected by console-aware QA. | Medium-high | Stop chasing single `HA` UV/world-position deltas as the main brightness gap. Continue only with residual generated-vs-source body/vertex diagnostics if a specific visible mismatch appears; otherwise prioritize proven transfer/projection contributors. |
 | 2 | S1-44 | `OA/CA` final `tScene` transfer | Source `CA` darken formula and `uDarken=.2` are confirmed, but `debug-composite-transfer=1` still moves final home luma strongly. | Rebuild has source-shaped darken, saturation, bloom and stage probes. Transfer debug is useful but not source-proven. | Medium-high | Audit source renderer/output initialization and `CA` input texture interpretation before any production transfer change. Keep this diagnostic unless source evidence is found. |
 | 3 | S1-45 | Spotlight map content/projection after texture fix | Source assigns thumb composite target as `SpotLight.map`; S1-40 made ordinary loaded textures source-default and raised thumb/composite luma substantially. | Map ownership, position, intensity, target size, and thumb visibility are source-shaped. Projection may still differ through `VA` world position or target transfer. | Medium | Re-run projection-focused matrix after vertex/body diagnostics; do not change intensity, map assignment, or thumb darkness constants. |
 | 4 | S1-46 | Shared project composite/media brightness | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal; source media scene renders offscreen into `C1.tMedia`. S1-46B now confirms the home `A1` main execution flow is source-equivalent except inert/relocated computations. | Project detail pages are stable but darker than source. A source-shaped offscreen media experiment regressed luma and was reverted. `A1` formula order is less likely to be the first remaining home brightness culprit. | High | Keep project pages as regression gates. Revisit shared media/offscreen routing only after `VA/zA` light semantics and projection attribution are narrower. |
@@ -977,6 +977,52 @@ Decision:
 Verification passed:
 
 - `OUT_DIR=/tmp/rogier-renderer-output-s147d node scripts/audit-renderer-output.mjs`
+
+### S1-48 `VA` Early Vertex UV Attribution Result
+
+This batch isolated the remaining source `HA` early-`screenUv` difference without changing default rendering.
+
+Source/static evidence:
+
+- Source `HA` computes `vec2 screenUv = gl_Position.xy / uCoords.xy`, then uses `newUv = screenUv`, adds `instanceOffset`, and samples `tMouseSim`, `tPerlin`, and `tDisplacement` from that path.
+- The stable rebuild bridge samples those vertex textures from local mesh UV divided by grid size plus `instanceOffset`.
+- Added `?debug-va-vertex-uv=source-zero`, work-block only, which replaces the local-UV seed with a source-shaped `screenUv` seed for attribution while keeping the rest of the stable bridge.
+- `scripts/dump-va-shader.mjs` now reports `vec2 screenUv = vec2(0.0)` and `vec2 newUv = screenUv` checks so the debug path can be verified in generated shader dumps.
+- `scripts/compare-home-brightness-attribution.mjs` now includes `va-vertex-uv-source-zero`.
+
+Shader dump results:
+
+| Dump | Vertex length | Key UV seed | Shader/console errors |
+| --- | ---: | --- | ---: |
+| Default `/tmp/rogier-va-shader-s148-default` | `4302` vs source `4482` | `vec2 newUv = uv` | `0` |
+| `debug-va-vertex-uv=source-zero` `/tmp/rogier-va-shader-s148-source-zero` | `4335` vs source `4482` | `vec2 screenUv = vec2(0.0)` then `vec2 newUv = screenUv` | `0` |
+
+Brightness attribution at `/tmp/rogier-home-brightness-s148-vertex-uv-retry`:
+
+| Variant | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 | Errors |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | `0.2200` | `0.3189` | `0.0551` | `0.1767` | `0` |
+| `va-world-undo-source` | `0.2214` | `0.3196` | `0.0550` | `0.1767` | `0` |
+| `va-vertex-uv-source-zero` | `0.2196` | `0.3164` | `0.0550` | `0.1767` | `0` |
+| spotlight transfer | `0.2587` | `0.3632` | `0.0753` | `0.1767` | `0` |
+| scene transfer | `0.2177` | `0.3182` | `0.0551` | `0.1767` | `0` |
+| spotlight map off | `0.2609` | `0.3820` | `0.0820` | `0.1767` | `0` |
+| texture sRGB rollback | `0.1852` | `0.2347` | `0.0224` | `0.0603` | `0` |
+
+Decision:
+
+- Keep the debug-only `debug-va-vertex-uv=source-zero` attribution switch and analyzer checks.
+- Do not promote this vertex UV path to production. It is source-motivated and stable, but it slightly lowers measured pre-composite luma and does not close the remaining Phase 1 gap.
+- Stop treating source `HA` early `screenUv` ownership as a primary brightness culprit in the current bridge.
+- The highest-value remaining evidence is still outside single-vertex deltas: spotlight map transfer/projection as a contributor, final `OA/CA` transfer as a contributor, and project shared media/composite as a regression-gated later chain.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5237 OUT_DIR=/tmp/rogier-va-shader-s148-default CDP_PORT=9301 DUMP_WAIT=5200 node scripts/dump-va-shader.mjs`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5237 OUT_DIR=/tmp/rogier-va-shader-s148-source-zero CDP_PORT=9302 DUMP_WAIT=5200 EXTRA_QUERY='&debug-va-vertex-uv=source-zero' node scripts/dump-va-shader.mjs`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5237 OUT_DIR=/tmp/rogier-home-brightness-s148-vertex-uv-retry CDP_PORT=9304 CAPTURE_WAIT=8000 node scripts/compare-home-brightness-attribution.mjs`
 
 ### S1-22 Generated Shader Diagnostic Result
 

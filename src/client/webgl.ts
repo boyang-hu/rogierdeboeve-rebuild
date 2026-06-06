@@ -371,6 +371,22 @@ vAlpha = instanceAlpha;
 #endif
 `;
 
+const workBlockSourceScreenUvBeginVertexChunk = workBlockBeginVertexChunk.replace(
+  [
+    "vec2 newUv = uv;",
+    "newUv.x /= uGridSize.x;",
+    "newUv.y /= uGridSize.y;",
+    "newUv += instanceOffset.xy;",
+  ].join("\n"),
+  [
+    "vec2 screenUv = vec2(0.0);",
+    "vec2 newUv = screenUv;",
+    "newUv.x /= uGridSize.x;",
+    "newUv.y /= uGridSize.y;",
+    "newUv += instanceOffset.xy;",
+  ].join("\n"),
+);
+
 const workBlockWorldPositionChunk = `
 #if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined ( USE_SHADOWMAP ) || defined ( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0
   vec3 sourceWorldTransformed = transformed / max(1.0 - vMouseSim * 0.2, 0.0001);
@@ -620,9 +636,10 @@ function patchWorkBlockShader(
   variant: "work" | "auxiliary" = "work",
 ) {
   Object.assign(shader.uniforms, uniforms);
+  const vertexUvMode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-vertex-uv") : null;
   shader.vertexShader = shader.vertexShader
     .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-    .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
+    .replace("#include <begin_vertex>", vertexUvMode === "source-zero" ? workBlockSourceScreenUvBeginVertexChunk : workBlockBeginVertexChunk)
     .replace(
       "#include <worldpos_vertex>",
       typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-va-world-undo") === "source"
