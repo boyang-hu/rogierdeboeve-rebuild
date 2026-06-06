@@ -135,7 +135,9 @@ async function capture({ name, url, viewportName = "desktop", clickEnter = false
         const rect = canvas.getBoundingClientRect();
         return { width: canvas.width, height: canvas.height, rectWidth: rect.width, rectHeight: rect.height };
       }),
-      active: document.querySelector('[data-project-card].is-active')?.dataset.slug || null,
+      active: document.querySelector('[data-project-card].is-active, .ui-work-ul [data-slug].is-active, .ui-progressbar-item.is-active')?.dataset.slug || null,
+      firstWorkSlug: document.querySelector('[data-project-card], .ui-work-ul [data-slug]')?.dataset.slug || null,
+      workSlugCount: document.querySelectorAll('[data-project-card], .ui-work-ul [data-slug]').length,
       text: document.body.innerText.slice(0, 300)
     })`,
     returnByValue: true,
@@ -181,6 +183,7 @@ try {
     results.push(await capture({ name: "original-hashgraph-vc-desktop", url: `${originalUrl}/hashgraph-vc/`, clickEnter: true }));
     results.push(await capture({ name: "rebuild-hashgraph-vc-desktop", url: `${rebuildUrl}/hashgraph-vc/?skip-preloader` }));
   }
+  writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {
   chrome.kill("SIGTERM");

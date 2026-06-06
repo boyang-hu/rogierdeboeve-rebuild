@@ -461,6 +461,33 @@ Mouse simulation readback during the static capture:
 
 Decision: keep the darken input probe and do not tune `uDarken` downward as a production fix. Source `xt.darken = .2`, source `CA` multiplies by `uDarken * 2.`, and source home/about/error route state sets this value. The remaining question is not mouse/fluid corruption; it is why the source `tScene` entering this same darken formula has enough perceived brightness afterward. Continue with `tScene` transfer/color interpretation and source-vs-rebuild capture timing/active-project state before touching production darken constants.
 
+### S1-34 Source/Rebuild Home State Timing Check
+
+The source-vs-rebuild capture harness now records a more reliable home active state:
+
+- `active` checks `[data-project-card].is-active`, `.ui-work-ul [data-slug].is-active`, and `.ui-progressbar-item.is-active`.
+- `firstWorkSlug` records the first work item slug even when the original HTML does not use rebuild-only `data-project-card`.
+- `workSlugCount` records the home work item count.
+- `scripts/capture.mjs` now writes `summary.json` into the capture output directory.
+
+This fixed a misleading earlier observation where original captures reported `active:null` only because the mirrored source HTML does not contain `data-project-card`.
+
+Source/rebuild data-state evidence:
+
+- Mirrored source `_astro/hashgraph-vc...js`: `darkenOverview:.2`, `ambient:.75`, `contrast:1.4`.
+- Rebuild `src/data/projects.json`: `hashgraph-vc` has the same `darkenOverview`, `ambient`, and `contrast` values.
+- Capture at `/tmp/rogier-compare-s134-state`: original and rebuild both report `active:"hashgraph-vc"`, `firstWorkSlug:"hashgraph-vc"`, and `workSlugCount:10`.
+
+Timing evidence:
+
+| Capture wait | Original desktop luma | Rebuild desktop luma | Original mobile luma | Rebuild mobile luma |
+| --- | ---: | ---: | ---: | ---: |
+| `4200ms` | `0.1057` | `0.0313` | `0.0549` | `0.0371` |
+| `8000ms` | `0.0999` | `0.0315` | `0.0548` | `0.0384` |
+| state-enhanced `4200ms` | `0.1050` | `0.0313` | `0.0548` | `0.0376` |
+
+Decision: the remaining desktop home brightness gap is not explained by active project mismatch, work-item count mismatch, or short capture timing. Since source and rebuild are both on `hashgraph-vc` with source-matching `uDarken` inputs, the next attribution target remains the color/transfer interpretation of the `tScene` input before `OA/CA` multiply darken, plus any upstream `VA`/spotlight response that determines that input's perceived brightness.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
