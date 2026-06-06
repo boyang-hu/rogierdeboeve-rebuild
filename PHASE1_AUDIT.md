@@ -2009,6 +2009,28 @@ Current recommendation: do not attempt the rest of Phase 1 in one unverified pas
 
 ## Next Batches
 
+### Current GA/VA Texture And Spread Alignment
+
+Source evidence from `bundle.250f01b7.js`:
+
+- `HA` uses `float spread = 3.;` in the work-block vertex displacement tail.
+- `VA.customUniforms.tPerlin` initializes from `Xt.perlin1`.
+- `Xt.preloadTextures()` loads `perlin1` from `/images/textures/perlin-1.${webpOrJpg}` with `wrapS/wrapT = vo` (`ClampToEdgeWrapping` in the bundled Three constants), while `perlin2` uses `ci` (`RepeatWrapping`).
+
+Rebuild status:
+
+- Ordinary and auxiliary work-block materials now use a separate `workPerlinTexture` loaded from `/images/textures/perlin-1.webp` with `ClampToEdgeWrapping`.
+- The A1/C1 pre-composite material keeps `perlinTexture` loaded from `/images/textures/perlin-2.webp` with `RepeatWrapping`.
+- Work-block spread is restored from the rebuild-only `5.0` to source `3.0`.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Full capture at `/tmp/rogier-phase1-ga-va-perlin` passed with no network failures or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Decision: keep this as a source-correct `GA/VA/Xt` fix. It should make gallery collapse/spread and perlin displacement closer to source without changing project media or shared composite behavior. Visual review still needs to decide whether the visible home transition/cube-depth mismatch is materially improved or whether the next batch must move deeper into full `HA/zA` shader parity.
+
 ### Batch A: `Ka/GA` Local Simulation Ownership
 
 Status: implemented in code, pending real WebGL visual/performance QA.

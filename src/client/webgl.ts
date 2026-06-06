@@ -359,7 +359,7 @@ transformed.z += mouse * 15.0 * uMouseFactor;
 transformed *= 1.0 - displacement * 0.1;
 
 vec3 transformedSpread = transformed;
-float spread = 5.0;
+float spread = 3.0;
 transformedSpread.x -= instanceColor.x * spread;
 transformedSpread.x += spread * 0.5;
 transformedSpread.y -= instanceColor.y * spread;
@@ -1937,6 +1937,7 @@ export class WebGLBackdrop {
   private renderSettings = SOURCE_HOME_RENDER_SETTINGS;
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
+  private workPerlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private skyCompositeMaterial: ShaderMaterial;
   private skyCompositeScene = new Scene();
   private skyRawTarget = makeSourceRenderTarget(false);
@@ -2615,6 +2616,7 @@ export class WebGLBackdrop {
     this.noiseTexture.dispose();
     this.fluidPlaceholder.dispose();
     this.perlinTexture.dispose();
+    this.workPerlinTexture.dispose();
     this.mediaPlanes.forEach((plane) => {
       plane.video?.pause();
       plane.texture?.dispose();
@@ -2767,7 +2769,7 @@ export class WebGLBackdrop {
       tMouseSim: { value: this.placeholder },
       tMouseSim2: { value: this.screenMouseSimulationTexture },
       tDisplacement: { value: this.displacementTarget.texture },
-      tPerlin: { value: this.perlinTexture },
+      tPerlin: { value: this.workPerlinTexture },
       uCoords: { value: new Vector2(1, 1) },
       uTime: { value: 0 },
     };
@@ -2858,7 +2860,7 @@ export class WebGLBackdrop {
       tMouseSim: { value: this.placeholder },
       tMouseSim2: { value: this.screenMouseSimulationTexture },
       tDisplacement: { value: this.displacementTarget.texture },
-      tPerlin: { value: this.perlinTexture },
+      tPerlin: { value: this.workPerlinTexture },
       uCoords: { value: new Vector2(1, 1) },
       uTime: { value: 0 },
     };
@@ -3245,10 +3247,20 @@ export class WebGLBackdrop {
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
     });
     this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
+      texture.wrapS = RepeatWrapping;
+      texture.wrapT = RepeatWrapping;
+      this.perlinTexture = texture;
       this.preCompositeMaterial.uniforms.tPerlin.value = texture;
+    });
+    this.loadTexture("/images/textures/perlin-1.webp", (texture) => {
+      texture.wrapS = ClampToEdgeWrapping;
+      texture.wrapT = ClampToEdgeWrapping;
+      this.workPerlinTexture = texture;
       this.workItems.forEach((item) => {
         item.material.uniforms.tPerlin.value = texture;
       });
+      if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = texture;
+      if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = texture;
     });
     this.loadTexture("/images/textures/floor-normal.webp", (texture) => {
       texture.colorSpace = NoColorSpace;
@@ -4630,6 +4642,7 @@ export class WebGLBackdrop {
       textures: {
         noise: { colorSpace: this.noiseTexture.colorSpace, type: this.noiseTexture.type, format: this.noiseTexture.format },
         perlin: { colorSpace: this.perlinTexture.colorSpace, type: this.perlinTexture.type, format: this.perlinTexture.format },
+        workPerlin: { colorSpace: this.workPerlinTexture.colorSpace, type: this.workPerlinTexture.type, format: this.workPerlinTexture.format },
         placeholder: { colorSpace: this.placeholder.colorSpace, type: this.placeholder.type, format: this.placeholder.format },
         fluidPlaceholder: { colorSpace: this.fluidPlaceholder.colorSpace, type: this.fluidPlaceholder.type, format: this.fluidPlaceholder.format },
       },
