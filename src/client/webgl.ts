@@ -2039,7 +2039,9 @@ export class WebGLBackdrop {
 
   prepareHomeVisualState(payload: ProjectPayload) {
     this.applyProjectLook(payload);
-    this.prepareHomeLighting(payload);
+    this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
+    this.spotLightParallax = true;
+    this.spotLight.map = this.homeSpotlightMap();
     this.keepWorkSceneHidden();
   }
 

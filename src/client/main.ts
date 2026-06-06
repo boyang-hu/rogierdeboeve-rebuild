@@ -652,7 +652,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     const onCtaClick = (event: MouseEvent) => {
       if (performance.now() - lastTouchSelect < 500) return;
       setDomActiveIndex(index);
-      getWebgl()?.beginProjectTransition?.(projectPayloadFromElement(card));
     };
     const onCtaMouseEnter = () => previewWork(true);
     const onCtaMouseLeave = () => previewWork(false);
@@ -1240,7 +1239,7 @@ function boot() {
     const routeUrl = normalizeRouteUrl(url);
     const routePromise = loadRoute(routeUrl);
     const leavePromise = new Promise((resolve) => window.setTimeout(resolve, transitionDelay(mode)));
-    if (mode === "home" && !document.documentElement.classList.contains("is-work-gallery-leaving")) {
+    if ((mode === "home" || mode === "project") && !document.documentElement.classList.contains("is-work-gallery-leaving")) {
       window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
     }
     animateCurrentViewOut();
