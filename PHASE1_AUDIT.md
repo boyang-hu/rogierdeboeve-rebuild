@@ -98,6 +98,20 @@ This board reflects the current active state after S1-46B through S1-50. Older r
 
 Finish Phase 1 before opening Phase 2 work. The next implementation batch should not be a broad rendering rewrite. It should either find source evidence for `OA/CA` transfer that can be safely applied, or produce a focused visual QA package for the user to decide whether any remaining differences are acceptable. The agent should not independently mark the remaining brightness/projection gaps as accepted.
 
+### S1-54 Source Non-Fix Audit
+
+This batch rechecked several plausible Phase 1 suspects against the mirrored source bundle and found no safe runtime change to promote. Normal rendering is unchanged.
+
+Source-checked non-fixes:
+
+- `p1.setLights()` creates `directionalLight2` but does not add it to the scene. The rebuild also creates the second directional light for setter/state parity but does not add it, matching source behavior.
+- Source environment shader `l1` really uses `skyMask2 = max(skyMask, step(0.6, skyMaskUv.y));`. The rebuild environment shader matches this line; it is not a typo to "fix".
+- Source has two similarly named shader constant groups: work `BA.SHADER_1_MIX_3 = 1`, environment `Qn.SHADER_1_MIX_3 = 1.5`, and sky composite `Zs.SHADER_MIX = 1.5`. The rebuild sky composite already uses `uShaderMix = 1.5`. The older audit row that described environment `SHADER_1_MIX_3` as `1` was incomplete and should not drive a code change.
+- Source renderer DPR can reach `2` through `Pe.dpr`, but `p1.resize()` still passes `Math.min(Pe.dpr, 1.5)` into the work scene. The rebuild's source DPR cap of `1.5` remains consistent with the current Phase 1 work-scene target sizing.
+- Source `Le.LOW_RES` starts false and is later set by GPU tier. The rebuild's `sourceLowRes()` is a local approximation and remains an open bridge-depth difference, but changing it without a source-equivalent GPU-tier implementation would be another unsupported heuristic.
+
+Decision: keep runtime unchanged and continue Phase 1 from source-backed transfer/render-manager evidence. Do not spend another implementation batch on these five suspects unless new source evidence appears.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

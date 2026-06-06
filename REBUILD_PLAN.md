@@ -205,6 +205,7 @@ Last updated: 2026-06-06
 | `current batch` | Home WebGL | Re-applied source `i1.setSize()` blur-resolution behavior after the lifecycle/camera-math port: reflection targets remain `0.75 * renderSize`, while the blur material now receives full render-size `uResolution`. Build, diff check, home capture, and full capture passed. The hard horizon is not solved, but this source value no longer causes the earlier white-floor regression in the accepted lifecycle context. |
 | `current batch` | Phase 1 Audit | Audited source `Lu.update()` pass clearing against the rebuild. Source render-manager passes rely on `autoClear=false` and do not explicitly call `renderer.clear()` before each work-scene render/bloom/composite target, but a narrow rebuild trial that removed those clears from only the work-scene path produced no visible improvement and added local complexity. The trial was reverted; any future no-clear alignment should come from porting the complete `Lu/kA` render-manager structure, not from ad hoc per-pass switches. |
 | `current batch` | Home WebGL | Aligned two source-proven `GA/VA/Xt` details: ordinary work-block spread now uses source `float spread = 3.` instead of the rebuild-only `5.0`, and `VA.tPerlin` now loads `/images/textures/perlin-1.webp` with ClampToEdge wrapping while the A1/C1 pre-composite keeps `/images/textures/perlin-2.webp` with Repeat wrapping. Build, diff check, and full source-vs-rebuild capture passed with no network/runtime failures across home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`. |
+| `current batch` | Phase 1 Audit | Rechecked likely-but-false runtime suspects against the source bundle: `directionalLight2` is intentionally not added to `p1.scene`, environment `skyMask2` uses `skyMask` in source, sky/environment mix constants are split across source constant groups, work-scene DPR remains capped at `1.5`, and `LOW_RES` still needs a source-equivalent GPU-tier bridge before changing runtime behavior. No rendering code changed. |
 
 ## Current Focus
 
@@ -221,6 +222,13 @@ Immediate source targets:
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, render target color-space assumptions, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain, routes active blend modes through source-shaped mode dispatchers, aligns proven material tone/blending flags, removes the rebuild-only `A1` final reveal mix, initializes source `C1.uBgColor` with the source linear-to-sRGB path, restores source `workScene.renderTargetComposite -> mainScene.C1.tWork` wiring, and aligns renderer construction with source `qw`. The main brightness gap improved, leaving the hard horizon/reflection boundary as the next output-flow issue. `workRawTarget.depthBuffer=true` is now confirmed source-correct for `kA/Lu`.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
 - `Se`: source-style visual-state setter ownership without non-source side effects; core setter state ownership plus project/home/about entry timing, about leave/destroy cleanup, and home route leave dispatch are now closer and pending browser route QA.
+
+Current non-fix notes:
+
+- Do not add `directionalLight2` to the home scene; source creates it but only adds `directionalLight`.
+- Do not rewrite the environment `skyMask2 = max(skyMask, ...)` line; source uses the same expression.
+- Do not change work-scene DPR solely because source `Pe.dpr` can be `2`; source `p1.resize()` clamps the work scene to `1.5`.
+- Do not change `sourceLowRes()` heuristics until there is a source-equivalent GPU-tier bridge.
 
 Latest verification:
 
