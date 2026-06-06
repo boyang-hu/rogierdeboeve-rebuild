@@ -20,6 +20,13 @@ const port = Number(process.env.CDP_PORT || 9278);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.PROBE_WAIT || 5200);
 
+function withProbeParams(url) {
+  const parsed = new URL(url);
+  parsed.searchParams.set("skip-preloader", "");
+  parsed.searchParams.set("debug-output-probe", "1");
+  return parsed.toString();
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -101,7 +108,7 @@ async function runProbe() {
     screenWidth: 1440,
     screenHeight: 900,
   });
-  await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&debug-output-probe=1` });
+  await send(ws, "Page.navigate", { url: withProbeParams(rebuildUrl) });
   await wait(waitAfter);
   const result = await send(ws, "Runtime.evaluate", {
     expression: `JSON.stringify({

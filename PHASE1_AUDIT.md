@@ -310,6 +310,33 @@ Verification:
 
 Decision: keep the environment material flag correction as source parity, but do not treat it as a visual fix. The next Phase 1 batch should move away from broad shader formula checks and toward exact render-target/color-transfer interpretation or generated shader diffing for `VA`/environment under the local Three version.
 
+### S1-63 Main `I1/ag` Fluid Alignment
+
+This batch restored the source main-render-manager fluid setting and added a minimal source-shaped `ag` fluid pass for the main `A1/C1` pre-composite input. Source `I1.initSettings()` enables `fluid` on high GPU tier with `{ mouseForce: 5, cursorSize: 6, delta: .125, poissonIterations: 1, bounce: false }`; the rebuild had the same constants but left the main fluid disabled.
+
+Source-backed runtime changes:
+
+- `SOURCE_MAIN_RENDER_SETTINGS.fluid.enabled` is now true for the normal rebuild path.
+- Added a dedicated main fluid ping-pong pass with advection, additive force, divergence, Poisson pressure solve, and pressure subtraction stages.
+- Fluid targets use float render targets with clamp/linear sampling.
+- `resizeMainFluidPass()` follows source sizing: half floor-power-of-two render size, divided by 3, then `ag.resolution = .005`. At 1440x900 this intentionally rounds to a `1x1` simulation target.
+- `A1/C1` pre-composite now samples the main fluid texture instead of the placeholder when fluid strength is active.
+- `?debug-main-fluid=off` disables the pass for attribution without changing normal production settings.
+- `window.__rogierOutputProbe.mainFluid` now reports enabled/debug state, fbo size, cell scale, bounds, pointer state, target metadata, and target stats.
+- `scripts/probe-output-color.mjs` now merges probe query parameters into `REBUILD_URL` instead of appending a second malformed query string, so debug variants such as `?debug-main-fluid=off` are measurable.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Default output probe at `/tmp/rogier-main-fluid-probe-default-2` passed with no network failures, runtime exceptions, or WebGL console errors. It reported `mainFluid.enabled=true`, `fboSize=[170.6667,85.3333]`, `cellScale=[0.005859375,0.01171875]`, `FloatType`, and target size `1x1`.
+- Fluid-off output probe at `/tmp/rogier-main-fluid-probe-off-2` passed with no failures/errors and correctly reported `mainFluid.enabled=false`.
+- Brightness attribution default at `/tmp/rogier-main-fluid-attribution` passed with errors `0`; default luma stayed in the current range (`workComposite=0.2404`, `preComposite=0.3135`, `bloom=0.0287`, `thumbComposite=0.1831`).
+- Home source-vs-rebuild capture at `/tmp/rogier-main-fluid-home` passed, and band analysis confirmed the existing center/horizon brightness gap remains open rather than solved by main fluid.
+- Full capture at `/tmp/rogier-main-fluid-full` passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`; all rebuild pages reached full-canvas states with no failed requests or runtime exceptions.
+
+Decision: keep this as a source-correct render-manager input alignment. It closes the explicit `I1` fluid-enabled divergence but does not close Phase 1 visual parity. The hard horizon/fog-bed mismatch, cube/thumb brightness/projection gap, and final transfer/color interpretation remain active blockers.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

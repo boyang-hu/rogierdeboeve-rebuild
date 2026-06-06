@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  AdditiveBlending,
   BackSide,
   Box3,
   BoxGeometry,
@@ -9,6 +10,7 @@ import {
   DataTexture,
   DirectionalLight,
   Fog,
+  FloatType,
   Group,
   IcosahedronGeometry,
   InstancedBufferAttribute,
@@ -177,6 +179,32 @@ type MediaPlane = {
   texture?: Texture;
 };
 
+type MainFluidPass = {
+  advectionMaterial: ShaderMaterial;
+  advectionScene: Scene;
+  forceMaterial: ShaderMaterial;
+  forceScene: Scene;
+  divergenceMaterial: ShaderMaterial;
+  divergenceScene: Scene;
+  poissonMaterial: ShaderMaterial;
+  poissonScene: Scene;
+  pressureMaterial: ShaderMaterial;
+  pressureScene: Scene;
+  targets: {
+    main: WebGLRenderTarget;
+    velocity: WebGLRenderTarget;
+    divergence: WebGLRenderTarget;
+    pressureA: WebGLRenderTarget;
+    pressureB: WebGLRenderTarget;
+  };
+  cellScale: Vector2;
+  fboSize: Vector2;
+  bounds: Vector2;
+  pointerOld: Vector2;
+  pointer: Vector2;
+  enabled: boolean;
+};
+
 const BREAKPOINT_LG = 1000;
 const BREAKPOINT_MD = 800;
 const SOURCE_MAX_DPR = 1.5;
@@ -239,7 +267,7 @@ const SOURCE_MAIN_RENDER_SETTINGS: SourceRenderSettings = {
   luminosity: { threshold: 0.1, smoothing: 1, enabled: false },
   bloom: { strength: 0.05, radius: 0.01, enabled: false },
   blur: { scale: 1, strength: 8, enabled: false },
-  fluid: { enabled: false, mouseForce: 5, cursorSize: 6, delta: 0.125, poissonIterations: 1, bounce: false },
+  fluid: { enabled: true, mouseForce: 5, cursorSize: 6, delta: 0.125, poissonIterations: 1, bounce: false },
 };
 
 function sourceBloomFactors(strength: number, radius: number) {
@@ -1476,6 +1504,140 @@ void main() {
 }
 `;
 
+const fluidBoundedVertex = `
+precision mediump float;
+
+uniform vec2 bounds;
+
+varying vec2 vUv;
+
+void main() {
+  vec3 pos = position;
+  vec2 scale = 1.0 - bounds * 2.0;
+  pos.xy *= scale;
+  vUv = vec2(0.5) + pos.xy * 0.5;
+  gl_Position = vec4(pos, 1.0);
+}
+`;
+
+const fluidForceVertex = `
+precision mediump float;
+
+uniform vec2 center;
+uniform vec2 scale;
+uniform vec2 px;
+
+varying vec2 vUv;
+
+void main() {
+  vec2 pos = position.xy * scale * 2.0 * px + center;
+  vUv = uv;
+  gl_Position = vec4(pos, 0.0, 1.0);
+}
+`;
+
+const fluidAdvectionFragment = `
+precision mediump float;
+
+uniform sampler2D velocity;
+uniform float dt;
+uniform vec2 fboSize;
+
+varying vec2 vUv;
+
+void main() {
+  vec2 ratio = max(fboSize.x, fboSize.y) / fboSize;
+  vec2 spotNew = vUv;
+  vec2 velOld = texture2D(velocity, vUv).xy;
+  vec2 spotOld = spotNew - velOld * dt * ratio;
+  vec2 velNew1 = texture2D(velocity, spotOld).xy;
+  vec2 spotNew2 = spotOld + velNew1 * dt * ratio;
+  vec2 error = spotNew2 - spotNew;
+  vec2 spotNew3 = spotNew - error / 2.0;
+  vec2 vel2 = texture2D(velocity, spotNew3).xy;
+  vec2 spotOld2 = spotNew3 - vel2 * dt * ratio;
+  vec2 newVel2 = texture2D(velocity, spotOld2).xy;
+  gl_FragColor = vec4(newVel2, 0.0, 0.0);
+}
+`;
+
+const fluidForceFragment = `
+precision mediump float;
+
+uniform vec2 force;
+
+varying vec2 vUv;
+
+void main() {
+  vec2 circle = (vUv - 0.5) * 2.0;
+  float d = 1.0 - min(length(circle), 1.0);
+  d *= d;
+  gl_FragColor = vec4(force * d, 0.0, 1.0);
+}
+`;
+
+const fluidDivergenceFragment = `
+precision mediump float;
+
+uniform sampler2D velocity;
+uniform float dt;
+uniform vec2 px;
+
+varying vec2 vUv;
+
+void main() {
+  float x0 = texture2D(velocity, vUv - vec2(px.x, 0.0)).x;
+  float x1 = texture2D(velocity, vUv + vec2(px.x, 0.0)).x;
+  float y0 = texture2D(velocity, vUv - vec2(0.0, px.y)).y;
+  float y1 = texture2D(velocity, vUv + vec2(0.0, px.y)).y;
+  float divergence = (x1 - x0 + y1 - y0) / 2.0;
+  gl_FragColor = vec4(divergence / dt);
+}
+`;
+
+const fluidPoissonFragment = `
+precision mediump float;
+
+uniform sampler2D pressure;
+uniform sampler2D divergence;
+uniform vec2 px;
+
+varying vec2 vUv;
+
+void main() {
+  float p0 = texture2D(pressure, vUv + vec2(px.x * 2.0, 0.0)).r;
+  float p1 = texture2D(pressure, vUv - vec2(px.x * 2.0, 0.0)).r;
+  float p2 = texture2D(pressure, vUv + vec2(0.0, px.y * 2.0)).r;
+  float p3 = texture2D(pressure, vUv - vec2(0.0, px.y * 2.0)).r;
+  float div = texture2D(divergence, vUv).r;
+  float newP = (p0 + p1 + p2 + p3) / 4.0 - div;
+  gl_FragColor = vec4(newP);
+}
+`;
+
+const fluidPressureFragment = `
+precision mediump float;
+
+uniform sampler2D pressure;
+uniform sampler2D velocity;
+uniform float dt;
+uniform vec2 px;
+
+varying vec2 vUv;
+
+void main() {
+  float step = 1.0;
+  float p0 = texture2D(pressure, vUv + vec2(px.x * step, 0.0)).r;
+  float p1 = texture2D(pressure, vUv - vec2(px.x * step, 0.0)).r;
+  float p2 = texture2D(pressure, vUv + vec2(0.0, px.y * step)).r;
+  float p3 = texture2D(pressure, vUv - vec2(0.0, px.y * step)).r;
+  vec2 v = texture2D(velocity, vUv).xy;
+  vec2 gradP = vec2(p0 - p1, p2 - p3) * 0.5;
+  v = v - dt * gradP;
+  gl_FragColor = vec4(v, 0.0, 1.0);
+}
+`;
+
 const backgroundFragment = `
 precision highp float;
 
@@ -1768,6 +1930,16 @@ function makeSourceRenderTarget(depthBuffer = false) {
   return new WebGLRenderTarget(1, 1, { depthBuffer, stencilBuffer: false });
 }
 
+function makeFluidRenderTarget() {
+  const target = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false, type: FloatType });
+  target.texture.generateMipmaps = false;
+  target.texture.wrapS = ClampToEdgeWrapping;
+  target.texture.wrapT = ClampToEdgeWrapping;
+  target.texture.minFilter = LinearFilter;
+  target.texture.magFilter = LinearFilter;
+  return target;
+}
+
 function renderTargetStats(renderer: WebGLRenderer, target: WebGLRenderTarget, sampleSize = 64): RenderTargetStats {
   const width = Math.max(1, target.width);
   const height = Math.max(1, target.height);
@@ -2020,6 +2192,7 @@ export class WebGLBackdrop {
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
   private screenMouseSimulationIndex = 0;
+  private mainFluidPass: MainFluidPass;
   private thumbCompositeMaterial: ShaderMaterial;
   private thumbCompositeScene = new Scene();
   private characterMaterial: ShaderMaterial;
@@ -2108,6 +2281,7 @@ export class WebGLBackdrop {
   private debugCompositeLightenMode =
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-composite-lighten") === "off" ? 1 : 0;
   private debugRendererOutput = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-renderer-output") : null;
+  private debugMainFluid = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-main-fluid") : null;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
   private fluidStrength = 0.5;
@@ -2230,6 +2404,7 @@ export class WebGLBackdrop {
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
+    this.mainFluidPass = this.createMainFluidPass();
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
     this.characterMaterial = this.createCharacterMaterial();
@@ -2705,6 +2880,7 @@ export class WebGLBackdrop {
     this.displacementMaterial.dispose();
     this.screenMouseSimulationTargets.forEach((target) => target.dispose());
     this.screenMouseSimulationMaterial.dispose();
+    this.disposeMainFluidPass();
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
     this.disposeCharacterModel();
@@ -3389,6 +3565,120 @@ export class WebGLBackdrop {
       scene,
       targets: Array.from({ length: 2 }, makeSimulationTarget),
     };
+  }
+
+  private createMainFluidPass(): MainFluidPass {
+    const settings = SOURCE_MAIN_RENDER_SETTINGS.fluid;
+    const cellScale = new Vector2();
+    const fboSize = new Vector2(1, 1);
+    const bounds = new Vector2();
+    const makeScene = (material: ShaderMaterial) => {
+      const scene = new Scene();
+      scene.add(new Mesh(new PlaneGeometry(2, 2), material));
+      return scene;
+    };
+    const advectionMaterial = new ShaderMaterial({
+      blending: NormalBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        bounds: { value: cellScale },
+        fboSize: { value: fboSize },
+        velocity: { value: this.fluidPlaceholder },
+        dt: { value: settings.delta },
+      },
+      vertexShader: fluidBoundedVertex,
+      fragmentShader: fluidAdvectionFragment,
+    });
+    const forceMaterial = new ShaderMaterial({
+      blending: AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+      transparent: true,
+      uniforms: {
+        center: { value: new Vector2() },
+        scale: { value: new Vector2(settings.cursorSize, settings.cursorSize) },
+        px: { value: cellScale },
+        force: { value: new Vector2() },
+      },
+      vertexShader: fluidForceVertex,
+      fragmentShader: fluidForceFragment,
+    });
+    const divergenceMaterial = new ShaderMaterial({
+      blending: NormalBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        bounds: { value: bounds },
+        velocity: { value: this.fluidPlaceholder },
+        px: { value: cellScale },
+        dt: { value: settings.delta },
+      },
+      vertexShader: fluidBoundedVertex,
+      fragmentShader: fluidDivergenceFragment,
+    });
+    const poissonMaterial = new ShaderMaterial({
+      blending: NormalBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        bounds: { value: bounds },
+        pressure: { value: this.fluidPlaceholder },
+        divergence: { value: this.fluidPlaceholder },
+        px: { value: cellScale },
+      },
+      vertexShader: fluidBoundedVertex,
+      fragmentShader: fluidPoissonFragment,
+    });
+    const pressureMaterial = new ShaderMaterial({
+      blending: NormalBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        bounds: { value: bounds },
+        pressure: { value: this.fluidPlaceholder },
+        velocity: { value: this.fluidPlaceholder },
+        px: { value: cellScale },
+        dt: { value: settings.delta },
+      },
+      vertexShader: fluidBoundedVertex,
+      fragmentShader: fluidPressureFragment,
+    });
+    return {
+      advectionMaterial,
+      advectionScene: makeScene(advectionMaterial),
+      forceMaterial,
+      forceScene: makeScene(forceMaterial),
+      divergenceMaterial,
+      divergenceScene: makeScene(divergenceMaterial),
+      poissonMaterial,
+      poissonScene: makeScene(poissonMaterial),
+      pressureMaterial,
+      pressureScene: makeScene(pressureMaterial),
+      targets: {
+        main: makeFluidRenderTarget(),
+        velocity: makeFluidRenderTarget(),
+        divergence: makeFluidRenderTarget(),
+        pressureA: makeFluidRenderTarget(),
+        pressureB: makeFluidRenderTarget(),
+      },
+      cellScale,
+      fboSize,
+      bounds,
+      pointerOld: new Vector2(),
+      pointer: new Vector2(),
+      enabled: settings.enabled && this.debugMainFluid !== "off",
+    };
+  }
+
+  private disposeMainFluidPass() {
+    const pass = this.mainFluidPass;
+    pass.advectionMaterial.dispose();
+    pass.forceMaterial.dispose();
+    pass.divergenceMaterial.dispose();
+    pass.poissonMaterial.dispose();
+    pass.pressureMaterial.dispose();
+    Object.values(pass.targets).forEach((target) => target.dispose());
   }
 
   private createThumbCompositeMaterial() {
@@ -4096,6 +4386,8 @@ export class WebGLBackdrop {
     this.backgroundTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
     this.mediaTarget.setSize(renderWidth, renderHeight);
+    const halfMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 2));
+    const halfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
     const quarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 4));
     const quarterMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 4));
     this.preBloomBrightTarget.setSize(quarterMipWidth, quarterMipHeight);
@@ -4111,6 +4403,7 @@ export class WebGLBackdrop {
       this.mainBloomTarget.setSize(quarterMipWidth, quarterMipHeight);
       this.resizeBloomMipChain(this.mainBloomHorizontalTargets, this.mainBloomVerticalTargets, quarterMipWidth, quarterMipHeight);
     }
+    this.resizeMainFluidPass(halfMipWidth / 3, halfMipHeight / 3);
     const skySize = Math.max(1, Math.round(height * 0.75));
     this.skyRawTarget.setSize(skySize, skySize);
     this.skyCompositeTarget.setSize(skySize, skySize);
@@ -4413,6 +4706,69 @@ export class WebGLBackdrop {
     });
   }
 
+  private resizeMainFluidPass(width: number, height: number) {
+    const pass = this.mainFluidPass;
+    if (!pass.enabled) return;
+    const fluidWidth = Math.max(1, Math.round(width * 0.005));
+    const fluidHeight = Math.max(1, Math.round(height * 0.005));
+    pass.fboSize.set(width, height);
+    pass.cellScale.set(1 / Math.max(1, width), 1 / Math.max(1, height));
+    Object.values(pass.targets).forEach((target) => target.setSize(fluidWidth, fluidHeight));
+  }
+
+  private updateMainFluidPass() {
+    const pass = this.mainFluidPass;
+    if (!pass.enabled) return this.fluidPlaceholder;
+    const settings = SOURCE_MAIN_RENDER_SETTINGS.fluid;
+    const pointer = pass.pointer;
+    pointer.set(
+      MathUtils.clamp((this.pointerPixels.x / Math.max(1, window.innerWidth)) * 2 - 1, -1, 1),
+      MathUtils.clamp(-(this.pointerPixels.y / Math.max(1, window.innerHeight)) * 2 + 1, -1, 1),
+    );
+    const diff = pointer.clone().sub(pass.pointerOld);
+    pass.pointerOld.copy(pointer);
+    pass.bounds.copy(settings.bounce ? new Vector2(0, 0) : pass.cellScale);
+
+    pass.advectionMaterial.uniforms.velocity.value = pass.targets.main.texture;
+    pass.advectionMaterial.uniforms.dt.value = settings.delta;
+    this.renderer.setRenderTarget(pass.targets.velocity);
+    this.renderer.render(pass.advectionScene, this.backgroundCamera);
+
+    const cursorX = settings.cursorSize * pass.cellScale.x;
+    const cursorY = settings.cursorSize * pass.cellScale.y;
+    const centerX = MathUtils.clamp(pointer.x, -1 + cursorX + pass.cellScale.x * 2, 1 - cursorX - pass.cellScale.x * 2);
+    const centerY = MathUtils.clamp(pointer.y, -1 + cursorY + pass.cellScale.y * 2, 1 - cursorY - pass.cellScale.y * 2);
+    pass.forceMaterial.uniforms.force.value.set((diff.x / 2) * settings.mouseForce, (diff.y / 2) * settings.mouseForce);
+    pass.forceMaterial.uniforms.center.value.set(centerX, centerY);
+    pass.forceMaterial.uniforms.scale.value.set(settings.cursorSize, settings.cursorSize);
+    this.renderer.setRenderTarget(pass.targets.velocity);
+    this.renderer.render(pass.forceScene, this.backgroundCamera);
+
+    pass.divergenceMaterial.uniforms.velocity.value = pass.targets.velocity.texture;
+    pass.divergenceMaterial.uniforms.dt.value = settings.delta;
+    this.renderer.setRenderTarget(pass.targets.divergence);
+    this.renderer.render(pass.divergenceScene, this.backgroundCamera);
+
+    let pressure = pass.targets.pressureA;
+    let pressureNext = pass.targets.pressureB;
+    for (let index = 0; index < settings.poissonIterations; index++) {
+      pressure = index % 2 === 0 ? pass.targets.pressureA : pass.targets.pressureB;
+      pressureNext = index % 2 === 0 ? pass.targets.pressureB : pass.targets.pressureA;
+      pass.poissonMaterial.uniforms.pressure.value = pressure.texture;
+      pass.poissonMaterial.uniforms.divergence.value = pass.targets.divergence.texture;
+      this.renderer.setRenderTarget(pressureNext);
+      this.renderer.render(pass.poissonScene, this.backgroundCamera);
+    }
+
+    pass.pressureMaterial.uniforms.pressure.value = pressureNext.texture;
+    pass.pressureMaterial.uniforms.velocity.value = pass.targets.velocity.texture;
+    pass.pressureMaterial.uniforms.dt.value = settings.delta;
+    this.renderer.setRenderTarget(pass.targets.main);
+    this.renderer.render(pass.pressureScene, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
+    return pass.targets.main.texture;
+  }
+
   private updateSpotLightBasis() {
     const direction = this.spotLightTarget.clone().sub(this.spotLightPosition).normalize();
     this.spotLightRight.crossVectors(direction, new Vector3(0, 1, 0)).normalize();
@@ -4610,6 +4966,7 @@ export class WebGLBackdrop {
     const darkenValue = this.compositeMaterial.uniforms.uDarken.value as number;
     const spotlightProjection = this.spotlightProjectionProbe();
     const mouseSimulation = this.mouseSimulationProbe(mouseSimProbe);
+    const mainFluid = this.mainFluidProbe();
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -4725,6 +5082,27 @@ export class WebGLBackdrop {
       },
       spotlightProjection,
       mouseSimulation,
+      mainFluid,
+    };
+  }
+
+  private mainFluidProbe() {
+    const pass = this.mainFluidPass;
+    return {
+      enabled: pass.enabled,
+      debug: this.debugMainFluid,
+      fboSize: pass.fboSize.toArray(),
+      cellScale: pass.cellScale.toArray(),
+      bounds: pass.bounds.toArray(),
+      pointer: pass.pointer.toArray(),
+      pointerOld: pass.pointerOld.toArray(),
+      targets: {
+        main: renderTargetProbe(this.renderer, pass.targets.main),
+        velocity: renderTargetProbe(this.renderer, pass.targets.velocity),
+        divergence: renderTargetProbe(this.renderer, pass.targets.divergence),
+        pressureA: renderTargetProbe(this.renderer, pass.targets.pressureA),
+        pressureB: renderTargetProbe(this.renderer, pass.targets.pressureB),
+      },
     };
   }
 
@@ -4984,6 +5362,8 @@ export class WebGLBackdrop {
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
+    const mainFluidTexture = this.fluidStrength > 0 ? this.updateMainFluidPass() : this.mainFluidPass.enabled ? this.mainFluidPass.targets.main.texture : this.fluidPlaceholder;
+    this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
     this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomTarget.texture;
     this.preCompositeMaterial.uniforms.boolBloom.value = SOURCE_MAIN_RENDER_SETTINGS.bloom.enabled;
     this.preCompositeMaterial.uniforms.boolFluid.value = SOURCE_MAIN_RENDER_SETTINGS.fluid.enabled;
@@ -5023,7 +5403,7 @@ export class WebGLBackdrop {
       this.renderer.clear();
       if (isProjectView && hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
       this.preCompositeMaterial.uniforms.tMedia.value = isProjectView && hasMedia ? this.mediaTarget.texture : this.fluidPlaceholder;
-      this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
+      this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
       this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
       if (SOURCE_MAIN_RENDER_SETTINGS.bloom.enabled) {
         this.renderMainBloomPass(preCompositeWorkTarget);
