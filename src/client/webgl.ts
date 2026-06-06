@@ -166,6 +166,7 @@ type MediaPlane = {
   offset: Vector2;
   loaded: boolean;
   parallaxTop: boolean;
+  observer?: IntersectionObserver;
   video?: HTMLVideoElement;
   texture?: Texture;
 };
@@ -2029,15 +2030,15 @@ export class WebGLBackdrop {
 
   setProject(payload: ProjectPayload) {
     this.applyProjectLook(payload);
-    this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
-    this.setDirectionalLightIntensity(1.5);
-    this.setDirectionalLight2Intensity(1);
-    this.setEnvRotation(0, 0);
-    this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
-    this.setRevealSpread(0);
-    this.resetThumbOffsetY();
+    this.prepareHomeLighting(payload);
 
     if (payload.slug) this.setActiveSlug(payload.slug);
+  }
+
+  prepareHomeVisualState(payload: ProjectPayload) {
+    this.applyProjectLook(payload);
+    this.prepareHomeLighting(payload);
+    this.keepWorkSceneHidden();
   }
 
   private applyProjectLook(payload: ProjectPayload) {
@@ -2056,6 +2057,18 @@ export class WebGLBackdrop {
     this.setThumbSaturation(numeric(payload.thumbSaturation, 1));
     this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
+  }
+
+  private prepareHomeLighting(payload: ProjectPayload) {
+    this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
+    this.setDirectionalLightIntensity(1.5);
+    this.setDirectionalLight2Intensity(1);
+    this.setEnvRotation(0, 0);
+    this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
+    this.setRevealSpread(0);
+    this.resetThumbOffsetY();
+    this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
+    this.initHomeSpotlight();
   }
 
   beginProjectTransition(payload: ProjectPayload) {
@@ -2190,6 +2203,7 @@ export class WebGLBackdrop {
     const ambientIntensity = numeric(payload.ambient, 0.5);
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
     this.activeSlug = payload.slug ?? this.activeSlug;
+    this.refreshMedia();
     this.keepWorkSceneHidden();
     this.setMainColor(payload.color);
     this.setMediaOpacity(0, 0, "none", 0);
@@ -2335,8 +2349,20 @@ export class WebGLBackdrop {
   }
 
   refreshMedia() {
+    const stalePlanes = this.mediaPlanes.filter((plane) => !plane.track.isConnected);
+    stalePlanes.forEach((plane) => this.destroyMediaPlane(plane));
+    this.mediaPlanes = this.mediaPlanes.filter((plane) => plane.track.isConnected);
     this.createMediaPlanes();
     this.resize();
+  }
+
+  private destroyMediaPlane(plane: MediaPlane) {
+    plane.observer?.disconnect();
+    plane.video?.pause();
+    plane.texture?.dispose();
+    plane.mesh.geometry.dispose();
+    plane.material.dispose();
+    this.mediaScene.remove(plane.mesh);
   }
 
   destroy() {
@@ -3280,7 +3306,7 @@ export class WebGLBackdrop {
           if (entry.target !== plane.track) return;
           if (entry.isIntersecting) {
             this.loadMediaPlane(plane);
-            void plane.video?.play();
+            this.playMediaVideo(plane);
           } else {
             plane.video?.pause();
           }
@@ -3289,6 +3315,7 @@ export class WebGLBackdrop {
       { rootMargin: "20% 0px", threshold: 0 },
     );
     observer.observe(plane.track);
+    plane.observer = observer;
   }
 
   private loadMediaPlane(plane: MediaPlane) {
@@ -3305,19 +3332,24 @@ export class WebGLBackdrop {
       });
       plane.video = video;
       video.addEventListener("loadedmetadata", () => {
+        if (!this.mediaPlanes.includes(plane) || !plane.track.isConnected) return;
         plane.material.uniforms.uMapSize.value.set(video.videoWidth || 1600, video.videoHeight || 1200);
         const texture = new VideoTexture(video);
         setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
         plane.texture = texture;
         plane.material.uniforms.tMap.value = texture;
         this.showMediaPlane(plane);
-        void video.play();
+        this.playMediaVideo(plane);
       });
       video.load();
       return;
     }
 
     this.loader.load(plane.src, (texture) => {
+      if (!this.mediaPlanes.includes(plane) || !plane.track.isConnected) {
+        texture.dispose();
+        return;
+      }
       setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
       const image = texture.image as HTMLImageElement | undefined;
       if (image?.naturalWidth && image?.naturalHeight) {
@@ -3332,6 +3364,11 @@ export class WebGLBackdrop {
   private showMediaPlane(plane: MediaPlane) {
     this.updateMediaPlanePositions();
     gsap.fromTo(plane.material.uniforms.uReveal, { value: 0 }, { value: 1, duration: 0.5, ease: "none" });
+  }
+
+  private playMediaVideo(plane: MediaPlane) {
+    if (!plane.video || !plane.track.isConnected) return;
+    plane.video.play().catch(() => {});
   }
 
   private setProjectBlockReveal(active: WorkItem) {

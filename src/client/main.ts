@@ -26,6 +26,7 @@ type WebGLLike = {
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number, delta?: number): void;
   restoreGalleryState?(progress: number, sceneRotation?: number): void;
+  prepareHomeVisualState?(payload: ReturnType<typeof projectPayloadFromElement>): void;
   enterWorkGallery?(activeSlug?: string): void;
   setCameraControllerSettings?(lookAt?: { x: number; y: number; z: number }, targetXY?: { x: number; y: number }, rotateAngle?: number): void;
   initHomeSpotlight?(): void;
@@ -901,11 +902,15 @@ function initProjectMedia() {
   const videos = document.querySelectorAll<HTMLVideoElement>(".media-block video");
   if (!videos.length) return () => {};
 
+  const playVideo = (video: HTMLVideoElement) => {
+    video.play().catch(() => {});
+  };
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const video = entry.target as HTMLVideoElement;
       if (entry.isIntersecting) {
-        void video.play();
+        playVideo(video);
       } else {
         video.pause();
       }
@@ -1180,9 +1185,9 @@ function boot() {
     const payload = projectPayloadFromElement(active ?? project);
     applyActiveColor(payload.color);
     if (document.querySelector("[data-view='home']")) {
-      webgl?.setProject(payload);
-      webgl?.setCameraControllerSettings?.({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
-      webgl?.initHomeSpotlight?.();
+      const routeSwapping = document.documentElement.classList.contains("is-route-swapping");
+      if (routeSwapping) webgl?.prepareHomeVisualState?.(payload);
+      else webgl?.setProject(payload);
       onPageEntered(() => {
         webgl?.showScene?.();
         homeGalleryEntered = true;
@@ -1196,6 +1201,7 @@ function boot() {
       onPageEntered(() => webgl?.animateAboutVisualIn?.(), callbacks);
       callbacks.push(() => webgl?.destroyAboutVisualState?.());
     } else if (project) {
+      webgl?.refreshMedia?.();
       webgl?.enterProjectVisualState?.(payload);
       onPageEntered(() => webgl?.mediaAnimateIn?.(), callbacks);
     }
