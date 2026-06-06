@@ -748,6 +748,10 @@ body.has-entered .ui-sound-toggle {
   transition: opacity 0.55s linear, visibility 0.55s linear;
 }
 
+html.has-session-entered .preloader {
+  display: none;
+}
+
 .preloader.is-hidden {
   opacity: 0;
   visibility: hidden;

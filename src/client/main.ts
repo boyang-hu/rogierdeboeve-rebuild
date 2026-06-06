@@ -160,6 +160,7 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
 
 function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
   if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
+  persistEnteredSession();
   window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
   window.setTimeout(() => {
     window.location.href = url;
@@ -188,6 +189,11 @@ function setSessionValue(key: string, value: string) {
 
 function persistSoundMode(enabled: boolean) {
   setSessionValue("rd:sound-enabled", String(enabled));
+}
+
+function persistEnteredSession() {
+  setSessionValue("rd:has-entered", "true");
+  document.documentElement.classList.add("has-session-entered");
 }
 
 function formatButton(button: HTMLElement) {
@@ -225,7 +231,7 @@ function initPreloader() {
   const hasEntered = () => getSessionValue("rd:has-entered") === "true";
   const getSessionSoundMode = () => getSessionValue("rd:sound-enabled") !== "false";
   const setSessionState = (soundEnabled: boolean) => {
-    setSessionValue("rd:has-entered", "true");
+    persistEnteredSession();
     setSessionValue("rd:sound-enabled", String(soundEnabled));
   };
   const skipPreloader = new URLSearchParams(window.location.search).has("skip-preloader") || hasEntered();

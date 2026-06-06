@@ -16,7 +16,14 @@ const pageClass = pathname === "/" ? "is-home" : pathname.startsWith("/about") ?
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <script is:inline>document.documentElement.classList.add("js");</script>
+    <script is:inline>
+      document.documentElement.classList.add("js");
+      try {
+        if (window.sessionStorage.getItem("rd:has-entered") === "true") {
+          document.documentElement.classList.add("has-session-entered");
+        }
+      } catch {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -32,6 +39,7 @@ const pageClass = pathname === "/" ? "is-home" : pathname.startsWith("/about") ?
     <script is:inline>
       try {
         if (window.sessionStorage.getItem("rd:has-entered") === "true") {
+          document.documentElement.classList.add("has-session-entered");
           document.body.classList.remove("is-preloading");
           document.body.classList.add("has-entered");
         }
