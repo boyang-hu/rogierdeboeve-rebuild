@@ -2941,3 +2941,33 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-floor-env-full`.
 
 Decision: keep the diagnostics and attribution results. No production visual behavior changed, but Phase 1 remains open. The evidence narrows the next batch to source draw-state/render-order parity for floor/environment/reflection instead of unsupported color or gamma tuning.
+
+### S1-28 `a1/i1` Floor Group and Reflector Ownership
+
+This batch promoted one source-backed structural difference from the S1-27 attribution results.
+
+Source evidence:
+
+- Source `a1.init()` creates a floor group, creates the floor mesh as a child, and adds the `i1` reflector object as a child of the floor mesh.
+- Source floor placement is owned by the group: `p1.floor.position.y = -1.65`; the floor mesh itself keeps local position `0` and only rotates `x = -Math.PI / 2`.
+- Source `i1.update()` reads reflector world position, rotation, texture matrix, and oblique clipping plane from `this.matrixWorld`, i.e. the reflector object itself, not directly from the floor mesh.
+- Source `onBeforeRender` hides the `a1` group while the reflector renders, then restores it.
+
+Runtime changes:
+
+- Added `floorGroup` and `floorReflector` so the rebuild now follows `a1 group -> floor mesh -> reflector object`.
+- Moved the `-1.65` y offset from the floor mesh to `floorGroup`.
+- Changed floor reflection matrix/clip-plane ownership to read from `floorReflector.matrixWorld`.
+- Changed floor reflection `onBeforeRender` and `debug-floor=off` visibility gating to hide/restore the floor group, matching source ownership.
+- Added floor group/plane positions to the output probe.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Home output probe passed and confirms `floor.groupPosition=[0,-1.65,0]` and `floor.planePosition=[0,0,0]`: `/tmp/rd-floor-group-probe`.
+- Brightness attribution passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-floor-group-attribution`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-floor-group-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-floor-group-full`.
+
+Decision: keep this source hierarchy correction. It removes a real `a1/i1` ownership drift and keeps the S1-27 attribution stable, but Phase 1 remains open because the remaining hard horizon/fog-bed still needs source-backed draw-state/render-order or target-content evidence.

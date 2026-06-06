@@ -2264,6 +2264,8 @@ export class WebGLBackdrop {
   private characterFallbackMesh: Mesh<PlaneGeometry, ShaderMaterial>;
   private characterTarget = makeSourceRenderTarget(false);
   private floorMaterial: ShaderMaterial;
+  private floorGroup = new Group();
+  private floorReflector = new Object3D();
   private floorPlane: Mesh<PlaneGeometry, ShaderMaterial>;
   private environmentMaterial: EnvironmentMaterial;
   private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
@@ -2498,21 +2500,23 @@ export class WebGLBackdrop {
     }
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
-    this.floorPlane.position.y = -1.65;
     this.floorPlane.rotation.x = -Math.PI / 2;
+    this.floorPlane.add(this.floorReflector);
     this.floorPlane.onBeforeRender = () => {
       if (!this.sceneWrap.visible) return;
       if (this.debugFloorReflection === "off") return;
-      this.floorPlane.visible = false;
+      this.floorGroup.visible = false;
       this.renderFloorReflection();
-      this.floorPlane.visible = true;
+      this.floorGroup.visible = true;
     };
+    this.floorGroup.position.y = -1.65;
+    this.floorGroup.add(this.floorPlane);
     this.environmentMaterial = this.createEnvironmentMaterial();
     this.environmentPlane = new Mesh(new IcosahedronGeometry(300, 10), this.environmentMaterial);
     this.environmentPlane.position.y = -12.65;
     this.homeScene.add(this.sceneWrap);
     this.sceneWrap.add(this.blocksWrap);
-    this.sceneWrap.add(this.floorPlane);
+    this.sceneWrap.add(this.floorGroup);
     this.sceneWrap.add(this.environmentPlane);
     this.thumbScene.background = sourceLinearToSrgbColor("#222222");
     this.thumbScene.add(this.thumbWrap);
@@ -4949,9 +4953,9 @@ export class WebGLBackdrop {
     const previousTarget = this.renderer.getRenderTarget();
     const previousXrEnabled = this.renderer.xr.enabled;
     const previousShadowAutoUpdate = this.renderer.shadowMap.autoUpdate;
-    this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorPlane.matrixWorld);
+    this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorReflector.matrixWorld);
     this.floorReflectionCameraWorldPosition.setFromMatrixPosition(this.homeCamera.matrixWorld);
-    this.floorReflectionRotationMatrix.extractRotation(this.floorPlane.matrixWorld);
+    this.floorReflectionRotationMatrix.extractRotation(this.floorReflector.matrixWorld);
     this.floorReflectorNormal.set(0, 0, 1);
     this.floorReflectorNormal.applyMatrix4(this.floorReflectionRotationMatrix);
     this.floorReflectionView.subVectors(this.floorReflectorWorldPosition, this.floorReflectionCameraWorldPosition);
@@ -4982,7 +4986,7 @@ export class WebGLBackdrop {
     );
     this.floorReflectionMatrix.multiply(this.floorReflectionCamera.projectionMatrix);
     this.floorReflectionMatrix.multiply(this.floorReflectionCamera.matrixWorldInverse);
-    this.floorReflectionMatrix.multiply(this.floorPlane.matrixWorld);
+    this.floorReflectionMatrix.multiply(this.floorReflector.matrixWorld);
     this.floorReflectorPlane.setFromNormalAndCoplanarPoint(this.floorReflectorNormal, this.floorReflectorWorldPosition);
     this.floorReflectorPlane.applyMatrix4(this.floorReflectionCamera.matrixWorldInverse);
     this.floorReflectionClipPlane.set(
@@ -5186,7 +5190,9 @@ export class WebGLBackdrop {
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
         },
         floor: {
-          visible: this.floorPlane.visible,
+          visible: this.floorGroup.visible,
+          groupPosition: this.floorGroup.position.toArray(),
+          planePosition: this.floorPlane.position.toArray(),
           uReflectivity: this.floorMaterial.uniforms.uReflectivity.value,
           uMirror: this.floorMaterial.uniforms.uMirror.value,
           uFloorMixStrength: this.floorMaterial.uniforms.uFloorMixStrength.value,
@@ -5581,8 +5587,9 @@ export class WebGLBackdrop {
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       const previousFloorVisible = this.floorPlane.visible;
+      const previousFloorGroupVisible = this.floorGroup.visible;
       const previousEnvironmentVisible = this.environmentPlane.visible;
-      if (this.debugFloor === "off") this.floorPlane.visible = false;
+      if (this.debugFloor === "off") this.floorGroup.visible = false;
       if (this.debugEnvironment === "off") this.environmentPlane.visible = false;
       try {
         this.renderer.render(this.homeScene, this.homeCamera);
@@ -5605,6 +5612,7 @@ export class WebGLBackdrop {
         }
       } finally {
         this.floorPlane.visible = previousFloorVisible;
+        this.floorGroup.visible = previousFloorGroupVisible;
         this.environmentPlane.visible = previousEnvironmentVisible;
       }
     } else {
