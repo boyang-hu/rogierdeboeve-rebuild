@@ -2412,6 +2412,8 @@ export class WebGLBackdrop {
   private debugEnvironment = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-environment") : null;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
+  private sourceUpdateOrder = "Iu.renderManager -> IT.cameraController -> p1.components";
+  private sourcePostRenderFrame = 0;
   private fluidStrength = 0.5;
   private darken = 0.1;
   private saturation = 1.15;
@@ -4861,7 +4863,7 @@ export class WebGLBackdrop {
     return { speed, index: outputIndex };
   }
 
-  private updateMouseSimulation(time: number, delta: number) {
+  private updateWorkMouseSimulation(time: number, delta: number) {
     if (!this.renderSettings.mousesim.enabled) return;
     this.workItems.forEach((item) => {
       if (!item.group.visible) return;
@@ -4882,6 +4884,10 @@ export class WebGLBackdrop {
       item.mouseSpeed = MathUtils.damp(item.mouseSpeed, meshResult.speed, 10, delta);
       item.mouseIndex = meshResult.index;
     });
+  }
+
+  private updateScreenMouseSimulation(time: number, delta: number) {
+    if (!this.renderSettings.mousesim.enabled) return;
     const screenResult = this.updateMouseBrush(
       this.screenMouseSimulationMaterial,
       this.screenMouseSimulationScene,
@@ -4899,12 +4905,36 @@ export class WebGLBackdrop {
     this.screenMouseSimulationIndex = screenResult.index;
     this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+  }
+
+  private syncWorkMouseSimulationUniforms() {
+    if (!this.renderSettings.mousesim.enabled) return;
     this.workItems.forEach((item) => {
       if (!item.group.visible) return;
       item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
       item.material.uniforms.uMouseSpeed.value = item.mouseSpeed;
     });
+  }
+
+  private updateWorkSceneForNextFrame(time: number, delta: number) {
+    this.updateHomeCamera(delta);
+    if (this.spotLightParallax) {
+      this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
+      this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
+      this.spotLightPosition.z = 3.7;
+    } else {
+      this.updateAboutSpotlight();
+    }
+    this.spotLight.position.copy(this.spotLightPosition);
+    this.spotLight.target.position.copy(this.spotLightTarget);
+    this.updateSpotLightBasis();
+    this.updateVisibleWorkItems(time);
+    this.updateAuxiliaryBlocks(time, delta);
+    this.updatePointerProjection();
+    this.updateWorkMouseSimulation(time, delta);
+    this.syncWorkMouseSimulationUniforms();
+    this.sourcePostRenderFrame += 1;
   }
 
   private resizeMainFluidPass(width: number, height: number) {
@@ -5232,6 +5262,10 @@ export class WebGLBackdrop {
           blur: this.sourceMainRenderSettings.blur,
           mousesim: this.sourceMainRenderSettings.mousesim,
           fluid: this.sourceMainRenderSettings.fluid,
+        },
+        updateOrder: {
+          source: this.sourceUpdateOrder,
+          postRenderFrame: this.sourcePostRenderFrame,
         },
       },
       uniforms: {
@@ -5695,21 +5729,6 @@ export class WebGLBackdrop {
     const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
     this.lastTickTime = time;
     this.pointer.lerp(this.targetPointer, 0.055);
-    this.updateHomeCamera(delta);
-    if (this.spotLightParallax) {
-      this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
-      this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
-      this.spotLightPosition.z = 3.7;
-    } else {
-      this.updateAboutSpotlight();
-    }
-    this.spotLight.position.copy(this.spotLightPosition);
-    this.spotLight.target.position.copy(this.spotLightTarget);
-    this.updateSpotLightBasis();
-    this.updateVisibleWorkItems(time);
-    this.updateAuxiliaryBlocks(time, delta);
-    this.updatePointerProjection();
-    this.updateMouseSimulation(time, delta);
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
@@ -5734,6 +5753,7 @@ export class WebGLBackdrop {
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     let preCompositeWorkTarget = this.debugPassOrder === "raw-work-composite" ? this.workRawTarget : this.workCompositeTarget;
     if (hasHome) {
+      this.updateScreenMouseSimulation(time, delta);
       this.renderSkyTarget(time);
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
@@ -5800,6 +5820,7 @@ export class WebGLBackdrop {
     this.updateOutputProbe(time);
     if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
     this.renderDisplacementTarget(time);
+    this.updateWorkSceneForNextFrame(time, delta);
     this.raf = requestAnimationFrame(this.tick);
   };
 }

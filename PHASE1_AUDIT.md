@@ -3179,3 +3179,39 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-reflection-variants-project-media`.
 
 Decision: keep the query-only diagnostics for future attribution, but do not promote any of these variants. The remaining hard horizon is not explained by simply removing clipping, removing blur, or sampling the raw reflection target. The next source-backed work should inspect source-vs-rebuild reflected scene content and camera/scene state at the reflection render, especially which objects/background/fog are visible to the virtual camera.
+
+### S1-73 Source `Iu/p1/kA/GA` Update Order
+
+This batch fixed a source-structure difference in the work-scene frame lifecycle.
+
+Source evidence:
+
+- Source `Iu.update(e,t,n,i)` calls `renderManager.update(...)` first.
+- Only after the render-manager finishes does source `Iu.update()` call `cameraController.update(...)` and then each component update.
+- Source `p1.update(...)` follows that order by calling `super.update(...)` before spotlight parallax, visible-block culling, `uRevealSides`, `uRevealSpreadSides`, `tMouseSim2`, and `GA.update(...)`.
+- Source `kA` enables the render-manager `mousesim` path, so screen-space mouse simulation belongs to the render-manager/composite path for the current render, while each `GA` block's own `Ka` mouse simulation is prepared during the post-render component update for the next frame.
+
+Runtime changes:
+
+- Split the rebuild's combined mouse-simulation update into screen-space render-manager simulation and per-work-block simulation.
+- Moved the source `kA` screen mouse-simulation update before the work-scene render.
+- Moved camera controller, home spotlight parallax, visible-work-item side reveal/culling, pointer projection, and per-block mouse simulation to a post-render `updateWorkSceneForNextFrame(...)` step.
+- Added `__rogierOutputProbe.settings.updateOrder` so browser QA records the active source update-order bridge.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-phase1-order-output`.
+- Thumb spotlight probe passed and retained the source home map/position/target: `/tmp/rd-phase1-order-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-phase1-order-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-phase1-order-capture`.
+
+Band snapshot from `/tmp/rd-phase1-order-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `-0.0024` | `+0.0009` |
+| Mobile source -> rebuild | `-0.0143` | `+0.0039` |
+
+Decision: keep this source update-order alignment. It removes a real `Iu/p1/kA/GA` lifecycle drift without regressing project media pages. Phase 1 remains open because the visual hard horizon/fog-bed and exact `VA` shader bridge are still not fully source-identical.
