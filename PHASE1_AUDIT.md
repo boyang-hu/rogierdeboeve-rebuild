@@ -247,6 +247,35 @@ Measured luma stayed stable:
 
 Decision: keep this cleanup because it removes a source-proven displacement shader approximation without destabilizing project media pages. The main Phase 1 visual gap still points to ordinary `VA`/spotlight lighting or a narrowly isolated full-`VA` shader experiment.
 
+### S1-04 a1/o1/i1 Floor Normal Cleanup Result
+
+The floor path is now closer to source `a1/o1/i1` without replacing the whole reflector implementation:
+
+- Confirmed source `a1` loads `Xt.floorNormal`, sets `repeat = (45, 45)`, and passes it to `o1` as `normalMap`.
+- Confirmed source floor material constants are `uMirror = 1`, `reflectivity = .97`, `uFloorMixStrength = 15`, and `uNormalDistortionStrength = 2.5`; the rebuild already used those values.
+- Added `/images/textures/floor-normal.webp` to the rebuild floor pipeline and set it to `RepeatWrapping`.
+- Treated the normal map as non-color data with `NoColorSpace`.
+- Replaced the rebuild-only procedural noise normal perturbation with the source `o1` normal-map vector shape: `normalColor.r/b/g`, `uNormalDistortionStrength`, and `normal.xz * 0.05`.
+- Removed the rebuild-only ambient-color scanline mix from the floor fragment so floor color ownership is closer to source `o1`.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-floor-normal` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after floor-normal cleanup | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.011` | Stable; main darkness remains in ordinary `VA`/lighting/composite. |
+| Home mobile | `0.056` | `0.012` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+
+Decision: keep this cleanup because it removes source-proven floor material approximations and brings the reflector distortion closer to source without destabilizing project pages. Full `i1` projection-matrix reflector parity remains a possible later isolated batch, but the main Phase 1 visual gap still points to ordinary `VA`/spotlight lighting or render-target/color-space output.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |

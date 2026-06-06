@@ -17,6 +17,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  NoColorSpace,
   NormalBlending,
   Object3D,
   OrthographicCamera,
@@ -1070,6 +1071,7 @@ uniform float uMirror;
 uniform float uFloorMixStrength;
 uniform float uNormalDistortionStrength;
 uniform vec2 uNormalScale;
+uniform sampler2D tNormalMap;
 
 varying vec2 vUv;
 
@@ -1092,19 +1094,19 @@ void main() {
   vec2 uv = vUv;
   float horizon = smoothstep(1.0, 0.18, uv.y);
   float edge = smoothstep(0.0, 0.22, uv.x) * smoothstep(1.0, 0.78, uv.x);
-  float scan = random(floor(vec2(uv.x * 70.0, uv.y * 8.0 + uTime * 0.4))) * 0.08;
-  float n1 = noise(uv * uNormalScale + vec2(uTime * 0.015, 0.0));
-  float n2 = noise(uv.yx * uNormalScale * 0.73 + vec2(0.0, -uTime * 0.012));
-  vec2 normal = (vec2(n1, n2) - 0.5) * uNormalDistortionStrength * 0.018;
-  vec2 reflectUv = vec2(uv.x, 1.0 - uv.y) + normal;
+  vec4 normalColor = texture2D(tNormalMap, uv * uNormalScale);
+  vec3 normal = normalize(vec3(
+    normalColor.r * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0),
+    normalColor.b,
+    normalColor.g * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0)
+  ));
+  vec2 reflectUv = vec2(uv.x, 1.0 - uv.y) + normal.xz * 0.05;
   reflectUv.y = mix(reflectUv.y, pow(clamp(reflectUv.y, 0.0, 1.0), 1.35), 0.45);
   vec3 reflectColor = texture2D(tReflect, clamp(reflectUv, vec2(0.0), vec2(1.0))).rgb;
   float fresnel = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow(uv.y, 5.0), 1.0));
   reflectColor = mix(vec3(0.0), reflectColor, fresnel);
-  vec3 base = vec3(0.070, 0.070, 0.070);
-  vec3 reflection = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.0));
+  vec3 base = vec3(0.29);
   vec3 color = base * ((1.0 - min(1.0, uMirror)) + reflectColor * uFloorMixStrength);
-  color = mix(color, reflection, scan * 0.18);
   float alpha = horizon * edge * 0.42;
   gl_FragColor = vec4(color, alpha);
 }
@@ -2491,6 +2493,12 @@ export class WebGLBackdrop {
         item.material.uniforms.tPerlin.value = texture;
       });
     });
+    this.loadTexture("/images/textures/floor-normal.webp", (texture) => {
+      texture.colorSpace = NoColorSpace;
+      texture.wrapS = RepeatWrapping;
+      texture.wrapT = RepeatWrapping;
+      this.floorMaterial.uniforms.tNormalMap.value = texture;
+    });
     this.loadTexture("/models/me/model_T.jpg", (texture) => {
       this.characterMaterial.uniforms.tMap.value = texture;
     });
@@ -2686,6 +2694,7 @@ export class WebGLBackdrop {
         uAmbientColor: { value: colorFrom("#414652") },
         uAmbientIntensity: { value: 0.5 },
         tReflect: { value: this.floorReflectionTarget.texture },
+        tNormalMap: { value: this.placeholder },
         uReflectivity: { value: 0.97 },
         uMirror: { value: 1 },
         uFloorMixStrength: { value: 15 },
