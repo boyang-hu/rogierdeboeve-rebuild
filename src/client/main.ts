@@ -164,9 +164,7 @@ function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike, navigate?: App
   if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
   persistEnteredSession();
   window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
-  window.setTimeout(() => {
-    navigate?.(url, "home") ?? window.location.assign(url);
-  }, 500);
+  navigate?.(url, "home") ?? window.setTimeout(() => window.location.assign(url), 500);
 }
 
 function dispatchSoundMode(enabled: boolean) {
@@ -990,9 +988,7 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppN
         gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
       }
       getWebgl()?.projectLeave?.();
-      window.setTimeout(() => {
-        navigate?.(target.href, "project") ?? window.location.assign(target.href);
-      }, 500);
+      navigate?.(target.href, "project") ?? window.setTimeout(() => window.location.assign(target.href), 500);
     };
     link.addEventListener("click", onClick);
     cleanups.push(() => link.removeEventListener("click", onClick));
@@ -1015,9 +1011,7 @@ function initAboutLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNav
         gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
       }
       getWebgl()?.animateAboutVisualOut?.();
-      window.setTimeout(() => {
-        navigate?.(target.href, "about") ?? window.location.assign(target.href);
-      }, 500);
+      navigate?.(target.href, "about") ?? window.setTimeout(() => window.location.assign(target.href), 500);
     };
     link.addEventListener("click", onClick);
     cleanups.push(() => link.removeEventListener("click", onClick));
@@ -1099,6 +1093,7 @@ function boot() {
   let webgl: WebGLLike | undefined;
   let homeGalleryEntered = false;
   let routing = false;
+  const pageCache = new Map<string, Document>();
   let cleanupMotion: (() => void) | undefined;
   const cleanupPageCallbacks: Array<() => void> = [];
   const cleanupPageMotion = () => {
@@ -1113,6 +1108,26 @@ function boot() {
     cleanupPage();
     window.removeEventListener("pagehide", cleanupApp);
     window.removeEventListener("beforeunload", cleanupApp);
+  };
+  const normalizeRouteUrl = (url: string) => new URL(url, window.location.href).href.split("#")[0];
+  const transitionDelay = (mode: "home" | "project" | "about" | "default") => {
+    if (prefersReducedMotion()) return 0;
+    if (mode === "home" || mode === "project" || mode === "about") return 500;
+    return 500;
+  };
+  const loadRoute = async (url: string) => {
+    const routeUrl = normalizeRouteUrl(url);
+    const cached = pageCache.get(routeUrl);
+    if (cached) return cached.cloneNode(true) as Document;
+    const response = await fetch(routeUrl, {
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "rdb" },
+    });
+    if (!response.ok) throw new Error(`Router request failed: ${response.status}`);
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    pageCache.set(routeUrl, doc);
+    return doc.cloneNode(true) as Document;
   };
   const setPageClasses = (nextBody: HTMLBodyElement, nextHtml: HTMLElement) => {
     const routeClasses = ["is-home", "is-about", "is-project", "is-scrolled", "is-work-gallery-leaving", "is-nav-mobile-open"];
@@ -1183,27 +1198,36 @@ function boot() {
     cleanupPageCallbacks.push(initHomeRouteLeave(() => webgl, navigateTo));
     cleanupPageCallbacks.push(initScrollState());
   };
-  const navigateTo: AppNavigate = (url, _mode = "default", historyMode = "push") => {
+  const preloadRoutes = () => {
+    const urls = new Set<string>([normalizeRouteUrl("/"), normalizeRouteUrl("/about/")]);
+    document.querySelectorAll<HTMLAnchorElement>("a[href^='/']:not([target]):not([href^='#'])").forEach((link) => {
+      urls.add(normalizeRouteUrl(link.href));
+    });
+    urls.delete(normalizeRouteUrl(window.location.href));
+    urls.forEach((routeUrl) => {
+      void loadRoute(routeUrl).catch(() => {});
+    });
+  };
+  const navigateTo: AppNavigate = (url, mode = "default", historyMode = "push") => {
     if (routing) return;
     routing = true;
     persistEnteredSession();
-    fetch(url, { credentials: "same-origin" })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Router request failed: ${response.status}`);
-        return response.text();
-      })
-      .then((html) => {
-        const nextDoc = new DOMParser().parseFromString(html, "text/html");
+    const routeUrl = normalizeRouteUrl(url);
+    const routePromise = loadRoute(routeUrl);
+    const leavePromise = new Promise((resolve) => window.setTimeout(resolve, transitionDelay(mode)));
+    Promise.all([routePromise, leavePromise])
+      .then(([nextDoc]) => {
         cleanupPage();
         replacePageDom(nextDoc);
         if (historyMode === "replace") {
-          window.history.replaceState({}, "", url);
+          window.history.replaceState({}, "", routeUrl);
         } else {
-          window.history.pushState({}, "", url);
+          window.history.pushState({}, "", routeUrl);
         }
         window.scrollTo(0, 0);
-        emitPageEntered();
         initCurrentPage();
+        preloadRoutes();
+        window.setTimeout(emitPageEntered, prefersReducedMotion() ? 0 : 100);
       })
       .catch((error) => {
         console.warn("Internal router failed; falling back to full navigation", error);
@@ -1226,6 +1250,7 @@ function boot() {
 
   initSoundToggle();
   initCurrentPage();
+  preloadRoutes();
   window.addEventListener("popstate", () => navigateTo(window.location.href, "default", "replace"));
   window.addEventListener("pagehide", cleanupApp, { once: true });
   window.addEventListener("beforeunload", cleanupApp, { once: true });
