@@ -175,6 +175,36 @@ Measured normal-path luma stayed stable:
 | `/gc-2026/` desktop | `0.140` | `0.039` |
 | `/hashgraph-vc/` desktop | `0.043` | `0.023` |
 
+### S1-26 VA Metalness Source Fix Result
+
+A source-proven material flag mismatch was fixed:
+
+- Source `VA extends MeshStandardMaterial` explicitly sets `envMapIntensity = .75`, `roughness = 1`, `dithering = true`, `transparent = true`, `depthTest = false`, and `depthWrite = false`.
+- Source `VA` does not set `metalness`; the bundled `MeshStandardMaterial` default is `metalness = 0`.
+- Rebuild had `SOURCE_WORK_METALNESS = 1`, which pushed ordinary work blocks and auxiliary blocks into a fully metallic material response that source `VA` does not use.
+- Rebuild now sets `SOURCE_WORK_METALNESS = 0`.
+
+This is the first recent D7 fix that materially moved normal-path home brightness while preserving project-page stability:
+
+| Capture | Original luma | Rebuild luma after S1-26 | Previous rebuild baseline | Decision |
+| --- | ---: | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.027` | `~0.019` | Improved in the correct direction; still below source. |
+| Home mobile | `0.056` | `0.032` | `~0.016` | Improved substantially. |
+| About desktop | `0.026` | `0.015` | `~0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | `~0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | `~0.023` | Project stability retained. |
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-va-shader-s126-metalness CDP_PORT=9268 DUMP_WAIT=5200 node scripts/dump-va-shader.mjs`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s126-metalness` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Decision: keep the metalness fix. Continue D7 attribution next, especially source `VA` light/material-body differences that remain after metalness is corrected: old `SPECULAR` macro naming, Three 0.184 physical interface drift, and whether `MeshStandardMaterial` constructor defaults around emissive/specular differ from source bundle defaults.
+
 ### Phase 1 Progress Checkpoint
 
 The current Phase 1 target is no longer a broad implementation pass. It is a focused attribution pass for a small number of source/rendering chains that still produce a large visible gap. The useful way to measure progress is now by chain status, not by total site completion:
