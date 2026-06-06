@@ -154,6 +154,35 @@ Measured luma decreased on home while project pages stayed stable:
 
 Decision: keep the source `A1` vignette formula despite lower home luma because it removes a local approximation in the shared composite path and did not regress runtime or project captures. The old simplified vignette was compensating for another missing source contribution. Continue attribution in remaining `A1/OA/Lu` output flow or ordinary `VA` light definitions; do not reintroduce the simplified vignette as a visual tuning fix.
 
+### S1-09 Lu Luminosity/Bloom Output Result
+
+The final `Lu/kA/OA` bloom path now follows source luminosity and render-pass ownership more closely:
+
+- Source `sg` luminosity material uses Rec.601 luma weights `vec3(0.299, 0.587, 0.114)` and outputs `mix(vec4(0), texel, alpha)`.
+- Rebuild luminosity material used Rec.709-ish weights and forced alpha to `1.0`; it now uses the source weights and `mix(vec4(0.0), texel, alpha)`.
+- Source `Lu.update()` renders the luminosity pass into `renderTargetBright` before the bloom chain whenever `settings.luminosity.enabled`.
+- Rebuild `renderPreCompositeBloomPass()` already did that for the A1 pre-composite bloom, but `renderHomeBloomPass()` passed `bloomBrightTarget` without rendering it in the same frame. `renderHomeBloomPass()` now renders the source-shaped bright pass first.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s109-lum-bloom` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed essentially unchanged:
+
+| Capture | Original luma | Rebuild luma after S1-09 Lu bloom | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.105` | `0.019` | Stable; final bloom pass was source-wrong before, but not the main brightness source. |
+| Home mobile | `0.056` | `0.016` | Stable relative to the source `A1` vignette batch. |
+| About desktop | `0.027` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the luminosity shader and final bloom bright-pass fix because they close a real source `Lu` output-chain gap without runtime or project regressions. Since luma did not move materially, continue attribution in the remaining ordinary `VA` light definitions, spotlight-map contribution, or deeper project/shared media composite ownership.
+
 ### S1-06 T1/w1/E1 Thumb Closeout Result
 
 The remaining thumbnail-strip audit is now closed:

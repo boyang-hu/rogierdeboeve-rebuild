@@ -676,10 +676,11 @@ uniform float uSmoothing;
 varying vec2 vUv;
 
 void main() {
-  vec3 color = texture2D(tScene, vUv).rgb;
-  float luma = dot(color, vec3(0.2125, 0.7154, 0.0721));
-  float alpha = smoothstep(uThreshold, uThreshold + uSmoothing, luma);
-  gl_FragColor = vec4(color * alpha, 1.0);
+  vec4 texel = texture2D(tScene, vUv);
+  vec3 luma = vec3(0.299, 0.587, 0.114);
+  float value = dot(texel.xyz, luma);
+  float alpha = smoothstep(uThreshold, uThreshold + uSmoothing, value);
+  gl_FragColor = mix(vec4(0.0), texel, alpha);
 }
 `;
 
@@ -3846,7 +3847,14 @@ export class WebGLBackdrop {
   }
 
   private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
-    const brightTarget = this.renderSettings.luminosity.enabled ? this.bloomBrightTarget : undefined;
+    let brightTarget: WebGLRenderTarget | undefined;
+    if (this.renderSettings.luminosity.enabled) {
+      this.luminosityMaterial.uniforms.tScene.value = sourceTarget.texture;
+      this.renderer.setRenderTarget(this.bloomBrightTarget);
+      this.renderer.clear();
+      this.renderer.render(this.luminosityScene, this.backgroundCamera);
+      brightTarget = this.bloomBrightTarget;
+    }
     this.renderBloomChain(
       sourceTarget,
       this.bloomTarget,
