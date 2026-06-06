@@ -513,6 +513,39 @@ Context from the same run:
 
 Decision: keep the transfer probe, but do not promote `scene-gamma` to production. It improves final home luma from `~0.031` to `~0.068`, but still falls well short of the source desktop luma (`~0.100-0.106`) and would be a broad color-space compensation without source proof. The result shows transfer interpretation is a real partial factor; the remaining gap still requires upstream `VA`/spotlight/tScene content attribution, especially why the source scene survives the same `uDarken * 2` multiply with higher perceived brightness.
 
+### S1-36 Home Brightness Attribution Matrix Result
+
+Added `scripts/compare-home-brightness-attribution.mjs`, a QA-only CDP harness that captures the rebuild home page across the current brightness debug switches:
+
+- `?debug-spotlight-map=off`
+- `?debug-spotlight-map-transfer=srgb`
+- `?debug-composite-transfer=1`
+- `?debug-composite-darken=3`
+
+Normal rendering remains unchanged unless one of those debug flags is present.
+
+Diagnostic run at `/tmp/rogier-home-brightness-s136`:
+
+| Variant | Screenshot luma | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | `0.0312` | `0.1864` | `0.2332` | `0.0214` | `0.0603` |
+| spotlight map off | `0.1122` | `0.2619` | `0.3720` | `0.0762` | `0.0603` |
+| spotlight transfer | `0.0755` | `0.2227` | `0.3075` | `0.0534` | `0.0603` |
+| scene transfer | `0.0678` | `0.1864` | `0.2337` | `0.0219` | `0.0603` |
+| spotlight + scene transfer | `0.1153` | `0.2273` | `0.3126` | `0.0535` | `0.0603` |
+| darken off | `0.0673` | `0.1854` | `0.2346` | `0.0221` | `0.0603` |
+| spotlight map off + darken off | `0.2034` | `0.2506` | `0.3623` | `0.0764` | `0.0603` |
+
+Important attribution:
+
+- `spotlight map off` reaches `0.1122`, which is already close to or above the measured source desktop home luma range (`~0.100-0.106`).
+- `spotlight + scene transfer` reaches `0.1153`, also in the source range.
+- `scene transfer` alone reaches only `0.0678`, so final `OA/CA` transfer explains a real but incomplete part of the gap.
+- `darken off` reaches only `0.0673`, and S1-33 already proved source-shaped static darken is expected. This remains a diagnostic, not a production fix.
+- The thumb composite probe stayed stable at `~0.0603` across variants, so the matrix points less at active thumb payload/timing and more at how the spotlight map is interpreted by the ordinary work material and light shader.
+
+Decision: keep the attribution script and debug switches, but do not disable the spotlight map or promote either gamma-like transfer path to production. The largest remaining home desktop gap is now concentrated in `VA/zA` spotlight-map light semantics and source-vs-Three-0.184 material response, with `tScene` transfer as a secondary factor. The next batch should compare source `lights_fragment_begin` / `RE_Direct` / reflected-light accumulation against the generated rebuild shader before any broad render-target or visual tuning change.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
