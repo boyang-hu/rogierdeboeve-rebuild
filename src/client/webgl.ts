@@ -337,6 +337,152 @@ const workBlockWorldPositionChunk = `
 #endif
 `;
 
+const workBlockSourceVertexShader = `
+attribute vec3 instanceOffset;
+attribute float instanceIndex;
+attribute float instanceAlpha;
+attribute vec3 instanceColor;
+
+varying vec2 vLocalUv;
+varying vec2 vOffset;
+varying float vMouseSim;
+varying float vAlpha;
+
+uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
+uniform float uReveal;
+uniform float uRevealProject;
+uniform float uRevealSides;
+uniform float uRevealSpread;
+uniform float uRevealSpreadSides;
+uniform float uMouseFactor;
+uniform vec2 uCoords;
+uniform vec3 uUvOffset;
+uniform float uUvOffsetScale;
+uniform sampler2D tMouseSim;
+uniform sampler2D tDisplacement;
+uniform sampler2D tPerlin;
+uniform float uTime;
+
+#define STANDARD
+varying vec3 vViewPosition;
+varying float vNoise;
+
+#ifdef USE_TRANSMISSION
+  varying vec3 vWorldPosition;
+#endif
+
+#include <common>
+#include <uv_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <normal_pars_vertex>
+#include <shadowmap_pars_vertex>
+
+void main() {
+  vUv = uv;
+  #include <uv_vertex>
+  #include <color_vertex>
+  #include <beginnormal_vertex>
+  #include <defaultnormal_vertex>
+  #include <normal_vertex>
+  #include <begin_vertex>
+
+  vec2 screenUv = gl_Position.xy / uCoords.xy;
+  vec2 newUv = screenUv;
+  vec2 newOffset = instanceOffset.xy;
+  newUv.x /= uGridSize.x;
+  newUv.y /= uGridSize.y;
+  newUv.x += newOffset.x;
+  newUv.y += newOffset.y;
+
+  vec2 mouseUv = newUv + uUvOffset.xy;
+  mouseUv /= uUvOffsetScale;
+  vec4 mouseSim = texture2D(tMouseSim, mouseUv);
+
+  vec4 instancePos = instanceMatrix[3];
+  vec2 perlinUv = newUv * 0.75;
+  vec4 perlin = texture2D(tPerlin, perlinUv - uTime * 0.05);
+
+  float revealCombined = uReveal * uRevealProject;
+  float perlinDisplacementHeight = 10.0;
+  float perlinDisplacement = perlin.x * perlinDisplacementHeight;
+  float toCenter = length(instancePos.xy);
+  float fadeScale = (revealCombined * 5.75) - (toCenter * (revealCombined / 5.75));
+  float fade = clamp(fadeScale, 0.0, 1.05);
+
+  perlinDisplacement *= fade;
+
+  float perlinScaleDisplacement = min(1.0, 1.0 - (perlinDisplacement - (perlinDisplacementHeight / 2.0)) * 0.1);
+  vec3 perlinDisplaced = vec3(transformed);
+  perlinDisplaced.z += perlinDisplacement - (perlinDisplacementHeight / 2.0);
+  perlinDisplaced *= perlinScaleDisplacement;
+
+  transformed *= 1.0 - mouseSim.r * 0.05;
+
+  float fadeDiplacementScale = (revealCombined * 4.85) - (toCenter * (revealCombined / 4.85));
+  float fadeDiplacement = clamp(fadeDiplacementScale, -1.0, 1.0);
+  transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDiplacement) * 0.25);
+  transformed *= fade;
+  transformed *= uRevealSides;
+
+  float mouseTransform = mouseSim.r * 15.0;
+  vec4 displacement = texture2D(tDisplacement, newUv);
+  float displacementF = displacement.r;
+  float waveDisplacement = displacementF * 3.0 + 6.0 * (1.0 - revealCombined);
+
+  transformed.z -= 1.5;
+  transformed.z += waveDisplacement;
+  transformed.z += mouseTransform * uMouseFactor;
+  transformed *= 1.0 - displacementF * 0.1;
+
+  float spread = 3.0;
+  vec3 transformedSpread = transformed;
+  transformedSpread.x -= instanceColor.x * spread;
+  transformedSpread.x += spread / 2.0;
+  transformedSpread.y -= instanceColor.y * spread;
+  transformedSpread.y += spread / 2.0;
+  transformedSpread.z -= instanceColor.z * spread;
+  transformedSpread.z += spread / 2.0;
+
+  transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
+  transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
+
+  vec4 mvPosition = vec4(transformed, 1.0);
+
+  #ifdef USE_INSTANCING
+    mvPosition = instanceMatrix * mvPosition;
+  #endif
+
+  mvPosition = modelViewMatrix * mvPosition;
+  gl_Position = projectionMatrix * mvPosition;
+
+  vViewPosition = -mvPosition.xyz;
+
+  transformed /= 1.0 - mouseSim.r * 0.2;
+  vec4 worldPosition = vec4(transformed, 1.0);
+
+  worldPosition = instanceMatrix * worldPosition;
+  worldPosition = modelMatrix * worldPosition;
+
+  #include <shadowmap_vertex>
+  #include <fog_vertex>
+
+  vLocalUv = uv;
+  vOffset = instanceOffset.xy;
+  vMouseSim = mouseSim.r;
+  vAlpha = instanceAlpha;
+
+  #ifdef USE_ALPHAHASH
+    vPosition = vec3(position);
+  #endif
+
+  #ifdef USE_TRANSMISSION
+    vWorldPosition = worldPosition.xyz;
+  #endif
+}
+`;
+
 const workBlockFragmentPars = `
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
@@ -451,10 +597,14 @@ function patchWorkBlockShader(
   variant: "work" | "auxiliary" = "work",
 ) {
   Object.assign(shader.uniforms, uniforms);
-  shader.vertexShader = shader.vertexShader
-    .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-    .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
-    .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
+  if (variant === "work") {
+    shader.vertexShader = workBlockSourceVertexShader;
+  } else {
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
+      .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
+      .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
+  }
   shader.fragmentShader = shader.fragmentShader
     .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
     .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk)

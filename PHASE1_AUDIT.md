@@ -46,7 +46,7 @@ Recommended cadence:
 - Do 3-5 differences per batch for shader, render-target, render-order, or material-replacement changes.
 - Run full QA and commit once per batch, not once per tiny sub-step.
 
-Current next batch: a focused `S1-08/S1-09/S1-17` attribution batch around ordinary `VA` color/light semantics, spotlight-map contribution, and renderer color-output assumptions. The first candidate implementation should be small: verify and align ordinary `VA` diffuse raw-color semantics before touching auxiliary `WA/XA` or attempting a full `HA/zA` replacement.
+Current next batch: continue the ordinary `VA` attribution path. `S1-21` full-`HA` vertex parity is implemented and stable but did not materially move luma, so the next source target is `S1-22`: the ordinary `VA` fragment/light body and bundled-Three light semantics around `zA`, especially spotlight-map contribution.
 
 ## Phase 1 Remaining Execution Audit
 
@@ -93,7 +93,37 @@ This table is the immediate execution board for the next implementation batches.
 | 4 | S1-24 | `Ka` per-item sizing and raycast UV audit | Source `GA.createPlane()` uses plane scale `(35*1.3, 23*1.3, 1)`, ray plane `* 1.5`, `uUvOffset`, `uUvOffsetScale = 1.5`, and `mouseSim.onResize(plane.scale.x, plane.scale.y)`. | Rebuild ray plane geometry incorporates `GRID_SCALE`; mouse simulation target uses unscaled grid plane dimensions. Broad numbers appear equivalent, but this needs a line-by-line audit before changing. | Audit only after S1-21/S1-22 unless a shader experiment proves mouse inputs are the blocker. This is a 1-3 diff low-to-medium risk batch. | Medium |
 | 5 | S1-25 | Shared media/composite offscreen path | Source renders media through `$1/Lo/W1` into `C1.tMedia`; global media reveal is owned by `C1.uMediaReveal`, not per-plane scene opacity. | A source-shaped experiment passed runtime but darkened project pages badly, so it was reverted. | Revisit only after home `VA` attribution. Next attempt must isolate blank `tWork`, `C1` background blend, and target alpha/color assumptions before routing live project media through `C1`. | High |
 
-Recommended next move: start with S1-21 as a controlled full-`HA` ordinary work-block experiment. This is more likely to explain the persistent home cube/thumb darkness than another small constant cleanup. Because it is high risk, it should be one batch by itself: implement, build, marker check, full source-vs-rebuild capture, document, then keep or revert before commit.
+Recommended next move: start S1-22 as a controlled ordinary-`VA` fragment/light-body experiment. Because it is high risk, it should be one batch by itself: implement, build, marker check, full source-vs-rebuild capture, document, then keep or revert before commit.
+
+### S1-21 Full HA Vertex Result
+
+The ordinary home work-block material now uses a source-compatible full `HA` vertex shader path instead of relying on Three 0.184 standard vertex chunk injection:
+
+- Source `VA.onBeforeCompile` assigns complete `HA` and `zA`; this batch implemented the `HA` half only.
+- The new work-only vertex path keeps source `HA` ownership of perlin displacement, reveal fade, mouse scaling, displacement-wave z offset, instance spread, `vViewPosition`, and source-shaped `worldPosition` for spotlight-map coordinates.
+- Compatibility varyings needed by the current fragment bridge (`vLocalUv`, `vOffset`, `vMouseSim`, `vAlpha`) are assigned inside the full vertex path so this remains an isolated S1-21 experiment.
+- Auxiliary `WA/XA` blocks still use the previous chunk bridge; this batch intentionally does not move about/floating visuals.
+- The ordinary `zA` fragment/light body is still not fully replaced. That remains S1-22.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s121-full-ha` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed in the established range:
+
+| Capture | Original luma | Rebuild luma after S1-21 | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.104` | `0.018` | Stable, but not the brightness fix. |
+| Home mobile | `0.055` | `0.015` | Stable, slightly lower than the recent `~0.016` range. |
+| About desktop | `0.026` | `0.015` | Stable; auxiliary path was not changed. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the full-`HA` vertex path because it removes a real source-proven ordinary-`VA` deviation without runtime or project regression. Since luma did not materially improve, the main unresolved Phase 1 gap is now more likely in the ordinary `zA` fragment/light body, bundled-Three spotlight-map/light semantics, or shared render-output assumptions than in the vertex displacement path alone.
 
 ### S1-08A VA Initial Diffuse Color Result
 
