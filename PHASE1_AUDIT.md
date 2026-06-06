@@ -220,6 +220,33 @@ Measured luma stayed stable, as expected for an about/floating auxiliary cleanup
 
 Decision: keep this cleanup because it removes four source-proven auxiliary block differences without regressing home or project pages. It does not address the main dark home work-block issue, so the next high-value batch remains ordinary `VA`/spotlight lighting or a narrowly isolated full-`VA` shader experiment.
 
+### S1-03 k1 Displacement Shader Cleanup Result
+
+The wavves/displacement target used by `VA.tDisplacement` is now closer to source `k1/O1/N1/F1`:
+
+- Confirmed the rebuild already uses the source-shaped square render target size `height / 10`.
+- Replaced the local two-argument vignette mask with the source `Ro.vignette(coords, vignin, vignout, vignfade, fstop)` shape.
+- Matched source `F1` constants: `vignin = 0.01`, `vignout = 0.5`, `vignfade = 2.0`, `fstop = 0.4`.
+- Matched source output ownership by rendering `strength * (1.0 - vignetteF)` directly instead of the rebuild-only `clamp(strength * mask, 0.0, 1.0)` path.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-k1-displacement` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after k1 cleanup | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.105` | `0.011` | Stable; ordinary `VA`/lighting darkness remains. |
+| Home mobile | `0.056` | `0.012` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+
+Decision: keep this cleanup because it removes a source-proven displacement shader approximation without destabilizing project media pages. The main Phase 1 visual gap still points to ordinary `VA`/spotlight lighting or a narrowly isolated full-`VA` shader experiment.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |

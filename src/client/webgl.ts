@@ -1034,10 +1034,10 @@ uniform float uRatio;
 
 varying vec2 vUv;
 
-float vignette(vec2 uv, float inner, float outer) {
-  vec2 p = uv - 0.5;
-  p.x *= uRatio;
-  return smoothstep(outer, inner, length(p));
+float vignette(vec2 coords, float vignin, float vignout, float vignfade, float fstop) {
+  float dist = distance(coords.xy, vec2(0.5));
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
 }
 
 void main() {
@@ -1046,15 +1046,14 @@ void main() {
   uvOff.x *= uRatio;
   uvOff.x += 0.5;
 
-  vec2 waveUv = uvOff;
-  waveUv -= 0.5;
-  waveUv *= 5.0;
-  waveUv += 0.5;
+  vec2 uvVignette = uvOff;
+  uvOff -= 0.5;
+  uvOff *= 5.0;
+  uvOff += 0.5;
 
-  float strength = 1.0 - abs(sin(distance(waveUv, vec2(0.5)) - 0.5 - uTime));
-  float mask = 1.0 - vignette(uvOff, 0.01, 0.5);
-  float displacement = clamp(strength * mask, 0.0, 1.0);
-  gl_FragColor = vec4(vec3(displacement), 1.0);
+  float strength = 1.0 - abs(sin(distance(uvOff, vec2(0.5)) - 0.5 - uTime));
+  float vignetteF = vignette(uvVignette, 0.01, 0.5, 2.0, 0.4);
+  gl_FragColor = vec4(vec3(strength * (1.0 - vignetteF)), 1.0);
 }
 `;
 
