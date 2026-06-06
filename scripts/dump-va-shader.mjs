@@ -258,6 +258,82 @@ function analyzeFragment(sourceShader, rebuildShader) {
   };
 }
 
+function analyzeVertex(sourceShader, rebuildShader) {
+  const anchors = [
+    "#include <begin_vertex>",
+    "#include <project_vertex>",
+    "#include <worldpos_vertex>",
+    "vec2 screenUv",
+    "vec2 newUv",
+    "float mouse",
+    "vec4 mvPosition",
+    "gl_Position",
+    "vViewPosition",
+    "transformed /= 1. - mouseSim.r * .2",
+    "sourceWorldTransformed",
+    "max(1.0 - vMouseSim * 0.2, 0.0001)",
+  ];
+  const checks = [
+    "gl_Position.xy / uCoords.xy",
+    "vec2 newUv = uv",
+    "texture2D(tMouseSim",
+    "transformed *= 1.0 - mouse",
+    "transformed /= 1. - mouseSim.r * .2",
+    "transformed / max(1.0 - vMouseSim * 0.2, 0.0001)",
+    "transformed / (1.0 - vMouseSim * 0.2)",
+    "vSpotLightCoord",
+    "NUM_SPOT_LIGHT_COORDS",
+    "USE_BATCHING",
+    "USE_INSTANCING",
+  ];
+  return {
+    lengths: {
+      source: sourceShader.length,
+      rebuild: rebuildShader.length,
+      delta: rebuildShader.length - sourceShader.length,
+    },
+    includes: compareLists(collectIncludes(sourceShader), collectIncludes(rebuildShader)),
+    uniforms: {
+      onlySource: compareLists(collectUniformNames(sourceShader), collectUniformNames(rebuildShader)).onlySource,
+      onlyRebuild: compareLists(collectUniformNames(sourceShader), collectUniformNames(rebuildShader)).onlyRebuild,
+    },
+    anchors: Object.fromEntries(anchors.map((anchor) => [
+      anchor,
+      {
+        sourceLine: lineNumber(sourceShader, sourceShader.indexOf(anchor)),
+        rebuildLine: lineNumber(rebuildShader, rebuildShader.indexOf(anchor)),
+      },
+    ])),
+    checks: Object.fromEntries(checks.map((check) => [
+      check,
+      {
+        source: sourceShader.includes(check),
+        rebuild: rebuildShader.includes(check),
+      },
+    ])),
+    sourceWindows: [
+      lineWindow(sourceShader, "vec2 screenUv"),
+      lineWindow(sourceShader, "vec2 newUv"),
+      lineWindow(sourceShader, "vec4 mvPosition"),
+      lineWindow(sourceShader, "transformed /= 1. - mouseSim.r * .2", 8, 12),
+    ].filter(Boolean),
+    rebuildWindows: [
+      lineWindow(rebuildShader, "vec2 newUv"),
+      lineWindow(rebuildShader, "#include <project_vertex>"),
+      lineWindow(rebuildShader, "sourceWorldTransformed", 8, 12),
+      lineWindow(rebuildShader, "vSpotLightCoord", 8, 12),
+    ].filter(Boolean),
+    mouseLines: {
+      source: findLines(sourceShader, /mouseSim|tMouseSim|mouseUv|uUvOffset|uUvOffsetScale/i),
+      rebuild: findLines(rebuildShader, /mouseSim|tMouseSim|mouseUv|uUvOffset|uUvOffsetScale/i),
+    },
+    worldPositionLines: {
+      source: findLines(sourceShader, /worldPosition|modelMatrix|instanceMatrix|vSpotLightCoord|spotLightMatrix/i),
+      rebuild: findLines(rebuildShader, /worldPosition|modelMatrix|instanceMatrix|vSpotLightCoord|spotLightMatrix|sourceWorldTransformed/i),
+    },
+  };
+}
+
 function analyzeShaderChunk(name) {
   const chunk = ShaderChunk[name] || "";
   const checks = [
@@ -338,7 +414,9 @@ try {
   }
   writeFileSync(path.join(outDir, "rebuild-work-vertex.glsl"), workDump.vertexShader);
   writeFileSync(path.join(outDir, "rebuild-work-fragment.glsl"), workDump.fragmentShader);
+  const vertexAnalysis = analyzeVertex(sourceH, workDump.vertexShader);
   const fragmentAnalysis = analyzeFragment(sourceZ, workDump.fragmentShader);
+  writeFileSync(path.join(outDir, "vertex-analysis.json"), JSON.stringify(vertexAnalysis, null, 2));
   writeFileSync(path.join(outDir, "fragment-analysis.json"), JSON.stringify(fragmentAnalysis, null, 2));
   const chunkAnalysis = {
     lightsFragmentBegin: analyzeShaderChunk("lights_fragment_begin"),
@@ -352,6 +430,15 @@ try {
     consoleMessages: consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message)),
     vertex: summarizeShader("work vertex", workDump.vertexShader, sourceH),
     fragment: summarizeShader("work fragment", workDump.fragmentShader, sourceZ),
+    vertexAnalysis: {
+      lengths: vertexAnalysis.lengths,
+      includesOnlySource: vertexAnalysis.includes.onlySource,
+      includesOnlyRebuild: vertexAnalysis.includes.onlyRebuild,
+      uniformsOnlySource: vertexAnalysis.uniforms.onlySource,
+      uniformsOnlyRebuild: vertexAnalysis.uniforms.onlyRebuild,
+      keyChecks: vertexAnalysis.checks,
+      anchors: vertexAnalysis.anchors,
+    },
     fragmentAnalysis: {
       lengths: fragmentAnalysis.lengths,
       includesOnlySource: fragmentAnalysis.includes.onlySource,
@@ -376,6 +463,7 @@ try {
       sourceFragment: path.join(outDir, "source-zA.glsl"),
       rebuildVertex: path.join(outDir, "rebuild-work-vertex.glsl"),
       rebuildFragment: path.join(outDir, "rebuild-work-fragment.glsl"),
+      vertexAnalysis: path.join(outDir, "vertex-analysis.json"),
       fragmentAnalysis: path.join(outDir, "fragment-analysis.json"),
       threeChunkAnalysis: path.join(outDir, "three-chunk-analysis.json"),
     },

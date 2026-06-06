@@ -384,6 +384,20 @@ const workBlockWorldPositionChunk = `
 #endif
 `;
 
+const workBlockSourceWorldPositionChunk = `
+#if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined ( USE_SHADOWMAP ) || defined ( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0
+  vec3 sourceWorldTransformed = transformed / (1.0 - vMouseSim * 0.2);
+  vec4 worldPosition = vec4(sourceWorldTransformed, 1.0);
+  #ifdef USE_BATCHING
+    worldPosition = batchingMatrix * worldPosition;
+  #endif
+  #ifdef USE_INSTANCING
+    worldPosition = instanceMatrix * worldPosition;
+  #endif
+  worldPosition = modelMatrix * worldPosition;
+#endif
+`;
+
 const workBlockFragmentPars = `
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
@@ -608,7 +622,12 @@ function patchWorkBlockShader(
   shader.vertexShader = shader.vertexShader
     .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
     .replace("#include <begin_vertex>", workBlockBeginVertexChunk)
-    .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
+    .replace(
+      "#include <worldpos_vertex>",
+      typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-va-world-undo") === "source"
+        ? workBlockSourceWorldPositionChunk
+        : workBlockWorldPositionChunk,
+    );
   shader.fragmentShader = shader.fragmentShader
     .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
     .replace("#include <tonemapping_fragment>", "// source VA omits tonemapping_fragment")

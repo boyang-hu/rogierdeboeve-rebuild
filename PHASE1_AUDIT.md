@@ -804,6 +804,59 @@ Recommended next implementation batch:
 
 This is a 6-8 point batch in one chain, not five isolated micro-steps and not a Phase 1 all-at-once rewrite.
 
+### S1-44 `VA` Vertex / World-Position Attribution Result
+
+This batch added diagnostics and one debug-only vertex attribution path. Normal production rendering remains on the stable `VA` chunk bridge.
+
+Changes:
+
+- `scripts/dump-va-shader.mjs` now writes `vertex-analysis.json` and includes vertex section summaries in `summary.json`.
+- The vertex report compares source `HA` with the generated rebuild work vertex shader around `begin_vertex`, `project_vertex`, `worldpos_vertex`, mouse sampling, varyings, and world-position formulas.
+- Added `?debug-va-world-undo=source`, work-block only, which changes the rebuild world-position helper from `transformed / max(1.0 - vMouseSim * 0.2, 0.0001)` to `transformed / (1.0 - vMouseSim * 0.2)`.
+- Added `va-world-undo-source` to `scripts/compare-home-brightness-attribution.mjs`.
+
+Shader dump results:
+
+| Dump | Vertex length | Key formula | Shader/console errors |
+| --- | ---: | --- | ---: |
+| Default `/tmp/rogier-va-shader-s143-vertex` | `4302` vs source `4482` | `transformed / max(1.0 - vMouseSim * 0.2, 0.0001)` | `0` |
+| `debug-va-world-undo=source` `/tmp/rogier-va-shader-s143-world-source` | `4291` vs source `4482` | `transformed / (1.0 - vMouseSim * 0.2)` | `0` |
+
+The vertex analyzer confirms these residual source-vs-rebuild differences:
+
+- Source `HA` uses `gl_Position.xy / uCoords.xy` to derive an early `screenUv`; rebuild does not currently mirror that exact early projection path.
+- Source `HA` performs the world-position mouse undo as `transformed /= 1. - mouseSim.r * .2`; the default rebuild bridge keeps a clamp for numerical safety.
+- The rebuild still carries Three 0.184 generated vertex includes such as batching/morph/skinning/project/logdepth/clipping wrappers. These are mostly compatibility wrappers, not proven visual defects.
+
+Brightness attribution at `/tmp/rogier-home-brightness-s143-world`:
+
+| Variant | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 | Errors |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | `0.2165` | `0.3103` | `0.0525` | `0.1775` | `0` |
+| `va-world-undo-source` | `0.2224` | `0.3216` | `0.0549` | `0.1767` | `0` |
+| spotlight transfer | `0.2473` | `0.3536` | `0.0745` | `0.1767` | `0` |
+| scene transfer | `0.2189` | `0.3167` | `0.0548` | `0.1767` | `0` |
+| source work-composite pass | `0.2226` | `0.2179` | `0.0211` | `0.1767` | `0` |
+| texture sRGB rollback | `0.1869` | `0.2347` | `0.0214` | `0.0603` | `0` |
+
+Decision:
+
+- Keep the vertex analyzer and `debug-va-world-undo=source` attribution switch.
+- Do not promote the unclamped source world-position formula to production. It is source-shaped and stable in the debug path, but it only creates a small positive movement compared with the already-kept texture color-space fix and does not close the remaining Phase 1 gap.
+- Stop treating the `max(...)` clamp as the main spotlight/thumb projection defect.
+- Continue next with source renderer/output and `OA/CA` input-transfer attribution, plus the source `HA` early `screenUv` path only if a smaller diagnostic can isolate it safely. Do not attempt full `HA` replacement again.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5231 OUT_DIR=/tmp/rogier-va-shader-s143-vertex CDP_PORT=9291 DUMP_WAIT=5200 node scripts/dump-va-shader.mjs`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5231 OUT_DIR=/tmp/rogier-home-brightness-s143-world CDP_PORT=9292 CAPTURE_WAIT=5200 node scripts/compare-home-brightness-attribution.mjs`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5231 OUT_DIR=/tmp/rogier-va-shader-s143-world-source CDP_PORT=9293 DUMP_WAIT=5200 EXTRA_QUERY='&debug-va-world-undo=source' node scripts/dump-va-shader.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-s143-world-undo` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

@@ -28,6 +28,7 @@ const variants = [
   { label: "spotlight-and-scene-transfer", query: "&debug-spotlight-map-transfer=srgb&debug-composite-transfer=1" },
   { label: "va-physical-direct", query: "&debug-va-physical-response=direct" },
   { label: "va-physical-source-fields", query: "&debug-va-physical-response=source-fields" },
+  { label: "va-world-undo-source", query: "&debug-va-world-undo=source" },
   { label: "sky-off", query: "&debug-sky-target=off" },
   { label: "sky-raw", query: "&debug-sky-target=raw" },
   { label: "texture-srgb-colorspace", query: "&debug-texture-colorspace=srgb" },
