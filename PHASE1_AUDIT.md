@@ -3049,3 +3049,30 @@ Attribution snapshot:
 | `environment-off` | `0.1398` | `0.1129` | `0.1209` | `0.0040` |
 
 Decision: keep this reflector blur/camera surface alignment. It changes reflector target content in a source-backed way and remains stable across project media, but Phase 1 is still open because the home hard horizon/fog-bed gap remains dominated by the broader environment/floor/reflection interaction and final target interpretation.
+
+### S1-31 Floor Reflection Band Attribution
+
+This batch expanded the Phase 1 QA harness instead of changing production visuals. The goal was to locate the hard horizontal fog/floor boundary before making more source-sensitive floor/environment edits.
+
+Runtime/tooling changes:
+
+- `scripts/analyze-home-bands.mjs` now accepts an output directory as its first CLI argument and reports source-vs-rebuild band deltas for desktop and mobile captures.
+- `window.__rogierOutputProbe.targets.*` now includes `bandStats`: ten horizontal luma bands and the strongest adjacent-band delta for every probed render target.
+
+Evidence from `/tmp/rd-band-probe` and `/tmp/rd-band-home`:
+
+| Target / capture | Key band jump | Read |
+| --- | ---: | --- |
+| Rebuild screenshot desktop | `0.1232` at `63.3%` height | Visible hard horizon remains in the final image. |
+| `workRaw` | `0.2023` at `0.50` | The boundary already exists in the raw home scene render. |
+| `workComposite` | `0.1159` at `0.50` | `OA/CA` inherits and softens it; it is not the origin. |
+| `preComposite` | `0.2027` at `0.50` | `A1/C1` re-exposes the same raw-scene boundary. |
+| `floorReflectionRead` | `0.3314` at `0.50` | The strongest target discontinuity is in the blurred reflector texture. |
+| `skyComposite` | `0.0325` at `0.90` | Sky target itself is smooth and is not the hard-horizon source. |
+
+Screenshot comparison:
+
+- Desktop rebuild center-band luma is now close to source (`-0.0178`), but the localized `0.55` band remains much darker than source (`-0.1032`).
+- Mobile rebuild center-band luma is still darker than source (`-0.0247`), with the largest remaining deficits around `0.25`, `0.65`, and `0.75`.
+
+Decision: keep the diagnostics. Do not tune global brightness, sky constants, thumb darkness, or final composite transfer from this evidence. The next source-backed batch should stay on `i1/a1` reflector target content and floor sampling/camera ownership, because the hard boundary is present before final compositing and is strongest in `floorReflectionRead`.

@@ -126,6 +126,14 @@ type RenderTargetStats = {
   luma: number;
 };
 
+type RenderTargetBandStats = {
+  bands: Array<[number, number]>;
+  maxHorizontalDelta: {
+    position: number;
+    value: number;
+  };
+};
+
 type ThumbProbeWindow = Window & {
   __rogierThumbProbe?: {
     activeSlug: string;
@@ -2075,6 +2083,38 @@ function renderTargetGridStats(renderer: WebGLRenderer, target: WebGLRenderTarge
   };
 }
 
+function renderTargetBandStats(renderer: WebGLRenderer, target: WebGLRenderTarget): RenderTargetBandStats {
+  const width = Math.max(1, target.width);
+  const height = Math.max(1, target.height);
+  const positions = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95];
+  const pixels = new Uint8Array(4);
+  const bands = positions.map((position) => {
+    const y = Math.min(height - 1, Math.max(0, Math.round((1 - position) * (height - 1))));
+    let lumaSum = 0;
+    const sampleCount = 17;
+    for (let index = 0; index < sampleCount; index += 1) {
+      const x = Math.min(width - 1, Math.max(0, Math.round(((index + 0.5) / sampleCount) * (width - 1))));
+      renderer.readRenderTargetPixels(target, x, y, 1, 1, pixels);
+      const r = pixels[0] / 255;
+      const g = pixels[1] / 255;
+      const b = pixels[2] / 255;
+      lumaSum += r * 0.2126 + g * 0.7152 + b * 0.0722;
+    }
+    return [position, Number((lumaSum / sampleCount).toFixed(4))] as [number, number];
+  });
+  let maxHorizontalDelta = { position: 0, value: 0 };
+  for (let index = 1; index < bands.length; index += 1) {
+    const value = Math.abs(bands[index][1] - bands[index - 1][1]);
+    if (value > maxHorizontalDelta.value) {
+      maxHorizontalDelta = {
+        position: Number(((bands[index][0] + bands[index - 1][0]) / 2).toFixed(3)),
+        value: Number(value.toFixed(4)),
+      };
+    }
+  }
+  return { bands, maxHorizontalDelta };
+}
+
 function renderTargetPixel(renderer: WebGLRenderer, target: WebGLRenderTarget, uv: Vector2) {
   const width = Math.max(1, target.width);
   const height = Math.max(1, target.height);
@@ -2105,6 +2145,7 @@ function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, s
     },
     stats: renderTargetStats(renderer, target, sampleSize),
     gridStats: renderTargetGridStats(renderer, target),
+    bandStats: renderTargetBandStats(renderer, target),
   };
 }
 

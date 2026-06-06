@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 
-const outDir = process.env.OUT_DIR || "/tmp/rogier-compare";
+const outDir = process.argv[2] || process.env.OUT_DIR || "/tmp/rogier-compare";
 const files = [
   ["original-desktop", "original-home-desktop.png"],
   ["rebuild-desktop", "rebuild-home-desktop.png"],
@@ -69,4 +69,26 @@ for (const [label, file] of files) {
   results.push(await analyze(label, file));
 }
 
-console.log(JSON.stringify({ outDir, results }, null, 2));
+function bandDelta(sourceLabel, rebuildLabel) {
+  const source = results.find((result) => result.label === sourceLabel);
+  const rebuild = results.find((result) => result.label === rebuildLabel);
+  if (!source || !rebuild || source.missing || rebuild.missing) return null;
+  return {
+    pair: `${sourceLabel} -> ${rebuildLabel}`,
+    centerBandLumaDelta: Number((rebuild.centerBandLuma - source.centerBandLuma).toFixed(4)),
+    maxHorizontalDeltaDelta: Number((rebuild.maxHorizontalDelta.value - source.maxHorizontalDelta.value).toFixed(4)),
+    bands: source.bands.map(([position, sourceValue], index) => {
+      const rebuildValue = rebuild.bands[index]?.[1] ?? 0;
+      return [position, Number((rebuildValue - sourceValue).toFixed(4))];
+    }),
+  };
+}
+
+console.log(JSON.stringify({
+  outDir,
+  results,
+  deltas: [
+    bandDelta("original-desktop", "rebuild-desktop"),
+    bandDelta("original-mobile", "rebuild-mobile"),
+  ].filter(Boolean),
+}, null, 2));
