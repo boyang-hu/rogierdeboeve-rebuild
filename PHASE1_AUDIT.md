@@ -128,6 +128,53 @@ Measured normal-path luma stayed stable:
 | `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
 | `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
 
+### S1-25 Spotlight Transfer / ColorSpace Attribution Result
+
+Two QA-only attribution paths are now available for D7/D8:
+
+- Added `?debug-thumb-colorspace=composite-srgb` and `?debug-thumb-colorspace=both-srgb`, which only alter thumb render-target texture `colorSpace` metadata for diagnosis.
+- Added `scripts/compare-thumb-colorspace.mjs`, which captures default, composite-srgb, and both-srgb home variants with `?debug-thumb-probe=1`.
+- Added `?debug-spotlight-map-transfer=srgb`, which replaces the ordinary work-block `lights_fragment_begin` include with a debug-only variant that samples `SpotLight.map` through `pow(spotColor.rgb, vec3(1.0 / 2.2))`.
+- Added `scripts/compare-spotlight-transfer.mjs`, which captures default vs debug transfer variants and records console/shader errors.
+- Normal rendering is unchanged unless one of these query flags is present.
+
+Source/Three evidence:
+
+- The mirrored bundle's `lights_fragment_begin` and local Three 0.184 both multiply `directLight.color` by `spotColor.rgb` when `SpotLight.map` is in bounds.
+- Three 0.184 wires `light.map` into `uniforms.spotLightMap.value` and updates the spotlight matrix even without shadow casting.
+- Therefore the remaining gap is not a missing `SpotLight.map` branch. It is transfer/color interpretation, projection coordinates, or the surrounding `VA/zA` lighting/material body.
+
+Diagnostic results:
+
+| Variant | Thumb probe effect | Final home luma | Interpretation |
+| --- | ---: | ---: | --- |
+| Default | composite target center luma `0.132`, map colorSpace empty | `0.0186` | Current baseline. |
+| `debug-thumb-colorspace=composite-srgb` | probe readback composite luma rises to `0.381` | `0.0186` | Texture metadata changes readback/composite interpretation, but does not materially change final spotlight projection. Not a direct fix. |
+| `debug-thumb-colorspace=both-srgb` | raw thumb luma `0.423`, composite luma `0.380` | `0.0186` | Same final result; target metadata alone is insufficient. |
+| `debug-spotlight-map-transfer=srgb` | shader samples the spotlight map through a gamma-like transfer | `0.0253` | Confirms map transfer contributes to darkness, but it only closes a small part of the `0.106` original-home luma gap. |
+
+Decision: keep these as diagnostic switches, not production behavior. The next implementation batch should not convert all thumb targets to sRGB or permanently gamma-correct the spotlight map. D7/D8 remain active, but S1-25 shows transfer is only a partial cause. The next source-driven target should be deeper `VA/zA` light/material-body parity: projection coordinates from `worldPosition`, old-vs-new `RE_Direct` material response, standard/physical specular interface drift, and any source `zA` chunks still bridged through Three 0.184.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-thumb-colorspace-s125 CDP_PORT=9263 CAPTURE_WAIT=5200 node scripts/compare-thumb-colorspace.mjs`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-spotlight-transfer-s125b CDP_PORT=9265 CAPTURE_WAIT=5200 node scripts/compare-spotlight-transfer.mjs`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s125-transfer` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured normal-path luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after S1-25 attribution |
+| --- | ---: | ---: |
+| Home desktop | `0.106` | `0.019` |
+| Home mobile | `0.056` | `0.016` |
+| About desktop | `0.027` | `0.015` |
+| `/gc-2026/` desktop | `0.140` | `0.039` |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` |
+
 ### Phase 1 Progress Checkpoint
 
 The current Phase 1 target is no longer a broad implementation pass. It is a focused attribution pass for a small number of source/rendering chains that still produce a large visible gap. The useful way to measure progress is now by chain status, not by total site completion:

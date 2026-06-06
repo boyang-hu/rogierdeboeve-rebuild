@@ -27,6 +27,7 @@ import {
   Raycaster,
   Scene,
   ShaderMaterial,
+  ShaderChunk,
   SpotLight,
   SRGBColorSpace,
   Texture,
@@ -508,6 +509,14 @@ function patchWorkBlockShader(
     .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
   if (variant === "work") {
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
+    const spotlightMapTransfer = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-spotlight-map-transfer") : null;
+    if (spotlightMapTransfer === "srgb") {
+      const lightsFragmentBegin = ShaderChunk.lights_fragment_begin.replace(
+        "directLight.color = inSpotLightMap ? directLight.color * spotColor.rgb : directLight.color;",
+        "directLight.color = inSpotLightMap ? directLight.color * pow(spotColor.rgb, vec3(1.0 / 2.2)) : directLight.color;",
+      );
+      shader.fragmentShader = shader.fragmentShader.replace("#include <lights_fragment_begin>", lightsFragmentBegin);
+    }
   }
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("dump-va-shader")) {
     const dumpWindow = window as ShaderDumpWindow;
@@ -1598,6 +1607,7 @@ export class WebGLBackdrop {
   private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
+  private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
   private thumbProbeLastUpdate = 0;
   private fluidStrength = 0.5;
@@ -1711,6 +1721,12 @@ export class WebGLBackdrop {
       target.texture.wrapS = ClampToEdgeWrapping;
       target.texture.wrapT = ClampToEdgeWrapping;
     });
+    if (this.debugThumbColorSpace === "both-srgb") {
+      this.thumbTarget.texture.colorSpace = SRGBColorSpace;
+      this.thumbCompositeTarget.texture.colorSpace = SRGBColorSpace;
+    } else if (this.debugThumbColorSpace === "composite-srgb") {
+      this.thumbCompositeTarget.texture.colorSpace = SRGBColorSpace;
+    }
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
     this.floorPlane.position.y = -1.65;
