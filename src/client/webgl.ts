@@ -343,6 +343,8 @@ uniform float uRevealSides;
 uniform float uMouseSpeed;
 uniform float uMouseLightness;
 uniform float uMouseFactor;
+uniform float uAuxiliaryMaterial;
+uniform float uScrollOpacity;
 uniform sampler2D tMouseSim2;
 uniform sampler2D tDisplacement;
 uniform vec2 uCoords;
@@ -388,13 +390,15 @@ float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
 float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
 float alpha = alpha1 * alpha2 * vAlpha;
 float revealCombined = uReveal * uRevealProject;
-float revealRadius = 2.0 * pow(revealCombined, 0.25);
+float fragmentReveal = mix(revealCombined, 1.0, uAuxiliaryMaterial);
+float revealRadius = 2.0 * pow(fragmentReveal, 0.25);
 float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
 float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
+float mouseAlphaFactor = mix(0.5, 0.15, uAuxiliaryMaterial);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * mouseAlphaFactor), 0.0, 1.0);
 alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
-alpha *= uRevealSides;
+alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
 
 gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 `;
@@ -2017,6 +2021,8 @@ export class WebGLBackdrop {
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
+      uAuxiliaryMaterial: { value: 0 },
+      uScrollOpacity: { value: 1 },
       uUvOffset: { value: sourceMouseUvOffset() },
       uUvOffsetScale: { value: MOUSE_RAY_SCALE },
       tMouseSim: { value: this.placeholder },
@@ -2106,6 +2112,7 @@ export class WebGLBackdrop {
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: 1 },
       uMouseFactor: { value: 1 },
+      uAuxiliaryMaterial: { value: 1 },
       uUvOffset: { value: new Vector3(0, 0, 0) },
       uUvOffsetScale: { value: 1.5 },
       uScrollOpacity: { value: 1 },
@@ -2129,6 +2136,7 @@ export class WebGLBackdrop {
       depthTest: false,
     }) as WorkBlockMaterial;
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
+    material.renderOrder = 10;
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
       patchWorkBlockShader(shader, uniforms);

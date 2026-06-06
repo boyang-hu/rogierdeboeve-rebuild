@@ -190,6 +190,36 @@ A local implementation experiment mirrored that flow by adding media raw/composi
 
 The experiment was reverted before commit. The important conclusion is that the source offscreen media path is still likely the correct final architecture, but current rebuild `C1/work/main` ownership is not ready for it. The next attempt should first isolate why project media becomes darker when mixed through `C1`: likely candidates are blank `tWork` ownership on project routes, `C1` background/darken interaction, or render-target color/alpha assumptions. Until that is solved, keep the current direct project media render path as the project-page stability baseline.
 
+### S1-07 XA/WA Auxiliary Block Shader Cleanup Result
+
+The about/floating auxiliary block path is now closer to source `XA/WA` without touching ordinary home `VA` work blocks:
+
+- Added the source `uScrollOpacity` fragment uniform to the shared block shader bridge.
+- Added an `uAuxiliaryMaterial` branch so only auxiliary blocks use source `WA` fragment semantics.
+- Auxiliary fragment reveal now follows source `WA` with `revealCombined = 1.` instead of using ordinary work-block `uReveal * uRevealProject`.
+- Auxiliary mouse alpha contribution now uses source `uMouseFactor * 0.15` instead of ordinary work-block `0.5`.
+- Auxiliary final alpha now multiplies by `uScrollOpacity`, matching source `gl_FragColor.a = mixedAlpha * uScrollOpacity`.
+- Auxiliary block material now sets `renderOrder = 10`, matching source `XA`.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-aux-wa` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed stable, as expected for an about/floating auxiliary cleanup:
+
+| Capture | Original luma | Rebuild luma after XA/WA cleanup | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.011` | Stable; ordinary `VA` darkness remains. |
+| Home mobile | `0.056` | `0.012` | Stable. |
+| About desktop | `0.026` | `0.015` | Runtime stable; visual acceptance still needs review. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+
+Decision: keep this cleanup because it removes four source-proven auxiliary block differences without regressing home or project pages. It does not address the main dark home work-block issue, so the next high-value batch remains ordinary `VA`/spotlight lighting or a narrowly isolated full-`VA` shader experiment.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |
