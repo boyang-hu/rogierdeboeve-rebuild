@@ -2621,3 +2621,30 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-sky-env-surface3-full`.
 
 Decision: keep this source-surface alignment. It removes another low-level shader/probe residual from the sky/environment chain, but Phase 1 remains open because the visible hard horizon/fog-bed and transfer/color interpretation gaps are still not source-resolved.
+
+### S1-17 `x1/_1/v1` Thumb Composite Uniform Surface
+
+This batch aligned a narrow thumb-composite shader-surface residual without changing the source formula or visual constants.
+
+Source evidence:
+
+- Source `_1/v1` declares `tScene`, `uDarkenIntensity`, `uDarkenColor`, and `uSaturation`.
+- Source `v1` applies `blendMultiply(mixed.rgb, uDarkenColor, uDarkenIntensity)`, then saturation, then `tonemapping_fragment`.
+- The rebuild already matched the formula and tonemapping tail, but still used local names `uDarkness` and `uDarknessColor`, which appeared as source/rebuild-only uniform residuals in the shader dump.
+
+Runtime/tooling changes:
+
+- Renamed the thumb composite shader uniforms from `uDarkness/uDarknessColor` to source `uDarkenIntensity/uDarkenColor`.
+- Updated the material uniform object, thumb darkness setters, GSAP tween targets, and thumb probe reads to use the source names.
+- Kept legacy probe fields `darkness` and `darknessColor` while adding source-named `darkenIntensity` and `darkenColor` fields for easier comparison.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-thumb-uniform-shader`.
+- The dump now reports `x1-thumb-composite.fragmentUniformsOnlySource=[]` and `fragmentUniformsOnlyRebuild=[]`.
+- Output probe passed with no failures or exceptions: `/tmp/rd-thumb-uniform-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-thumb-uniform-full`.
+
+Decision: keep this source-uniform cleanup. It improves shader attribution for the thumb/spotlight chain but does not close Phase 1 visually; the remaining blockers are still render-target/output transfer, generated material body parity, and the visible hard horizon/fog-bed gap.

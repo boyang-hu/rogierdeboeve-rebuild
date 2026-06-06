@@ -1431,8 +1431,8 @@ precision highp float;
 #include <tonemapping_pars_fragment>
 
 uniform sampler2D tScene;
-uniform float uDarkness;
-uniform vec3 uDarknessColor;
+uniform float uDarkenIntensity;
+uniform vec3 uDarkenColor;
 uniform float uSaturation;
 
 varying vec2 vUv;
@@ -1448,7 +1448,7 @@ vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
 
 void main() {
   vec4 color = texture2D(tScene, vUv);
-  color.rgb = blendMultiply(color.rgb, uDarknessColor, uDarkness);
+  color.rgb = blendMultiply(color.rgb, uDarkenColor, uDarkenIntensity);
   color.rgb = saturateColor(color.rgb, uSaturation);
   gl_FragColor = vec4(color.rgb, 1.0);
   #include <tonemapping_fragment>
@@ -3747,8 +3747,8 @@ export class WebGLBackdrop {
       depthTest: false,
       uniforms: {
         tScene: { value: this.thumbTarget.texture },
-        uDarkness: { value: 0 },
-        uDarknessColor: { value: sourceRgbColor("#000000", "#000000") },
+        uDarkenIntensity: { value: 0 },
+        uDarkenColor: { value: sourceRgbColor("#000000", "#000000") },
         uSaturation: { value: 1 },
       },
       vertexShader: backgroundVertex,
@@ -4105,10 +4105,10 @@ export class WebGLBackdrop {
     this.thumbDarknessTweens.forEach((tween) => tween.kill());
     this.thumbDarknessTweens = [];
     if (duration <= 0) {
-      this.thumbCompositeMaterial.uniforms.uDarkness.value = value;
+      this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value = value;
       return;
     }
-    this.thumbDarknessTweens.push(gsap.to(this.thumbCompositeMaterial.uniforms.uDarkness, { value, duration, ease: "expo.out" }));
+    this.thumbDarknessTweens.push(gsap.to(this.thumbCompositeMaterial.uniforms.uDarkenIntensity, { value, duration, ease: "expo.out" }));
   }
 
   private setSaturation(value: number, duration = 1.6) {
@@ -4160,7 +4160,7 @@ export class WebGLBackdrop {
   private setThumbDarknessColor(value?: string, duration = 1.6) {
     this.thumbDarknessColorTweens.forEach((tween) => tween.kill());
     this.thumbDarknessColorTweens = [];
-    tweenColorOwned(this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color, value ?? "#000000", duration, this.thumbDarknessColorTweens, "#000000");
+    tweenColorOwned(this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color, value ?? "#000000", duration, this.thumbDarknessColorTweens, "#000000");
   }
 
   private setThumbMouseLightness(value: number, duration = 1.6) {
@@ -4996,7 +4996,7 @@ export class WebGLBackdrop {
   private updateThumbProbe(time: number) {
     if (!this.debugThumbProbe || time - this.thumbProbeLastUpdate < 0.5) return;
     this.thumbProbeLastUpdate = time;
-    const color = this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color;
+    const color = this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color;
     const probeWindow = window as ThumbProbeWindow;
     probeWindow.__rogierThumbProbe = {
       activeSlug: this.activeSlug,
@@ -5004,8 +5004,10 @@ export class WebGLBackdrop {
       thumbProgress: this.thumbProgress,
       visibleThumbs: this.workItems.filter((item) => item.thumb.visible).length,
       thumbComposite: {
-        darkness: this.thumbCompositeMaterial.uniforms.uDarkness.value as number,
+        darkness: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
+        darkenIntensity: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
         darknessColor: [color.r, color.g, color.b],
+        darkenColor: [color.r, color.g, color.b],
         saturation: this.thumbCompositeMaterial.uniforms.uSaturation.value as number,
       },
       spotlight: {
