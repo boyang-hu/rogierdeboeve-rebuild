@@ -14,6 +14,7 @@ import {
   LinearFilter,
   LinearSRGBColorSpace,
   MathUtils,
+  Matrix3,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
@@ -23,6 +24,7 @@ import {
   Object3D,
   OrthographicCamera,
   PerspectiveCamera,
+  Plane,
   PlaneGeometry,
   RGBAFormat,
   Raycaster,
@@ -35,6 +37,7 @@ import {
   TextureLoader,
   Vector2,
   Vector3,
+  Vector4,
   VideoTexture,
   WebGLRenderer,
   WebGLRenderTarget,
@@ -1104,6 +1107,26 @@ void main() {
 }
 `;
 
+const floorVertex = `
+varying vec2 vUv;
+varying vec4 vCoord;
+varying vec3 vNormal;
+varying vec3 vToEye;
+
+uniform mat4 uMatrix;
+uniform mat3 uMapTransform;
+
+void main() {
+  vUv = (uMapTransform * vec3(uv, 1.0)).xy;
+  vCoord = uMatrix * vec4(position, 1.0);
+  vNormal = normalMatrix * normal;
+  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+  vToEye = cameraPosition - worldPosition.xyz;
+  vec4 mvPosition = viewMatrix * worldPosition;
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
 const thumbFragment = `
 precision highp float;
 
@@ -1275,30 +1298,51 @@ uniform float uShader1Speed;
 
 varying vec2 vUv;
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+float noiseShaderRandom(vec2 n) {
+  return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
 }
 
 float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+  vec2 ip = floor(p);
+  vec2 u = fract(p);
+  u = u * u * (3.0 - 2.0 * u);
+  float res = mix(
+    mix(noiseShaderRandom(ip), noiseShaderRandom(ip + vec2(1.0, 0.0)), u.x),
+    mix(noiseShaderRandom(ip + vec2(0.0, 1.0)), noiseShaderRandom(ip + vec2(1.0, 1.0)), u.x),
     u.y
   );
+  return res * res;
 }
 
-float fbm(vec2 p) {
+const mat2 mtx = mat2(0.80, 0.60, -0.60, 0.80);
+
+float fbm(vec2 p, float time, float speed) {
   float f = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 5; i++) {
-    f += a * noise(p);
-    p = p * 2.03 + 17.13;
-    a *= 0.5;
-  }
-  return f;
+
+  f += 0.500000 * noise(p - time * speed);
+  p = mtx * p * 2.02;
+  f += 0.031250 * noise(p);
+  p = mtx * p * 2.01;
+  f += 0.250000 * noise(p);
+  p = mtx * p * 2.03;
+  f += 0.125000 * noise(p);
+  p = mtx * p * 2.01;
+  f += 0.062500 * noise(p - time * (speed * 5.0));
+  p = mtx * p * 2.04;
+  f += 0.015625 * noise(p + time * (speed * 5.0));
+
+  return f / 0.96875;
+}
+
+float pattern(vec2 p, float time, float speed) {
+  float f1 = fbm(p, time, speed);
+  float f2 = fbm(p + f1, time, speed);
+  return fbm(p + f2, time, speed);
+}
+
+vec4 noiseShader(vec2 uv, float time, float speed) {
+  float shade = pattern(uv, time, speed);
+  return vec4(vec3(shade), shade);
 }
 
 vec3 contrastColor(vec3 color, float amount) {
@@ -1318,13 +1362,10 @@ void main() {
   vec2 pos = vUv.xy * 4.0;
   pos.x *= 1.5;
 
-  float n1 = fbm(pos + vec2(uTime * uShader1Speed * 0.01, 0.0));
-  float n2 = fbm(pos * 2.0 + vec2(11.7, uTime * uShader1Speed * -0.008));
-  float n3 = fbm(pos * 4.0 + vec2(uTime * uShader1Speed * 0.004, 5.3));
-  vec3 procedural = vec3(n1, n2, n3);
+  vec4 procedural = noiseShader(pos, uTime, uShader1Speed * 0.1);
   vec4 diffuseColor = texture2D(tScene, vUv);
 
-  diffuseColor.rgb = blendReflect(diffuseColor.rgb, procedural, 0.5);
+  diffuseColor.rgb = blendReflect(diffuseColor.rgb, procedural.rgb, 0.5);
   diffuseColor.rgb = contrastColor(diffuseColor.rgb, 2.0);
   diffuseColor.rgb *= 2.0;
 
@@ -1366,11 +1407,8 @@ void main() {
 const floorFragment = `
 precision highp float;
 
-uniform float uTime;
-uniform vec3 uActiveColor;
-uniform vec3 uAmbientColor;
-uniform float uAmbientIntensity;
 uniform sampler2D tReflect;
+uniform vec3 uColor;
 uniform float uReflectivity;
 uniform float uMirror;
 uniform float uFloorMixStrength;
@@ -1379,41 +1417,29 @@ uniform vec2 uNormalScale;
 uniform sampler2D tNormalMap;
 
 varying vec2 vUv;
-
-float random(vec2 st) {
-  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-}
-
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(random(i + vec2(0.0, 0.0)), random(i + vec2(1.0, 0.0)), u.x),
-    mix(random(i + vec2(0.0, 1.0)), random(i + vec2(1.0, 1.0)), u.x),
-    u.y
-  );
-}
+varying vec4 vCoord;
+varying vec3 vNormal;
+varying vec3 vToEye;
 
 void main() {
-  vec2 uv = vUv;
-  float horizon = smoothstep(1.0, 0.18, uv.y);
-  float edge = smoothstep(0.0, 0.22, uv.x) * smoothstep(1.0, 0.78, uv.x);
-  vec4 normalColor = texture2D(tNormalMap, uv * uNormalScale);
+  vec4 color = vec4(uColor, 1.0);
+  vec4 normalColor = texture2D(tNormalMap, vUv * uNormalScale);
   vec3 normal = normalize(vec3(
     normalColor.r * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0),
     normalColor.b,
     normalColor.g * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0)
   ));
-  vec2 reflectUv = vec2(uv.x, 1.0 - uv.y) + normal.xz * 0.05;
-  reflectUv.y = mix(reflectUv.y, pow(clamp(reflectUv.y, 0.0, 1.0), 1.35), 0.45);
-  vec3 reflectColor = texture2D(tReflect, clamp(reflectUv, vec2(0.0), vec2(1.0))).rgb;
-  float fresnel = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow(uv.y, 5.0), 1.0));
-  reflectColor = mix(vec3(0.0), reflectColor, fresnel);
-  vec3 base = vec3(0.29);
-  vec3 color = base * ((1.0 - min(1.0, uMirror)) + reflectColor * uFloorMixStrength);
-  float alpha = horizon * edge * 0.42;
-  gl_FragColor = vec4(color, alpha);
+  vec3 coord = vCoord.xyz / vCoord.w;
+  vec2 reflectUv = coord.xy + coord.z * normal.xz * 0.05;
+  vec4 reflectColor = texture2D(tReflect, reflectUv);
+
+  vec3 toEye = normalize(vToEye);
+  float theta = max(dot(toEye, normal), 0.0);
+  float reflectance = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow((1.0 - theta), 5.0), 1.0));
+  reflectColor = mix(vec4(0.0), reflectColor, reflectance);
+
+  gl_FragColor.rgb = color.rgb * ((1.0 - min(1.0, uMirror)) + reflectColor.rgb * uFloorMixStrength);
+  gl_FragColor.a = 1.0;
 }
 `;
 
@@ -1792,6 +1818,12 @@ export class WebGLBackdrop {
   private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
   private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false });
   private floorReflectionCamera = new PerspectiveCamera(55, 1, 1, 2000);
+  private floorReflectionMatrix = new Matrix4();
+  private floorReflectorPlane = new Plane();
+  private floorReflectorNormal = new Vector3(0, 1, 0);
+  private floorReflectorWorldPosition = new Vector3();
+  private floorReflectionClipPlane = new Vector4();
+  private floorReflectionQ = new Vector4();
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
   private screenMouseSimulationIndex = 0;
@@ -3198,15 +3230,11 @@ export class WebGLBackdrop {
 
   private createFloorMaterial() {
     return new ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      depthTest: false,
       uniforms: {
-        uTime: { value: 0 },
-        uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
-        uAmbientColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
-        uAmbientIntensity: { value: SOURCE_INITIAL_AMBIENT },
         tReflect: { value: this.floorReflectionTarget.texture },
+        uMapTransform: { value: new Matrix3().identity() },
+        uMatrix: { value: this.floorReflectionMatrix },
+        uColor: { value: colorFrom("#4a4a4a") },
         tNormalMap: { value: this.placeholder },
         uReflectivity: { value: 0.97 },
         uMirror: { value: 1 },
@@ -3214,7 +3242,7 @@ export class WebGLBackdrop {
         uNormalDistortionStrength: { value: 2.5 },
         uNormalScale: { value: new Vector2(45, 45) },
       },
-      vertexShader: thumbVertex,
+      vertexShader: floorVertex,
       fragmentShader: floorFragment,
     });
   }
@@ -3435,23 +3463,15 @@ export class WebGLBackdrop {
       this.ambientLight.color.copy(next);
       this.ambientLight.intensity = intensity;
       this.backgroundMaterial.uniforms.uAmbientColor.value.copy(next);
-      this.floorMaterial.uniforms.uAmbientColor.value.copy(next);
       this.environmentMaterial.uniforms.uDarkenColor.value.copy(next);
       this.backgroundMaterial.uniforms.uAmbientIntensity.value = intensity;
-      this.floorMaterial.uniforms.uAmbientIntensity.value = intensity;
       return;
     }
     this.ambientTweens.push(gsap.to(this.ambientLight.color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.ambientLight, { intensity, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
-    this.ambientTweens.push(gsap.to(this.floorMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uDarkenColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
-      value: intensity,
-      duration,
-      ease: "expo.out",
-    }));
-    this.ambientTweens.push(gsap.to(this.floorMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
       duration,
       ease: "expo.out",
@@ -4210,6 +4230,36 @@ export class WebGLBackdrop {
     this.floorReflectionCamera.lookAt(reflectedLookAt);
     this.floorReflectionCamera.projectionMatrix.copy(this.homeCamera.projectionMatrix);
     this.floorReflectionCamera.updateMatrixWorld();
+    this.floorReflectionMatrix.set(
+      0.5, 0, 0, 0.5,
+      0, 0.5, 0, 0.5,
+      0, 0, 0.5, 0.5,
+      0, 0, 0, 1,
+    );
+    this.floorReflectionMatrix.multiply(this.floorReflectionCamera.projectionMatrix);
+    this.floorReflectionMatrix.multiply(this.floorReflectionCamera.matrixWorldInverse);
+    this.floorReflectionMatrix.multiply(this.floorPlane.matrixWorld);
+    this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorPlane.matrixWorld);
+    this.floorReflectorNormal.set(0, 0, 1).transformDirection(this.floorPlane.matrixWorld);
+    this.floorReflectorPlane.setFromNormalAndCoplanarPoint(this.floorReflectorNormal, this.floorReflectorWorldPosition);
+    this.floorReflectorPlane.applyMatrix4(this.floorReflectionCamera.matrixWorldInverse);
+    this.floorReflectionClipPlane.set(
+      this.floorReflectorPlane.normal.x,
+      this.floorReflectorPlane.normal.y,
+      this.floorReflectorPlane.normal.z,
+      this.floorReflectorPlane.constant,
+    );
+    const projection = this.floorReflectionCamera.projectionMatrix;
+    const projectionElements = projection.elements;
+    this.floorReflectionQ.x = (Math.sign(this.floorReflectionClipPlane.x) + projectionElements[8]) / projectionElements[0];
+    this.floorReflectionQ.y = (Math.sign(this.floorReflectionClipPlane.y) + projectionElements[9]) / projectionElements[5];
+    this.floorReflectionQ.z = -1;
+    this.floorReflectionQ.w = (1 + projectionElements[10]) / projectionElements[14];
+    this.floorReflectionClipPlane.multiplyScalar(2 / this.floorReflectionClipPlane.dot(this.floorReflectionQ));
+    projectionElements[2] = this.floorReflectionClipPlane.x;
+    projectionElements[6] = this.floorReflectionClipPlane.y;
+    projectionElements[10] = this.floorReflectionClipPlane.z + 1;
+    projectionElements[14] = this.floorReflectionClipPlane.w;
 
     const wasVisible = this.floorPlane.visible;
     this.floorPlane.visible = false;
@@ -4598,7 +4648,6 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
     this.preCompositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
     this.preCompositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
-    this.floorMaterial.uniforms.uTime.value = time;
     this.environmentMaterial.uniforms.uTime.value = time;
     this.updateMediaPlanePositions();
 
