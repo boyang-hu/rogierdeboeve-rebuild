@@ -2536,3 +2536,31 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-remove-prebloom-full`.
 
 Decision: keep this source-structure cleanup. Phase 1 remains open; removing the dead pre-bloom branch reduces non-source graph noise but does not solve the hard horizon/fog-bed or transfer/color gap.
+
+### S1-14 `I1/C1` Render-Manager Surface
+
+This batch aligned narrow source render-manager surface details without enabling new visual effects or changing brightness constants.
+
+Source evidence:
+
+- Source `I1.initSettings()` defines a default-disabled `lensflare` settings object with `scale=(1.5,1.5)`, `exposure=1`, `clamp=1`, and `enabled=false`.
+- Source `I1.initRenderer()` always creates `renderTargetLensflare`, resizes it at full render resolution, and writes `C1.tLensflare = renderTargetLensflare.texture` in `I1.update()`, even when the lensflare pass is disabled.
+- Source `C1` declares `tScene`, `tPortal`, and `tLensflare` uniforms; `A1` actively declares `tScene` and `tLensflare`, while `tPortal` is a source material-surface uniform.
+- Source `I1.resize()` uses `floorPowerOfTwo(renderSize) / 2` for main bloom/luminosity mip ownership; source `Lu/kA` uses `/4`.
+
+Runtime changes:
+
+- Added the source default-disabled main lensflare settings object and a full-resolution `mainLensflareTarget`.
+- Routed `preCompositeMaterial.uniforms.tLensflare` to `mainLensflareTarget.texture` each frame, matching source `I1.update()` ownership while keeping the pass disabled.
+- Added source-surface `tScene` and `tPortal` uniforms to the `A1/C1` pre-composite material.
+- Changed the shared bloom composite factory to accept explicit settings, so source default-disabled main bloom uses `SOURCE_MAIN_RENDER_SETTINGS` factors instead of work `kA/OA` factors if enabled later.
+- Changed main bloom/luminosity target sizing to the source `I1` half-POT path; work bloom remains on source `Lu/kA` quarter-POT sizing.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe passed with no failures or exceptions and confirmed `lensflareEnabled=false` with a full-resolution lensflare target: `/tmp/rogier-phase1-i1-surface-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-i1-surface-full`.
+
+Decision: keep this source-surface alignment. It reduces remaining `I1/C1` graph drift and records the lensflare path as source-default disabled, but Phase 1 remains open because the hard horizon/fog-bed and render-target color interpretation gaps are still visible.
