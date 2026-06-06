@@ -2796,3 +2796,32 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-saturation-helper-full`.
 
 Decision: keep this helper alignment. It is source-correct and low risk, but it is a small color-semantic correction rather than a Phase 1 visual closeout; the hard horizon/fog-bed and target/output interpretation gaps remain open.
+
+### S1-23 `Lu/kA/I1` Bloom Composite Target Reuse
+
+This batch aligned a render-manager target ownership detail in source `Lu.update()`.
+
+Source evidence:
+
+- Source `Lu.initRenderer()` creates `renderTargetsHorizontal[]` and `renderTargetsVertical[]`, then `Lu.update()` writes the bloom composite back into `renderTargetsHorizontal[0]`.
+- Source then assigns `compositeMaterial.uniforms.tBloom.value = renderTargetsHorizontal[0].texture`.
+- There is no separate persistent `bloomTarget` or `mainBloomTarget` output target in source `Lu`; `renderTargetComposite` is reserved for the final composite material output.
+
+Runtime/tooling changes:
+
+- Removed the rebuild-only standalone work `bloomTarget`.
+- Removed the rebuild-only standalone main `mainBloomTarget`.
+- Changed the shared bloom chain to render the bloom composite into `horizontalTargets[0]`, matching source `Lu.update()`.
+- Routed work `OA/CA.tBloom`, main `lA/aA.tBloom`, and `C1/A1.tBloom` through the source-style first horizontal mip target.
+- Updated output probe `targets.bloom` and `targets.mainBloom` to report the source-style reused horizontal target.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-bloom-reuse-shader`.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-bloom-reuse-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks and non-zero media targets: `/tmp/rd-bloom-reuse-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-bloom-reuse-full`.
+
+Decision: keep this source render-manager structure change. It removes two non-source bloom output targets and makes the active `tBloom` ownership closer to `Lu.update()`, but Phase 1 remains open because the visible hard horizon/fog-bed and exact target/output interpretation gaps are still unresolved.
