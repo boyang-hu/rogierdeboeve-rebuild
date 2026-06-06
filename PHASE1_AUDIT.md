@@ -209,6 +209,37 @@ Source-checked non-fixes in this batch:
 
 Decision: keep the cubemap loader-ownership cleanup, reflection-target probe, and reusable band analyzer, but do not treat this as solving the horizon gap. The band analysis shows the remaining issue is structural: rebuild desktop/mobile still contain a strong mid/lower horizontal boundary. The next batch should inspect reflection target content and environment/floor composition around the `63%` desktop and `61%` mobile bands, not global brightness constants.
 
+### S1-59 Main / Work Render-Manager Split
+
+This batch source-checked the render-manager ownership around source `Lu`, `kA/OA`, and `I1/C1/A1`.
+
+Source-backed runtime changes:
+
+- Split the rebuild's work and main render-manager settings. Work keeps source `kA/OA` settings: mousesim on, luminosity on, bloom on with `strength=.15` and `radius=1.5`.
+- Added a separate source-shaped main settings object matching default `I1/Lu`: mousesim off, luminosity off, bloom off, blur off, fluid off.
+- Stopped reusing the work `OA` darken/saturation composite as the final screen pass. The main `A1`/pre-composite path now renders directly to screen, which matches source `U1` using `I1` with `C1/A1` as its composite material.
+- Stopped running the unused extra preBloom production pass. The old preBloom probe targets remain visible as zeroed diagnostics, while the active work bloom targets stay live.
+- Bloom target sizing is now consistently source-shaped at `floorPowerOfTwo(renderSize) / 4` for render-manager bloom chains.
+- The output probe now reports `settings.work` and `settings.main`, plus `mainBloomBright` / `mainBloom` target state.
+
+Verification:
+
+- `npm run build` passed.
+- `git diff --check` passed.
+- `scripts/probe-output-color.mjs` passed with no network/runtime/WebGL errors.
+- Full capture smoke passed for home, about, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Visual result:
+
+| Capture | Original | Rebuild after split | Key read |
+| --- | ---: | ---: | --- |
+| Desktop center-band luma | `0.2277` | `0.2662` | Still too bright through the middle. |
+| Desktop strongest horizontal delta | `0.0541` at `12.4%` | `0.1406` at `63.3%` | The hard mid/lower boundary remains and is more exposed without the non-source final `OA` pass. |
+| Mobile center-band luma | `0.2161` | `0.3597` | Mobile remains much too bright through the middle. |
+| Mobile strongest horizontal delta | `0.1367` at `95.6%` | `0.2557` at `49.8%` | The mobile hard edge is still structurally wrong. |
+
+Decision: keep this source-structure correction even though it does not visually close the horizon gap. The removed final `OA` pass was a non-source mask over the underlying floor/environment/A1 mismatch. The next batch should continue from the now source-shaped render-manager split and diagnose the actual mid-screen boundary, likely in floor/environment projection or A1 input composition, not by reintroducing final darkening.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.
