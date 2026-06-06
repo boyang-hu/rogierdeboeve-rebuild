@@ -2226,6 +2226,12 @@ export class WebGLBackdrop {
     this.floorPlane = new Mesh(new PlaneGeometry(60, 32), this.floorMaterial);
     this.floorPlane.position.y = -1.65;
     this.floorPlane.rotation.x = -Math.PI / 2;
+    this.floorPlane.onBeforeRender = () => {
+      if (!this.sceneWrap.visible) return;
+      this.floorPlane.visible = false;
+      this.renderFloorReflection();
+      this.floorPlane.visible = true;
+    };
     this.environmentMaterial = this.createEnvironmentMaterial();
     this.environmentPlane = new Mesh(new IcosahedronGeometry(300, 10), this.environmentMaterial);
     this.environmentPlane.position.y = -12.65;
@@ -4457,12 +4463,9 @@ export class WebGLBackdrop {
     projectionElements[10] = this.floorReflectionClipPlane.z + 1;
     projectionElements[14] = this.floorReflectionClipPlane.w;
 
-    const wasVisible = this.floorPlane.visible;
-    this.floorPlane.visible = false;
     this.renderer.setRenderTarget(this.floorReflectionTarget);
     this.renderer.clear();
     this.renderer.render(this.homeScene, this.floorReflectionCamera);
-    this.floorPlane.visible = wasVisible;
 
     this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
     this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(15, 0);
@@ -4865,7 +4868,6 @@ export class WebGLBackdrop {
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     if (hasHome) {
       this.renderSkyTarget(time);
-      this.renderFloorReflection();
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
