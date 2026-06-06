@@ -2768,3 +2768,31 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-oa-prod-surface-full`.
 
 Decision: keep this source-surface correction. It removes production shader pollution from diagnostic fields without losing the attribution tools, but Phase 1 remains open because the visible hard horizon/fog-bed and target/output color interpretation gaps are still unresolved.
+
+### S1-22 Shared `Ur` Saturation Helper Weights
+
+This batch aligned a small shared helper semantic across the source-owned composite shaders.
+
+Source evidence:
+
+- Source helper `Ur` implements `saturation(rgb, adjustment)` with luminance weights `vec3(0.2125, 0.7154, 0.0721)`.
+- Source `C1/A1`, `CA/OA`, and `v1/x1` all include `Ur` and call `saturation()`.
+- Source `aA/Lu` includes `Ur` but does not call saturation in the active main composite body, so no main composite runtime change was needed.
+
+Runtime/tooling changes:
+
+- Updated the work composite saturation helper to use source `Ur` weights.
+- Updated the pre-composite saturation helper to use source `Ur` weights.
+- Updated the thumb composite saturation helper to use source `Ur` weights.
+- Left `rgbshift` unchanged because the rebuild already samples alpha from the center texel, matching source `Qa`'s `g.a` behavior.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-saturation-helper-shader`.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-saturation-helper-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks and non-zero media targets: `/tmp/rd-saturation-helper-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-saturation-helper-full`.
+
+Decision: keep this helper alignment. It is source-correct and low risk, but it is a small color-semantic correction rather than a Phase 1 visual closeout; the hard horizon/fog-bed and target/output interpretation gaps remain open.

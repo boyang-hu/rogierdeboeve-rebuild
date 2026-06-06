@@ -895,7 +895,7 @@ uniform float uSaturation;
 varying vec2 vUv;
 
 vec3 saturation(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
   return mix(vec3(gray), color, amount);
 }
 
@@ -1045,7 +1045,7 @@ vec3 contrast(vec3 color, float amount) {
 }
 
 vec3 saturation(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
   return mix(vec3(gray), color, amount);
 }
 
@@ -1472,7 +1472,7 @@ uniform float uSaturation;
 varying vec2 vUv;
 
 vec3 saturateColor(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2126, 0.7152, 0.0722));
+  float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
   return mix(vec3(gray), color, amount);
 }
 
