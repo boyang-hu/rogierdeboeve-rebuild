@@ -170,6 +170,26 @@ function dispatchSoundMode(enabled: boolean) {
   window.dispatchEvent(new CustomEvent("rd:sound-mode", { detail: { enabled } }));
 }
 
+function getSessionValue(key: string) {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function setSessionValue(key: string, value: string) {
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch {
+    // Storage can be unavailable in restricted browsing contexts.
+  }
+}
+
+function persistSoundMode(enabled: boolean) {
+  setSessionValue("rd:sound-enabled", String(enabled));
+}
+
 function formatButton(button: HTMLElement) {
   const background = button.querySelector<HTMLElement>(".c-button-bg");
   const svg = background?.querySelector<SVGSVGElement>("svg");
@@ -202,12 +222,20 @@ function initPreloader() {
   const percent = document.querySelector<HTMLElement>("[data-preloader-percent]");
   const enterButtons = document.querySelectorAll<HTMLButtonElement>("[data-preloader-enter]");
   const soundToggle = document.querySelector<HTMLButtonElement>("[data-sound-toggle]");
+  const hasEntered = () => getSessionValue("rd:has-entered") === "true";
+  const getSessionSoundMode = () => getSessionValue("rd:sound-enabled") !== "false";
+  const setSessionState = (soundEnabled: boolean) => {
+    setSessionValue("rd:has-entered", "true");
+    setSessionValue("rd:sound-enabled", String(soundEnabled));
+  };
+  const skipPreloader = new URLSearchParams(window.location.search).has("skip-preloader") || hasEntered();
   let progress = 0;
   let complete = false;
 
   const reveal = (soundEnabled: boolean) => {
     if (complete) return;
     complete = true;
+    setSessionState(soundEnabled);
     dispatchSoundMode(soundEnabled);
     soundToggle?.setAttribute("aria-pressed", String(soundEnabled));
     soundToggle?.classList.toggle("is-muted", !soundEnabled);
@@ -217,6 +245,11 @@ function initPreloader() {
     emitPageEntered();
     window.setTimeout(() => preloader?.remove(), 850);
   };
+
+  if (skipPreloader) {
+    reveal(getSessionSoundMode());
+    return;
+  }
 
   const timer = window.setInterval(() => {
     progress = Math.min(100, progress + Math.ceil((100 - progress) * 0.18));
@@ -231,11 +264,6 @@ function initPreloader() {
     button.addEventListener("click", () => reveal(button.dataset.soundMode !== "off"));
   });
 
-  if (new URLSearchParams(window.location.search).has("skip-preloader")) {
-    reveal(false);
-    return;
-  }
-
   window.setTimeout(() => {
     enterButtons.forEach((button) => button.classList.add("is-active"));
     if (percent) percent.textContent = "100";
@@ -249,6 +277,7 @@ function initSoundToggle() {
     const enabled = toggle.getAttribute("aria-pressed") !== "true";
     toggle.setAttribute("aria-pressed", String(enabled));
     toggle.classList.toggle("is-muted", !enabled);
+    persistSoundMode(enabled);
     dispatchSoundMode(enabled);
   });
 }
