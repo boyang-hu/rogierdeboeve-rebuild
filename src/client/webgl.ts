@@ -3277,7 +3277,6 @@ export class WebGLBackdrop {
     this.cubeLoader.load(
       ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${cubeExt}`),
       (texture) => {
-        texture.colorSpace = SRGBColorSpace;
         this.homeScene.environment = texture;
       },
       undefined,
@@ -3285,7 +3284,6 @@ export class WebGLBackdrop {
         this.cubeLoader.load(
           ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.jpg`),
           (texture) => {
-            texture.colorSpace = SRGBColorSpace;
             this.homeScene.environment = texture;
           },
         );
@@ -4653,6 +4651,11 @@ export class WebGLBackdrop {
           uDarken: this.environmentMaterial.uniforms.uDarken.value,
           uDarkenColor: (this.environmentMaterial.uniforms.uDarkenColor.value as Color).toArray(),
           tSkyIsComposite: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
+          sceneEnvironment: this.homeScene.environment ? {
+            colorSpace: this.homeScene.environment.colorSpace,
+            type: this.homeScene.environment.type,
+            format: this.homeScene.environment.format,
+          } : null,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
           rotationY: this.environmentPlane.rotation.y,
           positionY: this.environmentPlane.position.y,
@@ -4666,6 +4669,8 @@ export class WebGLBackdrop {
         preBloom: renderTargetProbe(this.renderer, this.preBloomTarget),
         bloomBright: renderTargetProbe(this.renderer, this.bloomBrightTarget),
         bloom: renderTargetProbe(this.renderer, this.bloomTarget),
+        floorReflection: renderTargetProbe(this.renderer, this.floorReflectionTarget),
+        floorReflectionRead: renderTargetProbe(this.renderer, this.floorReflectionReadTarget),
         skyRaw: renderTargetProbe(this.renderer, this.skyRawTarget),
         skyComposite: renderTargetProbe(this.renderer, this.skyCompositeTarget),
         thumb: renderTargetProbe(this.renderer, this.thumbTarget),

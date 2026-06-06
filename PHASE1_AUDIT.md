@@ -183,6 +183,32 @@ Source-checked non-fixes in the same chain:
 
 Decision: keep the reflector render-state fix and the expanded probe. This is a small source-correct stability/parity improvement, not a claimed visual closeout. The next floor/environment pass should use the expanded probe and source-vs-rebuild captures to decide whether the remaining hard horizon is caused by reflection target content, environment `tSky` interpretation, or final `OA/CA` transfer.
 
+### S1-58 Cubemap Color-Space / Horizon Attribution
+
+This batch used source-vs-rebuild home captures plus screenshot band analysis to quantify the remaining floor/environment mismatch.
+
+Source-backed runtime/tooling changes:
+
+- Source `p1.addEnvironment()` loads `/images/cubemaps/01` through `CubeTextureLoader` and assigns the returned texture directly to `scene.environment`; the source loader itself sets cube textures to `srgb`. The rebuild no longer performs a separate explicit cubemap color-space assignment and instead leaves the loader-owned value visible in probes.
+- The output probe now reports `homeScene.environment` texture metadata under `uniforms.environment.sceneEnvironment` and also samples `floorReflection` / `floorReflectionRead` render targets.
+- Added `scripts/analyze-home-bands.mjs`, which reads a capture output directory and reports center-band luma plus strongest horizontal brightness deltas for original/rebuild home desktop/mobile screenshots.
+
+Screenshot band evidence:
+
+| Capture | Full center-band luma | Strongest horizontal delta | Key read |
+| --- | ---: | ---: | --- |
+| Original desktop | `0.2292` | `0.0541` at `12.4%` height | Source has a soft fog/floor distribution without the rebuild's mid-page hard jump. |
+| Rebuild desktop after cubemap cleanup | `0.2617` | `0.0921` at `63.3%` height | Still has a stronger mid/lower horizontal boundary. |
+| Original mobile | `0.2165` | `0.1359` at `95.7%` height | Mobile source boundary is near the bottom. |
+| Rebuild mobile after cubemap cleanup | `0.3649` | `0.1385` at `60.9%` height | Mobile rebuild remains much too bright through the middle. |
+
+Source-checked non-fixes in this batch:
+
+- Source `u1/l1` declares `uTime`, `uMultiplier`, and `uShader*` uniforms, but the active `l1` environment shader path sampled in the bundle does not use them for the visible color calculation. Do not add time/noise animation or tune these uniforms as a visual fix.
+- Source `l1` comments out `tonemapping_fragment` and `colorspace_fragment`, so the current environment material's local no-tonemap/no-colorspace behavior remains source-shaped.
+
+Decision: keep the cubemap loader-ownership cleanup, reflection-target probe, and reusable band analyzer, but do not treat this as solving the horizon gap. The band analysis shows the remaining issue is structural: rebuild desktop/mobile still contain a strong mid/lower horizontal boundary. The next batch should inspect reflection target content and environment/floor composition around the `63%` desktop and `61%` mobile bands, not global brightness constants.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.
