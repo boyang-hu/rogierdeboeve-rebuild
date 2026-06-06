@@ -12,6 +12,7 @@ import {
   InstancedBufferAttribute,
   InstancedMesh,
   LinearFilter,
+  LinearSRGBColorSpace,
   MathUtils,
   Matrix4,
   Mesh,
@@ -1840,6 +1841,7 @@ export class WebGLBackdrop {
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-darken"), 0)), 0, 3) : 0;
   private debugCompositeTransferMode =
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-transfer"), 0)), 0, 2) : 0;
+  private debugRendererOutput = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-renderer-output") : null;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
   private fluidStrength = 0.5;
@@ -1871,7 +1873,7 @@ export class WebGLBackdrop {
     this.renderer = new WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     this.renderer.setClearColor(colorFrom(SOURCE_WORK_BG), 0);
     this.renderer.setPixelRatio(sourceDpr());
-    this.renderer.outputColorSpace = SRGBColorSpace;
+    this.renderer.outputColorSpace = this.debugRendererOutput === "linear" ? LinearSRGBColorSpace : SRGBColorSpace;
     this.renderer.autoClear = false;
     this.renderer.domElement.className = "gl-canvas";
     this.root.appendChild(this.renderer.domElement);

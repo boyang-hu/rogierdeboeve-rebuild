@@ -857,6 +857,55 @@ Verification passed:
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 - Full source-vs-rebuild capture at `/tmp/rogier-compare-s143-world-undo` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
 
+### S1-45 Renderer Output / `OA/CA` Transfer Attribution Result
+
+This batch audited the source renderer/output chain and added a debug-only renderer output-color attribution path. Normal production rendering remains source-shaped with `renderer.outputColorSpace = "srgb"`.
+
+Source/static evidence:
+
+- Added `scripts/audit-renderer-output.mjs`.
+- Source bundle Three revision is `164`.
+- Source custom renderer `qw` calls the bundled `WebGLRenderer` with `alpha:true`, `antialias:false`, `preserveDrawingBuffer:false`, `powerPreference:"high-performance"`, `stencil:false`, `depth:false`, then sets `autoClear=false` and `outputColorSpace=Gt`; the bundle constant `Gt` is `"srgb"`.
+- Source `Lu` render manager creates `renderTargetA = new WebGLRenderTarget(1,1,{ depthBuffer:false, stencilBuffer:false })`, clones the rest, and then sets `renderTargetA.depthBuffer = true`.
+- Source `Lo` uses the same default render-target clone pattern for simple render managers.
+- Source `OA` uses `fragmentShader: CA`, `toneMapped:false`, `NormalBlending`, `transparent:true`, `depthWrite:false`, and `depthTest:false`.
+- Source `CA` contains `#include <tonemapping_fragment>`, but because `OA.toneMapped` is false this is not evidence for enabling tone mapping in production.
+- Local Three 0.184 source-like render targets have empty texture `colorSpace`, unsigned-byte RGBA, linear min/mag filters, and `generateMipmaps:false`, matching the source default render-target assumptions closely enough for now.
+
+Debug attribution:
+
+- Added `?debug-renderer-output=linear`, which changes only `renderer.outputColorSpace` from `srgb` to `srgb-linear`.
+- Added `renderer-output-linear` to `scripts/compare-home-brightness-attribution.mjs`.
+- A more destructive `NoColorSpace` renderer-output trial failed to produce `__rogierOutputProbe` and was not kept in the standard matrix. It is not source-shaped anyway because source explicitly uses `srgb`.
+
+Brightness attribution at `/tmp/rogier-home-brightness-s145-renderer-output2`:
+
+| Variant | Renderer output | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 | Errors |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| default | `srgb` | `0.2204` | `0.3189` | `0.0540` | `0.1767` | `0` |
+| renderer output linear | `srgb-linear` | `0.2199` | `0.3184` | `0.0548` | `0.1767` | `0` |
+| scene transfer | `srgb` | `0.2205` | `0.3188` | `0.0549` | `0.1767` | `0` |
+| spotlight transfer | `srgb` | `0.2445` | `0.3594` | `0.0748` | `0.1767` | `0` |
+| source work-composite pass | `srgb` | `0.2167` | `0.2117` | `0.0211` | `0.1767` | `0` |
+| texture sRGB rollback | `srgb` | `0.1861` | `0.2347` | `0.0214` | `0.0603` | `0` |
+
+Decision:
+
+- Keep `scripts/audit-renderer-output.mjs` and the `debug-renderer-output=linear` attribution switch.
+- Do not change production `renderer.outputColorSpace`; source and rebuild both use `srgb`, and `srgb-linear` barely changes the measured internal targets.
+- Do not promote the existing `debug-composite-transfer=1` gamma-like `tScene` lift. It still proves transfer interpretation can move the final visual, but S1-45 rules out renderer outputColorSpace as the source-backed explanation.
+- Continue Phase 1 with a narrower `CA`/blend-table and screen-pass shader audit: compare source blend mode implementations, `CA` final black blend constants, and screen material GLSL/output semantics rather than renderer-level output settings.
+
+Verification passed:
+
+- `OUT_DIR=/tmp/rogier-renderer-output-s145 node scripts/audit-renderer-output.mjs`
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5233 OUT_DIR=/tmp/rogier-home-brightness-s145-renderer-output2 CDP_PORT=9296 CAPTURE_WAIT=5200 node scripts/compare-home-brightness-attribution.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-s145-renderer-output` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
