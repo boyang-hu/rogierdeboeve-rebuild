@@ -1172,6 +1172,43 @@ void main() {
 }
 `;
 
+const mainCompositeFragment = `
+precision highp float;
+
+uniform sampler2D tScene;
+uniform sampler2D tBloom;
+uniform sampler2D tBlur;
+uniform sampler2D tFluid;
+uniform sampler2D tMouseSim;
+uniform bool boolBloom;
+uniform bool boolFluid;
+uniform bool boolLuminosity;
+uniform bool boolFxaa;
+
+varying vec2 vUv;
+
+vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
+  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
+  float r = texture2D(tex, uv + offset).r;
+  float g = texture2D(tex, uv).g;
+  float b = texture2D(tex, uv - offset).b;
+  float a = texture2D(tex, uv).a;
+  return vec4(r, g, b, a);
+}
+
+void main() {
+  vec2 uv = vUv;
+  vec4 fluid = texture2D(tFluid, uv);
+  uv = uv + fluid.rg * -0.15;
+  vec4 mixed = rgbshift(tScene, uv, -1.0, 0.001);
+  if (boolBloom) {
+    mixed.rgb += texture2D(tBloom, uv).rgb;
+  }
+  mixed.rgb += length(fluid.xy) * 0.015;
+  gl_FragColor = vec4(mixed.rgb, 1.0);
+}
+`;
+
 const homeLuminosityFragment = `
 precision highp float;
 
@@ -2142,6 +2179,8 @@ export class WebGLBackdrop {
   private preCompositeMaterial: ShaderMaterial;
   private preCompositeScene = new Scene();
   private compositeTarget = makeSourceRenderTarget(false);
+  private mainCompositeMaterial: ShaderMaterial;
+  private mainCompositeScene = new Scene();
   private mainBloomBrightTarget = makeSourceRenderTarget(false);
   private mainBloomTarget = makeSourceRenderTarget(false);
   private mainBloomHorizontalTargets: WebGLRenderTarget[] = [];
@@ -2362,6 +2401,8 @@ export class WebGLBackdrop {
     this.backgroundScene.add(makeFullscreenTriangle(this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
     this.preCompositeScene.add(makeFullscreenTriangle(this.preCompositeMaterial));
+    this.mainCompositeMaterial = this.createMainCompositeMaterial();
+    this.mainCompositeScene.add(makeFullscreenTriangle(this.mainCompositeMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
     this.compositeScene.add(makeFullscreenTriangle(this.compositeMaterial));
     this.bloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
@@ -2854,6 +2895,7 @@ export class WebGLBackdrop {
     this.backgroundTarget.dispose();
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
+    this.mainCompositeMaterial.dispose();
     this.mediaTarget.dispose();
     this.compositeMaterial.dispose();
     this.bloomBrightTarget.dispose();
@@ -3366,6 +3408,29 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: homePreCompositeFragment,
+    });
+  }
+
+  private createMainCompositeMaterial() {
+    const settings = SOURCE_MAIN_RENDER_SETTINGS;
+    return new ShaderMaterial({
+      toneMapped: false,
+      blending: NormalBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tScene: { value: this.compositeTarget.texture },
+        tBloom: { value: this.mainBloomTarget.texture },
+        tBlur: { value: this.fluidPlaceholder },
+        tFluid: { value: this.fluidPlaceholder },
+        tMouseSim: { value: this.fluidPlaceholder },
+        boolBloom: { value: settings.bloom.enabled },
+        boolFluid: { value: settings.fluid.enabled },
+        boolLuminosity: { value: settings.luminosity.enabled },
+        boolFxaa: { value: settings.fxaa.enabled },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: mainCompositeFragment,
     });
   }
 
@@ -5345,17 +5410,26 @@ export class WebGLBackdrop {
 
   private renderHomeCompositePass() {
     const settings = SOURCE_MAIN_RENDER_SETTINGS;
+    this.mainCompositeMaterial.uniforms.tScene.value = this.renderSettings.blur.enabled ? this.blurTargetB.texture : this.compositeTarget.texture;
+    this.mainCompositeMaterial.uniforms.tBloom.value = this.mainBloomTarget.texture;
+    this.mainCompositeMaterial.uniforms.tBlur.value = this.renderSettings.blur.enabled ? this.blurTargetB.texture : this.fluidPlaceholder;
+    this.mainCompositeMaterial.uniforms.tFluid.value = this.preCompositeMaterial.uniforms.tFluid.value;
+    this.mainCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+    this.mainCompositeMaterial.uniforms.boolBloom.value = settings.bloom.enabled;
+    this.mainCompositeMaterial.uniforms.boolFluid.value = settings.fluid.enabled;
+    this.mainCompositeMaterial.uniforms.boolLuminosity.value = settings.luminosity.enabled;
+    this.mainCompositeMaterial.uniforms.boolFxaa.value = settings.fxaa.enabled;
     if (settings.fxaa.enabled) {
       this.renderer.setRenderTarget(this.fxaaTarget);
       this.renderer.clear();
-      this.renderer.render(this.preCompositeScene, this.backgroundCamera);
+      this.renderer.render(this.mainCompositeScene, this.backgroundCamera);
       this.fxaaMaterial.uniforms.tMap.value = this.fxaaTarget.texture;
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.fxaaScene, this.backgroundCamera);
       return;
     }
     this.renderer.setRenderTarget(null);
-    this.renderer.render(this.preCompositeScene, this.backgroundCamera);
+    this.renderer.render(this.mainCompositeScene, this.backgroundCamera);
   }
 
   private tick = () => {

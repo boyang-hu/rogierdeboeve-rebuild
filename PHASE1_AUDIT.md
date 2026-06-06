@@ -2419,3 +2419,31 @@ Phase 1 should be considered complete only when:
 - Browser smoke passes home, about, and at least two project pages. Current local Chrome/SwiftShader smoke passes this gate.
 - Project media pages retain desktop WebGL tracks and mobile media fallback.
 - A final source-vs-rebuild visual QA pass confirms no obvious regressions in home WebGL, thumb projection, mouse interaction, about visual, and project media pages. Current forced-entry source screenshots are not sufficient evidence for this gate.
+
+### S1-10 Main `Lu/lA/aA` Composite Pass Result
+
+This batch corrected a source-level render-manager structure gap without treating it as a brightness tuning pass.
+
+Source facts:
+
+- Source `kA` extends `Lu` and replaces the work-scene composite material with `OA/CA`; that path renders the work scene to `renderTargetComposite`.
+- Source main scene uses default `Lu` with `lA/aA`, `renderToScreen=true`, `bloom/luminosity/fxaa=false`, and `fluid.enabled=true`.
+- Source default `aA` samples `tScene`, offsets UVs with `fluid.rg * -0.15`, applies a small RGB shift, conditionally adds bloom, adds `length(fluid.xy) * .015`, and outputs opaque color.
+
+Rebuild changes:
+
+- Added a separate `mainCompositeFragment` and `mainCompositeMaterial` matching the source default `lA/aA` role.
+- Routed `A1/C1` output through `compositeTarget -> mainCompositeMaterial.tScene -> screen`.
+- Fed the existing source-shaped main fluid texture into the final pass and kept main bloom/luminosity/fxaa flags at their source-disabled defaults.
+- Kept work-scene `OA/CA` ownership unchanged so darken/saturation remains scoped to the work render-manager.
+- Preserved project-page media routing and used full capture as the regression gate.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe at `/tmp/rd-main-composite-probe` passed with no console/runtime errors.
+- Home capture and band analysis at `/tmp/rd-main-composite-home` passed. Static luma stayed effectively unchanged because source main bloom is disabled and fluid is almost zero at rest.
+- Full capture at `/tmp/rd-main-composite-full` passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions.
+
+Decision: keep this source-structure fix. Phase 1 remains open; the visible hard horizon/fog-bed and transfer/color gaps are not solved by the default main composite pass.
