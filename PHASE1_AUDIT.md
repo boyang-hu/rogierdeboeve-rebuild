@@ -46,7 +46,7 @@ Recommended cadence:
 - Do 3-5 differences per batch for shader, render-target, render-order, or material-replacement changes.
 - Run full QA and commit once per batch, not once per tiny sub-step.
 
-Current next batch: continue the ordinary `VA` attribution path. `S1-21` full-`HA` vertex parity is implemented and stable but did not materially move luma, so the next source target is `S1-22`: the ordinary `VA` fragment/light body and bundled-Three light semantics around `zA`, especially spotlight-map contribution.
+Current next batch: continue the ordinary `VA` attribution path with diagnostics first. A committed full-`HA` vertex experiment initially passed the existing capture harness, but a later console-aware CDP probe exposed a shader compile/runtime hang under Three 0.184 + SwiftShader. The live code is restored to the stable chunk bridge; the next source target should be generated-shader diffing around `HA/zA` and spotlight-map light semantics before another live replacement.
 
 ## Phase 1 Remaining Execution Audit
 
@@ -93,37 +93,68 @@ This table is the immediate execution board for the next implementation batches.
 | 4 | S1-24 | `Ka` per-item sizing and raycast UV audit | Source `GA.createPlane()` uses plane scale `(35*1.3, 23*1.3, 1)`, ray plane `* 1.5`, `uUvOffset`, `uUvOffsetScale = 1.5`, and `mouseSim.onResize(plane.scale.x, plane.scale.y)`. | Rebuild ray plane geometry incorporates `GRID_SCALE`; mouse simulation target uses unscaled grid plane dimensions. Broad numbers appear equivalent, but this needs a line-by-line audit before changing. | Audit only after S1-21/S1-22 unless a shader experiment proves mouse inputs are the blocker. This is a 1-3 diff low-to-medium risk batch. | Medium |
 | 5 | S1-25 | Shared media/composite offscreen path | Source renders media through `$1/Lo/W1` into `C1.tMedia`; global media reveal is owned by `C1.uMediaReveal`, not per-plane scene opacity. | A source-shaped experiment passed runtime but darkened project pages badly, so it was reverted. | Revisit only after home `VA` attribution. Next attempt must isolate blank `tWork`, `C1` background blend, and target alpha/color assumptions before routing live project media through `C1`. | High |
 
-Recommended next move: start S1-22 as a controlled ordinary-`VA` fragment/light-body experiment. Because it is high risk, it should be one batch by itself: implement, build, marker check, full source-vs-rebuild capture, document, then keep or revert before commit.
+Recommended next move: continue S1-22 with a generated-shader diff/diagnostic pass before attempting another live shader replacement. Both the direct full-`HA` vertex path and a narrow `gl_FragColor` fragment-tail experiment proved unsafe under console-aware browser QA, so the next attempt must first identify the exact generated Three 0.184 vertex/fragment/light-body delta rather than broadening live shader changes.
 
-### S1-21 Full HA Vertex Result
+### S1-22 VA Fragment Tail Experiment Result
 
-The ordinary home work-block material now uses a source-compatible full `HA` vertex shader path instead of relying on Three 0.184 standard vertex chunk injection:
+A narrow ordinary-`VA` fragment-tail experiment was attempted and rejected before commit:
+
+- The experiment made the current fragment tail closer to source `zA` by letting `opaque_fragment` write `gl_FragColor = vec4(outgoingLight, diffuseColor.a)` first, then applying the mouse-lightness tail through `gl_FragColor.rgb`, and assigning alpha through `gl_FragColor.a`.
+- It also removed the rebuild-only `max(uCoords, vec2(1.0))` guard from screen UVs and stripped Three 0.184's `alphahash_pars_fragment`, which source `zA` does not include.
+- `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, and dist marker checks passed.
+- Browser QA failed: both full capture and home-only capture timed out at `Runtime.evaluate`, and a minimal CDP probe on rebuild home also timed out after navigation and load. This indicates the live fragment-tail experiment can hang the runtime under the local SwiftShader QA path even though the static build passes.
+
+Decision: revert the runtime shader changes and keep only this audit record. This failure does not invalidate S1-22, but it proves that the next S1-22 step should be diagnostic rather than another broad tail rewrite. The next useful batch is to capture/diff the generated ordinary-`VA` fragment shader after `onBeforeCompile`, compare it against source `zA`, and isolate spotlight-map/light-body deltas with a debug-only attribution path before committing live shader changes.
+
+### S1-21 Full HA Vertex Experiment Result
+
+The ordinary home work-block material briefly used a source-compatible full `HA` vertex shader path instead of relying on Three 0.184 standard vertex chunk injection, but that runtime change has been reverted:
 
 - Source `VA.onBeforeCompile` assigns complete `HA` and `zA`; this batch implemented the `HA` half only.
-- The new work-only vertex path keeps source `HA` ownership of perlin displacement, reveal fade, mouse scaling, displacement-wave z offset, instance spread, `vViewPosition`, and source-shaped `worldPosition` for spotlight-map coordinates.
-- Compatibility varyings needed by the current fragment bridge (`vLocalUv`, `vOffset`, `vMouseSim`, `vAlpha`) are assigned inside the full vertex path so this remains an isolated S1-21 experiment.
-- Auxiliary `WA/XA` blocks still use the previous chunk bridge; this batch intentionally does not move about/floating visuals.
-- The ordinary `zA` fragment/light body is still not fully replaced. That remains S1-22.
+- The attempted work-only vertex path kept source `HA` ownership of perlin displacement, reveal fade, mouse scaling, displacement-wave z offset, instance spread, `vViewPosition`, and source-shaped `worldPosition` for spotlight-map coordinates.
+- Compatibility varyings needed by the current fragment bridge (`vLocalUv`, `vOffset`, `vMouseSim`, `vAlpha`) were assigned inside the full vertex path.
+- Auxiliary `WA/XA` blocks were not changed.
+- Later console-aware browser probing showed the experiment was not stable: the first failure was a shader compile error from the source `vUv` declaration/chunk mismatch under Three 0.184; after patching that, rebuild home still timed out at CDP `Runtime.evaluate`.
+- The live code now restores the previous chunk-injection bridge and removes the unused full-`HA` shader string.
 
-Verification passed:
+Verification before rejection:
 
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
-- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s121-full-ha` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s121-full-ha` had no failed network requests or runtime exceptions, but this harness did not collect shader console errors.
 
 Measured luma stayed in the established range:
 
 | Capture | Original luma | Rebuild luma after S1-21 | Decision |
 | --- | ---: | ---: | --- |
-| Home desktop | `0.104` | `0.018` | Stable, but not the brightness fix. |
-| Home mobile | `0.055` | `0.015` | Stable, slightly lower than the recent `~0.016` range. |
+| Home desktop | `0.104` | `0.018` | Did not improve brightness. |
+| Home mobile | `0.055` | `0.015` | Did not improve brightness. |
 | About desktop | `0.026` | `0.015` | Stable; auxiliary path was not changed. |
 | `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
 | `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
 
-Decision: keep the full-`HA` vertex path because it removes a real source-proven ordinary-`VA` deviation without runtime or project regression. Since luma did not materially improve, the main unresolved Phase 1 gap is now more likely in the ordinary `zA` fragment/light body, bundled-Three spotlight-map/light semantics, or shared render-output assumptions than in the vertex displacement path alone.
+Decision: reject and revert the live full-`HA` path. It is source-proven but not safely portable as a direct full replacement under current Three 0.184. Future work should use generated-shader diffing and smaller compatibility patches instead of another full vertex replacement.
+
+Post-revert verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Console-aware rebuild-home CDP probe returned `ready:"complete"`, `has-webgl`, one full-viewport canvas, active `hashgraph-vc`, and no shader/`WebGLProgram` console errors.
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s122-diagnostics` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Post-revert luma baseline:
+
+| Capture | Original luma | Rebuild luma |
+| --- | ---: | ---: |
+| Home desktop | `0.106` | `0.019` |
+| Home mobile | `0.056` | `0.016` |
+| About desktop | `0.026` | `0.015` |
+| `/gc-2026/` desktop | `0.140` | `0.039` |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` |
 
 ### S1-08A VA Initial Diffuse Color Result
 
