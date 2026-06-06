@@ -96,6 +96,35 @@ Measured luma moved slightly in the correct direction on home while project page
 
 Decision: keep the ordinary-`VA` raw diffuse change because it is source-proven, moves home luma in the right direction, and does not regress project or about captures. The remaining Phase 1 visual gap still points to deeper `VA` light/shader semantics or render-target/color-output assumptions, not only initial diffuse color.
 
+### S1-08B VA Fragment Pars Cleanup Result
+
+The ordinary home `VA` shader patch now removes more source-commented fragment paths before the standard light body:
+
+- Source `zA` explicitly comments out `color_pars_fragment`, `map_pars_fragment`, `alphamap_pars_fragment`, `alphatest_pars_fragment`, `aomap_pars_fragment`, `lightmap_pars_fragment`, `emissivemap_pars_fragment`, `iridescence_fragment`, `cube_uv_reflection_fragment`, `envmap_common_pars_fragment`, `envmap_physical_pars_fragment`, `fog_pars_fragment`, `bumpmap_pars_fragment`, `normalmap_pars_fragment`, `clearcoat_pars_fragment`, `iridescence_pars_fragment`, `roughnessmap_pars_fragment`, `metalnessmap_pars_fragment`, `logdepthbuf_pars_fragment`, `clipping_planes_pars_fragment`, and `clipping_planes_fragment`.
+- Rebuild previously removed several source-absent fragment body paths, but many of those fragment pars still entered Three 0.184's generated ordinary work shader.
+- `stripSourceVaFragmentPaths()` now removes those source-commented pars for ordinary work `VA` only.
+- Auxiliary `WA/XA` is still left on the auxiliary variant because source `WA` keeps many of the standard material pars and body paths that ordinary `VA` comments out.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s108b-va-pars` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed essentially unchanged:
+
+| Capture | Original luma | Rebuild luma after S1-08B | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.105` | `0.019` | Stable; removing source-commented pars did not explain the main brightness gap. |
+| Home mobile | `0.055` | `0.020` | Stable. |
+| About desktop | `0.027` | `0.015` | Stable; auxiliary path was not changed. |
+| `/gc-2026/` desktop | `0.139` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the ordinary-`VA` fragment-pars cleanup because it removes a source-proven Three 0.184 shader deviation without destabilizing runtime or project pages. Since brightness did not materially move, the next Phase 1 attribution should inspect either the remaining generated `VA` light definitions against source `zA` or shared render-target/output assumptions around `Lu/C1/OA`.
+
 ### S1-06 T1/w1/E1 Thumb Closeout Result
 
 The remaining thumbnail-strip audit is now closed:
