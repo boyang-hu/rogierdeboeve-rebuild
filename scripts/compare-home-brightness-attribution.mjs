@@ -27,6 +27,7 @@ const variants = [
   { label: "source-work-composite-pass", query: "&debug-pass-order=source-work-composite" },
   { label: "spotlight-and-scene-transfer", query: "&debug-spotlight-map-transfer=srgb&debug-composite-transfer=1" },
   { label: "renderer-output-linear", query: "&debug-renderer-output=linear" },
+  { label: "composite-lighten-off", query: "&debug-composite-lighten=off" },
   { label: "va-physical-direct", query: "&debug-va-physical-response=direct" },
   { label: "va-physical-source-fields", query: "&debug-va-physical-response=source-fields" },
   { label: "va-world-undo-source", query: "&debug-va-world-undo=source" },

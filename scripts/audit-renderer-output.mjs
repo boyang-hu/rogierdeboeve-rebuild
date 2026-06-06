@@ -64,6 +64,9 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
+const sourcePo = extractTemplate(bundle, "Po", "`,CA=");
+const sourceBlendLighten = extractTemplate(bundle, "fg", "`,yA=");
+const sourceBlendMultiply = extractTemplate(bundle, "hg", "`,dg=");
 const sourceLu = extractAround(bundle, "class Lu", 200, 3600);
 const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
@@ -75,6 +78,14 @@ const rendererOutputRefs = [
 
 writeFileSync(path.join(outDir, "source-CA.glsl"), sourceCA);
 writeFileSync(path.join(outDir, "source-A1.glsl"), sourceA1);
+writeFileSync(path.join(outDir, "source-Po-blend.glsl"), sourcePo);
+writeFileSync(path.join(outDir, "source-fg-blend-lighten.glsl"), sourceBlendLighten);
+writeFileSync(path.join(outDir, "source-hg-blend-multiply.glsl"), sourceBlendMultiply);
+
+const blendModeMatches = [...sourcePo.matchAll(/mode == (\d+)\)\s*\{\s*return\s+([A-Za-z0-9_]+)/g)].map((match) => ({
+  mode: Number(match[1]),
+  functionName: match[2],
+}));
 
 const localDefaultTarget = new WebGLRenderTarget(1, 1);
 const localSourceTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
@@ -93,6 +104,32 @@ const summary = {
     },
   },
   sourceShaders: {
+    blendTable: {
+      length: sourcePo.length,
+      modeMap: Object.fromEntries(blendModeMatches.map((entry) => [entry.mode, entry.functionName])),
+      checks: checks(sourcePo, [
+        "vec3 blend(int mode, vec3 base, vec3 blend, float opacity)",
+        "return blendLighten(base, blend, opacity)",
+        "return blendMultiply(base, blend, opacity)",
+      ]),
+    },
+    blendFunctions: {
+      lighten: {
+        length: sourceBlendLighten.length,
+        checks: checks(sourceBlendLighten, [
+          "return max(blend,base)",
+          "return vec3(blendLighten(base.r,blend.r),blendLighten(base.g,blend.g),blendLighten(base.b,blend.b))",
+          "return (blendLighten(base, blend) * opacity + base * (1.0 - opacity))",
+        ]),
+      },
+      multiply: {
+        length: sourceBlendMultiply.length,
+        checks: checks(sourceBlendMultiply, [
+          "return base*blend",
+          "return (blendMultiply(base, blend) * opacity + base * (1.0 - opacity))",
+        ]),
+      },
+    },
     CA: {
       length: sourceCA.length,
       checks: checks(sourceCA, [
@@ -102,6 +139,7 @@ const summary = {
         "mixed.rgb += bloom.rgb",
         "mixed.rgb = blend(15, mixed.rgb, black, uDarken * 2. + mouseSim.r * .25 * uDarken)",
         "mixed.rgb = blend(11, mixed.rgb, black, 1.)",
+        "vec3 black = vec3(0.095,0.095,0.095)",
         "FragColor = vec4(mixed.rgb, 1.)",
       ]),
     },
@@ -190,6 +228,9 @@ const summary = {
   files: {
     sourceCA: path.join(outDir, "source-CA.glsl"),
     sourceA1: path.join(outDir, "source-A1.glsl"),
+    sourceBlendTable: path.join(outDir, "source-Po-blend.glsl"),
+    sourceBlendLighten: path.join(outDir, "source-fg-blend-lighten.glsl"),
+    sourceBlendMultiply: path.join(outDir, "source-hg-blend-multiply.glsl"),
   },
 };
 

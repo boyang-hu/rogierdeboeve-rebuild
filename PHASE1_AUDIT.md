@@ -906,6 +906,53 @@ Verification passed:
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 - Full source-vs-rebuild capture at `/tmp/rogier-compare-s145-renderer-output` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
 
+### S1-46 `CA` Blend Table / Final Lighten Attribution Result
+
+This batch audited source `CA` blend-mode ownership and added a debug-only final-lighten attribution path. Normal production rendering remains source-shaped.
+
+Source/static evidence:
+
+- `scripts/audit-renderer-output.mjs` now also extracts `source-Po-blend.glsl`, `source-fg-blend-lighten.glsl`, and `source-hg-blend-multiply.glsl`.
+- Source `Po` maps mode `11 -> blendLighten` and mode `15 -> blendMultiply`.
+- Source `blendLighten(base, blend, opacity)` is `blendLighten(base, blend) * opacity + base * (1.0 - opacity)`, where `blendLighten` is per-channel `max(blend, base)`.
+- Source `blendMultiply(base, blend, opacity)` is `base * blend * opacity + base * (1.0 - opacity)`.
+- Rebuild `homeCompositeFragment` uses equivalent formulas for the only `CA` modes used by the source final composite.
+- Source `CA` final black constant is `vec3(0.095,0.095,0.095)`, matching rebuild `vec3(0.095)`.
+
+Debug attribution:
+
+- Added `?debug-composite-lighten=off`, which skips the source final `blend(11, color, black, 1.)` step only when explicitly requested.
+- Added `composite-lighten-off` to `scripts/compare-home-brightness-attribution.mjs`.
+
+Brightness attribution at `/tmp/rogier-home-brightness-s146-ca-blend`:
+
+| Variant | Final lighten mode | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 | Errors |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| default | `0` | `0.2189` | `0.3157` | `0.0539` | `0.1767` | `0` |
+| composite lighten off | `1` | `0.2173` | `0.3130` | `0.0548` | `0.1767` | `0` |
+| darken off | `0` | `0.1908` | `0.2519` | `0.0201` | `0.1906` | `0` |
+| scene transfer | `0` | `0.2191` | `0.3172` | `0.0548` | `0.1767` | `0` |
+| spotlight transfer | `0` | `0.2387` | `0.3496` | `0.0753` | `0.1767` | `0` |
+| source work-composite pass | `0` | `0.2204` | `0.2170` | `0.0216` | `0.1767` | `0` |
+| texture sRGB rollback | `0` | `0.1603` | `0.2022` | `0.0115` | `0.0745` | `0` |
+
+Decision:
+
+- Keep the blend-table static audit and `debug-composite-lighten=off` switch.
+- Do not change source `CA` blend mode mapping, black constant, final lighten, or multiply darken. They are source-confirmed and the final-lighten attribution barely moves the measured output.
+- Stop treating `CA` blend-table implementation as the remaining Phase 1 brightness culprit.
+- Continue with `A1/C1` and screen-pass GLSL semantics that are still less directly attributed: source GLSL300 `FragColor` vs rebuild WebGL1 `gl_FragColor`, exact `A1` formula ordering against the extracted source shader, and shared project media/composite brightness.
+
+Verification passed:
+
+- `OUT_DIR=/tmp/rogier-renderer-output-s146b node scripts/audit-renderer-output.mjs`
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5235 OUT_DIR=/tmp/rogier-home-brightness-s146-ca-blend CDP_PORT=9298 CAPTURE_WAIT=5200 node scripts/compare-home-brightness-attribution.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-s146-ca-blend` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
