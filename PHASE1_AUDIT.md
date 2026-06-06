@@ -2709,3 +2709,31 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`: both keep `mediaCount=5`, `visibleMediaCount=5`, `uMediaReveal=1`, non-zero `mediaRaw/media` output, and no shader/runtime errors: `/tmp/rd-main-settings-project-media`.
 
 Decision: keep this source-alignment batch. It improves render-manager ownership and fixes a misleading QA comparison, but Phase 1 remains open because the visible home hard horizon/fog-bed and render-target/output color interpretation gaps are still unresolved.
+
+### S1-20 `Lu/lA/aA` Main Composite Shader Surface
+
+This batch finished the narrow shader-surface cleanup left by S1-19.
+
+Source evidence:
+
+- Source `lA/aA` declares `tScene`, `tBloom`, `tBlur`, `tFluid`, `boolBloom`, `boolFluid`, `boolLuminosity`, and `boolFxaa`.
+- Source `aA` does not declare or sample `tMouseSim`; mouse simulation remains part of source `OA/CA` work composite and the separate simulation passes, not the default main composite surface.
+
+Runtime/tooling changes:
+
+- Removed the rebuild-only `tMouseSim` declaration from `mainCompositeFragment`.
+- Removed the corresponding main composite material uniform.
+- Stopped updating `mainCompositeMaterial.uniforms.tMouseSim` during the main screen composite pass.
+- Kept `homeCompositeFragment` / `OA-work-composite` mouse simulation intact; that source path still declares and samples `tMouseSim`.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-main-composite-surface-shader3`.
+- The dump now reports `Lu-main-composite.fragmentUniformsOnlySource=[]` and `Lu-main-composite.fragmentUniformsOnlyRebuild=[]`.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-main-composite-surface-probe2`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`: both keep `mediaCount=5`, `visibleMediaCount=5`, `uMediaReveal=1`, non-zero media target output, and no shader/runtime errors: `/tmp/rd-main-composite-surface-project-media3`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-main-composite-surface-full`.
+
+Decision: keep this source-surface cleanup. It closes the obvious `Lu/aA` uniform residual without changing `OA/CA` behavior, but Phase 1 remains open because the visible hard horizon/fog-bed and render-target/output color interpretation gaps are still unresolved.

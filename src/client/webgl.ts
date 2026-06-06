@@ -1116,7 +1116,6 @@ uniform sampler2D tScene;
 uniform sampler2D tBloom;
 uniform sampler2D tBlur;
 uniform sampler2D tFluid;
-uniform sampler2D tMouseSim;
 uniform bool boolBloom;
 uniform bool boolFluid;
 uniform bool boolLuminosity;
@@ -3395,7 +3394,6 @@ export class WebGLBackdrop {
         tBloom: { value: this.mainBloomTarget.texture },
         tBlur: { value: this.fluidPlaceholder },
         tFluid: { value: this.fluidPlaceholder },
-        tMouseSim: { value: this.fluidPlaceholder },
         boolBloom: { value: settings.bloom.enabled },
         boolFluid: { value: settings.fluid.enabled },
         boolLuminosity: { value: settings.luminosity.enabled },
@@ -5454,7 +5452,6 @@ export class WebGLBackdrop {
     this.mainCompositeMaterial.uniforms.tBloom.value = this.mainBloomTarget.texture;
     this.mainCompositeMaterial.uniforms.tBlur.value = settings.blur.enabled ? this.blurTargetB.texture : this.fluidPlaceholder;
     this.mainCompositeMaterial.uniforms.tFluid.value = this.preCompositeMaterial.uniforms.tFluid.value;
-    this.mainCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     this.mainCompositeMaterial.uniforms.boolBloom.value = settings.bloom.enabled;
     this.mainCompositeMaterial.uniforms.boolFluid.value = settings.fluid.enabled;
     this.mainCompositeMaterial.uniforms.boolLuminosity.value = settings.luminosity.enabled;

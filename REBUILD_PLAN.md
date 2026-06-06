@@ -288,6 +288,7 @@ Latest verification:
 - Latest `VA/A1` shader-surface QA: after restoring the source-shaped work-block `mouseSim` world-position expression, removing production `debug-va-*` and `debug-spotlight-map-transfer` shader fallback branches, deleting obsolete comparison scripts, and adding the missing `A1.tScene` shader declaration, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, shader dump, output probe, and full capture passed. Outputs were written to `/tmp/rogier-phase1-va-surface-shader-3`, `/tmp/rogier-phase1-va-surface-probe`, and `/tmp/rogier-phase1-va-surface-full`; shader dump confirms `A1-pre-composite.fragmentUniformsOnlySource=[]` and the source `transformed /= 1. - mouseSim.r * .2` expression is active.
 - Latest sky/environment shader-surface QA: after restoring source-declared `V1/H1/z1/B1` sky uniforms, the sky `tonemapping_fragment` tail, source-declared `h1/u1/l1` environment uniforms, per-frame environment `uTime`, and expanded sky/environment probe metadata, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, shader dump, output probe, and full capture passed. Outputs were written to `/tmp/rd-sky-env-surface3-shader`, `/tmp/rd-sky-env-surface3-probe`, and `/tmp/rd-sky-env-surface3-full`; shader dump confirms `u1-environment.fragmentUniformsOnlySource=[]` and `fragmentUniformsOnlyRebuild=[]`. This is source-surface parity, not a Phase 1 visual closeout.
 - Latest thumb-composite uniform QA: after renaming `x1/_1/v1` thumb composite uniforms from rebuild-only `uDarkness/uDarknessColor` to source `uDarkenIntensity/uDarkenColor`, updating setters/tweens/probes, and keeping compatibility probe aliases, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, shader dump, output probe, and full capture passed. Outputs were written to `/tmp/rd-thumb-uniform-shader`, `/tmp/rd-thumb-uniform-probe`, and `/tmp/rd-thumb-uniform-full`; shader dump confirms `x1-thumb-composite.fragmentUniformsOnlySource=[]` and `fragmentUniformsOnlyRebuild=[]`. This improves thumb/spotlight attribution but is not a Phase 1 visual closeout.
+- Latest media/main composite QA: after aligning `$1/j1/W1` project media composite, `UD/FD/LD` project media surface, `I1/Lu/aA` settings, source shader mapping, and the final `Lu/aA` uniform surface, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, shader dump, output probe, project media probe, and full capture passed. Outputs were written to `/tmp/rd-media-surface-full`, `/tmp/rd-main-settings-full`, and `/tmp/rd-main-composite-surface-full`; project media probes confirmed `/gc-2026/` and `/hashgraph-vc/` keep five visible media tracks and non-zero media render targets. The next batch should stay on `Lu/kA/OA/I1` output-transfer or render-target content attribution rather than changing visual constants.
 
 ## Next Candidate Steps
 
@@ -300,6 +301,10 @@ Latest verification:
 ## Verification Baseline
 
 Run after each completed batch of up to ten related source-alignment steps, unless a risky shader, navigation, or media change needs an earlier quick check:
+
+- Batch size target: group related source-backed differences together, up to 10 per commit.
+- Do not commit unsupported visual tuning just to fill a batch.
+- Update this plan and `PHASE1_AUDIT.md` once per completed batch, after verification.
 
 ```sh
 ASTRO_TELEMETRY_DISABLED=1 npm run build
