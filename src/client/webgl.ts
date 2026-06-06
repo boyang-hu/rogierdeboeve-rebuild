@@ -3484,7 +3484,10 @@ export class WebGLBackdrop {
       texture.colorSpace = NoColorSpace;
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
+      texture.repeat.set(45, 45);
+      texture.updateMatrix();
       this.floorMaterial.uniforms.tNormalMap.value = texture;
+      this.floorMaterial.uniforms.uMapTransform.value = texture.matrix;
     });
     this.loadTexture("/models/me/model_T.jpg", (texture) => {
       this.characterMaterial.uniforms.tMap.value = texture;
@@ -3796,7 +3799,7 @@ export class WebGLBackdrop {
         uMirror: { value: 1 },
         uFloorMixStrength: { value: 15 },
         uNormalDistortionStrength: { value: 2.5 },
-        uNormalScale: { value: new Vector2(45, 45) },
+        uNormalScale: { value: new Vector2(1, 1) },
       },
       vertexShader: floorVertex,
       fragmentShader: floorFragment,

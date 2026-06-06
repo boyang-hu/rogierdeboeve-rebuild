@@ -263,6 +263,7 @@ Latest verification:
 - Latest work render-manager clear audit: a narrow no-clear trial for the work-scene raw/bloom/composite path wrote screenshots to `/tmp/rogier-work-manager-no-clear`. Build, `git diff --check`, and home capture passed, but the visual result was effectively unchanged, so the trial patch was reverted and only the source finding was documented.
 - Latest main fluid alignment QA: after enabling the source `I1` main fluid path and adding the source-shaped `ag` pass, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, focused output probes, default brightness attribution, home capture/band analysis, and full capture passed. Probe outputs were written to `/tmp/rogier-main-fluid-probe-default-2`, `/tmp/rogier-main-fluid-probe-off-2`, `/tmp/rogier-main-fluid-attribution`, `/tmp/rogier-main-fluid-home`, and `/tmp/rogier-main-fluid-full`. The debug-off probe now works because `scripts/probe-output-color.mjs` correctly merges query parameters. This closes the explicit main-fluid settings divergence but does not solve the remaining hard horizon/fog-bed or final transfer/color gap.
 - Latest fullscreen-triangle QA: after replacing render-manager screen-pass quads with the source fullscreen triangle, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, output probe, default brightness attribution, home capture/band analysis, and full capture passed. Outputs were written to `/tmp/rogier-fullscreen-triangle-probe`, `/tmp/rogier-fullscreen-triangle-attribution`, `/tmp/rogier-fullscreen-triangle-home`, and `/tmp/rogier-fullscreen-triangle-full`. The change is source-correct and stable, but the hard horizon/fog-bed and transfer/color gaps remain open.
+- Latest floor-normal matrix QA: after moving floor normal tiling from rebuild-only `uNormalScale=(45,45)` into the source texture matrix path `repeat=(45,45)` with material `uNormalScale=(1,1)`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, output probe, home capture/band analysis, and full capture passed. Outputs were written to `/tmp/rd-floor-probe`, `/tmp/rd-floor-home`, and `/tmp/rd-floor-full`. The probe confirmed `floor.uNormalScale=[1,1]`; project page content remained present. This is a source-structure fix, not a Phase 1 visual closeout.
 
 ## Next Candidate Steps
 
@@ -274,7 +275,7 @@ Latest verification:
 
 ## Verification Baseline
 
-Run after each completed batch of roughly five source-alignment steps, unless a risky shader, navigation, or media change needs an earlier quick check:
+Run after each completed batch of up to ten related source-alignment steps, unless a risky shader, navigation, or media change needs an earlier quick check:
 
 ```sh
 ASTRO_TELEMETRY_DISABLED=1 npm run build

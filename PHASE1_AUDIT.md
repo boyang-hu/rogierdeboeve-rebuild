@@ -358,6 +358,25 @@ Verification:
 
 Decision: keep this as source-correct render-manager structure. It reduces another implementation-level divergence without claiming a visual closeout. The next source-backed batch still needs to target the remaining hard horizon/fog-bed and final transfer/color interpretation gaps.
 
+### S1-65 Floor Normal Matrix Alignment
+
+This batch aligned the floor normal-map UV ownership with source `a1/o1/i1`. Source applies `Xt.floorNormal.repeat.set(45,45)` on the texture matrix, then leaves the material's `uNormalScale` at its default `vec2(1.)`; the rebuild previously encoded the same tiling in `uNormalScale`, which was visually similar but structurally different from the source shader path.
+
+Source-backed runtime changes:
+
+- The loaded floor normal texture now sets `repeat=(45,45)`, updates its texture matrix, and passes that matrix into `uMapTransform`.
+- `uNormalScale` is restored to source default `(1,1)`, so the shader samples `tNormalMap` through the source matrix path instead of a rebuild-only scale uniform.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe at `/tmp/rd-floor-probe` passed with no failed requests, runtime exceptions, or WebGL console errors. It confirmed `floor.uNormalScale=[1,1]`, reflection targets `1080x675`, and stable source-shaped floor uniforms.
+- Home source-vs-rebuild capture at `/tmp/rd-floor-home` passed; band analysis confirms the existing hard horizon/fog-bed gap remains open.
+- Full capture at `/tmp/rd-floor-full` passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`; all rebuild pages reached full-canvas states with no failed requests or runtime exceptions, and project page content remained present.
+
+Decision: keep this as a source-correct floor structure fix. It does not close Phase 1 visual parity. The next Phase 1 batch should group up to ten related source-backed differences around floor/environment output, `VA` generated shader deltas, and `OA/CA` transfer attribution before the next full verification/commit cycle.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.
