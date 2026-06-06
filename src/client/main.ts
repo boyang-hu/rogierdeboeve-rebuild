@@ -980,7 +980,7 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
   };
 }
 
-function initProjectLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
+function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
   const project = document.querySelector<HTMLElement>("[data-webgl-project]");
   if (!project) return () => {};
 
@@ -990,12 +990,8 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppN
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
       const target = new URL(link.href, window.location.href);
       if (target.origin !== window.location.origin || target.href === window.location.href) return;
-      event.preventDefault();
-      animateCurrentViewOut();
+      if (event.defaultPrevented) return;
       getWebgl()?.projectLeave?.();
-      const transition = link.dataset.transition;
-      if (navigate) navigate(target.href, transition === "work" ? "work" : "project");
-      else window.setTimeout(() => window.location.assign(target.href), 500);
     };
     link.addEventListener("click", onClick);
     cleanups.push(() => link.removeEventListener("click", onClick));
@@ -1216,7 +1212,7 @@ function boot() {
     cleanupPageCallbacks.push(initWorkPreview(() => webgl, navigateTo));
     cleanupPageCallbacks.push(initProjectMedia());
     cleanupPageCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
-    cleanupPageCallbacks.push(initProjectLeave(() => webgl, navigateTo));
+    cleanupPageCallbacks.push(initProjectLeave(() => webgl));
     cleanupPageCallbacks.push(initAboutLeave(() => webgl, navigateTo));
     cleanupPageCallbacks.push(initHomeRouteLeave(() => webgl, navigateTo));
     cleanupPageCallbacks.push(initScrollState());

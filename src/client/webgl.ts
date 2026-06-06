@@ -352,7 +352,7 @@ transformed.z += mouse * 15.0 * uMouseFactor;
 transformed *= 1.0 - displacement * 0.1;
 
 vec3 transformedSpread = transformed;
-float spread = 3.0;
+float spread = 5.0;
 transformedSpread.x -= instanceColor.x * spread;
 transformedSpread.x += spread * 0.5;
 transformedSpread.y -= instanceColor.y * spread;
@@ -2028,6 +2028,19 @@ export class WebGLBackdrop {
   }
 
   setProject(payload: ProjectPayload) {
+    this.applyProjectLook(payload);
+    this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
+    this.setDirectionalLightIntensity(1.5);
+    this.setDirectionalLight2Intensity(1);
+    this.setEnvRotation(0, 0);
+    this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
+    this.setRevealSpread(0);
+    this.resetThumbOffsetY();
+
+    if (payload.slug) this.setActiveSlug(payload.slug);
+  }
+
+  private applyProjectLook(payload: ProjectPayload) {
     const ambientIntensity = numeric(payload.ambient, 0.5);
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
     const sceneDarkness = payload.overviewDarkness ?? payload.darkness;
@@ -2043,15 +2056,6 @@ export class WebGLBackdrop {
     this.setThumbSaturation(numeric(payload.thumbSaturation, 1));
     this.setThumbMouseLightness(numeric(payload.mouseLightness, 1));
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
-    this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
-    this.setDirectionalLightIntensity(1.5);
-    this.setDirectionalLight2Intensity(1);
-    this.setEnvRotation(0, 0);
-    this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
-    this.setRevealSpread(0);
-    this.resetThumbOffsetY();
-
-    if (payload.slug) this.setActiveSlug(payload.slug);
   }
 
   beginProjectTransition(payload: ProjectPayload) {
@@ -2065,6 +2069,7 @@ export class WebGLBackdrop {
     this.setSaturation(numeric(payload.saturation, 1));
     this.setContrast(numeric(payload.contrast, 1.15));
     this.setFluidStrength(1, 0.5);
+    this.setSpotLightIntensity(0, 0.5, "none");
   }
 
   setActiveSlug(slug: string) {
@@ -2185,6 +2190,7 @@ export class WebGLBackdrop {
     const ambientIntensity = numeric(payload.ambient, 0.5);
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
     this.activeSlug = payload.slug ?? this.activeSlug;
+    this.keepWorkSceneHidden();
     this.setMainColor(payload.color);
     this.setMediaOpacity(0, 0, "none", 0);
     this.setDarken(numeric(payload.darkness, 0.25));
@@ -2305,13 +2311,8 @@ export class WebGLBackdrop {
   }
 
   setProjectScrollState(payload: ProjectPayload) {
-    const ambientIntensity = numeric(payload.ambient, 0.5);
-    const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
-    this.setMainColor(payload.color);
-    this.setAmbientLight(ambientColor, ambientIntensity);
-    this.setMediaBackground(payload.mediaColor ?? payload.color);
-    this.setSaturation(numeric(payload.saturation, 1));
-    this.setContrast(numeric(payload.contrast, 1.15));
+    this.applyProjectLook(payload);
+    this.keepWorkSceneHidden();
   }
 
   projectLeave() {
@@ -2319,6 +2320,18 @@ export class WebGLBackdrop {
     this.mediaTranslationTweens = [];
     this.setMediaOpacity(0, 0.5, "none", 0);
     this.setFluidStrength(0.5, 0.5);
+  }
+
+  private keepWorkSceneHidden() {
+    this.projectRevealTweens.forEach((tween) => tween.kill());
+    this.projectRevealProjectTweens.forEach((tween) => tween.kill());
+    this.projectRevealTweens = [];
+    this.projectRevealProjectTweens = [];
+    this.setRevealSpread(1, 0, "none");
+    this.setSpotLightIntensity(0, 0, "none");
+    this.workItems.forEach((item) => {
+      item.material.uniforms.uRevealProject.value = 0;
+    });
   }
 
   refreshMedia() {
