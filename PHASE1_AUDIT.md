@@ -2825,3 +2825,30 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-bloom-reuse-full`.
 
 Decision: keep this source render-manager structure change. It removes two non-source bloom output targets and makes the active `tBloom` ownership closer to `Lu.update()`, but Phase 1 remains open because the visible hard horizon/fog-bed and exact target/output interpretation gaps are still unresolved.
+
+### S1-24 `I1/Lu` Main Fluid GPU-Tier Gate
+
+This batch aligned the source main render-manager fluid gate without changing work-scene `kA/OA` mouse simulation.
+
+Source evidence:
+
+- Source `I1.initSettings()` sets `fluid.enabled = Le.GPU_TIER >= 3`.
+- Source `Le.GPU_TIER` defaults to `3` and `Qe.gpuCheck()` later updates it from the GPU benchmark, with `Le.LOW_RES = Le.GPU_TIER < 3`.
+- Work `kA` remains separate: its `fluid.enabled` is `false`, while its `mousesim.enabled` remains `true`.
+
+Runtime/tooling changes:
+
+- Restored the static `SOURCE_MAIN_RENDER_SETTINGS.fluid.enabled` template to the source default disabled value.
+- Added a local `sourceGpuTier()` bridge and made `sourceLowRes()` derive from that same tier gate.
+- Added instance-level `sourceMainRenderSettings`, enabling main fluid only when the local bridge resolves to tier 3.
+- Routed main composite creation, main bloom composite setup, resize gates, tick booleans, main fluid update, and output probe reporting through the instance settings.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-main-fluid-gate-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-main-fluid-gate-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-main-fluid-gate-full`.
+
+Decision: keep this source setting-ownership correction. On the current QA machine the local tier bridge resolves to `3`, so this does not close the remaining visible hard-horizon/fog-bed gap; it prevents the main fluid path from being unconditionally enabled on lower-tier devices and keeps main render-manager state closer to source `I1`.
