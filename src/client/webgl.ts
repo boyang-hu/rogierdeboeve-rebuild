@@ -2350,6 +2350,9 @@ export class WebGLBackdrop {
     || this.debugCompositeLightenMode !== 0;
   private debugRendererOutput = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-renderer-output") : null;
   private debugMainFluid = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-main-fluid") : null;
+  private debugFloor = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-floor") : null;
+  private debugFloorReflection = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-floor-reflection") : null;
+  private debugEnvironment = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-environment") : null;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
   private fluidStrength = 0.5;
@@ -2499,6 +2502,7 @@ export class WebGLBackdrop {
     this.floorPlane.rotation.x = -Math.PI / 2;
     this.floorPlane.onBeforeRender = () => {
       if (!this.sceneWrap.visible) return;
+      if (this.debugFloorReflection === "off") return;
       this.floorPlane.visible = false;
       this.renderFloorReflection();
       this.floorPlane.visible = true;
@@ -5125,6 +5129,11 @@ export class WebGLBackdrop {
       },
       settings: {
         passOrder: this.debugPassOrder === "raw-work-composite" ? "raw-work-composite" : "source-work-composite",
+        diagnostics: {
+          floor: this.debugFloor,
+          floorReflection: this.debugFloorReflection,
+          environment: this.debugEnvironment,
+        },
         work: {
           bloom: this.renderSettings.bloom,
           luminosity: this.renderSettings.luminosity,
@@ -5177,6 +5186,7 @@ export class WebGLBackdrop {
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
         },
         floor: {
+          visible: this.floorPlane.visible,
           uReflectivity: this.floorMaterial.uniforms.uReflectivity.value,
           uMirror: this.floorMaterial.uniforms.uMirror.value,
           uFloorMixStrength: this.floorMaterial.uniforms.uFloorMixStrength.value,
@@ -5192,6 +5202,7 @@ export class WebGLBackdrop {
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
         },
         environment: {
+          visible: this.environmentPlane.visible,
           uTime: this.environmentMaterial.uniforms.uTime.value,
           uMultiplier: this.environmentMaterial.uniforms.uMultiplier.value,
           uDarken: this.environmentMaterial.uniforms.uDarken.value,
@@ -5569,23 +5580,32 @@ export class WebGLBackdrop {
       this.renderSkyTarget(time);
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
-      this.renderer.render(this.homeScene, this.homeCamera);
-      if (preCompositeWorkTarget === this.workCompositeTarget) {
-        if (this.renderSettings.bloom.enabled) {
-          this.renderHomeBloomPass(this.workRawTarget);
-        }
-        this.compositeMaterial.uniforms.tScene.value = this.workRawTarget.texture;
-        this.compositeMaterial.uniforms.tBloom.value = this.bloomHorizontalTargets[0].texture;
-        this.compositeMaterial.uniforms.tBlur.value = this.fluidPlaceholder;
-        this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
-        this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
-        this.compositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled;
-        this.compositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
-        this.compositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
-        this.compositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
-        this.renderer.setRenderTarget(this.workCompositeTarget);
-        this.renderer.clear();
+      const previousFloorVisible = this.floorPlane.visible;
+      const previousEnvironmentVisible = this.environmentPlane.visible;
+      if (this.debugFloor === "off") this.floorPlane.visible = false;
+      if (this.debugEnvironment === "off") this.environmentPlane.visible = false;
+      try {
+        this.renderer.render(this.homeScene, this.homeCamera);
+        if (preCompositeWorkTarget === this.workCompositeTarget) {
+          if (this.renderSettings.bloom.enabled) {
+            this.renderHomeBloomPass(this.workRawTarget);
+          }
+          this.compositeMaterial.uniforms.tScene.value = this.workRawTarget.texture;
+          this.compositeMaterial.uniforms.tBloom.value = this.bloomHorizontalTargets[0].texture;
+          this.compositeMaterial.uniforms.tBlur.value = this.fluidPlaceholder;
+          this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
+          this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+          this.compositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled;
+          this.compositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
+          this.compositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
+          this.compositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
+          this.renderer.setRenderTarget(this.workCompositeTarget);
+          this.renderer.clear();
           this.renderer.render(this.compositeScene, this.backgroundCamera);
+        }
+      } finally {
+        this.floorPlane.visible = previousFloorVisible;
+        this.environmentPlane.visible = previousEnvironmentVisible;
       }
     } else {
       this.renderer.setRenderTarget(this.workRawTarget);

@@ -2904,3 +2904,40 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-fluid-resize-full`.
 
 Decision: keep this source resize correction. It fixes a real `I1/ag` structural mismatch and makes the main fluid path operational on tier-3 devices, but Phase 1 remains open because the hard horizon/fog-bed, exact `VA` shader bridge, and final target/output interpretation gaps are still not fully closed.
+
+### S1-27 Floor/Environment Contribution Attribution
+
+This batch widened the next small step into three related diagnostics without changing default rendering. The goal was to stop guessing at the remaining hard horizon/fog-bed issue and isolate whether it is primarily caused by floor mesh output, floor reflection content, or the environment dome.
+
+Runtime/tooling changes:
+
+- Added explicit debug-only home render switches: `debug-floor=off`, `debug-floor-reflection=off`, and `debug-environment=off`.
+- The floor/environment visibility switches are applied only around the home-scene render and then restored, so default rendering and project pages keep their normal state.
+- The reflection switch skips the floor `onBeforeRender` reflection update only when requested.
+- Added these diagnostics to `window.__rogierOutputProbe.settings.diagnostics`.
+- Extended `scripts/compare-home-brightness-attribution.mjs` with `floor-off`, `floor-reflection-off`, and `environment-off` variants.
+
+Attribution results at `1440x900`:
+
+- Default: `workRaw=0.2935`, `workComposite=0.2192`, `preComposite=0.2818`.
+- `floor-off`: `workRaw=0.3992`, `workComposite=0.3596`, `preComposite=0.5343`.
+- `floor-reflection-off`: `workRaw=0.2004`, `workComposite=0.1798`, `preComposite=0.2306`.
+- `environment-off`: `workRaw=0.1410`, `workComposite=0.1136`, `preComposite=0.1232`.
+- `sky-off` and `sky-raw` still brighten the output substantially, confirming the sky/environment input remains a major source of the visible field.
+
+Interpretation:
+
+- The hard boundary is not explained by "floor too bright"; disabling the floor exposes a much brighter environment path.
+- Environment is the dominant visible contributor, while the floor and reflected environment are acting as masking/darkening contributors.
+- The next source-backed work should inspect `a1/i1/h1/u1` ownership around draw order, depth/write state, and reflector/environment interaction rather than tuning brightness constants.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Brightness attribution passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-floor-env-attribution`.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-floor-env-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-floor-env-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-floor-env-full`.
+
+Decision: keep the diagnostics and attribution results. No production visual behavior changed, but Phase 1 remains open. The evidence narrows the next batch to source draw-state/render-order parity for floor/environment/reflection instead of unsupported color or gamma tuning.
