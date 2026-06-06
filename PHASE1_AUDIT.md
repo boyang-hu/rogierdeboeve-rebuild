@@ -546,6 +546,47 @@ Important attribution:
 
 Decision: keep the attribution script and debug switches, but do not disable the spotlight map or promote either gamma-like transfer path to production. The largest remaining home desktop gap is now concentrated in `VA/zA` spotlight-map light semantics and source-vs-Three-0.184 material response, with `tScene` transfer as a secondary factor. The next batch should compare source `lights_fragment_begin` / `RE_Direct` / reflected-light accumulation against the generated rebuild shader before any broad render-target or visual tuning change.
 
+### S1-37 Source Light Chunk Audit Result
+
+Added `scripts/compare-source-light-chunks.mjs`, a static source-vs-rebuild shader chunk attribution tool. It extracts source bundle chunks from `legacy-mirror/public/assets/bundle.250f01b7.js` and compares them with local Three 0.184 `ShaderChunk` output:
+
+- Source `MS`: `lights_pars_begin`
+- Source `CS`: `lights_physical_fragment`
+- Source `RS`: `lights_physical_pars_fragment`
+- Source `PS`: `lights_fragment_begin`
+- Source `IS`: `lights_fragment_end`
+
+Diagnostic run at `/tmp/rogier-source-light-chunks-s137`:
+
+| Chunk | Source length | Rebuild length | Delta | Key result |
+| --- | ---: | ---: | ---: | --- |
+| `lights_pars_begin` | `4560` | `4389` | `-171` | No direct spotlight-map loop. |
+| `lights_physical_fragment` | `3818` | `4021` | `+203` | Material field ownership differs. |
+| `lights_physical_pars_fragment` | `14683` | `18001` | `+3318` | Current Three adds multiscatter and newer material fields. |
+| `lights_fragment_begin` | `5411` | `6184` | `+773` | Spotlight-map core lines are present and source-equivalent. |
+| `lights_fragment_end` | `389` | `472` | `+83` | No direct spotlight-map loop. |
+
+Critical finding: the source and rebuild spotlight-map projection/multiplication lines are equivalent in the active chunk:
+
+- `spotLightCoord = vSpotLightCoord[ i ].xyz / vSpotLightCoord[ i ].w`
+- `inSpotLightMap = all( lessThan( abs( spotLightCoord * 2. - 1. ), vec3( 1.0 ) ) )`
+- `spotColor = texture2D( spotLightMap[ SPOT_LIGHT_MAP_INDEX ], spotLightCoord.xy )`
+- `directLight.color = inSpotLightMap ? directLight.color * spotColor.rgb : directLight.color`
+- `RE_Direct( directLight, ... material, reflectedLight )`
+
+The stronger source-vs-rebuild difference is downstream physical response:
+
+- Source `CS` writes `material.diffuseColor = diffuseColor.rgb * (1.0 - metalnessFactor)`.
+- Rebuild Three 0.184 writes `material.diffuseColor = diffuseColor.rgb`, `material.diffuseContribution = diffuseColor.rgb * (1.0 - metalnessFactor)`, and `material.metalness = metalnessFactor`.
+- Source specular uses `material.specularColor` directly.
+- Rebuild splits `material.specularColor` and `material.specularColorBlended`.
+- Source `RS` direct light uses single `BRDF_GGX(...)`.
+- Rebuild `RS` direct light uses `BRDF_GGX_Multiscatter(...)` and the newer diffuse/specular field names.
+
+Source `VA` material constants were rechecked from the bundle: `dithering=true`, `transparent=true`, `envMapIntensity=.75`, `roughness=1`, `depthTest=false`, `depthWrite=false`, and no explicit metalness override, so default metalness remains `0`. The rebuild ordinary work material is already aligned on those constants.
+
+Decision: stop treating the spotlight projection formula as the primary suspect. The next safe experiment should be debug-gated attribution of old physical-material response inside ordinary `VA` only, not a production change and not a light/intensity tweak. If that debug path does not materially close the luma gap, return to thumb render-target transfer/content and final `OA/CA` transfer as the remaining proven contributors.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
