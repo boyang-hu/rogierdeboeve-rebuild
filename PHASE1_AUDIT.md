@@ -84,6 +84,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 8 | S1-69 | `VA/zA` fragment tail and ordinary material surface | Source `zA` writes `gl_FragColor` through `opaque_fragment`, then mutates `gl_FragColor.rgb` and `.a`; ordinary `VA` has no auxiliary reveal/scroll opacity branch and declares `uTime` in the fragment surface. | Production now defaults to the source-style fragment tail, keeps `debug-va-output-tail=compat` as a query-only fallback, restores ordinary alpha/reveal/mouse formulas, splits auxiliary-only fragment uniforms out of ordinary `VA`, and includes `uTime` in ordinary fragment pars. | Medium | Keep as source-correct. Remaining ordinary fragment residuals are r164 shader-lib physical macro declarations (`dispersion/anisotropy*`) and the broader hard horizon/overbright mid-field gap, so the next batch should move to `OA/CA` transfer or render-target attribution rather than more unsupported VA tuning. |
 | 9 | S1-70 | Source `a1` floor geometry | Source `class Tu extends Vt` is Three `CircleGeometry`; `a1.init()` creates `new Tu(60,32)`, rotates it by `-PI/2`, and attaches the reflector. The rebuild had incorrectly used `PlaneGeometry(60,32)`, creating a rectangular floor/reflection surface. | Production now uses `CircleGeometry(60,32)` for the floor mesh and the output probe reports floor/reflection scene state for future attribution. Desktop center-band delta moved to roughly `+0.001` against source and the previous mid-page floor/reflection collapse is gone. | Low-medium | Keep as source-correct. Continue Phase 1 from remaining mobile/background and cube/thumb projection deltas; do not reintroduce plane floor geometry. |
 | 10 | S1-71 | Home spotlight target / thumb projection depth | Source `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, then sets spotlight position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`. The rebuild had the map and position right but reset the home target to `(0,0,0)`. | Production now keeps the home spotlight target at `(0,0,-8)` in constructor/default state and `initHomeSpotlight()`. Thumb spotlight probe confirms `hasMap=true`, target `[-8 z]`, intensity `220`, and no runtime errors. | Low-medium | Keep as source-correct. Continue projection parity from remaining `SpotLight.map` transfer/light multiplication and `VA` shader bridge, not by changing source spotlight position/intensity constants. |
+| 11 | S1-72 | Main `I1/Lu` default screen path | Source `I1.initSettings()` defaults main `renderToScreen=true` with bloom/luminosity/blur/fxaa disabled, and `I1.update()` renders its `C1/A1` `compositeMaterial` directly to screen in that default branch. The rebuild still sent the completed `A1/C1` target through an additional generic `mainCompositeFragment`, adding a non-source rgbshift/fluid-light tail even when all main post passes were disabled. | Production now short-circuits the default main path and renders `preCompositeScene` directly to the canvas when source main blur/bloom/fxaa are all disabled. The optional main-composite path remains available only for enabled source main post passes. | Low-medium | Keep as source-correct. QA shows stable home/project captures and center-band parity remains close; remaining Phase 1 work should target the hard horizontal boundary and residual `VA`/projection feel, not reintroduce the extra main composite pass. |
 
 ### Phase 1 Open Blocker Board
 
@@ -147,6 +148,31 @@ Verification:
 | Mobile center-band delta | `-0.0141` against source |
 
 Decision: keep the source target. This is a projection/depth correction, not a visual brightness tune. Phase 1 remains open for remaining cube/thumb projection transfer and render-manager/color interpretation gaps.
+
+### S1-72 Main I1 Default Screen Path
+
+This batch removed one non-source main output layer from the default Phase 1 home path.
+
+Source/runtime evidence:
+
+- Source `I1.initSettings()` sets the main render manager to `renderToScreen=true` with `bloom`, `luminosity`, `blur`, and `fxaa` disabled by default.
+- Source `I1.update()` uses `C1/A1` as the main `compositeMaterial`; in the default branch it renders that screen material directly to the canvas.
+- The rebuild still rendered `A1/C1` into `compositeTarget`, then passed it through an additional generic `mainCompositeFragment` that adds rgb shift and fluid luminance even when all source main post passes are disabled.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Output probe | No failures/exceptions; default main post flags remain disabled except source GPU-tier fluid input to `A1/C1` |
+| Thumb spotlight probe | `hasMap=true`, target `[0,0,-8]`, intensity `220`, no runtime errors |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` keep 5 visible media tracks |
+| Full source-vs-rebuild capture | Home/about/project pages captured without failures/exceptions |
+| Desktop center-band delta | `-0.0015` against source |
+| Mobile center-band delta | `-0.0168` against source |
+
+Decision: keep the direct `A1/C1` default screen path. This is a source-structure fix, not a global brightness tune. Phase 1 remains open because the screenshot band analysis still shows a residual horizontal boundary distribution mismatch and cube/thumb projection feel is not yet fully 1:1.
 
 ### S1-54 Source Non-Fix Audit
 

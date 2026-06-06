@@ -5664,6 +5664,11 @@ export class WebGLBackdrop {
 
   private renderHomeCompositePass() {
     const settings = this.sourceMainRenderSettings;
+    if (!settings.blur.enabled && !settings.bloom.enabled && !settings.fxaa.enabled) {
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.preCompositeScene, this.backgroundCamera);
+      return;
+    }
     this.mainCompositeMaterial.uniforms.tScene.value = settings.blur.enabled ? this.blurTargetB.texture : this.compositeTarget.texture;
     this.mainCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     this.mainCompositeMaterial.uniforms.tBlur.value = settings.blur.enabled ? this.blurTargetB.texture : this.fluidPlaceholder;
