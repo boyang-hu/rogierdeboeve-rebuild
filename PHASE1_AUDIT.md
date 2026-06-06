@@ -267,6 +267,31 @@ Verification:
 
 Decision: keep this as a source-correct lifecycle/camera fix. It is not a claimed hard-horizon solution. The next Phase 1 batch should continue with floor/environment/A1 input attribution now that the home gallery camera state is no longer ambiguous.
 
+### S1-61 Environment / A1 / Floor Non-Fix Audit
+
+This batch audited the remaining hard-horizon suspects after S1-60 corrected the gallery camera entry state.
+
+Source-checked runtime change:
+
+- Source `u1` environment material is constructed from `MeshStandardMaterial` with `side=BackSide`, `envMapIntensity=1`, `fog=false`, and `dithering=true`; it does not explicitly set `toneMapped=false`. The rebuild removed its extra `toneMapped:false` flag from the environment material.
+
+Source-checked non-fixes:
+
+- Source `l1/u1/h1` visible environment shader math matches the current rebuild bridge in the active path: `tSky` double sampling, seam mask, `blend(4)`, `blend(16)`, `skyMask2 = max(skyMask, step(...))`, `* 1.15`, clamp multiplication, lighting includes, and final darken-color blend are all already represented.
+- Source `V1/H1/z1/B1` sky target renders a `#666666` scene background into a `0.75 * height` square target, then applies the source `noiseShader -> blendReflect -> contrast(2) -> *2 -> .9 - color` composite. The rebuild's sky raw/composite target structure remains source-shaped.
+- Source `A1/C1` home flow still uses the same primary `tWork`, fluid UV, perlin, mouseSim, contrast, saturation, background-lighten, media reveal, and noise tail order that the rebuild already carries. No source evidence supports changing `uReveal` ownership or promoting a transfer/debug variant.
+- Source `a1/o1/i1` floor/reflection path matches the current accepted bridge: plane geometry `60x32`, color `#4a4a4a`, normal repeat `45x45`, `uMirror=1`, `reflectivity=.97`, `uFloorMixStrength=15`, reflector target size `0.75 * renderSize`, two blur iterations with directions `15,0` then `0,0`, oblique clip plane, and floor `onBeforeRender` ownership.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe at `/tmp/rogier-env-tonemapped-probe` passed with no network/runtime/WebGL errors.
+- Home source-vs-rebuild capture at `/tmp/rogier-env-tonemapped-home` passed with no failed network requests or runtime exceptions.
+- Correct band analysis for `/tmp/rogier-env-tonemapped-home` shows the hard boundary is still open: desktop rebuild center-band luma `0.2867` vs source `0.2281`, strongest rebuild delta `0.1272` at `63.3%`; mobile rebuild center-band luma `0.3707` vs source `0.2167`, strongest rebuild delta `0.2694` at `49.8%`.
+
+Decision: keep the environment material flag correction as source parity, but do not treat it as a visual fix. The next Phase 1 batch should move away from broad shader formula checks and toward exact render-target/color-transfer interpretation or generated shader diffing for `VA`/environment under the local Three version.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

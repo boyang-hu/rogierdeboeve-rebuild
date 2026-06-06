@@ -3511,7 +3511,6 @@ export class WebGLBackdrop {
       envMapIntensity: 1,
       fog: false,
       dithering: true,
-      toneMapped: false,
     }) as EnvironmentMaterial;
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
