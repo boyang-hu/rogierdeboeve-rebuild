@@ -337,6 +337,27 @@ Verification:
 
 Decision: keep this as a source-correct render-manager input alignment. It closes the explicit `I1` fluid-enabled divergence but does not close Phase 1 visual parity. The hard horizon/fog-bed mismatch, cube/thumb brightness/projection gap, and final transfer/color interpretation remain active blockers.
 
+### S1-64 Render-Manager Fullscreen Triangle Alignment
+
+This batch aligned the rebuild's postprocess/simulation screen-pass geometry with the source render managers. Source `Lu`, `I1`, and related render managers build a single fullscreen triangle using positions `[-1,3,0], [-1,-1,0], [3,-1,0]` and UVs `[0,2], [0,0], [2,0]`; the rebuild still used `PlaneGeometry(2,2)` for many screen passes.
+
+Source-backed runtime changes:
+
+- Added `makeFullscreenTriangle()` with the source position/UV layout and `frustumCulled=false`.
+- Replaced postprocess full-screen quads with the source fullscreen triangle for sky composite, background, `A1/C1` pre-composite, `OA/CA` composite, luminosity, bloom blur/composite, optional blur, FXAA, displacement, floor-reflection blur, screen mouse simulation, thumb composite, per-work local mouse simulation, and bounded main-fluid passes.
+- Kept real scene planes unchanged where the geometry has non-screen semantic meaning: thumbnail planes, character fallback plane, and the main-fluid force brush still use plane geometry.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe at `/tmp/rogier-fullscreen-triangle-probe` passed with no failed requests, runtime exceptions, or WebGL console errors. Default luma remained stable (`workComposite=0.2349`, `preComposite=0.3040`, `bloom=0.0289`, `thumbComposite=0.1825`).
+- Brightness attribution default at `/tmp/rogier-fullscreen-triangle-attribution` passed with errors `0`.
+- Home source-vs-rebuild capture at `/tmp/rogier-fullscreen-triangle-home` passed, and band analysis confirmed the existing hard horizon/fog-bed gap remains open.
+- Full capture at `/tmp/rogier-fullscreen-triangle-full` passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`; all rebuild pages reached full-canvas states with no failed requests or runtime exceptions.
+
+Decision: keep this as source-correct render-manager structure. It reduces another implementation-level divergence without claiming a visual closeout. The next source-backed batch still needs to target the remaining hard horizon/fog-bed and final transfer/color interpretation gaps.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

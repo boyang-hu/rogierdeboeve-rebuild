@@ -4,6 +4,7 @@ import {
   BackSide,
   Box3,
   BoxGeometry,
+  BufferGeometry,
   ClampToEdgeWrapping,
   Color,
   CubeTextureLoader,
@@ -11,6 +12,7 @@ import {
   DirectionalLight,
   Fog,
   FloatType,
+  Float32BufferAttribute,
   Group,
   IcosahedronGeometry,
   InstancedBufferAttribute,
@@ -1940,6 +1942,15 @@ function makeFluidRenderTarget() {
   return target;
 }
 
+function makeFullscreenTriangle(material: ShaderMaterial) {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
+  const mesh = new Mesh(geometry, material);
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
 function renderTargetStats(renderer: WebGLRenderer, target: WebGLRenderTarget, sampleSize = 64): RenderTargetStats {
   const width = Math.max(1, target.width);
   const height = Math.max(1, target.height);
@@ -2346,15 +2357,15 @@ export class WebGLBackdrop {
     this.homeScene.add(this.spotLight.target);
     this.homeScene.add(this.directionalLight);
     this.skyCompositeMaterial = this.createSkyCompositeMaterial();
-    this.skyCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.skyCompositeMaterial));
+    this.skyCompositeScene.add(makeFullscreenTriangle(this.skyCompositeMaterial));
     this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
     this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
     this.backgroundMaterial = this.createBackgroundMaterial();
-    this.backgroundScene.add(new Mesh(new PlaneGeometry(2, 2), this.backgroundMaterial));
+    this.backgroundScene.add(makeFullscreenTriangle(this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
-    this.preCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.preCompositeMaterial));
+    this.preCompositeScene.add(makeFullscreenTriangle(this.preCompositeMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
-    this.compositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.compositeMaterial));
+    this.compositeScene.add(makeFullscreenTriangle(this.compositeMaterial));
     this.bloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
     this.bloomVerticalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
     this.mainBloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
@@ -2362,34 +2373,34 @@ export class WebGLBackdrop {
     this.preBloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
     this.preBloomVerticalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
     this.luminosityMaterial = this.createLuminosityMaterial();
-    this.luminosityScene.add(new Mesh(new PlaneGeometry(2, 2), this.luminosityMaterial));
+    this.luminosityScene.add(makeFullscreenTriangle(this.luminosityMaterial));
     this.bloomBlurMaterial = this.createBloomBlurMaterial();
-    this.bloomBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomBlurMaterial));
+    this.bloomBlurScene.add(makeFullscreenTriangle(this.bloomBlurMaterial));
     this.bloomCompositeMaterial = this.createBloomCompositeMaterial(this.bloomVerticalTargets);
-    this.bloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.bloomCompositeMaterial));
+    this.bloomCompositeScene.add(makeFullscreenTriangle(this.bloomCompositeMaterial));
     this.preBloomBlurMaterial = this.createBloomBlurMaterial();
-    this.preBloomBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.preBloomBlurMaterial));
+    this.preBloomBlurScene.add(makeFullscreenTriangle(this.preBloomBlurMaterial));
     this.preBloomCompositeMaterial = this.createBloomCompositeMaterial(this.preBloomVerticalTargets);
-    this.preBloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.preBloomCompositeMaterial));
+    this.preBloomCompositeScene.add(makeFullscreenTriangle(this.preBloomCompositeMaterial));
     this.mainBloomBlurMaterial = this.createBloomBlurMaterial();
-    this.mainBloomBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.mainBloomBlurMaterial));
+    this.mainBloomBlurScene.add(makeFullscreenTriangle(this.mainBloomBlurMaterial));
     this.mainBloomCompositeMaterial = this.createBloomCompositeMaterial(this.mainBloomVerticalTargets, SOURCE_MAIN_RENDER_SETTINGS);
-    this.mainBloomCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.mainBloomCompositeMaterial));
+    this.mainBloomCompositeScene.add(makeFullscreenTriangle(this.mainBloomCompositeMaterial));
     this.blurHorizontalMaterial = this.createBloomBlurMaterial();
     this.blurHorizontalMaterial.uniforms.uKernelRadius.value = this.renderSettings.blur.strength;
     this.blurHorizontalMaterial.uniforms.uSigma.value = this.renderSettings.blur.strength;
     this.blurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
-    this.blurHorizontalScene.add(new Mesh(new PlaneGeometry(2, 2), this.blurHorizontalMaterial));
+    this.blurHorizontalScene.add(makeFullscreenTriangle(this.blurHorizontalMaterial));
     this.blurVerticalMaterial = this.createBloomBlurMaterial();
     this.blurVerticalMaterial.uniforms.uKernelRadius.value = this.renderSettings.blur.strength;
     this.blurVerticalMaterial.uniforms.uSigma.value = this.renderSettings.blur.strength;
     this.blurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
-    this.blurVerticalScene.add(new Mesh(new PlaneGeometry(2, 2), this.blurVerticalMaterial));
+    this.blurVerticalScene.add(makeFullscreenTriangle(this.blurVerticalMaterial));
     this.fxaaMaterial = this.createFxaaMaterial();
-    this.fxaaScene.add(new Mesh(new PlaneGeometry(2, 2), this.fxaaMaterial));
+    this.fxaaScene.add(makeFullscreenTriangle(this.fxaaMaterial));
     this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
-    this.displacementScene.add(new Mesh(new PlaneGeometry(2, 2), this.displacementMaterial));
+    this.displacementScene.add(makeFullscreenTriangle(this.displacementMaterial));
     this.floorReflectionTarget.texture.generateMipmaps = false;
     this.floorReflectionTarget.texture.minFilter = LinearFilter;
     this.floorReflectionTarget.texture.magFilter = LinearFilter;
@@ -2400,13 +2411,13 @@ export class WebGLBackdrop {
     this.floorReflectionWriteTarget.texture.minFilter = LinearFilter;
     this.floorReflectionWriteTarget.texture.magFilter = LinearFilter;
     this.floorReflectionBlurMaterial = this.createFloorReflectionBlurMaterial();
-    this.floorReflectionBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.floorReflectionBlurMaterial));
+    this.floorReflectionBlurScene.add(makeFullscreenTriangle(this.floorReflectionBlurMaterial));
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
-    this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
+    this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
     this.mainFluidPass = this.createMainFluidPass();
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
-    this.thumbCompositeScene.add(new Mesh(new PlaneGeometry(2, 2), this.thumbCompositeMaterial));
+    this.thumbCompositeScene.add(makeFullscreenTriangle(this.thumbCompositeMaterial));
     this.characterMaterial = this.createCharacterMaterial();
     this.characterFallbackMesh = new Mesh(new PlaneGeometry(2, 2), this.characterMaterial);
     this.characterDirectionalLight.position.set(2, 3, 5);
@@ -3559,7 +3570,7 @@ export class WebGLBackdrop {
   private createWorkMouseSimulation() {
     const material = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
     const scene = new Scene();
-    scene.add(new Mesh(new PlaneGeometry(2, 2), material));
+    scene.add(makeFullscreenTriangle(material));
     return {
       material,
       scene,
@@ -3572,9 +3583,9 @@ export class WebGLBackdrop {
     const cellScale = new Vector2();
     const fboSize = new Vector2(1, 1);
     const bounds = new Vector2();
-    const makeScene = (material: ShaderMaterial) => {
+    const makeBoundedScene = (material: ShaderMaterial) => {
       const scene = new Scene();
-      scene.add(new Mesh(new PlaneGeometry(2, 2), material));
+      scene.add(makeFullscreenTriangle(material));
       return scene;
     };
     const advectionMaterial = new ShaderMaterial({
@@ -3604,6 +3615,8 @@ export class WebGLBackdrop {
       vertexShader: fluidForceVertex,
       fragmentShader: fluidForceFragment,
     });
+    const forceScene = new Scene();
+    forceScene.add(new Mesh(new PlaneGeometry(2, 2), forceMaterial));
     const divergenceMaterial = new ShaderMaterial({
       blending: NormalBlending,
       depthWrite: false,
@@ -3646,15 +3659,15 @@ export class WebGLBackdrop {
     });
     return {
       advectionMaterial,
-      advectionScene: makeScene(advectionMaterial),
+      advectionScene: makeBoundedScene(advectionMaterial),
       forceMaterial,
-      forceScene: makeScene(forceMaterial),
+      forceScene,
       divergenceMaterial,
-      divergenceScene: makeScene(divergenceMaterial),
+      divergenceScene: makeBoundedScene(divergenceMaterial),
       poissonMaterial,
-      poissonScene: makeScene(poissonMaterial),
+      poissonScene: makeBoundedScene(poissonMaterial),
       pressureMaterial,
-      pressureScene: makeScene(pressureMaterial),
+      pressureScene: makeBoundedScene(pressureMaterial),
       targets: {
         main: makeFluidRenderTarget(),
         velocity: makeFluidRenderTarget(),
