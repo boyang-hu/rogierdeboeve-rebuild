@@ -1755,9 +1755,11 @@ export class WebGLBackdrop {
   private compositeScene = new Scene();
   private workRawTarget = makeSourceRenderTarget(true);
   private workCompositeTarget = makeSourceRenderTarget(false);
+  private backgroundTarget = makeSourceRenderTarget(false);
   private preCompositeMaterial: ShaderMaterial;
   private preCompositeScene = new Scene();
   private compositeTarget = makeSourceRenderTarget(false);
+  private mediaTarget = makeSourceRenderTarget(false);
   private luminosityMaterial: ShaderMaterial;
   private luminosityScene = new Scene();
   private bloomBlurMaterial: ShaderMaterial;
@@ -2409,8 +2411,10 @@ export class WebGLBackdrop {
     this.backgroundMaterial.dispose();
     this.workRawTarget.dispose();
     this.workCompositeTarget.dispose();
+    this.backgroundTarget.dispose();
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
+    this.mediaTarget.dispose();
     this.compositeMaterial.dispose();
     this.bloomBrightTarget.dispose();
     this.bloomTarget.dispose();
@@ -3822,7 +3826,9 @@ export class WebGLBackdrop {
     }
     this.workRawTarget.setSize(renderWidth, renderHeight);
     this.workCompositeTarget.setSize(renderWidth, renderHeight);
+    this.backgroundTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
+    this.mediaTarget.setSize(renderWidth, renderHeight);
     const halfMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 2));
     const halfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
     this.preBloomBrightTarget.setSize(halfMipWidth, halfMipHeight);
@@ -4598,7 +4604,24 @@ export class WebGLBackdrop {
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     if (!hasHome && hasMedia) {
+      this.renderer.setRenderTarget(this.backgroundTarget);
+      this.renderer.clear();
       this.renderer.render(this.backgroundScene, this.backgroundCamera);
+      this.renderer.setRenderTarget(this.mediaTarget);
+      this.renderer.clear();
+      this.renderer.render(this.mediaScene, this.mediaCamera);
+      this.preCompositeMaterial.uniforms.tWork.value = this.backgroundTarget.texture;
+      this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
+      this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
+      this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+      this.preCompositeMaterial.uniforms.tBloom.value = this.preBloomTarget.texture;
+      this.renderer.setRenderTarget(this.compositeTarget);
+      this.renderer.clear();
+      this.renderer.render(this.preCompositeScene, this.backgroundCamera);
+      if (this.renderSettings.bloom.enabled) {
+        this.renderHomeBloomPass(this.compositeTarget);
+      }
+      this.renderHomeCompositePass(this.compositeTarget);
     }
     if (hasHome) {
       this.renderSkyTarget(time);
@@ -4631,6 +4654,7 @@ export class WebGLBackdrop {
       this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
       this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
       this.preCompositeMaterial.uniforms.tBloom.value = this.preBloomTarget.texture;
+      this.preCompositeMaterial.uniforms.tMedia.value = this.fluidPlaceholder;
       this.renderer.setRenderTarget(this.compositeTarget);
       this.renderer.clear();
       this.renderer.render(this.preCompositeScene, this.backgroundCamera);
@@ -4654,7 +4678,6 @@ export class WebGLBackdrop {
     this.updateOutputProbe(time);
     if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
     this.renderDisplacementTarget(time);
-    if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
     this.raf = requestAnimationFrame(this.tick);
   };
 }
