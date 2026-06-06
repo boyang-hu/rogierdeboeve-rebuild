@@ -36,7 +36,6 @@ import {
   Raycaster,
   Scene,
   ShaderMaterial,
-  ShaderChunk,
   SpotLight,
   SRGBColorSpace,
   Texture,
@@ -381,7 +380,7 @@ newUv.x /= uGridSize.x;
 newUv.y /= uGridSize.y;
 newUv += instanceOffset.xy;
 vec2 mouseUv = (newUv + uUvOffset.xy) / uUvOffsetScale;
-float mouse = texture2D(tMouseSim, mouseUv).r;
+vec4 mouseSim = texture2D(tMouseSim, mouseUv);
 
 vec4 instancePos = instanceMatrix[3];
 float revealMask = uReveal * uRevealProject;
@@ -404,10 +403,10 @@ transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25)
 transformed *= fade * uRevealSides;
 
 float displacement = displacementMap.r;
-transformed *= 1.0 - mouse * 0.05;
+transformed *= 1.0 - mouseSim.r * 0.05;
 transformed.z -= 1.5;
 transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
-transformed.z += mouse * 15.0 * uMouseFactor;
+transformed.z += mouseSim.r * 15.0 * uMouseFactor;
 transformed *= 1.0 - displacement * 0.1;
 
 vec3 transformedSpread = transformed;
@@ -423,7 +422,7 @@ transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
 vLocalUv = uv;
 vOffset = instanceOffset.xy;
-vMouseSim = mouse;
+vMouseSim = mouseSim.r;
 vAlpha = instanceAlpha;
 #ifdef USE_ALPHAHASH
   vPosition = vec3(position);
@@ -446,24 +445,10 @@ const workBlockSourceScreenUvBeginVertexChunk = workBlockBeginVertexChunk.replac
   ].join("\n"),
 );
 
-const workBlockWorldPositionChunk = `
-#if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined ( USE_SHADOWMAP ) || defined ( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0
-  vec3 sourceWorldTransformed = transformed / max(1.0 - vMouseSim * 0.2, 0.0001);
-  vec4 worldPosition = vec4(sourceWorldTransformed, 1.0);
-  #ifdef USE_BATCHING
-    worldPosition = batchingMatrix * worldPosition;
-  #endif
-  #ifdef USE_INSTANCING
-    worldPosition = instanceMatrix * worldPosition;
-  #endif
-  worldPosition = modelMatrix * worldPosition;
-#endif
-`;
-
 const workBlockSourceWorldPositionChunk = `
 #if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined ( USE_SHADOWMAP ) || defined ( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0
-  vec3 sourceWorldTransformed = transformed / (1.0 - vMouseSim * 0.2);
-  vec4 worldPosition = vec4(sourceWorldTransformed, 1.0);
+  transformed /= 1. - mouseSim.r * .2;
+  vec4 worldPosition = vec4(transformed, 1.0);
   #ifdef USE_BATCHING
     worldPosition = batchingMatrix * worldPosition;
   #endif
@@ -506,34 +491,6 @@ float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, floa
 const auxiliaryBlockFragmentPars = `
 uniform float uAuxiliaryMaterial;
 uniform float uScrollOpacity;
-`;
-
-const workBlockOpaqueFragmentChunk = `
-vec3 sourceColor = outgoingLight;
-vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
-
-vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
-float simLight = texture2D(tMouseSim2, screenUv).r;
-vec4 sourceDisplacement = texture2D(tDisplacement, sourceUv);
-float mouseF = 1.0 - simLight;
-sourceColor = mix(sourceColor, sourceColor * vec3(mouseF), 1.0 - uMouseLightness);
-sourceColor += sourceDisplacement.rgb * 0.0;
-
-vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
-vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
-float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
-float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
-float alpha = alpha1 * alpha2 * vAlpha;
-float revealCombined = uReveal * uRevealProject;
-float revealRadius = 2.0 * pow(revealCombined, 0.25);
-float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
-alpha += centerAlpha * 0.1;
-alpha -= 1.0 - revealAlpha;
-alpha *= uRevealSides;
-
-gl_FragColor = vec4(sourceColor, alpha);
 `;
 
 const auxiliaryBlockOpaqueFragmentChunk = `
@@ -650,59 +607,16 @@ function stripSourceVaFragmentPaths(fragmentShader: string) {
     .replace(/#ifdef USE_CLEARCOAT\s+float dotNVcc = saturate\( dot\( geometryClearcoatNormal, geometryViewDir \) \);\s+vec3 Fcc = F_Schlick\( material.clearcoatF0, material.clearcoatF90, dotNVcc \);\s+outgoingLight = outgoingLight \* \( 1.0 - material.clearcoat \* Fcc \) \+ \( clearcoatSpecularDirect \+ clearcoatSpecularIndirect \) \* material.clearcoat;\s+#endif/g, "// source VA omits clearcoat outgoing-light tail");
 }
 
-function sourceDirectPhysicalParsChunk() {
-  return ShaderChunk.lights_physical_pars_fragment
-    .replace(
-      "reflectedLight.directSpecular += irradiance * BRDF_GGX_Multiscatter( directLight.direction, geometryViewDir, geometryNormal, material );",
-      "reflectedLight.directSpecular += irradiance * BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, material );",
-    )
-    .replace(
-      "reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution );",
-      "reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );",
-    );
-}
-
-function sourceCompatPhysicalFragmentChunk() {
-  return ShaderChunk.lights_physical_fragment
-    .replace(
-      [
-        "PhysicalMaterial material;",
-        "material.diffuseColor = diffuseColor.rgb;",
-        "material.diffuseContribution = diffuseColor.rgb * ( 1.0 - metalnessFactor );",
-        "material.metalness = metalnessFactor;",
-      ].join("\n"),
-      [
-        "PhysicalMaterial material;",
-        "material.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );",
-        "material.diffuseContribution = material.diffuseColor;",
-        "material.metalness = metalnessFactor;",
-      ].join("\n"),
-    )
-    .replace(
-      "material.specularColor = min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor;\n\tmaterial.specularColorBlended = mix( material.specularColor, diffuseColor.rgb, metalnessFactor );",
-      "material.specularColor = mix( min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor, diffuseColor.rgb, metalnessFactor );\n\tmaterial.specularColorBlended = material.specularColor;",
-    )
-    .replace(
-      "material.specularColor = vec3( 0.04 );\n\tmaterial.specularColorBlended = mix( material.specularColor, diffuseColor.rgb, metalnessFactor );",
-      "material.specularColor = mix( vec3( 0.04 ), diffuseColor.rgb, metalnessFactor );\n\tmaterial.specularColorBlended = material.specularColor;",
-    );
-}
-
 function patchWorkBlockShader(
   shader: { uniforms: Record<string, any>; vertexShader: string; fragmentShader: string },
   uniforms: Record<string, any>,
   variant: "work" | "auxiliary" = "work",
 ) {
   Object.assign(shader.uniforms, uniforms);
-  const vertexUvMode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-vertex-uv") : null;
-  const worldPositionMode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-world") : null;
   shader.vertexShader = shader.vertexShader
     .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-    .replace("#include <begin_vertex>", vertexUvMode === "uv" ? workBlockBeginVertexChunk : workBlockSourceScreenUvBeginVertexChunk)
-    .replace(
-      "#include <worldpos_vertex>",
-      worldPositionMode === "compat" ? workBlockWorldPositionChunk : workBlockSourceWorldPositionChunk,
-    );
+    .replace("#include <begin_vertex>", workBlockSourceScreenUvBeginVertexChunk)
+    .replace("#include <worldpos_vertex>", workBlockSourceWorldPositionChunk);
   shader.fragmentShader = shader.fragmentShader
     .replace("#include <common>", `${workBlockFragmentPars}\n${variant === "auxiliary" ? auxiliaryBlockFragmentPars : ""}\n#include <common>`)
     .replace("#include <tonemapping_fragment>", "// source VA omits tonemapping_fragment")
@@ -711,27 +625,8 @@ function patchWorkBlockShader(
     .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
     .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
   if (variant === "work") {
-    const outputTail = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-output-tail") : null;
-    shader.fragmentShader = shader.fragmentShader.replace(
-      "#include <opaque_fragment>",
-      outputTail === "compat" ? workBlockOpaqueFragmentChunk : workBlockSourceTailFragmentChunk,
-    );
+    shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", workBlockSourceTailFragmentChunk);
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
-    const physicalResponse = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-physical-response") : null;
-    if (physicalResponse === "direct" || physicalResponse === "source-fields") {
-      shader.fragmentShader = shader.fragmentShader.replace("#include <lights_physical_pars_fragment>", sourceDirectPhysicalParsChunk());
-    }
-    if (physicalResponse === "source-fields") {
-      shader.fragmentShader = shader.fragmentShader.replace("#include <lights_physical_fragment>", sourceCompatPhysicalFragmentChunk());
-    }
-    const spotlightMapTransfer = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-spotlight-map-transfer") : null;
-    if (spotlightMapTransfer === "srgb") {
-      const lightsFragmentBegin = ShaderChunk.lights_fragment_begin.replace(
-        "directLight.color = inSpotLightMap ? directLight.color * spotColor.rgb : directLight.color;",
-        "directLight.color = inSpotLightMap ? directLight.color * pow(spotColor.rgb, vec3(1.0 / 2.2)) : directLight.color;",
-      );
-      shader.fragmentShader = shader.fragmentShader.replace("#include <lights_fragment_begin>", lightsFragmentBegin);
-    }
   } else {
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", auxiliaryBlockOpaqueFragmentChunk);
   }
@@ -1075,6 +970,7 @@ const homePreCompositeFragment = `
 precision highp float;
 
 uniform sampler2D tWork;
+uniform sampler2D tScene;
 uniform sampler2D tFluid;
 uniform sampler2D tMouseSim;
 uniform sampler2D tNoise;

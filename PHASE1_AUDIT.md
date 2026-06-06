@@ -2564,3 +2564,32 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-i1-surface-full`.
 
 Decision: keep this source-surface alignment. It reduces remaining `I1/C1` graph drift and records the lensflare path as source-default disabled, but Phase 1 remains open because the hard horizon/fog-bed and render-target color interpretation gaps are still visible.
+
+### S1-15 `VA/A1` Shader Surface Cleanup
+
+This batch removed source-attribution noise from production shader paths and closed a narrow `A1/C1` shader-surface residual.
+
+Source evidence:
+
+- Source `HA` uses `vec4 mouseSim = texture2D(tMouseSim, mouseUv)` and later applies `transformed /= 1. - mouseSim.r * .2` before computing the instanced world position.
+- Source `VA.onBeforeCompile` directly assigns source `HA/zA`; it has no runtime URL-driven fallback for vertex UV mode, world-position mode, output-tail mode, physical-lighting response, or spotlight-map transfer.
+- Source `A1` declares `uniform sampler2D tScene;`; the rebuild had the material uniform but not the shader declaration.
+
+Runtime/tooling changes:
+
+- Changed the work-block vertex bridge to keep the source-shaped `mouseSim` vec4 and source world-position expression instead of the previous `vMouseSim` helper expression.
+- Removed production `debug-va-*` and `debug-spotlight-map-transfer` branches from the work-block shader patch path.
+- Removed dead helper chunks that existed only for those now-removed debug branches.
+- Added the missing `A1/C1` `tScene` shader declaration so shader dump no longer reports it as source-only.
+- Removed obsolete spotlight-transfer and VA-output-tail comparison scripts, and removed those stale variants from the broader brightness attribution script.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rogier-phase1-va-surface-shader-3`.
+- The dump now reports no `A1-pre-composite.fragmentUniformsOnlySource`, and confirms the work vertex contains the source `transformed /= 1. - mouseSim.r * .2` expression.
+- Output probe passed with no failures or exceptions: `/tmp/rogier-phase1-va-surface-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-va-surface-full`.
+
+Decision: keep this cleanup. It does not close Phase 1 visually, but it removes non-source shader toggles from the production path and narrows the remaining audit to real render-target, environment, and generated Three chunk differences.
