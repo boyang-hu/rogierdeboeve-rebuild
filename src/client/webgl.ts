@@ -4596,6 +4596,7 @@ export class WebGLBackdrop {
         drawingBufferSize: { width: drawingBufferSize.x, height: drawingBufferSize.y },
       },
       settings: {
+        passOrder: this.debugPassOrder === "raw-work-composite" ? "raw-work-composite" : "source-work-composite",
         bloom: this.renderSettings.bloom,
         luminosity: this.renderSettings.luminosity,
         blur: this.renderSettings.blur,

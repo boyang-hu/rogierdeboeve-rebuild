@@ -24,7 +24,7 @@ const variants = [
   { label: "spotlight-map-off", query: "&debug-spotlight-map=off" },
   { label: "spotlight-transfer", query: "&debug-spotlight-map-transfer=srgb" },
   { label: "scene-transfer", query: "&debug-composite-transfer=1" },
-  { label: "source-work-composite-pass", query: "&debug-pass-order=source-work-composite" },
+  { label: "raw-work-composite-pass", query: "&debug-pass-order=raw-work-composite" },
   { label: "spotlight-and-scene-transfer", query: "&debug-spotlight-map-transfer=srgb&debug-composite-transfer=1" },
   { label: "renderer-output-linear", query: "&debug-renderer-output=linear" },
   { label: "composite-lighten-off", query: "&debug-composite-lighten=off" },

@@ -112,6 +112,26 @@ Source-checked non-fixes:
 
 Decision: keep runtime unchanged and continue Phase 1 from source-backed transfer/render-manager evidence. Do not spend another implementation batch on these five suspects unless new source evidence appears.
 
+### S1-55 Pass-Order Diagnostic Correction
+
+This batch fixed a stale QA label around the work/main composite pass order and added a debug-only pass-order field to `window.__rogierOutputProbe`.
+
+Source/runtime evidence:
+
+- Current production rendering already uses the source-shaped work pass order: `workRawTarget -> OA/CA workCompositeTarget -> A1/C1 tWork`.
+- The old `scripts/compare-home-brightness-attribution.mjs` variant named `source-work-composite-pass` still sent `debug-pass-order=source-work-composite`, but the runtime only recognizes `debug-pass-order=raw-work-composite` as the alternative. The old variant was therefore a no-op.
+- The output probe now reports `settings.passOrder` as either `source-work-composite` or `raw-work-composite`, making this visible in future diagnostics.
+
+Current matrix at `/tmp/rogier-phase1-passorder-s55`:
+
+| Variant | Pass order | Work raw 9x9 | Work composite 9x9 | Pre-composite 9x9 | Bloom 9x9 | Errors |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| default | `source-work-composite` | `0.3048` | `0.2378` | `0.3476` | `0.0522` | `0` |
+| `raw-work-composite-pass` | `raw-work-composite` | `0.3126` | `0.0000` | `0.5712` | `0.1581` | `0` |
+| `scene-transfer` | `source-work-composite` | `0.2943` | `0.4098` | `0.8376` | `0.3336` | `0` |
+
+Decision: keep source-shaped production pass order. The raw-work fallback is a useful diagnostic because it brightens the intermediate A1 input, but it is explicitly not source-shaped and should not be used as a visual fix. Continue Phase 1 with the remaining source-backed transfer/color interpretation gap rather than reverting the pass graph.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

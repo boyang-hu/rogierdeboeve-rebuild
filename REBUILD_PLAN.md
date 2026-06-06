@@ -206,6 +206,7 @@ Last updated: 2026-06-06
 | `current batch` | Phase 1 Audit | Audited source `Lu.update()` pass clearing against the rebuild. Source render-manager passes rely on `autoClear=false` and do not explicitly call `renderer.clear()` before each work-scene render/bloom/composite target, but a narrow rebuild trial that removed those clears from only the work-scene path produced no visible improvement and added local complexity. The trial was reverted; any future no-clear alignment should come from porting the complete `Lu/kA` render-manager structure, not from ad hoc per-pass switches. |
 | `current batch` | Home WebGL | Aligned two source-proven `GA/VA/Xt` details: ordinary work-block spread now uses source `float spread = 3.` instead of the rebuild-only `5.0`, and `VA.tPerlin` now loads `/images/textures/perlin-1.webp` with ClampToEdge wrapping while the A1/C1 pre-composite keeps `/images/textures/perlin-2.webp` with Repeat wrapping. Build, diff check, and full source-vs-rebuild capture passed with no network/runtime failures across home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`. |
 | `current batch` | Phase 1 Audit | Rechecked likely-but-false runtime suspects against the source bundle: `directionalLight2` is intentionally not added to `p1.scene`, environment `skyMask2` uses `skyMask` in source, sky/environment mix constants are split across source constant groups, work-scene DPR remains capped at `1.5`, and `LOW_RES` still needs a source-equivalent GPU-tier bridge before changing runtime behavior. No rendering code changed. |
+| `current batch` | QA Harness | Corrected the stale brightness-matrix pass-order variant from the no-op `debug-pass-order=source-work-composite` to the real `debug-pass-order=raw-work-composite` fallback, and added `settings.passOrder` to the debug output probe. The current matrix confirms production is already using the source-shaped `workRaw -> OA/CA workComposite -> A1/C1` path; the raw fallback brightens A1 input but is not source-shaped. |
 
 ## Current Focus
 
@@ -229,6 +230,7 @@ Current non-fix notes:
 - Do not rewrite the environment `skyMask2 = max(skyMask, ...)` line; source uses the same expression.
 - Do not change work-scene DPR solely because source `Pe.dpr` can be `2`; source `p1.resize()` clamps the work scene to `1.5`.
 - Do not change `sourceLowRes()` heuristics until there is a source-equivalent GPU-tier bridge.
+- Do not use `debug-pass-order=raw-work-composite` as a production brightness fix. It is now the explicit non-source fallback diagnostic; default production already reports `settings.passOrder = source-work-composite`.
 
 Latest verification:
 
