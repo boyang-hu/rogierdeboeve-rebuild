@@ -587,6 +587,36 @@ Source `VA` material constants were rechecked from the bundle: `dithering=true`,
 
 Decision: stop treating the spotlight projection formula as the primary suspect. The next safe experiment should be debug-gated attribution of old physical-material response inside ordinary `VA` only, not a production change and not a light/intensity tweak. If that debug path does not materially close the luma gap, return to thumb render-target transfer/content and final `OA/CA` transfer as the remaining proven contributors.
 
+### S1-38 `VA` Physical Response Attribution Result
+
+Added a QA-only `?debug-va-physical-response=` switch for ordinary home `VA` work blocks:
+
+- `direct`: expands `lights_physical_pars_fragment` and changes direct light from Three 0.184 `BRDF_GGX_Multiscatter(...)` back to a source-shaped single `BRDF_GGX(...)`; direct diffuse also reads `material.diffuseColor`.
+- `source-fields`: includes `direct` and expands `lights_physical_fragment` so `material.diffuseColor`, `material.diffuseContribution`, `material.specularColor`, and `material.specularColorBlended` follow source-compatible ownership.
+
+Normal rendering remains unchanged unless the query flag is present. `dump-va-shader` against the built `dist` confirmed both debug variants expand the intended chunks and produced no shader/runtime console errors.
+
+Diagnostic run at `/tmp/rogier-home-brightness-s138`:
+
+| Variant | Screenshot luma | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | `0.1572` | `0.1864` | `0.2336` | `0.0216` | `0.0603` |
+| `va-physical-direct` | `0.1571` | `0.1857` | `0.2342` | `0.0223` | `0.0603` |
+| `va-physical-source-fields` | `0.1571` | `0.1855` | `0.2349` | `0.0223` | `0.0603` |
+| spotlight transfer | `0.2278` | `0.2277` | `0.3126` | `0.0532` | `0.0603` |
+| scene transfer | `0.2667` | `0.1847` | `0.2326` | `0.0219` | `0.0603` |
+| spotlight + scene transfer | `0.3286` | `0.2242` | `0.3071` | `0.0533` | `0.0603` |
+| spotlight map off | `0.2774` | `0.2589` | `0.3650` | `0.0763` | `0.0603` |
+
+Important attribution:
+
+- Old direct `BRDF_GGX` does not increase the visible output; it is effectively identical to default in this setup.
+- Source-compatible material fields also do not materially increase output.
+- The same matrix still shows large movement from spotlight-map transfer, scene transfer, and map-off diagnostics.
+- Because ordinary work metalness is source/default `0`, the current Three 0.184 `diffuseContribution/specularColorBlended` split is not the main luma gap for home work blocks.
+
+Decision: keep the debug switch as attribution tooling, but do not promote old physical response to production. This closes the S1-37 suspect path as low-impact. The remaining proven contributors are now narrower: thumb/spotlight map transfer/content and final `OA/CA` `tScene` transfer. The next Phase 1 batch should target render-target texture transfer/color-space around `T1/_1` and `OA/CA` rather than light intensity, spotlight projection formula, or physical BRDF constants.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

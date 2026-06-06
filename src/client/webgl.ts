@@ -531,6 +531,44 @@ function stripSourceVaFragmentPaths(fragmentShader: string) {
     .replace(/#ifdef USE_CLEARCOAT\s+float dotNVcc = saturate\( dot\( geometryClearcoatNormal, geometryViewDir \) \);\s+vec3 Fcc = F_Schlick\( material.clearcoatF0, material.clearcoatF90, dotNVcc \);\s+outgoingLight = outgoingLight \* \( 1.0 - material.clearcoat \* Fcc \) \+ \( clearcoatSpecularDirect \+ clearcoatSpecularIndirect \) \* material.clearcoat;\s+#endif/g, "// source VA omits clearcoat outgoing-light tail");
 }
 
+function sourceDirectPhysicalParsChunk() {
+  return ShaderChunk.lights_physical_pars_fragment
+    .replace(
+      "reflectedLight.directSpecular += irradiance * BRDF_GGX_Multiscatter( directLight.direction, geometryViewDir, geometryNormal, material );",
+      "reflectedLight.directSpecular += irradiance * BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, material );",
+    )
+    .replace(
+      "reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution );",
+      "reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );",
+    );
+}
+
+function sourceCompatPhysicalFragmentChunk() {
+  return ShaderChunk.lights_physical_fragment
+    .replace(
+      [
+        "PhysicalMaterial material;",
+        "material.diffuseColor = diffuseColor.rgb;",
+        "material.diffuseContribution = diffuseColor.rgb * ( 1.0 - metalnessFactor );",
+        "material.metalness = metalnessFactor;",
+      ].join("\n"),
+      [
+        "PhysicalMaterial material;",
+        "material.diffuseColor = diffuseColor.rgb * ( 1.0 - metalnessFactor );",
+        "material.diffuseContribution = material.diffuseColor;",
+        "material.metalness = metalnessFactor;",
+      ].join("\n"),
+    )
+    .replace(
+      "material.specularColor = min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor;\n\tmaterial.specularColorBlended = mix( material.specularColor, diffuseColor.rgb, metalnessFactor );",
+      "material.specularColor = mix( min( pow2( ( material.ior - 1.0 ) / ( material.ior + 1.0 ) ) * specularColorFactor, vec3( 1.0 ) ) * specularIntensityFactor, diffuseColor.rgb, metalnessFactor );\n\tmaterial.specularColorBlended = material.specularColor;",
+    )
+    .replace(
+      "material.specularColor = vec3( 0.04 );\n\tmaterial.specularColorBlended = mix( material.specularColor, diffuseColor.rgb, metalnessFactor );",
+      "material.specularColor = mix( vec3( 0.04 ), diffuseColor.rgb, metalnessFactor );\n\tmaterial.specularColorBlended = material.specularColor;",
+    );
+}
+
 function patchWorkBlockShader(
   shader: { uniforms: Record<string, any>; vertexShader: string; fragmentShader: string },
   uniforms: Record<string, any>,
@@ -555,6 +593,13 @@ function patchWorkBlockShader(
       outputTail === "source" ? workBlockSourceTailFragmentChunk : workBlockOpaqueFragmentChunk,
     );
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
+    const physicalResponse = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-physical-response") : null;
+    if (physicalResponse === "direct" || physicalResponse === "source-fields") {
+      shader.fragmentShader = shader.fragmentShader.replace("#include <lights_physical_pars_fragment>", sourceDirectPhysicalParsChunk());
+    }
+    if (physicalResponse === "source-fields") {
+      shader.fragmentShader = shader.fragmentShader.replace("#include <lights_physical_fragment>", sourceCompatPhysicalFragmentChunk());
+    }
     const spotlightMapTransfer = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-spotlight-map-transfer") : null;
     if (spotlightMapTransfer === "srgb") {
       const lightsFragmentBegin = ShaderChunk.lights_fragment_begin.replace(
