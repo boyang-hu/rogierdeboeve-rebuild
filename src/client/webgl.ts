@@ -93,6 +93,41 @@ type ShaderDumpWindow = Window & {
   }>;
 };
 
+type RenderTargetStats = {
+  width: number;
+  height: number;
+  sampleWidth: number;
+  sampleHeight: number;
+  mean: [number, number, number, number];
+  min: [number, number, number, number];
+  max: [number, number, number, number];
+  luma: number;
+};
+
+type ThumbProbeWindow = Window & {
+  __rogierThumbProbe?: {
+    activeSlug: string;
+    galleryProgress: number;
+    thumbProgress: number;
+    visibleThumbs: number;
+    thumbComposite: {
+      darkness: number;
+      darknessColor: [number, number, number];
+      saturation: number;
+    };
+    spotlight: {
+      hasMap: boolean;
+      intensity: number;
+      mapColorSpace: string;
+      rendererOutputColorSpace: string;
+    };
+    targets: {
+      thumb: RenderTargetStats;
+      composite: RenderTargetStats;
+    };
+  };
+};
+
 type AuxiliaryBlockItem = {
   kind: "about" | "floating";
   group: Group;
@@ -1330,6 +1365,42 @@ function makeSourceRenderTarget(depthBuffer = false) {
   return new WebGLRenderTarget(1, 1, { depthBuffer, stencilBuffer: false });
 }
 
+function renderTargetStats(renderer: WebGLRenderer, target: WebGLRenderTarget, sampleSize = 64): RenderTargetStats {
+  const width = Math.max(1, target.width);
+  const height = Math.max(1, target.height);
+  const sampleWidth = Math.min(sampleSize, width);
+  const sampleHeight = Math.min(sampleSize, height);
+  const x = Math.max(0, Math.floor((width - sampleWidth) / 2));
+  const y = Math.max(0, Math.floor((height - sampleHeight) / 2));
+  const pixels = new Uint8Array(sampleWidth * sampleHeight * 4);
+  renderer.readRenderTargetPixels(target, x, y, sampleWidth, sampleHeight, pixels);
+  const sums = [0, 0, 0, 0];
+  const mins = [255, 255, 255, 255];
+  const maxes = [0, 0, 0, 0];
+  for (let index = 0; index < pixels.length; index += 4) {
+    for (let channel = 0; channel < 4; channel += 1) {
+      const value = pixels[index + channel];
+      sums[channel] += value;
+      mins[channel] = Math.min(mins[channel], value);
+      maxes[channel] = Math.max(maxes[channel], value);
+    }
+  }
+  const count = sampleWidth * sampleHeight;
+  const mean = sums.map((value) => value / count / 255) as [number, number, number, number];
+  const min = mins.map((value) => value / 255) as [number, number, number, number];
+  const max = maxes.map((value) => value / 255) as [number, number, number, number];
+  return {
+    width,
+    height,
+    sampleWidth,
+    sampleHeight,
+    mean,
+    min,
+    max,
+    luma: mean[0] * 0.2126 + mean[1] * 0.7152 + mean[2] * 0.0722,
+  };
+}
+
 function setTextureQuality(texture: Texture, renderer: WebGLRenderer) {
   texture.colorSpace = SRGBColorSpace;
   texture.minFilter = LinearFilter;
@@ -1527,6 +1598,8 @@ export class WebGLBackdrop {
   private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
+  private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
+  private thumbProbeLastUpdate = 0;
   private fluidStrength = 0.5;
   private darken = 0.1;
   private saturation = 1.15;
@@ -3791,6 +3864,34 @@ export class WebGLBackdrop {
     this.renderer.setRenderTarget(null);
   }
 
+  private updateThumbProbe(time: number) {
+    if (!this.debugThumbProbe || time - this.thumbProbeLastUpdate < 0.5) return;
+    this.thumbProbeLastUpdate = time;
+    const color = this.thumbCompositeMaterial.uniforms.uDarknessColor.value as Color;
+    const probeWindow = window as ThumbProbeWindow;
+    probeWindow.__rogierThumbProbe = {
+      activeSlug: this.activeSlug,
+      galleryProgress: this.galleryProgress,
+      thumbProgress: this.thumbProgress,
+      visibleThumbs: this.workItems.filter((item) => item.thumb.visible).length,
+      thumbComposite: {
+        darkness: this.thumbCompositeMaterial.uniforms.uDarkness.value as number,
+        darknessColor: [color.r, color.g, color.b],
+        saturation: this.thumbCompositeMaterial.uniforms.uSaturation.value as number,
+      },
+      spotlight: {
+        hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
+        intensity: this.spotLight.intensity,
+        mapColorSpace: this.thumbCompositeTarget.texture.colorSpace,
+        rendererOutputColorSpace: this.renderer.outputColorSpace,
+      },
+      targets: {
+        thumb: renderTargetStats(this.renderer, this.thumbTarget),
+        composite: renderTargetStats(this.renderer, this.thumbCompositeTarget),
+      },
+    };
+  }
+
   private renderCharacterTarget() {
     this.renderer.setRenderTarget(this.characterTarget);
     this.renderer.clear();
@@ -3975,6 +4076,7 @@ export class WebGLBackdrop {
       this.renderHomeCompositePass(sceneSourceTarget);
     }
     this.renderThumbTargets();
+    this.updateThumbProbe(time);
     if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
     this.renderDisplacementTarget(time);
     if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);

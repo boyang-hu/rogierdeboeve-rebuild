@@ -85,6 +85,49 @@ This is the current source-driven audit board for the remaining Phase 1 visual g
 
 Immediate next batch recommendation: build a QA-only thumb/spotlight probe that reads `thumbTarget`, `thumbCompositeTarget`, and selected WebGL uniforms from the live rebuild, then compares them with source expectations from `_1/T1/w1/E1/Se`. This is a diagnostic batch, not a visual tuning batch. If the composite map is already bright but the blocks are dark, prioritize `VA/zA` light semantics. If the composite map is dark before projection, prioritize thumb background, darkness color transfer, and render-target color space.
 
+### S1-24 Thumb / Spotlight Probe Result
+
+A QA-only thumb-map probe is now available for the spotlight attribution chain:
+
+- Added `?debug-thumb-probe=1`, which samples `thumbTarget` and `thumbCompositeTarget` after the thumb render pass and writes the result to `window.__rogierThumbProbe`.
+- Added `scripts/probe-thumb-spotlight.mjs`, which opens rebuild home through CDP, waits for the probe, captures a screenshot, and writes `summary.json`.
+- Normal rendering is unchanged unless the query flag is present.
+
+The diagnostic run at `/tmp/rogier-thumb-probe-s124` captured the active home state:
+
+| Field | Value | Interpretation |
+| --- | ---: | --- |
+| Active project | `hashgraph-vc` | Matches the expected initial active card. |
+| Visible thumbs | `1` | Matches source strip visibility rules for the centered thumbnail. |
+| Thumb target size | `900 x 900` | Matches source-shaped square `T1` target for a 1440x900 viewport. |
+| `thumbTarget` center luma | `0.166` | The raw thumb render target is not black or near-empty. |
+| `thumbCompositeTarget` center luma | `0.132` | Composite darkening is present but still bright enough to project. |
+| Thumb composite uniforms | darkness `0.2`, color `[0,0,0]`, saturation `1` | Matches initial `hashgraph-vc` payload path and source-shaped defaults. |
+| Spotlight map | `hasMap: true`, intensity `220` | The source-shaped map assignment is live. |
+| Map color space | empty / `NoColorSpace`-style render target texture | This is a remaining D8 attribution point, not a proven bug yet. |
+| Renderer output color space | `srgb` | Confirms the rebuild is running through modern Three output color management. |
+
+Decision: D1-D4 are no longer the primary suspect for the large home darkening gap. The map input is visibly non-empty and the composite target center luma is far above the final rebuild-home luma baseline (`~0.019`). This points the next Phase 1 implementation batch toward D7/D8: ordinary `VA/zA` spotlight-map light semantics and render-target color-space interpretation under Three 0.184. Do not tune thumb darkness, saturation, spotlight intensity, or disable `SpotLight.map` as a fix.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-thumb-probe-s124 CDP_PORT=9261 PROBE_WAIT=5200 node scripts/probe-thumb-spotlight.mjs`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s124-thumb-probe` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured normal-path luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after S1-24 probe batch | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.019` | Stable; probe is diagnostic only and does not change normal rendering. |
+| Home mobile | `0.056` | `0.016` | Stable. |
+| About desktop | `0.026` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
 ### Phase 1 Progress Checkpoint
 
 The current Phase 1 target is no longer a broad implementation pass. It is a focused attribution pass for a small number of source/rendering chains that still produce a large visible gap. The useful way to measure progress is now by chain status, not by total site completion:
