@@ -170,6 +170,26 @@ Measured luma again shows this cleanup is source-correct but not the main bright
 
 Decision: keep the `A1/C1` cleanup because it removes rebuild-only shader behavior and aligns the pre-composite background default. Since the shared cleanup did not move luma, the next high-risk batch should inspect the source `Lu` render order/output target flow around `mainScene`, `workScene`, and project media, or isolate the full `VA` shader replacement with immediate shader smoke testing.
 
+### S1-16 Lu/$1 Media Flow Audit Result
+
+A focused audit of source `Lu`, `$1`, `Lo/W1`, `I1/C1`, and `Se.setMediaOpacity()` found a real source-vs-rebuild architecture difference:
+
+- Source initializes scene updates in order `sky`, `media`, `work`, `main`, `workthumb`, `wavves`, `character`.
+- Source `$1` media scene renders through a `Lo/W1`-style render manager with `renderToScreen:false`.
+- Source `Lo/W1` media composite is a pass-through material whose fragment samples `tScene` and outputs `FragColor = vec4(mixed.rgb, 1.)`.
+- Source connects `mainScene.renderManager.compositeMaterial.uniforms.tMedia` to `mediaScene.renderManager.renderTargetComposite.texture`.
+- Source project media plane material `UD/FD` has no global `uSceneOpacity`; individual plane alpha comes from its rounded mask and per-plane `uReveal`, while global media reveal is owned by `C1.uMediaReveal` through `Se.setMediaOpacity()`.
+
+A local implementation experiment mirrored that flow by adding media raw/composite render targets, routing project media through `C1.tMedia`, and removing the rebuild-only per-plane `uSceneOpacity`. It passed `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, marker checks, and full Chrome capture with no network failures or runtime exceptions. However, it materially regressed project-page brightness:
+
+| Capture | Stable rebuild luma before experiment | Rebuild luma with media offscreen experiment | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `~0.011` | `0.011` | Unchanged. |
+| `/gc-2026/` desktop | `~0.039` | `0.0146` | Regression; do not keep. |
+| `/hashgraph-vc/` desktop | higher than experiment range | `0.010` | Regression; do not keep. |
+
+The experiment was reverted before commit. The important conclusion is that the source offscreen media path is still likely the correct final architecture, but current rebuild `C1/work/main` ownership is not ready for it. The next attempt should first isolate why project media becomes darker when mixed through `C1`: likely candidates are blank `tWork` ownership on project routes, `C1` background/darken interaction, or render-target color/alpha assumptions. Until that is solved, keep the current direct project media render path as the project-page stability baseline.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |
