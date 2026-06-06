@@ -593,6 +593,7 @@ uniform float uDarken;
 uniform float uSaturation;
 uniform float uBloomDistortion;
 uniform int uDebugStage;
+uniform int uDebugDarkenMode;
 
 varying vec2 vUv;
 
@@ -649,7 +650,11 @@ void main() {
     gl_FragColor = vec4(color, 1.0);
     return;
   }
-  color = sourceBlend(15, color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
+  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;
+  if (uDebugDarkenMode == 1) darkenOpacity = uDarken * 2.0;
+  if (uDebugDarkenMode == 2) darkenOpacity = mouseSim.r * 0.25 * uDarken;
+  if (uDebugDarkenMode == 3) darkenOpacity = 0.0;
+  color = sourceBlend(15, color, vec3(0.095), darkenOpacity);
   if (uDebugStage == 4) {
     gl_FragColor = vec4(color, 1.0);
     return;
@@ -1730,6 +1735,8 @@ export class WebGLBackdrop {
   private debugOutputProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-output-probe");
   private debugCompositeStage =
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-stage"), 0)), 0, 5) : 0;
+  private debugCompositeDarkenMode =
+    typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-darken"), 0)), 0, 3) : 0;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
   private fluidStrength = 0.5;
@@ -2651,6 +2658,7 @@ export class WebGLBackdrop {
         uSaturation: { value: this.saturation },
         uBloomDistortion: { value: 2.5 },
         uDebugStage: { value: this.debugCompositeStage },
+        uDebugDarkenMode: { value: this.debugCompositeDarkenMode },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeCompositeFragment,
@@ -4038,6 +4046,11 @@ export class WebGLBackdrop {
     const drawingBufferSize = new Vector2();
     this.renderer.getSize(rendererSize);
     this.renderer.getDrawingBufferSize(drawingBufferSize);
+    const mouseSimProbe = this.renderSettings.mousesim.enabled
+      ? renderTargetProbe(this.renderer, this.screenMouseSimulationTargets[this.screenMouseSimulationIndex])
+      : null;
+    const mouseSimRed = mouseSimProbe?.gridStats.mean[0] ?? 0;
+    const darkenValue = this.compositeMaterial.uniforms.uDarken.value as number;
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -4067,9 +4080,13 @@ export class WebGLBackdrop {
           boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
         },
         composite: {
-          uDarken: this.compositeMaterial.uniforms.uDarken.value,
+          uDarken: darkenValue,
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
           uDebugStage: this.compositeMaterial.uniforms.uDebugStage.value,
+          uDebugDarkenMode: this.compositeMaterial.uniforms.uDebugDarkenMode.value,
+          estimatedDarkenOpacityFromMouseGrid: darkenValue * 2 + mouseSimRed * 0.25 * darkenValue,
+          estimatedDarkenOpacityWithoutMouse: darkenValue * 2,
+          estimatedDarkenOpacityMouseOnly: mouseSimRed * 0.25 * darkenValue,
           boolBloom: this.compositeMaterial.uniforms.boolBloom.value,
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
         },
@@ -4083,9 +4100,7 @@ export class WebGLBackdrop {
         bloom: renderTargetProbe(this.renderer, this.bloomTarget),
         thumb: renderTargetProbe(this.renderer, this.thumbTarget),
         thumbComposite: renderTargetProbe(this.renderer, this.thumbCompositeTarget),
-        screenMouseSim: this.renderSettings.mousesim.enabled
-          ? renderTargetProbe(this.renderer, this.screenMouseSimulationTargets[this.screenMouseSimulationIndex])
-          : null,
+        screenMouseSim: mouseSimProbe,
       },
       textures: {
         noise: { colorSpace: this.noiseTexture.colorSpace, type: this.noiseTexture.type, format: this.noiseTexture.format },

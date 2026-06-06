@@ -428,6 +428,39 @@ Diagnostic run at `/tmp/rogier-composite-stages-s132`:
 
 Decision: keep the debug stage probe. Do not remove or weaken the multiply-darken formula, because the source `CA` uses the same operation and `uDarken = .2` is source default. The next attribution target is why source can tolerate this darken step while the rebuild cannot: active `uDarken` route ownership, `tMouseSim.r` range, `tScene` transfer/linear interpretation at the `OA/CA` input, and source `blendMultiply` implementation details. This narrows the next batch to measured inputs around the multiply stage, not broad composite rewiring.
 
+### S1-33 OA/CA Darken Input Attribution Result
+
+The final-composite probe now records multiply-darken inputs and supports debug-only darken isolation:
+
+- Added `?debug-composite-darken=1` to use only the source base term `uDarken * 2`.
+- Added `?debug-composite-darken=2` to use only the mouse term `mouseSim.r * .25 * uDarken`.
+- Added `?debug-composite-darken=3` to bypass the multiply-darken opacity.
+- `scripts/compare-composite-stages.mjs` now captures these variants in addition to stages `0..5`.
+- Output probe now reports `estimatedDarkenOpacityFromMouseGrid`, `estimatedDarkenOpacityWithoutMouse`, and `estimatedDarkenOpacityMouseOnly`.
+
+Source/rebuild blend check:
+
+- Source `blendMultiply(base, blend, opacity)` is `(base * blend) * opacity + base * (1.0 - opacity)`.
+- Rebuild `blendMultiply(base, blend, opacity)` is algebraically equivalent.
+- Therefore the live luma drop is not caused by a local blend function formula mismatch.
+
+Diagnostic run at `/tmp/rogier-composite-stages-s133`:
+
+| Variant | Screenshot luma | Estimated opacity | Interpretation |
+| --- | ---: | ---: | --- |
+| default darken | `0.0313` | `0.4008` | Current normal-path baseline. |
+| base-only darken | `0.0317` | `0.4000` | Nearly identical to default. |
+| mouse-only darken | `0.0671` | `0.00085` mouse term | Mouse term is not the static brightness culprit. |
+| darken off | `0.0672` | `0` debug override | Matches the pre-darken stage, confirming multiply darken ownership. |
+
+Mouse simulation readback during the static capture:
+
+- `screenMouseSim` 9x9 mean red/luma: about `0.017`.
+- `screenMouseSim` 9x9 max red: about `0.26`.
+- The estimated mouse contribution to multiply opacity is only about `0.00085`, compared with the base `uDarken * 2 = 0.4`.
+
+Decision: keep the darken input probe and do not tune `uDarken` downward as a production fix. Source `xt.darken = .2`, source `CA` multiplies by `uDarken * 2.`, and source home/about/error route state sets this value. The remaining question is not mouse/fluid corruption; it is why the source `tScene` entering this same darken formula has enough perceived brightness afterward. Continue with `tScene` transfer/color interpretation and source-vs-rebuild capture timing/active-project state before touching production darken constants.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

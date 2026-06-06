@@ -20,6 +20,12 @@ const port = Number(process.env.CDP_PORT || 9282);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.CAPTURE_WAIT || 5200);
 const stages = [0, 1, 2, 3, 4, 5];
+const darkenModes = [
+  { label: "default", mode: 0 },
+  { label: "base-only", mode: 1 },
+  { label: "mouse-only", mode: 2 },
+  { label: "off", mode: 3 },
+];
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,7 +83,7 @@ async function connectWs(url) {
   return ws;
 }
 
-async function captureStage(stage) {
+async function captureVariant({ stage, darkenMode = 0, label = `stage-${stage}` }) {
   const failures = [];
   const exceptions = [];
   const consoleMessages = [];
@@ -102,7 +108,9 @@ async function captureStage(stage) {
     screenWidth: 1440,
     screenHeight: 900,
   });
-  await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&debug-output-probe=1&debug-composite-stage=${stage}` });
+  await send(ws, "Page.navigate", {
+    url: `${rebuildUrl}/?skip-preloader&debug-output-probe=1&debug-composite-stage=${stage}&debug-composite-darken=${darkenMode}`,
+  });
   await wait(waitAfter);
   const result = await send(ws, "Runtime.evaluate", {
     expression: `JSON.stringify({
@@ -119,12 +127,14 @@ async function captureStage(stage) {
   });
   const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
   const parsed = JSON.parse(result.result.value);
-  if (!parsed.probe) throw new Error(`No __rogierOutputProbe data found for stage ${stage}`);
-  const screenshotFile = path.join(outDir, `stage-${stage}.png`);
+  if (!parsed.probe) throw new Error(`No __rogierOutputProbe data found for ${label}`);
+  const screenshotFile = path.join(outDir, `${label}.png`);
   writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
   ws.close();
   return {
     stage,
+    label,
+    darkenMode,
     screenshot: screenshotFile,
     ...parsed,
     failures: failures.filter((failure) => !failure.canceled).map((failure) => ({ type: failure.type, errorText: failure.errorText })),
@@ -149,10 +159,14 @@ try {
   await waitForPort(port);
   const results = [];
   for (const stage of stages) {
-    results.push(await captureStage(stage));
+    results.push(await captureVariant({ stage }));
   }
-  writeFileSync(path.join(outDir, "summary.json"), JSON.stringify({ stages: results }, null, 2));
-  console.log(JSON.stringify({ stages: results }, null, 2));
+  const darkenResults = [];
+  for (const variant of darkenModes) {
+    darkenResults.push(await captureVariant({ stage: 0, darkenMode: variant.mode, label: `darken-${variant.label}` }));
+  }
+  writeFileSync(path.join(outDir, "summary.json"), JSON.stringify({ stages: results, darkenModes: darkenResults }, null, 2));
+  console.log(JSON.stringify({ stages: results, darkenModes: darkenResults }, null, 2));
 } finally {
   chrome.kill("SIGTERM");
 }
