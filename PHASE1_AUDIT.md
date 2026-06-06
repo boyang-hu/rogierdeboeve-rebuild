@@ -2648,3 +2648,34 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-thumb-uniform-full`.
 
 Decision: keep this source-uniform cleanup. It improves shader attribution for the thumb/spotlight chain but does not close Phase 1 visually; the remaining blockers are still render-target/output transfer, generated material body parity, and the visible hard horizon/fog-bed gap.
+
+### S1-18 `$1/j1/W1` Media Composite and `UD/FD` Project Media Surface
+
+This batch aligned a source-backed project media/render-manager surface while keeping project pages as regression gates.
+
+Source evidence:
+
+- Source `$1` media scene uses `j1`, whose composite material `W1/G1` declares `tScene`, `tBloom`, `tBlur`, `tFluid`, `tMouseSim`, `boolBloom`, `boolFluid`, `boolLuminosity`, and `boolFxaa`.
+- Source `G1` is a pass-through composite and writes the sampled `mixed` vec4, preserving alpha for `C1/A1` to consume.
+- Source `UD/FD/LD` project media planes declare `tMap`, `uMapSize`, `uContainerSize`, `uCameraDistance`, `uRadius`, `uBackgroundColor`, and `uReveal`; they do not have a per-plane `uSceneOpacity`.
+- Source project media reveal is owned by `Se.setMediaOpacity()` through `C1.uMediaReveal`, which multiplies `media.a * uMediaReveal` in the main pre-composite.
+
+Runtime/tooling changes:
+
+- Corrected shader-dump source mapping so `j1-media-composite` compares against source `G1`, and added a separate `UD-project-media` source mapping for source `LD`.
+- Added the source `W1/G1` uniform surface to the rebuild media composite material.
+- Kept media composite output as a pass-through `vec4 color`, matching source alpha behavior instead of forcing alpha to `1.0`.
+- Removed rebuild-only `uSceneOpacity` from project media shader/material updates, leaving reveal opacity to `C1.uMediaReveal`.
+- Added `scripts/probe-project-media.mjs` to check real project routes for desktop media nodes, canvas presence, media target output, media reveal state, and WebGL/runtime errors.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-media-surface-shader`.
+- The dump now reports `j1-media-composite.fragmentUniformsOnlySource=[]` and `fragmentUniformsOnlyRebuild=[]`.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-media-surface-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-media-surface-full`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`: both keep `mediaCount=5`, `visibleMediaCount=5`, `uMediaReveal=1`, non-zero `mediaRaw/media` output, and no shader/runtime errors: `/tmp/rd-project-media-probe`.
+
+Decision: keep this source-surface alignment. It reduces project-media regression risk and removes a non-source opacity path, but it does not close Phase 1; the remaining home blockers are still the hard horizon/fog-bed, generated `VA` residuals, and render-target/output color interpretation.

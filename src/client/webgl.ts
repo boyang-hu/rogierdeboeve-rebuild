@@ -308,7 +308,6 @@ uniform float uCameraDistance;
 uniform float uRadius;
 uniform vec3 uBackgroundColor;
 uniform float uReveal;
-uniform float uSceneOpacity;
 
 varying vec2 vUv;
 
@@ -341,7 +340,7 @@ void main() {
   float mask = 1.0 - smoothstep(0.0, 1.0, rounded);
 
   color.rgb = mix(color.rgb, uBackgroundColor, 1.0 - uReveal);
-  gl_FragColor = vec4(color.rgb, mask * uSceneOpacity);
+  gl_FragColor = vec4(color.rgb, mask);
 }
 `;
 
@@ -1461,6 +1460,14 @@ precision highp float;
 #include <tonemapping_pars_fragment>
 
 uniform sampler2D tScene;
+uniform sampler2D tBloom;
+uniform sampler2D tBlur;
+uniform sampler2D tFluid;
+uniform sampler2D tMouseSim;
+uniform bool boolBloom;
+uniform bool boolFluid;
+uniform bool boolLuminosity;
+uniform bool boolFxaa;
 
 varying vec2 vUv;
 
@@ -3404,6 +3411,14 @@ export class WebGLBackdrop {
       depthTest: false,
       uniforms: {
         tScene: { value: this.mediaRawTarget.texture },
+        tBloom: { value: this.fluidPlaceholder },
+        tBlur: { value: this.fluidPlaceholder },
+        tFluid: { value: this.fluidPlaceholder },
+        tMouseSim: { value: this.fluidPlaceholder },
+        boolBloom: { value: false },
+        boolFluid: { value: false },
+        boolLuminosity: { value: false },
+        boolFxaa: { value: false },
       },
       vertexShader: backgroundVertex,
       fragmentShader: mediaCompositeFragment,
@@ -3924,6 +3939,7 @@ export class WebGLBackdrop {
   }
 
   private createMediaMaterial() {
+    dumpShader("UD-project-media", projectMediaVertex, projectMediaFragment);
     return new ShaderMaterial({
       transparent: true,
       depthWrite: false,
@@ -3936,7 +3952,6 @@ export class WebGLBackdrop {
         uRadius: { value: 0 },
         uBackgroundColor: { value: this.mediaBackground.clone() },
         uReveal: { value: 0 },
-        uSceneOpacity: { value: 0 },
       },
       vertexShader: projectMediaVertex,
       fragmentShader: projectMediaFragment,
@@ -4357,9 +4372,6 @@ export class WebGLBackdrop {
     this.mediaOpacityTween?.kill();
     const update = () => {
       this.preCompositeMaterial.uniforms.uMediaReveal.value = this.mediaSceneOpacity;
-      this.mediaPlanes.forEach((plane) => {
-        plane.material.uniforms.uSceneOpacity.value = this.mediaSceneOpacity;
-      });
     };
     if (duration <= 0) {
       this.mediaSceneOpacity = value;

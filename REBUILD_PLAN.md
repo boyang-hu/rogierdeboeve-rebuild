@@ -31,6 +31,7 @@ Last updated: 2026-06-06
 
 | Commit | Area | Progress |
 | --- | --- | --- |
+| `current batch` | Project/Main WebGL / QA Harness | Aligned source `$1/j1/W1` media composite and `UD/FD/LD` project-media material surface: shader comparison now maps `j1` to source `G1`, media composite exposes the source pass-through uniforms, project media opacity is owned by `C1.uMediaReveal` instead of a non-source per-plane `uSceneOpacity`, and a dedicated project-media probe now checks `/gc-2026/` plus `/hashgraph-vc/` for media presence/output. |
 | `current batch` | Home WebGL / QA Harness | Cleaned the `VA/A1` shader surface by restoring the source-shaped `mouseSim` world-position expression, removing production `debug-va-*` and `debug-spotlight-map-transfer` shader branches plus obsolete comparison scripts, and adding the missing `A1.tScene` shader declaration. |
 | `fd76927` | Home WebGL | Aligned the source `I1/C1` render-manager surface by adding the default-disabled lensflare settings/target, wiring `C1.tLensflare` to the full-resolution target, adding source-surface `tScene`/`tPortal` uniforms, using explicit main bloom factors, and keeping source `I1` half-POT main bloom sizing separate from source `Lu/kA` quarter-POT work bloom sizing. |
 | `b9db4fd` | Home WebGL | Removed the unused rebuild-only pre-composite bloom branch (`preBloom*` targets/materials/probes/dead method) because source `Lu` only has one bloom chain per render manager and main `I1/C1` bloom is disabled by default. Active work bloom and disabled main bloom placeholders remain intact. |

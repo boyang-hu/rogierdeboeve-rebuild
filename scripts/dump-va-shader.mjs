@@ -429,7 +429,8 @@ const sourceShaders = {
   "Lu-main-composite": tryExtractSourceShader(bundle, "m1"),
   "OA-work-composite": tryExtractSourceShader(bundle, "CA"),
   "x1-thumb-composite": tryExtractSourceShader(bundle, "v1"),
-  "j1-media-composite": tryExtractSourceShader(bundle, "LD"),
+  "j1-media-composite": tryExtractSourceShader(bundle, "G1"),
+  "UD-project-media": tryExtractSourceShader(bundle, "LD"),
   "u1-environment": tryExtractSourceShader(bundle, "l1"),
 };
 writeFileSync(path.join(outDir, "source-HA.glsl"), sourceH);
