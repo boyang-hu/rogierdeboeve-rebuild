@@ -2381,7 +2381,7 @@ export class WebGLBackdrop {
   private directionalLightIntensity = 1.5;
   private directionalLight2Intensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
-  private spotLightTarget = new Vector3(0, 0, 0);
+  private spotLightTarget = new Vector3(0, 0, -8);
   private spotLightRight = new Vector3(1, 0, 0);
   private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
@@ -2712,7 +2712,7 @@ export class WebGLBackdrop {
     this.spotLightParallax = true;
     this.spotLight.map = this.homeSpotlightMap();
     this.spotLightPosition.set(0, 0, 3.7);
-    this.spotLightTarget.set(0, 0, 0);
+    this.spotLightTarget.set(0, 0, -8);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 0);
   }
 

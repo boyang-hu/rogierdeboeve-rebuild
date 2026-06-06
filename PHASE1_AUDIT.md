@@ -83,6 +83,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 7 | S1-68 | `VA/HA` vertex mouse projection under Three r164 | Source `HA` computes early vertex `screenUv = gl_Position.xy / uCoords.xy`, assigns `newUv = screenUv`, and applies the mouse displacement as `transformed / (1. - mouseSim.r * .2)`. | Production now uses those two source vertex paths by default, with query-only fallbacks `debug-va-vertex-uv=uv` and `debug-va-world=compat` for attribution. | Medium | Keep as source-correct. It improves shader-body parity but does not close Phase 1 because band analysis still shows the hard horizon/overbright mid-field gap. |
 | 8 | S1-69 | `VA/zA` fragment tail and ordinary material surface | Source `zA` writes `gl_FragColor` through `opaque_fragment`, then mutates `gl_FragColor.rgb` and `.a`; ordinary `VA` has no auxiliary reveal/scroll opacity branch and declares `uTime` in the fragment surface. | Production now defaults to the source-style fragment tail, keeps `debug-va-output-tail=compat` as a query-only fallback, restores ordinary alpha/reveal/mouse formulas, splits auxiliary-only fragment uniforms out of ordinary `VA`, and includes `uTime` in ordinary fragment pars. | Medium | Keep as source-correct. Remaining ordinary fragment residuals are r164 shader-lib physical macro declarations (`dispersion/anisotropy*`) and the broader hard horizon/overbright mid-field gap, so the next batch should move to `OA/CA` transfer or render-target attribution rather than more unsupported VA tuning. |
 | 9 | S1-70 | Source `a1` floor geometry | Source `class Tu extends Vt` is Three `CircleGeometry`; `a1.init()` creates `new Tu(60,32)`, rotates it by `-PI/2`, and attaches the reflector. The rebuild had incorrectly used `PlaneGeometry(60,32)`, creating a rectangular floor/reflection surface. | Production now uses `CircleGeometry(60,32)` for the floor mesh and the output probe reports floor/reflection scene state for future attribution. Desktop center-band delta moved to roughly `+0.001` against source and the previous mid-page floor/reflection collapse is gone. | Low-medium | Keep as source-correct. Continue Phase 1 from remaining mobile/background and cube/thumb projection deltas; do not reintroduce plane floor geometry. |
+| 10 | S1-71 | Home spotlight target / thumb projection depth | Source `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, then sets spotlight position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`. The rebuild had the map and position right but reset the home target to `(0,0,0)`. | Production now keeps the home spotlight target at `(0,0,-8)` in constructor/default state and `initHomeSpotlight()`. Thumb spotlight probe confirms `hasMap=true`, target `[-8 z]`, intensity `220`, and no runtime errors. | Low-medium | Keep as source-correct. Continue projection parity from remaining `SpotLight.map` transfer/light multiplication and `VA` shader bridge, not by changing source spotlight position/intensity constants. |
 
 ### Phase 1 Open Blocker Board
 
@@ -122,6 +123,30 @@ Verification from the source-vs-rebuild capture:
 | Project media probe | 5 visible tracks on `/gc-2026/` and `/hashgraph-vc/` | Project detail media did not regress. |
 
 Decision: keep the circle geometry correction. Phase 1 remains open because mobile background distribution and cube/thumb projection still need source-driven alignment.
+
+### S1-71 Home Spotlight Target Alignment
+
+This batch corrected one source-confirmed `SD/p1/T1` spotlight projection mismatch.
+
+Source/runtime evidence:
+
+- Source `SD.init()` wires the home spotlight map from `J.workThumbScene.renderManager.renderTargetComposite.texture`.
+- The same source block sets `J.workScene.spotLight.position` to `(0,0,3.7)`, `target.position` to `(0,0,-8)`, and intensity to `220`.
+- The rebuild already used the thumb composite map, position, and intensity, but `initHomeSpotlight()` reset the target to `(0,0,0)`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Thumb spotlight probe | `hasMap=true`, target `[0,0,-8]`, intensity `220`, no failures/exceptions |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` keep 5 visible media tracks |
+| Full source-vs-rebuild capture | Home/about/project pages captured without failures/exceptions |
+| Desktop center-band delta | `-0.0014` against source |
+| Mobile center-band delta | `-0.0141` against source |
+
+Decision: keep the source target. This is a projection/depth correction, not a visual brightness tune. Phase 1 remains open for remaining cube/thumb projection transfer and render-manager/color interpretation gaps.
 
 ### S1-54 Source Non-Fix Audit
 
