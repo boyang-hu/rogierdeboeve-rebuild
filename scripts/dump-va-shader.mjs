@@ -426,7 +426,7 @@ const sourceZ = extractSourceShader(bundle, "zA", "`,HA=`");
 const sourceH = extractSourceShader(bundle, "HA", "`;class VA extends");
 const sourceShaders = {
   "A1-pre-composite": tryExtractSourceShader(bundle, "A1"),
-  "Lu-main-composite": tryExtractSourceShader(bundle, "m1"),
+  "Lu-main-composite": tryExtractSourceShader(bundle, "aA"),
   "OA-work-composite": tryExtractSourceShader(bundle, "CA"),
   "x1-thumb-composite": tryExtractSourceShader(bundle, "v1"),
   "j1-media-composite": tryExtractSourceShader(bundle, "G1"),

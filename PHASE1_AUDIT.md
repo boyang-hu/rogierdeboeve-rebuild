@@ -2679,3 +2679,33 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`: both keep `mediaCount=5`, `visibleMediaCount=5`, `uMediaReveal=1`, non-zero `mediaRaw/media` output, and no shader/runtime errors: `/tmp/rd-project-media-probe`.
 
 Decision: keep this source-surface alignment. It reduces project-media regression risk and removes a non-source opacity path, but it does not close Phase 1; the remaining home blockers are still the hard horizon/fog-bed, generated `VA` residuals, and render-target/output color interpretation.
+
+### S1-19 `I1/Lu/aA` Main Render-Manager Settings and Shader Mapping
+
+This batch kept the focus on source-owned render-manager structure without changing visual constants.
+
+Source evidence:
+
+- Source `I1.initSettings()` owns main render-manager settings separately from source `kA`: `blur.enabled=false`, `fxaa.enabled=false`, `bloom.enabled=false`, `luminosity.enabled=false`, `mousesim.enabled=false`, and high-tier `fluid.enabled=true`.
+- Source `I1.update()` selects the main composite `tScene` from its own blur state, not from work `kA` settings.
+- Source `aA` main composite bloom branch samples `tBloom` through `rgbshift(tBloom, uv, -1.5, .02)`, then adds the angle/distortion shifted sample. The rebuild main composite previously only added a direct `texture2D(tBloom, uv)` sample.
+- The active rebuild `mainCompositeFragment` corresponds to source `lA/aA`. The prior shader-dump label `Lu-main-composite -> m1` compared it against source `Lo/g1/m1`, which is the simple pass-through manager, not the `Lu/lA` default composite.
+
+Runtime/tooling changes:
+
+- Main blur/fxaa target sizing now reads `SOURCE_MAIN_RENDER_SETTINGS` instead of the work-scene `renderSettings`.
+- Main screen composite `tScene` and `tBlur` selection now reads `SOURCE_MAIN_RENDER_SETTINGS.blur`.
+- Tick-time main blur gating now reads `SOURCE_MAIN_RENDER_SETTINGS.blur`.
+- Main composite bloom body now matches source `aA`'s shifted bloom accumulation.
+- Shader dump now maps `Lu-main-composite` to source `aA`, reducing that fragment residual from the earlier misleading large mismatch to `fragmentLengthDelta=-17`, with only `tMouseSim` still rebuild-only.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rd-main-settings-shader2`.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors: `/tmp/rd-main-settings-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-main-settings-full`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`: both keep `mediaCount=5`, `visibleMediaCount=5`, `uMediaReveal=1`, non-zero `mediaRaw/media` output, and no shader/runtime errors: `/tmp/rd-main-settings-project-media`.
+
+Decision: keep this source-alignment batch. It improves render-manager ownership and fixes a misleading QA comparison, but Phase 1 remains open because the visible home hard horizon/fog-bed and render-target/output color interpretation gaps are still unresolved.
