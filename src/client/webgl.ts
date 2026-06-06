@@ -3964,7 +3964,11 @@ export class WebGLBackdrop {
         USE_NORMALMAP: "",
       },
       uniforms: {
-        tReflect: { value: this.floorReflectionReadTarget.texture },
+        tReflect: {
+          value: this.debugFloorReflection === "raw-sample"
+            ? this.floorReflectionTarget.texture
+            : this.floorReflectionReadTarget.texture,
+        },
         uMapTransform: { value: new Matrix3().identity() },
         uMatrix: { value: this.floorReflectionMatrix },
         uColor: { value: colorFrom("#4a4a4a") },
@@ -5058,11 +5062,13 @@ export class WebGLBackdrop {
     this.floorReflectionQ.y = (Math.sign(this.floorReflectionClipPlane.y) + projectionElements[9]) / projectionElements[5];
     this.floorReflectionQ.z = -1;
     this.floorReflectionQ.w = (1 + projectionElements[10]) / projectionElements[14];
-    this.floorReflectionClipPlane.multiplyScalar(2 / this.floorReflectionClipPlane.dot(this.floorReflectionQ));
-    projectionElements[2] = this.floorReflectionClipPlane.x;
-    projectionElements[6] = this.floorReflectionClipPlane.y;
-    projectionElements[10] = this.floorReflectionClipPlane.z + 1;
-    projectionElements[14] = this.floorReflectionClipPlane.w;
+    if (this.debugFloorReflection !== "no-clip") {
+      this.floorReflectionClipPlane.multiplyScalar(2 / this.floorReflectionClipPlane.dot(this.floorReflectionQ));
+      projectionElements[2] = this.floorReflectionClipPlane.x;
+      projectionElements[6] = this.floorReflectionClipPlane.y;
+      projectionElements[10] = this.floorReflectionClipPlane.z + 1;
+      projectionElements[14] = this.floorReflectionClipPlane.w;
+    }
 
     try {
       this.renderer.xr.enabled = false;
@@ -5072,17 +5078,25 @@ export class WebGLBackdrop {
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.floorReflectionCamera);
 
-      this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
-      this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(15, 0);
-      this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
-      this.renderer.clear();
-      this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
-
-      this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionWriteTarget.texture;
-      this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 15);
       this.renderer.setRenderTarget(this.floorReflectionReadTarget);
       this.renderer.clear();
-      this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+      if (this.debugFloorReflection === "no-blur") {
+        this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
+        this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
+        this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+      } else {
+        this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
+        this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(15, 0);
+        this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
+        this.renderer.clear();
+        this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+
+        this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionWriteTarget.texture;
+        this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 15);
+        this.renderer.setRenderTarget(this.floorReflectionReadTarget);
+        this.renderer.clear();
+        this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+      }
     } finally {
       this.renderer.xr.enabled = previousXrEnabled;
       this.renderer.shadowMap.autoUpdate = previousShadowAutoUpdate;

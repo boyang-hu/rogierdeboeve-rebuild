@@ -3076,3 +3076,34 @@ Screenshot comparison:
 - Mobile rebuild center-band luma is still darker than source (`-0.0247`), with the largest remaining deficits around `0.25`, `0.65`, and `0.75`.
 
 Decision: keep the diagnostics. Do not tune global brightness, sky constants, thumb darkness, or final composite transfer from this evidence. The next source-backed batch should stay on `i1/a1` reflector target content and floor sampling/camera ownership, because the hard boundary is present before final compositing and is strongest in `floorReflectionRead`.
+
+### S1-32 Reflector Clip / Blur / Sampling Diagnostic
+
+This batch added query-only reflector diagnostics to test whether the hard horizon is caused by a single obvious `i1/a1` switch. Default production rendering is unchanged.
+
+Runtime/tooling changes:
+
+- Added `debug-floor-reflection=no-clip` to bypass the reflector oblique projection-matrix clip-plane write.
+- Added `debug-floor-reflection=no-blur` to copy the raw reflection target through the blur shader without directional blur.
+- Added `debug-floor-reflection=raw-sample` to make the floor shader sample the raw reflection target instead of the blurred read target.
+- Added these three variants to `scripts/compare-home-brightness-attribution.mjs`.
+
+Evidence from `/tmp/rd-reflection-variants`:
+
+| Variant | Work raw 9x9 | Pre-composite 9x9 | `floorReflectionRead` strongest band | Read |
+| --- | ---: | ---: | --- | --- |
+| default | `0.2882` | `0.2916` | `0.3283` at `0.50` | Baseline hard reflection boundary. |
+| `floor-reflection-off` | `0.1988` | `0.2285` | `0.0000` | Confirms reflection materially affects the floor/environment result. |
+| `no-clip` | `0.2873` | `0.2921` | `0.6285` at `0.30` | Disabling clip is not source-shaped and makes reflection target content worse. |
+| `no-blur` | `0.2917` | `0.2902` | `0.3331` at `0.50` | Blur pass is not the source of the hard band. |
+| `raw-sample` | `0.3000` | `0.2932` | `0.3478` at `0.50` | Sampling raw reflection is not a production fix. |
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Default home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-reflection-default-probe`.
+- Focused attribution passed with no errors: `/tmp/rd-reflection-variants`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-reflection-variants-project-media`.
+
+Decision: keep the query-only diagnostics for future attribution, but do not promote any of these variants. The remaining hard horizon is not explained by simply removing clipping, removing blur, or sampling the raw reflection target. The next source-backed work should inspect source-vs-rebuild reflected scene content and camera/scene state at the reflection render, especially which objects/background/fog are visible to the virtual camera.
