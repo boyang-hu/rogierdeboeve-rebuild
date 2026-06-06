@@ -22,6 +22,7 @@ type WebGLLike = {
     mouseLightness?: string;
     spotlight?: string;
   }): void;
+  beginProjectTransition?(payload: ReturnType<typeof projectPayloadFromElement>): void;
   setActiveSlug?(slug: string): void;
   setGalleryProgress?(progress: number, velocity?: number, delta?: number): void;
   restoreGalleryState?(progress: number, sceneRotation?: number): void;
@@ -147,7 +148,7 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
   clearWorkPreview(webgl);
   document.documentElement.classList.add("is-work-gallery-leaving");
   if (!prefersReducedMotion()) {
-    gsap.to("[data-view]", { opacity: 0, duration: 0.5, ease: "linear" });
+    gsap.to(".ui-work-content, .ui-progressbar--work, .ui-work .ui-footer", { opacity: 0, duration: 0.5, ease: "linear" });
   }
   if (!prefersReducedMotion()) {
     const descriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
@@ -644,6 +645,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
       event.preventDefault();
       if (performance.now() - lastTouchSelect < 500) return;
       setDomActiveIndex(index);
+      getWebgl()?.beginProjectTransition?.(projectPayloadFromElement(card));
       navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl(), navigate);
     };
     const onCtaMouseEnter = () => previewWork(true);
@@ -1040,7 +1042,7 @@ function initHomeRouteLeave(getWebgl: () => WebGLLike | undefined, navigate?: Ap
   return () => cleanups.splice(0).forEach((cleanup) => cleanup());
 }
 
-function initViewLifecycle() {
+function initViewLifecycle(animate = true) {
   const view = document.querySelector<HTMLElement>("[data-view]");
   if (!view) return () => {};
 
@@ -1048,7 +1050,7 @@ function initViewLifecycle() {
   document.documentElement.classList.add(viewClass);
   document.querySelector<HTMLElement>(".ui-header-name")?.style.setProperty("pointer-events", "all");
 
-  if (prefersReducedMotion()) {
+  if (prefersReducedMotion() || !animate) {
     view.style.opacity = "1";
     return () => {
       document.documentElement.classList.remove(viewClass);
@@ -1183,7 +1185,7 @@ function boot() {
   };
   const initCurrentPage = () => {
     cleanupPage();
-    cleanupPageCallbacks.push(initViewLifecycle());
+    cleanupPageCallbacks.push(initViewLifecycle(!document.documentElement.classList.contains("is-route-swapping")));
     void import("./motion").then(({ initMotion }) => {
       cleanupMotion = initMotion();
     });
@@ -1217,6 +1219,7 @@ function boot() {
     const leavePromise = new Promise((resolve) => window.setTimeout(resolve, transitionDelay(mode)));
     Promise.all([routePromise, leavePromise])
       .then(([nextDoc]) => {
+        document.documentElement.classList.add("is-route-swapping");
         cleanupPage();
         replacePageDom(nextDoc);
         if (historyMode === "replace") {
@@ -1227,7 +1230,10 @@ function boot() {
         window.scrollTo(0, 0);
         initCurrentPage();
         preloadRoutes();
-        window.setTimeout(emitPageEntered, prefersReducedMotion() ? 0 : 100);
+        window.setTimeout(() => {
+          document.documentElement.classList.remove("is-route-swapping");
+          emitPageEntered();
+        }, prefersReducedMotion() ? 0 : 100);
       })
       .catch((error) => {
         console.warn("Internal router failed; falling back to full navigation", error);

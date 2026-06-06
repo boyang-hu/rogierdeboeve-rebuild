@@ -2054,6 +2054,19 @@ export class WebGLBackdrop {
     if (payload.slug) this.setActiveSlug(payload.slug);
   }
 
+  beginProjectTransition(payload: ProjectPayload) {
+    const ambientIntensity = numeric(payload.ambient, 0.5);
+    const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
+    this.activeSlug = payload.slug ?? this.activeSlug;
+    this.setMainColor(payload.color);
+    this.setDarken(numeric(payload.darkness, 0.25), 0.5);
+    this.setAmbientLight(ambientColor, ambientIntensity);
+    this.setMediaBackground(payload.mediaColor ?? payload.color);
+    this.setSaturation(numeric(payload.saturation, 1));
+    this.setContrast(numeric(payload.contrast, 1.15));
+    this.setFluidStrength(1, 0.5);
+  }
+
   setActiveSlug(slug: string) {
     this.activeSlug = slug;
     const active = this.workItems.find((item) => item.slug === slug);
