@@ -45,7 +45,8 @@ type WebGLLike = {
   refreshMedia?(): void;
 };
 
-type AppNavigate = (url: string, mode?: "home" | "project" | "about" | "default", historyMode?: "push" | "replace") => void;
+type TransitionMode = "home" | "project" | "about" | "work" | "default";
+type AppNavigate = (url: string, mode?: TransitionMode, historyMode?: "push" | "replace") => void;
 
 function projectPayloadFromElement(element?: HTMLElement | null) {
   return {
@@ -162,7 +163,8 @@ function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike, navigate?: App
   if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
   persistEnteredSession();
   window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
-  navigate?.(url, "home") ?? window.setTimeout(() => window.location.assign(url), 500);
+  if (navigate) navigate(url, "home");
+  else window.setTimeout(() => window.location.assign(url), 500);
 }
 
 function animateCurrentViewOut() {
@@ -991,7 +993,9 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppN
       event.preventDefault();
       animateCurrentViewOut();
       getWebgl()?.projectLeave?.();
-      navigate?.(target.href, "project") ?? window.setTimeout(() => window.location.assign(target.href), 500);
+      const transition = link.dataset.transition;
+      if (navigate) navigate(target.href, transition === "work" ? "work" : "project");
+      else window.setTimeout(() => window.location.assign(target.href), 500);
     };
     link.addEventListener("click", onClick);
     cleanups.push(() => link.removeEventListener("click", onClick));
@@ -1012,7 +1016,8 @@ function initAboutLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNav
       event.preventDefault();
       animateCurrentViewOut();
       getWebgl()?.animateAboutVisualOut?.();
-      navigate?.(target.href, "about") ?? window.setTimeout(() => window.location.assign(target.href), 500);
+      if (navigate) navigate(target.href, "about");
+      else window.setTimeout(() => window.location.assign(target.href), 500);
     };
     link.addEventListener("click", onClick);
     cleanups.push(() => link.removeEventListener("click", onClick));
@@ -1128,9 +1133,9 @@ function boot() {
     window.removeEventListener("beforeunload", cleanupApp);
   };
   const normalizeRouteUrl = (url: string) => new URL(url, window.location.href).href.split("#")[0];
-  const transitionDelay = (mode: "home" | "project" | "about" | "default") => {
+  const transitionDelay = (mode: TransitionMode) => {
     if (prefersReducedMotion()) return 0;
-    if (mode === "home" || mode === "project" || mode === "about") return 500;
+    if (mode === "home" || mode === "project" || mode === "about" || mode === "work") return 500;
     return 500;
   };
   const loadRoute = async (url: string) => {
@@ -1271,9 +1276,12 @@ function boot() {
     if (target.origin !== window.location.origin || target.href === window.location.href) return;
     event.preventDefault();
     const view = document.querySelector<HTMLElement>("[data-view]");
-    const mode: "home" | "project" | "about" | "default" = view?.dataset.view === "home" || view?.dataset.view === "project" || view?.dataset.view === "about"
-      ? view.dataset.view
-      : "default";
+    const transition = link.dataset.transition;
+    const mode: TransitionMode = transition === "project" || transition === "work"
+      ? transition
+      : view?.dataset.view === "home" || view?.dataset.view === "project" || view?.dataset.view === "about"
+        ? view.dataset.view
+        : "default";
     navigateTo(target.href, mode);
   };
 
