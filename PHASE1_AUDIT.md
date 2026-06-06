@@ -690,6 +690,40 @@ Verification passed:
 
 Next: continue with `OA/CA` `tScene` transfer and final composite attribution. The texture colorSpace fix removes a major thumb-map content error, but the remaining transfer diagnostics still show material headroom.
 
+### S1-41 Work/Main Pass Ownership Attribution Result
+
+Source evidence:
+
+- Source `workScene` uses `kA/OA/CA` as its own render manager and writes `workScene.renderManager.renderTargetComposite`.
+- Source init then assigns `mainScene.renderManager.compositeMaterial.uniforms.tWork.value = workScene.renderManager.renderTargetComposite.texture`.
+- Source `A1/C1` therefore consumes already-composited work output, while the rebuild currently keeps a stable bridge where `A1` consumes `workRawTarget` and the final screen pass applies `OA/CA`.
+
+Added a debug-only attribution path:
+
+- `?debug-pass-order=source-work-composite` renders `workRawTarget` through the `OA/CA` composite into a new `workCompositeTarget`, then feeds that target to `A1.tWork`.
+- Normal rendering still uses `workRawTarget` as `A1.tWork`.
+- The output probe now reports `targets.workComposite`; it is expected to be black in normal rendering because the target is only populated by the debug path.
+- The brightness attribution matrix now includes `source-work-composite-pass`.
+
+Diagnostic run at `/tmp/rogier-home-brightness-s141-pass-order`:
+
+| Variant | Screenshot luma | Work raw 9x9 | Work composite 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| default | `0.2284` | `0.2170` | `0.0000` | `0.3113` | `0.0531` | `0.1767` |
+| source work-composite pass | `0.1440` | `0.2217` | `0.1690` | `0.2168` | `0.0194` | `0.1773` |
+| scene transfer | `0.3313` | `0.2144` | `0.0000` | `0.3086` | `0.0528` | `0.1767` |
+| spotlight + scene transfer | `0.3693` | `0.2479` | `0.0000` | `0.3632` | `0.0731` | `0.1767` |
+
+Decision: keep this as attribution tooling and do not promote the source-shaped work/main pass ownership to production yet. After the S1-40 texture colorSpace fix, the two-level ownership experiment is still strongly negative in the current bridge: it darkens the intermediate work composite and then reduces `A1` input luma. This confirms the earlier S1-31 result under the new brighter texture baseline. The remaining productive path is not a broad pass-order rewrite; continue with smaller `OA/CA` `tScene` transfer/content attribution and the upstream `VA` work output that feeds it.
+
+Verification passed:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-s141-pass-order` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

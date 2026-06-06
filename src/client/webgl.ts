@@ -1667,6 +1667,7 @@ export class WebGLBackdrop {
   private compositeMaterial: ShaderMaterial;
   private compositeScene = new Scene();
   private workRawTarget = makeSourceRenderTarget(true);
+  private workCompositeTarget = makeSourceRenderTarget(false);
   private preCompositeMaterial: ShaderMaterial;
   private preCompositeScene = new Scene();
   private compositeTarget = makeSourceRenderTarget(false);
@@ -1780,6 +1781,7 @@ export class WebGLBackdrop {
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
   private debugTextureColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-texture-colorspace") : null;
+  private debugPassOrder = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-pass-order") : null;
   private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
   private debugOutputProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-output-probe");
@@ -2255,6 +2257,7 @@ export class WebGLBackdrop {
     });
     this.backgroundMaterial.dispose();
     this.workRawTarget.dispose();
+    this.workCompositeTarget.dispose();
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
     this.compositeMaterial.dispose();
@@ -3655,6 +3658,7 @@ export class WebGLBackdrop {
       this.blurVerticalMaterial.uniforms.uResolution.value.set(width, height);
     }
     this.workRawTarget.setSize(renderWidth, renderHeight);
+    this.workCompositeTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
     const halfMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 2));
     const halfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
@@ -4157,6 +4161,7 @@ export class WebGLBackdrop {
       },
       targets: {
         workRaw: renderTargetProbe(this.renderer, this.workRawTarget),
+        workComposite: renderTargetProbe(this.renderer, this.workCompositeTarget),
         preComposite: renderTargetProbe(this.renderer, this.compositeTarget),
         preBloomBright: renderTargetProbe(this.renderer, this.preBloomBrightTarget),
         preBloom: renderTargetProbe(this.renderer, this.preBloomTarget),
@@ -4335,10 +4340,28 @@ export class WebGLBackdrop {
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
-      if (this.renderSettings.bloom.enabled) {
-        this.renderPreCompositeBloomPass(this.workRawTarget);
+      const preCompositeWorkTarget = this.debugPassOrder === "source-work-composite" ? this.workCompositeTarget : this.workRawTarget;
+      if (preCompositeWorkTarget === this.workCompositeTarget) {
+        if (this.renderSettings.bloom.enabled) {
+          this.renderHomeBloomPass(this.workRawTarget);
+        }
+        this.compositeMaterial.uniforms.tScene.value = this.workRawTarget.texture;
+        this.compositeMaterial.uniforms.tBloom.value = this.bloomTarget.texture;
+        this.compositeMaterial.uniforms.tBlur.value = this.fluidPlaceholder;
+        this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
+        this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+        this.compositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled;
+        this.compositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
+        this.compositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
+        this.compositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
+        this.renderer.setRenderTarget(this.workCompositeTarget);
+        this.renderer.clear();
+        this.renderer.render(this.compositeScene, this.backgroundCamera);
       }
-      this.preCompositeMaterial.uniforms.tWork.value = this.workRawTarget.texture;
+      if (this.renderSettings.bloom.enabled) {
+        this.renderPreCompositeBloomPass(preCompositeWorkTarget);
+      }
+      this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
       this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
       this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
       this.preCompositeMaterial.uniforms.tBloom.value = this.preBloomTarget.texture;
