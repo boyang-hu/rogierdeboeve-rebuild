@@ -1,6 +1,6 @@
 # Phase 1 Audit: Home WebGL Source Parity
 
-Last updated: 2026-06-05
+Last updated: 2026-06-06
 
 ## Scope
 
@@ -22,18 +22,31 @@ Primary source areas:
 
 ## Current Phase 1 Status
 
-Phase 1 is in the source-vs-rebuild audit stage. The known source-proven architecture gaps are mostly closed, but visual parity is not ready to call 1:1 because the first valid comparison pass still shows material WebGL/composite differences.
+Phase 1 is past the broad architecture-rebuild stage and is now in source-difference attribution. Most source-proven structural gaps are closed, but Phase 1 is not complete because source-vs-rebuild captures still show material WebGL/composite differences, especially home cube/thumb brightness and shared project-page composite brightness.
 
 Estimated status:
 
-- Architecture parity: 85%
-- Shader/render-manager parity: 70-75%
-- Final home visual parity: 60-70%
+- Architecture parity: 88-90%
+- Shader/render-manager parity: 75-80%
+- Final home visual parity: 65-70%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
-The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with shader chunk injection, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, floor/environment layers, and about/floating auxiliary blocks.
+The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with source-style shader patching, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, per-work-item local mouse simulation, source-shaped floor/environment bridges, and about/floating auxiliary blocks.
 
-The remaining risk is mostly in fine-grained shader behavior, render pass ordering, source material details, and visual validation of the spotlight projection and mouse/fluid feel.
+The remaining risk is concentrated in fine-grained shader behavior, render-target/color output, source material details, and visual validation of spotlight/thumb projection and mouse/fluid feel. Phase 2 should not start until Phase 1 either reaches visual acceptance or records explicit accepted deviations for the remaining home WebGL differences.
+
+## Decision Checkpoint
+
+The previous goal was directionally right, but too broad for the current state. "Rebuild the whole site 1:1" is useful as the overall goal; for execution, Phase 1 should now be treated as the active goal until closed. Project detail pages are closer and should remain regression checks, not the main target of new risky rendering changes.
+
+Recommended cadence:
+
+- Do not attempt the rest of Phase 1 in one pass. The remaining work is coupled enough that a large shader/render-manager pass can pass build while making visual attribution worse.
+- Do 6-10 differences per batch only when they are low-risk constants, ownership, documentation, or route-state corrections in one chain.
+- Do 3-5 differences per batch for shader, render-target, render-order, or material-replacement changes.
+- Run full QA and commit once per batch, not once per tiny sub-step.
+
+Current next batch: a focused `S1-08/S1-09/S1-17` attribution batch around ordinary `VA` color/light semantics, spotlight-map contribution, and renderer color-output assumptions. The first candidate implementation should be small: verify and align ordinary `VA` diffuse raw-color semantics before touching auxiliary `WA/XA` or attempting a full `HA/zA` replacement.
 
 ## Phase 1 Remaining Execution Audit
 
@@ -41,25 +54,17 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | S1-06 | `T1/w1/E1` thumbnail strip | Source `E1/M1` uses `toneMapped:false`, `transparent:false`, `uProgress=1`, `uTransitionCount=150`, `uTransitionSmoothness=.2`, scale `(2,2,2)`. Source `w1.updateGalleryProgress()` wraps by `itemWidth * totalItems`, recenters with `if x > totalWidth / 2`, and pauses while `isTransitioning`. | Closed in this batch. Thumb material now explicitly uses `toneMapped:false`; thumb scene background now follows source `#222222.convertLinearToSRGB()`. Source search found no external writes to `J.workThumbScene.thumbs.isTransitioning`, so the local guard remains an accepted source-shaped no-op unless future source evidence appears. | Low | Run full QA and keep as implemented. |
-| 2 | S1-08 | Ordinary `VA` full shader | Source `VA` replaces the full standard vertex and fragment shaders with `HA/zA`, omits the final tonemapping tail, and owns alpha/reveal/mouse-lightness after the physical lights body. | Rebuild uses source-style chunk injection and already removed Three 0.184 output tails. This is safer but still not a full `VA` replacement. The dark home cubes/thumb projection gap remains. | High | Next implementation target. Do not full-replace in a large pass. First compare current injected generated shader against source `zA/HA` line-by-line and make 3-5 isolated source-proven changes. Full replacement remains an experiment branch only if diff evidence points there. |
-| 3 | S1-09 | Render target and color output | Source render managers use bundled Three defaults, many `toneMapped:false` screen materials, explicit `convertLinearToSRGB()` in selected colors, and `OA` still includes a `tonemapping_fragment` token even with `toneMapped:false`. | Rebuild uses Three 0.184, `renderer.outputColorSpace = SRGBColorSpace`, source-shaped render target defaults, and source raw color setters. Luma remains much lower on both home and project captures. | Medium-high | Audit actual source renderer initialization and render-target texture color-space assumptions before broad changes. Keep project pages in every run. |
-| 4 | S1-17 | Spotlight projection and map intensity | Source home route assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, sets position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`. | Rebuild uses the same map source and home defaults, plus local parallax/active-item projection helpers. Brightness still suggests the map may not contribute through `VA` the same way. | Medium-high | After S1-06, inspect whether current active-project spotlight positioning/parallax diverges from source `p1` update. Avoid changing intensity unless source evidence supports it. |
-| 5 | S1-18 | Main shared composite route ownership | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal. Source `OA/kA` handles bloom/RGB shift/darken/saturation after work composite. | A1/OA split and several source cleanups are implemented. A source-shaped media offscreen experiment regressed project luma and was reverted, proving the current ownership still has unresolved coupling. | High | Defer new architecture changes until S1-08/S1-09 are narrowed. If revisited, isolate why `C1.tMedia` darkens project pages before keeping the source offscreen media flow. |
-| 6 | S1-19 | Floor reflector full projection | Source `a1/o1/i1` owns a dedicated projection-matrix reflector path with normal-map distortion. | Rebuild has source constants and normal-map distortion, but not full reflector parity. | Medium | Defer. It is unlikely to explain the full-screen luma gap and can be handled as a later isolated floor batch. |
+| 1 | S1-08A | Ordinary `VA` color semantics | Source `VA.createCube()` seeds the material with `new Color("#808080")`; source runtime setters parse hex through `sr()` as raw channel values. Under local Three 0.184, `new Color("#808080")` becomes linear `~0.216`, not raw `~0.502`. | Runtime `Se` color setters already use `sourceRgbColor()`, but initial ordinary work material diffuse still needs a focused audit. Auxiliary `WA/XA` should not be changed until source evidence is checked separately. | Medium | Confirm source `VA` diffuse path and, if proven, change ordinary work diffuse to raw source RGB. Run full QA because this may affect spotlight/luma. |
+| 2 | S1-08B | Ordinary `VA` full shader | Source `VA` replaces the full standard vertex and fragment shaders with `HA/zA`, omits the final tonemapping tail, and owns alpha/reveal/mouse-lightness after the physical lights body. | Rebuild uses source-style chunk injection and already removed several Three 0.184 output/fragment tails. This is safer but still not a full `VA` replacement. The dark home cubes/thumb projection gap remains. | High | Compare current generated patched shader against source `HA/zA` and make only 3-5 isolated source-proven changes. Full replacement remains an experiment branch only if smaller diffs fail. |
+| 3 | S1-09 | Render target and color output | Source `Lu` creates default `WebGLRenderTarget` clones; many screen materials are `toneMapped:false`; selected colors call `.convertLinearToSRGB()` explicitly. | Rebuild uses source-shaped target defaults and source raw color setters, but runs on Three 0.184 with `renderer.outputColorSpace = SRGBColorSpace`. Luma remains much lower on home and project captures. | Medium-high | Audit actual source renderer initialization and render-target texture color-space assumptions before broad changes. Keep project pages in every full run. |
+| 4 | S1-17 | Spotlight projection and map contribution | Source home route assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, sets position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`; `p1.update()` only applies camera parallax to spotlight `x/y`. | Rebuild follows map ownership, position, target, intensity, and parallax. Brightness still suggests the map may not contribute through `VA` the same way as source. | Medium-high | Do not change intensity without source evidence. Attribute the gap through `VA` light/color semantics and renderer output first. |
+| 5 | S1-18 | Shared `C1/A1` + media flow | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal; source media scene renders offscreen into `C1.tMedia`. | A1/OA split and several source cleanups are implemented. A source-shaped media offscreen experiment regressed project luma and was reverted, proving unresolved coupling in current ownership. | High | Defer new architecture changes until `S1-08/S1-09` are narrowed. If revisited, isolate why `C1.tMedia` darkens project pages before keeping the source offscreen media flow. |
+| 6 | S1-19 | Floor reflector full projection | Source `a1/o1/i1` owns a dedicated projection-matrix reflector path with normal-map distortion. | Rebuild has source constants and normal-map distortion, but not full reflector parity. Recent floor cleanup did not materially move luma. | Medium | Defer. Handle as an isolated floor batch after ordinary `VA`/output attribution. |
 | 7 | S1-20 | About character/render manager | Source about spotlight map comes from the character scene/render manager and rotatable mesh behavior. | Rebuild renders `me.gltf` into a character target and uses it as the about spotlight map, with fallback texture. | Medium | Treat as accepted bridge unless final visual QA shows a material about-page mismatch. Home parity is higher priority. |
 
 ### Current Recommendation
 
-Do not attempt "finish Phase 1 in one pass". The remaining unknowns are shader and render-target coupled, so a large pass can easily pass `npm run build` while making visual attribution worse.
-
-Recommended next batch:
-
-1. Run build, marker checks, full capture/luma for the `S1-06` closeout batch, then commit.
-2. Start a separate `S1-08/S1-17` VA/spotlight batch with no more than 3-5 shader or light-path changes.
-3. Keep `S1-09` render-target/color-space as the follow-up audit if VA/spotlight evidence does not explain the brightness gap.
-
-Batch size guidance remains: 8-10 low-risk state/ownership differences per batch is acceptable, but shader/render-target changes should stay at 3-5 differences with immediate browser QA.
+Finish Phase 1 before opening Phase 2 work. The next implementation batch should stay in one rendering chain: ordinary `VA` color/light semantics plus spotlight contribution attribution. If the batch only changes initial color/material constants and documentation, it can include up to 6-10 source-proven differences. If it changes shader text, render targets, render order, or full material replacement, cap it at 3-5 differences and run browser QA immediately.
 
 ### S1-06 T1/w1/E1 Thumb Closeout Result
 
