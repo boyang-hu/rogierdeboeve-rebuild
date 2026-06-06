@@ -205,6 +205,36 @@ Verification passed:
 
 Decision: keep the metalness fix. Continue D7 attribution next, especially source `VA` light/material-body differences that remain after metalness is corrected: old `SPECULAR` macro naming, Three 0.184 physical interface drift, and whether `MeshStandardMaterial` constructor defaults around emissive/specular differ from source bundle defaults.
 
+### S1-27 VA Emissive Intensity Source Fix Result
+
+A second source-proven `VA` material default mismatch was fixed:
+
+- Source `VA` does not set `emissiveIntensity`; the bundled `MeshStandardMaterial` default is `emissiveIntensity = 1`.
+- Source `Se.setBlocksColor()` animates only `J.workScene.blocks[*].instance.material.emissive`; it does not compensate with a lower emissive intensity.
+- Rebuild had `SOURCE_WORK_EMISSIVE_INTENSITY = 0.5`, which halved the block-color emissive contribution after `setBlocksColor()`.
+- Rebuild now sets `SOURCE_WORK_EMISSIVE_INTENSITY = 1`.
+
+Measured normal-path luma moved again in the correct direction:
+
+| Capture | Original luma | Rebuild luma after S1-27 | Previous rebuild after S1-26 | Decision |
+| --- | ---: | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.031` | `0.027` | Improved; remaining gap is still large. |
+| Home mobile | `0.056` | `0.038` | `0.032` | Improved and now closer to source mobile. |
+| About desktop | `0.027` | `0.015` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | `0.023` | Project stability retained. |
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-va-shader-s127-emissive CDP_PORT=9270 DUMP_WAIT=5200 node scripts/dump-va-shader.mjs`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s127-emissive` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Decision: keep the emissive-intensity fix. The next D7 pass should continue with source `VA` material/program defaults, but be more cautious: `color`, `roughness`, `metalness`, `emissiveIntensity`, `envMapIntensity`, transparency, and depth flags are now source-aligned. Remaining likely deltas are shader-body compatibility (`SPECULAR` macro drift, Three 0.184 physical chunks) and composite/output coupling.
+
 ### Phase 1 Progress Checkpoint
 
 The current Phase 1 target is no longer a broad implementation pass. It is a focused attribution pass for a small number of source/rendering chains that still produce a large visible gap. The useful way to measure progress is now by chain status, not by total site completion:
