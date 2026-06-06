@@ -74,7 +74,7 @@ function applyActiveColor(color?: string) {
 }
 
 function hasPageEntered() {
-  return document.body.classList.contains("has-entered");
+  return document.body.classList.contains("has-entered") && !document.documentElement.classList.contains("is-route-swapping");
 }
 
 function emitPageEntered() {
@@ -1049,9 +1049,25 @@ function initViewLifecycle(animate = true) {
   document.documentElement.classList.add(viewClass);
   document.querySelector<HTMLElement>(".ui-header-name")?.style.setProperty("pointer-events", "all");
 
-  if (prefersReducedMotion() || !animate) {
+  if (prefersReducedMotion()) {
     view.style.opacity = "1";
     return () => {
+      document.documentElement.classList.remove(viewClass);
+      view.style.opacity = "";
+      document.querySelector<HTMLElement>(".ui-header-name")?.style.removeProperty("pointer-events");
+    };
+  }
+
+  if (!animate) {
+    view.style.opacity = "0";
+    const reveal = () => {
+      gsap.killTweensOf(view);
+      gsap.to(view, { opacity: 1, duration: 0.5, ease: "linear" });
+    };
+    window.addEventListener("rd:page-entered", reveal, { once: true });
+    return () => {
+      window.removeEventListener("rd:page-entered", reveal);
+      gsap.killTweensOf(view);
       document.documentElement.classList.remove(viewClass);
       view.style.opacity = "";
       document.querySelector<HTMLElement>(".ui-header-name")?.style.removeProperty("pointer-events");
