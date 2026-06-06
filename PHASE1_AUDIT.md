@@ -274,6 +274,38 @@ This audit refresh re-scoped the next Phase 1 work after the successful `VA` def
 - Source `HA` full replacement remains rejected as a direct next step because the prior browser QA failures were runtime/shader stability failures, not missing source evidence.
 - Next implementation should start with generated-shader section diffing and only keep small source-proven changes.
 
+### S1-28 Generated Shader Section Diff Result
+
+The shader dump tool now writes a richer section report for ordinary `VA` attribution:
+
+- `scripts/dump-va-shader.mjs` still captures source `HA/zA` and the rebuild's patched work shader under `?dump-va-shader=1`.
+- It now also writes `fragment-analysis.json` with active include differences, uniform-only differences, key anchor lines around `lights_physical_fragment` / `lights_fragment_begin` / reflected-light accumulation, and tail ownership.
+- It now writes `three-chunk-analysis.json` with local Three chunk checks for `lights_fragment_begin`, `lights_physical_fragment`, and `opaque_fragment`.
+- Normal rendering remains unchanged unless the debug query flag is present.
+
+The diagnostic run at `/tmp/rogier-va-shader-s128-diff2` produced these useful findings:
+
+| Finding | Result | Decision |
+| --- | --- | --- |
+| Active include delta | After ignoring commented source includes, source-only active includes are `packing`, `bsdfs`, and `opaque_fragment`; rebuild has no active include that source lacks in this section. | The bridge is closer than the raw length delta suggests. Do not attempt another full fragment replacement from this alone. |
+| Light-body anchors | Both source and rebuild keep the same core sequence: `roughnessmap`, `metalnessmap`, normal chunks, `lights_physical_fragment`, `lights_fragment_begin`, `lights_fragment_end`, then reflected-light accumulation. | The remaining gap is not a missing light-body include. |
+| Spotlight map chunk | Local Three `lights_fragment_begin` contains `spotLightMap`, `inSpotLightMap`, `RE_Direct`, and the same direct-light multiplication shape: `directLight.color * spotColor.rgb`. The mirrored source bundle contains the same branch. | `SpotLight.map` branch absence is ruled out again. Keep map ownership and constants unchanged. |
+| Material interface delta | Rebuild still has newer uniforms/interface names such as `dispersion`, `anisotropyVector`, `anisotropyMap`, plus rebuild-only local uniforms `uMouseSpeed`, `uAuxiliaryMaterial`, and `uScrollOpacity`. Source has old specular map macro spelling (`USE_SPECULARCOLORMAP`, `USE_SPECULARINTENSITYMAP`), while rebuild has modern underscore spelling. | This is mostly interface drift, but no one-line safe production patch is proven yet. |
+| Fragment output tail | Source uses active `#include <opaque_fragment>`, then modifies `gl_FragColor.rgb` and `gl_FragColor.a`. Rebuild avoids `opaque_fragment` and writes a bridge-local `vec4(sourceColor, alpha)`. | This remains the most concrete source/rebuild difference, but a prior live tail-order experiment hung browser QA. Any retry must be debug-gated and smaller than the rejected experiment. |
+
+Decision: keep the expanded diagnostic tooling. Do not make a production shader patch yet. The next implementation batch should either:
+
+- run a debug-gated, work-only output-tail attribution variant that compares source `opaque_fragment` tail behavior against the stable bridge without committing the live behavior, or
+- move to S1-29 renderer/output color diagnostics if the tail experiment again fails or does not move luma.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-va-shader-s128-diff2 CDP_PORT=9273 DUMP_WAIT=5200 node scripts/dump-va-shader.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

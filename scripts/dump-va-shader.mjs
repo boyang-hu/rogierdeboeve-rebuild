@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import net from "node:net";
+import { ShaderChunk } from "three";
 
 const chromePath = process.env.CHROME_PATH
   || [
@@ -108,6 +109,178 @@ function summarizeShader(label, shader, sourceShader) {
   };
 }
 
+function collectIncludes(shader) {
+  return shader
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => !line.startsWith("//"))
+    .flatMap((line) => [...line.matchAll(/#include <([^>]+)>/g)].map((match) => match[1]));
+}
+
+function collectUniformNames(shader) {
+  const names = [];
+  for (const match of shader.matchAll(/\buniform\s+[^;]*?\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\[[^\]]+\])?\s*;/g)) {
+    names.push(match[1]);
+  }
+  return names;
+}
+
+function unique(values) {
+  return [...new Set(values)];
+}
+
+function lineNumber(shader, index) {
+  if (index < 0) return null;
+  return shader.slice(0, index).split("\n").length;
+}
+
+function findLines(shader, pattern) {
+  return shader
+    .split("\n")
+    .map((line, index) => ({ line: index + 1, text: line.trim() }))
+    .filter((entry) => pattern.test(entry.text));
+}
+
+function lineWindow(shader, needle, before = 5, after = 8) {
+  const index = shader.indexOf(needle);
+  if (index < 0) return null;
+  const lines = shader.split("\n");
+  const line = lineNumber(shader, index);
+  const start = Math.max(1, line - before);
+  const end = Math.min(lines.length, line + after);
+  return {
+    needle,
+    line,
+    text: lines.slice(start - 1, end).map((value, offset) => `${start + offset}: ${value}`).join("\n"),
+  };
+}
+
+function compareLists(sourceValues, rebuildValues) {
+  const sourceSet = new Set(sourceValues);
+  const rebuildSet = new Set(rebuildValues);
+  return {
+    source: unique(sourceValues),
+    rebuild: unique(rebuildValues),
+    onlySource: unique(sourceValues).filter((value) => !rebuildSet.has(value)),
+    onlyRebuild: unique(rebuildValues).filter((value) => !sourceSet.has(value)),
+  };
+}
+
+function analyzeFragment(sourceShader, rebuildShader) {
+  const anchors = [
+    "#include <roughnessmap_fragment>",
+    "#include <metalnessmap_fragment>",
+    "#include <normal_fragment_begin>",
+    "#include <normal_fragment_maps>",
+    "#include <lights_physical_fragment>",
+    "#include <lights_fragment_begin>",
+    "#include <lights_fragment_end>",
+    "vec3 totalDiffuse",
+    "vec3 totalSpecular",
+    "vec3 outgoingLight",
+    "#include <opaque_fragment>",
+    "gl_FragColor.rgb",
+    "gl_FragColor.a",
+  ];
+  const checks = [
+    "NUM_SPOT_LIGHT_COORDS",
+    "spotLightMap",
+    "spotLightMatrix",
+    "getSpotLightInfo",
+    "RE_Direct",
+    "RE_IndirectDiffuse",
+    "RE_IndirectSpecular",
+    "PhysicalMaterial material",
+    "material.specularColor",
+    "material.specularF90",
+    "material.dispersion",
+    "material.anisotropy",
+    "USE_SPECULAR",
+    "USE_SPECULAR_COLORMAP",
+    "USE_SPECULARCOLORMAP",
+    "USE_SPECULAR_INTENSITYMAP",
+    "USE_SPECULARINTENSITYMAP",
+    "totalEmissiveRadiance = emissive",
+    "gl_FragColor = vec4( outgoingLight",
+    "gl_FragColor = vec4(sourceColor",
+  ];
+  const sourceIncludes = collectIncludes(sourceShader);
+  const rebuildIncludes = collectIncludes(rebuildShader);
+  const sourceUniforms = collectUniformNames(sourceShader);
+  const rebuildUniforms = collectUniformNames(rebuildShader);
+
+  return {
+    lengths: {
+      source: sourceShader.length,
+      rebuild: rebuildShader.length,
+      delta: rebuildShader.length - sourceShader.length,
+    },
+    includes: compareLists(sourceIncludes, rebuildIncludes),
+    uniforms: {
+      onlySource: compareLists(sourceUniforms, rebuildUniforms).onlySource,
+      onlyRebuild: compareLists(sourceUniforms, rebuildUniforms).onlyRebuild,
+    },
+    anchors: Object.fromEntries(anchors.map((anchor) => [
+      anchor,
+      {
+        sourceLine: lineNumber(sourceShader, sourceShader.indexOf(anchor)),
+        rebuildLine: lineNumber(rebuildShader, rebuildShader.indexOf(anchor)),
+      },
+    ])),
+    checks: Object.fromEntries(checks.map((check) => [
+      check,
+      {
+        source: sourceShader.includes(check),
+        rebuild: rebuildShader.includes(check),
+      },
+    ])),
+    sourceWindows: [
+      lineWindow(sourceShader, "#include <lights_physical_fragment>"),
+      lineWindow(sourceShader, "#include <lights_fragment_begin>"),
+      lineWindow(sourceShader, "vec3 totalDiffuse"),
+      lineWindow(sourceShader, "gl_FragColor.rgb"),
+    ].filter(Boolean),
+    rebuildWindows: [
+      lineWindow(rebuildShader, "#include <lights_physical_fragment>"),
+      lineWindow(rebuildShader, "#include <lights_fragment_begin>"),
+      lineWindow(rebuildShader, "vec3 totalDiffuse"),
+      lineWindow(rebuildShader, "gl_FragColor = vec4(sourceColor"),
+    ].filter(Boolean),
+    spotlightLines: {
+      source: findLines(sourceShader, /spotLight|SpotLight|NUM_SPOT/i),
+      rebuild: findLines(rebuildShader, /spotLight|SpotLight|NUM_SPOT/i),
+    },
+    materialInterfaceLines: {
+      source: findLines(sourceShader, /specular|dispersion|anisotropy|clearcoat|sheen/i),
+      rebuild: findLines(rebuildShader, /specular|dispersion|anisotropy|clearcoat|sheen/i),
+    },
+  };
+}
+
+function analyzeShaderChunk(name) {
+  const chunk = ShaderChunk[name] || "";
+  const checks = [
+    "spotLightMap",
+    "spotLightMatrix",
+    "inSpotLightMap",
+    "directLight.color = inSpotLightMap ? directLight.color * spotColor.rgb : directLight.color;",
+    "RE_Direct",
+    "gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
+  ];
+  return {
+    name,
+    length: chunk.length,
+    checks: Object.fromEntries(checks.map((check) => [
+      check,
+      {
+        present: chunk.includes(check),
+        line: lineNumber(chunk, chunk.indexOf(check)),
+      },
+    ])),
+    spotlightWindow: lineWindow(chunk, "spotLightMap", 12, 12),
+  };
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
@@ -164,17 +337,46 @@ try {
   }
   writeFileSync(path.join(outDir, "rebuild-work-vertex.glsl"), workDump.vertexShader);
   writeFileSync(path.join(outDir, "rebuild-work-fragment.glsl"), workDump.fragmentShader);
+  const fragmentAnalysis = analyzeFragment(sourceZ, workDump.fragmentShader);
+  writeFileSync(path.join(outDir, "fragment-analysis.json"), JSON.stringify(fragmentAnalysis, null, 2));
+  const chunkAnalysis = {
+    lightsFragmentBegin: analyzeShaderChunk("lights_fragment_begin"),
+    lightsPhysicalFragment: analyzeShaderChunk("lights_physical_fragment"),
+    opaqueFragment: analyzeShaderChunk("opaque_fragment"),
+  };
+  writeFileSync(path.join(outDir, "three-chunk-analysis.json"), JSON.stringify(chunkAnalysis, null, 2));
   const summary = {
     body: parsed.body,
     dumpCount: parsed.dump.length,
     consoleMessages: consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message)),
     vertex: summarizeShader("work vertex", workDump.vertexShader, sourceH),
     fragment: summarizeShader("work fragment", workDump.fragmentShader, sourceZ),
+    fragmentAnalysis: {
+      lengths: fragmentAnalysis.lengths,
+      includesOnlySource: fragmentAnalysis.includes.onlySource,
+      includesOnlyRebuild: fragmentAnalysis.includes.onlyRebuild,
+      uniformsOnlySource: fragmentAnalysis.uniforms.onlySource,
+      uniformsOnlyRebuild: fragmentAnalysis.uniforms.onlyRebuild,
+      keyChecks: fragmentAnalysis.checks,
+      anchors: fragmentAnalysis.anchors,
+    },
+    threeChunkAnalysis: {
+      lightsFragmentBegin: {
+        length: chunkAnalysis.lightsFragmentBegin.length,
+        checks: chunkAnalysis.lightsFragmentBegin.checks,
+      },
+      opaqueFragment: {
+        length: chunkAnalysis.opaqueFragment.length,
+        checks: chunkAnalysis.opaqueFragment.checks,
+      },
+    },
     files: {
       sourceVertex: path.join(outDir, "source-HA.glsl"),
       sourceFragment: path.join(outDir, "source-zA.glsl"),
       rebuildVertex: path.join(outDir, "rebuild-work-vertex.glsl"),
       rebuildFragment: path.join(outDir, "rebuild-work-fragment.glsl"),
+      fragmentAnalysis: path.join(outDir, "fragment-analysis.json"),
+      threeChunkAnalysis: path.join(outDir, "three-chunk-analysis.json"),
     },
   };
   writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(summary, null, 2));
