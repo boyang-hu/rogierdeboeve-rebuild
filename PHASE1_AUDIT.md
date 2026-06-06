@@ -67,7 +67,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 2 | S1-44 | `OA/CA` final `tScene` transfer | Source `CA` darken formula and `uDarken=.2` are confirmed, but `debug-composite-transfer=1` still moves final home luma strongly. | Rebuild has source-shaped darken, saturation, bloom and stage probes. Transfer debug is useful but not source-proven. | Medium-high | Audit source renderer/output initialization and `CA` input texture interpretation before any production transfer change. Keep this diagnostic unless source evidence is found. |
 | 3 | S1-45 | Spotlight map content/projection after texture fix | Source assigns thumb composite target as `SpotLight.map`; S1-40 made ordinary loaded textures source-default and raised thumb/composite luma substantially. S1-49 confirms the active block projects into the expected center region of the thumb map. | Map ownership, position, intensity, target size, thumb visibility, and active-block map coverage are source-shaped. Remaining risk is map transfer/light multiplication, not gross projection miss. | Medium | Do not change intensity, map assignment, target, or thumb darkness constants. Keep transfer/projection diagnostics; prioritize `OA/CA` input transfer and accepted-deviation decision next. |
 | 4 | S1-46 | Shared project composite/media brightness | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal; source media scene renders offscreen into `C1.tMedia`. S1-46B now confirms the home `A1` main execution flow is source-equivalent except inert/relocated computations. | Project detail pages are stable but darker than source. A source-shaped offscreen media experiment regressed luma and was reverted. `A1` formula order is less likely to be the first remaining home brightness culprit. | High | Keep project pages as regression gates. Revisit shared media/offscreen routing only after `VA/zA` light semantics and projection attribution are narrower. |
-| 5 | S1-47 | `Ka/GA` mouse/fluid feel | Source per-`GA` `Ka` simulation and render-manager mousesim are broadly ported. Static capture shows mouse term is not the main brightness culprit. | Runtime structure exists; exact pointer UV, `uCoords`, target sizing, and fluid feel are not visually accepted. | Medium | Defer brightness work; later run interaction QA and add a probe for UV/target sizing if motion feels off. |
+| 5 | S1-47 | `Ka/GA` mouse/fluid feel | Source per-`GA` `Ka` simulation and render-manager mousesim are broadly ported. Static capture shows mouse term is not the main brightness culprit. S1-50 confirms target sizing, `uCoords`, local UV offset/scale, and active pointer state are source-shaped at rest. | Runtime structure exists and debug probe now covers exact sizing/UV state. Fluid/mouse feel still needs interactive visual QA, but it is not a static brightness blocker. | Low-medium | Treat as structurally attributed. Revisit only for interactive feel QA, not Phase 1 brightness tuning. |
 | 6 | S1-48 | Floor/environment/about accepted deviations | Source floor reflector, environment shader, and about character manager have source-shaped bridges but not full byte-for-byte ports. | Prior probes show sky/floor are not the main brightness lever; about route is stable. | Medium | Treat as accepted temporary bridge unless source-vs-rebuild visual QA identifies a specific visible mismatch. |
 
 ### Current Recommendation
@@ -89,7 +89,7 @@ This is the current source-driven audit board for the remaining Phase 1 visual g
 | D7 | `VA/zA` light body | Source `VA.onBeforeCompile` fully replaces vertex and fragment shader with bundled `HA/zA`, relying on source Three light chunks and `SpotLight.map` semantics. | Rebuild uses a Three 0.184 shader bridge. Full `HA` and fragment-tail experiments were rejected by console-aware QA. Generated fragment is longer and contains modern physical-material interfaces. | Very high. This is the most plausible cause of map projection being multiplied differently. | Continue with generated-shader diffing and one small compatibility patch at a time; avoid another full replacement. |
 | D8 | Render target color space | Source `Lu/Lo` create default `WebGLRenderTarget` clones; screen/composite materials are often `toneMapped:false`; selected colors call `.convertLinearToSRGB()`. | Rebuild uses Three 0.184 with `renderer.outputColorSpace = SRGBColorSpace` and explicit `SRGBColorSpace` for loaded image textures, but render-target texture transfer assumptions differ by Three version. | High. A wrong linear/sRGB interpretation of a spotlight map can darken multiplication heavily. | Add diagnostic to report texture `colorSpace`, renderer output color space, and target means before broad renderer changes. |
 | D9 | Main composite `kA/OA` | Source work render manager enables mousesim, luminosity, bloom with `strength:.15`, `radius:1.5`, and composite darken/saturation uniforms. S1-46B confirms source `A1` and rebuild `homePreCompositeFragment` have matching main flow order after excluding inert source computations and a relocated `tNoise` sample declaration. | Rebuild has source-shaped A1/OA split and bloom/luminosity, but home luma remains low and project pages are darker too. | Medium, shared with project-page gap. | Defer live composite rewiring until D7/D8 are attributed; keep project pages as regression gates. Treat `A1` order as audited unless a later media/offscreen probe finds a specific mismatch. |
-| D10 | Mouse simulation `Ka` | Source `Ka` lerps target UV, ping-pongs a sim target, applies persistence as `pow(persistance, dt*10)`, and per-`GA` raycasts against source-scaled planes. | Rebuild has a Ka-style simulation and per-item targets, but exact UV/target sizing is not yet independently measured. | Medium. Affects motion/fluid feel more than static dark luma. | Audit after spotlight/color-space attribution, unless diagnostics show mouse sim texture is corrupt or over-darkening. |
+| D10 | Mouse simulation `Ka` | Source `Ka` lerps target UV, ping-pongs a sim target, applies persistence as `pow(persistance, dt*10)`, and per-`GA` raycasts against source-scaled planes. | Rebuild has a Ka-style simulation and per-item targets. S1-50 verifies screen sim `144x90`, active local sim `46x30`, source-equivalent plane/ray sizes, centered active UV, and negligible static composite-darken mouse contribution. | Low-medium. Affects motion/fluid feel more than static dark luma. | Keep probe. Do not tune brightness through mouse sim. Revisit only with pointer interaction QA if motion feel visibly differs. |
 
 Immediate next batch recommendation: build a QA-only thumb/spotlight probe that reads `thumbTarget`, `thumbCompositeTarget`, and selected WebGL uniforms from the live rebuild, then compares them with source expectations from `_1/T1/w1/E1/Se`. This is a diagnostic batch, not a visual tuning batch. If the composite map is already bright but the blocks are dark, prioritize `VA/zA` light semantics. If the composite map is dark before projection, prioritize thumb background, darkness color transfer, and render-target color space.
 
@@ -1063,6 +1063,50 @@ Verification passed:
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
 - `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5238 OUT_DIR=/tmp/rogier-home-brightness-s149-spotlight-projection CDP_PORT=9305 CAPTURE_WAIT=6500 node scripts/compare-home-brightness-attribution.mjs`
+
+### S1-50 `Ka/GA` Mouse Simulation Probe Result
+
+This batch extended `?debug-output-probe=1` with mouse-simulation sizing and UV state. Normal rendering remains unchanged unless the debug probe flag is present.
+
+Changes:
+
+- Added `mouseSimulation` to `window.__rogierOutputProbe`.
+- The probe reports shared screen mouse-sim target size, `uCoords`, old/new/target positions, speed, persistence, thickness, and target stats.
+- The probe reports the active work item's local `Ka` target size, `uCoords`, pointer UV state, speed, persistence, thickness, `uUvOffset`, `uUvOffsetScale`, source-equivalent plane/ray sizes, and target stats.
+
+Source/static evidence:
+
+- Source `Ka` defaults to `persistance:.75`, `thickness:.25`, and updates `uPersistance` as `pow(persistance, dt*10)`.
+- Source `GA` constructs local `Ka` with `persistance:.85`, `thickness:.1`, `mesh:this.plane`, `rayCastMesh:this.rayPlane`.
+- Source `GA.createPlane()` uses plane size `35*1.3 x 23*1.3`, then ray-plane scale `* 1.5`, and sets `uUvOffsetScale = 1.5`.
+- Source `GA.resize()` calls `mouseSim.onResize(this.plane.scale.x, this.plane.scale.y)`.
+
+Probe result at `/tmp/rogier-mouse-sim-s150b` on `1440x900` home desktop:
+
+| Field | Value | Interpretation |
+| --- | ---: | --- |
+| Screen sim target / `uCoords` | `144 x 90` / `[144,90]` | Matches rebuild's source-shaped screen sim resolution scale. |
+| Screen persistence / thickness | `0.8660` / `0.25` | Runtime persistence is the expected frame-adjusted `pow(.75, dt*10)` shape; thickness matches source default. |
+| Active local target / `uCoords` | `46 x 30` / `[46,30]` | Matches source plane `35*1.3 x 23*1.3 = 45.5 x 29.9`, rounded for target allocation. |
+| Active UV target | `[0.5,0.5]` | Active `hashgraph-vc` starts centered at rest. |
+| Active local persistence / thickness | `0.9220` / `0.1` | Runtime persistence follows `pow(.85, dt*10)`; thickness matches source `GA` local `Ka`. |
+| `uUvOffset` / `uUvOffsetScale` | `[0.25,0.25,0]` / `1.5` | Matches source ray-plane enlargement and shader UV compensation. |
+| Source plane / ray-plane size | `45.5 x 29.9` / `68.25 x 44.85` | Rebuild geometry encodes the source ray-plane scale through `GRID_SCALE`; object scale remains `[1,1,1]` by design. |
+| Composite mouse darken term | `0.00087` | Static mouse sim is not the home brightness culprit. |
+| Runtime errors | `0` | Probe is stable under Chrome/SwiftShader. |
+
+Decision:
+
+- Keep the mouse-simulation probe.
+- Treat `Ka/GA` target sizing, `uCoords`, UV offset/scale, and at-rest pointer state as source-attributed.
+- Do not tune home brightness via mouse simulation. The measured static contribution to `CA` darken is negligible.
+- Leave fluid/mouse feel for later interactive visual QA only if it is visibly off; it should not block the remaining static Phase 1 brightness attribution.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome` CDP probe at `/tmp/rogier-mouse-sim-s150b` against `http://127.0.0.1:5239/?skip-preloader&debug-output-probe=1`
 
 ### S1-22 Generated Shader Diagnostic Result
 

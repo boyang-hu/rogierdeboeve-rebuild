@@ -4209,6 +4209,7 @@ export class WebGLBackdrop {
     const mouseSimRed = mouseSimProbe?.gridStats.mean[0] ?? 0;
     const darkenValue = this.compositeMaterial.uniforms.uDarken.value as number;
     const spotlightProjection = this.spotlightProjectionProbe();
+    const mouseSimulation = this.mouseSimulationProbe(mouseSimProbe);
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -4272,6 +4273,56 @@ export class WebGLBackdrop {
         fluidPlaceholder: { colorSpace: this.fluidPlaceholder.colorSpace, type: this.fluidPlaceholder.type, format: this.fluidPlaceholder.format },
       },
       spotlightProjection,
+      mouseSimulation,
+    };
+  }
+
+  private mouseSimulationProbe(screenProbe: ReturnType<typeof renderTargetProbe> | null) {
+    const active = this.workItems.find((item) => item.slug === this.activeSlug && item.group.visible) ?? this.workItems.find((item) => item.group.visible);
+    const screenCoords = this.screenMouseSimulationMaterial.uniforms.uCoords.value as Vector2;
+    const screenTarget = this.screenMouseSimulationTargets[this.screenMouseSimulationIndex];
+    const activeCoords = active?.mouseMaterial.uniforms.uCoords.value as Vector2 | undefined;
+    const activeTarget = active?.mouseTargets[active.mouseIndex];
+    const uvOffset = active?.material.uniforms.uUvOffset.value as Vector3 | undefined;
+    const uvOffsetScale = active?.material.uniforms.uUvOffsetScale.value as number | undefined;
+    return {
+      enabled: this.renderSettings.mousesim.enabled,
+      screen: {
+        index: this.screenMouseSimulationIndex,
+        targetSize: screenTarget ? { width: screenTarget.width, height: screenTarget.height } : null,
+        uCoords: screenCoords.toArray(),
+        old: this.screenMouseSimOldPos.toArray(),
+        new: this.screenMouseSimNewPos.toArray(),
+        target: this.screenMouseSimTargetPos.toArray(),
+        speed: this.screenMouseSimulationMaterial.uniforms.uSpeed.value,
+        persistence: this.screenMouseSimulationMaterial.uniforms.uPersistance.value,
+        thickness: this.screenMouseSimulationMaterial.uniforms.uThickness.value,
+        stats: screenProbe,
+      },
+      active: active && activeTarget && activeCoords ? {
+        slug: active.slug,
+        index: active.mouseIndex,
+        targetSize: { width: activeTarget.width, height: activeTarget.height },
+        uCoords: activeCoords.toArray(),
+        mouseTarget: active.mouseTarget.toArray(),
+        mouseOld: active.mouseOld.toArray(),
+        mouseNew: active.mouseNew.toArray(),
+        mouseSpeed: active.mouseSpeed,
+        uniformSpeed: active.mouseMaterial.uniforms.uSpeed.value,
+        persistence: active.mouseMaterial.uniforms.uPersistance.value,
+        thickness: active.mouseMaterial.uniforms.uThickness.value,
+        uvOffset: uvOffset?.toArray() ?? null,
+        uvOffsetScale: uvOffsetScale ?? null,
+        rayPlaneScale: active.rayPlane.scale.toArray(),
+        rayPlaneGeometrySize: [
+          GRID_COLS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
+          GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
+        ],
+        sourcePlaneSize: [GRID_COLS * MOUSE_PLANE_SCALE, GRID_ROWS * MOUSE_PLANE_SCALE],
+        sourceRayPlaneSize: [GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE, GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE],
+        groupVisible: active.group.visible,
+        stats: renderTargetProbe(this.renderer, activeTarget),
+      } : null,
     };
   }
 
