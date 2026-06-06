@@ -3013,3 +3013,39 @@ Attribution snapshot:
 | `environment-off` | `0.1386` | `0.1123` | `0.1202` | `0.0039` |
 
 Decision: keep the RawShader/GLSL3 floor material change. This removes a real source-surface mismatch and preserves project-page stability, but it does not close Phase 1 visually. The attribution still says the remaining hard horizon/fog-bed gap is dominated by environment/floor/reflection target content and render-order interaction, not by unsupported color or brightness constants.
+
+### S1-30 `i1/t1` Reflector Blur Pass Direction and Camera Surface
+
+This batch continued the same source-backed floor/reflector chain and intentionally stayed narrow because the change affects render-target content.
+
+Source evidence:
+
+- Source `i1.update()` runs two blur iterations by default.
+- The source blur direction is computed as `d = (blurIterations - u - 1) * 15`, then `uDirection = (d, 0)` for the first iteration and `(0, d)` for the second iteration. With the default `blurIterations=2`, the second pass is therefore vertical `(0, 15)`.
+- Source `i1.update()` sets `virtualCamera.far = camera.far` and copies `camera.projectionMatrix`, but does not assign a separate `near` value before the copy.
+- Source `t1/QA` blur shader body matches the rebuild's blur formula, so no blur-kernel rewrite was promoted.
+
+Runtime changes:
+
+- Changed the second floor-reflection blur pass from rebuild-only `(0, 0)` to source `(0, 15)`.
+- Removed the non-source `floorReflectionCamera.near = homeCamera.near` assignment from the reflector update path.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-reflector-blur-vpass-probe`.
+- Brightness attribution passed with no errors: `/tmp/rd-reflector-blur-vpass-attribution`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-reflector-blur-vpass-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-reflector-blur-vpass-full`.
+
+Attribution snapshot:
+
+| Variant | Work raw 9x9 | Work composite 9x9 | Pre-composite 9x9 | Bloom 9x9 |
+| --- | ---: | ---: | ---: | ---: |
+| default | `0.2955` | `0.2228` | `0.2887` | `0.0248` |
+| `floor-off` | `0.3995` | `0.3597` | `0.5352` | `0.0820` |
+| `floor-reflection-off` | `0.2028` | `0.1812` | `0.2331` | `0.0175` |
+| `environment-off` | `0.1398` | `0.1129` | `0.1209` | `0.0040` |
+
+Decision: keep this reflector blur/camera surface alignment. It changes reflector target content in a source-backed way and remains stable across project media, but Phase 1 is still open because the home hard horizon/fog-bed gap remains dominated by the broader environment/floor/reflection interaction and final target interpretation.

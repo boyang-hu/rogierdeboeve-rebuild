@@ -4992,7 +4992,6 @@ export class WebGLBackdrop {
     this.floorReflectionCamera.up.reflect(this.floorReflectorNormal);
     this.floorReflectionCamera.lookAt(this.floorReflectionTargetPosition);
     this.floorReflectionCamera.far = this.homeCamera.far;
-    this.floorReflectionCamera.near = this.homeCamera.near;
     this.floorReflectionCamera.projectionMatrix.copy(this.homeCamera.projectionMatrix);
     this.floorReflectionCamera.updateMatrixWorld();
     this.floorReflectionMatrix.set(
@@ -5039,7 +5038,7 @@ export class WebGLBackdrop {
       this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
 
       this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionWriteTarget.texture;
-      this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
+      this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 15);
       this.renderer.setRenderTarget(this.floorReflectionReadTarget);
       this.renderer.clear();
       this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
