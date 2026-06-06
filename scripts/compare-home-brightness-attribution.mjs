@@ -170,8 +170,26 @@ try {
   for (const variant of variants) {
     results.push(await captureVariant(variant));
   }
+  const compact = results.map((variant) => {
+    const probe = variant.probe || {};
+    const targets = probe.targets || {};
+    return {
+      label: variant.label,
+      active: variant.active,
+      passOrder: probe.settings?.passOrder,
+      uDarken: probe.uniforms?.composite?.uDarken,
+      workRaw: targets.workRaw?.gridStats?.luma,
+      workComposite: targets.workComposite?.gridStats?.luma,
+      preComposite: targets.preComposite?.gridStats?.luma,
+      bloom: targets.bloom?.gridStats?.luma,
+      thumbComposite: targets.thumbComposite?.gridStats?.luma,
+      spotlightMap: probe.spotlightProjection?.spotlight?.hasMap,
+      errors: (variant.failures?.length || 0) + (variant.exceptions?.length || 0) + (variant.consoleMessages?.length || 0),
+    };
+  });
   writeFileSync(path.join(outDir, "summary.json"), JSON.stringify({ variants: results }, null, 2));
-  console.log(JSON.stringify({ variants: results }, null, 2));
+  writeFileSync(path.join(outDir, "compact-summary.json"), JSON.stringify({ variants: compact }, null, 2));
+  console.log(JSON.stringify({ outDir, variants: compact }, null, 2));
 } finally {
   chrome.kill("SIGTERM");
 }

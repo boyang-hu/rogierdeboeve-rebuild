@@ -132,6 +132,39 @@ Current matrix at `/tmp/rogier-phase1-passorder-s55`:
 
 Decision: keep source-shaped production pass order. The raw-work fallback is a useful diagnostic because it brightens the intermediate A1 input, but it is explicitly not source-shaped and should not be used as a visual fix. Continue Phase 1 with the remaining source-backed transfer/color interpretation gap rather than reverting the pass graph.
 
+### S1-56 Current Brightness Matrix / Non-Fix Batch
+
+This batch expanded the Phase 1 step size to cover up to ten related `GA/VA` and `OA/CA` attribution points in one verification cycle. Normal rendering is unchanged.
+
+Runtime/tooling change:
+
+- `scripts/compare-home-brightness-attribution.mjs` now still writes the full `summary.json`, but also writes `compact-summary.json` and prints only the compact matrix to stdout. This keeps future QA runs usable without flooding the working context.
+
+Source/runtime evidence from the current build:
+
+- Source `VA` still fully assigns `HA/zA`; the rebuild remains a Three 0.184 chunk bridge. The source `zA` fragment confirms the ordinary work-block mouse alpha term is `uMouseFactor * 0.5`, while the older auxiliary-style `0.15` factor should not be applied to ordinary work blocks. The current rebuild already follows this split through `mix(0.5, 0.15, uAuxiliaryMaterial)`.
+- Source `HA` uses `spread = 3.` and `tPerlin = Xt.perlin1`; the current rebuild already has both after S1-53/S1-54-era fixes.
+- Source `CA` final composite still uses `rgbshift(tScene, -1., .0015)`, source bloom addition, `length(fluid.xy) * .015`, `blend(15, ..., vec3(0.095), uDarken * 2. + mouseSim.r * .25 * uDarken)`, `blend(11, ..., vec3(0.095), 1.)`, and final saturation. The rebuild's current `homeCompositeFragment` matches these confirmed operations.
+- Source `Lu.update()` sets `compositeMaterial.uniforms.tScene` from the main render target or blur target, and writes bloom from the bloom-composite target. The current rebuild's final composite target ownership remains source-shaped; the brighter `raw-work-composite-pass` fallback is still diagnostic-only.
+- Source and local Three light chunks both contain the same `SpotLight.map` multiplication branch. The current light-chunk comparison again rules out a missing spotlight-map branch.
+
+Current compact matrix at `/tmp/rogier-phase1-current-brightness`:
+
+| Variant | Work raw 9x9 | Work composite 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 | Decision |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| default | `0.2954` | `0.2379` | `0.3533` | `0.0551` | `0.1850` | Baseline; keep. |
+| `spotlight-map-off` | `0.3452` | `0.2868` | `0.4922` | `0.1254` | `0.1786` | Brighter but not source; do not promote. |
+| `spotlight-transfer` | `0.3290` | `0.2811` | `0.4645` | `0.1077` | `0.1853` | Partial attribution only; do not promote gamma map transfer. |
+| `scene-transfer` | `0.2797` | `0.4327` | `0.8503` | `0.3413` | `0.1955` | Strong attribution only; no source proof for production transfer. |
+| `raw-work-composite-pass` | `0.2838` | `0.0000` | `0.4623` | `0.0997` | `0.1955` | Diagnostic-only non-source pass order. |
+| `va-physical-direct` | `0.3105` | `0.2366` | `0.3471` | `0.0543` | `0.1777` | Low impact; do not promote. |
+| `va-physical-source-fields` | `0.2966` | `0.2398` | `0.3564` | `0.0558` | `0.1853` | Low impact; do not promote. |
+| `sky-off` | `0.4085` | `0.3380` | `0.6297` | `0.1896` | `0.1840` | Confirms environment target strongly affects output, but disabling it is not source. |
+| `texture-srgb-colorspace` | `0.2551` | `0.1973` | `0.2198` | `0.0137` | `0.0630` | Worse; keep ordinary source-default texture color space. |
+| `darken-off` | `0.3002` | `0.3536` | `0.6499` | `0.1996` | `0.1839` | Confirms final darken ownership; source formula requires keeping it. |
+
+Decision: no production visual patch is safe from this batch. The useful outcome is narrower: the remaining Phase 1 gap is not solved by `VA` physical-response bridge tweaks, output-tail order, renderer output metadata, or pass-order fallback. The next source-backed work should target exact source/local interpretation of the `tScene` entering `OA/CA` and the environment/floor contribution to that texture, preferably with an original-side comparable render-target or pixel probe rather than more rebuild-only brightness toggles.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

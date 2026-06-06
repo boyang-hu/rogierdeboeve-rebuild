@@ -10,7 +10,7 @@ Last updated: 2026-06-06
 - Keep the stack: Astro, TypeScript, Three.js, GSAP, Lenis, Howler.
 - Audio must use Howler.
 - Do not delete `public/` or `legacy-mirror/`.
-- Work in batches of roughly five source-alignment steps unless a risky shader/navigation/media change needs a quick local check. Prefer one verification/documentation/commit cycle per batch instead of per tiny step.
+- Work in batches of related source-alignment steps, up to ten differences per batch. Keep each batch on one coherent chain such as `GA/VA` or `OA/CA`; if a risky shader/render-manager change shows an early regression, stop the batch and verify before stacking more changes.
 - After each completed batch:
   - update this document,
   - run build and diff checks,
@@ -207,6 +207,7 @@ Last updated: 2026-06-06
 | `current batch` | Home WebGL | Aligned two source-proven `GA/VA/Xt` details: ordinary work-block spread now uses source `float spread = 3.` instead of the rebuild-only `5.0`, and `VA.tPerlin` now loads `/images/textures/perlin-1.webp` with ClampToEdge wrapping while the A1/C1 pre-composite keeps `/images/textures/perlin-2.webp` with Repeat wrapping. Build, diff check, and full source-vs-rebuild capture passed with no network/runtime failures across home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`. |
 | `current batch` | Phase 1 Audit | Rechecked likely-but-false runtime suspects against the source bundle: `directionalLight2` is intentionally not added to `p1.scene`, environment `skyMask2` uses `skyMask` in source, sky/environment mix constants are split across source constant groups, work-scene DPR remains capped at `1.5`, and `LOW_RES` still needs a source-equivalent GPU-tier bridge before changing runtime behavior. No rendering code changed. |
 | `current batch` | QA Harness | Corrected the stale brightness-matrix pass-order variant from the no-op `debug-pass-order=source-work-composite` to the real `debug-pass-order=raw-work-composite` fallback, and added `settings.passOrder` to the debug output probe. The current matrix confirms production is already using the source-shaped `workRaw -> OA/CA workComposite -> A1/C1` path; the raw fallback brightens A1 input but is not source-shaped. |
+| `current batch` | Phase 1 Audit/QA Harness | Expanded the current `GA/VA` + `OA/CA` attribution batch to cover multiple related non-fixes in one cycle, and changed `scripts/compare-home-brightness-attribution.mjs` to print a compact luma matrix while keeping full JSON on disk. Current evidence keeps `spotlight-map-off`, `spotlight-transfer`, `scene-transfer`, `raw-work-composite-pass`, `va-physical-*`, `sky-off`, `texture-srgb-colorspace`, and `darken-off` as diagnostics only; no production rendering code changed. |
 
 ## Current Focus
 
