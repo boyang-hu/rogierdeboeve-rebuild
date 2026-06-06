@@ -65,7 +65,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | S1-43 | Ordinary `VA` vertex/body residual diff | Source `VA` still fully assigns `HA/zA`; rebuild uses a stable chunk bridge. Recent evidence says fragment light chunks, physical response variants, world-position unclamp, and source-like early vertex `screenUv` attribution are low-impact. | Stable bridge is close and production-safe; full `HA` replacement was rejected by console-aware QA. | Medium-high | Stop chasing single `HA` UV/world-position deltas as the main brightness gap. Continue only with residual generated-vs-source body/vertex diagnostics if a specific visible mismatch appears; otherwise prioritize proven transfer/projection contributors. |
 | 2 | S1-44 | `OA/CA` final `tScene` transfer | Source `CA` darken formula and `uDarken=.2` are confirmed, but `debug-composite-transfer=1` still moves final home luma strongly. | Rebuild has source-shaped darken, saturation, bloom and stage probes. Transfer debug is useful but not source-proven. | Medium-high | Audit source renderer/output initialization and `CA` input texture interpretation before any production transfer change. Keep this diagnostic unless source evidence is found. |
-| 3 | S1-45 | Spotlight map content/projection after texture fix | Source assigns thumb composite target as `SpotLight.map`; S1-40 made ordinary loaded textures source-default and raised thumb/composite luma substantially. | Map ownership, position, intensity, target size, and thumb visibility are source-shaped. Projection may still differ through `VA` world position or target transfer. | Medium | Re-run projection-focused matrix after vertex/body diagnostics; do not change intensity, map assignment, or thumb darkness constants. |
+| 3 | S1-45 | Spotlight map content/projection after texture fix | Source assigns thumb composite target as `SpotLight.map`; S1-40 made ordinary loaded textures source-default and raised thumb/composite luma substantially. S1-49 confirms the active block projects into the expected center region of the thumb map. | Map ownership, position, intensity, target size, thumb visibility, and active-block map coverage are source-shaped. Remaining risk is map transfer/light multiplication, not gross projection miss. | Medium | Do not change intensity, map assignment, target, or thumb darkness constants. Keep transfer/projection diagnostics; prioritize `OA/CA` input transfer and accepted-deviation decision next. |
 | 4 | S1-46 | Shared project composite/media brightness | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal; source media scene renders offscreen into `C1.tMedia`. S1-46B now confirms the home `A1` main execution flow is source-equivalent except inert/relocated computations. | Project detail pages are stable but darker than source. A source-shaped offscreen media experiment regressed luma and was reverted. `A1` formula order is less likely to be the first remaining home brightness culprit. | High | Keep project pages as regression gates. Revisit shared media/offscreen routing only after `VA/zA` light semantics and projection attribution are narrower. |
 | 5 | S1-47 | `Ka/GA` mouse/fluid feel | Source per-`GA` `Ka` simulation and render-manager mousesim are broadly ported. Static capture shows mouse term is not the main brightness culprit. | Runtime structure exists; exact pointer UV, `uCoords`, target sizing, and fluid feel are not visually accepted. | Medium | Defer brightness work; later run interaction QA and add a probe for UV/target sizing if motion feels off. |
 | 6 | S1-48 | Floor/environment/about accepted deviations | Source floor reflector, environment shader, and about character manager have source-shaped bridges but not full byte-for-byte ports. | Prior probes show sky/floor are not the main brightness lever; about route is stable. | Medium | Treat as accepted temporary bridge unless source-vs-rebuild visual QA identifies a specific visible mismatch. |
@@ -84,8 +84,8 @@ This is the current source-driven audit board for the remaining Phase 1 visual g
 | D2 | Thumb scene `T1` target sizing | Source `T1.resize(e,t,n)` renders the thumb scene to a square `t x t` target with pixel ratio forced to `1`. | Rebuild resizes `thumbTarget` / `thumbCompositeTarget` to a square based on viewport height and target budget. | Medium. Small size differences can alter map softness but should not explain a 5x luma gap alone. | Verify exact target size at runtime in diagnostics; only align if measured mismatch is source-proven. |
 | D3 | Thumb background color | Source `T1` sets scene background `new Color("#222222").convertLinearToSRGB()`. | Rebuild uses a thumb clear/background path, but the exact color-space treatment should be measured from the target, not inferred. | Medium-high. The map-on run is much darker than map-off, so a dark background or wrong transfer curve can dominate projection. | Capture mean/min/max of `thumbTarget` and `thumbCompositeTarget` on the active project. |
 | D4 | Thumb strip material `S1` | Source `E1/M1/S1` uses cover texture, transition-to-UV fallback, plane scale `(2,2,2)`, and visibility outside `[-1.5, 1.5]`. | Rebuild broadly follows these rules. Active thumb payload mapping from Astro to `payloadFromElement()` is correct for `data-thumb-darkness`, `data-darkness-color`, and `data-thumb-saturation`. | Medium. If active thumb progress differs, the spotlight map could be mostly fallback/background. | Add diagnostic fields for active slug, thumb progress, visible thumb count, and composite uniforms. |
-| D5 | Spotlight map assignment | Source `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`. | Rebuild assigns `thumbCompositeTarget.texture`; S1-23 map-on/off test shows the map is strong and darkening. | High, but not missing. | Keep assignment. Investigate texture contents and light shader semantics instead of disabling map. |
-| D6 | Spotlight position/intensity/parallax | Source `p1.setLights()` uses intensity `220`; update only parallax-adjusts `x/y`, target remains source-shaped. | Rebuild follows position, target, intensity, angle/penumbra ownership, and parallax. | Medium. Position may affect projection framing but does not explain source-vs-rebuild brightness alone. | Leave constants unchanged unless a projection-framing capture proves a mismatch. |
+| D5 | Spotlight map assignment | Source `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`. | Rebuild assigns `thumbCompositeTarget.texture`; S1-23 map-on/off test shows the map is strong and darkening. S1-49 projection probe confirms the same target has healthy sampled luma at the active block projection points. | High, but not missing. | Keep assignment. Do not disable map as a fix; remaining issue is transfer/light interpretation or an accepted deviation. |
+| D6 | Spotlight position/intensity/parallax | Source `p1.setLights()` uses intensity `220`; update only parallax-adjusts `x/y`, target remains source-shaped. | Rebuild follows position, target, intensity, angle/penumbra ownership, and parallax. S1-49 shows active block center projects to thumb UV `0.5,0.5`, and left/right/top/bottom samples all remain in-map. | Low-medium. Projection framing is no longer a strong suspect for the main brightness gap. | Leave constants unchanged. Do not tune spotlight framing unless a future visual QA finds a specific non-brightness mismatch. |
 | D7 | `VA/zA` light body | Source `VA.onBeforeCompile` fully replaces vertex and fragment shader with bundled `HA/zA`, relying on source Three light chunks and `SpotLight.map` semantics. | Rebuild uses a Three 0.184 shader bridge. Full `HA` and fragment-tail experiments were rejected by console-aware QA. Generated fragment is longer and contains modern physical-material interfaces. | Very high. This is the most plausible cause of map projection being multiplied differently. | Continue with generated-shader diffing and one small compatibility patch at a time; avoid another full replacement. |
 | D8 | Render target color space | Source `Lu/Lo` create default `WebGLRenderTarget` clones; screen/composite materials are often `toneMapped:false`; selected colors call `.convertLinearToSRGB()`. | Rebuild uses Three 0.184 with `renderer.outputColorSpace = SRGBColorSpace` and explicit `SRGBColorSpace` for loaded image textures, but render-target texture transfer assumptions differ by Three version. | High. A wrong linear/sRGB interpretation of a spotlight map can darken multiplication heavily. | Add diagnostic to report texture `colorSpace`, renderer output color space, and target means before broad renderer changes. |
 | D9 | Main composite `kA/OA` | Source work render manager enables mousesim, luminosity, bloom with `strength:.15`, `radius:1.5`, and composite darken/saturation uniforms. S1-46B confirms source `A1` and rebuild `homePreCompositeFragment` have matching main flow order after excluding inert source computations and a relocated `tNoise` sample declaration. | Rebuild has source-shaped A1/OA split and bloom/luminosity, but home luma remains low and project pages are darker too. | Medium, shared with project-page gap. | Defer live composite rewiring until D7/D8 are attributed; keep project pages as regression gates. Treat `A1` order as audited unless a later media/offscreen probe finds a specific mismatch. |
@@ -1023,6 +1023,46 @@ Verification passed:
 - `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5237 OUT_DIR=/tmp/rogier-va-shader-s148-default CDP_PORT=9301 DUMP_WAIT=5200 node scripts/dump-va-shader.mjs`
 - `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5237 OUT_DIR=/tmp/rogier-va-shader-s148-source-zero CDP_PORT=9302 DUMP_WAIT=5200 EXTRA_QUERY='&debug-va-vertex-uv=source-zero' node scripts/dump-va-shader.mjs`
 - `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5237 OUT_DIR=/tmp/rogier-home-brightness-s148-vertex-uv-retry CDP_PORT=9304 CAPTURE_WAIT=8000 node scripts/compare-home-brightness-attribution.mjs`
+
+### S1-49 Spotlight Projection Coverage Attribution Result
+
+This batch added a projection/content probe to `?debug-output-probe=1`. Normal rendering remains unchanged unless the debug probe flag is present.
+
+Changes:
+
+- Added `spotlightProjection` to `window.__rogierOutputProbe`.
+- The probe updates the Three `SpotLight.shadow.matrix`, samples the active work block bounds at center/left/right/top/bottom, projects those world points through the same matrix family used by `vSpotLightCoord`, and reads the corresponding `thumbCompositeTarget` pixels.
+- It reports active slug, spotlight map ownership, active block bounds, projected UVs, in-map count, and sampled map luma.
+
+Projection results at `/tmp/rogier-home-brightness-s149-spotlight-projection`:
+
+| Variant | Has map | In-map samples | Center UV | Center map luma | Mean sampled map luma | Work raw 9x9 | Pre-composite 9x9 | Errors |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| default | `true` | `5/5` | `0.500,0.500` | `0.2764` | `0.2718` | `0.2210` | `0.3195` | `0` |
+| spotlight map off | `false` | `5/5` | `0.500,0.500` | `0.2764` | `0.2718` | `0.2640` | `0.3782` | `0` |
+| spotlight transfer | `true` | `5/5` | `0.500,0.500` | `0.2764` | `0.2718` | `0.2408` | `0.3524` | `0` |
+| scene transfer | `true` | `5/5` | `0.500,0.500` | `0.2764` | `0.2718` | `0.2220` | `0.3215` | `0` |
+| texture sRGB rollback | `true` | `5/5` | `0.500,0.500` | `0.0833` | `0.0837` | `0.1872` | `0.2392` | `0` |
+
+Interpretation:
+
+- The active `hashgraph-vc` block is not projecting outside the spotlight map.
+- The active block center lands exactly on the thumb map center, and all sampled active-block bounds stay in-map.
+- The sampled map luma is healthy on the current source-default texture path (`~0.272` mean) and collapses only under the intentional old texture color-space rollback (`~0.084`), which reconfirms S1-40.
+- The `spotlight-map-off` variant still brightens work/pre-composite while the sampled target remains healthy; this points to the source-shaped map multiplication/transfer being inherently dark in the rebuild bridge, not a missing map, empty map, or gross projection-framing error.
+
+Decision:
+
+- Keep the projection probe.
+- Do not change spotlight intensity, target, parallax, map assignment, thumb darkness, or thumb target size.
+- Stop treating active-block spotlight projection coverage as the main remaining Phase 1 brightness culprit.
+- The remaining Phase 1 closeout should focus on either source-backed `OA/CA` transfer evidence or an explicit accepted deviation for the map-transfer/composite brightness gap, while keeping project pages as regression gates.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5238 OUT_DIR=/tmp/rogier-home-brightness-s149-spotlight-projection CDP_PORT=9305 CAPTURE_WAIT=6500 node scripts/compare-home-brightness-attribution.mjs`
 
 ### S1-22 Generated Shader Diagnostic Result
 

@@ -1634,6 +1634,22 @@ function renderTargetGridStats(renderer: WebGLRenderer, target: WebGLRenderTarge
   };
 }
 
+function renderTargetPixel(renderer: WebGLRenderer, target: WebGLRenderTarget, uv: Vector2) {
+  const width = Math.max(1, target.width);
+  const height = Math.max(1, target.height);
+  const x = Math.min(width - 1, Math.max(0, Math.round(uv.x * (width - 1))));
+  const y = Math.min(height - 1, Math.max(0, Math.round((1 - uv.y) * (height - 1))));
+  const pixels = new Uint8Array(4);
+  renderer.readRenderTargetPixels(target, x, y, 1, 1, pixels);
+  const rgba = [pixels[0] / 255, pixels[1] / 255, pixels[2] / 255, pixels[3] / 255] as [number, number, number, number];
+  return {
+    x,
+    y,
+    rgba,
+    luma: rgba[0] * 0.2126 + rgba[1] * 0.7152 + rgba[2] * 0.0722,
+  };
+}
+
 function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, sampleSize = 64) {
   return {
     width: target.width,
@@ -4192,6 +4208,7 @@ export class WebGLBackdrop {
       : null;
     const mouseSimRed = mouseSimProbe?.gridStats.mean[0] ?? 0;
     const darkenValue = this.compositeMaterial.uniforms.uDarken.value as number;
+    const spotlightProjection = this.spotlightProjectionProbe();
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -4254,6 +4271,56 @@ export class WebGLBackdrop {
         placeholder: { colorSpace: this.placeholder.colorSpace, type: this.placeholder.type, format: this.placeholder.format },
         fluidPlaceholder: { colorSpace: this.fluidPlaceholder.colorSpace, type: this.fluidPlaceholder.type, format: this.fluidPlaceholder.format },
       },
+      spotlightProjection,
+    };
+  }
+
+  private spotlightProjectionProbe() {
+    const active = this.workItems.find((item) => item.slug === this.activeSlug && item.group.visible) ?? this.workItems.find((item) => item.group.visible);
+    if (!active) return null;
+    this.spotLight.shadow.updateMatrices(this.spotLight);
+    active.mesh.updateWorldMatrix(true, false);
+    const box = new Box3().setFromObject(active.mesh);
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
+    const samples = [
+      { label: "center", offset: new Vector3(0, 0, 0) },
+      { label: "left", offset: new Vector3(-0.5, 0, 0) },
+      { label: "right", offset: new Vector3(0.5, 0, 0) },
+      { label: "top", offset: new Vector3(0, 0.5, 0) },
+      { label: "bottom", offset: new Vector3(0, -0.5, 0) },
+    ].map(({ label, offset }) => {
+      const world = center.clone().add(new Vector3(size.x * offset.x, size.y * offset.y, size.z * offset.z));
+      const projected = world.clone().applyMatrix4(this.spotLight.shadow.matrix);
+      const uv = new Vector2(projected.x, projected.y);
+      const inMap = Math.abs(uv.x * 2 - 1) < 1 && Math.abs(uv.y * 2 - 1) < 1 && Math.abs(projected.z * 2 - 1) < 1;
+      return {
+        label,
+        world: world.toArray(),
+        projected: projected.toArray(),
+        uv: uv.toArray(),
+        inMap,
+        mapPixel: renderTargetPixel(this.renderer, this.thumbCompositeTarget, uv),
+      };
+    });
+    const inMapSamples = samples.filter((sample) => sample.inMap);
+    const mapLumaMean = inMapSamples.length
+      ? inMapSamples.reduce((sum, sample) => sum + sample.mapPixel.luma, 0) / inMapSamples.length
+      : 0;
+    return {
+      activeSlug: active.slug,
+      spotlight: {
+        intensity: this.spotLight.intensity,
+        hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
+        mapColorSpace: this.thumbCompositeTarget.texture.colorSpace,
+      },
+      bounds: {
+        center: center.toArray(),
+        size: size.toArray(),
+      },
+      samples,
+      inMapCount: inMapSamples.length,
+      mapLumaMean,
     };
   }
 
