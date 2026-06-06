@@ -4604,28 +4604,8 @@ export class WebGLBackdrop {
 
     this.renderer.clear();
     const isProjectView = document.body.classList.contains("is-project");
-    const hasHome = this.sceneWrap.visible && !isProjectView;
+    const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
-    if (isProjectView && hasMedia) {
-      this.renderer.setRenderTarget(this.backgroundTarget);
-      this.renderer.clear();
-      this.renderer.render(this.backgroundScene, this.backgroundCamera);
-      this.renderer.setRenderTarget(this.mediaTarget);
-      this.renderer.clear();
-      this.renderer.render(this.mediaScene, this.mediaCamera);
-      this.preCompositeMaterial.uniforms.tWork.value = this.backgroundTarget.texture;
-      this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
-      this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
-      this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
-      this.preCompositeMaterial.uniforms.tBloom.value = this.preBloomTarget.texture;
-      this.renderer.setRenderTarget(this.compositeTarget);
-      this.renderer.clear();
-      this.renderer.render(this.preCompositeScene, this.backgroundCamera);
-      if (this.renderSettings.bloom.enabled) {
-        this.renderHomeBloomPass(this.compositeTarget);
-      }
-      this.renderHomeCompositePass(this.compositeTarget);
-    }
     if (hasHome) {
       this.renderSkyTarget(time);
       this.renderFloorReflection();
@@ -4654,10 +4634,13 @@ export class WebGLBackdrop {
         this.renderPreCompositeBloomPass(preCompositeWorkTarget);
       }
       this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
+      this.renderer.setRenderTarget(this.mediaTarget);
+      this.renderer.clear();
+      if (isProjectView && hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
+      this.preCompositeMaterial.uniforms.tMedia.value = isProjectView && hasMedia ? this.mediaTarget.texture : this.fluidPlaceholder;
       this.preCompositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
       this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
       this.preCompositeMaterial.uniforms.tBloom.value = this.preBloomTarget.texture;
-      this.preCompositeMaterial.uniforms.tMedia.value = this.fluidPlaceholder;
       this.renderer.setRenderTarget(this.compositeTarget);
       this.renderer.clear();
       this.renderer.render(this.preCompositeScene, this.backgroundCamera);
