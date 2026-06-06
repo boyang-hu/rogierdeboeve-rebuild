@@ -2511,3 +2511,28 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-oa-tonemap-full`.
 
 Decision: keep this source-surface alignment. It does not close the Phase 1 transfer/color gap because `toneMapped:false` makes the fragment include inert unless source render state proves otherwise. The next batch should continue with render-target/output-color interpretation or exact source-vs-rebuild target content, not constants.
+
+### S1-13 Remove Unused Pre-Composite Bloom Branch
+
+This batch reduced a rebuild-only render-manager artifact without changing the active production path.
+
+Source evidence:
+
+- Source `Lu.update()` owns one render-manager bloom chain per render manager: primary target, optional luminosity bright target, five blur mip pairs, bloom composite, then the active composite material.
+- Source main `I1/C1/A1` render manager has bloom/luminosity disabled by default, and the work `kA/OA` render manager owns the active work-scene bloom.
+- There is no separate `preBloom*` branch between `OA/kA` work composite and `A1/C1` pre-composite in the source graph.
+
+Runtime changes:
+
+- Removed the unused rebuild-only `preBloomBrightTarget`, `preBloomTarget`, pre-bloom mip targets, materials, scenes, resize/dispose code, output-probe fields, and dead `renderPreCompositeBloomPass()` method.
+- Kept active work bloom (`kA/OA`) and source-default main bloom placeholders (`I1/Lu`, disabled) intact.
+- Did not change render order, clear behavior, shader constants, or visual tuning values.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe passed with no failures or exceptions and no longer reports `preBloom*` targets: `/tmp/rogier-phase1-remove-prebloom-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-remove-prebloom-full`.
+
+Decision: keep this source-structure cleanup. Phase 1 remains open; removing the dead pre-bloom branch reduces non-source graph noise but does not solve the hard horizon/fog-bed or transfer/color gap.
