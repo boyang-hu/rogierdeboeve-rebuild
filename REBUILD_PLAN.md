@@ -1,6 +1,6 @@
 # Rebuild Plan
 
-Last updated: 2026-06-05
+Last updated: 2026-06-06
 
 ## Execution Rules
 
@@ -207,13 +207,13 @@ Last updated: 2026-06-05
 
 ## Current Focus
 
-Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. The current pass has cleared the known source-proven architecture Must Fix list in `PHASE1_AUDIT.md`, and Phase 1 is now in a source-vs-rebuild difference attribution stage.
+Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. Phase 1 is not complete: the previous closeout language in `PHASE1_AUDIT.md` has been superseded because the current 1:1 target does not allow the remaining home visual gaps to be treated as accepted deviations.
 
 Immediate source targets:
 
 - `V1/H1/z1/B1` and `h1/u1/l1`: source-shaped sky render-target ownership is implemented, the source `noiseShader`/`pattern` chain is ported, and `h1/u1` now uses the source icosahedron/backside/full-shader structure. The old wedge-shaped light was confirmed as a rebuild artifact. The current source-vs-rebuild screenshots now show full-screen fog coverage but rebuild is overbright and has a hard horizon/reflection boundary, so the next edit should target render-target/color-space/composite input instead of more environment geometry or invented color tuning.
 - `p1`: validate route-specific visibility and spotlight-map ownership for about/floating blocks, now that the source-shaped auxiliary block objects can be activated on the about route and the about spotlight map renders the local GLTF character target.
-- `GA/VA`: continue narrowing remaining differences now that work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, source material flags including dithering, source-shaped output-tail removal, and a cleaner shared custom-uniform surface. Full source shader override is still documented as a high-risk deviation because the safer tail bridge and first render-target defaults audit did not move the brightness gap.
+- `GA/VA`: active priority. Work blocks use MeshStandardMaterial chunk injection, a real spotlight-map path, source-style `instanceOffset` sampling, source vertex mouse UVs, source world-position correction, per-work-item local `Ka` simulation targets, source material flags including dithering, source-shaped output-tail removal, and a cleaner shared custom-uniform surface. This is still not a full source `HA/zA` replacement, and the cube/thumb projection remains visibly off, so the next implementation batch should inspect generated-vs-source shader body differences and spotlight/thumb-map contribution rather than treating the bridge as accepted.
 - `T1/w1/E1`: thumbnail scene, render target sizing, thumb strip progress, and spotlight-map texture path; the current pass now matches source-style render target sampling and previous-frame feedback order more closely.
 - `A1/OA/kA/Lu`: pre-composite, final composite, bloom chain, settings-gated render-manager ordering, fluid/mouseSim inputs, render target color-space assumptions, and remaining optional blur/fxaa behavior; the current pass now separates the source `I1/C1/A1` half-resolution bloom chain from the source `Lu/kA/OA` quarter-resolution final bloom chain, routes active blend modes through source-shaped mode dispatchers, aligns proven material tone/blending flags, removes the rebuild-only `A1` final reveal mix, initializes source `C1.uBgColor` with the source linear-to-sRGB path, restores source `workScene.renderTargetComposite -> mainScene.C1.tWork` wiring, and aligns renderer construction with source `qw`. The main brightness gap improved, leaving the hard horizon/reflection boundary as the next output-flow issue. `workRawTarget.depthBuffer=true` is now confirmed source-correct for `kA/Lu`.
 - `Ka`: low-resolution mouse simulation sizing, pointer projection, persistence/thickness, and screen-vs-local simulation feeds; the current pass now gives visible work items source-shaped local simulation ownership instead of sharing one mesh-local buffer.
@@ -243,8 +243,8 @@ Latest verification:
 
 ## Next Candidate Steps
 
-1. Continue source audit around `Lu/kA/OA` output flow without isolated clear/depth switches; the next acceptable change should reduce structural divergence in the render-manager pass graph itself.
-2. Audit source `Lu/kA/Lo` render order and target clearing around `renderTargetA -> renderTargetComposite` before changing shader math or flipping rebuild target depth defaults.
+1. Audit and implement the next `GA/VA` + spotlight/thumb projection differences that have direct visual impact on cube brightness/depth/projection.
+2. Continue source audit around `Lu/kA/OA` output flow without isolated clear/depth switches; the next acceptable render-manager change should reduce structural divergence in the pass graph itself.
 3. Keep project detail pages as regression checks because the darker project composite may share render-manager or media-background ownership with home.
 4. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with accepted deviations or new source-proven fixes.
 5. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.

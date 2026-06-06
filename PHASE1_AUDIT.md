@@ -22,18 +22,27 @@ Primary source areas:
 
 ## Current Phase 1 Status
 
-Phase 1 is complete with accepted deviations as of S1-53. Most source-proven structural gaps are closed, and the S1-40 ordinary texture color-space fix removed the largest known home brightness defect. S1-46B through S1-50 probes narrowed the remaining home gap away from `A1` flow order, active spotlight projection coverage, single `HA` vertex deltas, and static `Ka/GA` mouse simulation sizing. S1-52 recorded explicit accepted deviations for the remaining brightness/transfer gaps, and S1-53 passed final build, marker, and source-vs-rebuild browser QA.
+Phase 1 is reopened and not complete as of 2026-06-06. The previous S1-53 closeout accepted too many visible deviations for the current 1:1 rebuild goal. Treat the older "complete with accepted deviations" sections below as historical evidence, not the active execution standard.
 
 Estimated status:
 
-- Architecture parity: 90-92%
-- Shader/render-manager parity: 86-89%
-- Final home visual parity: 80-84%
+- Architecture parity: 75-80%
+- Shader/render-manager parity: 60-70%
+- Final home visual parity: 55-65%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
-The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with source-style shader patching, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, per-work-item local mouse simulation, source-shaped floor/environment bridges, and about/floating auxiliary blocks.
+The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with source-style shader patching, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, per-work-item local mouse simulation, source-shaped floor/environment bridges, and about/floating auxiliary blocks. That is implementation progress, not completion.
 
-The remaining risk is now documented as accepted Phase 1 deviation: stable Three 0.184 `VA` bridge instead of byte-for-byte `HA/zA`, lower home/project brightness from unresolved transfer/color interpretation, current direct project-media path instead of source offscreen media routing, and floor/environment/about bridge depth. Phase 2 can start from those carryovers without reopening broad Phase 1 tuning.
+Current visible blockers for Phase 1:
+
+- Home background/floor/environment still has a hard horizontal horizon instead of the source's softer fog/floor blend.
+- Home work cubes and thumb projection still do not match the source's brightness, depth, and projection feel.
+- `VA/GA` still use a stable Three 0.184 shader bridge, not a byte-for-byte source `HA/zA` replacement.
+- `A1/OA/kA/Lu` are source-shaped in pieces but not a fully source-isomorphic render-manager graph.
+- Mouse/fluid simulation is structurally present but not yet interactively verified 1:1.
+- Project pages are regression gates; they are stable but not proof that Home WebGL Phase 1 is complete.
+
+Phase 2 should remain paused until these Phase 1 blockers are either source-fixed or explicitly reviewed against the live source by the user.
 
 Current production reference after S1-42:
 
@@ -55,7 +64,7 @@ Recommended cadence:
 - Do 3-5 differences per batch for shader, render-target, render-order, or material-replacement changes.
 - Run full QA and commit once per batch, not once per tiny sub-step.
 
-Current next batch: start Phase 2 from the accepted-deviation carryovers. The live code stays on the stable `VA` chunk bridge; full `HA/zA` replacement remains rejected after console-aware QA failures. Future transfer/color work should be narrow and evidence-driven, with project pages kept as regression gates.
+Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work in this order: `VA/GA` output and spotlight/thumb projection, then `A1/OA/kA/Lu` render-manager graph parity, while keeping project pages as regression gates. Phase 2 should not start yet.
 
 ## Phase 1 Remaining Execution Audit
 
