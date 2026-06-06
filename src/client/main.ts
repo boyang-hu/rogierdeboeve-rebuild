@@ -44,6 +44,8 @@ type WebGLLike = {
   refreshMedia?(): void;
 };
 
+type AppNavigate = (url: string, mode?: "home" | "project" | "about" | "default", historyMode?: "push" | "replace") => void;
+
 function projectPayloadFromElement(element?: HTMLElement | null) {
   return {
     slug: element?.dataset.slug ?? element?.dataset.project,
@@ -158,12 +160,12 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
   webgl?.hideWorkScene?.();
 }
 
-function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike) {
+function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike, navigate?: AppNavigate) {
   if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
   persistEnteredSession();
   window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
   window.setTimeout(() => {
-    window.location.href = url;
+    navigate?.(url, "home") ?? window.location.assign(url);
   }, 500);
 }
 
@@ -339,7 +341,7 @@ function initMenu() {
   };
 }
 
-function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
+function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
   document.documentElement.classList.remove("is-work-gallery-leaving");
   const stateKey = "rd:work-state";
   const cards = document.querySelectorAll<HTMLElement>("[data-project-card]");
@@ -644,7 +646,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
       event.preventDefault();
       if (performance.now() - lastTouchSelect < 500) return;
       setDomActiveIndex(index);
-      navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl());
+      navigateWithWorkSceneOut((event.currentTarget as HTMLAnchorElement).href, getWebgl(), navigate);
     };
     const onCtaMouseEnter = () => previewWork(true);
     const onCtaMouseLeave = () => previewWork(false);
@@ -973,7 +975,7 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
   };
 }
 
-function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
+function initProjectLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
   const project = document.querySelector<HTMLElement>("[data-webgl-project]");
   if (!project) return () => {};
 
@@ -989,7 +991,7 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
       }
       getWebgl()?.projectLeave?.();
       window.setTimeout(() => {
-        window.location.href = target.href;
+        navigate?.(target.href, "project") ?? window.location.assign(target.href);
       }, 500);
     };
     link.addEventListener("click", onClick);
@@ -998,7 +1000,7 @@ function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
   return () => cleanups.splice(0).forEach((cleanup) => cleanup());
 }
 
-function initAboutLeave(getWebgl: () => WebGLLike | undefined) {
+function initAboutLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
   const about = document.querySelector<HTMLElement>("[data-view='about']");
   if (!about) return () => {};
 
@@ -1014,7 +1016,7 @@ function initAboutLeave(getWebgl: () => WebGLLike | undefined) {
       }
       getWebgl()?.animateAboutVisualOut?.();
       window.setTimeout(() => {
-        window.location.href = target.href;
+        navigate?.(target.href, "about") ?? window.location.assign(target.href);
       }, 500);
     };
     link.addEventListener("click", onClick);
@@ -1023,7 +1025,7 @@ function initAboutLeave(getWebgl: () => WebGLLike | undefined) {
   return () => cleanups.splice(0).forEach((cleanup) => cleanup());
 }
 
-function initHomeRouteLeave(getWebgl: () => WebGLLike | undefined) {
+function initHomeRouteLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
   const home = document.querySelector<HTMLElement>("[data-view='home']");
   if (!home) return () => {};
 
@@ -1036,7 +1038,7 @@ function initHomeRouteLeave(getWebgl: () => WebGLLike | undefined) {
       const target = new URL(link.href, window.location.href);
       if (target.origin !== window.location.origin || target.href === window.location.href) return;
       event.preventDefault();
-      navigateWithWorkSceneOut(target.href, getWebgl());
+      navigateWithWorkSceneOut(target.href, getWebgl(), navigate);
     };
     link.addEventListener("click", onClick);
     cleanups.push(() => link.removeEventListener("click", onClick));
@@ -1096,28 +1098,49 @@ function boot() {
   document.body.classList.add("is-ready");
   let webgl: WebGLLike | undefined;
   let homeGalleryEntered = false;
+  let routing = false;
   let cleanupMotion: (() => void) | undefined;
-  const cleanupCallbacks: Array<() => void> = [];
+  const cleanupPageCallbacks: Array<() => void> = [];
   const cleanupPageMotion = () => {
     cleanupMotion?.();
     cleanupMotion = undefined;
   };
   const cleanupPage = () => {
     cleanupPageMotion();
-    cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
+    cleanupPageCallbacks.splice(0).forEach((cleanup) => cleanup());
   };
-
-  initPreloader();
-  cleanupCallbacks.push(initViewLifecycle());
-  void import("./audio").then(({ initAudio }) => {
-    initAudio();
-    if (homeGalleryEntered) window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
-  });
-  void import("./motion").then(({ initMotion }) => {
-    cleanupMotion = initMotion();
-  });
-  void initWebGL().then((instance) => {
-    webgl = instance;
+  const cleanupApp = () => {
+    cleanupPage();
+    window.removeEventListener("pagehide", cleanupApp);
+    window.removeEventListener("beforeunload", cleanupApp);
+  };
+  const setPageClasses = (nextBody: HTMLBodyElement, nextHtml: HTMLElement) => {
+    const routeClasses = ["is-home", "is-about", "is-project", "is-scrolled", "is-work-gallery-leaving", "is-nav-mobile-open"];
+    routeClasses.forEach((className) => {
+      document.body.classList.toggle(className, nextBody.classList.contains(className));
+      document.documentElement.classList.toggle(className, nextHtml.classList.contains(className));
+    });
+    document.body.classList.add("is-ready", "has-entered");
+    document.body.classList.remove("is-preloading");
+    document.documentElement.classList.add("js", "has-session-entered");
+  };
+  const replacePageDom = (doc: Document) => {
+    const nextBody = doc.body;
+    const nextHtml = doc.documentElement;
+    const nextHeader = doc.querySelector<HTMLElement>(".ui-header");
+    const nextNav = doc.querySelector<HTMLElement>(".ui-nav");
+    const nextMain = doc.querySelector<HTMLElement>(".ui-main");
+    const header = document.querySelector<HTMLElement>(".ui-header");
+    const nav = document.querySelector<HTMLElement>(".ui-nav");
+    const main = document.querySelector<HTMLElement>(".ui-main");
+    if (!nextMain || !main) throw new Error("Router response is missing .ui-main");
+    if (nextHeader && header) header.replaceWith(nextHeader);
+    if (nextNav && nav) nav.replaceWith(nextNav);
+    main.replaceWith(nextMain);
+    document.title = doc.title;
+    setPageClasses(nextBody, nextHtml);
+  };
+  const initWebglForCurrentPage = (callbacks: Array<() => void>) => {
     const active = document.querySelector<HTMLElement>("[data-project-card].is-active");
     const project = document.querySelector<HTMLElement>("[data-webgl-project]");
     const payload = projectPayloadFromElement(active ?? project);
@@ -1130,32 +1153,82 @@ function boot() {
         webgl?.showScene?.();
         homeGalleryEntered = true;
         window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
-      }, cleanupCallbacks);
+      }, callbacks);
     } else if (document.querySelector("[data-view='about']")) {
       webgl?.enterAboutVisualState?.(
         document.querySelector<HTMLElement>(".ui-about-hero-visual"),
         document.querySelector<HTMLElement>(".ui-about-hero"),
       );
-      onPageEntered(() => webgl?.animateAboutVisualIn?.(), cleanupCallbacks);
-      cleanupCallbacks.push(() => webgl?.destroyAboutVisualState?.());
+      onPageEntered(() => webgl?.animateAboutVisualIn?.(), callbacks);
+      callbacks.push(() => webgl?.destroyAboutVisualState?.());
     } else if (project) {
       webgl?.enterProjectVisualState?.(payload);
-      onPageEntered(() => webgl?.mediaAnimateIn?.(), cleanupCallbacks);
+      onPageEntered(() => webgl?.mediaAnimateIn?.(), callbacks);
     }
+  };
+  const initCurrentPage = () => {
+    cleanupPage();
+    cleanupPageCallbacks.push(initViewLifecycle());
+    void import("./motion").then(({ initMotion }) => {
+      cleanupMotion = initMotion();
+    });
+    initWebglForCurrentPage(cleanupPageCallbacks);
+    cleanupPageCallbacks.push(initMenu() ?? (() => {}));
+    cleanupPageCallbacks.push(initButtons());
+    cleanupPageCallbacks.push(initWorkPreview(() => webgl, navigateTo));
+    cleanupPageCallbacks.push(initProjectMedia());
+    cleanupPageCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
+    cleanupPageCallbacks.push(initProjectLeave(() => webgl, navigateTo));
+    cleanupPageCallbacks.push(initAboutLeave(() => webgl, navigateTo));
+    cleanupPageCallbacks.push(initHomeRouteLeave(() => webgl, navigateTo));
+    cleanupPageCallbacks.push(initScrollState());
+  };
+  const navigateTo: AppNavigate = (url, _mode = "default", historyMode = "push") => {
+    if (routing) return;
+    routing = true;
+    persistEnteredSession();
+    fetch(url, { credentials: "same-origin" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Router request failed: ${response.status}`);
+        return response.text();
+      })
+      .then((html) => {
+        const nextDoc = new DOMParser().parseFromString(html, "text/html");
+        cleanupPage();
+        replacePageDom(nextDoc);
+        if (historyMode === "replace") {
+          window.history.replaceState({}, "", url);
+        } else {
+          window.history.pushState({}, "", url);
+        }
+        window.scrollTo(0, 0);
+        emitPageEntered();
+        initCurrentPage();
+      })
+      .catch((error) => {
+        console.warn("Internal router failed; falling back to full navigation", error);
+        window.location.assign(url);
+      })
+      .finally(() => {
+        routing = false;
+      });
+  };
+
+  initPreloader();
+  void import("./audio").then(({ initAudio }) => {
+    initAudio();
+    if (homeGalleryEntered) window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
+  });
+  void initWebGL().then((instance) => {
+    webgl = instance;
+    initWebglForCurrentPage(cleanupPageCallbacks);
   });
 
   initSoundToggle();
-  cleanupCallbacks.push(initMenu() ?? (() => {}));
-  cleanupCallbacks.push(initButtons());
-  cleanupCallbacks.push(initWorkPreview(() => webgl));
-  cleanupCallbacks.push(initProjectMedia());
-  cleanupCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
-  cleanupCallbacks.push(initProjectLeave(() => webgl));
-  cleanupCallbacks.push(initAboutLeave(() => webgl));
-  cleanupCallbacks.push(initHomeRouteLeave(() => webgl));
-  cleanupCallbacks.push(initScrollState());
-  window.addEventListener("pagehide", cleanupPage, { once: true });
-  window.addEventListener("beforeunload", cleanupPage, { once: true });
+  initCurrentPage();
+  window.addEventListener("popstate", () => navigateTo(window.location.href, "default", "replace"));
+  window.addEventListener("pagehide", cleanupApp, { once: true });
+  window.addEventListener("beforeunload", cleanupApp, { once: true });
 }
 
 if (document.readyState === "loading") {
