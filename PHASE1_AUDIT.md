@@ -339,6 +339,45 @@ Verification passed:
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 
+### S1-30 Renderer / Output Color Probe Result
+
+A debug-only renderer/output probe is now available:
+
+- Added `?debug-output-probe=1`.
+- Added `scripts/probe-output-color.mjs`.
+- The probe writes `window.__rogierOutputProbe` with renderer output settings, key composite uniforms, render-target texture metadata, center stats, and 9x9 grid stats for home render targets.
+- Normal rendering is unchanged unless the debug query flag is present.
+
+The diagnostic run at `/tmp/rogier-output-probe-s129b` produced these key numbers on home desktop:
+
+| Target / output | Center luma | 9x9 grid luma | Texture colorSpace | Interpretation |
+| --- | ---: | ---: | --- | --- |
+| `workRawTarget` | `0.526` | `0.184` | empty / `NoColorSpace` | Work scene target is not globally black; center is bright and grid is already above original final home luma. |
+| `compositeTarget` / A1 pre-composite | `0.862` | `0.231` | empty / `NoColorSpace` | A1 pre-composite is bright, especially near center; it is not the cause of the final dark output. |
+| `preBloomTarget` | `0.035` | `0.009` | empty / `NoColorSpace` | Pre-bloom composite is small and dark as expected from bloom blur/composite, not the main scene. |
+| `bloomTarget` | `0.040` | `0.022` | empty / `NoColorSpace` | Bloom contribution is modest. |
+| `thumbCompositeTarget` | `0.132` | `0.060` | empty / `NoColorSpace` | Thumb map remains non-empty and source-shaped enough for projection attribution. |
+| final screenshot | n/a | `0.031` full-image luma | renderer output `srgb` | Final visible output is far darker than A1 `compositeTarget`, so the next suspect is the final `OA/CA` composite pass rather than upstream render targets. |
+
+Renderer/output metadata:
+
+- `renderer.outputColorSpace = "srgb"`
+- `renderer.toneMapping = 0`
+- `renderer.autoClear = false`
+- all sampled render-target textures report empty colorSpace / `NoColorSpace`-style metadata
+- `preComposite.uBgColor = [0.1216, 0.1216, 0.1216]`
+- final `OA` composite uniforms at capture: `uDarken = 0.2`, `uSaturation = 1`, bloom/luminosity enabled
+
+Decision: keep the output probe. Do not broadly change renderer output color space yet. The current evidence narrows the next batch to final `OA/CA` composite parity: source `CA` blend modes, darken color value, `uDarken` ownership for the active project, and whether the rebuild samples the correct `tScene`/`tBloom` target in `renderHomeCompositePass()`. A1/pre-composite and render-target color metadata are no longer the first live-edit target.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-output-probe-s129b CDP_PORT=9279 PROBE_WAIT=5200 node scripts/probe-output-color.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

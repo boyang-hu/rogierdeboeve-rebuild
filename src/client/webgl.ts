@@ -94,6 +94,10 @@ type ShaderDumpWindow = Window & {
   }>;
 };
 
+type OutputProbeWindow = Window & {
+  __rogierOutputProbe?: Record<string, any>;
+};
+
 type RenderTargetStats = {
   width: number;
   height: number;
@@ -1454,6 +1458,55 @@ function renderTargetStats(renderer: WebGLRenderer, target: WebGLRenderTarget, s
   };
 }
 
+function renderTargetGridStats(renderer: WebGLRenderer, target: WebGLRenderTarget, grid = 9) {
+  const width = Math.max(1, target.width);
+  const height = Math.max(1, target.height);
+  const pixels = new Uint8Array(4);
+  const sums = [0, 0, 0, 0];
+  const mins = [255, 255, 255, 255];
+  const maxes = [0, 0, 0, 0];
+  let count = 0;
+  for (let yIndex = 0; yIndex < grid; yIndex += 1) {
+    for (let xIndex = 0; xIndex < grid; xIndex += 1) {
+      const x = Math.min(width - 1, Math.max(0, Math.round(((xIndex + 0.5) / grid) * width)));
+      const y = Math.min(height - 1, Math.max(0, Math.round(((yIndex + 0.5) / grid) * height)));
+      renderer.readRenderTargetPixels(target, x, y, 1, 1, pixels);
+      for (let channel = 0; channel < 4; channel += 1) {
+        const value = pixels[channel];
+        sums[channel] += value;
+        mins[channel] = Math.min(mins[channel], value);
+        maxes[channel] = Math.max(maxes[channel], value);
+      }
+      count += 1;
+    }
+  }
+  const mean = sums.map((value) => value / count / 255) as [number, number, number, number];
+  return {
+    grid,
+    mean,
+    min: mins.map((value) => value / 255) as [number, number, number, number],
+    max: maxes.map((value) => value / 255) as [number, number, number, number],
+    luma: mean[0] * 0.2126 + mean[1] * 0.7152 + mean[2] * 0.0722,
+  };
+}
+
+function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, sampleSize = 64) {
+  return {
+    width: target.width,
+    height: target.height,
+    texture: {
+      colorSpace: target.texture.colorSpace,
+      type: target.texture.type,
+      format: target.texture.format,
+      minFilter: target.texture.minFilter,
+      magFilter: target.texture.magFilter,
+      generateMipmaps: target.texture.generateMipmaps,
+    },
+    stats: renderTargetStats(renderer, target, sampleSize),
+    gridStats: renderTargetGridStats(renderer, target),
+  };
+}
+
 function setTextureQuality(texture: Texture, renderer: WebGLRenderer) {
   texture.colorSpace = SRGBColorSpace;
   texture.minFilter = LinearFilter;
@@ -1653,7 +1706,9 @@ export class WebGLBackdrop {
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
   private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
+  private debugOutputProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-output-probe");
   private thumbProbeLastUpdate = 0;
+  private outputProbeLastUpdate = 0;
   private fluidStrength = 0.5;
   private darken = 0.1;
   private saturation = 1.15;
@@ -3952,6 +4007,70 @@ export class WebGLBackdrop {
     };
   }
 
+  private updateOutputProbe(time: number) {
+    if (!this.debugOutputProbe || time - this.outputProbeLastUpdate < 0.5) return;
+    this.outputProbeLastUpdate = time;
+    const rendererSize = new Vector2();
+    const drawingBufferSize = new Vector2();
+    this.renderer.getSize(rendererSize);
+    this.renderer.getDrawingBufferSize(drawingBufferSize);
+    const probeWindow = window as OutputProbeWindow;
+    probeWindow.__rogierOutputProbe = {
+      activeSlug: this.activeSlug,
+      bodyClass: document.body.className,
+      renderer: {
+        outputColorSpace: this.renderer.outputColorSpace,
+        toneMapping: this.renderer.toneMapping,
+        autoClear: this.renderer.autoClear,
+        pixelRatio: this.renderer.getPixelRatio(),
+        size: { width: rendererSize.x, height: rendererSize.y },
+        drawingBufferSize: { width: drawingBufferSize.x, height: drawingBufferSize.y },
+      },
+      settings: {
+        bloom: this.renderSettings.bloom,
+        luminosity: this.renderSettings.luminosity,
+        blur: this.renderSettings.blur,
+        mousesim: this.renderSettings.mousesim,
+        fluid: this.renderSettings.fluid,
+      },
+      uniforms: {
+        preComposite: {
+          uBgColor: (this.preCompositeMaterial.uniforms.uBgColor.value as Color).toArray(),
+          uContrast: this.preCompositeMaterial.uniforms.uContrast.value,
+          uFluidStrength: this.preCompositeMaterial.uniforms.uFluidStrength.value,
+          uMediaReveal: this.preCompositeMaterial.uniforms.uMediaReveal.value,
+          boolBloom: this.preCompositeMaterial.uniforms.boolBloom.value,
+          boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
+        },
+        composite: {
+          uDarken: this.compositeMaterial.uniforms.uDarken.value,
+          uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
+          boolBloom: this.compositeMaterial.uniforms.boolBloom.value,
+          boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
+        },
+      },
+      targets: {
+        workRaw: renderTargetProbe(this.renderer, this.workRawTarget),
+        preComposite: renderTargetProbe(this.renderer, this.compositeTarget),
+        preBloomBright: renderTargetProbe(this.renderer, this.preBloomBrightTarget),
+        preBloom: renderTargetProbe(this.renderer, this.preBloomTarget),
+        bloomBright: renderTargetProbe(this.renderer, this.bloomBrightTarget),
+        bloom: renderTargetProbe(this.renderer, this.bloomTarget),
+        thumb: renderTargetProbe(this.renderer, this.thumbTarget),
+        thumbComposite: renderTargetProbe(this.renderer, this.thumbCompositeTarget),
+        screenMouseSim: this.renderSettings.mousesim.enabled
+          ? renderTargetProbe(this.renderer, this.screenMouseSimulationTargets[this.screenMouseSimulationIndex])
+          : null,
+      },
+      textures: {
+        noise: { colorSpace: this.noiseTexture.colorSpace, type: this.noiseTexture.type, format: this.noiseTexture.format },
+        perlin: { colorSpace: this.perlinTexture.colorSpace, type: this.perlinTexture.type, format: this.perlinTexture.format },
+        placeholder: { colorSpace: this.placeholder.colorSpace, type: this.placeholder.type, format: this.placeholder.format },
+        fluidPlaceholder: { colorSpace: this.fluidPlaceholder.colorSpace, type: this.fluidPlaceholder.type, format: this.fluidPlaceholder.format },
+      },
+    };
+  }
+
   private renderCharacterTarget() {
     this.renderer.setRenderTarget(this.characterTarget);
     this.renderer.clear();
@@ -4137,6 +4256,7 @@ export class WebGLBackdrop {
     }
     this.renderThumbTargets();
     this.updateThumbProbe(time);
+    this.updateOutputProbe(time);
     if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
     this.renderDisplacementTarget(time);
     if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
