@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  BackSide,
   Box3,
   BoxGeometry,
   ClampToEdgeWrapping,
@@ -9,6 +10,7 @@ import {
   DirectionalLight,
   Fog,
   Group,
+  IcosahedronGeometry,
   InstancedBufferAttribute,
   InstancedMesh,
   LinearFilter,
@@ -90,6 +92,7 @@ type WorkItem = {
 };
 
 type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
+type EnvironmentMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
 type ShaderDumpWindow = Window & {
   __rogierVaShaderDump?: Array<{
     variant: "work" | "auxiliary";
@@ -693,6 +696,214 @@ function patchWorkBlockShader(
   }
 }
 
+const environmentVertexShader = `
+varying vec2 vUv;
+#define STANDARD
+varying vec3 vViewPosition;
+#ifdef USE_TRANSMISSION
+  varying vec3 vWorldPosition;
+#endif
+#include <common>
+#include <uv_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <normal_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+void main() {
+  vUv = uv;
+  #include <uv_vertex>
+  #include <color_vertex>
+  #include <morphcolor_vertex>
+  #include <beginnormal_vertex>
+  #include <morphnormal_vertex>
+  #include <skinbase_vertex>
+  #include <skinnormal_vertex>
+  #include <defaultnormal_vertex>
+  #include <normal_vertex>
+  #include <begin_vertex>
+  #include <morphtarget_vertex>
+  #include <skinning_vertex>
+  #include <displacementmap_vertex>
+  #include <project_vertex>
+  #include <logdepthbuf_vertex>
+  #include <clipping_planes_vertex>
+  vViewPosition = -mvPosition.xyz;
+  #include <worldpos_vertex>
+  #include <shadowmap_vertex>
+  #include <fog_vertex>
+#ifdef USE_TRANSMISSION
+  vWorldPosition = worldPosition.xyz;
+#endif
+}
+`;
+
+const environmentFragmentShader = `
+uniform float uDarken;
+uniform vec3 uDarkenColor;
+uniform sampler2D tSky;
+
+varying vec2 vUv;
+
+#define STANDARD
+#ifdef PHYSICAL
+  #define IOR
+  #define SPECULAR
+#endif
+uniform vec3 diffuse;
+uniform vec3 emissive;
+uniform float roughness;
+uniform float metalness;
+uniform float opacity;
+#ifdef IOR
+uniform float ior;
+#endif
+#ifdef SPECULAR
+uniform float specularIntensity;
+uniform vec3 specularColor;
+  #ifdef USE_SPECULARINTENSITYMAP
+uniform sampler2D specularIntensityMap;
+  #endif
+  #ifdef USE_SPECULARCOLORMAP
+uniform sampler2D specularColorMap;
+  #endif
+#endif
+#ifdef USE_CLEARCOAT
+uniform float clearcoat;
+uniform float clearcoatRoughness;
+#endif
+#ifdef USE_IRIDESCENCE
+uniform float iridescence;
+uniform float iridescenceIOR;
+uniform float iridescenceThicknessMinimum;
+uniform float iridescenceThicknessMaximum;
+#endif
+#ifdef USE_SHEEN
+uniform vec3 sheenColor;
+uniform float sheenRoughness;
+  #ifdef USE_SHEENCOLORMAP
+uniform sampler2D sheenColorMap;
+  #endif
+  #ifdef USE_SHEENROUGHNESSMAP
+uniform sampler2D sheenRoughnessMap;
+  #endif
+#endif
+varying vec3 vViewPosition;
+#include <common>
+#include <packing>
+#include <dithering_pars_fragment>
+#include <uv_pars_fragment>
+#include <bsdfs>
+#include <cube_uv_reflection_fragment>
+#include <envmap_common_pars_fragment>
+#include <envmap_physical_pars_fragment>
+#include <lights_pars_begin>
+#include <normal_pars_fragment>
+#include <lights_physical_pars_fragment>
+#include <transmission_pars_fragment>
+#include <shadowmap_pars_fragment>
+
+float environmentBlendColorDodgeChannel(float base, float blend) {
+  return blend == 1.0 ? blend : min(base / (1.0 - blend), 1.0);
+}
+
+vec3 environmentBlendColorDodge(vec3 base, vec3 blend, float opacity) {
+  vec3 mixed = vec3(
+    environmentBlendColorDodgeChannel(base.r, blend.r),
+    environmentBlendColorDodgeChannel(base.g, blend.g),
+    environmentBlendColorDodgeChannel(base.b, blend.b)
+  );
+  return mix(base, mixed, opacity);
+}
+
+vec3 environmentBlendNegation(vec3 base, vec3 blend, float opacity) {
+  vec3 mixed = vec3(1.0) - abs(vec3(1.0) - base - blend);
+  return mix(base, mixed, opacity);
+}
+
+vec3 environmentBlend(int mode, vec3 base, vec3 blend, float opacity) {
+  if (mode == 4) return environmentBlendColorDodge(base, blend, opacity);
+  if (mode == 16) return environmentBlendNegation(base, blend, opacity);
+  return base;
+}
+
+float smoothMask(float coord, float center, float spread) {
+  return (1.0 - smoothstep(coord, center, center - spread)) + (1.0 - smoothstep(coord, center, center + spread));
+}
+
+void main() {
+  vec4 diffuseColor = vec4(diffuse, opacity);
+  ReflectedLight reflectedLight = ReflectedLight(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
+  vec3 totalEmissiveRadiance = emissive;
+
+  vec2 skyUv = vUv;
+  vec2 skyUv2 = vUv;
+
+  skyUv.x += 0.5;
+  skyUv2.x -= 0.75;
+
+  vec4 noise = texture2D(tSky, skyUv * 2.0);
+  vec4 noise2 = texture2D(tSky, skyUv2);
+
+  float m = 0.0;
+  m = max(m, 1.0 - smoothstep(vUv.x, 0.00, 0.015));
+  m = max(m, 1.0 - smoothstep(vUv.x, 1.015, 0.985));
+  m = max(m, smoothMask(vUv.x, 0.5, 0.01));
+  m = m * 1.0 - smoothMask(vUv.x, 0.75, 0.02);
+  m = clamp(m, 0.0, 1.0);
+
+  vec4 noiseMixed = mix(noise, noise2, m);
+  diffuseColor.rgb = environmentBlend(4, diffuseColor.rgb, noiseMixed.rgb, 0.5);
+
+  vec2 skyMaskUv = vUv;
+  skyMaskUv.y -= 0.1;
+
+  float skyMask = mod(skyMaskUv.y * 5.0, 1.0);
+  skyMask = max(skyMask, step(0.6, skyMaskUv.y));
+
+  diffuseColor.rgb = environmentBlend(16, diffuseColor.rgb, noiseMixed.rgb, skyMask);
+  diffuseColor.rgb += vec3(smoothstep(vUv.y, 0.45, 0.595));
+
+  float skyMask2 = mod(skyMaskUv.y * 2.5, 1.0);
+  skyMask2 = max(skyMask, step(0.6, skyMaskUv.y));
+
+  diffuseColor.rgb = mix(vec3(1.0), diffuseColor.rgb, skyMask2 * 1.5);
+  diffuseColor.rgb *= 1.15;
+  diffuseColor.rgb *= clamp(diffuseColor.rgb, vec3(0.0), vec3(1.0));
+
+  #include <roughnessmap_fragment>
+  #include <metalnessmap_fragment>
+  #include <normal_fragment_begin>
+  #include <normal_fragment_maps>
+  #include <lights_physical_fragment>
+  #include <lights_fragment_begin>
+  #include <lights_fragment_maps>
+  #include <lights_fragment_end>
+
+  vec3 totalDiffuse = reflectedLight.indirectDiffuse;
+  vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+  vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
+
+  #include <opaque_fragment>
+
+  gl_FragColor.rgb = environmentBlend(4, gl_FragColor.rgb, uDarkenColor, uDarken);
+  #include <dithering_fragment>
+}
+`;
+
+function patchEnvironmentShader(
+  shader: { uniforms: Record<string, any>; vertexShader: string; fragmentShader: string },
+  uniforms: Record<string, any>,
+) {
+  Object.assign(shader.uniforms, uniforms);
+  shader.vertexShader = environmentVertexShader;
+  shader.fragmentShader = environmentFragmentShader;
+}
+
 const homeCompositeFragment = `
 precision highp float;
 
@@ -975,6 +1186,43 @@ vec4 gaussianBlur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
 
 void main() {
   gl_FragColor = gaussianBlur(tMap, vUv, uResolution, uDirection);
+}
+`;
+
+const floorReflectionBlurFragment = `
+precision highp float;
+
+uniform sampler2D tMap;
+uniform vec2 uDirection;
+uniform vec2 uResolution;
+
+varying vec2 vUv;
+
+float smootherstep(float edge0, float edge1, float x) {
+  x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+  return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+}
+
+vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
+  vec4 sum = vec4(0.0);
+  vec2 pixel = 1.0 / resolution;
+  sum += texture2D(image, uv - 4.0 * pixel * direction) * 0.051;
+  sum += texture2D(image, uv - 3.0 * pixel * direction) * 0.0918;
+  sum += texture2D(image, uv - 2.0 * pixel * direction) * 0.12245;
+  sum += texture2D(image, uv - 1.0 * pixel * direction) * 0.1531;
+  sum += texture2D(image, uv) * 0.1633;
+  sum += texture2D(image, uv + 1.0 * pixel * direction) * 0.1531;
+  sum += texture2D(image, uv + 2.0 * pixel * direction) * 0.12245;
+  sum += texture2D(image, uv + 3.0 * pixel * direction) * 0.0918;
+  sum += texture2D(image, uv + 4.0 * pixel * direction) * 0.051;
+  return sum;
+}
+
+void main() {
+  vec2 distance = smootherstep(1.0, 0.0, vUv.y) * uDirection;
+  vec4 mapped = texture2D(tMap, vUv);
+  vec4 blurred = blur(tMap, vUv, uResolution, distance);
+  gl_FragColor = mix(mapped, blurred, 1.25);
 }
 `;
 
@@ -1443,89 +1691,6 @@ void main() {
 }
 `;
 
-const environmentFragment = `
-precision highp float;
-
-uniform float uTime;
-uniform vec3 uDarkenColor;
-uniform float uDarken;
-uniform float uMultiplier;
-uniform float uShader1Alpha;
-uniform float uShader1Speed;
-uniform float uShader1Scale;
-uniform float uShader2Alpha;
-uniform float uShader2Scale;
-uniform float uShader3Alpha;
-uniform float uShader3Speed;
-uniform float uShader3Scale;
-uniform float uShader1Mix3;
-uniform sampler2D tSky;
-
-varying vec2 vUv;
-
-vec3 blendScreen(vec3 base, vec3 blend, float opacity) {
-  vec3 mixed = 1.0 - (1.0 - base) * (1.0 - blend);
-  return mix(base, mixed, opacity);
-}
-
-float blendColorDodgeChannel(float base, float blend) {
-  return blend == 1.0 ? blend : min(base / (1.0 - blend), 1.0);
-}
-
-vec3 blendColorDodge(vec3 base, vec3 blend, float opacity) {
-  vec3 mixed = vec3(
-    blendColorDodgeChannel(base.r, blend.r),
-    blendColorDodgeChannel(base.g, blend.g),
-    blendColorDodgeChannel(base.b, blend.b)
-  );
-  return mix(base, mixed, opacity);
-}
-
-vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
-  vec3 mixed = vec3(1.0) - abs(vec3(1.0) - base - blend);
-  return mix(base, mixed, opacity);
-}
-
-float smoothMask(float coord, float center, float spread) {
-  return (1.0 - smoothstep(coord, center, center - spread)) + (1.0 - smoothstep(coord, center, center + spread));
-}
-
-void main() {
-  vec2 uv = vUv;
-  vec2 skyUv = uv;
-  vec2 skyUv2 = uv;
-  skyUv.x += 0.5;
-  skyUv2.x -= 0.75;
-
-  vec4 noise1 = texture2D(tSky, skyUv * max(0.001, uMultiplier));
-  vec4 noise2 = texture2D(tSky, skyUv2);
-  float m = 0.0;
-  m = max(m, 1.0 - smoothstep(uv.x, 0.00, 0.015));
-  m = max(m, 1.0 - smoothstep(uv.x, 1.015, 0.985));
-  m = max(m, smoothMask(uv.x, 0.5, 0.01));
-  m = m * 1.0 - smoothMask(uv.x, 0.75, 0.02);
-  m = clamp(m, 0.0, 1.0);
-  vec3 noiseMixed = mix(noise1.rgb, noise2.rgb, m);
-
-  vec3 color = vec3(1.0);
-  color = blendColorDodge(color, noiseMixed, 0.5);
-  vec2 skyMaskUv = uv;
-  skyMaskUv.y -= 0.1;
-  float skyMask = mod(skyMaskUv.y * 5.0, 1.0);
-  skyMask = max(skyMask, step(0.6, skyMaskUv.y));
-  color = blendNegation(color, noiseMixed, skyMask);
-  color += vec3(smoothstep(uv.y, 0.45, 0.595));
-
-  float skyMask2 = mod(skyMaskUv.y * 2.5, 1.0);
-  skyMask2 = max(skyMask, step(0.6, skyMaskUv.y));
-  color = mix(vec3(1.0), color, skyMask2 * 1.5);
-  color *= 1.15;
-  color *= clamp(color, vec3(0.0), vec3(1.0));
-  color = blendColorDodge(color, uDarkenColor, clamp(uDarken, 0.0, 1.0));
-  gl_FragColor = vec4(color, 1.0);
-}
-`;
-
 function normalizeColor(value?: string) {
   const trimmed = value?.trim();
   if (!trimmed) return undefined;
@@ -1817,6 +1982,8 @@ export class WebGLBackdrop {
   private displacementScene = new Scene();
   private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
   private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false });
+  private floorReflectionReadTarget = makeSourceRenderTarget(false);
+  private floorReflectionWriteTarget = makeSourceRenderTarget(false);
   private floorReflectionCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private floorReflectionMatrix = new Matrix4();
   private floorReflectorPlane = new Plane();
@@ -1824,6 +1991,8 @@ export class WebGLBackdrop {
   private floorReflectorWorldPosition = new Vector3();
   private floorReflectionClipPlane = new Vector4();
   private floorReflectionQ = new Vector4();
+  private floorReflectionBlurMaterial: ShaderMaterial;
+  private floorReflectionBlurScene = new Scene();
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
   private screenMouseSimulationIndex = 0;
@@ -1836,8 +2005,8 @@ export class WebGLBackdrop {
   private characterTarget = makeSourceRenderTarget(false);
   private floorMaterial: ShaderMaterial;
   private floorPlane: Mesh<PlaneGeometry, ShaderMaterial>;
-  private environmentMaterial: ShaderMaterial;
-  private environmentPlane: Mesh<PlaneGeometry, ShaderMaterial>;
+  private environmentMaterial: EnvironmentMaterial;
+  private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
   private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private thumbCompositeTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private raycaster = new Raycaster();
@@ -2013,6 +2182,14 @@ export class WebGLBackdrop {
     this.floorReflectionTarget.texture.generateMipmaps = false;
     this.floorReflectionTarget.texture.minFilter = LinearFilter;
     this.floorReflectionTarget.texture.magFilter = LinearFilter;
+    this.floorReflectionReadTarget.texture.generateMipmaps = false;
+    this.floorReflectionReadTarget.texture.minFilter = LinearFilter;
+    this.floorReflectionReadTarget.texture.magFilter = LinearFilter;
+    this.floorReflectionWriteTarget.texture.generateMipmaps = false;
+    this.floorReflectionWriteTarget.texture.minFilter = LinearFilter;
+    this.floorReflectionWriteTarget.texture.magFilter = LinearFilter;
+    this.floorReflectionBlurMaterial = this.createFloorReflectionBlurMaterial();
+    this.floorReflectionBlurScene.add(new Mesh(new PlaneGeometry(2, 2), this.floorReflectionBlurMaterial));
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationScene.add(new Mesh(new PlaneGeometry(2, 2), this.screenMouseSimulationMaterial));
@@ -2043,7 +2220,7 @@ export class WebGLBackdrop {
     this.floorPlane.position.y = -1.65;
     this.floorPlane.rotation.x = -Math.PI / 2;
     this.environmentMaterial = this.createEnvironmentMaterial();
-    this.environmentPlane = new Mesh(new PlaneGeometry(300, 10), this.environmentMaterial);
+    this.environmentPlane = new Mesh(new IcosahedronGeometry(300, 10), this.environmentMaterial);
     this.environmentPlane.position.y = -12.65;
     this.homeScene.add(this.sceneWrap);
     this.sceneWrap.add(this.blocksWrap);
@@ -2471,6 +2648,9 @@ export class WebGLBackdrop {
     this.fxaaTarget.dispose();
     this.displacementTarget.dispose();
     this.floorReflectionTarget.dispose();
+    this.floorReflectionReadTarget.dispose();
+    this.floorReflectionWriteTarget.dispose();
+    this.floorReflectionBlurMaterial.dispose();
     this.displacementMaterial.dispose();
     this.screenMouseSimulationTargets.forEach((target) => target.dispose());
     this.screenMouseSimulationMaterial.dispose();
@@ -3008,6 +3188,20 @@ export class WebGLBackdrop {
     });
   }
 
+  private createFloorReflectionBlurMaterial() {
+    return new ShaderMaterial({
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tMap: { value: this.floorReflectionTarget.texture },
+        uDirection: { value: new Vector2(1, 0) },
+        uResolution: { value: new Vector2(1, 1) },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: floorReflectionBlurFragment,
+    });
+  }
+
   private createFxaaMaterial() {
     return new ShaderMaterial({
       blending: NormalBlending,
@@ -3231,7 +3425,7 @@ export class WebGLBackdrop {
   private createFloorMaterial() {
     return new ShaderMaterial({
       uniforms: {
-        tReflect: { value: this.floorReflectionTarget.texture },
+        tReflect: { value: this.floorReflectionReadTarget.texture },
         uMapTransform: { value: new Matrix3().identity() },
         uMatrix: { value: this.floorReflectionMatrix },
         uColor: { value: colorFrom("#4a4a4a") },
@@ -3248,31 +3442,24 @@ export class WebGLBackdrop {
   }
 
   private createEnvironmentMaterial() {
-    return new ShaderMaterial({
+    const uniforms = {
+      uDarkenColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
+      uDarken: { value: 1 },
+      tSky: { value: this.environmentSkyTexture() },
+    };
+    const material = new MeshStandardMaterial({
+      side: BackSide,
+      envMapIntensity: 1,
+      fog: false,
+      dithering: true,
       toneMapped: false,
-      transparent: false,
-      depthWrite: false,
-      depthTest: false,
-      blending: NormalBlending,
-      uniforms: {
-        uTime: { value: 0 },
-        uDarkenColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
-        uDarken: { value: 1 },
-        uMultiplier: { value: 2 },
-        uShader1Alpha: { value: 0.5 },
-        uShader1Speed: { value: 0.5 },
-        uShader1Scale: { value: 5.5 },
-        uShader2Alpha: { value: 0 },
-        uShader2Scale: { value: 13 },
-        uShader3Alpha: { value: 0 },
-        uShader3Speed: { value: 0 },
-        uShader3Scale: { value: 0 },
-        uShader1Mix3: { value: 1.5 },
-        tSky: { value: this.environmentSkyTexture() },
-      },
-      vertexShader: thumbVertex,
-      fragmentShader: environmentFragment,
-    });
+    }) as EnvironmentMaterial;
+    material.uniforms = uniforms;
+    material.onBeforeCompile = (shader) => {
+      patchEnvironmentShader(shader, uniforms);
+    };
+    material.customProgramCacheKey = () => "source-u1-environment-standard";
+    return material;
   }
 
   private createWorkRayPlane() {
@@ -3876,10 +4063,12 @@ export class WebGLBackdrop {
     const displacementSize = Math.max(1, Math.round(height / 10));
     this.displacementTarget.setSize(displacementSize, displacementSize);
     this.preCompositeMaterial.uniforms.uDisplacementSize.value.set(displacementSize, displacementSize);
-    this.floorReflectionTarget.setSize(
-      Math.max(1, Math.round(renderWidth * 0.75)),
-      Math.max(1, Math.round(renderHeight * 0.75)),
-    );
+    const floorReflectionWidth = Math.max(1, Math.round(renderWidth * 0.75));
+    const floorReflectionHeight = Math.max(1, Math.round(renderHeight * 0.75));
+    this.floorReflectionTarget.setSize(floorReflectionWidth, floorReflectionHeight);
+    this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
+    this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
+    this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(floorReflectionWidth, floorReflectionHeight);
     const screenSimWidth = Math.max(1, Math.round(renderWidth / SCREEN_MOUSE_SIM_SCALE));
     const screenSimHeight = Math.max(1, Math.round(renderHeight / SCREEN_MOUSE_SIM_SCALE));
     if (this.renderSettings.mousesim.enabled) {
@@ -4267,6 +4456,19 @@ export class WebGLBackdrop {
     this.renderer.clear();
     this.renderer.render(this.homeScene, this.floorReflectionCamera);
     this.floorPlane.visible = wasVisible;
+
+    this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
+    this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(15, 0);
+    this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
+    this.renderer.clear();
+    this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+
+    this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionWriteTarget.texture;
+    this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
+    this.renderer.setRenderTarget(this.floorReflectionReadTarget);
+    this.renderer.clear();
+    this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+
     this.renderer.setRenderTarget(previousTarget);
   }
 
@@ -4648,7 +4850,6 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
     this.preCompositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
     this.preCompositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
-    this.environmentMaterial.uniforms.uTime.value = time;
     this.updateMediaPlanePositions();
 
     this.renderer.clear();
