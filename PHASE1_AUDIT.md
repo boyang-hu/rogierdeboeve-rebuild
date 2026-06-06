@@ -396,6 +396,38 @@ Measured result from `/tmp/rogier-output-probe-s131-order`:
 
 Decision: reject this pass-order change for production and keep the stable current order while continuing source attribution. The result is useful because it proves that a broad structural rewiring can reduce visible parity even when the intermediate targets are healthy. The next `OA/CA` batch should be smaller: compare source `CA` formula, `uDarken` active value, bloom texture ownership, and target sampling one at a time instead of swapping the whole pass chain.
 
+### S1-32 OA/CA Stage Attribution Result
+
+A debug-only final-composite stage probe is now available:
+
+- Added `?debug-composite-stage=1..5`, active only when explicitly requested.
+- Added `scripts/compare-composite-stages.mjs`, which captures stages `0..5` with `?debug-output-probe=1`.
+- Normal rendering remains unchanged at stage `0`.
+
+Stage meanings:
+
+| Stage | Output point |
+| --- | --- |
+| `0` | Normal `OA/CA` output. |
+| `1` | `rgbshift(tScene)` only. |
+| `2` | scene plus bloom. |
+| `3` | scene plus bloom plus fluid contribution. |
+| `4` | after source multiply darken: `blend(15, ..., black, uDarken * 2. + mouseSim.r * .25 * uDarken)`. |
+| `5` | after source lighten against black, before final saturation. |
+
+Diagnostic run at `/tmp/rogier-composite-stages-s132`:
+
+| Stage | Screenshot luma | Interpretation |
+| --- | ---: | --- |
+| `0` normal | `0.0314` | Stable current baseline. |
+| `1` scene only | `0.0530` | Final input is visibly brighter before bloom/darken. |
+| `2` + bloom | `0.0674` | Bloom raises output substantially. |
+| `3` + fluid | `0.0673` | Fluid is disabled/neutral for home static capture. |
+| `4` + multiply darken | `0.0307` | This is the main final-composite luma drop. |
+| `5` + lighten black | `0.0313` | Lighten barely changes the result after multiply darken. |
+
+Decision: keep the debug stage probe. Do not remove or weaken the multiply-darken formula, because the source `CA` uses the same operation and `uDarken = .2` is source default. The next attribution target is why source can tolerate this darken step while the rebuild cannot: active `uDarken` route ownership, `tMouseSim.r` range, `tScene` transfer/linear interpretation at the `OA/CA` input, and source `blendMultiply` implementation details. This narrows the next batch to measured inputs around the multiply stage, not broad composite rewiring.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

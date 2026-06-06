@@ -592,6 +592,7 @@ uniform bool boolFxaa;
 uniform float uDarken;
 uniform float uSaturation;
 uniform float uBloomDistortion;
+uniform int uDebugStage;
 
 varying vec2 vUv;
 
@@ -628,6 +629,10 @@ void main() {
   vec4 fluid = texture2D(tFluid, uv);
   vec4 mouseSim = texture2D(tMouseSim, uv);
   vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
+  if (uDebugStage == 1) {
+    gl_FragColor = vec4(color, 1.0);
+    return;
+  }
   if (boolBloom) {
     vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
     float amount = 0.001 * uBloomDistortion;
@@ -635,9 +640,25 @@ void main() {
     color += bloom;
     color += bloomShift;
   }
+  if (uDebugStage == 2) {
+    gl_FragColor = vec4(color, 1.0);
+    return;
+  }
   color += length(fluid.xy) * 0.015;
+  if (uDebugStage == 3) {
+    gl_FragColor = vec4(color, 1.0);
+    return;
+  }
   color = sourceBlend(15, color, vec3(0.095), uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
+  if (uDebugStage == 4) {
+    gl_FragColor = vec4(color, 1.0);
+    return;
+  }
   color = sourceBlend(11, color, vec3(0.095), 1.0);
+  if (uDebugStage == 5) {
+    gl_FragColor = vec4(color, 1.0);
+    return;
+  }
   color = saturation(color, uSaturation);
 
   gl_FragColor = vec4(color, 1.0);
@@ -1707,6 +1728,8 @@ export class WebGLBackdrop {
   private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
   private debugOutputProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-output-probe");
+  private debugCompositeStage =
+    typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-stage"), 0)), 0, 5) : 0;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
   private fluidStrength = 0.5;
@@ -2627,6 +2650,7 @@ export class WebGLBackdrop {
         uDarken: { value: this.darken },
         uSaturation: { value: this.saturation },
         uBloomDistortion: { value: 2.5 },
+        uDebugStage: { value: this.debugCompositeStage },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeCompositeFragment,
@@ -4045,6 +4069,7 @@ export class WebGLBackdrop {
         composite: {
           uDarken: this.compositeMaterial.uniforms.uDarken.value,
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
+          uDebugStage: this.compositeMaterial.uniforms.uDebugStage.value,
           boolBloom: this.compositeMaterial.uniforms.boolBloom.value,
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
         },
