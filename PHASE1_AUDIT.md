@@ -377,6 +377,26 @@ Verification:
 
 Decision: keep this as a source-correct floor structure fix. It does not close Phase 1 visual parity. The next Phase 1 batch should group up to ten related source-backed differences around floor/environment output, `VA` generated shader deltas, and `OA/CA` transfer attribution before the next full verification/commit cycle.
 
+### S1-66 Home Spotlight Target / Probe Alignment
+
+This batch audited source `p1.setLights()` and about visual `TD.updateSpotLight()` to separate home spotlight ownership from about spotlight ownership. Source home creates the spotlight at `(0,0,3.7)` and adds its target without moving it, so the home target remains the Three default origin. Source about visual later moves the same spotlight target to `aboutBlocks.position + (1.5, 0, -8)` only while the about visual is active. The rebuild had incorrectly initialized the home target to `(0,0,-8)`.
+
+Source-backed runtime changes:
+
+- Restored the home spotlight target to `(0,0,0)` during initialization and `initHomeSpotlight()`.
+- Kept the about visual spotlight target path at `z - 8`, matching source `TD.updateSpotLight()`.
+- Expanded thumb/output probes with spotlight `position`, `target`, and `parallax` fields so future projection QA can verify actual runtime state instead of inferring it from screenshots.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe at `/tmp/rd-home-spot-target-probe-2` passed with no failed requests, runtime exceptions, or WebGL console errors. It confirmed home spotlight `position=[0,0,3.7]`, `target=[0,0,0]`, `parallax=true`, `hasMap=true`, and five in-map projection samples.
+- Home source-vs-rebuild capture at `/tmp/rd-home-spot-target-home` passed. Band analysis still shows the hard horizon/fog-bed gap remains open.
+- Full capture at `/tmp/rd-home-spot-target-full` passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`; all rebuild pages reached full-canvas states with no failed requests or runtime exceptions, and project page content remained present.
+
+Decision: keep this as source-correct home spotlight ownership. It is not a Phase 1 visual closeout because centered static projection is mostly unchanged; the benefit is correct parallax/projection state and better future attribution.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

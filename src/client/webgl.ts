@@ -2272,7 +2272,7 @@ export class WebGLBackdrop {
   private directionalLightIntensity = 1.5;
   private directionalLight2Intensity = 1;
   private spotLightPosition = new Vector3(0, 0, 3.7);
-  private spotLightTarget = new Vector3(0, 0, -8);
+  private spotLightTarget = new Vector3(0, 0, 0);
   private spotLightRight = new Vector3(1, 0, 0);
   private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
@@ -2594,7 +2594,7 @@ export class WebGLBackdrop {
     this.spotLightParallax = true;
     this.spotLight.map = this.homeSpotlightMap();
     this.spotLightPosition.set(0, 0, 3.7);
-    this.spotLightTarget.set(0, 0, -8);
+    this.spotLightTarget.set(0, 0, 0);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 0);
   }
 
@@ -4958,6 +4958,9 @@ export class WebGLBackdrop {
       spotlight: {
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
         intensity: this.spotLight.intensity,
+        position: this.spotLight.position.toArray(),
+        target: this.spotLight.target.position.toArray(),
+        parallax: this.spotLightParallax,
         mapColorSpace: this.thumbCompositeTarget.texture.colorSpace,
         rendererOutputColorSpace: this.renderer.outputColorSpace,
       },
@@ -5208,6 +5211,9 @@ export class WebGLBackdrop {
       spotlight: {
         intensity: this.spotLight.intensity,
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
+        position: this.spotLight.position.toArray(),
+        target: this.spotLight.target.position.toArray(),
+        parallax: this.spotLightParallax,
         mapColorSpace: this.thumbCompositeTarget.texture.colorSpace,
       },
       bounds: {
