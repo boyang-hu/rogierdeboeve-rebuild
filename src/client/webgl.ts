@@ -2328,7 +2328,14 @@ export class WebGLBackdrop {
   }
 
   setProjectScrollState(payload: ProjectPayload) {
-    this.applyProjectLook(payload);
+    const ambientIntensity = numeric(payload.ambient, 0.5);
+    const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
+    this.activeSlug = payload.slug ?? this.activeSlug;
+    this.setMainColor(payload.color);
+    this.setAmbientLight(ambientColor, ambientIntensity);
+    this.setMediaBackground(payload.mediaColor ?? payload.color);
+    this.setSaturation(numeric(payload.saturation, 1));
+    this.setContrast(numeric(payload.contrast, 1.15));
     this.keepWorkSceneHidden();
   }
 
