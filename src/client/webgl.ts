@@ -416,6 +416,36 @@ float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, floa
 `;
 
 const workBlockOpaqueFragmentChunk = `
+vec3 sourceColor = outgoingLight;
+vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
+
+vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
+float simLight = texture2D(tMouseSim2, screenUv).r;
+vec4 sourceDisplacement = texture2D(tDisplacement, sourceUv);
+float mouseF = 1.0 - simLight;
+sourceColor = mix(sourceColor, sourceColor * vec3(mouseF), 1.0 - uMouseLightness);
+sourceColor += sourceDisplacement.rgb * 0.0;
+
+vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
+vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
+float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
+float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
+float alpha = alpha1 * alpha2 * vAlpha;
+float revealCombined = uReveal * uRevealProject;
+float fragmentReveal = mix(revealCombined, 1.0, uAuxiliaryMaterial);
+float revealRadius = 2.0 * pow(fragmentReveal, 0.25);
+float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+float mouseAlphaFactor = mix(0.5, 0.15, uAuxiliaryMaterial);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * mouseAlphaFactor), 0.0, 1.0);
+alpha += centerAlpha * 0.1;
+alpha -= 1.0 - revealAlpha;
+alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
+
+gl_FragColor = vec4(sourceColor, alpha);
+`;
+
+const auxiliaryBlockOpaqueFragmentChunk = `
 #ifdef OPAQUE
 diffuseColor.a = 1.0;
 #endif
@@ -609,7 +639,7 @@ function patchWorkBlockShader(
       shader.fragmentShader = shader.fragmentShader.replace("#include <lights_fragment_begin>", lightsFragmentBegin);
     }
   } else {
-    shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
+    shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", auxiliaryBlockOpaqueFragmentChunk);
   }
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("dump-va-shader")) {
     const dumpWindow = window as ShaderDumpWindow;

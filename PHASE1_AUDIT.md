@@ -724,6 +724,45 @@ Verification passed:
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 - Full source-vs-rebuild capture at `/tmp/rogier-compare-s141-pass-order` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
 
+### S1-42 Ordinary `VA` Tail Alpha Cleanup Result
+
+Source evidence:
+
+- Source `zA` runs `#include <opaque_fragment>`, then owns the final alpha with `gl_FragColor.a = mixedAlpha`.
+- The source ordinary `VA` tail does not keep the generated Three `OPAQUE` / `USE_TRANSMISSION` alpha multiplication after the custom reveal/mouse alpha is computed.
+- Rebuild ordinary work `VA` still ended with `gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a)`, plus the generated `OPAQUE` and `USE_TRANSMISSION` alpha branches.
+
+Change:
+
+- Ordinary work `VA` now writes `gl_FragColor = vec4(sourceColor, alpha)` in its custom tail, matching source ownership of reveal alpha.
+- The auxiliary block path keeps its previous bridge tail in a separate `auxiliaryBlockOpaqueFragmentChunk`; source `WA/XA` is a different shader family and was not changed by this ordinary `VA` cleanup.
+
+Shader diagnostic at `/tmp/rogier-va-shader-s142-tail-alpha`:
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Rebuild ordinary work fragment length | `6297` | `6158` |
+| Delta vs source `zA` length | `+1209` | `+1070` |
+| Shader/console errors | `0` | `0` |
+
+Brightness matrix at `/tmp/rogier-home-brightness-s142-tail-alpha`:
+
+| Variant | Screenshot luma | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Thumb composite 9x9 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| default | `0.2254` | `0.2226` | `0.3163` | `0.0524` | `0.1777` |
+| scene transfer | `0.3326` | `0.2232` | `0.3237` | `0.0550` | `0.1767` |
+| texture sRGB rollback | `0.1568` | `0.1849` | `0.2318` | `0.0219` | `0.0603` |
+
+Decision: keep the ordinary `VA` tail alpha cleanup because it removes a source-proven generated-tail deviation and does not regress browser QA. It is not a material brightness fix: default luma remains in the S1-40 range (`~0.225`). The remaining ordinary `VA` work should continue with generated-vs-source light/body interface differences that still show in the shader dump: modern physical-material uniforms (`dispersion`, `anisotropy*`) and the source `HA`/rebuild vertex-body delta around transformed/world position.
+
+Verification passed:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-s142-tail-alpha` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
