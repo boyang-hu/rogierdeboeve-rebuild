@@ -1989,6 +1989,11 @@ export class WebGLBackdrop {
   private floorReflectorPlane = new Plane();
   private floorReflectorNormal = new Vector3(0, 1, 0);
   private floorReflectorWorldPosition = new Vector3();
+  private floorReflectionCameraWorldPosition = new Vector3();
+  private floorReflectionRotationMatrix = new Matrix4();
+  private floorReflectionLookAtPosition = new Vector3(0, 0, -1);
+  private floorReflectionView = new Vector3();
+  private floorReflectionTargetPosition = new Vector3();
   private floorReflectionClipPlane = new Vector4();
   private floorReflectionQ = new Vector4();
   private floorReflectionBlurMaterial: ShaderMaterial;
@@ -4422,14 +4427,29 @@ export class WebGLBackdrop {
   private renderFloorReflection() {
     if (!this.sceneWrap.visible) return;
     const previousTarget = this.renderer.getRenderTarget();
-    const floorY = this.floorPlane.getWorldPosition(new Vector3()).y;
-    this.floorReflectionCamera.copy(this.homeCamera);
-    this.floorReflectionCamera.position.y = floorY - (this.homeCamera.position.y - floorY);
-    this.floorReflectionCamera.up.copy(this.homeCamera.up);
-    this.floorReflectionCamera.up.y *= -1;
-    const reflectedLookAt = this.cameraLookAt.clone();
-    reflectedLookAt.y = floorY - (reflectedLookAt.y - floorY);
-    this.floorReflectionCamera.lookAt(reflectedLookAt);
+    this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorPlane.matrixWorld);
+    this.floorReflectionCameraWorldPosition.setFromMatrixPosition(this.homeCamera.matrixWorld);
+    this.floorReflectionRotationMatrix.extractRotation(this.floorPlane.matrixWorld);
+    this.floorReflectorNormal.set(0, 0, 1);
+    this.floorReflectorNormal.applyMatrix4(this.floorReflectionRotationMatrix);
+    this.floorReflectionView.subVectors(this.floorReflectorWorldPosition, this.floorReflectionCameraWorldPosition);
+    if (this.floorReflectionView.dot(this.floorReflectorNormal) > 0) return;
+    this.floorReflectionView.reflect(this.floorReflectorNormal).negate();
+    this.floorReflectionView.add(this.floorReflectorWorldPosition);
+    this.floorReflectionRotationMatrix.extractRotation(this.homeCamera.matrixWorld);
+    this.floorReflectionLookAtPosition.set(0, 0, -1);
+    this.floorReflectionLookAtPosition.applyMatrix4(this.floorReflectionRotationMatrix);
+    this.floorReflectionLookAtPosition.add(this.floorReflectionCameraWorldPosition);
+    this.floorReflectionTargetPosition.subVectors(this.floorReflectorWorldPosition, this.floorReflectionLookAtPosition);
+    this.floorReflectionTargetPosition.reflect(this.floorReflectorNormal).negate();
+    this.floorReflectionTargetPosition.add(this.floorReflectorWorldPosition);
+    this.floorReflectionCamera.position.copy(this.floorReflectionView);
+    this.floorReflectionCamera.up.set(0, 1, 0);
+    this.floorReflectionCamera.up.applyMatrix4(this.floorReflectionRotationMatrix);
+    this.floorReflectionCamera.up.reflect(this.floorReflectorNormal);
+    this.floorReflectionCamera.lookAt(this.floorReflectionTargetPosition);
+    this.floorReflectionCamera.far = this.homeCamera.far;
+    this.floorReflectionCamera.near = this.homeCamera.near;
     this.floorReflectionCamera.projectionMatrix.copy(this.homeCamera.projectionMatrix);
     this.floorReflectionCamera.updateMatrixWorld();
     this.floorReflectionMatrix.set(
@@ -4441,8 +4461,6 @@ export class WebGLBackdrop {
     this.floorReflectionMatrix.multiply(this.floorReflectionCamera.projectionMatrix);
     this.floorReflectionMatrix.multiply(this.floorReflectionCamera.matrixWorldInverse);
     this.floorReflectionMatrix.multiply(this.floorPlane.matrixWorld);
-    this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorPlane.matrixWorld);
-    this.floorReflectorNormal.set(0, 0, 1).transformDirection(this.floorPlane.matrixWorld);
     this.floorReflectorPlane.setFromNormalAndCoplanarPoint(this.floorReflectorNormal, this.floorReflectorWorldPosition);
     this.floorReflectorPlane.applyMatrix4(this.floorReflectionCamera.matrixWorldInverse);
     this.floorReflectionClipPlane.set(
