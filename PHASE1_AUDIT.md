@@ -22,18 +22,27 @@ Primary source areas:
 
 ## Current Phase 1 Status
 
-Phase 1 is past the broad architecture-rebuild stage and is now in source-difference attribution. Most source-proven structural gaps are closed, but Phase 1 is not complete because source-vs-rebuild captures still show material WebGL/composite differences, especially home cube/thumb brightness and shared project-page composite brightness.
+Phase 1 is past the broad architecture-rebuild stage and is now in source-difference attribution. Most source-proven structural gaps are closed, and the S1-40 ordinary texture color-space fix removed the largest known home brightness defect. Phase 1 is still not complete because source-vs-rebuild captures and debug matrices continue to show material WebGL/composite differences in home cube/thumb projection, final `OA/CA` transfer, and shared project-page composite brightness.
 
 Estimated status:
 
-- Architecture parity: 88-90%
-- Shader/render-manager parity: 75-80%
-- Final home visual parity: 65-70%
+- Architecture parity: 90-92%
+- Shader/render-manager parity: 80-84%
+- Final home visual parity: 75-80%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
 The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with source-style shader patching, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, per-work-item local mouse simulation, source-shaped floor/environment bridges, and about/floating auxiliary blocks.
 
 The remaining risk is concentrated in fine-grained shader behavior, render-target/color output, source material details, and visual validation of spotlight/thumb projection and mouse/fluid feel. Phase 2 should not start until Phase 1 either reaches visual acceptance or records explicit accepted deviations for the remaining home WebGL differences.
+
+Current production reference after S1-42:
+
+| Measurement | Current result | Meaning |
+| --- | ---: | --- |
+| Home default luma | `~0.225` | Major improvement from the early `~0.019-0.031` baseline; ordinary texture color-space was the largest fixed contributor. |
+| Old sRGB texture rollback | `~0.157` | Confirms S1-40 is a real source-proven production fix. |
+| Scene transfer debug | `~0.333` | Final `OA/CA` transfer interpretation still has measurable headroom, but is not source-proven for production. |
+| Source-shaped work composite debug | `~0.144-0.150` | Broad pass-order/source-ownership rewiring is still negative in the current bridge. |
 
 ## Decision Checkpoint
 
@@ -46,7 +55,7 @@ Recommended cadence:
 - Do 3-5 differences per batch for shader, render-target, render-order, or material-replacement changes.
 - Run full QA and commit once per batch, not once per tiny sub-step.
 
-Current next batch: continue the ordinary `VA` attribution path with diagnostics first. A committed full-`HA` vertex experiment initially passed the existing capture harness, but a later console-aware CDP probe exposed a shader compile/runtime hang under Three 0.184 + SwiftShader. The live code is restored to the stable chunk bridge; the next source target should be generated-shader diffing around `HA/zA` and spotlight-map light semantics before another live replacement.
+Current next batch: continue the ordinary `VA` vertex/body and final-output attribution path with diagnostics first. A committed full-`HA` vertex experiment initially passed the existing capture harness, but a later console-aware CDP probe exposed a shader compile/runtime hang under Three 0.184 + SwiftShader. The live code is restored to the stable chunk bridge. The next source target should be a small generated-vs-source vertex/body audit around `HA`, `zA`, `worldPosition`, and `OA/CA` input transfer before any new live shader replacement.
 
 ## Phase 1 Remaining Execution Audit
 
@@ -54,17 +63,16 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | S1-08A | Ordinary `VA` color semantics | Source `VA.createCube()` seeds the material with `new Color("#808080")`; source runtime setters parse hex through `sr()` as raw channel values. Under local Three 0.184, `new Color("#808080")` becomes linear `~0.216`, not raw `~0.502`. | Runtime `Se` color setters already use `sourceRgbColor()`, but initial ordinary work material diffuse still needs a focused audit. Auxiliary `WA/XA` should not be changed until source evidence is checked separately. | Medium | Confirm source `VA` diffuse path and, if proven, change ordinary work diffuse to raw source RGB. Run full QA because this may affect spotlight/luma. |
-| 2 | S1-08B | Ordinary `VA` full shader | Source `VA` replaces the full standard vertex and fragment shaders with `HA/zA`, omits the final tonemapping tail, and owns alpha/reveal/mouse-lightness after the physical lights body. | Rebuild uses source-style chunk injection and already removed several Three 0.184 output/fragment tails. This is safer but still not a full `VA` replacement. The dark home cubes/thumb projection gap remains. | High | Compare current generated patched shader against source `HA/zA` and make only 3-5 isolated source-proven changes. Full replacement remains an experiment branch only if smaller diffs fail. |
-| 3 | S1-09 | Render target and color output | Source `Lu` creates default `WebGLRenderTarget` clones; many screen materials are `toneMapped:false`; selected colors call `.convertLinearToSRGB()` explicitly. | Rebuild uses source-shaped target defaults and source raw color setters, but runs on Three 0.184 with `renderer.outputColorSpace = SRGBColorSpace`. Luma remains much lower on home and project captures. | Medium-high | Audit actual source renderer initialization and render-target texture color-space assumptions before broad changes. Keep project pages in every full run. |
-| 4 | S1-17 | Spotlight projection and map contribution | Source home route assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, sets position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`; `p1.update()` only applies camera parallax to spotlight `x/y`. | Rebuild follows map ownership, position, target, intensity, and parallax. Brightness still suggests the map may not contribute through `VA` the same way as source. | Medium-high | Do not change intensity without source evidence. Attribute the gap through `VA` light/color semantics and renderer output first. |
-| 5 | S1-18 | Shared `C1/A1` + media flow | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal; source media scene renders offscreen into `C1.tMedia`. | A1/OA split and several source cleanups are implemented. A source-shaped media offscreen experiment regressed project luma and was reverted, proving unresolved coupling in current ownership. | High | Defer new architecture changes until `S1-08/S1-09` are narrowed. If revisited, isolate why `C1.tMedia` darkens project pages before keeping the source offscreen media flow. |
-| 6 | S1-19 | Floor reflector full projection | Source `a1/o1/i1` owns a dedicated projection-matrix reflector path with normal-map distortion. | Rebuild has source constants and normal-map distortion, but not full reflector parity. Recent floor cleanup did not materially move luma. | Medium | Defer. Handle as an isolated floor batch after ordinary `VA`/output attribution. |
-| 7 | S1-20 | About character/render manager | Source about spotlight map comes from the character scene/render manager and rotatable mesh behavior. | Rebuild renders `me.gltf` into a character target and uses it as the about spotlight map, with fallback texture. | Medium | Treat as accepted bridge unless final visual QA shows a material about-page mismatch. Home parity is higher priority. |
+| 1 | S1-43 | Ordinary `VA` vertex/body residual diff | Source `VA` still fully assigns `HA/zA`; rebuild uses a stable chunk bridge. Recent evidence says fragment light chunks and physical response variants are low-impact, while the remaining vertex/body interface still differs around `screenUv`, `worldPosition`, and source's unclamped mouse undo. | Stable bridge is close and production-safe; full `HA` replacement was rejected by console-aware QA. | Medium-high | Add or extend diagnostics for generated-vs-source vertex/body sections. Only test one debug-gated runtime delta at a time, starting with world-position mouse undo clamp attribution. |
+| 2 | S1-44 | `OA/CA` final `tScene` transfer | Source `CA` darken formula and `uDarken=.2` are confirmed, but `debug-composite-transfer=1` still moves final home luma strongly. | Rebuild has source-shaped darken, saturation, bloom and stage probes. Transfer debug is useful but not source-proven. | Medium-high | Audit source renderer/output initialization and `CA` input texture interpretation before any production transfer change. Keep this diagnostic unless source evidence is found. |
+| 3 | S1-45 | Spotlight map content/projection after texture fix | Source assigns thumb composite target as `SpotLight.map`; S1-40 made ordinary loaded textures source-default and raised thumb/composite luma substantially. | Map ownership, position, intensity, target size, and thumb visibility are source-shaped. Projection may still differ through `VA` world position or target transfer. | Medium | Re-run projection-focused matrix after vertex/body diagnostics; do not change intensity, map assignment, or thumb darkness constants. |
+| 4 | S1-46 | Shared project composite/media brightness | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal; source media scene renders offscreen into `C1.tMedia`. | Project detail pages are stable but darker than source. A source-shaped offscreen media experiment regressed luma and was reverted. | High | Keep as regression gate during Phase 1. Revisit only after home `VA/OA` attribution is narrower. |
+| 5 | S1-47 | `Ka/GA` mouse/fluid feel | Source per-`GA` `Ka` simulation and render-manager mousesim are broadly ported. Static capture shows mouse term is not the main brightness culprit. | Runtime structure exists; exact pointer UV, `uCoords`, target sizing, and fluid feel are not visually accepted. | Medium | Defer brightness work; later run interaction QA and add a probe for UV/target sizing if motion feels off. |
+| 6 | S1-48 | Floor/environment/about accepted deviations | Source floor reflector, environment shader, and about character manager have source-shaped bridges but not full byte-for-byte ports. | Prior probes show sky/floor are not the main brightness lever; about route is stable. | Medium | Treat as accepted temporary bridge unless source-vs-rebuild visual QA identifies a specific visible mismatch. |
 
 ### Current Recommendation
 
-Finish Phase 1 before opening Phase 2 work. The next implementation batch should stay in one rendering chain: ordinary `VA` color/light semantics plus spotlight contribution attribution. If the batch only changes initial color/material constants and documentation, it can include up to 6-10 source-proven differences. If it changes shader text, render targets, render order, or full material replacement, cap it at 3-5 differences and run browser QA immediately.
+Finish Phase 1 before opening Phase 2 work. The next implementation batch should stay in one rendering chain: ordinary `VA` vertex/body plus final `OA/CA` input attribution. If the batch only changes diagnostics, documentation, constants, or clearly inert source-proven ownership, it can include up to 8-10 differences. If it changes shader text, render targets, render order, texture transfer, or material replacement, cap it at 3-5 differences and run browser QA immediately.
 
 ### Detailed Difference Audit: Spotlight / Thumb / Output Chain
 
@@ -762,6 +770,39 @@ Verification passed:
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 - Full source-vs-rebuild capture at `/tmp/rogier-compare-s142-tail-alpha` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+### S1-43 Phase 1 Difference Audit Refresh
+
+This batch is an analysis-only checkpoint requested before the next implementation pass. No runtime code changed.
+
+Current Phase 1 readout:
+
+| Chain | Progress | Evidence | Decision |
+| --- | ---: | --- | --- |
+| `p1/GA/T1` structure | High | Source-sized grids, carousel placement, thumb square target, visible thumb count, spotlight ownership, and route visual state are source-shaped. | Do not spend the next batch on broad hierarchy rewrites. |
+| Ordinary texture/color input | High | S1-40 promoted source-default loaded texture color space and moved home default luma to `~0.225`; rollback to old sRGB path falls to `~0.157`. | Keep. This was the largest proven brightness fix. |
+| `VA/zA` fragment light body | Medium-high | Source and local Three spotlight-map chunk formulas match; old physical-response debug variants were near-identical to default. Tail alpha cleanup is source-correct but low-impact. | Stop chasing spotlight intensity or physical BRDF as the first suspect. Continue only with residual generated-vs-source body/vertex deltas. |
+| `HA` vertex/world position | Medium | Full `HA` replacement was source-proven but unstable under console-aware QA. Current bridge is close, but still differs around source `screenUv`, `mouseSim.r`, and unclamped `transformed / (1. - mouseSim.r * .2)` world-position ownership. | Next diagnostic target. Use debug-gated attribution rather than replacing full `HA`. |
+| `OA/CA` final transfer | Medium | Source-shaped darken formula and `uDarken=.2` are confirmed. `debug-composite-transfer=1` still raises output from `~0.225` to `~0.333`, proving transfer interpretation matters. | Keep as a proven contributor, but do not promote gamma-like transfer without source renderer evidence. |
+| Source-shaped work/main pass order | Low for production | S1-31 and S1-41 both showed source-work-composite pass ownership darkens the rebuild in the current bridge. | Keep only as diagnostic; do not rewire production pass order next. |
+| `Ka` mouse/fluid | Medium-high structurally | Ping-pong simulations and per-item targets exist; static mouse term is not the brightness culprit. | Defer until interaction QA, unless vertex/world-position diagnostics implicate `tMouseSim` sizing. |
+| Project detail media | Stable, not complete | Marker/browser smoke passes; project pages remain darker than source. Prior offscreen-media experiment regressed luma. | Keep as regression gate during home Phase 1; do not optimize project pages separately yet. |
+
+Batch-size decision:
+
+- Five tiny differences is too conservative now when they are all diagnostics or documentation; it wastes repeated build/QA cycles.
+- Ten differences is reasonable only when they are in one chain and mostly non-runtime, such as shader report fields, probe outputs, comments, source extraction helpers, or documented accepted deviations.
+- A whole-Phase-1 pass is still too risky. Previous full `HA`, fragment-tail, and source-work-composite ownership experiments either failed console-aware QA or moved luma in the wrong direction despite passing build.
+
+Recommended next implementation batch:
+
+1. Extend generated shader diagnostics for ordinary `VA` vertex sections: source `HA` block, rebuild `begin_vertex`, rebuild `worldpos_vertex`, active varyings, and world-position formulas.
+2. Add a debug-only `?debug-va-world-undo=source` path that removes the local `max(...)` clamp in `workBlockWorldPositionChunk`, then measure whether spotlight projection/luma changes.
+3. Add output-probe fields for ordinary work spotlight/world-position attribution if it can be done without changing normal rendering.
+4. Re-run `dump-va-shader`, home brightness attribution, full source-vs-rebuild capture, build, diff check, and marker checks.
+5. Keep production code unchanged unless the debug path gives a source-proven positive result with no project-page regression.
+
+This is a 6-8 point batch in one chain, not five isolated micro-steps and not a Phase 1 all-at-once rewrite.
 
 ### S1-22 Generated Shader Diagnostic Result
 
