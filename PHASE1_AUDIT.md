@@ -89,6 +89,36 @@ Measured luma stayed in the established range, which is expected for a low-risk 
 
 Decision: keep the `T1/w1/E1` closeout and remove `S1-06` from active implementation risk. The next Phase 1 implementation target is `S1-08/S1-17`, focused on ordinary `VA` shader parity and spotlight-map contribution.
 
+### S1-08 VA Fragment Path Cleanup Result
+
+The first ordinary-`VA` shader batch is implemented without attempting the high-risk full `HA/zA` replacement:
+
+- Source `zA` computes `totalDiffuse`, `totalSpecular`, and `outgoingLight`, then enters its custom alpha/reveal tail immediately after `opaque_fragment`.
+- Three 0.184 `MeshStandardMaterial` continues through additional standard fragment paths after the equivalent light body: `lights_fragment_maps`, `aomap_fragment`, `transmission_fragment`, clearcoat/sheen outgoing-light tails, plus several map/logdepth/alpha helper fragments that source `zA` comments out or omits.
+- Added a `work` vs `auxiliary` variant to the shared block shader patch so the cleanup only applies to ordinary home `VA` work blocks.
+- For ordinary work blocks, stripped the source-absent standard fragment paths listed above while keeping the existing chunk-injection bridge, physical light body, source alpha/reveal/mouse-lightness tail, and source output-tail removals.
+- Auxiliary `WA/XA` blocks keep the previous shader path because source `WA` retains more standard material includes than `VA`.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-va-fragpaths` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after VA fragment cleanup | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.104` | `0.011` | Stable; this cleanup did not explain the main brightness gap. |
+| Home mobile | `0.055` | `0.012` | Stable. |
+| About desktop | `0.026` | `0.015` | Stable; auxiliary shader path was not regressed. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the work-only `VA` fragment cleanup because it removes source-proven Three 0.184 standard-tail behavior without destabilizing project or about pages. Since luma did not move, the next `S1-08/S1-17` batch should focus on the deeper full-`VA` light definitions, renderer legacy-light/color-output assumptions, or spotlight-map coordinate contribution rather than more standard-tail cleanup.
+
 ## Latest Source Audit Snapshot
 
 This checkpoint narrows Phase 1 from a broad rebuild target into a short source-difference list.

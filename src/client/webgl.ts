@@ -404,7 +404,29 @@ alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
 gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 `;
 
-function patchWorkBlockShader(shader: { uniforms: Record<string, any>; vertexShader: string; fragmentShader: string }, uniforms: Record<string, any>) {
+function stripSourceVaFragmentPaths(fragmentShader: string) {
+  return fragmentShader
+    .replace("#include <logdepthbuf_fragment>", "// source VA omits logdepthbuf_fragment")
+    .replace("#include <map_fragment>", "// source VA omits map_fragment")
+    .replace("#include <color_fragment>", "// source VA omits color_fragment")
+    .replace("#include <alphamap_fragment>", "// source VA omits alphamap_fragment")
+    .replace("#include <alphatest_fragment>", "// source VA omits alphatest_fragment")
+    .replace("#include <alphahash_fragment>", "// source VA omits alphahash_fragment")
+    .replace("#include <clearcoat_normal_fragment_begin>", "// source VA omits clearcoat_normal_fragment_begin")
+    .replace("#include <clearcoat_normal_fragment_maps>", "// source VA omits clearcoat_normal_fragment_maps")
+    .replace("#include <emissivemap_fragment>", "// source VA omits emissivemap_fragment")
+    .replace("#include <lights_fragment_maps>", "// source VA omits lights_fragment_maps")
+    .replace("#include <aomap_fragment>", "// source VA omits aomap_fragment")
+    .replace("#include <transmission_fragment>", "// source VA omits transmission_fragment")
+    .replace(/#ifdef USE_SHEEN\s+outgoingLight = outgoingLight \+ sheenSpecularDirect \+ sheenSpecularIndirect;\s+#endif/g, "// source VA omits sheen outgoing-light tail")
+    .replace(/#ifdef USE_CLEARCOAT\s+float dotNVcc = saturate\( dot\( geometryClearcoatNormal, geometryViewDir \) \);\s+vec3 Fcc = F_Schlick\( material.clearcoatF0, material.clearcoatF90, dotNVcc \);\s+outgoingLight = outgoingLight \* \( 1.0 - material.clearcoat \* Fcc \) \+ \( clearcoatSpecularDirect \+ clearcoatSpecularIndirect \) \* material.clearcoat;\s+#endif/g, "// source VA omits clearcoat outgoing-light tail");
+}
+
+function patchWorkBlockShader(
+  shader: { uniforms: Record<string, any>; vertexShader: string; fragmentShader: string },
+  uniforms: Record<string, any>,
+  variant: "work" | "auxiliary" = "work",
+) {
   Object.assign(shader.uniforms, uniforms);
   shader.vertexShader = shader.vertexShader
     .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
@@ -418,6 +440,9 @@ function patchWorkBlockShader(shader: { uniforms: Record<string, any>; vertexSha
     .replace("#include <fog_fragment>", "// source VA omits fog_fragment")
     .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
     .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
+  if (variant === "work") {
+    shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
+  }
 }
 
 const homeCompositeFragment = `
@@ -2053,7 +2078,7 @@ export class WebGLBackdrop {
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
-      patchWorkBlockShader(shader, uniforms);
+      patchWorkBlockShader(shader, uniforms, "work");
     };
     material.customProgramCacheKey = () => "source-va-work-block-chunks";
     return material;
@@ -2145,7 +2170,7 @@ export class WebGLBackdrop {
     material.renderOrder = 10;
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
-      patchWorkBlockShader(shader, uniforms);
+      patchWorkBlockShader(shader, uniforms, "auxiliary");
     };
     material.customProgramCacheKey = () => `source-${kind}-aux-block-chunks`;
     return material;
