@@ -1514,6 +1514,23 @@ void main() {
 }
 `;
 
+const mediaCompositeFragment = `
+precision highp float;
+
+#include <tonemapping_pars_fragment>
+
+uniform sampler2D tScene;
+
+varying vec2 vUv;
+
+void main() {
+  vec4 color = texture2D(tScene, vUv);
+  gl_FragColor = color;
+
+  #include <tonemapping_fragment>
+}
+`;
+
 const characterCompositeFragment = `
 precision highp float;
 
@@ -2189,7 +2206,10 @@ export class WebGLBackdrop {
   private mainBloomCompositeScene = new Scene();
   private mainBloomBlurMaterial: ShaderMaterial;
   private mainBloomBlurScene = new Scene();
+  private mediaRawTarget = makeSourceRenderTarget(false);
   private mediaTarget = makeSourceRenderTarget(false);
+  private mediaCompositeMaterial: ShaderMaterial;
+  private mediaCompositeScene = new Scene();
   private luminosityMaterial: ShaderMaterial;
   private luminosityScene = new Scene();
   private bloomBlurMaterial: ShaderMaterial;
@@ -2425,6 +2445,8 @@ export class WebGLBackdrop {
     this.mainBloomBlurScene.add(makeFullscreenTriangle(this.mainBloomBlurMaterial));
     this.mainBloomCompositeMaterial = this.createBloomCompositeMaterial(this.mainBloomVerticalTargets, SOURCE_MAIN_RENDER_SETTINGS);
     this.mainBloomCompositeScene.add(makeFullscreenTriangle(this.mainBloomCompositeMaterial));
+    this.mediaCompositeMaterial = this.createMediaCompositeMaterial();
+    this.mediaCompositeScene.add(makeFullscreenTriangle(this.mediaCompositeMaterial));
     this.blurHorizontalMaterial = this.createBloomBlurMaterial();
     this.blurHorizontalMaterial.uniforms.uKernelRadius.value = this.renderSettings.blur.strength;
     this.blurHorizontalMaterial.uniforms.uSigma.value = this.renderSettings.blur.strength;
@@ -2896,7 +2918,9 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
     this.mainCompositeMaterial.dispose();
+    this.mediaRawTarget.dispose();
     this.mediaTarget.dispose();
+    this.mediaCompositeMaterial.dispose();
     this.compositeMaterial.dispose();
     this.bloomBrightTarget.dispose();
     this.bloomTarget.dispose();
@@ -3431,6 +3455,21 @@ export class WebGLBackdrop {
       },
       vertexShader: backgroundVertex,
       fragmentShader: mainCompositeFragment,
+    });
+  }
+
+  private createMediaCompositeMaterial() {
+    return new ShaderMaterial({
+      toneMapped: false,
+      transparent: true,
+      blending: NormalBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tScene: { value: this.mediaRawTarget.texture },
+      },
+      vertexShader: backgroundVertex,
+      fragmentShader: mediaCompositeFragment,
     });
   }
 
@@ -4464,6 +4503,7 @@ export class WebGLBackdrop {
     this.workCompositeTarget.setSize(renderWidth, renderHeight);
     this.backgroundTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
+    this.mediaRawTarget.setSize(renderWidth, renderHeight);
     this.mediaTarget.setSize(renderWidth, renderHeight);
     const halfMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 2));
     const halfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
@@ -5147,6 +5187,8 @@ export class WebGLBackdrop {
         bloom: renderTargetProbe(this.renderer, this.bloomTarget),
         mainBloomBright: renderTargetProbe(this.renderer, this.mainBloomBrightTarget),
         mainBloom: renderTargetProbe(this.renderer, this.mainBloomTarget),
+        mediaRaw: renderTargetProbe(this.renderer, this.mediaRawTarget),
+        media: renderTargetProbe(this.renderer, this.mediaTarget),
         floorReflection: renderTargetProbe(this.renderer, this.floorReflectionTarget),
         floorReflectionRead: renderTargetProbe(this.renderer, this.floorReflectionReadTarget),
         skyRaw: renderTargetProbe(this.renderer, this.skyRawTarget),
@@ -5295,6 +5337,20 @@ export class WebGLBackdrop {
     if (this.characterFallbackMesh.visible) this.renderer.render(this.characterScene, this.backgroundCamera);
     else this.renderer.render(this.characterScene, this.characterCamera);
     this.renderer.setRenderTarget(null);
+  }
+
+  private renderMediaCompositeTarget(hasMedia: boolean) {
+    const previousAutoClear = this.renderer.autoClear;
+    this.renderer.autoClear = true;
+    this.renderer.setRenderTarget(this.mediaRawTarget);
+    if (hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
+    else this.renderer.clear();
+
+    this.mediaCompositeMaterial.uniforms.tScene.value = this.mediaRawTarget.texture;
+    this.renderer.setRenderTarget(this.mediaTarget);
+    this.renderer.render(this.mediaCompositeScene, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
+    this.renderer.autoClear = previousAutoClear;
   }
 
   private renderHomeBlurPass() {
@@ -5469,12 +5525,12 @@ export class WebGLBackdrop {
     const isProjectView = document.body.classList.contains("is-project");
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
+    let preCompositeWorkTarget = this.debugPassOrder === "raw-work-composite" ? this.workRawTarget : this.workCompositeTarget;
     if (hasHome) {
       this.renderSkyTarget(time);
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
       this.renderer.render(this.homeScene, this.homeCamera);
-      const preCompositeWorkTarget = this.debugPassOrder === "raw-work-composite" ? this.workRawTarget : this.workCompositeTarget;
       if (preCompositeWorkTarget === this.workCompositeTarget) {
         if (this.renderSettings.bloom.enabled) {
           this.renderHomeBloomPass(this.workRawTarget);
@@ -5492,29 +5548,33 @@ export class WebGLBackdrop {
         this.renderer.clear();
           this.renderer.render(this.compositeScene, this.backgroundCamera);
       }
-      this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
-      this.renderer.setRenderTarget(this.mediaTarget);
+    } else {
+      this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.clear();
-      if (isProjectView && hasMedia) this.renderer.render(this.mediaScene, this.mediaCamera);
-      this.preCompositeMaterial.uniforms.tMedia.value = isProjectView && hasMedia ? this.mediaTarget.texture : this.fluidPlaceholder;
-      this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
-      this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
-      if (SOURCE_MAIN_RENDER_SETTINGS.bloom.enabled) {
-        this.renderMainBloomPass(preCompositeWorkTarget);
-      }
-      this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomTarget.texture;
-      this.renderer.setRenderTarget(this.compositeTarget);
+      this.renderer.setRenderTarget(this.workCompositeTarget);
       this.renderer.clear();
-      this.renderer.render(this.preCompositeScene, this.backgroundCamera);
-      const sceneSourceTarget = this.renderSettings.blur.enabled ? this.blurTargetB : this.compositeTarget;
-      if (this.renderSettings.blur.enabled) {
-        this.renderHomeBlurPass();
-      }
-      if (SOURCE_MAIN_RENDER_SETTINGS.bloom.enabled) {
-        this.renderMainBloomPass(sceneSourceTarget);
-      }
-      this.renderHomeCompositePass();
+      preCompositeWorkTarget = this.workCompositeTarget;
     }
+    this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
+    this.renderMediaCompositeTarget(isProjectView && hasMedia);
+    this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
+    this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
+    this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
+    if (SOURCE_MAIN_RENDER_SETTINGS.bloom.enabled) {
+      this.renderMainBloomPass(preCompositeWorkTarget);
+    }
+    this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomTarget.texture;
+    this.renderer.setRenderTarget(this.compositeTarget);
+    this.renderer.clear();
+    this.renderer.render(this.preCompositeScene, this.backgroundCamera);
+    const sceneSourceTarget = this.renderSettings.blur.enabled ? this.blurTargetB : this.compositeTarget;
+    if (this.renderSettings.blur.enabled) {
+      this.renderHomeBlurPass();
+    }
+    if (SOURCE_MAIN_RENDER_SETTINGS.bloom.enabled) {
+      this.renderMainBloomPass(sceneSourceTarget);
+    }
+    this.renderHomeCompositePass();
     this.renderThumbTargets();
     this.updateThumbProbe(time);
     this.updateOutputProbe(time);
