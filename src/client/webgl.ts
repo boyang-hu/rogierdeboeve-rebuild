@@ -468,11 +468,9 @@ uniform vec3 uGridOffset;
 uniform float uReveal;
 uniform float uRevealProject;
 uniform float uRevealSides;
-uniform float uMouseSpeed;
+uniform float uTime;
 uniform float uMouseLightness;
 uniform float uMouseFactor;
-uniform float uAuxiliaryMaterial;
-uniform float uScrollOpacity;
 uniform sampler2D tMouseSim2;
 uniform sampler2D tDisplacement;
 uniform vec2 uCoords;
@@ -493,6 +491,11 @@ float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, floa
 }
 `;
 
+const auxiliaryBlockFragmentPars = `
+uniform float uAuxiliaryMaterial;
+uniform float uScrollOpacity;
+`;
+
 const workBlockOpaqueFragmentChunk = `
 vec3 sourceColor = outgoingLight;
 vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
@@ -510,15 +513,13 @@ float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
 float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
 float alpha = alpha1 * alpha2 * vAlpha;
 float revealCombined = uReveal * uRevealProject;
-float fragmentReveal = mix(revealCombined, 1.0, uAuxiliaryMaterial);
-float revealRadius = 2.0 * pow(fragmentReveal, 0.25);
+float revealRadius = 2.0 * pow(revealCombined, 0.25);
 float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
 float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-float mouseAlphaFactor = mix(0.5, 0.15, uAuxiliaryMaterial);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * mouseAlphaFactor), 0.0, 1.0);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
 alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
-alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
+alpha *= uRevealSides;
 
 gl_FragColor = vec4(sourceColor, alpha);
 `;
@@ -586,15 +587,13 @@ float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
 float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
 float alpha = alpha1 * alpha2 * vAlpha;
 float revealCombined = uReveal * uRevealProject;
-float fragmentReveal = mix(revealCombined, 1.0, uAuxiliaryMaterial);
-float revealRadius = 2.0 * pow(fragmentReveal, 0.25);
+float revealRadius = 2.0 * pow(revealCombined, 0.25);
 float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
 float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-float mouseAlphaFactor = mix(0.5, 0.15, uAuxiliaryMaterial);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * mouseAlphaFactor), 0.0, 1.0);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
 alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
-alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
+alpha *= uRevealSides;
 
 gl_FragColor.a = alpha * diffuseColor.a;
 `;
@@ -693,7 +692,7 @@ function patchWorkBlockShader(
       worldPositionMode === "compat" ? workBlockWorldPositionChunk : workBlockSourceWorldPositionChunk,
     );
   shader.fragmentShader = shader.fragmentShader
-    .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
+    .replace("#include <common>", `${workBlockFragmentPars}\n${variant === "auxiliary" ? auxiliaryBlockFragmentPars : ""}\n#include <common>`)
     .replace("#include <tonemapping_fragment>", "// source VA omits tonemapping_fragment")
     .replace("#include <colorspace_fragment>", "// source VA omits colorspace_fragment")
     .replace("#include <fog_fragment>", "// source VA omits fog_fragment")
@@ -703,7 +702,7 @@ function patchWorkBlockShader(
     const outputTail = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-output-tail") : null;
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <opaque_fragment>",
-      outputTail === "source" ? workBlockSourceTailFragmentChunk : workBlockOpaqueFragmentChunk,
+      outputTail === "compat" ? workBlockOpaqueFragmentChunk : workBlockSourceTailFragmentChunk,
     );
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
     const physicalResponse = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-physical-response") : null;
