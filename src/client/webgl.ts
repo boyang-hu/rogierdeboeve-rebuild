@@ -4086,7 +4086,7 @@ export class WebGLBackdrop {
     this.floorReflectionTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
-    this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(floorReflectionWidth, floorReflectionHeight);
+    this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(renderWidth, renderHeight);
     const screenSimWidth = Math.max(1, Math.round(renderWidth / SCREEN_MOUSE_SIM_SCALE));
     const screenSimHeight = Math.max(1, Math.round(renderHeight / SCREEN_MOUSE_SIM_SCALE));
     if (this.renderSettings.mousesim.enabled) {
