@@ -165,6 +165,24 @@ Current compact matrix at `/tmp/rogier-phase1-current-brightness`:
 
 Decision: no production visual patch is safe from this batch. The useful outcome is narrower: the remaining Phase 1 gap is not solved by `VA` physical-response bridge tweaks, output-tail order, renderer output metadata, or pass-order fallback. The next source-backed work should target exact source/local interpretation of the `tScene` entering `OA/CA` and the environment/floor contribution to that texture, preferably with an original-side comparable render-target or pixel probe rather than more rebuild-only brightness toggles.
 
+### S1-57 Floor / Environment Render-State Alignment
+
+This batch continued the `OA/CA` input and floor/environment contribution chain without changing final brightness constants.
+
+Source-backed runtime changes:
+
+- `renderFloorReflection()` now mirrors source `i1.update()` render-state ownership more closely: before rendering the reflection target, it saves `renderer.xr.enabled` and `renderer.shadowMap.autoUpdate`, disables both for the reflection pass, forces the depth buffer mask to writable, then restores the previous renderer target and state in a `finally` block.
+- `window.__rogierOutputProbe` now reports floor/environment uniforms and target state: floor reflectivity, mirror, mix strength, normal scale, reflection target sizes, blur resolution, environment darken color/value, `tSky` ownership, environment `envMapIntensity`, rotation, and y position.
+
+Source-checked non-fixes in the same chain:
+
+- Source `u1/l1` declares `uTime`, and `h1.update()` writes it, but the active source `l1` environment fragment does not use `uTime` in the visible shader path. Adding time-driven environment motion would be unsupported.
+- Source `i1.setSize()` uses `0.75 * renderSize` for reflection targets while keeping full render-size blur `uResolution`; the rebuild already follows this after the earlier floor retest.
+- Source `a1` keeps `uMirror=1`, `reflectivity=.97`, `uFloorMixStrength=15`, `uNormalDistortionStrength=2.5`, and normal repeat `45x45`; the rebuild already follows these values.
+- Source `p1` adds only `directionalLight`, not `directionalLight2`; this remains unchanged.
+
+Decision: keep the reflector render-state fix and the expanded probe. This is a small source-correct stability/parity improvement, not a claimed visual closeout. The next floor/environment pass should use the expanded probe and source-vs-rebuild captures to decide whether the remaining hard horizon is caused by reflection target content, environment `tSky` interpretation, or final `OA/CA` transfer.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.

@@ -4439,6 +4439,8 @@ export class WebGLBackdrop {
   private renderFloorReflection() {
     if (!this.sceneWrap.visible) return;
     const previousTarget = this.renderer.getRenderTarget();
+    const previousXrEnabled = this.renderer.xr.enabled;
+    const previousShadowAutoUpdate = this.renderer.shadowMap.autoUpdate;
     this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorPlane.matrixWorld);
     this.floorReflectionCameraWorldPosition.setFromMatrixPosition(this.homeCamera.matrixWorld);
     this.floorReflectionRotationMatrix.extractRotation(this.floorPlane.matrixWorld);
@@ -4493,23 +4495,30 @@ export class WebGLBackdrop {
     projectionElements[10] = this.floorReflectionClipPlane.z + 1;
     projectionElements[14] = this.floorReflectionClipPlane.w;
 
-    this.renderer.setRenderTarget(this.floorReflectionTarget);
-    this.renderer.clear();
-    this.renderer.render(this.homeScene, this.floorReflectionCamera);
+    try {
+      this.renderer.xr.enabled = false;
+      this.renderer.shadowMap.autoUpdate = false;
+      this.renderer.setRenderTarget(this.floorReflectionTarget);
+      this.renderer.state.buffers.depth.setMask(true);
+      this.renderer.clear();
+      this.renderer.render(this.homeScene, this.floorReflectionCamera);
 
-    this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
-    this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(15, 0);
-    this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
-    this.renderer.clear();
-    this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+      this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
+      this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(15, 0);
+      this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
+      this.renderer.clear();
+      this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
 
-    this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionWriteTarget.texture;
-    this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
-    this.renderer.setRenderTarget(this.floorReflectionReadTarget);
-    this.renderer.clear();
-    this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
-
-    this.renderer.setRenderTarget(previousTarget);
+      this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionWriteTarget.texture;
+      this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
+      this.renderer.setRenderTarget(this.floorReflectionReadTarget);
+      this.renderer.clear();
+      this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+    } finally {
+      this.renderer.xr.enabled = previousXrEnabled;
+      this.renderer.shadowMap.autoUpdate = previousShadowAutoUpdate;
+      this.renderer.setRenderTarget(previousTarget);
+    }
   }
 
   private renderSkyTarget(time: number) {
@@ -4624,6 +4633,29 @@ export class WebGLBackdrop {
           estimatedDarkenOpacityMouseOnly: mouseSimRed * 0.25 * darkenValue,
           boolBloom: this.compositeMaterial.uniforms.boolBloom.value,
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
+        },
+        floor: {
+          uReflectivity: this.floorMaterial.uniforms.uReflectivity.value,
+          uMirror: this.floorMaterial.uniforms.uMirror.value,
+          uFloorMixStrength: this.floorMaterial.uniforms.uFloorMixStrength.value,
+          uNormalScale: (this.floorMaterial.uniforms.uNormalScale.value as Vector2).toArray(),
+          reflectionTargetSize: {
+            width: this.floorReflectionTarget.width,
+            height: this.floorReflectionTarget.height,
+          },
+          reflectionReadTargetSize: {
+            width: this.floorReflectionReadTarget.width,
+            height: this.floorReflectionReadTarget.height,
+          },
+          blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
+        },
+        environment: {
+          uDarken: this.environmentMaterial.uniforms.uDarken.value,
+          uDarkenColor: (this.environmentMaterial.uniforms.uDarkenColor.value as Color).toArray(),
+          tSkyIsComposite: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
+          envMapIntensity: this.environmentMaterial.envMapIntensity,
+          rotationY: this.environmentPlane.rotation.y,
+          positionY: this.environmentPlane.position.y,
         },
       },
       targets: {
