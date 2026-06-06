@@ -27,6 +27,8 @@ const variants = [
   { label: "spotlight-and-scene-transfer", query: "&debug-spotlight-map-transfer=srgb&debug-composite-transfer=1" },
   { label: "va-physical-direct", query: "&debug-va-physical-response=direct" },
   { label: "va-physical-source-fields", query: "&debug-va-physical-response=source-fields" },
+  { label: "sky-off", query: "&debug-sky-target=off" },
+  { label: "sky-raw", query: "&debug-sky-target=raw" },
   { label: "darken-off", query: "&debug-composite-darken=3" },
   { label: "spotlight-map-off-darken-off", query: "&debug-spotlight-map=off&debug-composite-darken=3" },
 ];

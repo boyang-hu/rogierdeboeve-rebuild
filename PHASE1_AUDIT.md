@@ -617,6 +617,37 @@ Important attribution:
 
 Decision: keep the debug switch as attribution tooling, but do not promote old physical response to production. This closes the S1-37 suspect path as low-impact. The remaining proven contributors are now narrower: thumb/spotlight map transfer/content and final `OA/CA` `tScene` transfer. The next Phase 1 batch should target render-target texture transfer/color-space around `T1/_1` and `OA/CA` rather than light intensity, spotlight projection formula, or physical BRDF constants.
 
+### S1-39 Sky Target Attribution Result
+
+Added sky target attribution to the output probe and brightness matrix:
+
+- `window.__rogierOutputProbe.targets.skyRaw`
+- `window.__rogierOutputProbe.targets.skyComposite`
+- `?debug-sky-target=off`, which feeds the environment material a placeholder texture instead of the sky composite target.
+- `?debug-sky-target=raw`, which feeds the environment material the raw sky target instead of the composite target.
+
+Normal rendering still uses `skyCompositeTarget.texture`.
+
+Diagnostic run at `/tmp/rogier-home-brightness-s139-sky`:
+
+| Variant | Screenshot luma | Work raw 9x9 | Pre-composite 9x9 | Bloom 9x9 | Sky raw 9x9 | Sky composite 9x9 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| default | `0.1570` | `0.1865` | `0.2348` | `0.0215` | `0.4000` | `0.4397` |
+| sky off | `0.1572` | `0.1865` | `0.2343` | `0.0223` | `0.4000` | `0.4397` |
+| sky raw | `0.1573` | `0.1859` | `0.2345` | `0.0221` | `0.4000` | `0.4397` |
+| spotlight transfer | `0.2281` | `0.2228` | `0.3127` | `0.0535` | `0.4000` | `0.4397` |
+| scene transfer | `0.2669` | `0.1881` | `0.2366` | `0.0220` | `0.4000` | `0.4397` |
+| spotlight + scene transfer | `0.3281` | `0.2223` | `0.3044` | `0.0532` | `0.4000` | `0.4396` |
+
+Important attribution:
+
+- The sky targets are alive, correctly sized (`675 x 675` at a `900px` viewport height), and non-black.
+- Feeding the environment a placeholder or raw sky target barely changes final/home work luma.
+- The already-implemented sky bridge is therefore not the remaining large home brightness lever.
+- The same run again shows the dominant measured movement comes from spotlight-map transfer and final scene transfer diagnostics.
+
+Decision: keep the sky probe and debug switch. Treat S1-10 as implemented and stop prioritizing sky target work for the main Phase 1 brightness gap. The next batch should return to the two remaining proven contributors: spotlight-map transfer/content and `OA/CA` `tScene` transfer.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
@@ -985,11 +1016,11 @@ This audit table records the next source-proven differences to address after the
 
 | ID | Source area | Source evidence | Rebuild state | Likely impact | Decision |
 | --- | --- | --- | --- | --- | --- |
-| S1-10 | `V1/H1/z1/B1` sky render target | Source creates `skyScene = new V1`, renders it through `H1` with a `z1` composite material, uses `#666666.convertLinearToSRGB()` as the sky scene background, sizes the target to `height * .75`, and assigns `skyScene.renderManager.renderTargetComposite.texture` to `workScene.env.material.customUniforms.tSky`. | Rebuild feeds `/images/textures/blue-noise.png` directly into `environmentMaterial.uniforms.tSky`. There is no offscreen sky scene/composite target. | High. This is the clearest source-proven explanation for the whole home environment reading dark, because `tSky` should be a processed bright/inverted sky texture rather than raw blue noise. | Next implementation target. Add a source-shaped offscreen sky target and feed it to `environmentMaterial.tSky` before tuning `VA`. |
-| S1-11 | `h1/u1/l1/c1` environment material | Source environment is `MeshStandardMaterial`-derived with full shader replacement, `envMapIntensity = Qn.ENVMAP_INTENSITY`, and a large standard-lighting fragment body sampling `tSky`. Constants include `ENVMAP_INTENSITY=1`, `SHADER_1_ALPHA=.5`, `SHADER_1_SCALE=5.5`, `SHADER_2_ALPHA=0`, `SHADER_2_SCALE=13`, `SHADER_3_ALPHA=0`, `SHADER_1_MIX_3=1`. | Rebuild uses a simplified transparent `ShaderMaterial` around the same broad constants, with raw blue-noise sampling and local color math. | High. Even with a sky target, simplified environment lighting may still underrepresent source horizon/sky contribution. | Pair with S1-10 only as far as needed: first feed a real sky target, then decide whether to port more `l1` shader math based on luma/contact-sheet change. |
+| S1-10 | `V1/H1/z1/B1` sky render target | Source creates `skyScene = new V1`, renders it through `H1` with a `z1` composite material, uses `#666666.convertLinearToSRGB()` as the sky scene background, sizes the target to `height * .75`, and assigns `skyScene.renderManager.renderTargetComposite.texture` to `workScene.env.material.customUniforms.tSky`. | Rebuild now has an offscreen `skyScene`, `skyRawTarget`, `skyCompositeTarget`, source-shaped `#666666.convertLinearToSRGB()` background, `height * .75` sizing, pre-home render ordering, and `environmentMaterial.uniforms.tSky = skyCompositeTarget.texture`. | Low as the main luma cause. S1-39 shows disabling or bypassing the sky composite barely changes home luma. | Treat source bridge as implemented. Keep shader-level `z1/H1` parity as a lower-priority environment visual refinement, not the next brightness target. |
+| S1-11 | `h1/u1/l1/c1` environment material | Source environment is `MeshStandardMaterial`-derived with full shader replacement, `envMapIntensity = Qn.ENVMAP_INTENSITY`, and a large standard-lighting fragment body sampling `tSky`. Constants include `ENVMAP_INTENSITY=1`, `SHADER_1_ALPHA=.5`, `SHADER_1_SCALE=5.5`, `SHADER_2_ALPHA=0`, `SHADER_2_SCALE=13`, `SHADER_3_ALPHA=0`, `SHADER_1_MIX_3=1`. | Rebuild uses a simplified `ShaderMaterial` around the same broad constants and samples the sky composite target. | Medium. It may affect horizon texture detail, but S1-39 shows `tSky` source selection is not the large home brightness lever. | Defer full `l1` material port until the remaining spotlight/composite transfer gap is narrowed. |
 | S1-12 | `VA` full shader and material tonemapping | Source `VA` extends the standard material class but replaces the complete vertex and fragment shader through `onBeforeCompile`; its fragment comments out `tonemapping_fragment`. Material flags include `dithering=true`, `transparent=true`, `envMapIntensity=.75`, `roughness=1`, `depthTest=false`, and `depthWrite=false`. | Rebuild uses `MeshStandardMaterial` with chunk injection. Work and auxiliary materials now have source flags, and a local source-supported experiment adds `toneMapped:false` plus raw initial emissive colors, but luma did not materially improve by itself. | Medium-high. Still likely affects cube/thumb brightness and spotlight-map interpretation, but the environment target gap is broader and safer to test first. | Keep the source-supported `toneMapped:false`/initial emissive correction if no regression appears, but do not treat it as the main brightness fix. Full `VA` replacement remains a dedicated high-risk batch. |
 | S1-13 | `Lu/I1` render-target and color-space assumptions | Source creates default `WebGLRenderTarget` clones throughout `Lu`, then applies many `toneMapped:false` screen materials. Source colors often call `.convertLinearToSRGB()` explicitly and run under the bundled Three color-management defaults. | Rebuild explicitly sets many target textures to non-mipmapped linear/clamped and runs Three 0.184 with `renderer.outputColorSpace = SRGBColorSpace`; runtime project colors are now parsed with source `sr()` semantics. | Medium-high. Color-space/tone-map mismatch could explain why source-shaped colors and lights still produce low luma. | Audit after S1-10 because the sky-target absence is a concrete missing source pass; avoid broad color-space changes until that pass is measured. |
-| S1-14 | Source scene update/render ordering | Source manager updates scenes in order `sky`, `media`, `work`, `main`, `workthumb`, `wavves`, `character`; it assigns `skyScene.renderTargetComposite` to env once during init. Earlier audit showed work blocks consume previous-frame thumb/displacement outputs. | Rebuild currently renders home first, then thumb targets, character target, and displacement; it has no sky render pass. Some previous-frame behavior is intentional and already source-shaped for thumb/displacement. | Medium. Adding sky must respect source ordering enough that env samples a valid sky target before the home scene render. | When implementing S1-10, render the sky target before the home scene render. Do not disturb the source-shaped previous-frame thumb/displacement order unless new evidence requires it. |
+| S1-14 | Source scene update/render ordering | Source manager updates scenes in order `sky`, `media`, `work`, `main`, `workthumb`, `wavves`, `character`; it assigns `skyScene.renderTargetComposite` to env once during init. Earlier audit showed work blocks consume previous-frame thumb/displacement outputs. | Rebuild renders the sky target before the home scene render, and intentionally keeps previous-frame thumb/displacement behavior for source-shaped work-block inputs. | Low-medium. Remaining ordering gaps may still affect animation timing, but not the static home luma issue shown by S1-39. | Keep as implemented unless a route/animation QA pass shows a concrete timing mismatch. |
 | S1-15 | `a1/o1/i1` floor material | Source floor is a dedicated material chain and participates in the same environment/reflection feel beneath the cubes. | Rebuild floor is an approximation using a reflection target and local scan/reflection math. | Medium. It may contribute to lower-viewport darkness but is less likely than missing `V1` to explain the full-screen luma gap. | Defer until after sky/environment measurement. Keep as an isolated batch. |
 | S1-16 | Shared project composite/background darkness | Source project luma is also higher (`/gc-2026/` about `0.140` original vs `0.039` rebuild), suggesting part of the issue may be shared `A1/C1` or media-background handling, not only home cubes. | Project media markers and WebGL planes remain stable, but background/composite appears darker. | Medium. Project pages are closer and should stay regression checks; changing shared composite can regress them. | Keep project pages in every full QA pass. Do not tune project visuals separately until home `V1/tSky` and render-target assumptions are narrowed. |
 
@@ -1002,6 +1033,7 @@ The source-shaped sky/environment bridge is now implemented:
 - Set the sky composite texture to repeat wrapping and feed it to `environmentMaterial.uniforms.tSky`.
 - Stopped assigning raw `/images/textures/blue-noise.png` directly to the environment `tSky`; blue-noise remains scoped to pre-composite and mouse simulation.
 - Moved the environment fragment closer to source `l1` by removing the rebuild-only low-alpha transparent band and outputting the source-style full environment color path.
+- S1-39 later added `skyRaw`/`skyComposite` output probes plus `?debug-sky-target=off|raw`, proving the sky bridge is alive but not the main remaining brightness lever.
 
 Verification passed:
 
@@ -1019,7 +1051,7 @@ Measured luma shows this source gap was real but not the main brightness fix:
 | Home mobile | `0.056` | `0.012` | Essentially unchanged. |
 | `/gc-2026/` desktop | `0.140` | `0.039` | Project composite remains in the previous range. |
 
-Decision: keep the sky/environment bridge because it removes a source-proven architecture gap, but do not continue tuning this path blindly. The next implementation batch should target `S1-12` (`VA` full fragment/tone-mapping path) or `S1-13` (render-target/color-space assumptions).
+Decision: keep the sky/environment bridge and treat S1-10 as implemented. S1-39 confirms sky target source selection is low-impact, so the next target remains spotlight-map transfer/content and `OA/CA` transfer/color-space attribution rather than further guessing at sky constants.
 
 ### S1-12 VA Tail Bridge Result
 

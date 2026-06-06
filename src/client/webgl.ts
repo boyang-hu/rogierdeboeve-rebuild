@@ -1778,6 +1778,7 @@ export class WebGLBackdrop {
   private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
+  private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
   private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
   private debugOutputProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-output-probe");
@@ -3073,7 +3074,7 @@ export class WebGLBackdrop {
         uShader3Speed: { value: 0 },
         uShader3Scale: { value: 0 },
         uShader1Mix3: { value: 1.5 },
-        tSky: { value: this.skyCompositeTarget.texture },
+        tSky: { value: this.environmentSkyTexture() },
       },
       vertexShader: thumbVertex,
       fragmentShader: environmentFragment,
@@ -3472,6 +3473,12 @@ export class WebGLBackdrop {
 
   private homeSpotlightMap() {
     return this.debugDisableHomeSpotlightMap ? null : this.thumbCompositeTarget.texture;
+  }
+
+  private environmentSkyTexture() {
+    if (this.debugSkyTarget === "off") return this.placeholder;
+    if (this.debugSkyTarget === "raw") return this.skyRawTarget.texture;
+    return this.skyCompositeTarget.texture;
   }
 
   private setDirectionalLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
@@ -4150,6 +4157,8 @@ export class WebGLBackdrop {
         preBloom: renderTargetProbe(this.renderer, this.preBloomTarget),
         bloomBright: renderTargetProbe(this.renderer, this.bloomBrightTarget),
         bloom: renderTargetProbe(this.renderer, this.bloomTarget),
+        skyRaw: renderTargetProbe(this.renderer, this.skyRawTarget),
+        skyComposite: renderTargetProbe(this.renderer, this.skyCompositeTarget),
         thumb: renderTargetProbe(this.renderer, this.thumbTarget),
         thumbComposite: renderTargetProbe(this.renderer, this.thumbCompositeTarget),
         screenMouseSim: mouseSimProbe,
