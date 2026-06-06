@@ -1137,16 +1137,21 @@ vec3 blendScreen(vec3 base, vec3 blend, float opacity) {
   return mix(base, mixed, opacity);
 }
 
-vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
-  return mix(base, base * blend, opacity);
+float blendColorDodgeChannel(float base, float blend) {
+  return blend == 1.0 ? blend : min(base / (1.0 - blend), 1.0);
 }
 
-vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
+vec3 blendColorDodge(vec3 base, vec3 blend, float opacity) {
   vec3 mixed = vec3(
-    blend.r == 1.0 ? blend.r : min(base.r * base.r / (1.0 - blend.r), 1.0),
-    blend.g == 1.0 ? blend.g : min(base.g * base.g / (1.0 - blend.g), 1.0),
-    blend.b == 1.0 ? blend.b : min(base.b * base.b / (1.0 - blend.b), 1.0)
+    blendColorDodgeChannel(base.r, blend.r),
+    blendColorDodgeChannel(base.g, blend.g),
+    blendColorDodgeChannel(base.b, blend.b)
   );
+  return mix(base, mixed, opacity);
+}
+
+vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
+  vec3 mixed = vec3(1.0) - abs(vec3(1.0) - base - blend);
   return mix(base, mixed, opacity);
 }
 
@@ -1172,12 +1177,12 @@ void main() {
   vec3 noiseMixed = mix(noise1.rgb, noise2.rgb, m);
 
   vec3 color = vec3(1.0);
-  color = blendReflect(color, noiseMixed, 0.5 * uShader1Alpha);
+  color = blendColorDodge(color, noiseMixed, 0.5);
   vec2 skyMaskUv = uv;
   skyMaskUv.y -= 0.1;
   float skyMask = mod(skyMaskUv.y * 5.0, 1.0);
   skyMask = max(skyMask, step(0.6, skyMaskUv.y));
-  color = blendScreen(color, noiseMixed, skyMask * uShader1Mix3);
+  color = blendNegation(color, noiseMixed, skyMask);
   color += vec3(smoothstep(uv.y, 0.45, 0.595));
 
   float skyMask2 = mod(skyMaskUv.y * 2.5, 1.0);
@@ -1185,7 +1190,7 @@ void main() {
   color = mix(vec3(1.0), color, skyMask2 * 1.5);
   color *= 1.15;
   color *= clamp(color, vec3(0.0), vec3(1.0));
-  color = blendReflect(color, uDarkenColor, clamp(uDarken, 0.0, 1.0));
+  color = blendColorDodge(color, uDarkenColor, clamp(uDarken, 0.0, 1.0));
   gl_FragColor = vec4(color, 1.0);
 }
 `;

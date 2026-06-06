@@ -276,6 +276,35 @@ Measured luma stayed stable:
 
 Decision: keep this cleanup because it removes source-proven floor material approximations and brings the reflector distortion closer to source without destabilizing project pages. Full `i1` projection-matrix reflector parity remains a possible later isolated batch, but the main Phase 1 visual gap still points to ordinary `VA`/spotlight lighting or render-target/color-space output.
 
+### S1-05 h1/u1/l1 Environment Blend Cleanup Result
+
+The environment shader is now closer to source `h1/u1/l1/c1` blend semantics:
+
+- Confirmed source `u1` owns `uMultiplier = 2`, `uShader1Alpha = .5`, `uShader1Speed = .5`, `uShader1Scale = 5.5`, `uShader1Mix3 = 1.5`, and samples `tSky` from the offscreen sky composite target.
+- Replaced the rebuild environment's first noise blend from Reflect to source `blend(4)` ColorDodge.
+- Matched source opacity for the first environment noise blend at `0.5`; the rebuild had effectively reduced it through `0.5 * uShader1Alpha`.
+- Replaced the second noise blend from Screen to source `blend(16)` Negation.
+- Matched source ownership of the second noise blend opacity as `skyMask`; `uShader1Mix3` remains used only in the later `skyMask2 * 1.5` mix.
+- Replaced final darken-color blend from Reflect to source `blend(4)` ColorDodge.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-env-blends` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after environment blend cleanup | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.105` | `0.011` | Stable; main darkness remains in ordinary `VA`/spotlight/composite. |
+| Home mobile | `0.056` | `0.012` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+
+Decision: keep this cleanup because it removes source-proven environment blend deviations without destabilizing project pages. Since it did not materially improve home luma, the remaining Phase 1 visual gap still points to ordinary `VA`/spotlight lighting or render-target/color-space output.
+
 ## Completed Source-Aligned Areas
 
 | Area | Current state | Confidence |
