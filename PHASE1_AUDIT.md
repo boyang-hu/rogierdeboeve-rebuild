@@ -66,6 +66,8 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work in this order: `VA/GA` output and spotlight/thumb projection, then `A1/OA/kA/Lu` render-manager graph parity, while keeping project pages as regression gates. Phase 2 should not start yet.
 
+Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle.
+
 ## Phase 1 Remaining Execution Audit
 
 This table is the current working board for completing Phase 1. It supersedes the older scattered "next batch" notes below without deleting their evidence history.
@@ -78,6 +80,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 4 | S1-46 | Shared project composite/media brightness | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal; source media scene renders offscreen into `C1.tMedia`. S1-46B confirms the home `A1` main execution flow is source-equivalent except inert/relocated computations. | Project detail pages are stable but darker than source. A source-shaped offscreen media experiment regressed luma and was reverted. `A1` formula order is no longer a likely blocker. | High | Keep project pages as regression gates. Treat current direct media path as stability baseline; only retry offscreen routing in Phase 2 or a dedicated post-closeout batch with narrower target ownership evidence. |
 | 5 | S1-47 | `Ka/GA` mouse/fluid feel | Source per-`GA` `Ka` simulation and render-manager mousesim are broadly ported. Static capture shows mouse term is not the main brightness culprit. S1-50 confirms target sizing, `uCoords`, local UV offset/scale, and active pointer state are source-shaped at rest. | Runtime structure exists and debug probe now covers exact sizing/UV state. Fluid/mouse feel still needs interactive visual QA, but it is not a static brightness blocker. | Low-medium | Treat as structurally attributed. Revisit only for interactive feel QA, not Phase 1 brightness tuning. |
 | 6 | S1-48 | Floor/environment/about bridge depth | Source floor reflector, environment shader, and about character manager have source-shaped bridges but not full byte-for-byte ports. | Prior probes show sky/floor are not the main brightness lever; about route is stable. | Medium | Keep as an open bridge-depth item until visual QA confirms it is indistinguishable enough or the user explicitly accepts the remaining difference. |
+| 7 | S1-68 | `VA/HA` vertex mouse projection under Three r164 | Source `HA` computes early vertex `screenUv = gl_Position.xy / uCoords.xy`, assigns `newUv = screenUv`, and applies the mouse displacement as `transformed / (1. - mouseSim.r * .2)`. | Production now uses those two source vertex paths by default, with query-only fallbacks `debug-va-vertex-uv=uv` and `debug-va-world=compat` for attribution. | Medium | Keep as source-correct. It improves shader-body parity but does not close Phase 1 because band analysis still shows the hard horizon/overbright mid-field gap. |
 
 ### Phase 1 Open Blocker Board
 

@@ -426,7 +426,7 @@ const workBlockSourceScreenUvBeginVertexChunk = workBlockBeginVertexChunk.replac
     "newUv += instanceOffset.xy;",
   ].join("\n"),
   [
-    "vec2 screenUv = vec2(0.0);",
+    "vec2 screenUv = gl_Position.xy / uCoords.xy;",
     "vec2 newUv = screenUv;",
     "newUv.x /= uGridSize.x;",
     "newUv.y /= uGridSize.y;",
@@ -684,14 +684,13 @@ function patchWorkBlockShader(
 ) {
   Object.assign(shader.uniforms, uniforms);
   const vertexUvMode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-vertex-uv") : null;
+  const worldPositionMode = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-world") : null;
   shader.vertexShader = shader.vertexShader
     .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
-    .replace("#include <begin_vertex>", vertexUvMode === "source-zero" ? workBlockSourceScreenUvBeginVertexChunk : workBlockBeginVertexChunk)
+    .replace("#include <begin_vertex>", vertexUvMode === "uv" ? workBlockBeginVertexChunk : workBlockSourceScreenUvBeginVertexChunk)
     .replace(
       "#include <worldpos_vertex>",
-      typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-va-world-undo") === "source"
-        ? workBlockSourceWorldPositionChunk
-        : workBlockWorldPositionChunk,
+      worldPositionMode === "compat" ? workBlockWorldPositionChunk : workBlockSourceWorldPositionChunk,
     );
   shader.fragmentShader = shader.fragmentShader
     .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
