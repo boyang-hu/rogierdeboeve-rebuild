@@ -3043,7 +3043,7 @@ export class WebGLBackdrop {
       uTime: { value: 0 },
     };
     const material = new MeshStandardMaterial({
-      color: sourceRgbColor(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE),
+      color: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE),
       emissive: sourceRgbColor(payload.blocks ?? DEFAULT_BG, DEFAULT_BG),
       emissiveIntensity: SOURCE_WORK_EMISSIVE_INTENSITY,
       roughness: SOURCE_WORK_ROUGHNESS,
@@ -5102,6 +5102,7 @@ export class WebGLBackdrop {
     const spotlightProjection = this.spotlightProjectionProbe();
     const mouseSimulation = this.mouseSimulationProbe(mouseSimProbe);
     const mainFluid = this.mainFluidProbe();
+    const activeWorkItem = this.workItems.find((item) => item.slug === this.activeSlug) ?? this.workItems[0];
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -5130,6 +5131,14 @@ export class WebGLBackdrop {
           blur: this.renderSettings.blur,
           mousesim: this.renderSettings.mousesim,
           fluid: this.renderSettings.fluid,
+          activeMaterial: activeWorkItem ? {
+            color: activeWorkItem.material.color.toArray(),
+            emissive: activeWorkItem.material.emissive.toArray(),
+            emissiveIntensity: activeWorkItem.material.emissiveIntensity,
+            envMapIntensity: activeWorkItem.material.envMapIntensity,
+            roughness: activeWorkItem.material.roughness,
+            metalness: activeWorkItem.material.metalness,
+          } : null,
         },
         main: {
           gpuTier: sourceGpuTier(),

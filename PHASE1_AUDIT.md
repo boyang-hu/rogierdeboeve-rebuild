@@ -2852,3 +2852,29 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-main-fluid-gate-full`.
 
 Decision: keep this source setting-ownership correction. On the current QA machine the local tier bridge resolves to `3`, so this does not close the remaining visible hard-horizon/fog-bed gap; it prevents the main fluid path from being unconditionally enabled on lower-tier devices and keeps main render-manager state closer to source `I1`.
+
+### S1-25 `GA/VA` Base Diffuse Color Parsing
+
+This batch aligned a source-confirmed `GA.createCube()` material construction detail without changing project visual-state setters.
+
+Source evidence:
+
+- Source `GA.createCube()` constructs the ordinary work material as `new VA({ color: new Color("#808080") })`.
+- In Three r164/current Three, `new Color("#808080")` stores linear channels around `0.21586`, not raw `128 / 255`.
+- Source `VA` then owns the standard-material diffuse path separately from project block/emissive colors that are set by `Se` and project payload data.
+
+Runtime/tooling changes:
+
+- Changed ordinary work block diffuse construction from the rebuild's raw RGB parser to the normal Three `Color` path for `#808080`.
+- Left `payload.blocks`, `Se`-owned project colors, and media/background setter colors on their existing source-owned raw RGB paths.
+- Added `settings.work.activeMaterial` to the output probe so future diagnostics can verify active work material diffuse, emissive, env map intensity, roughness, and metalness.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Home output probe passed with no failed requests, runtime exceptions, or WebGL errors and reports active work diffuse as `[0.21586050010324417, 0.21586050010324417, 0.21586050010324417]`: `/tmp/rd-work-diffuse-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-work-diffuse-project-media`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-work-diffuse-full`.
+
+Decision: keep this source material-color correction. It reduces a clear `GA/VA` diffuse mismatch and lowers work-target brightness in the expected source-backed direction, but Phase 1 remains open because the hard horizon/fog-bed, exact `VA` shader bridge, and final target/output interpretation gaps are not fully closed.
