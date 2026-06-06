@@ -19,7 +19,7 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-home-brightnes
 const port = Number(process.env.CDP_PORT || 9288);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.CAPTURE_WAIT || 5200);
-const variants = [
+const defaultVariants = [
   { label: "default", query: "" },
   { label: "spotlight-map-off", query: "&debug-spotlight-map=off" },
   { label: "spotlight-transfer", query: "&debug-spotlight-map-transfer=srgb" },
@@ -38,6 +38,19 @@ const variants = [
   { label: "darken-off", query: "&debug-composite-darken=3" },
   { label: "spotlight-map-off-darken-off", query: "&debug-spotlight-map=off&debug-composite-darken=3" },
 ];
+const requestedVariantLabels = (process.env.VARIANTS || "")
+  .split(",")
+  .map((label) => label.trim())
+  .filter(Boolean);
+const variants = requestedVariantLabels.length
+  ? defaultVariants.filter((variant) => requestedVariantLabels.includes(variant.label))
+  : defaultVariants;
+
+if (requestedVariantLabels.length && variants.length !== requestedVariantLabels.length) {
+  const available = new Set(defaultVariants.map((variant) => variant.label));
+  const missing = requestedVariantLabels.filter((label) => !available.has(label));
+  throw new Error(`Unknown VARIANTS labels: ${missing.join(", ")}`);
+}
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

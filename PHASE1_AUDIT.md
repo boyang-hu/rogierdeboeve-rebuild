@@ -258,6 +258,24 @@ Runtime changes:
 - Fixed the home gallery entry lifecycle so the gallery is not marked active before WebGL exists. This prevents the source `yD.animateIn()` WebGL state from being skipped on first load.
 - Added camera controller state to `window.__rogierOutputProbe` so future captures can distinguish base `p1` state from entered work-gallery state.
 
+### S1-62 `VA` / Spotlight / Composite Attribution Batch
+
+This batch expanded the step size across one coherent Phase 1 chain: generated `VA` shader residuals, spotlight/thumb transfer, and composite-stage attribution. Production rendering is unchanged.
+
+Tooling changes:
+
+- `scripts/compare-home-brightness-attribution.mjs` now accepts `VARIANTS=label,label` so focused shader/transfer matrices can run without the full diagnostic set.
+- `scripts/compare-composite-stages.mjs` now writes `compact-summary.json` and prints a compact matrix while preserving the full `summary.json` on disk.
+
+Source/runtime evidence:
+
+- `scripts/dump-va-shader.mjs` still shows a real source residual in `HA`: source derives the local mouse UV from `screenUv = gl_Position.xy / uCoords.xy`, while the stable rebuild bridge derives it from geometry UV. The existing `debug-va-vertex-uv=source-zero` and `debug-va-world-undo=source` trials compile cleanly but only move current luma slightly; this is source evidence for a future bridge-depth pass, not a current visual fix.
+- `VARIANTS=default,va-world-undo-source,va-vertex-uv-source-zero` at `/tmp/rogier-va-attribution` showed no shader/runtime errors and only small changes in `workRaw`, `workComposite`, and `preComposite` luma. Promoting either debug switch would not address the visible hard horizon.
+- Spotlight/thumb color-space diagnostics again show that sRGB-style transfer strongly brightens the thumb map/composite, but the mirrored source still assigns `SpotLight.map` from the render target texture directly. No source-backed texture color-space promotion was found.
+- Composite-stage diagnostics at `/tmp/rogier-composite-current` confirm the stage/darken/transfer variants remain useful attribution tools, but not production fixes. Scene-gamma/linearize remains a transfer hypothesis without source proof.
+
+Decision: keep normal rendering unchanged. The next production code change should be source-backed in the actual render-target/color interpretation path or a narrower `VA` shader bridge change that preserves Three r184 lighting/spotlight compatibility. Do not promote `debug-va-*`, `debug-spotlight-map-transfer=srgb`, or `debug-composite-transfer=*` as visual shortcuts.
+
 Verification:
 
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
