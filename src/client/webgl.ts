@@ -4601,9 +4601,10 @@ export class WebGLBackdrop {
     this.updateMediaPlanePositions();
 
     this.renderer.clear();
-    const hasHome = this.sceneWrap.visible;
+    const isProjectView = document.body.classList.contains("is-project");
+    const hasHome = this.sceneWrap.visible && !isProjectView;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
-    if (!hasHome && hasMedia) {
+    if (isProjectView && hasMedia) {
       this.renderer.setRenderTarget(this.backgroundTarget);
       this.renderer.clear();
       this.renderer.render(this.backgroundScene, this.backgroundCamera);
