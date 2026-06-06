@@ -129,6 +129,8 @@ const SOURCE_WORK_BG = "#1a1a1a";
 const SOURCE_COMPOSITE_BG = "#1f1f1f";
 const DEFAULT_BG = SOURCE_WORK_BG;
 const DEFAULT_COLOR = "#bcbcbc";
+const SOURCE_INITIAL_SECONDARY = "#464646";
+const SOURCE_INITIAL_AMBIENT = 1;
 const SOURCE_WORK_DIFFUSE = "#808080";
 const SOURCE_WORK_ENVMAP_INTENSITY = 0.75;
 const SOURCE_WORK_ROUGHNESS = 1;
@@ -1492,13 +1494,13 @@ export class WebGLBackdrop {
   private revealSpread = 0;
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
-  private currentAmbientIntensity = 0.5;
+  private currentAmbientIntensity = SOURCE_INITIAL_AMBIENT;
   private mediaBackground = colorFrom(DEFAULT_BG);
   private mediaBackgroundState = colorFrom(DEFAULT_BG);
   private mediaSceneOpacity = 0;
   private gridLayers = SOURCE_GRID_LAYERS;
   private radius = 8;
-  private ambientLight = new AmbientLight(colorFrom("#414652"), 0.5);
+  private ambientLight = new AmbientLight(colorFrom(SOURCE_INITIAL_SECONDARY), SOURCE_INITIAL_AMBIENT);
   private spotLight = new SpotLight(colorFrom("white"), 220);
   private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
   private directionalLight2 = new DirectionalLight(colorFrom("white"), 1);
@@ -1521,7 +1523,7 @@ export class WebGLBackdrop {
     this.mediaCamera.position.set(0, 0, 1000);
     this.skyScene.background = sourceLinearToSrgbColor("#666666", "#666666");
     this.homeScene.fog = new Fog("grey", 0, 100);
-    this.homeScene.background = colorFrom(SOURCE_WORK_BG);
+    this.homeScene.background = sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG);
     this.spotLight.position.copy(this.spotLightPosition);
     this.spotLight.target.position.copy(this.spotLightTarget);
     this.spotLight.angle = Math.PI / 4;
@@ -2366,8 +2368,8 @@ export class WebGLBackdrop {
         uProgress: { value: 0 },
         uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
         uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
-        uAmbientColor: { value: colorFrom("#414652") },
-        uAmbientIntensity: { value: 0.5 },
+        uAmbientColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
+        uAmbientIntensity: { value: SOURCE_INITIAL_AMBIENT },
       },
       vertexShader: backgroundVertex,
       fragmentShader: backgroundFragment,
@@ -2722,8 +2724,8 @@ export class WebGLBackdrop {
       uniforms: {
         uTime: { value: 0 },
         uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
-        uAmbientColor: { value: colorFrom("#414652") },
-        uAmbientIntensity: { value: 0.5 },
+        uAmbientColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
+        uAmbientIntensity: { value: SOURCE_INITIAL_AMBIENT },
         tReflect: { value: this.floorReflectionTarget.texture },
         tNormalMap: { value: this.placeholder },
         uReflectivity: { value: 0.97 },
@@ -2746,7 +2748,7 @@ export class WebGLBackdrop {
       blending: NormalBlending,
       uniforms: {
         uTime: { value: 0 },
-        uDarkenColor: { value: colorFrom("#414652") },
+        uDarkenColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
         uDarken: { value: 1 },
         uMultiplier: { value: 2 },
         uShader1Alpha: { value: 0.5 },
@@ -2937,7 +2939,7 @@ export class WebGLBackdrop {
     this.ambientTweens.forEach((tween) => tween.kill());
     this.ambientTweens = [];
     this.currentAmbientIntensity = intensity;
-    const next = sourceRgbColor(color, "#414652");
+    const next = sourceRgbColor(color, SOURCE_INITIAL_SECONDARY);
     if (duration <= 0) {
       this.ambientLight.color.copy(next);
       this.ambientLight.intensity = intensity;

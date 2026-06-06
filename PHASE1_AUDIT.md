@@ -119,6 +119,41 @@ Measured luma stayed stable:
 
 Decision: keep the work-only `VA` fragment cleanup because it removes source-proven Three 0.184 standard-tail behavior without destabilizing project or about pages. Since luma did not move, the next `S1-08/S1-17` batch should focus on the deeper full-`VA` light definitions, renderer legacy-light/color-output assumptions, or spotlight-map coordinate contribution rather than more standard-tail cleanup.
 
+### S1-17 p1 Light/Background Defaults Result
+
+The spotlight-map audit found that the main home `SpotLight.map` path is already source-shaped:
+
+- Source `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, sets spotlight position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`.
+- Source `p1.update()` only applies camera parallax to spotlight `x/y`; it does not retarget the spotlight to the active project item.
+- Three 0.184 confirms `SpotLight.map` contributes through `spotLightMap` whenever `light.map` exists; `castShadow` is not required for the map path.
+- Rebuild already follows those spotlight-map ownership, position, target, intensity, and parallax rules. `updateAboutSpotlight()` remains scoped to about visual state.
+
+The same audit found three source-proven initial light/background defaults that were still local approximations:
+
+- Source `p1` sets `scene.background` to `new Color(BA.BACKGROUND_COLOR).convertLinearToSRGB()`; rebuild now does the same for `#1a1a1a`.
+- Source initial `xt.colors.secondary` is `#464646`; rebuild initial ambient/background/floor/environment uniforms now use this instead of local `#414652`.
+- Source initial `xt.ambient` is `1`; rebuild initial ambient intensity and matching background/floor uniforms now use `1` instead of local `0.5`.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s117-light-defaults` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma improved on home while project pages stayed stable:
+
+| Capture | Original luma | Rebuild luma after p1 light defaults | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.104` | `0.018` | Improved from the previous `~0.011`; still not close to source. |
+| Home mobile | `0.056` | `0.019` | Improved from the previous `~0.012`; still low. |
+| About desktop | `0.026` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the `p1` light/background default cleanup because it is source-proven and finally moves home luma in the correct direction without project regression. The remaining brightness gap still points to full `VA` light/color semantics, renderer legacy-light/color-output assumptions, or additional source defaults around initial/project activation timing.
+
 ## Latest Source Audit Snapshot
 
 This checkpoint narrows Phase 1 from a broad rebuild target into a short source-difference list.
