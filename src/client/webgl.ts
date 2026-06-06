@@ -2056,9 +2056,9 @@ export class WebGLBackdrop {
   private cameraOrigin = new Vector3(0, 0, 5.5);
   private cameraTarget = new Vector3(0, 0, 5.5);
   private cameraLookAt = new Vector3(0, 0, 0);
-  private cameraTargetXY = new Vector2(1, 0.5);
+  private cameraTargetXY = new Vector2(0.25, 0.25);
   private cameraRoll = 0;
-  private cameraRotateAngle = MathUtils.degToRad(20);
+  private cameraRotateAngle = MathUtils.degToRad(10);
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
@@ -2291,7 +2291,7 @@ export class WebGLBackdrop {
 
   prepareHomeVisualState(payload: ProjectPayload) {
     this.applyProjectLook(payload);
-    this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
+    this.setCameraControllerSettings();
     this.spotLightParallax = true;
     this.spotLight.map = this.homeSpotlightMap();
     this.keepWorkSceneHidden();
@@ -2323,7 +2323,7 @@ export class WebGLBackdrop {
     this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
     this.setRevealSpread(0);
     this.resetThumbOffsetY();
-    this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
+    this.setCameraControllerSettings();
     this.initHomeSpotlight();
   }
 
@@ -2368,6 +2368,7 @@ export class WebGLBackdrop {
     this.setThumbTransitioning(false);
     this.resetThumbOffsetY();
     this.setMouseFactor(0, 0);
+    this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
     this.setMouseFactor(1, 3);
     this.setRevealSpread(0);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 1.6);
@@ -4621,6 +4622,14 @@ export class WebGLBackdrop {
         pixelRatio: this.renderer.getPixelRatio(),
         size: { width: rendererSize.x, height: rendererSize.y },
         drawingBufferSize: { width: drawingBufferSize.x, height: drawingBufferSize.y },
+      },
+      camera: {
+        position: this.homeCamera.position.toArray(),
+        origin: this.cameraOrigin.toArray(),
+        targetXY: this.cameraTargetXY.toArray(),
+        lookAt: this.cameraLookAt.toArray(),
+        rotateAngle: MathUtils.radToDeg(this.cameraRotateAngle),
+        sceneWrapY: this.sceneWrap.position.y,
       },
       settings: {
         passOrder: this.debugPassOrder === "raw-work-composite" ? "raw-work-composite" : "source-work-composite",

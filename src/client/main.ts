@@ -444,6 +444,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     moved: false,
   };
   let lastTouchSelect = 0;
+  let webglGalleryEntered = false;
 
   const lerp = (current: number, target: number, factor: number, delta: number) =>
     current + (target - current) * (1 - Math.exp(-factor * delta));
@@ -614,11 +615,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   };
 
   const enterWorkGallery = () => {
-    if (scroll.active) return;
+    const webgl = getWebgl();
+    if (!webgl) return;
+    if (scroll.active && webglGalleryEntered) return;
     activateIndex(activeIndex, false, true, true);
-    getWebgl()?.restoreGalleryState?.(scroll.progress, sceneRotation);
-    getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
-    getWebgl()?.enterWorkGallery?.(activeProjectId || cardsArray[activeIndex]?.dataset.slug);
+    webgl.restoreGalleryState?.(scroll.progress, sceneRotation);
+    webgl.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
+    webgl.enterWorkGallery?.(activeProjectId || cardsArray[activeIndex]?.dataset.slug);
+    webglGalleryEntered = true;
     scroll.active = true;
   };
 

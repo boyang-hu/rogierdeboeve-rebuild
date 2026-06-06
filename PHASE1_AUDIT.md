@@ -240,6 +240,33 @@ Visual result:
 
 Decision: keep this source-structure correction even though it does not visually close the horizon gap. The removed final `OA` pass was a non-source mask over the underlying floor/environment/A1 mismatch. The next batch should continue from the now source-shaped render-manager split and diagnose the actual mid-screen boundary, likely in floor/environment projection or A1 input composition, not by reintroducing final darkening.
 
+### S1-60 Camera Controller / Home Gallery Entry Attribution
+
+This batch corrected the source attribution around `p1`, `IT`, and `yD.animateIn()` after the render-manager split exposed more home-scene differences.
+
+Source evidence:
+
+- Base `p1.setCameraControllerSettings()` defaults to `lookAt=(0,0,0)`, `targetXY=(.25,.25)`, and `rotateAngle=10`.
+- Home work-gallery entry is different: source `yD.animateIn()` explicitly calls `Se.setCameraControllerSettings(new L(0,0,0), new Q(1,.5), 20)` immediately before animating `mouseF` from `0` to `1`.
+- Source `yD.updateScene()` owns `sceneWrap.rotation.y`, `mainScene.renderManager.compositeMaterial.uniforms.uTransformX`, `workThumbScene.thumbs.updateGalleryProgress(-progress)`, `workScene.scene.rotation.z`, and `workScene.scene.position.z = rotation.z - zoom`. The rebuild's corresponding `setGalleryProgress()` transform shape is source-backed and should not be removed as a speculative horizon fix.
+
+Runtime changes:
+
+- Restored the base `p1` camera-controller defaults in the rebuild to `targetXY=(.25,.25)` and `rotateAngle=10`.
+- Kept route visual preparation on the base `p1` defaults, matching source non-gallery state.
+- Moved the source work-gallery camera override to `enterWorkGallery()`, where the rebuild now applies `targetXY=(1,.5)` and `rotateAngle=20` like `yD.animateIn()`.
+- Fixed the home gallery entry lifecycle so the gallery is not marked active before WebGL exists. This prevents the source `yD.animateIn()` WebGL state from being skipped on first load.
+- Added camera controller state to `window.__rogierOutputProbe` so future captures can distinguish base `p1` state from entered work-gallery state.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Output probe at `/tmp/rogier-camera-probe-2` passed with no network/runtime/WebGL errors and reported the entered home gallery camera as `targetXY=[1,.5]`, `rotateAngle=20`.
+- Full source-vs-rebuild capture at `/tmp/rogier-camera-gallery-entry-full` passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed network requests or runtime exceptions.
+
+Decision: keep this as a source-correct lifecycle/camera fix. It is not a claimed hard-horizon solution. The next Phase 1 batch should continue with floor/environment/A1 input attribution now that the home gallery camera state is no longer ambiguous.
+
 ### Phase 1 Final Difference Audit Matrix
 
 This matrix is the working closeout audit for Phase 1. It converts the remaining source-analysis threads into implementation decisions so Phase 1 can finish without open-ended brightness tuning.
