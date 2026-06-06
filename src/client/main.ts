@@ -1064,7 +1064,7 @@ function initViewLifecycle(animate = true) {
   }
 
   if (!animate) {
-    view.style.opacity = "0";
+    view.style.opacity = "1";
     const reveal = () => {
       gsap.killTweensOf(view);
       gsap.to(view, { opacity: 1, duration: 0.5, ease: "linear" });
