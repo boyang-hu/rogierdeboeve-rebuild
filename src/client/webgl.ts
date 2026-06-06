@@ -598,10 +598,12 @@ vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   return vec4(r, g, b, a);
 }
 
-float vignette(vec2 uv, float inner, float outer) {
+float vignette(vec2 uv, float vignin, float vignout, float vignfade, float fstop) {
   vec2 p = uv - 0.5;
   p.x *= uRatio;
-  return smoothstep(outer, inner, length(p));
+  float dist = length(p);
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
 }
 
 void main() {
@@ -630,8 +632,8 @@ void main() {
   vec4 mouseSim = texture2D(tMouseSim, mix(perlinCoords, uv, 2.5));
   mouseSim.rgb = contrast(mouseSim.rgb, 1.0);
 
-  float perlinVignette = vignette(perlinCoords, 0.1, 0.35);
-  float displacementVignette = vignette(uv, 0.1, 0.5);
+  float perlinVignette = vignette(perlinCoords, 0.1, 0.35, 2.0, 0.5);
+  float displacementVignette = vignette(uv, 0.1, 0.5, 2.0, 0.5);
   vec4 sceneDisplaced = rgbshift(tWork, uv, -1.0, 0.005);
   vec4 scene = rgbshift(tWork, uv, -1.0, 0.0005 + 0.1 * length(fluid.xy) * uFluidStrength);
   vec3 color = mix(scene.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);

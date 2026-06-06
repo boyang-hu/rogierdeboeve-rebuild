@@ -125,6 +125,35 @@ Measured luma stayed essentially unchanged:
 
 Decision: keep the ordinary-`VA` fragment-pars cleanup because it removes a source-proven Three 0.184 shader deviation without destabilizing runtime or project pages. Since brightness did not materially move, the next Phase 1 attribution should inspect either the remaining generated `VA` light definitions against source `zA` or shared render-target/output assumptions around `Lu/C1/OA`.
 
+### S1-09 A1 Vignette Formula Cleanup Result
+
+The home pre-composite `A1` vignette helper now matches the source helper shape used for perlin/displacement masks:
+
+- Source shared `vignette(coords, vignin, vignout, vignfade, fstop)` offsets the inner and outer thresholds by `fstop / vignfade` before `smoothstep()`.
+- Source `A1` calls `vignette(perlinCoords.xy, 0.1, .35, 2.0, .5)` and `vignette(uv.xy, 0.1, .5, 2.0, .5)`.
+- Rebuild previously used a simplified two-argument helper with no `fstop / vignfade` offset.
+- Rebuild `homePreCompositeFragment` now uses the source five-argument formula and call constants.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s109-a1-vignette` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma decreased on home while project pages stayed stable:
+
+| Capture | Original luma | Rebuild luma after S1-09 A1 vignette | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.104` | `0.019` | Slightly lower than previous `~0.019`; source-correct but not a brightness fix. |
+| Home mobile | `0.055` | `0.016` | Lower than previous `~0.020`; this exposes other missing brightening/source contributions rather than justifying the old approximation. |
+| About desktop | `0.026` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the source `A1` vignette formula despite lower home luma because it removes a local approximation in the shared composite path and did not regress runtime or project captures. The old simplified vignette was compensating for another missing source contribution. Continue attribution in remaining `A1/OA/Lu` output flow or ordinary `VA` light definitions; do not reintroduce the simplified vignette as a visual tuning fix.
+
 ### S1-06 T1/w1/E1 Thumb Closeout Result
 
 The remaining thumbnail-strip audit is now closed:
