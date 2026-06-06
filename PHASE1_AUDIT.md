@@ -306,6 +306,39 @@ Verification passed:
 - Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
 - Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
 
+### S1-29 VA Output Tail Attribution Result
+
+A debug-only ordinary `VA` output-tail attribution path is now available:
+
+- Added `?debug-va-output-tail=source`, work-block only.
+- Default rendering keeps the stable bridge path: compute `sourceColor`, then write `gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a)`.
+- The debug path writes `gl_FragColor = vec4(outgoingLight, diffuseColor.a)`, then mutates `gl_FragColor.rgb` and `gl_FragColor.a`, matching the source `zA` tail order more closely.
+- Added `scripts/compare-va-output-tail.mjs` to capture default vs source-tail home variants with console/shader/runtime checks.
+- `scripts/dump-va-shader.mjs` now accepts `EXTRA_QUERY` so debug shader variants can be dumped without changing the base URL.
+
+Diagnostic results:
+
+| Variant | Home luma | Runtime result | Interpretation |
+| --- | ---: | --- | --- |
+| Default stable bridge | `0.031294` | Ready, one full viewport canvas, no shader/console/runtime errors. | Current baseline after S1-27. |
+| `debug-va-output-tail=source` | `0.031327` | Ready, one full viewport canvas, no shader/console/runtime errors. | Source-tail order compiles and runs, but moves luma by only `~0.00003`. |
+
+The debug shader dump confirmed the variant was actually active:
+
+- `gl_FragColor = vec4(sourceColor...)` is absent in the source-tail dump.
+- `gl_FragColor.rgb` and `gl_FragColor.a` anchors are present at rebuild lines `158` and `177`.
+
+Decision: do not promote the source-tail path to production. The tail-order mismatch is real but not a material cause of the remaining home brightness gap. Move the next batch to S1-29 renderer/output color diagnostics, because home and project pages are both still darker than original after the source-proven `VA` defaults were fixed.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-va-output-tail-s129 CDP_PORT=9274 CAPTURE_WAIT=5200 node scripts/compare-va-output-tail.mjs`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-va-output-tail-dump-source2 CDP_PORT=9277 DUMP_WAIT=5200 EXTRA_QUERY='&debug-va-output-tail=source' node scripts/dump-va-shader.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

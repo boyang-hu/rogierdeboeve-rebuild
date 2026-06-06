@@ -19,6 +19,7 @@ if (!chromePath) {
 const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-va-shader");
 const port = Number(process.env.CDP_PORT || 9231);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
+const extraQuery = process.env.EXTRA_QUERY || "";
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
 
 function wait(ms) {
@@ -324,7 +325,7 @@ try {
     screenWidth: 1440,
     screenHeight: 900,
   });
-  await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&dump-va-shader=1` });
+  await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&dump-va-shader=1${extraQuery}` });
   await wait(Number(process.env.DUMP_WAIT || 5000));
   const result = await send(ws, "Runtime.evaluate", {
     expression: "JSON.stringify({ body: document.body.className, dump: window.__rogierVaShaderDump || [] })",

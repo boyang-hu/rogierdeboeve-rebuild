@@ -449,6 +449,44 @@ alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
 gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 `;
 
+const workBlockSourceTailFragmentChunk = `
+#ifdef OPAQUE
+diffuseColor.a = 1.0;
+#endif
+
+#ifdef USE_TRANSMISSION
+diffuseColor.a *= material.transmissionAlpha;
+#endif
+
+gl_FragColor = vec4(outgoingLight, diffuseColor.a);
+
+vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
+vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
+float simLight = texture2D(tMouseSim2, screenUv).r;
+vec4 sourceDisplacement = texture2D(tDisplacement, sourceUv);
+float mouseF = 1.0 - simLight;
+gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), 1.0 - uMouseLightness);
+gl_FragColor.rgb += sourceDisplacement.rgb * 0.0;
+
+vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
+vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
+float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
+float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
+float alpha = alpha1 * alpha2 * vAlpha;
+float revealCombined = uReveal * uRevealProject;
+float fragmentReveal = mix(revealCombined, 1.0, uAuxiliaryMaterial);
+float revealRadius = 2.0 * pow(fragmentReveal, 0.25);
+float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+float mouseAlphaFactor = mix(0.5, 0.15, uAuxiliaryMaterial);
+if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * mouseAlphaFactor), 0.0, 1.0);
+alpha += centerAlpha * 0.1;
+alpha -= 1.0 - revealAlpha;
+alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
+
+gl_FragColor.a = alpha * diffuseColor.a;
+`;
+
 function stripSourceVaFragmentPaths(fragmentShader: string) {
   return fragmentShader
     .replace("#include <color_pars_fragment>", "// source VA omits color_pars_fragment")
@@ -501,13 +539,17 @@ function patchWorkBlockShader(
     .replace("#include <worldpos_vertex>", workBlockWorldPositionChunk);
   shader.fragmentShader = shader.fragmentShader
     .replace("#include <common>", `${workBlockFragmentPars}\n#include <common>`)
-    .replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk)
     .replace("#include <tonemapping_fragment>", "// source VA omits tonemapping_fragment")
     .replace("#include <colorspace_fragment>", "// source VA omits colorspace_fragment")
     .replace("#include <fog_fragment>", "// source VA omits fog_fragment")
     .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
     .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
   if (variant === "work") {
+    const outputTail = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-va-output-tail") : null;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <opaque_fragment>",
+      outputTail === "source" ? workBlockSourceTailFragmentChunk : workBlockOpaqueFragmentChunk,
+    );
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
     const spotlightMapTransfer = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-spotlight-map-transfer") : null;
     if (spotlightMapTransfer === "srgb") {
@@ -517,6 +559,8 @@ function patchWorkBlockShader(
       );
       shader.fragmentShader = shader.fragmentShader.replace("#include <lights_fragment_begin>", lightsFragmentBegin);
     }
+  } else {
+    shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", workBlockOpaqueFragmentChunk);
   }
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("dump-va-shader")) {
     const dumpWindow = window as ShaderDumpWindow;
