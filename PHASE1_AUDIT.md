@@ -22,18 +22,18 @@ Primary source areas:
 
 ## Current Phase 1 Status
 
-Phase 1 is past the broad architecture-rebuild stage and is now in source-difference attribution. Most source-proven structural gaps are closed, and the S1-40 ordinary texture color-space fix removed the largest known home brightness defect. Phase 1 is still not complete because source-vs-rebuild captures and debug matrices continue to show material WebGL/composite differences in home cube/thumb projection, final `OA/CA` transfer, and shared project-page composite brightness.
+Phase 1 is past the broad architecture-rebuild stage and is now in closeout attribution. Most source-proven structural gaps are closed, and the S1-40 ordinary texture color-space fix removed the largest known home brightness defect. Recent S1-46B through S1-50 probes have narrowed the remaining home gap away from `A1` flow order, active spotlight projection coverage, single `HA` vertex deltas, and static `Ka/GA` mouse simulation sizing. Phase 1 is not yet marked complete because the remaining brightness/transfer deviations still need either source-backed fixes or explicit accepted-deviation signoff before Phase 2.
 
 Estimated status:
 
 - Architecture parity: 90-92%
-- Shader/render-manager parity: 80-84%
-- Final home visual parity: 75-80%
+- Shader/render-manager parity: 86-89%
+- Final home visual parity: 80-84%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
 The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with source-style shader patching, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, per-work-item local mouse simulation, source-shaped floor/environment bridges, and about/floating auxiliary blocks.
 
-The remaining risk is concentrated in fine-grained shader behavior, render-target/color output, source material details, and visual validation of spotlight/thumb projection and mouse/fluid feel. Phase 2 should not start until Phase 1 either reaches visual acceptance or records explicit accepted deviations for the remaining home WebGL differences.
+The remaining risk is concentrated in accepted visual deviation decisions around spotlight-map transfer/light multiplication, final `OA/CA` `tScene` transfer, and shared project-page composite/media brightness. Phase 2 should not start until those remaining differences are either source-fixed or explicitly accepted as Phase 1 deviations.
 
 Current production reference after S1-42:
 
@@ -55,7 +55,7 @@ Recommended cadence:
 - Do 3-5 differences per batch for shader, render-target, render-order, or material-replacement changes.
 - Run full QA and commit once per batch, not once per tiny sub-step.
 
-Current next batch: continue the ordinary `VA` vertex/body and final-output attribution path with diagnostics first. A committed full-`HA` vertex experiment initially passed the existing capture harness, but a later console-aware CDP probe exposed a shader compile/runtime hang under Three 0.184 + SwiftShader. The live code is restored to the stable chunk bridge. The next source target should be a small generated-vs-source vertex/body audit around `HA`, `zA`, `worldPosition`, and `OA/CA` input transfer before any new live shader replacement.
+Current next batch: prepare Phase 1 closeout. The live code stays on the stable `VA` chunk bridge; full `HA/zA` replacement remains rejected after console-aware QA failures. The remaining work should be limited to source-backed `OA/CA` transfer evidence, project composite regression gates, and explicit accepted-deviation language for the brightness gap if no source-safe fix is found.
 
 ## Phase 1 Remaining Execution Audit
 
@@ -70,9 +70,24 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 5 | S1-47 | `Ka/GA` mouse/fluid feel | Source per-`GA` `Ka` simulation and render-manager mousesim are broadly ported. Static capture shows mouse term is not the main brightness culprit. S1-50 confirms target sizing, `uCoords`, local UV offset/scale, and active pointer state are source-shaped at rest. | Runtime structure exists and debug probe now covers exact sizing/UV state. Fluid/mouse feel still needs interactive visual QA, but it is not a static brightness blocker. | Low-medium | Treat as structurally attributed. Revisit only for interactive feel QA, not Phase 1 brightness tuning. |
 | 6 | S1-48 | Floor/environment/about accepted deviations | Source floor reflector, environment shader, and about character manager have source-shaped bridges but not full byte-for-byte ports. | Prior probes show sky/floor are not the main brightness lever; about route is stable. | Medium | Treat as accepted temporary bridge unless source-vs-rebuild visual QA identifies a specific visible mismatch. |
 
+### Phase 1 Closeout Board
+
+This board reflects the current closeout state after S1-46B through S1-50. It does not erase the remaining visual gap; it separates source-backed implementation work from accepted-deviation decisions.
+
+| Chain | Closeout status | Evidence | Blocks Phase 1? | Remaining action |
+| --- | --- | --- | --- | --- |
+| `p1` hierarchy/lights/route state | Source-shaped | Scene hierarchy, active project, work count, light constants, about/floating toggles, and full-canvas QA are stable. | No | Keep as regression gate only. |
+| `T1/w1/E1` thumb target | Source-shaped | Thumb target size, visible thumb count, composite uniforms, texture color-space fix, and S1-49 projection coverage are attributed. | No | Do not tune thumb darkness/intensity. |
+| `GA/VA` ordinary blocks | Stable bridge with accepted shader deviation candidate | Material defaults, alpha tail, physical-response probes, vertex world/UV probes, and projection coverage are attributed; full `HA/zA` replacement is rejected as unsafe. | Not by itself | Keep stable bridge unless a specific visible defect has source-safe fix. |
+| `Ka` mouse simulation | Structurally attributed | S1-50 verifies target sizing, `uCoords`, UV offset/scale, persistence/thickness shape, and negligible static darken contribution. | No | Interactive feel QA only if visibly off. |
+| `A1/C1` pre-composite | Source-equivalent for home flow | S1-46B semantic flow order matches source except inert/relocated computations. | No for home brightness | Keep project pages as regression gates. |
+| `OA/CA` final transfer | Remaining accepted-deviation candidate | Source formulas, blend table, renderer output, and darken inputs are confirmed. Gamma-like transfer debug moves luma but lacks source proof. | Yes, until accepted or source-fixed | Final closeout needs either source-backed transfer fix or explicit accepted deviation. |
+| Project detail composite/media | Stable but darker | Full QA passes and previous offscreen-media attempt regressed luma. | Yes, until accepted or source-fixed | Keep as regression gate; do not rewire without narrower source evidence. |
+| Floor/environment/about | Accepted temporary bridge candidate | Prior probes show low brightness impact; about route passes full-canvas QA. | No unless visual QA flags it | Document as accepted bridge for Phase 1. |
+
 ### Current Recommendation
 
-Finish Phase 1 before opening Phase 2 work. The next implementation batch should stay in one rendering chain: ordinary `VA` vertex/body plus final `OA/CA` input attribution. If the batch only changes diagnostics, documentation, constants, or clearly inert source-proven ownership, it can include up to 8-10 differences. If it changes shader text, render targets, render order, texture transfer, or material replacement, cap it at 3-5 differences and run browser QA immediately.
+Finish Phase 1 before opening Phase 2 work. The next implementation batch should be a closeout batch, not another broad rendering rewrite. It should either find source evidence for `OA/CA` transfer that can be safely applied, or record accepted deviations for the remaining brightness gaps with full source-vs-rebuild QA. If any live shader/render-target behavior changes are attempted, keep them to 3-5 differences and run browser QA immediately.
 
 ### Detailed Difference Audit: Spotlight / Thumb / Output Chain
 
@@ -1107,6 +1122,36 @@ Verification passed:
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
 - `CHROME_PATH=/usr/bin/google-chrome` CDP probe at `/tmp/rogier-mouse-sim-s150b` against `http://127.0.0.1:5239/?skip-preloader&debug-output-probe=1`
+
+### S1-51 Phase 1 Closeout QA Baseline
+
+This batch did not change runtime behavior. It refreshed the Phase 1 closeout board and ran a full source-vs-rebuild QA pass after the recent attribution probes.
+
+Full capture at `/tmp/rogier-compare-phase1-s151-closeout`:
+
+| Route | Original state | Rebuild state | Result |
+| --- | --- | --- | --- |
+| Home desktop | Full `1440x900` canvas, active `hashgraph-vc`, `10` work slugs | Full `1440x900` canvas, active `hashgraph-vc`, `10` project cards | Pass |
+| Home mobile | Full `390x844` canvas, active `hashgraph-vc`, `10` work slugs | Full `390x844` canvas, active `hashgraph-vc`, `10` project cards | Pass |
+| About desktop | Full `1440x900` canvas, post-preloader | Full `1440x900` canvas, `is-about is-ready has-entered has-webgl` | Pass |
+| `/gc-2026/` desktop | Full `1440x900` canvas, post-preloader | Full `1440x900` canvas, `is-project is-ready has-entered has-webgl` | Pass |
+| `/hashgraph-vc/` desktop | Full `1440x900` canvas, post-preloader | Full `1440x900` canvas, `is-project is-ready has-entered has-webgl` | Pass |
+
+Runtime result:
+
+- No failed network requests after filtering canceled lifecycle requests.
+- No runtime exceptions.
+- Rebuild dist markers remain stable for home and `/gc-2026/`.
+
+Closeout decision:
+
+- Do not restart broad `VA`, spotlight projection, `A1`, or mouse-simulation rewrites. Those chains now have enough attribution evidence for Phase 1 closeout.
+- Phase 1 still needs one final decision pass: either a source-backed `OA/CA` / project-composite transfer fix, or explicit accepted-deviation language for the remaining brightness gaps.
+- Phase 2 remains blocked until that final decision is recorded.
+
+Verification passed:
+
+- `CHROME_PATH=/usr/bin/google-chrome REBUILD_URL=http://127.0.0.1:5240 ORIGINAL_URL=http://127.0.0.1:5241 OUT_DIR=/tmp/rogier-compare-phase1-s151-closeout CDP_PORT=9308 CAPTURE_WAIT=5200 node scripts/capture.mjs`
 
 ### S1-22 Generated Shader Diagnostic Result
 
