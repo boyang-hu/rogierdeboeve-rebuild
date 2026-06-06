@@ -85,6 +85,13 @@ type WorkItem = {
 };
 
 type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
+type ShaderDumpWindow = Window & {
+  __rogierVaShaderDump?: Array<{
+    variant: "work" | "auxiliary";
+    vertexShader: string;
+    fragmentShader: string;
+  }>;
+};
 
 type AuxiliaryBlockItem = {
   kind: "about" | "floating";
@@ -412,6 +419,7 @@ function stripSourceVaFragmentPaths(fragmentShader: string) {
     .replace("#include <map_pars_fragment>", "// source VA omits map_pars_fragment")
     .replace("#include <alphamap_pars_fragment>", "// source VA omits alphamap_pars_fragment")
     .replace("#include <alphatest_pars_fragment>", "// source VA omits alphatest_pars_fragment")
+    .replace("#include <alphahash_pars_fragment>", "// source VA omits alphahash_pars_fragment")
     .replace("#include <aomap_pars_fragment>", "// source VA omits aomap_pars_fragment")
     .replace("#include <lightmap_pars_fragment>", "// source VA omits lightmap_pars_fragment")
     .replace("#include <emissivemap_pars_fragment>", "// source VA omits emissivemap_pars_fragment")
@@ -465,6 +473,15 @@ function patchWorkBlockShader(
     .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
   if (variant === "work") {
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
+  }
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("dump-va-shader")) {
+    const dumpWindow = window as ShaderDumpWindow;
+    dumpWindow.__rogierVaShaderDump ??= [];
+    dumpWindow.__rogierVaShaderDump.push({
+      variant,
+      vertexShader: shader.vertexShader,
+      fragmentShader: shader.fragmentShader,
+    });
   }
 }
 

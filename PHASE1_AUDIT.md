@@ -95,6 +95,43 @@ This table is the immediate execution board for the next implementation batches.
 
 Recommended next move: continue S1-22 with a generated-shader diff/diagnostic pass before attempting another live shader replacement. Both the direct full-`HA` vertex path and a narrow `gl_FragColor` fragment-tail experiment proved unsafe under console-aware browser QA, so the next attempt must first identify the exact generated Three 0.184 vertex/fragment/light-body delta rather than broadening live shader changes.
 
+### S1-22 Generated Shader Diagnostic Result
+
+A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:
+
+- Added a QA-only `?dump-va-shader=1` hook that records patched work/auxiliary shader strings from `onBeforeCompile` into `window.__rogierVaShaderDump`.
+- Added `scripts/dump-va-shader.mjs`, which opens rebuild home through CDP, captures the ordinary work shader dump, extracts source `HA/zA` from `legacy-mirror/public/assets/bundle.250f01b7.js`, writes both shader pairs to disk, and prints a compact summary.
+- Normal rendering does not enable the dump path.
+
+The diagnostic run at `/tmp/rogier-va-shader-s122-alphahash` produced these useful findings:
+
+- Current generated work vertex length is `4302` vs source `HA` `4482`; the bridge is close in size but keeps Three 0.184 wrapper chunks around the source-shaped transform block.
+- Current generated work fragment length is `6297` vs source `zA` `5088`; most remaining difference is Three 0.184 physical-material interface text rather than the already-stripped standard tails.
+- The generated fragment still contained Three 0.184 `alphahash_pars_fragment`, which source `zA` does not include. Ordinary work `VA` now strips that include.
+- The generated fragment still differs in macro/interface naming around `USE_SPECULAR`, `USE_SPECULAR_COLORMAP`, `USE_SPECULAR_INTENSITYMAP`, plus newer `dispersion` and `anisotropy` declarations. These are currently diagnostic findings only; do not patch them live until a smaller source-safe compatibility change is identified.
+- The source `zA` tail writes through `gl_FragColor.rgb`, while the current stable bridge writes `vec4(sourceColor, alpha)`. A live tail-order experiment was already rejected, so this remains a known delta rather than a kept fix.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-va-shader-s122-alphahash CDP_PORT=9257 node scripts/dump-va-shader.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s122-shader-dump` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after shader diagnostic batch | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.019` | Stable; diagnostic tooling and `alphahash_pars_fragment` cleanup are not the brightness fix. |
+| Home mobile | `0.056` | `0.016` | Stable. |
+| About desktop | `0.026` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the dump tooling and work-only `alphahash_pars_fragment` cleanup. The next S1-22 step should use the dumped shader files to isolate one smaller compatibility patch around either specular macro/interface drift or spotlight-map light contribution, not another full `HA/zA` replacement.
+
 ### S1-22 VA Fragment Tail Experiment Result
 
 A narrow ordinary-`VA` fragment-tail experiment was attempted and rejected before commit:
