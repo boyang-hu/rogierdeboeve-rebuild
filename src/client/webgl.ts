@@ -1526,6 +1526,7 @@ export class WebGLBackdrop {
   private spotLightRight = new Vector3(1, 0, 0);
   private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
+  private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
   private fluidStrength = 0.5;
   private darken = 0.1;
   private saturation = 1.15;
@@ -1569,7 +1570,7 @@ export class WebGLBackdrop {
     this.spotLight.target.position.copy(this.spotLightTarget);
     this.spotLight.angle = Math.PI / 4;
     this.spotLight.penumbra = 0.95;
-    this.spotLight.map = this.thumbCompositeTarget.texture;
+    this.spotLight.map = this.homeSpotlightMap();
     this.directionalLight.position.set(10.5, 10, 1);
     this.directionalLight2.position.set(-10.5, 5, -1);
     this.homeScene.add(this.ambientLight);
@@ -1749,7 +1750,7 @@ export class WebGLBackdrop {
 
   initHomeSpotlight() {
     this.spotLightParallax = true;
-    this.spotLight.map = this.thumbCompositeTarget.texture;
+    this.spotLight.map = this.homeSpotlightMap();
     this.spotLightPosition.set(0, 0, 3.7);
     this.spotLightTarget.set(0, 0, -8);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 0);
@@ -1900,7 +1901,7 @@ export class WebGLBackdrop {
     }
     this.setSpotLightIntensity(0);
     this.spotLightParallax = true;
-    this.spotLight.map = this.thumbCompositeTarget.texture;
+    this.spotLight.map = this.homeSpotlightMap();
   }
 
   destroyAboutVisualState() {
@@ -1918,7 +1919,7 @@ export class WebGLBackdrop {
     this.auxiliaryScrollLast = window.scrollY;
     this.setSpotLightIntensity(0, 0);
     this.spotLightParallax = true;
-    this.spotLight.map = this.thumbCompositeTarget.texture;
+    this.spotLight.map = this.homeSpotlightMap();
   }
 
   leaveAboutVisualState() {
@@ -3196,6 +3197,10 @@ export class WebGLBackdrop {
       ease,
       onUpdate: update,
     });
+  }
+
+  private homeSpotlightMap() {
+    return this.debugDisableHomeSpotlightMap ? null : this.thumbCompositeTarget.texture;
   }
 
   private setDirectionalLightIntensity(value: number, duration = 1.6, ease = "expo.out") {

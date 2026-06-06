@@ -132,6 +132,44 @@ Measured luma stayed stable:
 
 Decision: keep the dump tooling and work-only `alphahash_pars_fragment` cleanup. The next S1-22 step should use the dumped shader files to isolate one smaller compatibility patch around either specular macro/interface drift or spotlight-map light contribution, not another full `HA/zA` replacement.
 
+### S1-23 Spotlight Map Attribution Result
+
+A QA-only spotlight-map attribution path is now available:
+
+- Added `?debug-spotlight-map=off`, which disables the home `SpotLight.map` assignment while preserving source-shaped spotlight position, target, angle, penumbra, and intensity.
+- Added `scripts/compare-spotlight-map.mjs`, which captures rebuild home with the map on and off and records failures, runtime exceptions, shader console messages, and screenshots.
+- About/character spotlight ownership is not changed by this debug switch.
+- Normal rendering keeps the source-shaped `thumbCompositeTarget.texture` spotlight map.
+
+The attribution run at `/tmp/rogier-spotlight-map-s123` showed the map is strongly contributing:
+
+| Variant | Rebuild home luma | Interpretation |
+| --- | ---: | --- |
+| Spotlight map on | `0.019` | Current normal path; still much darker than original home. |
+| Spotlight map off | `0.085` | Disabling the map makes the rebuild dramatically brighter and much closer to original luma, but this is not source-correct behavior. |
+| Difference image | `0.042` mean-luma delta, `0.381` max channel delta | The map is not missing; it is a dominant darkening/projection input. |
+
+Decision: do not remove the spotlight map or lower source intensity as a tuning fix. This confirms the remaining gap is likely upstream of the map contribution: thumb composite contents, texture/color-space interpretation of `SpotLight.map`, or the bundled-Three light projection math around `zA`/`lights_fragment_begin`. The next implementation work should inspect the thumb composite texture and map sampling/color assumptions, not whether the map is assigned.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/usr/bin/google-chrome OUT_DIR=/tmp/rogier-spotlight-map-s123 CDP_PORT=9259 CAPTURE_WAIT=4200 node scripts/compare-spotlight-map.mjs`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s123-spotlight-map` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured normal-path luma stayed stable:
+
+| Capture | Original luma | Rebuild luma after S1-23 attribution | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.106` | `0.019` | Stable; debug switch does not change normal rendering. |
+| Home mobile | `0.057` | `0.016` | Stable. |
+| About desktop | `0.026` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
 ### S1-22 VA Fragment Tail Experiment Result
 
 A narrow ordinary-`VA` fragment-tail experiment was attempted and rejected before commit:
