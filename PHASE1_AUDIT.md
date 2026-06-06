@@ -488,6 +488,31 @@ Timing evidence:
 
 Decision: the remaining desktop home brightness gap is not explained by active project mismatch, work-item count mismatch, or short capture timing. Since source and rebuild are both on `hashgraph-vc` with source-matching `uDarken` inputs, the next attribution target remains the color/transfer interpretation of the `tScene` input before `OA/CA` multiply darken, plus any upstream `VA`/spotlight response that determines that input's perceived brightness.
 
+### S1-35 OA/CA `tScene` Transfer Attribution Result
+
+The final-composite probe now includes debug-only `tScene` transfer variants:
+
+- Added `?debug-composite-transfer=1`, which applies `pow(tScene.rgb, 1.0 / 2.2)` after `rgbshift(tScene)` and before bloom/darken.
+- Added `?debug-composite-transfer=2`, which applies `pow(tScene.rgb, 2.2)` at the same point.
+- `scripts/compare-composite-stages.mjs` now captures `transfer-default`, `transfer-scene-gamma`, and `transfer-scene-linearize`.
+- Normal rendering remains unchanged unless the query flag is present.
+
+Diagnostic run at `/tmp/rogier-composite-transfer-s135`:
+
+| Variant | Screenshot luma | Interpretation |
+| --- | ---: | --- |
+| default transfer | `0.0314` | Current stable normal-path baseline. |
+| `scene-gamma` | `0.0679` | A gamma-like lift of `tScene` explains part of the dark final output. |
+| `scene-linearize` | `0.0193` | Treating `tScene` as needing linearization makes the mismatch worse. |
+
+Context from the same run:
+
+- Stage `1` (`rgbshift(tScene)` only) luma stayed around `0.0533`.
+- Stage `2` (scene plus bloom) luma stayed around `0.0672`.
+- Pre-composite render target 9x9 luma stayed stable around `0.234` across transfer variants, so the debug transfer only changes the final `OA/CA` interpretation, not upstream target generation.
+
+Decision: keep the transfer probe, but do not promote `scene-gamma` to production. It improves final home luma from `~0.031` to `~0.068`, but still falls well short of the source desktop luma (`~0.100-0.106`) and would be a broad color-space compensation without source proof. The result shows transfer interpretation is a real partial factor; the remaining gap still requires upstream `VA`/spotlight/tScene content attribution, especially why the source scene survives the same `uDarken * 2` multiply with higher perceived brightness.
+
 ### S1-22 Generated Shader Diagnostic Result
 
 A controlled generated-shader diagnostic path is now available for ordinary `VA` attribution:

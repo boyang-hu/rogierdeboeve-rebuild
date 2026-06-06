@@ -594,6 +594,7 @@ uniform float uSaturation;
 uniform float uBloomDistortion;
 uniform int uDebugStage;
 uniform int uDebugDarkenMode;
+uniform int uDebugTransferMode;
 
 varying vec2 vUv;
 
@@ -630,6 +631,8 @@ void main() {
   vec4 fluid = texture2D(tFluid, uv);
   vec4 mouseSim = texture2D(tMouseSim, uv);
   vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
+  if (uDebugTransferMode == 1) color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
+  if (uDebugTransferMode == 2) color = pow(max(color, vec3(0.0)), vec3(2.2));
   if (uDebugStage == 1) {
     gl_FragColor = vec4(color, 1.0);
     return;
@@ -1737,6 +1740,8 @@ export class WebGLBackdrop {
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-stage"), 0)), 0, 5) : 0;
   private debugCompositeDarkenMode =
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-darken"), 0)), 0, 3) : 0;
+  private debugCompositeTransferMode =
+    typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-transfer"), 0)), 0, 2) : 0;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
   private fluidStrength = 0.5;
@@ -2659,6 +2664,7 @@ export class WebGLBackdrop {
         uBloomDistortion: { value: 2.5 },
         uDebugStage: { value: this.debugCompositeStage },
         uDebugDarkenMode: { value: this.debugCompositeDarkenMode },
+        uDebugTransferMode: { value: this.debugCompositeTransferMode },
       },
       vertexShader: backgroundVertex,
       fragmentShader: homeCompositeFragment,
@@ -4084,6 +4090,7 @@ export class WebGLBackdrop {
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
           uDebugStage: this.compositeMaterial.uniforms.uDebugStage.value,
           uDebugDarkenMode: this.compositeMaterial.uniforms.uDebugDarkenMode.value,
+          uDebugTransferMode: this.compositeMaterial.uniforms.uDebugTransferMode.value,
           estimatedDarkenOpacityFromMouseGrid: darkenValue * 2 + mouseSimRed * 0.25 * darkenValue,
           estimatedDarkenOpacityWithoutMouse: darkenValue * 2,
           estimatedDarkenOpacityMouseOnly: mouseSimRed * 0.25 * darkenValue,
