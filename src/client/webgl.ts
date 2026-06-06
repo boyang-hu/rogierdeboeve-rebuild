@@ -965,6 +965,8 @@ function dumpShader(name: string, vertexShader: string, fragmentShader: string) 
 const homeCompositeFragment = `
 precision highp float;
 
+#include <tonemapping_pars_fragment>
+
 uniform sampler2D tScene;
 uniform sampler2D tBloom;
 uniform sampler2D tBlur;
@@ -1058,6 +1060,7 @@ void main() {
   color = saturation(color, uSaturation);
 
   gl_FragColor = vec4(color, 1.0);
+  #include <tonemapping_fragment>
 }
 `;
 
@@ -1510,6 +1513,8 @@ void main() {
 const thumbCompositeFragment = `
 precision highp float;
 
+#include <tonemapping_pars_fragment>
+
 uniform sampler2D tScene;
 uniform float uDarkness;
 uniform vec3 uDarknessColor;
@@ -1531,6 +1536,7 @@ void main() {
   color.rgb = blendMultiply(color.rgb, uDarknessColor, uDarkness);
   color.rgb = saturateColor(color.rgb, uSaturation);
   gl_FragColor = vec4(color.rgb, 1.0);
+  #include <tonemapping_fragment>
 }
 `;
 

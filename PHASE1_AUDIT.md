@@ -2483,3 +2483,31 @@ Verification:
 - Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-shaderdump-full`.
 
 Decision: keep the dump tooling and color-setter non-fix record. Phase 1 remains open; the next production change should target source-backed `OA` tonemapping/transfer interpretation or a complete render-target color-space proof, not local brightness constants.
+
+### S1-12 `OA` / Thumb Composite Tonemapping Surface
+
+This batch promoted a narrow source shader-surface difference found by S1-11.
+
+Source evidence:
+
+- Source `CA` (`OA/kA` work composite fragment) declares `#include <tonemapping_pars_fragment>` and ends with `#include <tonemapping_fragment>`.
+- Source `v1` (`x1` thumb composite fragment) has the same tonemapping include pair.
+- Both source materials set `toneMapped:false`, so Three r164 should not define `TONE_MAPPING`; the included `tonemapping_fragment` is therefore a source-surface no-op in the normal production path.
+- Source `A1/C1` pre-composite does not include tonemapping and was left unchanged.
+
+Runtime changes:
+
+- Added the source tonemapping include pair to the rebuild `homeCompositeFragment` used by the work `OA/kA` composite.
+- Added the same include pair to `thumbCompositeFragment`.
+- Kept all material flags, renderer output color space, darken constants, and debug transfer paths unchanged.
+
+Verification:
+
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `git diff --check` passed.
+- Shader dump passed with no shader/runtime console errors: `/tmp/rogier-phase1-oa-tonemap-shader`.
+- The dump now reports no `fragmentIncludesOnlySource` residual for `OA-work-composite` or `x1-thumb-composite`.
+- Output probe passed with no failures or exceptions: `/tmp/rogier-phase1-oa-tonemap-probe`.
+- Full capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rogier-phase1-oa-tonemap-full`.
+
+Decision: keep this source-surface alignment. It does not close the Phase 1 transfer/color gap because `toneMapped:false` makes the fragment include inert unless source render state proves otherwise. The next batch should continue with render-target/output-color interpretation or exact source-vs-rebuild target content, not constants.
