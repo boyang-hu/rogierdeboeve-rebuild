@@ -1580,7 +1580,7 @@ export class WebGLBackdrop {
     this.sceneWrap.add(this.blocksWrap);
     this.sceneWrap.add(this.floorPlane);
     this.sceneWrap.add(this.environmentPlane);
-    this.thumbScene.background = colorFrom("#222222");
+    this.thumbScene.background = sourceLinearToSrgbColor("#222222");
     this.thumbScene.add(this.thumbWrap);
 
     this.createWorkScene();
@@ -2309,6 +2309,7 @@ export class WebGLBackdrop {
 
   private createThumbPlane(payload: ProjectPayload) {
     const material = new ShaderMaterial({
+      toneMapped: false,
       transparent: false,
       depthWrite: false,
       depthTest: false,

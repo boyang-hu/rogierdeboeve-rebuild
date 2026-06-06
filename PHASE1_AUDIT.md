@@ -41,8 +41,8 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | S1-06 | `T1/w1/E1` thumbnail strip | Source `E1/M1` uses `toneMapped:false`, `transparent:false`, `uProgress=1`, `uTransitionCount=150`, `uTransitionSmoothness=.2`, scale `(2,2,2)`. Source `w1.updateGalleryProgress()` wraps by `itemWidth * totalItems`, recenters with `if x > totalWidth / 2`, and pauses while `isTransitioning`. | Shader, sizing, wrapping, visibility range, and render target sizing are source-shaped. Transition ownership is present as a local flag but has not been tied back to every source gallery leave/enter path. | Low-medium | Close this first. Audit all calls to `setThumbTransitioning`, gallery leave/enter, and source `yD/BD/zD` transitions. Implement only missing state ownership, then run full QA. |
-| 2 | S1-08 | Ordinary `VA` full shader | Source `VA` replaces the full standard vertex and fragment shaders with `HA/zA`, omits the final tonemapping tail, and owns alpha/reveal/mouse-lightness after the physical lights body. | Rebuild uses source-style chunk injection and already removed Three 0.184 output tails. This is safer but still not a full `VA` replacement. The dark home cubes/thumb projection gap remains. | High | Do not full-replace in a large pass. First compare current injected generated shader against source `zA/HA` line-by-line and make 3-5 isolated source-proven changes. Full replacement remains an experiment branch only if diff evidence points there. |
+| 1 | S1-06 | `T1/w1/E1` thumbnail strip | Source `E1/M1` uses `toneMapped:false`, `transparent:false`, `uProgress=1`, `uTransitionCount=150`, `uTransitionSmoothness=.2`, scale `(2,2,2)`. Source `w1.updateGalleryProgress()` wraps by `itemWidth * totalItems`, recenters with `if x > totalWidth / 2`, and pauses while `isTransitioning`. | Closed in this batch. Thumb material now explicitly uses `toneMapped:false`; thumb scene background now follows source `#222222.convertLinearToSRGB()`. Source search found no external writes to `J.workThumbScene.thumbs.isTransitioning`, so the local guard remains an accepted source-shaped no-op unless future source evidence appears. | Low | Run full QA and keep as implemented. |
+| 2 | S1-08 | Ordinary `VA` full shader | Source `VA` replaces the full standard vertex and fragment shaders with `HA/zA`, omits the final tonemapping tail, and owns alpha/reveal/mouse-lightness after the physical lights body. | Rebuild uses source-style chunk injection and already removed Three 0.184 output tails. This is safer but still not a full `VA` replacement. The dark home cubes/thumb projection gap remains. | High | Next implementation target. Do not full-replace in a large pass. First compare current injected generated shader against source `zA/HA` line-by-line and make 3-5 isolated source-proven changes. Full replacement remains an experiment branch only if diff evidence points there. |
 | 3 | S1-09 | Render target and color output | Source render managers use bundled Three defaults, many `toneMapped:false` screen materials, explicit `convertLinearToSRGB()` in selected colors, and `OA` still includes a `tonemapping_fragment` token even with `toneMapped:false`. | Rebuild uses Three 0.184, `renderer.outputColorSpace = SRGBColorSpace`, source-shaped render target defaults, and source raw color setters. Luma remains much lower on both home and project captures. | Medium-high | Audit actual source renderer initialization and render-target texture color-space assumptions before broad changes. Keep project pages in every run. |
 | 4 | S1-17 | Spotlight projection and map intensity | Source home route assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, sets position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`. | Rebuild uses the same map source and home defaults, plus local parallax/active-item projection helpers. Brightness still suggests the map may not contribute through `VA` the same way. | Medium-high | After S1-06, inspect whether current active-project spotlight positioning/parallax diverges from source `p1` update. Avoid changing intensity unless source evidence supports it. |
 | 5 | S1-18 | Main shared composite route ownership | Source `C1/A1` mixes `tWork`, `tMedia`, noise, contrast, background, and media reveal. Source `OA/kA` handles bloom/RGB shift/darken/saturation after work composite. | A1/OA split and several source cleanups are implemented. A source-shaped media offscreen experiment regressed project luma and was reverted, proving the current ownership still has unresolved coupling. | High | Defer new architecture changes until S1-08/S1-09 are narrowed. If revisited, isolate why `C1.tMedia` darkens project pages before keeping the source offscreen media flow. |
@@ -55,11 +55,39 @@ Do not attempt "finish Phase 1 in one pass". The remaining unknowns are shader a
 
 Recommended next batch:
 
-1. Close `S1-06` thumbnail transition ownership and document it as either source-aligned or accepted.
-2. Run build, marker checks, full capture/luma, update this audit, and commit.
-3. Start a separate `S1-08/S1-17` VA/spotlight batch with no more than 3-5 shader or light-path changes.
+1. Run build, marker checks, full capture/luma for the `S1-06` closeout batch, then commit.
+2. Start a separate `S1-08/S1-17` VA/spotlight batch with no more than 3-5 shader or light-path changes.
+3. Keep `S1-09` render-target/color-space as the follow-up audit if VA/spotlight evidence does not explain the brightness gap.
 
 Batch size guidance remains: 8-10 low-risk state/ownership differences per batch is acceptable, but shader/render-target changes should stay at 3-5 differences with immediate browser QA.
+
+### S1-06 T1/w1/E1 Thumb Closeout Result
+
+The remaining thumbnail-strip audit is now closed:
+
+- Source `M1/E1` explicitly constructs the thumb plane material with `toneMapped:false`, `transparent:false`, `depthWrite:false`, and `depthTest:false`; the rebuild thumb plane material now explicitly sets `toneMapped:false`.
+- Source `T1.init()` sets the thumb scene background to `new Color("#222222").convertLinearToSRGB()`; the rebuild now uses the same source-shaped conversion.
+- Source search found `w1.isTransitioning` initialized and guarded inside `w1.updateGalleryProgress()`, but no external writes to `J.workThumbScene.thumbs.isTransitioning`. The rebuild keeps the local transition guard and resets it on gallery restore/enter, but no new leave/enter writes were added because there is no source evidence for them.
+
+Verification passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Home dist markers: `data-project-card=10`, `data-sound-click=30`, `data-webgl-root=1`, `ui-work-container=1`
+- Project `/gc-2026/` markers: `data-media-src=5`, `data-mobile-media=5`, `data-webgl-project=1`
+- Full source-vs-rebuild capture at `/tmp/rogier-compare-phase1-s106` had no failed network requests or runtime exceptions across home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/`.
+
+Measured luma stayed in the established range, which is expected for a low-risk thumb scene closeout:
+
+| Capture | Original luma | Rebuild luma after S1-06 | Decision |
+| --- | ---: | ---: | --- |
+| Home desktop | `0.105` | `0.011` | Stable; main darkness remains in ordinary `VA`/spotlight/composite. |
+| Home mobile | `0.056` | `0.012` | Stable. |
+| About desktop | `0.026` | `0.015` | Stable. |
+| `/gc-2026/` desktop | `0.140` | `0.039` | Project stability retained. |
+| `/hashgraph-vc/` desktop | `0.043` | `0.023` | Project stability retained. |
+
+Decision: keep the `T1/w1/E1` closeout and remove `S1-06` from active implementation risk. The next Phase 1 implementation target is `S1-08/S1-17`, focused on ordinary `VA` shader parity and spotlight-map contribution.
 
 ## Latest Source Audit Snapshot
 
