@@ -781,6 +781,76 @@ function analyzeMainFluidCore(sourceVertex, sourceFragment, rebuildVertex, rebui
   return checks;
 }
 
+function analyzeMouseSimulationCore(sourceVertex, sourceFragment, rebuildVertex, rebuildFragment, shaderName = "") {
+  if (!sourceVertex || !sourceFragment || shaderName !== "Ka-mouse-simulation") return null;
+  const sourceV = normalizeShaderForCoreChecks(sourceVertex);
+  const rebuildV = normalizeShaderForCoreChecks(rebuildVertex);
+  const sourceF = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuildF = normalizeShaderForCoreChecks(rebuildFragment);
+  return {
+    vertexSurface: {
+      source: sourceV.includes("uniformfloatuTime")
+        && sourceV.includes("vec4modelViewPosition=modelViewMatrix*vec4(position,1.0)")
+        && sourceV.includes("gl_Position=projectionMatrix*modelViewPosition"),
+      rebuild: rebuildV.includes("uniformfloatuTime")
+        && rebuildV.includes("vec4modelViewPosition=modelViewMatrix*vec4(position,1.0)")
+        && rebuildV.includes("gl_Position=projectionMatrix*modelViewPosition"),
+    },
+    uniformSurface: {
+      source: [
+        "uniformsampler2DuTexture",
+        "uniformsampler2DuNoiseTexture",
+        "uniformvec2uPosOld",
+        "uniformvec2uPosNew",
+        "uniformvec2uCoords",
+        "uniformfloatuSpeed",
+        "uniformfloatuPersistance",
+        "uniformfloatuThickness",
+        "uniformfloatuTime",
+        "uniformfloatuDiffusionSize",
+        "uniformfloatuDiffusion",
+        "uniformvec3uColor",
+      ].every((value) => sourceF.includes(value)),
+      rebuild: [
+        "uniformsampler2DuTexture",
+        "uniformsampler2DuNoiseTexture",
+        "uniformvec2uPosOld",
+        "uniformvec2uPosNew",
+        "uniformvec2uCoords",
+        "uniformfloatuSpeed",
+        "uniformfloatuPersistance",
+        "uniformfloatuThickness",
+        "uniformfloatuTime",
+        "uniformfloatuDiffusionSize",
+        "uniformfloatuDiffusion",
+        "uniformvec3uColor",
+      ].every((value) => rebuildF.includes(value)),
+    },
+    noisePath: {
+      source: sourceF.includes("vec4noise1=texture2D(uNoiseTexture,vUv*4.0+vec2(uTime*.1,.0))")
+        && sourceF.includes("floatdirX=(-.5+noise.g)*noise.r*10.")
+        && sourceF.includes("floatdirY=(-.5+noise.b)*noise.r*10."),
+      rebuild: rebuildF.includes("vec4noise1=texture2D(uNoiseTexture,vUv*4.0+vec2(uTime*0.1,0.0))")
+        && rebuildF.includes("floatdirX=(-0.5+noise.g)*noise.r*10.0")
+        && rebuildF.includes("floatdirY=(-0.5+noise.b)*noise.r*10.0"),
+    },
+    diffusionPlaceholders: {
+      source: sourceF.includes("floatbr=1.-+(oldTexture.r+oldTexture.g+oldTexture.b)/3.0")
+        && sourceF.includes("floatp2=(uDiffusion)/4.0"),
+      rebuild: rebuildF.includes("floatbr=1.0-+(oldTexture.r+oldTexture.g+oldTexture.b)/3.0")
+        && rebuildF.includes("floatp2=uDiffusion/4.0"),
+    },
+    commentedSourceHelpers: {
+      source: sourceFragment.includes("// float lineSegment") && sourceFragment.includes("// vec4 blur"),
+      rebuild: rebuildFragment.includes("// float lineSegment") && rebuildFragment.includes("// vec4 blur"),
+    },
+    circleBrushPath: {
+      source: sourceF.includes("lineValue=circle(newUv,posOld,th)") && sourceFragment.includes("// lineValue = lineSegment(newUv, uPosOld, uPosNew, th, ratio);"),
+      rebuild: rebuildF.includes("lineValue=circle(newUv,posOld,th)") && rebuildFragment.includes("// lineValue = lineSegment(newUv, uPosOld, uPosNew, th, ratio);"),
+    },
+  };
+}
+
 function analyzeVertexCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
@@ -1181,6 +1251,7 @@ const sourceFragmentShaders = {
   "ag-divergence": sourceShader(bundle, "WT"),
   "ag-poisson": sourceShader(bundle, "YT"),
   "ag-pressure": sourceShader(bundle, "ZT"),
+  "Ka-mouse-simulation": sourceShader(bundle, "rA"),
   "UD-project-media": sourceShader(bundle, "LD"),
   "z1-sky-composite": sourceShader(bundle, "B1"),
   "u1-environment": sourceShader(bundle, "l1"),
@@ -1209,6 +1280,7 @@ const sourceVertexShaders = {
   "ag-divergence": sourceShader(bundle, "Co"),
   "ag-poisson": sourceShader(bundle, "Co"),
   "ag-pressure": sourceShader(bundle, "Co"),
+  "Ka-mouse-simulation": sourceShader(bundle, "oA"),
   "o1-floor-material": sourceShader(bundle, "r1"),
   "t1-floor-reflection-blur": sourceShader(bundle, "e1"),
 };
@@ -1286,6 +1358,7 @@ try {
       thumbPlaneCoreChecks: entry.name === "M1-thumb-plane" ? analyzeThumbPlaneCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       displacementCoreChecks: entry.name === "N1-displacement-composite" ? analyzeDisplacementCore(sourceFragment, entry.fragmentShader) : null,
       mainFluidCoreChecks: analyzeMainFluidCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader, entry.name),
+      mouseSimulationCoreChecks: analyzeMouseSimulationCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader, entry.name),
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaVertexCoreChecks: entry.name === "VA-work" ? analyzeVertexCore(sourceVertex, entry.vertexShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
@@ -1375,6 +1448,7 @@ try {
         rgBlurCoreChecks: analysis.rgBlurCoreChecks,
         standardBlurCoreChecks: analysis.standardBlurCoreChecks,
         lensflareCoreChecks: analysis.lensflareCoreChecks,
+        mouseSimulationCoreChecks: analysis.mouseSimulationCoreChecks,
         igFxaaCoreChecks: analysis.igFxaaCoreChecks,
         vaVertexCoreChecks: analysis.vaVertexCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,

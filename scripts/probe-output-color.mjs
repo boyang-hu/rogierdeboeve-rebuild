@@ -296,6 +296,17 @@ async function runProbe() {
   if (uniformSurfaceErrors.length) {
     throw new Error(`Ka simulation uniform source-shape mismatch: ${uniformSurfaceErrors.join(", ")}`);
   }
+  const mouseShaderSurface = parsed.probe.mouseSimulation?.shaderSurface || {};
+  const mouseShaderErrors = [];
+  if (mouseShaderSurface.mode !== "source-Ka-rA-oA-shader-surface") mouseShaderErrors.push("mode");
+  if (mouseShaderSurface.vertexMode !== "source-oA-modelview-projection") mouseShaderErrors.push("vertexMode");
+  if (mouseShaderSurface.hasSourceNoisePath !== true) mouseShaderErrors.push("noisePath");
+  if (mouseShaderSurface.hasSourceDiffusionPlaceholders !== true) mouseShaderErrors.push("diffusionPlaceholders");
+  if (mouseShaderSurface.hasSourceCommentedHelpers !== true) mouseShaderErrors.push("commentedHelpers");
+  if (mouseShaderSurface.hasSourceCircleBrush !== true) mouseShaderErrors.push("circleBrush");
+  if (mouseShaderErrors.length) {
+    throw new Error(`Ka/rA shader source-surface mismatch: ${mouseShaderErrors.join(", ")}`);
+  }
   if (gaShape) {
     const shapeErrors = Object.entries(gaShape)
       .filter(([, value]) => typeof value === "boolean" && value !== true)

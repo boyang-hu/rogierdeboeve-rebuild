@@ -132,18 +132,18 @@ Known remaining gaps:
   - rebuild approximates these in a simpler Three shader pipeline.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, but the projected thumb content/transfer feel is still not exact.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
-- Mouse/fluid simulation is structurally source-shaped but not yet interactively verified 1:1.
+- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders, but interactive mouse/fluid feel is still not verified 1:1.
 
 Latest Phase 1 batch:
 
-- Source `E1/M1/w1` thumb-plane creation and visibility ownership was restored without visual tuning.
-- The mirrored `E1` constructor creates the mesh, assigns `new M1`, scales it to `2,2,2`, and does not set `mesh.visible=false`. Source `w1.updateGalleryProgress()` owns thumb visibility through the x-wrap rule `c < -1.5 || c > 1.5`.
-- The rebuild removed the rebuild-only initial `mesh.visible = false` from thumb-plane creation, leaving visibility to the source-shaped `updateThumbGallery()` path.
-- Thumb runtime probes now expose/assert `sourceInitialVisibleMode=source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible` for each thumb and assert source `M1` default blending `NormalBlending=1`.
-- Static audit now extracts source `E1`, verifies the no-initial-hidden source shape, and verifies the rebuild no longer contains the rebuild-only hidden state.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0053` and mobile center `+0.0295`, recorded only as regression evidence.
+- Source `Ka/rA/oA` mouse simulation shader-surface parity was restored without visual tuning.
+- The mirrored `Ka` material binds fragment `rA` and vertex `oA`. Source `oA` uses the modelView/projection vertex path; source `rA` keeps the noise direction path, commented `lineSegment(...)` and `blur(...)` helpers, inert diffusion placeholders, commented line-segment brush assignment, and active `circle(newUv, posOld, th)` brush path.
+- The rebuild now uses a dedicated `mouseSimulationVertex`, dumps `Ka-mouse-simulation`, and restores the source `rA` comments/placeholders around the active formulas.
+- Runtime probes now expose/assert `shaderSurface.mode=source-Ka-rA-oA-shader-surface`, source `oA` vertex mode, source noise path, diffusion placeholders, commented helpers, and circle brush path.
+- Static audit extracts source `rA/oA`; shader dump maps `Ka-mouse-simulation` to those source shaders and records focused `mouseSimulationCoreChecks`; output probe hard-fails on shader-surface drift.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0048` and mobile center `+0.0304`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a thumb-plane creation/visibility ownership mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a `Ka/rA/oA` shader-surface mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -161,7 +161,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the matrix-fullscreen vertex batch.
+All passed in the `Ka/rA/oA` mouse simulation shader-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -219,7 +219,7 @@ Continue source-driven implementation in this order:
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Improve original mouse/fluid simulation fidelity.
    - Original `GA` uses `Ka` mouse simulation with `tMouseSim`, `tMouseSim2`, and `tDisplacement`.
-   - Rebuild has the source-shaped render-target structure but still needs interactive 1:1 verification.
+   - Rebuild has the source-shaped render-target structure and `rA/oA` shader surface, but still needs interactive 1:1 verification.
 5. Compare against the original mirror only after source behavior changes.
    - Run mirror server if needed:
      ```sh

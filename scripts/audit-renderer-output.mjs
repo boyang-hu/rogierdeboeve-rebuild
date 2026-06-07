@@ -176,6 +176,8 @@ const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceSA = bundle.match(/class sA\{[\s\S]*?class Ka\{/)?.[0] ?? null;
+const sourceMouseSimulationFragment = extractTemplate(bundle, "rA", "`,oA=");
+const sourceMouseSimulationVertex = extractTemplate(bundle, "oA", "`;class Ka");
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
@@ -1218,6 +1220,33 @@ const summary = {
               "const hit = this.raycaster.intersectObject(item.rayPlane, false)[0]",
               "raycastMode: \"source-Ka-onMouseMove-per-item-raycast-immediate-pointer\"",
               "raycastEventMode: \"source-Ka-raycast-during-mousemove-not-raf-tail\"",
+            ]),
+            sourceShaderChecks: {
+              vertex: checks(sourceMouseSimulationVertex, [
+                "uniform float uTime",
+                "vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0)",
+                "gl_Position = projectionMatrix * modelViewPosition",
+              ]),
+              fragment: checks(sourceMouseSimulationFragment, [
+                "float br = 1. - + (oldTexture.r + oldTexture.g + oldTexture.b)/3.0",
+                "float p2 = (uDiffusion)/4.0",
+                "// float lineSegment(vec2 p, vec2 a, vec2 b, float thickness, float aspectRatio)",
+                "// vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction)",
+                "// lineValue = lineSegment(newUv, uPosOld, uPosNew, th, ratio)",
+                "lineValue = circle(newUv, posOld, th)",
+              ]),
+            },
+            rebuildShaderChecks: checks(rebuildWebgl, [
+              "const mouseSimulationVertex = `",
+              "dumpShader(\"Ka-mouse-simulation\", mouseSimulationVertex, mouseSimulationFragment)",
+              "vertexShader: mouseSimulationVertex",
+              "float br = 1.0 - + (oldTexture.r + oldTexture.g + oldTexture.b) / 3.0",
+              "float p2 = uDiffusion / 4.0",
+              "// float lineSegment(vec2 p, vec2 a, vec2 b, float thickness, float aspectRatio)",
+              "// vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction)",
+              "// lineValue = lineSegment(newUv, uPosOld, uPosNew, th, ratio)",
+              "lineValue = circle(newUv, posOld, th)",
+              "mode: \"source-Ka-rA-oA-shader-surface\"",
             ]),
             rebuildNoRafRaycast: !rebuildWebgl.includes("this.updateAuxiliaryBlocks(time, delta);\n    this.updatePointerProjection();"),
             excerpt: compact(sourceKa),

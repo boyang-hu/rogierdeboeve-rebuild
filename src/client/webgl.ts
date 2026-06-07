@@ -2527,6 +2527,25 @@ float circle(vec2 uv, vec2 center, float size) {
   return 1.0 - smoothstep(0.0, size, circle);
 }
 
+// float lineSegment(vec2 p, vec2 a, vec2 b, float thickness, float aspectRatio) {
+//   vec2 pa = p - a, ba = b - a;
+//   float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+//   float circle = length(pa - ba * h);
+//   return smoothstep(thickness, thickness * 0.5, circle);
+// }
+
+// vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction){
+//   vec4 color = vec4(0.0);
+//   vec2 off1 = vec2(.013846153846) * direction;
+//   vec2 off2 = vec2(.032307692308) * direction;
+//   color += texture2D(image, uv) * 0.2270270270;
+//   color += texture2D(image, uv + vec2(off1 * resolution)) * 0.3162162162;
+//   color += texture2D(image, uv - vec2(off1 * resolution)) * 0.3162162162;
+//   color += texture2D(image, uv + vec2(off2 * resolution)) * 0.0702702703;
+//   color += texture2D(image, uv - vec2(off2 * resolution)) * 0.0702702703;
+//   return color;
+// }
+
 void main() {
   vec4 noise1 = texture2D(uNoiseTexture, vUv * 4.0 + vec2(uTime * 0.1, 0.0));
   vec4 noise2 = texture2D(uNoiseTexture, vUv * 8.0 + vec2(0.0, uTime * 0.1) + noise1.rg * 0.5);
@@ -2536,17 +2555,26 @@ void main() {
   float dirX = (-0.5 + noise.g) * noise.r * 10.0;
   float dirY = (-0.5 + noise.b) * noise.r * 10.0;
   vec4 oldTexture = texture2D(uTexture, vUv);
+  float br = 1.0 - + (oldTexture.r + oldTexture.g + oldTexture.b) / 3.0;
   vec4 col = oldTexture * (1.0 - uDiffusion);
+  float p2 = uDiffusion / 4.0;
+  // vec2 stretchUv = vUv * vec2(1.0, 1.0);
+  // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(dirX, dirY) ) * p2;
+  // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(dirY, dirX) ) * p2;
+  // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(-dirX, -dirY) ) * p2;
+  // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(-dirY, -dirX) ) * p2;
   col.rgb *= uPersistance;
 
   if (uSpeed > 0.0) {
+    float lineValue = 0.0;
     float th = clamp(uThickness + uSpeed * 0.3, 0.0001, 0.2);
     vec2 newUv = vUv;
     float ratio = uCoords.x / uCoords.y;
     newUv.y /= ratio;
     vec2 posOld = uPosOld;
     posOld.y /= ratio;
-    float lineValue = circle(newUv, posOld, th);
+    // lineValue = lineSegment(newUv, uPosOld, uPosNew, th, ratio);
+    lineValue = circle(newUv, posOld, th);
     col.rgb = mix(col.rgb, uColor, lineValue * 0.05);
     col.rgb = clamp(col.rgb, vec3(0.0), vec3(1.0));
   }
@@ -2747,6 +2775,19 @@ varying vec2 vUv;
 void main() {
   vUv = uv;
   gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`;
+
+const mouseSimulationVertex = `
+precision highp float;
+
+uniform float uTime;
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * modelViewPosition;
 }
 `;
 
@@ -5290,6 +5331,7 @@ export class WebGLBackdrop {
   }
 
   private createMouseSimulationMaterial(ratio: number, thickness: number, persistance = 0.75) {
+    dumpShader("Ka-mouse-simulation", mouseSimulationVertex, mouseSimulationFragment);
     return new ShaderMaterial({
       depthWrite: false,
       depthTest: false,
@@ -5307,7 +5349,7 @@ export class WebGLBackdrop {
         uSpeed: { value: 0 },
         uColor: { value: new Color(0xffffff) },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: mouseSimulationVertex,
       fragmentShader: mouseSimulationFragment,
     });
   }
@@ -7880,6 +7922,22 @@ void main() {
     const expectedUvOffset = sourceMouseUvOffset();
     return {
       enabled: this.renderSettings.mousesim.enabled,
+      shaderSurface: {
+        mode: "source-Ka-rA-oA-shader-surface",
+        vertexMode: this.screenMouseSimulationMaterial.vertexShader === mouseSimulationVertex
+          ? "source-oA-modelview-projection"
+          : "non-source",
+        hasSourceNoisePath: mouseSimulationFragment.includes("vec4 noise1 = texture2D(uNoiseTexture")
+          && mouseSimulationFragment.includes("float dirX = (-0.5 + noise.g) * noise.r * 10.0")
+          && mouseSimulationFragment.includes("float dirY = (-0.5 + noise.b) * noise.r * 10.0"),
+        hasSourceDiffusionPlaceholders: mouseSimulationFragment.includes("float br = 1.0 - +")
+          && mouseSimulationFragment.includes("float p2 = uDiffusion / 4.0")
+          && mouseSimulationFragment.includes("// col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(dirX, dirY) ) * p2"),
+        hasSourceCommentedHelpers: mouseSimulationFragment.includes("// float lineSegment")
+          && mouseSimulationFragment.includes("// vec4 blur"),
+        hasSourceCircleBrush: mouseSimulationFragment.includes("lineValue = circle(newUv, posOld, th)")
+          && mouseSimulationFragment.includes("// lineValue = lineSegment(newUv, uPosOld, uPosNew, th, ratio)"),
+      },
       screen: {
         index: this.screenMouseSimulationIndex,
         targetSize: screenTarget ? { width: screenTarget.width, height: screenTarget.height } : null,
