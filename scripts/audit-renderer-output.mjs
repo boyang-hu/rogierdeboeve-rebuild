@@ -139,8 +139,11 @@ const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 500, 900);
+const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSettings(e=new L(0,0,0),t=new Q(.25,.25),n=10)", 240, 520);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
+const sourceSe = extractAround(bundle, "class Se", 200, 10600);
+const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
 const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 400, 1700);
@@ -364,8 +367,22 @@ const summary = {
         "blending:ot",
         "depthWrite:!1",
         "depthTest:!1",
+        "uBgColor:new I(new ye(\"#1F1F1F\").convertLinearToSRGB())",
       ]),
       excerpt: compact(sourceC1.text),
+    },
+    Se: sourceSe && {
+      index: sourceSe.index,
+      checks: checks(sourceSe.text, [
+        "class Se",
+        "static setAmbientColor(e,t=1.6){const n=this.formatColor(e)",
+        "J.workScene.ambientLight.color",
+        "J.workScene.env.material.customUniforms.uDarkenColor.value.set",
+        "static setAmbientLight=(e,t=.5,n=1.6)=>{this.setAmbientColor(e,n),this.setAmbientIntensity(t,n)}",
+        "static formatColor=e=>(typeof e==\"string\"",
+        "e=sr(e)",
+      ]),
+      excerpt: compact(sourceSe.text),
     },
     helperMaterialSurfaces: {
       lA: sourceLA && {
@@ -626,6 +643,26 @@ const summary = {
         "this.sceneWrap.position.y=.3",
       ]),
       excerpt: compact(sourceP1Resize.text),
+    },
+    p1CameraControllerSettings: sourceP1CameraSettings && {
+      index: sourceP1CameraSettings.index,
+      checks: checks(sourceP1CameraSettings.text, [
+        "setCameraControllerSettings(e=new L(0,0,0),t=new Q(.25,.25),n=10)",
+        "this.cameraController.lookAt=e",
+        "this.cameraController.targetXY.set(t.x,t.y)",
+        "this.cameraController.rotateAngle=Xc(n)",
+      ]),
+      excerpt: compact(sourceP1CameraSettings.text),
+    },
+    homeGalleryAnimateIn: sourceYDAnimateIn && {
+      index: sourceYDAnimateIn.index,
+      checks: checks(sourceYDAnimateIn.text, [
+        "J.workScene.setMouseFactor(0)",
+        "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)",
+        "ln.playPlucks()",
+        "J.workScene.setMouseFactor(this.mouseF)",
+      ]),
+      excerpt: compact(sourceYDAnimateIn.text),
     },
     p1EnvironmentHierarchy: sourceP1InitEnv && {
       index: sourceP1InitEnv.index,
