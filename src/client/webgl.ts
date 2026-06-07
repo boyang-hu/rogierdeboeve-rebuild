@@ -5873,8 +5873,8 @@ void main() {
     const displacementSize = Math.max(1, Math.round(height / 10));
     this.displacementTarget.setSize(displacementSize, displacementSize);
     this.preCompositeMaterial.uniforms.uDisplacementSize.value.set(displacementSize, displacementSize);
-    const floorReflectionWidth = Math.max(1, Math.round(width * 0.75));
-    const floorReflectionHeight = Math.max(1, Math.round(height * 0.75));
+    const floorReflectionWidth = Math.max(1, width * 0.75);
+    const floorReflectionHeight = Math.max(1, height * 0.75);
     this.floorReflectionTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
@@ -7305,8 +7305,8 @@ void main() {
         clipBias: this.floorReflectionClipBias,
         blurSwapMode: "source-i1-write-target-loop-swap",
         renderTargetUniformMode: "source-i1-update-after-each-blur-swap",
-        sourceCssSized: this.floorReflectionTarget.width === Math.max(1, Math.round(window.innerWidth * 0.75))
-          && this.floorReflectionTarget.height === Math.max(1, Math.round(window.innerHeight * 0.75)),
+        sourceCssSized: this.floorReflectionTarget.width === Math.max(1, window.innerWidth * 0.75)
+          && this.floorReflectionTarget.height === Math.max(1, window.innerHeight * 0.75),
       },
     };
   }
