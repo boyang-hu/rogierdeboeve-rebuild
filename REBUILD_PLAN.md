@@ -13,6 +13,7 @@ Last updated: 2026-06-07
 - Work in batches of related source-alignment steps, up to ten differences per batch. Keep each batch on one coherent chain such as `GA/VA` or `OA/CA`; shader/render-target batches may stop below ten when the risk is high or an early probe shows regression. Do not test/commit after every isolated one-line change unless it is the only safe change in that chain.
 - Implementation decisions must be source-backed. Visual QA is used to catch regressions and attribute remaining differences, not to justify visually beneficial changes without source evidence.
 - Prioritize source-structure, source-value, and source-behavior parity over any visual-payoff scoring. Visual improvement is not an implementation goal by itself; production changes need mirrored-bundle evidence even when they look better. Low perceived visual payoff is not a reason to stop while a source mismatch remains open.
+- Next-work ordering is based on three accepted criteria: clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Expected visual payoff is explicitly not an ordering or rejection criterion.
 - After each completed batch:
   - update this document,
   - run build and diff checks,

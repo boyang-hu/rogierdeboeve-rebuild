@@ -10,6 +10,8 @@ Rebuild `https://rogierdeboeve.com/` locally with a modern, lighter stack while 
 
 The user explicitly corrected the approach: do not rely mainly on visual screenshots. The rebuild should be source-code-driven from the mirrored original bundle, with visual QA only used as verification. Visual improvement is not the goal by itself; production changes need mirrored-bundle evidence even when they appear to improve the result. Known source mismatches must not be closed as "accepted deviations" based on visual review or low perceived visual payoff; they should either be fixed from source evidence, documented as unavoidable technical bridges, or left open.
 
+Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
+
 ## Chosen Stack
 
 - Astro static output
@@ -244,6 +246,8 @@ Goal: keep rebuilding `https://rogierdeboeve.com/` 1:1 using the agreed stack: A
 Important instruction: do not use screenshots as the primary implementation method. The user explicitly wants a source-code-driven rebuild. Use the mirrored source bundle as the spec:
 - `legacy-mirror/public/assets/bundle.250f01b7.js`
 - `legacy-mirror/public/assets/bundle.87ba3613.css`
+
+Priority rule: choose work by source mismatch evidence, 1:1 blocker severity, and controllable risk. Do not rank or reject source-backed mismatches by expected visual payoff.
 
 Do not delete `public/` or `legacy-mirror/`.
 
