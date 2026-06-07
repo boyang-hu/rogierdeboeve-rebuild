@@ -161,6 +161,10 @@ async function runProbe() {
   if (sizingErrors.length) {
     throw new Error(`Render-manager sizing source-shape mismatch: ${sizingErrors.join(", ")}`);
   }
+  const updateOrder = parsed.probe.settings?.updateOrder;
+  if (updateOrder?.environmentUpdateOrder !== "source-p1-component-post-render") {
+    throw new Error(`Environment update-order source-shape mismatch: ${updateOrder?.environmentUpdateOrder || "missing"}`);
+  }
   const shaderConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
   if (shaderConsoleMessages.length) {
     throw new Error(`Shader/WebGL console errors: ${shaderConsoleMessages.join("\n")}`);

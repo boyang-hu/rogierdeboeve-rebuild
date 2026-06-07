@@ -5036,6 +5036,7 @@ export class WebGLBackdrop {
   }
 
   private updateWorkSceneForNextFrame(time: number, delta: number) {
+    this.environmentMaterial.uniforms.uTime.value = time;
     this.updateHomeCamera(delta);
     if (this.spotLightParallax) {
       this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
@@ -5453,6 +5454,7 @@ export class WebGLBackdrop {
         updateOrder: {
           source: this.sourceUpdateOrder,
           postRenderFrame: this.sourcePostRenderFrame,
+          environmentUpdateOrder: "source-p1-component-post-render",
           skyPassClearing: "source-Lo-no-explicit-clear",
         },
       },
@@ -6000,7 +6002,6 @@ export class WebGLBackdrop {
     this.lastTickTime = time;
     this.pointer.lerp(this.targetPointer, 0.055);
     this.backgroundMaterial.uniforms.uTime.value = time;
-    this.environmentMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;

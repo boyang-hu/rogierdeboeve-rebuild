@@ -123,6 +123,8 @@ const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
+const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
+const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const rendererOutputRefs = [
@@ -348,6 +350,23 @@ const summary = {
         "this.sceneWrap.position.y=.3",
       ]),
       excerpt: compact(sourceP1Resize.text),
+    },
+    IuUpdate: sourceIuUpdate && {
+      index: sourceIuUpdate.index,
+      checks: checks(sourceIuUpdate.text, [
+        "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController&&this.cameraController.update(e,t,n,i);for",
+        "this.components[r].update&&this.components[r].update(e,t,n,i)",
+      ]),
+      excerpt: compact(sourceIuUpdate.text),
+    },
+    p1Update: sourceP1Update && {
+      index: sourceP1Update.index,
+      checks: checks(sourceP1Update.text, [
+        "update(e,t,n,i){super.update(e,t,n,i),this.spotLight&&this.spotLightParallax",
+        "o.instance.update(e,t,n,Math.min(Pe.dpr,1.5))",
+        "this.aboutBlocks.visible&&(this.aboutBlocks.update(e,t,n,Math.min(Pe.dpr,1.5))",
+      ]),
+      excerpt: compact(sourceP1Update.text),
     },
     GA: sourceGA && {
       index: sourceGA.index,

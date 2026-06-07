@@ -103,6 +103,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 26 | S1-99 | Source `VA/zA` material macro surface | Source `zA` uses old physical-material macro spellings such as `USE_SPECULARCOLORMAP`, `USE_SPECULARINTENSITYMAP`, `USE_SHEENCOLORMAP`, and `USE_SHEENROUGHNESSMAP`; the rebuild bridge still carried modern underscore spellings after prior material-body fixes. | Ordinary work-block `VA` now rewrites those four macro names to the source surface, and shader dump reports source-style specular and sheen-map macro checks true while modern underscore checks are false in both source and rebuild. | Low-medium | Keep as a source-correct material-surface alignment. This narrows shader residuals but does not close Phase 1; mobile/fog-bed, strict projection feel, and remaining source `bsdfs`/`opaque_fragment` bridge depth remain open. |
 | 27 | S1-100 | Source `Lu/kA` bloom pass clearing | Source `Lu.update()` renders luminosity, horizontal blur, vertical blur, and bloom-composite fullscreen passes directly after `setRenderTarget(...)` without explicit `renderer.clear()` calls. The rebuild still cleared those fullscreen pass targets before rendering. | Production now removes explicit clears from the shared `renderBloomChain()` passes and both work/main luminosity bright passes. Output probe reports `bloomPassClearing=source-Lu-no-explicit-clear` for work and main render managers, and fails if either drifts. | Low-medium | Keep as source-correct render-manager pass ownership. This does not close Phase 1; remaining gaps are still mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic render-manager structure. |
 | 28 | S1-101 | Source `I1` main render-manager sizing | Source `I1.resize()` uses `Fa(renderSize)/2` for main luminosity/bloom and then resizes main fluid with that half-POT size divided by `3`; this differs from work `Lu/kA`, which uses `/4`. | Production now restores main `I1` half-POT bloom/luminosity/fluid sizing while leaving work `Lu/kA` on quarter-POT. Output probe and renderer audit now assert the split so `I1` cannot be accidentally collapsed back into `Lu`. | Low-medium | Keep as source-correct sizing ownership. This is a structural correction, not a Phase 1 visual closeout. |
+| 29 | S1-102 | Source `Iu/p1/h1` update ordering | Source `Iu.update()` renders the render-manager first, then updates the camera controller and components; source `p1.update()` calls `super.update()` before work items/about blocks, so environment `h1.update()` is a component update after the current frame render. | Production now writes environment `uTime` in the post-render next-frame update path instead of the pre-render tick path. Renderer audit checks source `Iu.update()` and `p1.update()` anchors, and output probe asserts `environmentUpdateOrder=source-p1-component-post-render`. | Low-medium | Keep as source-correct frame-order ownership. This is a one-frame environment timing alignment, not a Phase 1 visual closeout; mobile/fog-bed and projection/material residuals remain open. |
 
 ### Phase 1 Open Blocker Board
 
@@ -386,6 +387,41 @@ Verification:
 | Mobile center-band delta | `-0.0121` against source |
 
 Decision: keep the source `I1` half-POT correction. It fixes a real render-manager ownership regression from S1-93; Phase 1 remains open for mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic renderer structure.
+
+### S1-102 Source `Iu/p1/h1` Environment Update Order
+
+This batch corrected environment time ownership to match the source frame order rather than updating every environment uniform before the current render.
+
+Source/runtime evidence:
+
+- Source `Iu.update(e,t,n,i)` calls `this.renderManager.update(e,t,n,i)` first, then updates the camera controller and iterates component `update()` calls.
+- Source `p1.update(e,t,n,i)` calls `super.update(e,t,n,i)` before spotlight parallax, work-item updates, and about-block updates.
+- `h1` environment is one of the `p1` components, so its `uTime` update happens after the current render-manager frame and prepares state for the next frame.
+
+Production change:
+
+- Environment material `uTime` is no longer written in the pre-render `tick()` path.
+- `uTime` is now written inside `updateWorkSceneForNextFrame()`, matching the source post-render component-update ordering.
+- `__rogierOutputProbe` reports `environmentUpdateOrder=source-p1-component-post-render`.
+- `scripts/probe-output-color.mjs` fails if the update-order marker drifts.
+- `scripts/audit-renderer-output.mjs` now extracts and checks source `Iu.update()` and `p1.update()` anchors.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `Iu.update()` and `p1.update()` update-order anchors present |
+| Output probe | Passed; `environmentUpdateOrder=source-p1-component-post-render` |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors |
+| Home source-vs-rebuild capture | Desktop/mobile home captures passed without failures or runtime exceptions |
+| Desktop center-band delta | `+0.0006` against source |
+| Mobile center-band delta | `-0.0124` against source |
+
+Decision: keep the source post-render environment timing. It aligns frame ownership with `Iu/p1` but does not close Phase 1; mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic renderer structure remain open.
 
 ### S1-70 Source Floor Circle Geometry
 
