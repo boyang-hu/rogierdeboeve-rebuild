@@ -131,19 +131,18 @@ Known remaining gaps:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild approximates these in a simpler Three shader pipeline.
 - The original projects the thumb render target through a spotlight map. The rebuild currently uses a reduced projection helper plus cube shader sampling. This is closer than a flat preview, but still not exact.
-- Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, but technical bridges remain: `uUvOffset` stays `vec2` for the source runtime `Vector2`, and `SPECULAR` stays bridged to Three r164 `USE_SPECULAR` unless the whole physical-light chunk is source-ported and verified.
+- Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Mouse/fluid simulation is structurally source-shaped but not yet interactively verified 1:1.
 
 Latest Phase 1 batch:
 
-- Source `zA` ordinary work fragment generation was tightened without visual tuning:
-  - the `VA-work` fragment shader now uses a direct source-shaped `zA` template instead of patching/stripping Three r164's `meshphysical` fragment template;
-  - source custom declarations, material surface order, include order, random grid alpha tail, mouse-simulation sampling, reveal/vignette alpha logic, and final source tail are preserved;
-  - the documented `SPECULAR -> USE_SPECULAR` technical bridge remains because local Three r164's `lights_physical_fragment` requires `USE_SPECULAR`;
-  - auxiliary block fragments remain on the safer r164 bridge because they are not ordinary source `VA-work`;
-  - shader dump now records/asserts `noR164StripCommentsInWorkFragment`.
-- `VA-work` fragment text delta narrowed to `-1`; the final fragment diff is limited to the `SPECULAR`/`USE_SPECULAR` bridge plus whitespace normalization. The prior direct `HA` vertex template remains at delta `-28`, limited to the `uUvOffset` bridge plus whitespace normalization.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0044` and mobile center `+0.0298`, recorded only as regression evidence.
+- Source `zA` ordinary work fragment macro parity was tightened without visual tuning:
+  - the `VA-work` direct `zA` fragment template now keeps the source old `SPECULAR` macro instead of the temporary Three r164 `USE_SPECULAR` bridge;
+  - runtime output probes now hard-check that the active ordinary work material is `MeshStandardMaterial`, `isMeshPhysicalMaterial=false`, and has no `PHYSICAL` define, so that source `PHYSICAL` branch is inactive for ordinary work;
+  - shader dump now classifies ordinary `VA-work` as `source-old-specular-macro-standard-material-physical-branch-inactive`;
+  - the shader residual summarizer now reports the restored source macro classification instead of reintroducing stale `SPECULAR/USE_SPECULAR` bridge wording.
+- `VA-work` direct `HA/zA` residuals are now reduced to the source-proven `uUvOffset vec2` runtime bridge plus whitespace/generation normalization for ordinary work. Auxiliary block shaders still use the safer r164 bridge because they are not ordinary source `VA-work`.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0041` and mobile center `+0.0288`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open; this was source surface parity, not a visual closeout or accepted deviation.
 
@@ -203,15 +202,15 @@ npm run dev
 
 Continue source-driven implementation in this order:
 
-1. Review whether the remaining ordinary `VA-work` `SPECULAR`/`USE_SPECULAR` compile bridge can only be closed by source-porting the physical-light chunk.
-   - Do not replace `USE_SPECULAR` with `SPECULAR` in production unless WebGL compile is proven after the relevant light chunk is also source-ported.
+1. Continue spotlight/thumb projection evidence.
+   - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
+   - Current rebuild has source spotlight-map ownership but the projected thumb feel is still not exact.
 2. Extract the original main composite/render-manager shader behavior from `bundle.250f01b7.js`.
    - Look near original `A1`, `OA`, `kA`, `Lu`, and main scene render manager code.
-   - Port only what materially affects the 1:1 home result.
-3. Revisit the spotlight/thumb projection path.
-   - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild uses a lighter projection helper plus cube shader sampling.
-   - A closer port should make the thumb image feel projected into cube volume, not overlaid.
+   - Port source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
+3. Revisit floor/environment distribution from source evidence.
+   - The visible fog-bed/horizon still differs from the source.
+   - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Improve original mouse/fluid simulation fidelity.
    - Original `GA` uses `Ka` mouse simulation with `tMouseSim`, `tMouseSim2`, and `tDisplacement`.
    - Rebuild has the source-shaped render-target structure but still needs interactive 1:1 verification.

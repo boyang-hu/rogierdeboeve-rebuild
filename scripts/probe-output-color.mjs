@@ -215,6 +215,11 @@ async function runProbe() {
   if (workSettings.materialStateMode !== "source-VA-meshstandard-default-toneMapped") materialErrors.push("materialStateMode");
   if (workSettings.vertexWorldPositionMode !== "source-HA-unconditional-instance-world") materialErrors.push("vertexWorldPositionMode");
   if (!activeMaterial) materialErrors.push("activeMaterialMissing");
+  if (activeMaterial?.type !== "MeshStandardMaterial") materialErrors.push("activeMaterialType");
+  if (activeMaterial?.isMeshStandardMaterial !== true) materialErrors.push("activeIsMeshStandardMaterial");
+  if (activeMaterial?.isMeshPhysicalMaterial !== false) materialErrors.push("activeIsMeshPhysicalMaterial");
+  if (activeMaterial?.hasPhysicalDefine !== false) materialErrors.push("activePhysicalDefine");
+  if (activeMaterial?.physicalBranchMode !== "source-VA-standard-material-PHYSICAL-inactive") materialErrors.push("activePhysicalBranchMode");
   if (activeMaterial?.toneMapped !== true) materialErrors.push("activeToneMapped");
   if (activeMaterial?.transparent !== true) materialErrors.push("activeTransparent");
   if (activeMaterial?.depthWrite !== false) materialErrors.push("activeDepthWrite");

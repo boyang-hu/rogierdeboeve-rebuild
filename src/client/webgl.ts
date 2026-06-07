@@ -793,7 +793,7 @@ uniform sampler2D tDisplacement;
 #define STANDARD
 #ifdef PHYSICAL
 	#define IOR
-	#define USE_SPECULAR
+	#define SPECULAR
 #endif
 uniform vec3 diffuse;
 uniform vec3 emissive;
@@ -803,7 +803,7 @@ uniform float opacity;
 #ifdef IOR
 uniform float ior;
 #endif
-#ifdef USE_SPECULAR
+#ifdef SPECULAR
 uniform float specularIntensity;
 uniform vec3 specularColor;
 	#ifdef USE_SPECULARINTENSITYMAP
@@ -7130,6 +7130,13 @@ void main() {
             depthWrite: activeWorkItem.material.depthWrite,
             depthTest: activeWorkItem.material.depthTest,
             dithering: activeWorkItem.material.dithering,
+            type: activeWorkItem.material.type,
+            isMeshStandardMaterial: activeWorkItem.material.isMeshStandardMaterial === true,
+            isMeshPhysicalMaterial: "isMeshPhysicalMaterial" in activeWorkItem.material
+              ? (activeWorkItem.material as MeshStandardMaterial & { isMeshPhysicalMaterial?: boolean }).isMeshPhysicalMaterial === true
+              : false,
+            hasPhysicalDefine: Object.hasOwn(activeWorkItem.material.defines ?? {}, "PHYSICAL"),
+            physicalBranchMode: "source-VA-standard-material-PHYSICAL-inactive",
           } : null,
           materialStateMode: "source-VA-meshstandard-default-toneMapped",
           vertexWorldPositionMode: "source-HA-unconditional-instance-world",

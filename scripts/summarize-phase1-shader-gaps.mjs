@@ -56,6 +56,9 @@ function checksStatus(checks) {
 function bridgeStatus(entry) {
   const compatibility = entry?.vaBridgeCompatibility;
   if (!compatibility) return "-";
+  if (compatibility.classification === "source-old-specular-macro-standard-material-physical-branch-inactive") {
+    return "source old `SPECULAR` macro restored; ordinary work is guarded as `MeshStandardMaterial`, so the `PHYSICAL` branch is inactive";
+  }
   if (compatibility.classification === "r164-compile-bridge") {
     return "r164 compile bridge: source `SPECULAR`, rebuild keeps `USE_SPECULAR` for Three `lights_physical_fragment`";
   }
@@ -140,11 +143,14 @@ const vaWorkHasCommentedIncludeResidual = Boolean(
   vaWorkRow
   && vaWorkRow.fragmentCommentedIncludesSource.length !== vaWorkRow.fragmentCommentedIncludesRebuild.length,
 );
+const vaWorkBridgeClassification = shaderSummary["VA-work"]?.vaBridgeCompatibility?.classification;
 const vaWorkReading = vaWorkHasIncludeResidual
   ? `- \`VA-work\` still has an include-surface residual: source-only ${values(vaWorkRow.fragmentOnlySourceIncludes)}, rebuild-only ${values(vaWorkRow.fragmentOnlyRebuildIncludes)}.`
   : vaWorkHasCommentedIncludeResidual
     ? `- \`VA-work\` still has a commented include-surface residual: source commented ${values(vaWorkRow.fragmentCommentedIncludesSource)}, rebuild commented ${values(vaWorkRow.fragmentCommentedIncludesRebuild)}.`
-  : "- `VA-work` no longer has source/rebuild include or uniform residuals in this generated dump; the remaining `SPECULAR`/`USE_SPECULAR` define difference is classified separately as a Three r164 compile bridge when present.";
+    : vaWorkBridgeClassification === "source-old-specular-macro-standard-material-physical-branch-inactive"
+      ? "- `VA-work` no longer has source/rebuild include or uniform residuals in this generated dump; the old source `SPECULAR` macro is restored for the ordinary work fragment and classified as safe because the active work material is `MeshStandardMaterial`, leaving `PHYSICAL` inactive."
+      : "- `VA-work` no longer has source/rebuild include or uniform residuals in this generated dump; any remaining `SPECULAR`/`USE_SPECULAR` define difference is classified separately as a Three r164 compile bridge when present.";
 
 const markdown = [
   "# Phase 1 Shader Residual Summary",

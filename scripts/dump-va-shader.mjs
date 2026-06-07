@@ -983,11 +983,13 @@ function analyzeVaBridgeCompatibility(sourceShader, rebuildShader) {
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
   const lightsPhysical = normalizeShaderForCoreChecks(ShaderChunk.lights_physical_fragment || "");
   const sourceHasOldSpecularDefine = source.includes("#ifdefPHYSICAL#defineIOR#defineSPECULAR#endif");
+  const rebuildHasOldSpecularDefine = rebuild.includes("#ifdefPHYSICAL#defineIOR#defineSPECULAR#endif");
   const rebuildHasR164SpecularDefine = rebuild.includes("#ifdefPHYSICAL#defineIOR#defineUSE_SPECULAR#endif");
   const lightsPhysicalRequiresUseSpecular = lightsPhysical.includes("#ifdefUSE_SPECULAR");
   const lightsPhysicalAcceptsOldSpecular = lightsPhysical.includes("#ifdefSPECULAR");
   return {
     sourceHasOldSpecularDefine,
+    rebuildHasOldSpecularDefine,
     rebuildHasR164SpecularDefine,
     lightsPhysicalRequiresUseSpecular,
     lightsPhysicalAcceptsOldSpecular,
@@ -1002,12 +1004,14 @@ function analyzeVaBridgeCompatibility(sourceShader, rebuildShader) {
     r164PhysicalBranchesStripped: {
       rebuild: !rebuild.includes("USE_DISPERSION") && !rebuild.includes("USE_ANISOTROPY") && !rebuild.includes("sheenEnergyComp"),
     },
-    classification: sourceHasOldSpecularDefine
-      && rebuildHasR164SpecularDefine
-      && lightsPhysicalRequiresUseSpecular
-      && !lightsPhysicalAcceptsOldSpecular
-      ? "r164-compile-bridge"
-      : "needs-review",
+    classification: sourceHasOldSpecularDefine && rebuildHasOldSpecularDefine
+      ? "source-old-specular-macro-standard-material-physical-branch-inactive"
+      : sourceHasOldSpecularDefine
+        && rebuildHasR164SpecularDefine
+        && lightsPhysicalRequiresUseSpecular
+        && !lightsPhysicalAcceptsOldSpecular
+        ? "r164-compile-bridge"
+        : "needs-review",
   };
 }
 
