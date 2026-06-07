@@ -970,6 +970,10 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
       source: orderedBefore(sourceShader, "float vignette(vec2 coords", "void main()"),
       rebuild: orderedBefore(rebuildShader, "float vignette(vec2 coords", "void main()"),
     }],
+    ["noR164StripCommentsInWorkFragment", {
+      source: !sourceShader.includes("source VA omits"),
+      rebuild: !rebuildShader.includes("source VA omits"),
+    }],
   ]));
 }
 

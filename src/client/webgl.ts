@@ -771,6 +771,183 @@ float vignette(vec2 coords, vec2 center, float vignin, float vignout, float vign
 }
 `;
 
+const workBlockSourceZaFragmentShader = `
+varying float vInstanceIndex;
+varying float vInstanceAlpha;
+varying vec3 vInstanceColor;
+varying vec3 vPosition;
+varying vec3 vOffset;
+uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
+uniform float uTime;
+uniform float uMouseFactor;
+uniform float uMouseLightness;
+uniform vec2 uCoords;
+uniform float uReveal;
+uniform float uRevealProject;
+uniform float uRevealSides;
+varying vec2 vUv;
+uniform sampler2D tMouseSim2;
+uniform sampler2D tDisplacement;
+
+#define STANDARD
+#ifdef PHYSICAL
+	#define IOR
+	#define USE_SPECULAR
+#endif
+uniform vec3 diffuse;
+uniform vec3 emissive;
+uniform float roughness;
+uniform float metalness;
+uniform float opacity;
+#ifdef IOR
+uniform float ior;
+#endif
+#ifdef USE_SPECULAR
+uniform float specularIntensity;
+uniform vec3 specularColor;
+	#ifdef USE_SPECULARINTENSITYMAP
+uniform sampler2D specularIntensityMap;
+	#endif
+	#ifdef USE_SPECULARCOLORMAP
+uniform sampler2D specularColorMap;
+	#endif
+#endif
+#ifdef USE_CLEARCOAT
+uniform float clearcoat;
+uniform float clearcoatRoughness;
+#endif
+#ifdef USE_IRIDESCENCE
+uniform float iridescence;
+uniform float iridescenceIOR;
+uniform float iridescenceThicknessMinimum;
+uniform float iridescenceThicknessMaximum;
+#endif
+#ifdef USE_SHEEN
+uniform vec3 sheenColor;
+uniform float sheenRoughness;
+	#ifdef USE_SHEENCOLORMAP
+uniform sampler2D sheenColorMap;
+	#endif
+	#ifdef USE_SHEENROUGHNESSMAP
+uniform sampler2D sheenRoughnessMap;
+	#endif
+#endif
+varying vec3 vViewPosition;
+#include <common>
+#include <packing>
+#include <dithering_pars_fragment>
+// #include <color_pars_fragment>
+#include <uv_pars_fragment>
+// #include <map_pars_fragment>
+// #include <alphamap_pars_fragment>
+// #include <alphatest_pars_fragment>
+// #include <aomap_pars_fragment>
+// #include <lightmap_pars_fragment>
+// #include <emissivemap_pars_fragment>
+#include <bsdfs>
+// #include <iridescence_fragment>
+// #include <cube_uv_reflection_fragment>
+// #include <envmap_common_pars_fragment>
+// #include <envmap_physical_pars_fragment>
+// #include <fog_pars_fragment>
+#include <lights_pars_begin>
+#include <normal_pars_fragment>
+#include <lights_physical_pars_fragment>
+#include <transmission_pars_fragment>
+#include <shadowmap_pars_fragment>
+// #include <bumpmap_pars_fragment>
+// #include <normalmap_pars_fragment>
+// #include <clearcoat_pars_fragment>
+// #include <iridescence_pars_fragment>
+// #include <roughnessmap_pars_fragment>
+// #include <metalnessmap_pars_fragment>
+// #include <logdepthbuf_pars_fragment>
+// #include <clipping_planes_pars_fragment>
+
+float random(vec2 st)
+{
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+
+float vignette(vec2 coords, vec2 center, float vignin, float vignout, float vignfade, float fstop) {
+  float dist = distance(coords.xy, center);
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
+}
+
+
+void main() {
+	// #include <clipping_planes_fragment>
+  vec4 diffuseColor = vec4(diffuse, opacity);
+  ReflectedLight reflectedLight = ReflectedLight(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
+  vec3 totalEmissiveRadiance = emissive;
+
+  #include <roughnessmap_fragment>
+	#include <metalnessmap_fragment>
+	#include <normal_fragment_begin>
+	#include <normal_fragment_maps>
+	#include <lights_physical_fragment>
+	#include <lights_fragment_begin>
+	#include <lights_fragment_end>
+
+  vec3 totalDiffuse = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
+  vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+  vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
+
+  #include <opaque_fragment>
+
+  float mixedAlpha = vInstanceAlpha;
+  vec2 newUv = vUv;
+  vec2 newOffset = vOffset.xy;
+
+  newUv.x /= uGridSize.x;
+  newUv.y /= uGridSize.y;
+
+  newUv.x += newOffset.x;
+  newUv.y += newOffset.y;
+
+  vec2 gridUv = vec2(floor(newUv.x * uGridSize.x), floor(newUv.y * uGridSize.y));
+  vec2 gridUv2 = vec2(floor(newUv.y * uGridSize.y), floor(newUv.x * uGridSize.y));
+
+  float alpha = mix(random(gridUv * vInstanceAlpha), random(gridUv), 1.);
+  float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.);
+
+  // create a vignette
+
+  // get screen uv
+  vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
+  vec4 mouseSim = texture2D(tMouseSim2, screenUv);
+  vec4 displacement = texture2D(tDisplacement, newUv);
+
+  float revealCombined = uReveal * uRevealProject;
+  float mouseF = 1. - mouseSim.r;
+
+  mixedAlpha =  ((alpha * alpha2) * vInstanceAlpha);
+  if(screenUv.y > 0.1) mixedAlpha += clamp(mouseSim.r * (uMouseFactor * 0.5), 0., 1.);
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), (1. - uMouseLightness));
+
+  float vignin = 0.01;
+  float vignout = 0.2;
+  float vignfade = 6.;
+  float fstop = 1.0;
+
+  vec2 center = vec2(0.5, 0.5);
+
+  float v = vignette(newUv.xy, center.xy, 0.01, 0.2,  6., 1.0);
+  float v2 = vignette(newUv.xy, center.xy, 0.01, 2.0 * pow(revealCombined, .25),  6. , 1.0);
+
+  mixedAlpha += v * .1;
+  mixedAlpha -= 1. - v2;
+  mixedAlpha *= uRevealSides;
+
+  gl_FragColor.a = mixedAlpha;
+
+  // #include <tonemapping_fragment>
+}
+`;
+
 const auxiliaryBlockFragmentPars = `
 uniform float uAuxiliaryMaterial;
 uniform float uScrollOpacity;
@@ -913,20 +1090,16 @@ function patchWorkBlockShader(
       .replace("#include <worldpos_vertex>", workBlockSourceWorldPositionChunk)
       .replace("#include <shadowmap_vertex>\n\t#include <fog_vertex>", workBlockSourceShadowmapVertexChunk);
   }
-  shader.fragmentShader = `${workBlockFragmentDeclarationPars}\n${variant === "auxiliary" ? `${auxiliaryBlockFragmentPars}\n` : ""}${shader.fragmentShader}`
-    .replace("#include <clipping_planes_pars_fragment>", `#include <clipping_planes_pars_fragment>\n\n${workBlockFragmentHelperPars}`)
-    .replace("#include <tonemapping_fragment>", variant === "work" ? "// #include <tonemapping_fragment>" : "// source VA omits tonemapping_fragment")
-    .replace("#include <colorspace_fragment>", "// source VA omits colorspace_fragment")
-    .replace("#include <fog_fragment>", "// source VA omits fog_fragment")
-    .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
-    .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
   if (variant === "work") {
-    shader.fragmentShader = shader.fragmentShader.replace("#include <lights_pars_begin>", "#include <bsdfs>\n#include <lights_pars_begin>");
-    shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", workBlockSourceTailFragmentChunk);
-    shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
-    shader.fragmentShader = stripSourceVaR164PhysicalBranches(shader.fragmentShader);
-    shader.fragmentShader = alignSourceVaMaterialMacroSurface(shader.fragmentShader);
+    shader.fragmentShader = workBlockSourceZaFragmentShader;
   } else {
+    shader.fragmentShader = `${workBlockFragmentDeclarationPars}\n${auxiliaryBlockFragmentPars}\n${shader.fragmentShader}`
+      .replace("#include <clipping_planes_pars_fragment>", `#include <clipping_planes_pars_fragment>\n\n${workBlockFragmentHelperPars}`)
+      .replace("#include <tonemapping_fragment>", "// source VA omits tonemapping_fragment")
+      .replace("#include <colorspace_fragment>", "// source VA omits colorspace_fragment")
+      .replace("#include <fog_fragment>", "// source VA omits fog_fragment")
+      .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
+      .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", auxiliaryBlockOpaqueFragmentChunk);
   }
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("dump-va-shader")) {
