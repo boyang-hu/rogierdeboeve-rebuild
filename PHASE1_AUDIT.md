@@ -3759,3 +3759,37 @@ Band snapshot from `/tmp/rd-s1-85-capture`:
 | Mobile source -> rebuild | `-0.0126` | `+0.0150` |
 
 Decision: keep the source render-state parity. This removes a real draw-state divergence and slightly improves the mobile center-band delta versus S1-84, but Phase 1 remains open for the remaining mobile/fog-bed and projection-feel residuals.
+
+### S1-86 Shader Audit Comment-Include Handling
+
+This batch cleaned up a Phase 1 audit-harness false positive before making more runtime changes.
+
+Source evidence:
+
+- Source `u1-environment` contains a long block of full-line commented Three shader includes near the fragment tail, including `// #include <tonemapping_fragment>` and `// #include <colorspace_fragment>`.
+- Those commented includes are not live shader code. `collectIncludes()` already ignored full-line comments, so `u1-environment` had no live include delta; only `analyzeCompositeCore()` was still matching against raw normalized text and counting the commented tonemapping include.
+
+Tooling changes:
+
+- `scripts/dump-va-shader.mjs` now strips full-line comments before normalized composite-core matching.
+- Generic shader summaries now expose `fragmentCommentedIncludesSource` and `fragmentCommentedIncludesRebuild` separately, so commented source bundle text remains visible without being treated as runtime parity work.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s1-86-shader`.
+- Shader dump confirms `u1-environment.compositeCoreChecks.tonemappingTail` is now `source=false` and `rebuild=false`; the source-only commented include list still reports the commented `tonemapping_fragment`, `colorspace_fragment`, `fog_fragment`, and related includes.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-s1-86-output`.
+- Thumb spotlight probe passed and retained a non-empty thumb target/composite target plus spotlight map: `/tmp/rd-s1-86-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-s1-86-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-s1-86-capture`.
+
+Band snapshot from `/tmp/rd-s1-86-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0012` | `+0.0001` |
+| Mobile source -> rebuild | `-0.0128` | `+0.0208` |
+
+Decision: keep the audit cleanup. It prevents a non-runtime source comment from driving production shader changes. Phase 1 remains open for the remaining mobile/fog-bed, safe `u1/l1` shader-body, `VA/GA` material-body, and spotlight/thumb projection residuals.

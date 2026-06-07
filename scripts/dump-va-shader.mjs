@@ -128,6 +128,14 @@ function collectIncludes(shader) {
     .flatMap((line) => [...line.matchAll(/#include <([^>]+)>/g)].map((match) => match[1]));
 }
 
+function collectCommentedIncludes(shader) {
+  return shader
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("//"))
+    .flatMap((line) => [...line.matchAll(/#include <([^>]+)>/g)].map((match) => match[1]));
+}
+
 function collectUniformNames(shader) {
   const names = [];
   for (const match of shader.matchAll(/\buniform\s+[^;]*?\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\[[^\]]+\])?\s*;/g)) {
@@ -420,7 +428,15 @@ function summarizeGenericShader(sourceShader, rebuildShader) {
 }
 
 function normalizeShaderForCoreChecks(shader = "") {
-  return shader.replace(/\s+/g, "").replace(/texture2D/g, "texture");
+  return shader
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      return trimmed.startsWith("//") ? "" : line;
+    })
+    .join("\n")
+    .replace(/\s+/g, "")
+    .replace(/texture2D/g, "texture");
 }
 
 function analyzeCompositeCore(sourceShader, rebuildShader) {
@@ -557,6 +573,10 @@ try {
       vertex: summarizeGenericShader(sourceVertex, entry.vertexShader),
       fragment: summarizeGenericShader(sourceFragment, entry.fragmentShader),
       compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
+      commentedIncludes: {
+        fragmentSource: sourceFragment ? collectCommentedIncludes(sourceFragment) : [],
+        fragmentRebuild: collectCommentedIncludes(entry.fragmentShader),
+      },
       files: {
         rebuildVertex: path.join(outDir, `rebuild-${safeName}-vertex.glsl`),
         rebuildFragment: path.join(outDir, `rebuild-${safeName}-fragment.glsl`),
@@ -622,6 +642,8 @@ try {
         fragmentUniformsOnlyRebuild: analysis.fragment.uniforms.onlyRebuild,
         fragmentIncludesOnlySource: analysis.fragment.includes.onlySource,
         fragmentIncludesOnlyRebuild: analysis.fragment.includes.onlyRebuild,
+        fragmentCommentedIncludesSource: analysis.commentedIncludes.fragmentSource,
+        fragmentCommentedIncludesRebuild: analysis.commentedIncludes.fragmentRebuild,
         compositeCoreChecks: analysis.compositeCoreChecks,
         files: analysis.files,
       },
