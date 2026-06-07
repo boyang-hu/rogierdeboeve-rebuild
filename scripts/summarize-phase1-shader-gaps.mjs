@@ -50,6 +50,15 @@ function checksStatus(checks) {
   return parts.join("; ");
 }
 
+function bridgeStatus(entry) {
+  const compatibility = entry?.vaBridgeCompatibility;
+  if (!compatibility) return "-";
+  if (compatibility.classification === "r164-compile-bridge") {
+    return "r164 compile bridge: source `SPECULAR`, rebuild keeps `USE_SPECULAR` for Three `lights_physical_fragment`";
+  }
+  return `bridge compatibility: ${compatibility.classification || "needs-review"}`;
+}
+
 function classify(name, entry) {
   const fragment = entry.fragment || {};
   const vertex = entry.vertex || {};
@@ -89,6 +98,7 @@ const rows = focusOrder
       fragmentOnlyRebuildIncludes: entry.fragment?.includes?.onlyRebuild || [],
       fragmentOnlySourceUniforms: entry.fragment?.uniforms?.onlySource || [],
       fragmentOnlyRebuildUniforms: entry.fragment?.uniforms?.onlyRebuild || [],
+      bridge: bridgeStatus(entry),
       coreChecks: checksStatus(
         entry.vaFragmentCoreChecks
           || entry.compositeCoreChecks
@@ -108,15 +118,15 @@ const vaWorkHasIncludeResidual = Boolean(
 );
 const vaWorkReading = vaWorkHasIncludeResidual
   ? `- \`VA-work\` still has an include-surface residual: source-only ${values(vaWorkRow.fragmentOnlySourceIncludes)}, rebuild-only ${values(vaWorkRow.fragmentOnlyRebuildIncludes)}.`
-  : "- `VA-work` no longer has source/rebuild include or uniform residuals in this generated dump; remaining differences are generated shader text/bridge depth unless new core-check residuals appear.";
+  : "- `VA-work` no longer has source/rebuild include or uniform residuals in this generated dump; the remaining `SPECULAR`/`USE_SPECULAR` define difference is classified separately as a Three r164 compile bridge when present.";
 
 const markdown = [
   "# Phase 1 Shader Residual Summary",
   "",
   `Input: \`${inputDir}\``,
   "",
-  "| Shader | Status | Vertex Delta | Fragment Delta | Fragment Source-Only Includes | Fragment Rebuild-Only Includes | Fragment Source-Only Uniforms | Fragment Rebuild-Only Uniforms | Core Checks |",
-  "| --- | --- | ---: | ---: | --- | --- | --- | --- | --- |",
+  "| Shader | Status | Vertex Delta | Fragment Delta | Fragment Source-Only Includes | Fragment Rebuild-Only Includes | Fragment Source-Only Uniforms | Fragment Rebuild-Only Uniforms | Bridge Notes | Core Checks |",
+  "| --- | --- | ---: | ---: | --- | --- | --- | --- | --- | --- |",
   ...rows.map((row) => [
     `\`${row.shader}\``,
     row.status,
@@ -126,6 +136,7 @@ const markdown = [
     values(row.fragmentOnlyRebuildIncludes),
     values(row.fragmentOnlySourceUniforms),
     values(row.fragmentOnlyRebuildUniforms),
+    row.bridge,
     row.coreChecks,
   ].join(" | ")).map((line) => `| ${line} |`),
   "",

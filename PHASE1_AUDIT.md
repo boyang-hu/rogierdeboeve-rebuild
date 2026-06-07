@@ -123,6 +123,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 46 | S1-119 | Source `GT.createBounds()` advection boundary pass | Source `GT.init()` calls `createBounds()`, which adds a line segment geometry around the fluid domain with vertex shader `VT`, fragment `Sf`, `glslVersion:lt`, `blending:ot`, and the same advection uniforms as the main `Co/Sf` material. | Production now adds the source `VT/Sf` `ag-advection-bounds` line pass to the advection scene, using `LineSegments`, the source boundary vertex coordinates, shared advection uniforms, and raw GLSL3/no-blending material state. Output probe asserts the boundary material, shared uniforms, and two-child advection scene; shader dump maps `ag-advection-bounds` to source `VT/Sf`; renderer audit checks the source geometry and line-add anchors. | Low-medium | Keep as source-correct advection boundary ownership. This completes the missing source `GT` boundary surface but does not close Phase 1; remaining blockers are still mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 47 | S1-120 | Phase 1 shader residual audit and source `$T` force surface | Source `$T` force fragment declares `force`, `center`, `scale`, and `px`; the rebuild's `ag-force` vertex had the placement uniforms but the fragment only declared `force`. Current shader dumps also needed a compact source-vs-rebuild residual board so the next 5-10 point batches are based on current generated shaders rather than memory. | Production now declares `center`, `scale`, and `px` in the `ag-force` fragment surface without changing the formula. `scripts/summarize-phase1-shader-gaps.mjs` now generates `phase1-shader-residuals.md/json` from a dump directory, and `dump-va-shader.mjs` automatically writes that report after each shader dump. | Low | Keep as source-correct pass-surface and QA attribution work. S1-121 supersedes the older `VA-work` include-surface note. Phase 1 remains open. |
 | 48 | S1-121 | Source `VA/zA` include surface | Source `zA` keeps `#include <bsdfs>` before lights parsing and `#include <opaque_fragment>` before the source `gl_FragColor.rgb/a` tail mutations. The rebuild had manually expanded the opaque output tail, leaving an avoidable include-surface residual even though core checks matched. | Ordinary work-block `VA` now restores the source include surface by inserting `bsdfs` in the work variant and using `#include <opaque_fragment>` before the existing source-style tail mutations. The shader residual report text is now conditional so it cannot keep reporting a stale `VA-work` include residual after the generated dump clears it. | Low-medium | Keep as source-correct `VA/zA` surface alignment. Shader dump now reports no `VA-work` source/rebuild include or uniform residuals, but Phase 1 remains open for generated shader text/bridge depth, mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
+| 49 | S1-122 | `VA/zA` r164 bridge attribution | Source `zA` uses the old `SPECULAR` define surface under `PHYSICAL`, but the local Three r164 `lights_physical_fragment` chunk requires `USE_SPECULAR` and does not accept `SPECULAR`. The remaining `VA-work` text diff therefore needed to be classified so it is not mistaken for a safe source-constant or visual tweak. | Production rendering is unchanged. Shader dump now records `vaBridgeCompatibility`, reports the Three r164 `lights_physical_fragment` chunk surface, and `phase1-shader-residuals.md` adds a Bridge Notes column that classifies `VA-work` as an `r164 compile bridge` while still showing include/uniform/core anchors matched. | Low | Keep as QA attribution. Do not replace `USE_SPECULAR` with `SPECULAR` unless the entire `lights_physical_fragment` dependency is source-ported and WebGL-verified. Phase 1 remains open for visual parity, but this removes one false implementation target. |
 
 ### Phase 1 Open Blocker Board
 
@@ -132,7 +133,7 @@ This board reflects the current active state after S1-46B through S1-50. Older r
 | --- | --- | --- | --- | --- |
 | `p1` hierarchy/lights/route state | Source-shaped | Scene hierarchy, active project, work count, light constants, about/floating toggles, and full-canvas QA are stable. | No | Keep as regression gate only. |
 | `T1/w1/E1` thumb target | Source-shaped | Thumb target size, visible thumb count, composite uniforms, texture color-space fix, and S1-49 projection coverage are attributed. | No | Do not tune thumb darkness/intensity. |
-| `GA/VA` ordinary blocks | Stable bridge, still not full source shader | Material defaults, alpha tail, physical-response probes, vertex world/UV probes, projection coverage, and current `VA-work` include/uniform surface are attributed; full `HA/zA` replacement was rejected as unsafe in the current bridge. | Yes for strict 1:1 | Keep stable bridge for runtime safety, but do not mark it accepted without user visual review or narrower source-safe shader evidence. |
+| `GA/VA` ordinary blocks | Stable bridge, still not full source shader | Material defaults, alpha tail, physical-response probes, vertex world/UV probes, projection coverage, current `VA-work` include/uniform surface, and the r164 `USE_SPECULAR` compile bridge are attributed; full `HA/zA` replacement was rejected as unsafe in the current bridge. | Yes for strict 1:1 | Keep stable bridge for runtime safety, but do not mark it accepted without user visual review or narrower source-safe shader evidence. |
 | `Ka` mouse simulation | Structurally attributed | S1-50 verifies target sizing, `uCoords`, UV offset/scale, persistence/thickness shape, and negligible static darken contribution. | No | Interactive feel QA only if visibly off. |
 | `A1/C1` pre-composite | Source-equivalent for home flow | S1-83 confirms semantic flow order matches source, including the formerly inert/relocated computations. | No for home brightness | Keep project pages as regression gates. |
 | `OA/CA` final transfer | Open transfer/color interpretation gap | Source formulas, blend table, renderer output, and darken inputs are confirmed. Gamma-like transfer debug moves luma but lacks source proof. | Yes | Needs source-backed transfer fix, narrower source evidence, or explicit user acceptance after visual review. |
@@ -1128,6 +1129,35 @@ Verification notes:
 - Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
 - Band analysis: desktop center-band delta `+0.0008`; mobile center-band delta `-0.0125`.
 - Phase 1 remains open for generated shader text/bridge depth, strict projection/material feel, mobile/fog-bed distribution, and transfer interpretation.
+
+### S1-122 `VA/zA` r164 Bridge Attribution
+
+This batch did not change rendering. It prevents a known unsafe follow-up by classifying the remaining `VA-work` shader text residual that looked source-different after S1-121.
+
+Source/runtime evidence:
+
+- Source `zA` uses the old physical-material define surface `#define SPECULAR` under `PHYSICAL`.
+- The local Three r164 `lights_physical_fragment` chunk gates specular setup behind `#ifdef USE_SPECULAR`, and does not include an `#ifdef SPECULAR` path.
+- The rebuild has already aligned old source map macro spellings such as `USE_SPECULARCOLORMAP` / `USE_SPECULARINTENSITYMAP`, and has stripped r164-only dispersion, anisotropy, and sheen outgoing-light branches.
+- Therefore the remaining `SPECULAR` versus `USE_SPECULAR` difference is a compile bridge for the Three r164 chunk dependency, not a safe standalone source-text replacement.
+
+Runtime and tooling changes:
+
+- `scripts/dump-va-shader.mjs` now records `vaBridgeCompatibility` for `VA-work`.
+- The dump summary now exposes `lightsPhysicalFragment` chunk checks alongside `lightsFragmentBegin` and `opaqueFragment`.
+- `scripts/summarize-phase1-shader-gaps.mjs` adds a Bridge Notes column and classifies `VA-work` as an `r164 compile bridge` when the source/rebuild/chunk evidence matches this shape.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed and wrote `/tmp/rd-s122-shader/phase1-shader-residuals.md`; `VA-work` reports no include/uniform residuals and Bridge Notes says the remaining specular define delta is an r164 compile bridge.
+- Output probe passed with no failures, exceptions, or shader/WebGL console errors.
+- Thumb spotlight probe passed.
+- Project media probe passed; project pages retain five visible media tracks.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
+- Band analysis: desktop center-band delta `+0.0018`; mobile center-band delta `-0.0139`.
+- Phase 1 remains open. This is attribution hardening so the next implementation batch can focus on visual parity blockers instead of a false `VA` macro target.
 
 ### S1-70 Source Floor Circle Geometry
 

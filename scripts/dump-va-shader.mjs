@@ -628,6 +628,40 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
   ]));
 }
 
+function analyzeVaBridgeCompatibility(sourceShader, rebuildShader) {
+  if (!sourceShader) return null;
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const lightsPhysical = normalizeShaderForCoreChecks(ShaderChunk.lights_physical_fragment || "");
+  const sourceHasOldSpecularDefine = source.includes("#ifdefPHYSICAL#defineIOR#defineSPECULAR#endif");
+  const rebuildHasR164SpecularDefine = rebuild.includes("#ifdefPHYSICAL#defineIOR#defineUSE_SPECULAR#endif");
+  const lightsPhysicalRequiresUseSpecular = lightsPhysical.includes("#ifdefUSE_SPECULAR");
+  const lightsPhysicalAcceptsOldSpecular = lightsPhysical.includes("#ifdefSPECULAR");
+  return {
+    sourceHasOldSpecularDefine,
+    rebuildHasR164SpecularDefine,
+    lightsPhysicalRequiresUseSpecular,
+    lightsPhysicalAcceptsOldSpecular,
+    mapMacroSurfaceAligned: {
+      source: source.includes("USE_SPECULARCOLORMAP") && source.includes("USE_SPECULARINTENSITYMAP"),
+      rebuild: rebuild.includes("USE_SPECULARCOLORMAP") && rebuild.includes("USE_SPECULARINTENSITYMAP"),
+    },
+    modernMapMacroSurfaceAbsent: {
+      source: !source.includes("USE_SPECULAR_COLORMAP") && !source.includes("USE_SPECULAR_INTENSITYMAP"),
+      rebuild: !rebuild.includes("USE_SPECULAR_COLORMAP") && !rebuild.includes("USE_SPECULAR_INTENSITYMAP"),
+    },
+    r164PhysicalBranchesStripped: {
+      rebuild: !rebuild.includes("USE_DISPERSION") && !rebuild.includes("USE_ANISOTROPY") && !rebuild.includes("sheenEnergyComp"),
+    },
+    classification: sourceHasOldSpecularDefine
+      && rebuildHasR164SpecularDefine
+      && lightsPhysicalRequiresUseSpecular
+      && !lightsPhysicalAcceptsOldSpecular
+      ? "r164-compile-bridge"
+      : "needs-review",
+  };
+}
+
 function analyzeEnvironmentCore(sourceShader, rebuildShader) {
   if (!sourceShader) return null;
   const source = normalizeShaderForCoreChecks(sourceShader);
@@ -838,6 +872,7 @@ try {
       lensflareCoreChecks: entry.name === "L1-lensflare" ? analyzeLensflareCore(sourceFragment, entry.fragmentShader) : null,
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
+      vaBridgeCompatibility: entry.name === "VA-work" ? analyzeVaBridgeCompatibility(sourceFragment, entry.fragmentShader) : null,
       environmentCoreChecks: entry.name === "u1-environment" ? analyzeEnvironmentCore(sourceFragment, entry.fragmentShader) : null,
       floorCoreChecks: entry.name === "o1-floor-material" ? analyzeFloorCore(sourceFragment, entry.fragmentShader) : null,
       floorBlurCoreChecks: entry.name === "t1-floor-reflection-blur" ? analyzeFloorBlurCore(sourceFragment, entry.fragmentShader) : null,
@@ -896,6 +931,10 @@ try {
         length: chunkAnalysis.lightsFragmentBegin.length,
         checks: chunkAnalysis.lightsFragmentBegin.checks,
       },
+      lightsPhysicalFragment: {
+        length: chunkAnalysis.lightsPhysicalFragment.length,
+        checks: chunkAnalysis.lightsPhysicalFragment.checks,
+      },
       opaqueFragment: {
         length: chunkAnalysis.opaqueFragment.length,
         checks: chunkAnalysis.opaqueFragment.checks,
@@ -918,6 +957,7 @@ try {
         lensflareCoreChecks: analysis.lensflareCoreChecks,
         igFxaaCoreChecks: analysis.igFxaaCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
+        vaBridgeCompatibility: analysis.vaBridgeCompatibility,
         environmentCoreChecks: analysis.environmentCoreChecks,
         files: analysis.files,
       },
