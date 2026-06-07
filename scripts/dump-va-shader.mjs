@@ -419,6 +419,35 @@ function summarizeGenericShader(sourceShader, rebuildShader) {
   };
 }
 
+function normalizeShaderForCoreChecks(shader = "") {
+  return shader.replace(/\s+/g, "").replace(/texture2D/g, "texture");
+}
+
+function analyzeCompositeCore(sourceShader, rebuildShader) {
+  if (!sourceShader) return null;
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const checks = {
+    sceneRgbshift: ["rgbshift(tScene,uv,-1.,.0015)", "rgbshift(tScene,uv,-1.0,0.0015)"],
+    bloomPrimaryRgbshift: ["rgbshift(tBloom,uv,-1.5,.02)", "rgbshift(tBloom,uv,-1.5,0.02)"],
+    bloomDistortionAngle: ["length(uv+0.5)"],
+    bloomDistortionAmount: ["amount/.5", "amount/0.5"],
+    fluidLuminanceAdd: ["length(fluid.xy)*.015", "length(fluid.xy)*0.015"],
+    darkenOpacity: ["uDarken*2.+mouseSim.r*.25*uDarken", "uDarken*2.0+mouseSim.r*0.25*uDarken"],
+    multiplyDarken: ["blend(15,", "sourceBlend(15,"],
+    lightenBlack: ["blend(11,", "sourceBlend(11,"],
+    saturationTail: ["saturation("],
+    tonemappingTail: ["#include<tonemapping_fragment>"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
+    name,
+    {
+      source: candidates.some((candidate) => source.includes(candidate)),
+      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+    },
+  ]));
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
@@ -495,6 +524,7 @@ try {
     genericShaderAnalysis[entry.name] = {
       vertex: summarizeGenericShader(sourceShaders[entry.name], entry.vertexShader),
       fragment: summarizeGenericShader(sourceShaders[entry.name], entry.fragmentShader),
+      compositeCoreChecks: analyzeCompositeCore(sourceShaders[entry.name], entry.fragmentShader),
       files: {
         rebuildVertex: path.join(outDir, `rebuild-${safeName}-vertex.glsl`),
         rebuildFragment: path.join(outDir, `rebuild-${safeName}-fragment.glsl`),
@@ -557,6 +587,7 @@ try {
         fragmentUniformsOnlyRebuild: analysis.fragment.uniforms.onlyRebuild,
         fragmentIncludesOnlySource: analysis.fragment.includes.onlySource,
         fragmentIncludesOnlyRebuild: analysis.fragment.includes.onlyRebuild,
+        compositeCoreChecks: analysis.compositeCoreChecks,
         files: analysis.files,
       },
     ])),
