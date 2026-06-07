@@ -368,6 +368,8 @@ async function runProbe() {
   if (skyTarget && skyComposite && (skyTarget.width !== skyComposite.expectedSize || skyTarget.height !== skyComposite.expectedSize)) skyUniformErrors.push("targetSize");
   if (skyUniforms?.uShader1Mix3Binding !== "source-declared-only") skyUniformErrors.push("uShader1Mix3Binding");
   if (skyUniforms?.uShader3ScaleBinding !== "source-declared-only") skyUniformErrors.push("uShader3ScaleBinding");
+  if (skyUniforms?.uShaderMix !== null) skyUniformErrors.push("uShaderMixValue");
+  if (skyUniforms?.uShaderMixMode !== "source-Zs-missing-SHADER_1_MIX_3") skyUniformErrors.push("uShaderMixMode");
   if (skyUniformErrors.length) {
     throw new Error(`Sky composite uniform binding source-shape mismatch: ${skyUniformErrors.join(", ")}`);
   }

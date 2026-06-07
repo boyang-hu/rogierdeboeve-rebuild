@@ -823,16 +823,33 @@ varying vec3 vViewPosition;
 #include <common>
 #include <packing>
 #include <dithering_pars_fragment>
+// #include <color_pars_fragment>
 #include <uv_pars_fragment>
+// #include <map_pars_fragment>
+// #include <alphamap_pars_fragment>
+// #include <alphatest_pars_fragment>
+// #include <aomap_pars_fragment>
+// #include <lightmap_pars_fragment>
+// #include <emissivemap_pars_fragment>
 #include <bsdfs>
+// #include <iridescence_fragment>
 #include <cube_uv_reflection_fragment>
 #include <envmap_common_pars_fragment>
 #include <envmap_physical_pars_fragment>
+// #include <fog_pars_fragment>
 #include <lights_pars_begin>
 #include <normal_pars_fragment>
 #include <lights_physical_pars_fragment>
 #include <transmission_pars_fragment>
 #include <shadowmap_pars_fragment>
+// #include <bumpmap_pars_fragment>
+// #include <normalmap_pars_fragment>
+// #include <clearcoat_pars_fragment>
+// #include <iridescence_pars_fragment>
+// #include <roughnessmap_pars_fragment>
+// #include <metalnessmap_pars_fragment>
+// #include <logdepthbuf_pars_fragment>
+// #include <clipping_planes_pars_fragment>
 
 float blendColorDodge(float base, float blend) {
   return blend == 1.0 ? blend : min(base / (1.0 - blend), 1.0);
@@ -870,9 +887,14 @@ float smoothMask(float coord, float center, float spread) {
 }
 
 void main() {
+  // #include <clipping_planes_fragment>
   vec4 diffuseColor = vec4(diffuse, opacity);
   ReflectedLight reflectedLight = ReflectedLight(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
   vec3 totalEmissiveRadiance = emissive;
+
+  // #include <logdepthbuf_fragment>
+  // #include <map_fragment>
+  // #include <color_fragment>
 
   vec2 skyUv = vUv;
   vec2 skyUv2 = vUv;
@@ -911,17 +933,24 @@ void main() {
   diffuseColor.rgb *= 1.15;
   diffuseColor.rgb *= clamp(diffuseColor.rgb, vec3(0.0), vec3(1.0));
 
+  // #include <alphamap_fragment>
+  // #include <alphatest_fragment>
   #include <roughnessmap_fragment>
   #include <metalnessmap_fragment>
   #include <normal_fragment_begin>
   #include <normal_fragment_maps>
+  // #include <clearcoat_normal_fragment_begin>
+  // #include <clearcoat_normal_fragment_maps>
+  // #include <emissivemap_fragment>
   #include <lights_physical_fragment>
   #include <lights_fragment_begin>
   #include <lights_fragment_maps>
   #include <lights_fragment_end>
+  // #include <aomap_fragment>
 
   vec3 totalDiffuse = reflectedLight.indirectDiffuse;
   vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+  // #include <transmission_fragment>
   vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
 
   vec3 black = vec3(0.095, 0.095, 0.095);
@@ -929,6 +958,10 @@ void main() {
   #include <opaque_fragment>
 
   gl_FragColor.rgb = blend(4, gl_FragColor.rgb, uDarkenColor, uDarken);
+  // #include <tonemapping_fragment>
+  // #include <colorspace_fragment>
+  // #include <fog_fragment>
+  // #include <premultiplied_alpha_fragment>
   #include <dithering_fragment>
 }
 `;
@@ -4242,7 +4275,7 @@ export class WebGLBackdrop {
         uShader2Speed: { value: 0 },
         uShader1Scale: { value: 5.5 },
         uShader2Scale: { value: 0 },
-        uShaderMix: { value: 1.5 },
+        uShaderMix: { value: undefined },
       },
       vertexShader: sourceTlFullscreenVertex,
       fragmentShader: skyCompositeFragment,
@@ -6275,7 +6308,10 @@ export class WebGLBackdrop {
             uShader1Mix3Binding: this.skyCompositeMaterial.uniforms.uShader1Mix3 ? "runtime" : "source-declared-only",
             uShader3Scale: this.skyCompositeMaterial.uniforms.uShader3Scale?.value ?? null,
             uShader3ScaleBinding: this.skyCompositeMaterial.uniforms.uShader3Scale ? "runtime" : "source-declared-only",
-            uShaderMix: this.skyCompositeMaterial.uniforms.uShaderMix.value,
+            uShaderMix: this.skyCompositeMaterial.uniforms.uShaderMix.value ?? null,
+            uShaderMixMode: this.skyCompositeMaterial.uniforms.uShaderMix.value == null
+              ? "source-Zs-missing-SHADER_1_MIX_3"
+              : "runtime",
           },
         },
         perlin: {
