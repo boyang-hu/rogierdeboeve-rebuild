@@ -706,6 +706,10 @@ async function runProbe() {
   }
   const preloadState = updateOrder?.sourceTexturePreloadState || {};
   const preloadErrors = [];
+  if (updateOrder?.sourceWebpDetectionMode !== "source-Qe-k0-lossy-before-Xt-and-p1-assets") preloadErrors.push("sourceWebpDetectionMode");
+  if (![true, false].includes(updateOrder?.sourceWebpSupport)) preloadErrors.push("sourceWebpSupport");
+  if (!["webp", "jpg"].includes(updateOrder?.sourceAssetExt)) preloadErrors.push("sourceAssetExt");
+  if (updateOrder?.sourceAssetExt !== (updateOrder?.sourceWebpSupport ? "webp" : "jpg")) preloadErrors.push("sourceAssetExtSupportMismatch");
   if (updateOrder?.animateInMode !== "source-nD-animateIn-awaits-init-and-four-preloaded-textures") preloadErrors.push("animateInMode");
   if (updateOrder?.animateInStarted !== true) preloadErrors.push("animateInStarted");
   if (updateOrder?.animateInResolvedMode !== "source-nD-animateIn-resolves-after-fade-scheduled") preloadErrors.push("animateInResolvedMode");
@@ -853,6 +857,14 @@ async function runProbe() {
   if (environmentUniforms?.tSkyBindingMode !== "source-nD-after-init-resize-delay-bind-repeat-composite") skyUniformErrors.push("environmentBindingMode");
   if (environmentUniforms?.tSkyIsComposite !== true || environmentUniforms?.skyCompositeBindingMatchesUniform !== true) skyUniformErrors.push("environmentCompositeBinding");
   if (environmentUniforms?.tSkyWrapS !== RepeatWrapping || environmentUniforms?.tSkyWrapT !== RepeatWrapping) skyUniformErrors.push("environmentSkyWrap");
+  if (environmentUniforms?.sceneEnvironmentLoadMode !== "source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback") skyUniformErrors.push("sceneEnvironmentLoadMode");
+  if (environmentUniforms?.sceneEnvironmentExt !== updateOrder?.sourceAssetExt) skyUniformErrors.push("sceneEnvironmentExt");
+  if (environmentUniforms?.sceneEnvironmentLoaded !== true) skyUniformErrors.push("sceneEnvironmentLoaded");
+  if (environmentUniforms?.sceneEnvironmentFailed !== false) skyUniformErrors.push("sceneEnvironmentFailed");
+  if (!Array.isArray(environmentUniforms?.sceneEnvironmentUrls) || environmentUniforms.sceneEnvironmentUrls.length !== 6) skyUniformErrors.push("sceneEnvironmentUrls");
+  if (Array.isArray(environmentUniforms?.sceneEnvironmentUrls) && !environmentUniforms.sceneEnvironmentUrls.every((url) => url.endsWith(`.${updateOrder?.sourceAssetExt}`))) {
+    skyUniformErrors.push("sceneEnvironmentUrlExt");
+  }
   if (skyUniforms?.uShader1Mix3Binding !== "source-declared-only") skyUniformErrors.push("uShader1Mix3Binding");
   if (skyUniforms?.uShader3ScaleBinding !== "source-declared-only") skyUniformErrors.push("uShader3ScaleBinding");
   if (skyUniforms?.uShaderMix !== null) skyUniformErrors.push("uShaderMixValue");
@@ -865,6 +877,9 @@ async function runProbe() {
   const textures = parsed.probe.textures || {};
   const textureWrappingErrors = [];
   if (textures.sourceLoadedTextureMode !== "source-Xt-TextureLoader-default-sampling-wrap-only-overrides") textureWrappingErrors.push("sourceLoadedTextureMode");
+  if (textures.sourceWebpDetectionMode !== "source-Qe-k0-lossy-before-Xt-preloadTextures") textureWrappingErrors.push("sourceWebpDetectionMode");
+  if (textures.sourceWebpSupport !== updateOrder?.sourceWebpSupport) textureWrappingErrors.push("sourceWebpSupport");
+  if (textures.sourceAssetExt !== updateOrder?.sourceAssetExt) textureWrappingErrors.push("sourceAssetExt");
   if (textures.noise?.wrapS !== RepeatWrapping || textures.noise?.wrapT !== RepeatWrapping) textureWrappingErrors.push("blueNoise");
   if (textures.floorNormal?.wrapS !== RepeatWrapping || textures.floorNormal?.wrapT !== RepeatWrapping) textureWrappingErrors.push("floorNormal");
   if (textures.perlin?.wrapS !== RepeatWrapping || textures.perlin?.wrapT !== RepeatWrapping) textureWrappingErrors.push("perlin2");

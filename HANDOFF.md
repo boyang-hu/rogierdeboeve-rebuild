@@ -106,6 +106,7 @@ Implemented:
   - CTA hover mapped to `mouseFactor`
   - virtual gallery progress controls carousel rotation and thumb gallery
   - lightweight floor/env layers corresponding to source `p1.floor` and `p1.env`
+  - source WebP-selected texture/cubemap extension ownership from `Qe`, `Xt`, and `p1.addEnvironment()`
   - support for `ambient < 0 && colors.invert`
 - Project media system
   - desktop `[data-media][data-media-src]` empty tracks mapped to WebGL planes
@@ -138,16 +139,16 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `U1/yg/I1/C1` main raw camera and `C1` update-order ownership was completed without visual tuning.
-- Source `yg` owns a perspective main camera with `distance=1000`, `far=2000`, source `Ef(...)` fov calculation, z position `1000`, and an empty `setCameraController(){}`.
-- Source `U1.update()` runs `super.update(e,t,n)` first, which renders `I1`, then calls `this.renderManager.compositeMaterial.update(e,t,n)` on `C1/A1`.
-- The rebuild now renders `mainRawTarget` with a dedicated source-shaped `mainCamera` instead of the home work camera, and resize keeps its fov/aspect/far/position aligned to source `yg`.
-- `C1/A1.uTime` is now written after `renderHomeCompositePass()`, matching source `U1.update()` where the `I1` render pass occurs before `C1.update(...)`.
-- Runtime probes expose/assert `mainRawCameraMode=source-yg-perspective-distance-1000-no-camera-controller`, `mainRawRenderCamera=source-U1-I1-renderTargetA-uses-yg-camera`, `mainCompositeUpdateOrder=source-U1-super-update-renders-I1-before-C1-update`, and `preComposite.uTimeUpdateOrder=source-U1-C1-update-after-I1-render`.
-- Static audit extracts source `yg` and `U1` anchors and checks the rebuild main raw camera/render/update-order ownership.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0060` and mobile center `+0.0300`, recorded only as regression evidence.
+- Source `Qe/Xt/p1` WebP-selected asset extension ownership was completed without visual tuning.
+- Source `Qe.init()` runs `await k0("lossy")` before texture and scene initialization, writing `Le.WEBP`.
+- Source `Xt.preloadTextures()` uses one `Le.WEBP ? "webp" : "jpg"` extension for `floor-normal`, `perlin-1`, and `perlin-2`.
+- Source `p1.addEnvironment()` uses the same WebP-selected extension for `/images/cubemaps/01/[px,nx,ny,py,pz,nz]`, then assigns `this.scene.environment=t`; it does not hardcode webp or do a webp-first/jpg-fallback path there.
+- The rebuild now detects lossy WebP once, stores `sourceWebpSupport` / `sourceAssetExt`, loads the three source-selected textures and six cubemap faces with that extension, and removes the hardcoded `const cubeExt = "webp"` plus unconditional cubemap fallback bridge.
+- Runtime probes expose/assert `sourceWebpDetectionMode`, support/ext consistency, `sceneEnvironmentLoadMode=source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback`, cubemap URL extension consistency, and loaded/failed state.
+- Static audit extracts source `Qe` WebP detection, `Xt.preloadTextures()`, and `p1.addEnvironment()` anchors and checks the rebuild source-extension ownership.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0045` and mobile center `+0.0299`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a `U1/yg/I1/C1` main-camera/update-order mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a `Qe/Xt/p1` resource-extension mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -165,7 +166,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `U1/yg/I1/C1` main raw camera and `C1` update-order batch.
+All passed in the `Qe/Xt/p1` WebP-selected texture/cubemap extension batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

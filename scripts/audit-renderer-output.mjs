@@ -159,6 +159,7 @@ const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSetting
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceIT = extractAround(bundle, "class IT{constructor", 120, 3200);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
+const sourceWebpDetection = extractAround(bundle, "await k0(\"lossy\").then(()=>{Le.WEBP=!0}).catch(()=>{Le.WEBP=!1})", 240, 420);
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
 const sourceSDInitSpotlight = extractAround(bundle, "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture", 260, 520);
@@ -185,6 +186,7 @@ const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
 const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 120, 900);
+const sourceP1AddEnvironment = extractAround(bundle, "async addEnvironment(){const e=Le.WEBP?\"webp\":\"jpg\"", 220, 420);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
   extractAround(bundle, "setOutputColorSpace", 180, 700),
@@ -894,7 +896,37 @@ const summary = {
           && !sourceLoadedTextureHelperBody.includes("texture.anisotropy"),
         runtimeGuard: rebuildWebgl.includes("sourceLoadedTextureMode: \"source-Xt-TextureLoader-default-sampling-wrap-only-overrides\""),
       },
+      webpDetection: sourceWebpDetection && {
+        index: sourceWebpDetection.index,
+        checks: checks(sourceWebpDetection.text, [
+          "await k0(\"lossy\").then(()=>{Le.WEBP=!0}).catch(()=>{Le.WEBP=!1})",
+        ]),
+        rebuildChecks: {
+          detector: rebuildWebgl.includes("function detectSourceWebpSupport()"),
+          sharedTextureExt: rebuildWebgl.includes("const sourceExt: \"webp\" | \"jpg\" = this.sourceWebpSupport ? \"webp\" : \"jpg\""),
+          floorNormalUsesSourceExt: rebuildWebgl.includes("`/images/textures/floor-normal.${sourceExt}`"),
+          perlin1UsesSourceExt: rebuildWebgl.includes("`/images/textures/perlin-1.${sourceExt}`"),
+          perlin2UsesSourceExt: rebuildWebgl.includes("`/images/textures/perlin-2.${sourceExt}`"),
+          runtimeGuard: rebuildWebgl.includes("sourceWebpDetectionMode: \"source-Qe-k0-lossy-before-Xt-preloadTextures\""),
+        },
+        excerpt: compact(sourceWebpDetection.text),
+      },
       excerpt: compact(sourceTextureManager.text),
+    },
+    p1AddEnvironment: sourceP1AddEnvironment && {
+      index: sourceP1AddEnvironment.index,
+      checks: checks(sourceP1AddEnvironment.text, [
+        "async addEnvironment(){const e=Le.WEBP?\"webp\":\"jpg\"",
+        "const e=Le.WEBP?\"webp\":\"jpg\",t=await f1(\"/images/cubemaps/01\",e);this.scene.environment=t",
+      ]),
+      rebuildChecks: {
+        cubemapUsesSourceExt: rebuildWebgl.includes("`${cubeBase}/${side}.${sourceExt}`"),
+        sourceLoadModeGuard: rebuildWebgl.includes("sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode"),
+        noHardcodedCubeExt: !rebuildWebgl.includes("const cubeExt = \"webp\""),
+        noRuntimeJpgFallback: !rebuildWebgl.includes("`${cubeBase}/${side}.jpg`"),
+        runtimeGuard: rebuildWebgl.includes("source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback"),
+      },
+      excerpt: compact(sourceP1AddEnvironment.text),
     },
     Pe: sourcePe && {
       index: sourcePe.index,

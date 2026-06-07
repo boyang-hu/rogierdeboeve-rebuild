@@ -300,6 +300,8 @@ const SOURCE_WORK_ENVMAP_INTENSITY = 0.75;
 const SOURCE_WORK_ROUGHNESS = 1;
 const SOURCE_WORK_METALNESS = 0;
 const SOURCE_WORK_EMISSIVE_INTENSITY = 1;
+const SOURCE_ASSET_WEBP_PROBE =
+  "data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA";
 const GRID_COLS = 35;
 const GRID_ROWS = 23;
 const SOURCE_GRID_LAYERS = 7;
@@ -3583,6 +3585,20 @@ function applySourceLoadedTextureState(texture: Texture, colorSpace: typeof SRGB
   texture.colorSpace = colorSpace;
 }
 
+let sourceWebpSupportPromise: Promise<boolean> | null = null;
+
+function detectSourceWebpSupport() {
+  if (!sourceWebpSupportPromise) {
+    sourceWebpSupportPromise = new Promise<boolean>((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(image.width > 0 && image.height > 0);
+      image.onerror = () => resolve(false);
+      image.src = SOURCE_ASSET_WEBP_PROBE;
+    });
+  }
+  return sourceWebpSupportPromise;
+}
+
 function sourceTextureProbe(texture: Texture) {
   return {
     colorSpace: texture.colorSpace,
@@ -3908,6 +3924,21 @@ export class WebGLBackdrop {
     floorNormal: false,
     perlin1: false,
     perlin2: false,
+  };
+  private sourceWebpSupport: boolean | null = null;
+  private sourceAssetExt: "webp" | "jpg" | null = null;
+  private sourceCubemapLoadState: {
+    mode: string;
+    ext: "webp" | "jpg" | null;
+    loaded: boolean;
+    failed: boolean;
+    urls: string[];
+  } = {
+    mode: "pending-source-p1-addEnvironment",
+    ext: null,
+    loaded: false,
+    failed: false,
+    urls: [],
   };
   private canvasAnimateInPromise?: Promise<void>;
   private canvasAnimateInStarted = false;
@@ -5201,6 +5232,13 @@ export class WebGLBackdrop {
   }
 
   private loadCompositeTextures() {
+    this.sourceTexturePreloadPromise = this.loadCompositeTexturesFromSourceWebpState();
+  }
+
+  private async loadCompositeTexturesFromSourceWebpState() {
+    this.sourceWebpSupport = await detectSourceWebpSupport();
+    const sourceExt: "webp" | "jpg" = this.sourceWebpSupport ? "webp" : "jpg";
+    this.sourceAssetExt = sourceExt;
     const blueNoise = this.loadTextureAsync("/images/textures/blue-noise.png").then((texture) => {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
@@ -5212,14 +5250,14 @@ export class WebGLBackdrop {
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
       this.sourceTexturePreloadState.blueNoise = true;
     });
-    const perlin2 = this.loadTextureAsync("/images/textures/perlin-2.webp").then((texture) => {
+    const perlin2 = this.loadTextureAsync(`/images/textures/perlin-2.${sourceExt}`).then((texture) => {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
       this.perlinTexture = texture;
       this.preCompositeMaterial.uniforms.tPerlin.value = texture;
       this.sourceTexturePreloadState.perlin2 = true;
     });
-    const perlin1 = this.loadTextureAsync("/images/textures/perlin-1.webp").then((texture) => {
+    const perlin1 = this.loadTextureAsync(`/images/textures/perlin-1.${sourceExt}`).then((texture) => {
       texture.wrapS = MirroredRepeatWrapping;
       texture.wrapT = MirroredRepeatWrapping;
       this.workPerlinTexture = texture;
@@ -5230,7 +5268,7 @@ export class WebGLBackdrop {
       if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = texture;
       this.sourceTexturePreloadState.perlin1 = true;
     });
-    const floorNormal = this.loadTextureAsync("/images/textures/floor-normal.webp").then((texture) => {
+    const floorNormal = this.loadTextureAsync(`/images/textures/floor-normal.${sourceExt}`).then((texture) => {
       texture.colorSpace = NoColorSpace;
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
@@ -5240,28 +5278,32 @@ export class WebGLBackdrop {
       this.floorMaterial.uniforms.uMapTransform.value = texture.matrix;
       this.sourceTexturePreloadState.floorNormal = true;
     });
-    this.sourceTexturePreloadPromise = Promise.all([blueNoise, floorNormal, perlin1, perlin2]).then(() => undefined);
     this.loadTexture("/models/me/model_T.jpg", (texture) => {
       this.characterMaterial.uniforms.tMap.value = texture;
     });
     this.loadCharacterModel();
-    const cubeExt = "webp";
     const cubeBase = "/images/cubemaps/01";
+    const cubeUrls = ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${sourceExt}`);
+    this.sourceCubemapLoadState = {
+      mode: "source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback",
+      ext: sourceExt,
+      loaded: false,
+      failed: false,
+      urls: cubeUrls,
+    };
     this.cubeLoader.load(
-      ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${cubeExt}`),
+      cubeUrls,
       (texture) => {
         this.homeScene.environment = texture;
+        this.sourceCubemapLoadState.loaded = true;
       },
       undefined,
-      () => {
-        this.cubeLoader.load(
-          ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.jpg`),
-          (texture) => {
-            this.homeScene.environment = texture;
-          },
-        );
+      (error) => {
+        this.sourceCubemapLoadState.failed = true;
+        console.error("Source p1.addEnvironment cubemap load failed", error);
       },
     );
+    await Promise.all([blueNoise, floorNormal, perlin1, perlin2]);
   }
 
   private createSkyCompositeMaterial() {
@@ -7296,6 +7338,9 @@ void main() {
           animateInStarted: this.canvasAnimateInStarted,
           animateInResolvedMode: "source-nD-animateIn-resolves-after-fade-scheduled",
           canvasFadeCompleted: this.canvasFadeCompleted,
+          sourceWebpDetectionMode: "source-Qe-k0-lossy-before-Xt-and-p1-assets",
+          sourceWebpSupport: this.sourceWebpSupport,
+          sourceAssetExt: this.sourceAssetExt,
           sourceTexturePreloadState: { ...this.sourceTexturePreloadState },
           sourceTexturePreloadComplete: Object.values(this.sourceTexturePreloadState).every(Boolean),
         },
@@ -7642,6 +7687,11 @@ void main() {
             type: this.homeScene.environment.type,
             format: this.homeScene.environment.format,
           } : null,
+          sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode,
+          sceneEnvironmentExt: this.sourceCubemapLoadState.ext,
+          sceneEnvironmentLoaded: this.sourceCubemapLoadState.loaded,
+          sceneEnvironmentFailed: this.sourceCubemapLoadState.failed,
+          sceneEnvironmentUrls: [...this.sourceCubemapLoadState.urls],
           fog: this.environmentMaterial.fog,
           dithering: this.environmentMaterial.dithering,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
@@ -7684,6 +7734,9 @@ void main() {
       },
       textures: {
         sourceLoadedTextureMode: "source-Xt-TextureLoader-default-sampling-wrap-only-overrides",
+        sourceWebpDetectionMode: "source-Qe-k0-lossy-before-Xt-preloadTextures",
+        sourceWebpSupport: this.sourceWebpSupport,
+        sourceAssetExt: this.sourceAssetExt,
         noise: sourceTextureProbe(this.noiseTexture),
         skyComposite: {
           materialMode: "source-z1-raw-glsl3",
