@@ -467,6 +467,7 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
     && source.includes("uniformfloatuMediaReveal")
     && source.includes("uniformfloatuDisplacement");
   const usesSourceFullBlendDispatcher = ["A1-pre-composite", "OA-work-composite"].includes(shaderName);
+  const isThumbComposite = shaderName === "x1-thumb-composite";
   const checks = {
     sceneRgbshift: ["rgbshift(tScene,uv,-1.,.0015)", "rgbshift(tScene,uv,-1.0,0.0015)"],
     bloomPrimaryRgbshift: ["rgbshift(tBloom,uv,-1.5,.02)", "rgbshift(tBloom,uv,-1.5,0.02)"],
@@ -497,6 +498,13 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
       a1BlendCallName: ["blend(1,", "blend(11,"],
       noA1SourceBlendCallName: ["sourceBlend("],
       noA1RatioVignetteBridge: ["p.x*=uRatio"],
+    } : {}),
+    ...(isThumbComposite ? {
+      sourceThumbBlendMultiplyHelper: ["vec3blendMultiply(vec3base,vec3blend)", "returnbase*blend;"],
+      sourceThumbBlendMultiplyOpacityHelper: ["vec3blendMultiply(vec3base,vec3blend,floatopacity)", "return(blendMultiply(base,blend)*opacity+base*(1.0-opacity));"],
+      sourceThumbSaturationHelper: ["vec3saturation(vec3rgb,floatadjustment)", "constvec3W=vec3(0.2125,0.7154,0.0721)"],
+      noThumbLocalGraySaturationBridge: ["floatgray=dot("],
+      noThumbInlineMultiplyOpacityBridge: ["returnbase*blend*opacity+base*(1.0-opacity)"],
     } : {}),
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [

@@ -853,13 +853,16 @@ vec3 contrast(vec3 color, float value) {
 }
 `;
 
-const sourceCompositeColorHelper = `
+const sourceSaturationHelper = `
 vec3 saturation(vec3 rgb, float adjustment) {
   const vec3 W = vec3(0.2125, 0.7154, 0.0721);
   vec3 intensity = vec3(dot(rgb, W));
   return mix(intensity, rgb, adjustment);
 }
+`;
 
+const sourceCompositeColorHelper = `
+${sourceSaturationHelper}
 float vignette(vec2 coords, float vignin, float vignout, float vignfade, float fstop) {
   float dist = distance(coords.xy, vec2(0.5, 0.5));
   dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
@@ -1317,6 +1320,16 @@ vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
     return blendVividLight(base, blend, opacity);
   }
   return base;
+}
+`;
+
+const sourceBlendMultiplyHelper = `
+vec3 blendMultiply(vec3 base, vec3 blend) {
+  return base * blend;
+}
+
+vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
+  return (blendMultiply(base, blend) * opacity + base * (1.0 - opacity));
 }
 `;
 
@@ -2292,14 +2305,8 @@ uniform float uSaturation;
 in vec2 vUv;
 out vec4 FragColor;
 
-vec3 saturation(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
-  return mix(vec3(gray), color, amount);
-}
-
-vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
-  return base * blend * opacity + base * (1.0 - opacity);
-}
+${sourceBlendMultiplyHelper}
+${sourceSaturationHelper}
 
 void main() {
   vec2 uv = vUv;
