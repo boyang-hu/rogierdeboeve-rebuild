@@ -3149,6 +3149,8 @@ export class WebGLBackdrop {
     } else if (this.debugThumbColorSpace === "composite-srgb") {
       this.thumbCompositeTarget.texture.colorSpace = SRGBColorSpace;
     }
+    this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
+    this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new CircleGeometry(60, 32), this.floorMaterial);
     this.floorPlane.rotation.x = -Math.PI / 2;
@@ -6578,6 +6580,7 @@ void main() {
           materialMode: "source-z1-raw-glsl3",
           vertexMode: "source-tl-matrix-fullscreen",
           sizingMode: "source-V1-height-0.75-square",
+          wrapMode: "source-nD-sky-composite-repeat-for-work-env",
           expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",
           glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,

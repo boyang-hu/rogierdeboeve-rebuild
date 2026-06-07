@@ -527,8 +527,9 @@ async function runProbe() {
   if (skyComposite?.sizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("sizingMode");
   if (skyComposite?.timeMode !== (parsed.probe.renderer?.dprPolicy?.lowRes ? "source-V1-low-res-time-0" : "source-V1-live-time")) skyUniformErrors.push("timeMode");
   if (skyTarget && skyComposite && (skyTarget.width !== skyComposite.expectedSize || skyTarget.height !== skyComposite.expectedSize)) skyUniformErrors.push("targetSize");
-  const ClampToEdgeWrapping = 1001;
-  if (skyComposite?.wrapS !== ClampToEdgeWrapping || skyComposite?.wrapT !== ClampToEdgeWrapping) skyUniformErrors.push("sourceLoCompositeClampWrap");
+  const RepeatWrapping = 1000;
+  if (skyComposite?.wrapMode !== "source-nD-sky-composite-repeat-for-work-env") skyUniformErrors.push("skyCompositeWrapMode");
+  if (skyComposite?.wrapS !== RepeatWrapping || skyComposite?.wrapT !== RepeatWrapping) skyUniformErrors.push("sourceNdSkyCompositeRepeatWrap");
   if (skyUniforms?.uShader1Mix3Binding !== "source-declared-only") skyUniformErrors.push("uShader1Mix3Binding");
   if (skyUniforms?.uShader3ScaleBinding !== "source-declared-only") skyUniformErrors.push("uShader3ScaleBinding");
   if (skyUniforms?.uShaderMix !== null) skyUniformErrors.push("uShaderMixValue");
@@ -536,7 +537,6 @@ async function runProbe() {
   if (skyUniformErrors.length) {
     throw new Error(`Sky composite uniform binding source-shape mismatch: ${skyUniformErrors.join(", ")}`);
   }
-  const RepeatWrapping = 1000;
   const MirroredRepeatWrapping = 1002;
   const textures = parsed.probe.textures || {};
   const textureWrappingErrors = [];

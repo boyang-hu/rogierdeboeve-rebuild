@@ -650,6 +650,8 @@ const summary = {
         "for(let r=0;r<this.scenes.length;r++)this.scenes[r].instance.update(e,t,n,i)",
         "this.addScene(this.workScene,\"work\")",
         "this.addScene(this.mainScene,\"main\")",
+        "const e=this.skyScene.renderManager.renderTargetComposite.texture;e.wrapS=e.wrapT=ci",
+        "this.workScene.env.material.customUniforms.tSky.value=e",
       ]),
       excerpt: compact(sourceCanvasManager.text),
     },
