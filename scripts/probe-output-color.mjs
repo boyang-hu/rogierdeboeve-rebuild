@@ -177,14 +177,28 @@ async function runProbe() {
   const environmentUniforms = parsed.probe.uniforms?.environment;
   const environmentHierarchy = parsed.probe.reflectionState?.environment;
   const environmentErrors = [];
+  if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
+  if (environmentUniforms?.customUniformsAlias !== true) environmentErrors.push("customUniformsAlias");
   if (environmentUniforms?.hierarchyMode !== "source-h1-group-owns-transform") environmentErrors.push("hierarchyMode");
+  if (environmentUniforms?.fog !== false) environmentErrors.push("materialFog");
+  if (environmentUniforms?.dithering !== true) environmentErrors.push("materialDithering");
+  if (environmentUniforms && Math.abs((environmentUniforms.envMapIntensity ?? 0) - 1) > 0.0001) environmentErrors.push("envMapIntensity");
   if (environmentUniforms && Math.abs((environmentUniforms.groupPositionY ?? 0) + 12.65) > 0.0001) environmentErrors.push("groupPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshPositionY ?? 0) > 0.0001) environmentErrors.push("meshPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshRotationY ?? 0) > 0.0001) environmentErrors.push("meshRotationY");
   if (environmentHierarchy?.group?.children !== 1) environmentErrors.push("groupChildren");
   if (environmentHierarchy?.object?.position?.[1] !== 0) environmentErrors.push("meshLocalPosition");
+  if (environmentHierarchy?.material?.mode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("reflectionMaterialMode");
+  if (environmentHierarchy?.material?.customUniformsAlias !== true) environmentErrors.push("reflectionCustomUniformsAlias");
   if (environmentErrors.length) {
     throw new Error(`Environment hierarchy source-shape mismatch: ${environmentErrors.join(", ")}`);
+  }
+  const floorUniforms = parsed.probe.uniforms?.floor;
+  const floorErrors = [];
+  if (floorUniforms?.reflectionVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("reflectionVisibilityMode");
+  if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
+  if (floorErrors.length) {
+    throw new Error(`Floor reflection visibility source-shape mismatch: ${floorErrors.join(", ")}`);
   }
   const skyUniforms = parsed.probe.textures?.skyComposite?.uniforms;
   const skyUniformErrors = [];

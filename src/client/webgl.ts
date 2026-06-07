@@ -101,7 +101,10 @@ type WorkItem = {
 };
 
 type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
-type EnvironmentMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
+type EnvironmentMaterial = MeshStandardMaterial & {
+  uniforms: Record<string, { value: any }>;
+  customUniforms: Record<string, { value: any }>;
+};
 type ShaderDumpWindow = Window & {
   __rogierVaShaderDump?: Array<{
     variant: "work" | "auxiliary";
@@ -4130,8 +4133,9 @@ export class WebGLBackdrop {
       dithering: true,
     }) as EnvironmentMaterial;
     material.uniforms = uniforms;
+    material.customUniforms = uniforms;
     material.onBeforeCompile = (shader) => {
-      patchEnvironmentShader(shader, uniforms);
+      patchEnvironmentShader(shader, material.customUniforms);
     };
     material.customProgramCacheKey = () => "source-u1-environment-standard";
     return material;
@@ -5524,6 +5528,7 @@ export class WebGLBackdrop {
           visible: this.floorGroup.visible,
           groupPosition: this.floorGroup.position.toArray(),
           planePosition: this.floorPlane.position.toArray(),
+          reflectionVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
           uReflectivity: this.floorMaterial.uniforms.uReflectivity.value,
           uMirror: this.floorMaterial.uniforms.uMirror.value,
           uFloorMixStrength: this.floorMaterial.uniforms.uFloorMixStrength.value,
@@ -5545,6 +5550,8 @@ export class WebGLBackdrop {
         },
         environment: {
           visible: this.environmentGroup.visible,
+          materialMode: "source-u1-meshstandard-onBeforeCompile",
+          customUniformsAlias: this.environmentMaterial.customUniforms === this.environmentMaterial.uniforms,
           uTime: this.environmentMaterial.uniforms.uTime.value,
           uMultiplier: this.environmentMaterial.uniforms.uMultiplier.value,
           uDarken: this.environmentMaterial.uniforms.uDarken.value,
@@ -5569,6 +5576,8 @@ export class WebGLBackdrop {
             type: this.homeScene.environment.type,
             format: this.homeScene.environment.format,
           } : null,
+          fog: this.environmentMaterial.fog,
+          dithering: this.environmentMaterial.dithering,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
           hierarchyMode: "source-h1-group-owns-transform",
           groupRotationY: this.environmentGroup.rotation.y,
@@ -5718,12 +5727,17 @@ export class WebGLBackdrop {
         group: objectSummary(this.environmentGroup),
         object: objectSummary(this.environmentPlane),
         material: {
+          mode: "source-u1-meshstandard-onBeforeCompile",
+          customUniformsAlias: this.environmentMaterial.customUniforms === this.environmentMaterial.uniforms,
           transparent: this.environmentMaterial.transparent,
           depthWrite: this.environmentMaterial.depthWrite,
           depthTest: this.environmentMaterial.depthTest,
           blending: this.environmentMaterial.blending,
           side: this.environmentMaterial.side,
           toneMapped: this.environmentMaterial.toneMapped,
+          fog: this.environmentMaterial.fog,
+          dithering: this.environmentMaterial.dithering,
+          envMapIntensity: this.environmentMaterial.envMapIntensity,
         },
       },
       camera: {
@@ -5754,6 +5768,7 @@ export class WebGLBackdrop {
         blurInputUsesRaw: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionTarget.texture,
         blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
+        floorVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
         rawClearMode: "source-autoClear-false-only",
         cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",
         sourceCssSized: this.floorReflectionTarget.width === Math.max(1, Math.round(window.innerWidth * 0.75))

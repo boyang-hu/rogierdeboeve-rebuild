@@ -109,6 +109,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 32 | S1-105 | Source `Lu/I1` render-manager clearing ownership | Source renderer `qw` sets `autoClear=false`; source `Lu.update()` and `I1.update()` render raw, blur, FXAA, and composite targets directly with `setRenderTarget(...); render(...)` except for explicitly source-owned special cases such as reflector raw clear and media scene `autoClear=true`. | Production now removes rebuild-only explicit clears from the work raw/composite pass, main pre-composite pass, main blur pass, main FXAA pass, frame start, and hidden-home work fallback. Output probe reports work/main render-manager clear modes and hard-fails on drift; renderer audit records source `qw`, `nD`, `Lu`, and `I1` anchors. | Medium | Keep as source-correct render-manager ownership after QA. Project media remains stable, but Phase 1 stays open for mobile/fog-bed distribution and strict projection/material residuals. |
 | 33 | S1-106 | Source `Xt.preloadTextures()` wrapping ownership | Source preloads blue-noise, floor-normal, and `perlin2` with `ci=RepeatWrapping=1000`; `perlin1` uses `vo=MirroredRepeatWrapping=1002`. | Production now loads work-block `perlin1` with `MirroredRepeatWrapping` while keeping A1/C1 `perlin2`, blue-noise, and floor-normal on `RepeatWrapping`. Output probe exposes and hard-fails on wrapping drift; renderer audit records the source `Xt.preloadTextures()` anchors. | Low-medium | Keep as source-correct texture ownership. This fixes a concrete earlier misread where `vo` had been documented as clamp; Phase 1 remains open for fog-bed and projection/material parity. |
 | 34 | S1-107 | Source `h1/p1` environment hierarchy ownership | Source constructs `env=this.add(h1)`, where `h1` is a group that owns position `y=-12.65` and rotation `-rotationAdjustment`; the environment mesh is a local child at origin. | Production now wraps the environment mesh in `environmentGroup`, moves y/rotation ownership to the group, keeps the mesh local at origin, and hard-fails output probe if the hierarchy drifts. Renderer audit records source `h1` and `p1` environment hierarchy anchors. | Low-medium | Keep as source-correct hierarchy ownership. World transform is equivalent, so this is not a visual closeout; Phase 1 remains open for fog-bed distribution and projection/material parity. |
+| 35 | S1-108 | Source `u1/a1` environment and reflector ownership surface | Source `u1` extends `MeshStandardMaterial`, stores runtime bindings on `customUniforms`, patches `c1/l1` in `onBeforeCompile`, sets `dithering=true`, and is constructed by `h1` with `side=BackSide`, `envMapIntensity=1`, `fog=false`. Source `a1` hides its component group during `onBeforeRender` before calling `reflector.update()`. | Production now exposes the source `u1` `customUniforms` alias, adds hard output-probe assertions for material mode, fog/dithering/env intensity, and records source `a1` reflection visibility ownership. Renderer audit now records source `u1` and `a1` anchors. | Low | Keep as source-correct interface and QA hardening. This prevents future background/fog-bed work from misattributing the floor hidden-state or environment material surface, but does not close the mobile/fog-bed visual residual. |
 
 ### Phase 1 Open Blocker Board
 
@@ -616,6 +617,40 @@ Verification:
 | Mobile center-band delta | `-0.0117` against source |
 
 Decision: keep as source-correct environment hierarchy ownership. This removes another `p1/h1` structure mismatch but does not close Phase 1; remaining blockers are still mobile fog-bed distribution, strict projection/material feel, and transfer interpretation.
+
+### S1-108 Source `u1/a1` Environment and Reflector Ownership Surface
+
+This batch stayed on the home background/fog-bed chain and added source-backed interface parity plus hard QA gates without changing visual constants.
+
+Source/runtime evidence:
+
+- Source `u1` extends the standard material path, stores its bindings in `customUniforms`, sets `dithering=true`, and patches `c1/l1` through `onBeforeCompile`.
+- Source `h1` constructs `u1` with `side=BackSide`, `envMapIntensity=1`, and `fog=false`.
+- Source `a1` floor reflection hides the `a1` component group during the floor mesh `onBeforeRender` reflector update, then restores it.
+
+Production now exposes and asserts:
+
+- `environmentMaterial.customUniforms` aliases the runtime uniform surface used by the shader patch,
+- environment material mode, fog, dithering, and env-map intensity match the source `u1/h1` surface,
+- floor reflection visibility ownership is recorded as `source-a1-onBeforeRender-hide-component-group`,
+- renderer audit extracts source `u1` and `a1` anchors so future background work does not misread these as open visual-tuning levers.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Source `u1`, `h1`, and `a1` anchors present |
+| Output probe | New material/visibility assertions passed after restarting rebuild server |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors; `u1-environment` core checks remain source/rebuild true |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `+0.0007` against source |
+| Mobile center-band delta | `-0.0128` against source |
+
+Decision: keep this as source-correct environment/floor ownership hardening. Phase 1 remains open because this batch proves interface ownership and prevents wrong future changes; it does not resolve the remaining mobile/fog-bed and projection/material residuals.
 
 ### S1-70 Source Floor Circle Geometry
 

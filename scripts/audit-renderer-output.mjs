@@ -127,6 +127,8 @@ const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floo
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
+const sourceU1 = extractAround(bundle, "class u1 extends", 400, 1700);
+const sourceA1Floor = extractAround(bundle, "class a1 extends", 300, 1400);
 const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
@@ -418,6 +420,31 @@ const summary = {
         "const t=new at(e,this.material);this.add(t),this.mesh=t",
       ]),
       excerpt: compact(sourceH1.text),
+    },
+    environmentU1: sourceU1 && {
+      index: sourceU1.index,
+      checks: checks(sourceU1.text, [
+        "class u1 extends Ao",
+        "this.dithering=!0",
+        "this.customUniforms={uTime:new I(0)",
+        "uMultiplier:new I(2)",
+        "uDarken:new I(1)",
+        "tSky:new I(null)",
+        "uShader1Alpha:new I(Qn.SHADER_1_ALPHA)",
+        "uShader1Mix3:new I(Qn.SHADER_1_MIX_3)",
+        "t.vertexShader=c1,t.fragmentShader=l1",
+      ]),
+      excerpt: compact(sourceU1.text),
+    },
+    floorA1: sourceA1Floor && {
+      index: sourceA1Floor.index,
+      checks: checks(sourceA1Floor.text, [
+        "class a1 extends rt",
+        "this.reflector=new i1",
+        "i.onBeforeRender=(r,o,a)=>{this.visible=!1,this.reflector.update(this.renderer,this.scene,this.camera),this.visible=!0}",
+        "this.add(i),this.material=n",
+      ]),
+      excerpt: compact(sourceA1Floor.text),
     },
     IuUpdate: sourceIuUpdate && {
       index: sourceIuUpdate.index,
