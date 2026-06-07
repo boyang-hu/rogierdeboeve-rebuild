@@ -1482,14 +1482,14 @@ uniform float uTransitionSmoothness;
 in vec2 vUv;
 out vec4 FragColor;
 
-vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 size) {
-  vec2 s = size;
+vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
+  vec2 s = containerSize;
   vec2 i = imgSize;
   float rs = s.x / s.y;
   float ri = i.x / i.y;
-  vec2 newSize = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
-  vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
-  vec2 uv = ouv * s / newSize + newOffset;
+  vec2 new = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
+  vec2 newOffset = (rs < ri ? vec2((new.x - s.x) / 2.0, 0.0) : vec2(0.0, (new.y - s.y) / 2.0)) / new;
+  vec2 uv = ouv * s / new + newOffset;
   return texture(tex, uv);
 }
 
@@ -1500,9 +1500,10 @@ vec4 transition(vec4 color1, vec4 color2, float progress, vec2 uv) {
 }
 
 void main() {
-  vec4 map = coverTexture(tMap, uMapSize, vUv, uResolution);
-  vec4 fallback = vec4(vUv.x, vUv.y, 0.0, 0.0);
-  vec4 mixed = transition(map, fallback, 1.0 - uProgress, vUv);
+  vec2 uv = vUv;
+  vec4 map = coverTexture(tMap, uMapSize, uv, uResolution);
+  vec4 color = vec4(uv.x, uv.y, 0.0, 0.0);
+  vec4 mixed = transition(map, color, 1. - uProgress, uv);
   FragColor = mixed;
 }
 `;
@@ -1531,7 +1532,7 @@ uniform float uSaturation;
 in vec2 vUv;
 out vec4 FragColor;
 
-vec3 saturateColor(vec3 color, float amount) {
+vec3 saturation(vec3 color, float amount) {
   float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
   return mix(vec3(gray), color, amount);
 }
@@ -1541,10 +1542,11 @@ vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
 }
 
 void main() {
-  vec4 color = texture(tScene, vUv);
-  color.rgb = blendMultiply(color.rgb, uDarkenColor, uDarkenIntensity);
-  color.rgb = saturateColor(color.rgb, uSaturation);
-  FragColor = vec4(color.rgb, 1.0);
+  vec2 uv = vUv;
+  vec4 mixed = texture(tScene, uv);
+  mixed.rgb = blendMultiply(mixed.rgb, uDarkenColor, uDarkenIntensity);
+  mixed.rgb = saturation(mixed.rgb, uSaturation);
+  FragColor = vec4(mixed.rgb, 1.);
   #include <tonemapping_fragment>
 }
 `;
@@ -3431,6 +3433,7 @@ export class WebGLBackdrop {
   }
 
   private createThumbPlane(payload: ProjectPayload) {
+    dumpShader("M1-thumb-plane", thumbVertex, thumbFragment);
     const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,

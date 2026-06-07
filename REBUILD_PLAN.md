@@ -1,6 +1,6 @@
 # Rebuild Plan
 
-Last updated: 2026-06-06
+Last updated: 2026-06-07
 
 ## Execution Rules
 
@@ -31,6 +31,7 @@ Last updated: 2026-06-06
 
 | Commit | Area | Progress |
 | --- | --- | --- |
+| `current batch` | Home WebGL / QA Harness | Aligned source `T1/w1/E1/M1/x1` thumb shader surface and audit coverage: thumb plane fragment now follows source `S1` local `uv`/`color`/`1. - uProgress` form and source `y1` helper naming, thumb composite now uses source `v1` `saturation(...)`/`mixed` tail form, and shader dump now captures `M1-thumb-plane` with source `S1` fragment plus `b1` vertex mapping. `git diff --check`, build, shader dump, output probe, thumb spotlight probe, project-media probe, full capture, and band analysis passed. Desktop center-band delta is `+0.0006`; mobile center-band delta is `-0.0137`. |
 | `current batch` | Home WebGL | Aligned source `V1/H1/Lo` sky render-pass clearing: removed rebuild-only explicit clears from sky raw and sky composite target renders, matching source `Lo.update()` for the sky scene. Added an output-probe marker `skyPassClearing=source-Lo-no-explicit-clear`. `git diff --check`, build, output probe, thumb spotlight probe, project-media probe, full capture, and band analysis passed. Desktop center-band delta is `+0.0022`; mobile center-band delta is `-0.0126`, so Phase 1 stays open for mobile/fog-bed and projection residuals. |
 | `current batch` | Home WebGL | Aligned source `i1` reflector target/camera initialization: raw floor-reflection target now follows the source create-clone-toggle sequence (`depthBuffer:false` -> clone read/write -> raw `depthBuffer=true`), read/write targets stay depthless, and the virtual reflection camera uses the default `PerspectiveCamera` surface before copying the home projection. Expanded `reflectionStateProbe()` with target/camera/texture ownership fields. `git diff --check`, build, output probe, thumb spotlight probe, project-media probe, full capture, and band analysis passed. Desktop center-band delta is `+0.0013`; mobile center-band delta remains `-0.0133`, so Phase 1 stays open. |
 | `current batch` | Home WebGL | Aligned the source `T1/x1/Lo` thumb render-manager pass by removing rebuild-only explicit clears from the thumb raw and thumb composite target renders. Source `Lo.update()` renders those targets directly with `setRenderTarget(...); render(...)`, and this path feeds the home spotlight map. `git diff --check`, build, thumb spotlight probe, project-media probe, full source-vs-rebuild capture, and band analysis passed. Desktop center-band delta is `-0.0009`; mobile center-band delta is `-0.0129`. |

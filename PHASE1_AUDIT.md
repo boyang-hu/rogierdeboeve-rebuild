@@ -3683,3 +3683,40 @@ Band snapshot from `/tmp/rd-a1-flow-capture`:
 | Mobile source -> rebuild | `-0.0134` | `+0.0171` |
 
 Decision: keep the source `A1/C1` flow alignment. It removes a real shader-flow mismatch and keeps project pages stable, but it is not a Phase 1 closeout. Continue with source-backed target-content/projection attribution rather than visual tuning.
+
+### S1-84 Source `T1/w1/E1/M1/x1` Thumb Shader Surface
+
+This batch tightened the thumb/spotlight-map shader chain and expanded the shader audit so future projection work can compare the source thumb plane directly.
+
+Source evidence:
+
+- Source `M1` uses source `b1` vertex and `S1` fragment with `RawShaderMaterial`/GLSL3-like declarations, uniforms `tMap`, `uMapSize`, `uResolution`, `uProgress`, `uTransitionCount`, and `uTransitionSmoothness`, plus defaults `uTransitionCount=150` and `uTransitionSmoothness=.2`.
+- Source `S1` uses source helper `y1`, then declares `vec2 uv = vUv`, samples `coverTexture(tMap, uMapSize, uv, uResolution)`, creates fallback `vec4 color = vec4(uv.x, uv.y, 0.0, 0.0)`, and calls `transition(map, color, 1. - uProgress, uv)`.
+- Source `v1` thumb composite samples `vec4 mixed = texture(tScene, uv)`, applies `blendMultiply(...)`, then `saturation(...)`, and outputs `FragColor = vec4(mixed.rgb, 1.)` before the tonemapping include.
+
+Runtime and tooling changes:
+
+- `thumbFragment` now matches the source `S1` local `uv`/`color`/`1. - uProgress` form and source `y1` cover-helper naming (`containerSize`, `new`).
+- `thumbCompositeFragment` now uses the source `saturation(...)` helper name and `mixed` variable/output form.
+- `createThumbPlane()` now dumps `M1-thumb-plane` under `dump-va-shader=1`.
+- `scripts/dump-va-shader.mjs` now maps `M1-thumb-plane` to source `S1` for fragment comparison and source `b1` for vertex comparison. The generic shader analysis now keeps separate fragment and vertex source maps so vertex deltas are not compared against fragment source text.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s1-84-thumb-shader-2`.
+- Shader dump confirms `x1-thumb-composite.compositeCoreChecks.saturationTail` is true in both source and rebuild, and `M1-thumb-plane` is now captured with source vertex mapping (`vertexLengthDelta=1`).
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-s1-84-output`.
+- Thumb spotlight probe passed and retained a non-empty thumb target/composite target plus spotlight map: `/tmp/rd-s1-84-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-s1-84-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-s1-84-capture`.
+
+Band snapshot from `/tmp/rd-s1-84-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0006` | `-0.0014` |
+| Mobile source -> rebuild | `-0.0137` | `+0.0153` |
+
+Decision: keep the thumb shader-surface and audit-coverage alignment. It improves source attribution for the spotlight/thumb-map chain, but Phase 1 remains open for mobile/fog-bed and projection-feel residuals.

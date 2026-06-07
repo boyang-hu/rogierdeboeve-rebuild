@@ -476,19 +476,26 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const sourceZ = extractSourceShader(bundle, "zA", "`,HA=`");
 const sourceH = extractSourceShader(bundle, "HA", "`;class VA extends");
-const sourceShaders = {
+const sourceFragmentShaders = {
   "A1-pre-composite": tryExtractSourceShader(bundle, "A1"),
   "Lu-main-composite": tryExtractSourceShader(bundle, "aA"),
   "OA-work-composite": tryExtractSourceShader(bundle, "CA"),
   "x1-thumb-composite": tryExtractSourceShader(bundle, "v1"),
+  "M1-thumb-plane": tryExtractSourceShader(bundle, "S1"),
   "j1-media-composite": tryExtractSourceShader(bundle, "G1"),
   "UD-project-media": tryExtractSourceShader(bundle, "LD"),
   "u1-environment": tryExtractSourceShader(bundle, "l1"),
 };
+const sourceVertexShaders = {
+  "M1-thumb-plane": tryExtractSourceShader(bundle, "b1"),
+};
 writeFileSync(path.join(outDir, "source-HA.glsl"), sourceH);
 writeFileSync(path.join(outDir, "source-zA.glsl"), sourceZ);
-for (const [name, shader] of Object.entries(sourceShaders)) {
+for (const [name, shader] of Object.entries(sourceFragmentShaders)) {
   if (shader) writeFileSync(path.join(outDir, `source-${name}.glsl`), shader);
+}
+for (const [name, shader] of Object.entries(sourceVertexShaders)) {
+  if (shader) writeFileSync(path.join(outDir, `source-${name}-vertex.glsl`), shader);
 }
 
 const chrome = spawn(chromePath, [
@@ -542,16 +549,19 @@ try {
   const genericShaderAnalysis = {};
   for (const entry of parsed.shaderDump || []) {
     const safeName = entry.name.replace(/[^A-Za-z0-9_.-]/g, "_");
+    const sourceVertex = sourceVertexShaders[entry.name] || null;
+    const sourceFragment = sourceFragmentShaders[entry.name] || null;
     writeFileSync(path.join(outDir, `rebuild-${safeName}-vertex.glsl`), entry.vertexShader);
     writeFileSync(path.join(outDir, `rebuild-${safeName}-fragment.glsl`), entry.fragmentShader);
     genericShaderAnalysis[entry.name] = {
-      vertex: summarizeGenericShader(sourceShaders[entry.name], entry.vertexShader),
-      fragment: summarizeGenericShader(sourceShaders[entry.name], entry.fragmentShader),
-      compositeCoreChecks: analyzeCompositeCore(sourceShaders[entry.name], entry.fragmentShader),
+      vertex: summarizeGenericShader(sourceVertex, entry.vertexShader),
+      fragment: summarizeGenericShader(sourceFragment, entry.fragmentShader),
+      compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
       files: {
         rebuildVertex: path.join(outDir, `rebuild-${safeName}-vertex.glsl`),
         rebuildFragment: path.join(outDir, `rebuild-${safeName}-fragment.glsl`),
-        source: sourceShaders[entry.name] ? path.join(outDir, `source-${entry.name}.glsl`) : null,
+        source: sourceFragment ? path.join(outDir, `source-${entry.name}.glsl`) : null,
+        sourceVertex: sourceVertex ? path.join(outDir, `source-${entry.name}-vertex.glsl`) : null,
       },
     };
   }
