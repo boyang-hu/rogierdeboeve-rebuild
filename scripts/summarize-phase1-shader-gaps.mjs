@@ -101,6 +101,15 @@ const rows = focusOrder
     };
   });
 
+const vaWorkRow = rows.find((row) => row.shader === "VA-work");
+const vaWorkHasIncludeResidual = Boolean(
+  vaWorkRow
+  && (vaWorkRow.fragmentOnlySourceIncludes.length || vaWorkRow.fragmentOnlyRebuildIncludes.length),
+);
+const vaWorkReading = vaWorkHasIncludeResidual
+  ? `- \`VA-work\` still has an include-surface residual: source-only ${values(vaWorkRow.fragmentOnlySourceIncludes)}, rebuild-only ${values(vaWorkRow.fragmentOnlyRebuildIncludes)}.`
+  : "- `VA-work` no longer has source/rebuild include or uniform residuals in this generated dump; remaining differences are generated shader text/bridge depth unless new core-check residuals appear.";
+
 const markdown = [
   "# Phase 1 Shader Residual Summary",
   "",
@@ -123,7 +132,7 @@ const markdown = [
   "## Current Phase 1 Reading",
   "",
   "- `OA-work-composite`, `A1-pre-composite`, `u1-environment`, thumb, media, and main-fluid helper shaders currently have matched core anchors in the generated dump.",
-  "- `VA-work` still has a source-only include surface residual for `bsdfs` and `opaque_fragment`; the expanded rebuild tail is semantically source-shaped by the current core checks, but the include surface is not byte-for-byte source-shaped.",
+  vaWorkReading,
   "- Treat this report as attribution input. It is not visual acceptance and does not close Phase 1.",
   "",
 ].join("\n");

@@ -27,7 +27,7 @@ Phase 1 is reopened and not complete as of 2026-06-06. The previous S1-53 closeo
 Estimated status:
 
 - Architecture parity: 75-80%
-- Shader/render-manager parity: 60-70%
+- Shader/render-manager parity: 65-75%
 - Final home visual parity: 55-65%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
@@ -37,7 +37,7 @@ Current visible blockers for Phase 1:
 
 - Home background/floor/environment still has a hard horizontal horizon instead of the source's softer fog/floor blend.
 - Home work cubes and thumb projection still do not match the source's brightness, depth, and projection feel.
-- `VA/GA` still use a stable Three 0.184 shader bridge, not a byte-for-byte source `HA/zA` replacement.
+- `VA/GA` still use a stable Three 0.184 shader bridge, not a byte-for-byte source `HA/zA` replacement, though the current generated `VA-work` dump no longer has source/rebuild include or uniform residuals.
 - `A1/OA/kA/Lu` are source-shaped in pieces but not a fully source-isomorphic render-manager graph.
 - Mouse/fluid simulation is structurally present but not yet interactively verified 1:1.
 - Project pages are regression gates; they are stable but not proof that Home WebGL Phase 1 is complete.
@@ -121,7 +121,8 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 44 | S1-117 | Source `L1/R1/P1` lensflare pass surface | Source `I1.initSettings()` defines `lensflare:{scale:(1.5,1.5), exposure:1, clamp:1, enabled:false}`; source `I1.initRenderer()` owns `renderTargetLensflare`; source `L1` is a raw GLSL3 material using vertex `R1`, fragment `P1`, uniforms `tMap/uLightPosition/uScale/uExposure/uClamp/uResolution`, and `depthTest/depthWrite:false`. | Production now has a source-shaped `L1-lensflare` raw GLSL3 material/scene, keeps the full-resolution lensflare target wired into `C1/A1.tLensflare`, gates rendering behind the source default `enabled:false`, and records the source explicit-clear pass shape. Output probe and shader dump hard-check `L1` uniforms/defaults, GLSL surface, clear mode, and core `P1` fragment anchors. | Low | Keep as source-correct default-disabled render-manager surface alignment. This should not alter the current visual output; it closes the missing lensflare branch surface but Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 45 | S1-118 | Source `ag/GT/qT/jT/KT/JT` main-fluid pass surface | Source `ag` owns float FBOs with `depthBuffer:false`, `stencilBuffer:false`, `type:FloatType`; source `GT/qT/jT/KT/JT` use raw GLSL3 materials, source advection/divergence/poisson/pressure use `blending:ot`, and source force uses `blending:Uc`. | Production main-fluid passes now use `RawShaderMaterial`/`GLSL3`, source-style `in/out`, `texture(...)`, and `FragColor`, with `NoBlending` for advection/divergence/poisson/pressure and `AdditiveBlending` for force. Output probe now hard-checks material modes, GLSL versions, depth flags, blending, and float target ownership; shader dump maps the five `ag-*` pass shaders to source `Co/XT/Sf/$T/WT/YT/ZT`; renderer audit records source `ag` and pass material anchors. | Low-medium | Keep as source-correct main-fluid render-manager surface alignment. This removes a real source pass-surface mismatch without tuning visual constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 46 | S1-119 | Source `GT.createBounds()` advection boundary pass | Source `GT.init()` calls `createBounds()`, which adds a line segment geometry around the fluid domain with vertex shader `VT`, fragment `Sf`, `glslVersion:lt`, `blending:ot`, and the same advection uniforms as the main `Co/Sf` material. | Production now adds the source `VT/Sf` `ag-advection-bounds` line pass to the advection scene, using `LineSegments`, the source boundary vertex coordinates, shared advection uniforms, and raw GLSL3/no-blending material state. Output probe asserts the boundary material, shared uniforms, and two-child advection scene; shader dump maps `ag-advection-bounds` to source `VT/Sf`; renderer audit checks the source geometry and line-add anchors. | Low-medium | Keep as source-correct advection boundary ownership. This completes the missing source `GT` boundary surface but does not close Phase 1; remaining blockers are still mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
-| 47 | S1-120 | Phase 1 shader residual audit and source `$T` force surface | Source `$T` force fragment declares `force`, `center`, `scale`, and `px`; the rebuild's `ag-force` vertex had the placement uniforms but the fragment only declared `force`. Current shader dumps also needed a compact source-vs-rebuild residual board so the next 5-10 point batches are based on current generated shaders rather than memory. | Production now declares `center`, `scale`, and `px` in the `ag-force` fragment surface without changing the formula. `scripts/summarize-phase1-shader-gaps.mjs` now generates `phase1-shader-residuals.md/json` from a dump directory, and `dump-va-shader.mjs` automatically writes that report after each shader dump. | Low | Keep as source-correct pass-surface and QA attribution work. The current residual board shows `OA/A1/thumb/environment/media/main-fluid` core anchors match, while `VA-work` still has a source-only `bsdfs`/`opaque_fragment` include-surface residual. Phase 1 remains open. |
+| 47 | S1-120 | Phase 1 shader residual audit and source `$T` force surface | Source `$T` force fragment declares `force`, `center`, `scale`, and `px`; the rebuild's `ag-force` vertex had the placement uniforms but the fragment only declared `force`. Current shader dumps also needed a compact source-vs-rebuild residual board so the next 5-10 point batches are based on current generated shaders rather than memory. | Production now declares `center`, `scale`, and `px` in the `ag-force` fragment surface without changing the formula. `scripts/summarize-phase1-shader-gaps.mjs` now generates `phase1-shader-residuals.md/json` from a dump directory, and `dump-va-shader.mjs` automatically writes that report after each shader dump. | Low | Keep as source-correct pass-surface and QA attribution work. S1-121 supersedes the older `VA-work` include-surface note. Phase 1 remains open. |
+| 48 | S1-121 | Source `VA/zA` include surface | Source `zA` keeps `#include <bsdfs>` before lights parsing and `#include <opaque_fragment>` before the source `gl_FragColor.rgb/a` tail mutations. The rebuild had manually expanded the opaque output tail, leaving an avoidable include-surface residual even though core checks matched. | Ordinary work-block `VA` now restores the source include surface by inserting `bsdfs` in the work variant and using `#include <opaque_fragment>` before the existing source-style tail mutations. The shader residual report text is now conditional so it cannot keep reporting a stale `VA-work` include residual after the generated dump clears it. | Low-medium | Keep as source-correct `VA/zA` surface alignment. Shader dump now reports no `VA-work` source/rebuild include or uniform residuals, but Phase 1 remains open for generated shader text/bridge depth, mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -131,7 +132,7 @@ This board reflects the current active state after S1-46B through S1-50. Older r
 | --- | --- | --- | --- | --- |
 | `p1` hierarchy/lights/route state | Source-shaped | Scene hierarchy, active project, work count, light constants, about/floating toggles, and full-canvas QA are stable. | No | Keep as regression gate only. |
 | `T1/w1/E1` thumb target | Source-shaped | Thumb target size, visible thumb count, composite uniforms, texture color-space fix, and S1-49 projection coverage are attributed. | No | Do not tune thumb darkness/intensity. |
-| `GA/VA` ordinary blocks | Stable bridge, still not full source shader | Material defaults, alpha tail, physical-response probes, vertex world/UV probes, and projection coverage are attributed; full `HA/zA` replacement was rejected as unsafe in the current bridge. | Yes for strict 1:1 | Keep stable bridge for runtime safety, but do not mark it accepted without user visual review or narrower source-safe shader evidence. |
+| `GA/VA` ordinary blocks | Stable bridge, still not full source shader | Material defaults, alpha tail, physical-response probes, vertex world/UV probes, projection coverage, and current `VA-work` include/uniform surface are attributed; full `HA/zA` replacement was rejected as unsafe in the current bridge. | Yes for strict 1:1 | Keep stable bridge for runtime safety, but do not mark it accepted without user visual review or narrower source-safe shader evidence. |
 | `Ka` mouse simulation | Structurally attributed | S1-50 verifies target sizing, `uCoords`, UV offset/scale, persistence/thickness shape, and negligible static darken contribution. | No | Interactive feel QA only if visibly off. |
 | `A1/C1` pre-composite | Source-equivalent for home flow | S1-83 confirms semantic flow order matches source, including the formerly inert/relocated computations. | No for home brightness | Keep project pages as regression gates. |
 | `OA/CA` final transfer | Open transfer/color interpretation gap | Source formulas, blend table, renderer output, and darken inputs are confirmed. Gamma-like transfer debug moves luma but lacks source proof. | Yes | Needs source-backed transfer fix, narrower source evidence, or explicit user acceptance after visual review. |
@@ -1097,6 +1098,36 @@ Verification notes:
 - Band analysis: desktop center-band delta `+0.0013`; mobile center-band delta `-0.0137`.
 - This is intentionally not a visual closeout. It should make the next production batch safer by showing which residuals are source-surface gaps versus already-matched core anchors.
 - Phase 1 remains open for the `VA` include-surface residual, strict projection/material feel, mobile/fog-bed distribution, and transfer interpretation.
+
+### S1-121 Source `VA/zA` Include Surface
+
+This batch closed the specific `VA-work` include-surface residual identified by S1-120 without tuning lighting, color, or projection constants.
+
+Source/runtime evidence:
+
+- Source `zA` keeps `#include <bsdfs>` in the fragment shader before lights parsing.
+- Source `zA` keeps `#include <opaque_fragment>` before the source tail mutates `gl_FragColor.rgb` and `gl_FragColor.a`.
+- The rebuild's ordinary work-block `VA` already had matching core tail checks, but it had expanded the opaque output logic manually and therefore still differed at the include surface.
+- The current generated residual report now shows `VA-work` with no source-only or rebuild-only fragment includes and no source-only or rebuild-only fragment uniforms.
+
+Runtime and tooling changes:
+
+- Ordinary work-block `VA` now inserts `#include <bsdfs>` before `#include <lights_pars_begin>` in the work variant.
+- The work-block source tail chunk now keeps `#include <opaque_fragment>` before the existing source-style `gl_FragColor.rgb/a` mutations.
+- `scripts/summarize-phase1-shader-gaps.mjs` now generates the `VA-work` reading from the current row data instead of hardcoding the older `bsdfs`/`opaque_fragment` residual.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Renderer audit passed.
+- Shader dump passed and wrote `/tmp/rd-s121-shader/phase1-shader-residuals.md`; `VA-work` reports `source anchors match; text differs`, with no fragment include or uniform residuals.
+- Output probe passed with no failures, exceptions, or shader/WebGL console errors.
+- Thumb spotlight probe passed; source map/target/intensity stayed intact.
+- Project media probe passed; project pages retain five visible media tracks.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
+- Band analysis: desktop center-band delta `+0.0008`; mobile center-band delta `-0.0125`.
+- Phase 1 remains open for generated shader text/bridge depth, strict projection/material feel, mobile/fog-bed distribution, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

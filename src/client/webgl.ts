@@ -577,15 +577,7 @@ gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 `;
 
 const workBlockSourceTailFragmentChunk = `
-#ifdef OPAQUE
-diffuseColor.a = 1.0;
-#endif
-
-#ifdef USE_TRANSMISSION
-diffuseColor.a *= material.transmissionAlpha;
-#endif
-
-gl_FragColor = vec4(outgoingLight, diffuseColor.a);
+#include <opaque_fragment>
 
 vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
 vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
@@ -669,6 +661,7 @@ function patchWorkBlockShader(
     .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
     .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
   if (variant === "work") {
+    shader.fragmentShader = shader.fragmentShader.replace("#include <lights_pars_begin>", "#include <bsdfs>\n#include <lights_pars_begin>");
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", workBlockSourceTailFragmentChunk);
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
     shader.fragmentShader = stripSourceVaR164PhysicalBranches(shader.fragmentShader);
