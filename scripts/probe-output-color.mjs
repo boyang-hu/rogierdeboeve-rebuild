@@ -127,6 +127,21 @@ async function runProbe() {
   });
   const parsed = JSON.parse(result.result.value);
   if (!parsed.probe) throw new Error("No __rogierOutputProbe data found");
+  const sourceDefaults = parsed.probe.sourceDefaults || {};
+  const sourceDefaultErrors = [];
+  if (sourceDefaults.darken !== 0.2) sourceDefaultErrors.push("darken");
+  if (sourceDefaults.saturation !== 0.35) sourceDefaultErrors.push("saturation");
+  if (sourceDefaults.contrast !== 1.1) sourceDefaultErrors.push("contrast");
+  if (sourceDefaults.projectDetailDarken !== 0.25) sourceDefaultErrors.push("projectDetailDarken");
+  if (sourceDefaults.projectSaturationFallback !== 1) sourceDefaultErrors.push("projectSaturationFallback");
+  if (sourceDefaults.projectContrastFallback !== 1.15) sourceDefaultErrors.push("projectContrastFallback");
+  if (sourceDefaults.thumbDarknessIntensity !== 0.5) sourceDefaultErrors.push("thumbDarknessIntensity");
+  if (sourceDefaults.thumbDarknessColor !== "#000000") sourceDefaultErrors.push("thumbDarknessColor");
+  if (sourceDefaults.thumbSaturation !== 1) sourceDefaultErrors.push("thumbSaturation");
+  if (sourceDefaults.thumbMouseLightness !== 1) sourceDefaultErrors.push("thumbMouseLightness");
+  if (sourceDefaultErrors.length) {
+    throw new Error(`Se/xt source default mismatch: ${sourceDefaultErrors.join(", ")}`);
+  }
   const gaShape = parsed.probe.mouseSimulation?.active?.sourceShape;
   if (gaShape) {
     const shapeErrors = Object.entries(gaShape)

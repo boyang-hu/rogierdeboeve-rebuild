@@ -121,6 +121,19 @@ async function runProbe() {
   if (!parsed.probe) throw new Error("No __rogierThumbProbe data found");
   const probe = parsed.probe;
   const sourceShapeErrors = [];
+  const sourceDefaults = probe.sourceDefaults || {};
+  if (sourceDefaults.thumbDarknessIntensity !== 0.5) {
+    sourceShapeErrors.push(`thumbDefaultDarkness=${sourceDefaults.thumbDarknessIntensity}`);
+  }
+  if (sourceDefaults.thumbDarknessColor !== "#000000") {
+    sourceShapeErrors.push(`thumbDefaultColor=${sourceDefaults.thumbDarknessColor}`);
+  }
+  if (sourceDefaults.thumbSaturation !== 1) {
+    sourceShapeErrors.push(`thumbDefaultSaturation=${sourceDefaults.thumbSaturation}`);
+  }
+  if (sourceDefaults.thumbMouseLightness !== 1) {
+    sourceShapeErrors.push(`thumbDefaultMouseLightness=${sourceDefaults.thumbMouseLightness}`);
+  }
   if (probe.thumbPositionMode !== "source-w1-x-only") {
     sourceShapeErrors.push(`thumbPositionMode=${probe.thumbPositionMode}`);
   }

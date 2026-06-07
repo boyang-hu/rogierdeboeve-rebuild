@@ -124,6 +124,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 47 | S1-120 | Phase 1 shader residual audit and source `$T` force surface | Source `$T` force fragment declares `force`, `center`, `scale`, and `px`; the rebuild's `ag-force` vertex had the placement uniforms but the fragment only declared `force`. Current shader dumps also needed a compact source-vs-rebuild residual board so the next 5-10 point batches are based on current generated shaders rather than memory. | Production now declares `center`, `scale`, and `px` in the `ag-force` fragment surface without changing the formula. `scripts/summarize-phase1-shader-gaps.mjs` now generates `phase1-shader-residuals.md/json` from a dump directory, and `dump-va-shader.mjs` automatically writes that report after each shader dump. | Low | Keep as source-correct pass-surface and QA attribution work. S1-121 supersedes the older `VA-work` include-surface note. Phase 1 remains open. |
 | 48 | S1-121 | Source `VA/zA` include surface | Source `zA` keeps `#include <bsdfs>` before lights parsing and `#include <opaque_fragment>` before the source `gl_FragColor.rgb/a` tail mutations. The rebuild had manually expanded the opaque output tail, leaving an avoidable include-surface residual even though core checks matched. | Ordinary work-block `VA` now restores the source include surface by inserting `bsdfs` in the work variant and using `#include <opaque_fragment>` before the existing source-style tail mutations. The shader residual report text is now conditional so it cannot keep reporting a stale `VA-work` include residual after the generated dump clears it. | Low-medium | Keep as source-correct `VA/zA` surface alignment. Shader dump now reports no `VA-work` source/rebuild include or uniform residuals, but Phase 1 remains open for generated shader text/bridge depth, mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 49 | S1-122 | `VA/zA` r164 bridge attribution | Source `zA` uses the old `SPECULAR` define surface under `PHYSICAL`, but the local Three r164 `lights_physical_fragment` chunk requires `USE_SPECULAR` and does not accept `SPECULAR`. The remaining `VA-work` text diff therefore needed to be classified so it is not mistaken for a safe source-constant or visual tweak. | Production rendering is unchanged. Shader dump now records `vaBridgeCompatibility`, reports the Three r164 `lights_physical_fragment` chunk surface, and `phase1-shader-residuals.md` adds a Bridge Notes column that classifies `VA-work` as an `r164 compile bridge` while still showing include/uniform/core anchors matched. | Low | Keep as QA attribution. Do not replace `USE_SPECULAR` with `SPECULAR` unless the entire `lights_physical_fragment` dependency is source-ported and WebGL-verified. Phase 1 remains open for visual parity, but this removes one false implementation target. |
+| 50 | S1-123 | Source `xt/Se` visual defaults | Source `xt` defines `darken=.2`, `saturation=.35`, `contrast=1.1`, `thumbDarknessIntensity=.5`, `thumbDarknessColor="#000000"`, while `Se.init()` seeds those settings before route payloads take over. The rebuild still had pre-route/fallback state at `darken=.1`, `saturation=1.15`, and thumb darkness fallback `0`. | Production now names and uses source visual defaults for WebGL initial state, home fallback darken/saturation, about defaults, thumb fallback darkness/color/saturation/mouse-lightness, and separate project-detail fallback constants. Output and thumb probes expose and assert the source defaults. | Low | Keep as source-correct visual-state ownership. This removes a route-boundary/fallback mismatch without tuning projection or shader formulas. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -1129,6 +1130,37 @@ Verification notes:
 - Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
 - Band analysis: desktop center-band delta `+0.0008`; mobile center-band delta `-0.0125`.
 - Phase 1 remains open for generated shader text/bridge depth, strict projection/material feel, mobile/fog-bed distribution, and transfer interpretation.
+
+### S1-123 Source `xt/Se` Visual Defaults
+
+This batch aligned visual-state defaults and fallbacks with source `xt` / `Se.init()`. It did not change shader formulas, spotlight constants, projection strength, or project media mapping.
+
+Source evidence:
+
+- Source `xt` defines `darken=.2`, `saturation=.35`, `contrast=1.1`, `thumbDarknessIntensity=.5`, and `thumbDarknessColor="#000000"`.
+- Source `OA` seeds `uDarken=xt.darken` and `uSaturation=xt.saturation`.
+- Source `Se.init()` seeds `settings.darken`, `settings.saturation`, `settings.contrast`, and thumb defaults before route/page payloads override them.
+- Source project detail routes still use detail fallbacks such as `darkenDetail || .25`, `saturation || 1`, and `contrast || 1.15`, so those are now named separately instead of being conflated with home/default state.
+
+Runtime and tooling changes:
+
+- WebGL initial `darken`, `saturation`, and `contrast` now start at source `.2`, `.35`, and `1.1`.
+- Home visual fallback darken/saturation and about visual defaults now use the same source constants.
+- Thumb fallback darkness/color/saturation/mouse-lightness now use the source default values.
+- Project/detail fallback constants are named independently as `SOURCE_PROJECT_DETAIL_DARKEN`, `SOURCE_PROJECT_SATURATION_FALLBACK`, and `SOURCE_PROJECT_CONTRAST_FALLBACK`.
+- Output and thumb probes now expose and hard-assert the source defaults so future route-state work cannot silently drift them.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed and wrote `/tmp/rd-s123-shader/phase1-shader-residuals.md`; `VA-work` remains classified as an r164 compile bridge with no include/uniform residuals.
+- Output probe passed and reported source defaults `.2/.35/1.1`, project fallbacks `.25/1/1.15`, and thumb defaults `.5/#000000/1/1`.
+- Thumb spotlight probe passed and retained source thumb strip shape, spotlight map, target `(0,0,-8)`, and intensity `220`.
+- Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
+- Band analysis: desktop center-band delta `-0.0010`; mobile center-band delta `-0.0136`.
+- Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-122 `VA/zA` r164 Bridge Attribution
 
