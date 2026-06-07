@@ -2001,8 +2001,21 @@ uniform float uReflectivity;
 uniform float uMirror;
 uniform float uFloorMixStrength;
 uniform float uNormalDistortionStrength;
+
+#ifdef USE_MAP
+uniform sampler2D tMap;
+#endif
+
+#ifdef USE_NORMALMAP
 uniform vec2 uNormalScale;
 uniform sampler2D tNormalMap;
+#endif
+
+#ifdef USE_FOG
+uniform vec3 uFogColor;
+uniform float uFogNear;
+uniform float uFogFar;
+#endif
 
 in vec2 vUv;
 in vec4 vCoord;
@@ -2012,7 +2025,13 @@ in vec3 vToEye;
 out vec4 FragColor;
 
 void main() {
+#ifdef USE_MAP
+  vec4 color = texture(tMap, vUv);
+#else
   vec4 color = vec4(uColor, 1.0);
+#endif
+
+#ifdef USE_NORMALMAP
   vec4 normalColor = texture(tNormalMap, vUv * uNormalScale);
   vec3 normal = normalize(vec3(
     normalColor.r * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0),
@@ -2022,6 +2041,10 @@ void main() {
   vec3 coord = vCoord.xyz / vCoord.w;
   vec2 reflectUv = coord.xy + coord.z * normal.xz * 0.05;
   vec4 reflectColor = texture(tReflect, reflectUv);
+#else
+  vec3 normal = vNormal;
+  vec4 reflectColor = textureProj(tReflect, vCoord);
+#endif
 
   vec3 toEye = normalize(vToEye);
   float theta = max(dot(toEye, normal), 0.0);
@@ -2029,6 +2052,17 @@ void main() {
   reflectColor = mix(vec4(0.0), reflectColor, reflectance);
 
   FragColor.rgb = color.rgb * ((1.0 - min(1.0, uMirror)) + reflectColor.rgb * uFloorMixStrength);
+
+#ifdef USE_FOG
+  float fogDepth = gl_FragCoord.z / gl_FragCoord.w;
+  float fogFactor = smoothstep(uFogNear, uFogFar, fogDepth);
+  FragColor.rgb = mix(FragColor.rgb, uFogColor, fogFactor);
+#endif
+
+#ifdef DITHERING
+  FragColor.rgb = dither(FragColor.rgb);
+#endif
+
   FragColor.a = 1.0;
 }
 `;
@@ -5546,6 +5580,12 @@ export class WebGLBackdrop {
           groupPosition: this.floorGroup.position.toArray(),
           planePosition: this.floorPlane.position.toArray(),
           reflectionVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
+          shaderBranches: {
+            map: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_MAP"),
+            normalMap: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_NORMALMAP"),
+            fog: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_FOG"),
+            dithering: Object.hasOwn(this.floorMaterial.defines ?? {}, "DITHERING"),
+          },
           uReflectivity: this.floorMaterial.uniforms.uReflectivity.value,
           uMirror: this.floorMaterial.uniforms.uMirror.value,
           uFloorMixStrength: this.floorMaterial.uniforms.uFloorMixStrength.value,
@@ -5741,6 +5781,12 @@ export class WebGLBackdrop {
           depthTest: this.floorMaterial.depthTest,
           blending: this.floorMaterial.blending,
           mode: "source-o1-raw-glsl3",
+          branches: {
+            map: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_MAP"),
+            normalMap: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_NORMALMAP"),
+            fog: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_FOG"),
+            dithering: Object.hasOwn(this.floorMaterial.defines ?? {}, "DITHERING"),
+          },
         },
       },
       environment: {

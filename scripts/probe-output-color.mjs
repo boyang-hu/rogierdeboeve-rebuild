@@ -198,7 +198,15 @@ async function runProbe() {
   if (floorUniforms?.reflectionVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("reflectionVisibilityMode");
   if (floorUniforms?.materialMode !== "source-o1-raw-glsl3") floorErrors.push("materialMode");
   if (floorUniforms?.reflectionBlurMode !== "source-t1-raw-glsl3") floorErrors.push("reflectionBlurMode");
+  if (floorUniforms?.shaderBranches?.normalMap !== true) floorErrors.push("floorNormalMapBranch");
+  if (floorUniforms?.shaderBranches?.map !== false) floorErrors.push("floorMapBranch");
+  if (floorUniforms?.shaderBranches?.fog !== false) floorErrors.push("floorFogBranch");
+  if (floorUniforms?.shaderBranches?.dithering !== false) floorErrors.push("floorDitheringBranch");
   if (parsed.probe.reflectionState?.floor?.material?.mode !== "source-o1-raw-glsl3") floorErrors.push("reflectionFloorMaterialMode");
+  if (parsed.probe.reflectionState?.floor?.material?.branches?.normalMap !== true) floorErrors.push("reflectionNormalMapBranch");
+  if (parsed.probe.reflectionState?.floor?.material?.branches?.map !== false) floorErrors.push("reflectionMapBranch");
+  if (parsed.probe.reflectionState?.floor?.material?.branches?.fog !== false) floorErrors.push("reflectionFogBranch");
+  if (parsed.probe.reflectionState?.floor?.material?.branches?.dithering !== false) floorErrors.push("reflectionDitheringBranch");
   if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
   if (floorErrors.length) {

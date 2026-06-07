@@ -571,6 +571,8 @@ function analyzeFloorCore(sourceShader, rebuildShader) {
     fresnelReflectance: ["pow((1.-theta),5.)", "pow((1.0-theta),5.0)"],
     floorMix: ["color.rgb*((1.-min(1.,uMirror))+reflectColor.rgb*uFloorMixStrength)", "color.rgb*((1.0-min(1.0,uMirror))+reflectColor.rgb*uFloorMixStrength)"],
     fogBranch: ["#ifdefUSE_FOG"],
+    ditheringBranch: ["#ifdefDITHERING"],
+    ditherCall: ["dither(FragColor.rgb)"],
     fragColor: ["FragColor.rgb=", "FragColor=vec4"],
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [

@@ -111,6 +111,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 34 | S1-107 | Source `h1/p1` environment hierarchy ownership | Source constructs `env=this.add(h1)`, where `h1` is a group that owns position `y=-12.65` and rotation `-rotationAdjustment`; the environment mesh is a local child at origin. | Production now wraps the environment mesh in `environmentGroup`, moves y/rotation ownership to the group, keeps the mesh local at origin, and hard-fails output probe if the hierarchy drifts. Renderer audit records source `h1` and `p1` environment hierarchy anchors. | Low-medium | Keep as source-correct hierarchy ownership. World transform is equivalent, so this is not a visual closeout; Phase 1 remains open for fog-bed distribution and projection/material parity. |
 | 35 | S1-108 | Source `u1/a1` environment and reflector ownership surface | Source `u1` extends `MeshStandardMaterial`, stores runtime bindings on `customUniforms`, patches `c1/l1` in `onBeforeCompile`, sets `dithering=true`, and is constructed by `h1` with `side=BackSide`, `envMapIntensity=1`, `fog=false`. Source `a1` hides its component group during `onBeforeRender` before calling `reflector.update()`. | Production now exposes the source `u1` `customUniforms` alias, adds hard output-probe assertions for material mode, fog/dithering/env intensity, and records source `a1` reflection visibility ownership. Renderer audit now records source `u1` and `a1` anchors. | Low | Keep as source-correct interface and QA hardening. This prevents future background/fog-bed work from misattributing the floor hidden-state or environment material surface, but does not close the mobile/fog-bed visual residual. |
 | 36 | S1-109 | Source `o1/t1` floor material and reflection blur shader surface | Source floor material `o1` and reflection blur material `t1` use raw shader surfaces; source blur fragment `QA` is GLSL3-shaped with `in vUv`, `out FragColor`, `texture(...)`, and `mix(tMapped, blurred, 1.25)`. | Production now reports the floor material as `source-o1-raw-glsl3`, uses `RawShaderMaterial`/`GLSL3` for the reflection blur material, dumps both `o1-floor-material` and `t1-floor-reflection-blur`, and hard-fails output probes if the floor/blur material modes drift. | Low-medium | Keep as source-correct floor shader-surface alignment. This narrows the floor/reflector bridge, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
+| 37 | S1-110 | Source `o1` floor fragment branch surface | Source `o1` keeps conditional `USE_MAP`, `USE_NORMALMAP`, `USE_FOG`, and `DITHERING` branches in the raw fragment shader; runtime `a1` constructs it with `normalMap` only. | Production now restores the full conditional fragment branch surface while preserving source runtime branch state: `USE_NORMALMAP=true`, `USE_MAP=false`, `USE_FOG=false`, `DITHERING=false`. Shader dump hardens floor core checks and output probe asserts the branch state. | Low-medium | Keep as source-correct floor shader-body alignment. Do not enable floor fog/map/dithering as a visual tweak; Phase 1 remains open for the mobile fog-bed residual and projection/material parity. |
 
 ### Phase 1 Open Blocker Board
 
@@ -686,6 +687,40 @@ Verification:
 | Mobile center-band delta | `-0.0125` against source |
 
 Decision: keep this source-correct floor/reflection shader-surface alignment. Phase 1 remains open because the remaining residual is still mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation, not this material surface.
+
+### S1-110 Source `o1` Floor Fragment Branch Surface
+
+This batch stayed on the floor/reflection shader chain and restored source fragment branch structure without turning it into a visual tuning pass.
+
+Source/runtime evidence:
+
+- Source `o1` declares conditional `USE_MAP`, `USE_NORMALMAP`, `USE_FOG`, and `DITHERING` branches in the raw fragment shader.
+- Source `a1.init()` constructs `new o1({ color:"#4a4a4a", normalMap:e, uMirror:1, reflectivity:.97, uFloorMixStrength:15 })`, so runtime floor rendering enables `USE_NORMALMAP` only.
+- The previous rebuild formula matched the active normal-map path, but had trimmed the inactive source branch surface, which made shader residuals noisier and left room for misreading floor fog/map as open tuning levers.
+
+Production now exposes and asserts:
+
+- floor fragment includes the source conditional branch surface for map, normal map, fog, and dithering,
+- runtime probe reports `USE_NORMALMAP=true`, `USE_MAP=false`, `USE_FOG=false`, and `DITHERING=false`,
+- output probe hard-fails on branch drift in both `uniforms.floor.shaderBranches` and `reflectionState.floor.material.branches`,
+- shader dump floor core checks now include `ditheringBranch` and `ditherCall`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source floor/reflection anchors still present |
+| Output probe | Passed after restarting rebuild server; floor branches match source runtime state |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors; `o1-floor-material` fragment delta narrowed to `-35` and source/rebuild floor core checks align |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `-0.0004` against source |
+| Mobile center-band delta | `-0.0122` against source |
+
+Decision: keep this source-correct `o1` floor fragment branch alignment. It narrows the floor shader bridge and prevents unsupported fog/map/dithering tuning, but it does not close Phase 1; the mobile fog-bed distribution and strict projection/material residuals remain open.
 
 ### S1-70 Source Floor Circle Geometry
 
