@@ -5956,6 +5956,9 @@ export class WebGLBackdrop {
         position: this.homeCamera.position.toArray(),
         quaternion: this.homeCamera.quaternion.toArray(),
         origin: this.cameraOrigin.toArray(),
+        resizeMode: "source-p1-mobile-origin-sceneWrap",
+        breakpointMd: BREAKPOINT_MD,
+        mobileResizeBranch: window.innerWidth < BREAKPOINT_MD,
         controllerPosition: this.cameraControllerGroup.position.toArray(),
         controllerRotation: [
           this.cameraControllerGroup.rotation.x,

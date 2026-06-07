@@ -681,6 +681,8 @@ const summary = {
         "instance.resize&&",
         "instance.resize(e,t,Math.min(n,1.5))",
         "this.aboutBlocks.resize(e,t,Math.min(n,1.5))",
+        "this.cameraController.origin.z=5.5",
+        "this.sceneWrap.position.y=0",
         "this.cameraController.origin.z=5",
         "this.sceneWrap.position.y=.3",
       ]),

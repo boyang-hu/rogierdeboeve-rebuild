@@ -21,6 +21,12 @@ const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.PROBE_WAIT || 5200);
 const deviceScaleFactor = Number(process.env.DEVICE_SCALE_FACTOR || 1);
 const skipScreenshot = process.env.SKIP_SCREENSHOT === "1";
+const viewportName = process.env.VIEWPORT || "desktop";
+const viewports = {
+  desktop: { width: 1440, height: 900, mobile: false },
+  mobile: { width: 390, height: 844, mobile: true },
+};
+const viewport = viewports[viewportName] || viewports.desktop;
 const rebuildSearchParams = new URL(rebuildUrl).searchParams;
 const debugCompositeProbe = rebuildSearchParams.has("debug-composite-stage")
   || rebuildSearchParams.has("debug-composite-darken")
@@ -108,12 +114,12 @@ async function runProbe() {
   await send(ws, "Runtime.enable");
   await send(ws, "Network.enable");
   await send(ws, "Emulation.setDeviceMetricsOverride", {
-    width: 1440,
-    height: 900,
+    width: viewport.width,
+    height: viewport.height,
     deviceScaleFactor,
-    mobile: false,
-    screenWidth: 1440,
-    screenHeight: 900,
+    mobile: viewport.mobile,
+    screenWidth: viewport.width,
+    screenHeight: viewport.height,
   });
   await send(ws, "Page.navigate", { url: withProbeParams(rebuildUrl) });
   await wait(waitAfter);
@@ -146,6 +152,19 @@ async function runProbe() {
   if (sourceDefaults.thumbMouseLightness !== 1) sourceDefaultErrors.push("thumbMouseLightness");
   if (sourceDefaultErrors.length) {
     throw new Error(`Se/xt source default mismatch: ${sourceDefaultErrors.join(", ")}`);
+  }
+  const camera = parsed.probe.camera || {};
+  const resizeErrors = [];
+  const expectedMobile = viewport.width < 800;
+  const expectedOriginZ = expectedMobile ? 5 : 5.5;
+  const expectedSceneWrapY = expectedMobile ? 0.3 : 0;
+  if (camera.resizeMode !== "source-p1-mobile-origin-sceneWrap") resizeErrors.push("resizeMode");
+  if (camera.breakpointMd !== 800) resizeErrors.push("breakpointMd");
+  if (camera.mobileResizeBranch !== expectedMobile) resizeErrors.push("mobileResizeBranch");
+  if (Math.abs((camera.origin?.[2] ?? 0) - expectedOriginZ) > 0.001) resizeErrors.push("cameraOriginZ");
+  if (Math.abs((camera.sceneWrapY ?? 0) - expectedSceneWrapY) > 0.001) resizeErrors.push("sceneWrapY");
+  if (resizeErrors.length) {
+    throw new Error(`p1.resize source-shape mismatch: ${resizeErrors.join(", ")}`);
   }
   const gaShape = parsed.probe.mouseSimulation?.active?.sourceShape;
   if (gaShape) {
