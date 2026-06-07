@@ -108,6 +108,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 31 | S1-104 | Source `GA` rotation-wrap scale ownership | Source `GA.createInstancedMesh()` attaches the instanced mesh to `rotationWrap` and applies `settings.scale=.09` to `rotationWrap`; source `GA.createPlane()` attaches `rayPlane` to the same `rotationWrap` with unscaled geometry/position, then local mouse simulation resizes from the unscaled plane size. | Production now restores that object hierarchy: each work item has `group -> rotationWrap(scale=.09) -> mesh + rayPlane`, mesh scale stays identity, and ray-plane geometry/z are no longer pre-multiplied by grid scale. Output probe asserts the hierarchy/scale shape and renderer audit records source anchors. | Low-medium | Keep as source-correct `GA` matrix/projection ownership. World dimensions remain stable, but Phase 1 is still open for mobile/fog-bed distribution and strict projection/material residuals. |
 | 32 | S1-105 | Source `Lu/I1` render-manager clearing ownership | Source renderer `qw` sets `autoClear=false`; source `Lu.update()` and `I1.update()` render raw, blur, FXAA, and composite targets directly with `setRenderTarget(...); render(...)` except for explicitly source-owned special cases such as reflector raw clear and media scene `autoClear=true`. | Production now removes rebuild-only explicit clears from the work raw/composite pass, main pre-composite pass, main blur pass, main FXAA pass, frame start, and hidden-home work fallback. Output probe reports work/main render-manager clear modes and hard-fails on drift; renderer audit records source `qw`, `nD`, `Lu`, and `I1` anchors. | Medium | Keep as source-correct render-manager ownership after QA. Project media remains stable, but Phase 1 stays open for mobile/fog-bed distribution and strict projection/material residuals. |
 | 33 | S1-106 | Source `Xt.preloadTextures()` wrapping ownership | Source preloads blue-noise, floor-normal, and `perlin2` with `ci=RepeatWrapping=1000`; `perlin1` uses `vo=MirroredRepeatWrapping=1002`. | Production now loads work-block `perlin1` with `MirroredRepeatWrapping` while keeping A1/C1 `perlin2`, blue-noise, and floor-normal on `RepeatWrapping`. Output probe exposes and hard-fails on wrapping drift; renderer audit records the source `Xt.preloadTextures()` anchors. | Low-medium | Keep as source-correct texture ownership. This fixes a concrete earlier misread where `vo` had been documented as clamp; Phase 1 remains open for fog-bed and projection/material parity. |
+| 34 | S1-107 | Source `h1/p1` environment hierarchy ownership | Source constructs `env=this.add(h1)`, where `h1` is a group that owns position `y=-12.65` and rotation `-rotationAdjustment`; the environment mesh is a local child at origin. | Production now wraps the environment mesh in `environmentGroup`, moves y/rotation ownership to the group, keeps the mesh local at origin, and hard-fails output probe if the hierarchy drifts. Renderer audit records source `h1` and `p1` environment hierarchy anchors. | Low-medium | Keep as source-correct hierarchy ownership. World transform is equivalent, so this is not a visual closeout; Phase 1 remains open for fog-bed distribution and projection/material parity. |
 
 ### Phase 1 Open Blocker Board
 
@@ -578,6 +579,43 @@ Verification:
 | Mobile center-band delta | `-0.0128` against source |
 
 Decision: keep as source-correct texture preload/wrapping ownership. This corrects a concrete earlier documentation/implementation misread; Phase 1 remains open for mobile fog-bed distribution and strict projection/material parity.
+
+### S1-107 Source `h1/p1` Environment Hierarchy Ownership
+
+This batch corrected environment object ownership without changing environment shader constants.
+
+Source/runtime evidence:
+
+- Source `h1` extends `Group` and creates an environment mesh child with `new Mesh(new IcosahedronGeometry(300,10), new u1(...))`.
+- Source `p1.init()` assigns `this.env=this.add(h1)`, then sets `this.env.position.y=-12.65` and `this.env.rotation.y=-Xc(this.rotationAdjustment)`.
+- The rebuild previously applied y/rotation directly to the environment mesh, which made the world transform equivalent but did not match source ownership.
+
+Production now:
+
+- Adds `environmentGroup` as the source `h1`-style transform owner.
+- Keeps `environmentPlane` as a child at local position/rotation zero.
+- Applies `-12.65` y and `-rotationAdjustment` to the group.
+- Hides/restores the group for `debug-environment=off`.
+- Exposes hierarchy fields in `__rogierOutputProbe.uniforms.environment` and `reflectionState.environment`.
+- Adds hard output-probe assertions for group-owned transform.
+- Adds renderer-audit anchors for source `h1` and `p1` environment hierarchy.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Source `h1` and `p1` environment hierarchy anchors all true |
+| Output probe | Passed; group owns y/rotation, mesh local y/rotation are zero |
+| Thumb spotlight probe | Passed; map present, target `(0,0,-8)`, intensity `220` |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | Passed with no shader/WebGL console errors |
+| Full home source-vs-rebuild capture | Passed without failures/exceptions |
+| Desktop center-band delta | `+0.0005` against source |
+| Mobile center-band delta | `-0.0117` against source |
+
+Decision: keep as source-correct environment hierarchy ownership. This removes another `p1/h1` structure mismatch but does not close Phase 1; remaining blockers are still mobile fog-bed distribution, strict projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

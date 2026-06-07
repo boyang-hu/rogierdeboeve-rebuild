@@ -123,8 +123,10 @@ const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
+const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 500, 900);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
+const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
@@ -397,6 +399,25 @@ const summary = {
         "this.sceneWrap.position.y=.3",
       ]),
       excerpt: compact(sourceP1Resize.text),
+    },
+    p1EnvironmentHierarchy: sourceP1InitEnv && {
+      index: sourceP1InitEnv.index,
+      checks: checks(sourceP1InitEnv.text, [
+        "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)",
+        "this.env.position.y=-12.65",
+        "this.env.rotation.y=-Xc(this.rotationAdjustment)",
+        "this.sceneWrap.add(this.env)",
+      ]),
+      excerpt: compact(sourceP1InitEnv.text),
+    },
+    environmentH1: sourceH1 && {
+      index: sourceH1.index,
+      checks: checks(sourceH1.text, [
+        "class h1 extends rt",
+        "this.material=new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})",
+        "const t=new at(e,this.material);this.add(t),this.mesh=t",
+      ]),
+      excerpt: compact(sourceH1.text),
     },
     IuUpdate: sourceIuUpdate && {
       index: sourceIuUpdate.index,

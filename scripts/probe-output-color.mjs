@@ -174,6 +174,18 @@ async function runProbe() {
   if (updateOrder?.environmentUpdateOrder !== "source-p1-component-post-render") {
     throw new Error(`Environment update-order source-shape mismatch: ${updateOrder?.environmentUpdateOrder || "missing"}`);
   }
+  const environmentUniforms = parsed.probe.uniforms?.environment;
+  const environmentHierarchy = parsed.probe.reflectionState?.environment;
+  const environmentErrors = [];
+  if (environmentUniforms?.hierarchyMode !== "source-h1-group-owns-transform") environmentErrors.push("hierarchyMode");
+  if (environmentUniforms && Math.abs((environmentUniforms.groupPositionY ?? 0) + 12.65) > 0.0001) environmentErrors.push("groupPositionY");
+  if (environmentUniforms && Math.abs(environmentUniforms.meshPositionY ?? 0) > 0.0001) environmentErrors.push("meshPositionY");
+  if (environmentUniforms && Math.abs(environmentUniforms.meshRotationY ?? 0) > 0.0001) environmentErrors.push("meshRotationY");
+  if (environmentHierarchy?.group?.children !== 1) environmentErrors.push("groupChildren");
+  if (environmentHierarchy?.object?.position?.[1] !== 0) environmentErrors.push("meshLocalPosition");
+  if (environmentErrors.length) {
+    throw new Error(`Environment hierarchy source-shape mismatch: ${environmentErrors.join(", ")}`);
+  }
   const skyUniforms = parsed.probe.textures?.skyComposite?.uniforms;
   const skyUniformErrors = [];
   if (skyUniforms?.uShader1Mix3Binding !== "source-declared-only") skyUniformErrors.push("uShader1Mix3Binding");

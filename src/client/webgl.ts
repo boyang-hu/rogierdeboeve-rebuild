@@ -2416,6 +2416,7 @@ export class WebGLBackdrop {
   private floorReflector = new Object3D();
   private floorPlane: Mesh<CircleGeometry, ShaderMaterial>;
   private environmentMaterial: EnvironmentMaterial;
+  private environmentGroup = new Group();
   private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
   private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private thumbCompositeTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
@@ -2675,11 +2676,12 @@ export class WebGLBackdrop {
     this.floorGroup.add(this.floorPlane);
     this.environmentMaterial = this.createEnvironmentMaterial();
     this.environmentPlane = new Mesh(new IcosahedronGeometry(300, 10), this.environmentMaterial);
-    this.environmentPlane.position.y = -12.65;
+    this.environmentGroup.position.y = -12.65;
+    this.environmentGroup.add(this.environmentPlane);
     this.homeScene.add(this.sceneWrap);
     this.sceneWrap.add(this.blocksWrap);
     this.sceneWrap.add(this.floorGroup);
-    this.sceneWrap.add(this.environmentPlane);
+    this.sceneWrap.add(this.environmentGroup);
     this.thumbScene.background = sourceLinearToSrgbColor("#222222");
     this.thumbScene.add(this.thumbWrap);
 
@@ -3192,7 +3194,7 @@ export class WebGLBackdrop {
     });
     this.thumbTotalItems = this.workItems.length;
     this.calcThumbItemWidth();
-    this.environmentPlane.rotation.y = -MathUtils.degToRad(rotationAdjustment);
+    this.environmentGroup.rotation.y = -MathUtils.degToRad(rotationAdjustment);
   }
 
   private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
@@ -5542,7 +5544,7 @@ export class WebGLBackdrop {
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
         },
         environment: {
-          visible: this.environmentPlane.visible,
+          visible: this.environmentGroup.visible,
           uTime: this.environmentMaterial.uniforms.uTime.value,
           uMultiplier: this.environmentMaterial.uniforms.uMultiplier.value,
           uDarken: this.environmentMaterial.uniforms.uDarken.value,
@@ -5568,8 +5570,13 @@ export class WebGLBackdrop {
             format: this.homeScene.environment.format,
           } : null,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
-          rotationY: this.environmentPlane.rotation.y,
-          positionY: this.environmentPlane.position.y,
+          hierarchyMode: "source-h1-group-owns-transform",
+          groupRotationY: this.environmentGroup.rotation.y,
+          groupPositionY: this.environmentGroup.position.y,
+          meshRotationY: this.environmentPlane.rotation.y,
+          meshPositionY: this.environmentPlane.position.y,
+          rotationY: this.environmentGroup.rotation.y,
+          positionY: this.environmentGroup.position.y,
         },
       },
       targets: {
@@ -5708,6 +5715,7 @@ export class WebGLBackdrop {
         },
       },
       environment: {
+        group: objectSummary(this.environmentGroup),
         object: objectSummary(this.environmentPlane),
         material: {
           transparent: this.environmentMaterial.transparent,
@@ -6077,9 +6085,9 @@ export class WebGLBackdrop {
       this.renderer.setRenderTarget(this.workRawTarget);
       const previousFloorVisible = this.floorPlane.visible;
       const previousFloorGroupVisible = this.floorGroup.visible;
-      const previousEnvironmentVisible = this.environmentPlane.visible;
+      const previousEnvironmentVisible = this.environmentGroup.visible;
       if (this.debugFloor === "off") this.floorGroup.visible = false;
-      if (this.debugEnvironment === "off") this.environmentPlane.visible = false;
+      if (this.debugEnvironment === "off") this.environmentGroup.visible = false;
       try {
         this.renderer.render(this.homeScene, this.homeCamera);
         if (preCompositeWorkTarget === this.workCompositeTarget) {
@@ -6101,7 +6109,7 @@ export class WebGLBackdrop {
       } finally {
         this.floorPlane.visible = previousFloorVisible;
         this.floorGroup.visible = previousFloorGroupVisible;
-        this.environmentPlane.visible = previousEnvironmentVisible;
+        this.environmentGroup.visible = previousEnvironmentVisible;
       }
     } else {
       this.renderer.setRenderTarget(this.workRawTarget);
