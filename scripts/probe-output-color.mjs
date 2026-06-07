@@ -342,6 +342,7 @@ async function runProbe() {
   const skyUniformErrors = [];
   if (skyComposite?.materialMode !== "source-z1-raw-glsl3") skyUniformErrors.push("materialMode");
   if (skyComposite?.glslVersion !== "300 es") skyUniformErrors.push("glslVersion");
+  if (skyComposite?.vertexMode !== "source-tl-matrix-fullscreen") skyUniformErrors.push("vertexMode");
   if (skyComposite?.sizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("sizingMode");
   if (skyComposite?.timeMode !== (parsed.probe.renderer?.dprPolicy?.lowRes ? "source-V1-low-res-time-0" : "source-V1-live-time")) skyUniformErrors.push("timeMode");
   if (skyTarget && skyComposite && (skyTarget.width !== skyComposite.expectedSize || skyTarget.height !== skyComposite.expectedSize)) skyUniformErrors.push("targetSize");

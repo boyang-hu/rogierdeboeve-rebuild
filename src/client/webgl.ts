@@ -2092,6 +2092,8 @@ void main() {
 const skyCompositeFragment = `
 precision highp float;
 
+#include <tonemapping_pars_fragment>
+
 uniform sampler2D tScene;
 uniform float uTime;
 uniform float uShader1Speed;
@@ -2886,7 +2888,7 @@ export class WebGLBackdrop {
     this.homeScene.add(this.spotLight.target);
     this.homeScene.add(this.directionalLight);
     this.skyCompositeMaterial = this.createSkyCompositeMaterial();
-    this.skyCompositeScene.add(makeFullscreenTriangle(this.skyCompositeMaterial));
+    this.skyCompositeScene.add(makeSourceFullscreenTriangle(this.skyCompositeMaterial));
     this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
     this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
     this.backgroundMaterial = this.createBackgroundMaterial();
@@ -2951,7 +2953,7 @@ export class WebGLBackdrop {
     this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
     this.mainFluidPass = this.createMainFluidPass();
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
-    this.thumbCompositeScene.add(makeFullscreenTriangle(this.thumbCompositeMaterial));
+    this.thumbCompositeScene.add(makeSourceFullscreenTriangle(this.thumbCompositeMaterial));
     this.characterMaterial = this.createCharacterMaterial();
     this.characterFallbackMesh = new Mesh(new PlaneGeometry(2, 2), this.characterMaterial);
     this.characterDirectionalLight.position.set(2, 3, 5);
@@ -4179,7 +4181,7 @@ export class WebGLBackdrop {
   }
 
   private createSkyCompositeMaterial() {
-    dumpShader("z1-sky-composite", thumbCompositeVertex, skyCompositeFragment);
+    dumpShader("z1-sky-composite", sourceTlFullscreenVertex, skyCompositeFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
@@ -4197,7 +4199,7 @@ export class WebGLBackdrop {
         uShader2Scale: { value: 0 },
         uShaderMix: { value: 1.5 },
       },
-      vertexShader: thumbCompositeVertex,
+      vertexShader: sourceTlFullscreenVertex,
       fragmentShader: skyCompositeFragment,
     });
   }
@@ -4412,7 +4414,7 @@ export class WebGLBackdrop {
   }
 
   private createThumbCompositeMaterial() {
-    dumpShader("x1-thumb-composite", thumbCompositeVertex, thumbCompositeFragment);
+    dumpShader("x1-thumb-composite", sourceTlFullscreenVertex, thumbCompositeFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
@@ -4426,7 +4428,7 @@ export class WebGLBackdrop {
         uDarkenColor: { value: sourceRgbColor("#000000", "#000000") },
         uSaturation: { value: 1 },
       },
-      vertexShader: thumbCompositeVertex,
+      vertexShader: sourceTlFullscreenVertex,
       fragmentShader: thumbCompositeFragment,
     });
   }
@@ -6048,6 +6050,7 @@ export class WebGLBackdrop {
             blending: this.skyCompositeMaterial.blending,
             materialMode: "source-z1-raw-glsl3",
             glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            vertexMode: "source-tl-matrix-fullscreen",
           },
           displacement: {
             blending: this.displacementMaterial.blending,
@@ -6175,6 +6178,7 @@ export class WebGLBackdrop {
         },
         skyComposite: {
           materialMode: "source-z1-raw-glsl3",
+          vertexMode: "source-tl-matrix-fullscreen",
           sizingMode: "source-V1-height-0.75-square",
           expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",

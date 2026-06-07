@@ -127,6 +127,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 50 | S1-123 | Source `xt/Se` visual defaults | Source `xt` defines `darken=.2`, `saturation=.35`, `contrast=1.1`, `thumbDarknessIntensity=.5`, `thumbDarknessColor="#000000"`, while `Se.init()` seeds those settings before route payloads take over. The rebuild still had pre-route/fallback state at `darken=.1`, `saturation=1.15`, and thumb darkness fallback `0`. | Production now names and uses source visual defaults for WebGL initial state, home fallback darken/saturation, about defaults, thumb fallback darkness/color/saturation/mouse-lightness, and separate project-detail fallback constants. Output and thumb probes expose and assert the source defaults. | Low | Keep as source-correct visual-state ownership. This removes a route-boundary/fallback mismatch without tuning projection or shader formulas. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 51 | S1-124 | Source `k1/O1/N1/F1` displacement pass | Source `k1` owns a wavves/displacement scene through `O1 extends Lo`; source `N1` is a raw GLSL3 material using fragment `F1`, source fullscreen vertex `tl`, tonemapping includes, direct `Lo.update()` render calls, and a square target sized at `height/10`. The rebuild still used a bridge `ShaderMaterial`, bridge vertex, `gl_FragColor` surface, and an explicit clear before rendering the displacement target. | Production now uses `RawShaderMaterial`/`GLSL3` for the displacement composite, source fullscreen vertex surface, source-style `in/out` and `FragColor` fragment output, tonemapping include surface, transparent/no-blending material state, target resize metadata, and source `Lo` no-explicit-clear ownership. Output probe and shader dump expose and assert the new pass surface. | Low-medium | Keep as source-correct displacement render-manager alignment. The source-only `tScene` uniform remains an unused source surface residual to revisit only if a narrower `N1/F1` evidence pass requires it. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 52 | S1-125 | Source `N1/F1/tl` displacement residual cleanup | After S1-124, source `N1/F1` still had three avoidable same-chain residuals: `uniform sampler2D tScene`, source global vignette constants `vignout/vignin/vignfade`, and source `tl` matrix fullscreen vertex path. The residual summary also omitted `N1-displacement-composite` from its focused table. | Production now binds source `tScene`, uses source `F1` global vignette constants, renders the displacement pass with an isolated source `tl` matrix fullscreen vertex/mesh path, and includes `N1-displacement-composite` in `phase1-shader-residuals.md`. Output probe hard-asserts `vertexMode`, `tSceneBound`, and source vignette constant mode. | Low-medium | Keep as source-correct `N1/F1/tl` cleanup. Do not generalize the matrix fullscreen vertex to other stable pass materials without a dedicated source/QA batch. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 53 | S1-126 | Source `Lo/tl` sky/thumb composite vertex surface | Source `Lo` composite screen meshes use fullscreen-triangle geometry plus matrix fullscreen vertex `tl`; source `z1` and `_1/x1` both bind `vertexShader:tl`. The rebuild still used the direct clip-space bridge vertex for sky and thumb composites, and `z1/B1` was missing the source `tonemapping_pars_fragment` include surface. | Production now renders `z1-sky-composite` and `x1-thumb-composite` through the isolated source `tl` fullscreen vertex/mesh path, adds the missing `z1` tonemapping pars include, maps `x1-thumb-composite` to source `tl` in shader dump, and hard-asserts sky composite vertex mode in output probe. | Low-medium | Keep as source-correct `Lo/tl` composite alignment. Do not apply `tl` to `OA/lA/W1/sg/rg/cg/Na`, which source maps to other vertex shaders. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -1226,6 +1227,39 @@ Verification notes:
 - Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks.
 - Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
 - Band analysis: desktop center-band delta `-0.0014`; mobile center-band delta `-0.0158`.
+- Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-126 Source `Lo/tl` Sky/Thumb Composite Vertex Surface
+
+This batch aligned the remaining same-family `Lo` composite vertex surfaces for sky and thumb composites. It did not change `OA/CA`, `A1/C1`, bloom helper passes, lighting constants, texture color spaces, or project media wiring.
+
+Source evidence:
+
+- Source `Lo.initRenderer()` creates a fullscreen-triangle geometry and renders its `screen` mesh through a screen orthographic camera.
+- Source `tl` computes fullscreen `gl_Position` through `modelMatrix`, `viewMatrix`, and `projectionMatrix`.
+- Source `_1/x1` binds `vertexShader:tl` for the thumb composite fragment `v1`.
+- Source `z1/H1` binds `vertexShader:tl` for the sky composite fragment `B1`.
+- Source `B1` includes `#include <tonemapping_pars_fragment>` before its uniforms and `#include <tonemapping_fragment>` at the tail.
+- Source `OA/lA/W1/sg/rg/cg/Na` use other vertex shaders (`el`, `OT`, `BT`, `iA`, `HT`), so those are deliberately not part of this batch.
+
+Runtime and tooling changes:
+
+- `z1-sky-composite` now uses the isolated source `tl` matrix fullscreen vertex and source fullscreen mesh helper.
+- `x1-thumb-composite` now uses the same isolated source `tl` matrix fullscreen vertex and source fullscreen mesh helper.
+- `skyCompositeFragment` now carries the missing `tonemapping_pars_fragment` include.
+- Shader dump now maps `x1-thumb-composite` to source `tl` so its vertex surface is compared.
+- Output probe now reports and hard-asserts `skyComposite.vertexMode=source-tl-matrix-fullscreen`.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed and wrote `/tmp/rd-s126-shader/phase1-shader-residuals.md`; `z1-sky-composite` no longer has source-only fragment includes, and `x1-thumb-composite` now has source/rebuild vertex comparison.
+- Output probe passed and reported `skyComposite.vertexMode=source-tl-matrix-fullscreen` with no failures, exceptions, or console messages.
+- Thumb spotlight probe passed and retained source thumb strip shape, spotlight map, target `(0,0,-8)`, and intensity `220`.
+- Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
+- Band analysis: desktop center-band delta `-0.0005`; mobile center-band delta `-0.0163`.
 - Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-122 `VA/zA` r164 Bridge Attribution

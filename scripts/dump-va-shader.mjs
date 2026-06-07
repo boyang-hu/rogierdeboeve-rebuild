@@ -785,6 +785,7 @@ const sourceVertexShaders = {
   "VA-work": sourceH,
   "M1-thumb-plane": tryExtractSourceShader(bundle, "b1"),
   "z1-sky-composite": tryExtractSourceShader(bundle, "tl"),
+  "x1-thumb-composite": tryExtractSourceShader(bundle, "tl"),
   "sg-luminosity": tryExtractSourceShader(bundle, "OT"),
   "Na-standard-blur": tryExtractSourceShader(bundle, "HT"),
   "rg-bloom-blur": tryExtractSourceShader(bundle, "BT"),
