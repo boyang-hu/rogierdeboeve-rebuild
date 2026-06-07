@@ -16,6 +16,7 @@ const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
 const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
+const threeWebglLights = readFileSync("node_modules/three/src/renderers/webgl/WebGLLights.js", "utf8");
 
 function extractTemplate(bundle, name, terminator) {
   const start = bundle.indexOf(`${name}=\``);
@@ -840,6 +841,13 @@ const summary = {
         "J.workScene.spotLight.intensity=220",
       ]),
       threeR164MapPath: {
+        webglLights: checks(threeWebglLights, [
+          "if ( light.map )",
+          "state.spotLightMap[ numSpotMaps ] = light.map",
+          "shadow.updateMatrices( light )",
+          "if ( light.castShadow ) numSpotShadowsWithMaps ++",
+          "state.spotLightMatrix[ spotLength ] = shadow.matrix",
+        ]),
         lightsFragmentBegin: checks(threeLightsFragmentBegin, [
           "spotLightCoord = vSpotLightCoord[ i ].xyz / vSpotLightCoord[ i ].w",
           "spotColor = texture2D( spotLightMap[ SPOT_LIGHT_MAP_INDEX ], spotLightCoord.xy )",
@@ -852,6 +860,12 @@ const summary = {
         ]),
       },
       excerpt: compact(sourceSDInitSpotlight.text),
+      sourceNoExplicitCastShadow: !sourceSDInitSpotlight.text.includes(".castShadow")
+        && !sourceP1SetLights?.text.includes(".castShadow"),
+      rebuildMapProjectionGuards:
+        rebuildWebgl.includes("this.thumbWrap.frustumCulled = false")
+        && rebuildWebgl.includes("projectionPath: \"source-SpotLight.map-without-castShadow\"")
+        && rebuildWebgl.includes("shadowPathMode: \"source-map-projection-not-shadow-cast\""),
     },
     p1EnvironmentHierarchy: sourceP1InitEnv && {
       index: sourceP1InitEnv.index,

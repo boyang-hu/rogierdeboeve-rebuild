@@ -149,6 +149,9 @@ async function runProbe() {
   if (probe.thumbScrollWrapParentIsThumbWrap !== true) {
     sourceShapeErrors.push(`thumbScrollWrapParentIsThumbWrap=${probe.thumbScrollWrapParentIsThumbWrap}`);
   }
+  if (probe.thumbWrapFrustumCulled !== false) {
+    sourceShapeErrors.push(`thumbWrapFrustumCulled=${probe.thumbWrapFrustumCulled}`);
+  }
   if (probe.thumbSceneMode !== "source-T1-square-height-target-orthographic") {
     sourceShapeErrors.push(`thumbSceneMode=${probe.thumbSceneMode}`);
   }

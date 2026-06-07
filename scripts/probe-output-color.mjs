@@ -161,7 +161,9 @@ async function runProbe() {
   if (!spotlight) spotlightErrors.push("missing");
   if (spotlight?.spotlight?.mapMode !== "source-thumb-composite-target") spotlightErrors.push("mapMode");
   if (spotlight?.spotlight?.mapProjectionMode !== "three-r164-spotLightMap-vSpotLightCoord") spotlightErrors.push("mapProjectionMode");
+  if (spotlight?.spotlight?.projectionPath !== "source-SpotLight.map-without-castShadow") spotlightErrors.push("projectionPath");
   if (spotlight?.projectionMatrixMode !== "source-SD-SpotLight-map-through-three-shadow-matrix") spotlightErrors.push("projectionMatrixMode");
+  if (spotlight?.shadowPathMode !== "source-map-projection-not-shadow-cast") spotlightErrors.push("shadowPathMode");
   if (spotlight?.threeChunkMode !== "r164-lights_fragment_begin-multiplies-directLight-by-spotLightMap") spotlightErrors.push("threeChunkMode");
   if (spotlight?.sampleGridMode !== "source-spotlight-map-3x3-active-bounds") spotlightErrors.push("sampleGridMode");
   if (spotlight?.sampleCount !== 9) spotlightErrors.push("sampleCount");
@@ -172,6 +174,7 @@ async function runProbe() {
   if (Math.abs((light.intensity ?? 0) - 220) > 0.001) spotlightErrors.push("intensity");
   if (Math.abs((light.angle ?? 0) - Math.PI / 4) > 0.0001) spotlightErrors.push("angle");
   if (Math.abs((light.penumbra ?? 0) - 0.95) > 0.0001) spotlightErrors.push("penumbra");
+  if (light.castShadow !== false) spotlightErrors.push("castShadow");
   const expectedMobile = viewport.width < 800;
   const expectedSpotlightY = expectedMobile ? 0.3 : 0;
   const expectedSpotlightPosition = [0, expectedSpotlightY, 3.7];

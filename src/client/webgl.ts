@@ -4019,6 +4019,7 @@ export class WebGLBackdrop {
     this.sceneWrap.add(this.floorGroup);
     this.sceneWrap.add(this.environmentGroup);
     this.thumbScene.background = sourceLinearToSrgbColor("#222222");
+    this.thumbWrap.frustumCulled = false;
     this.thumbWrap.add(this.thumbScrollWrap);
     this.thumbScene.add(this.thumbWrap);
 
@@ -6912,6 +6913,7 @@ void main() {
       thumbHierarchyMode: "source-T1-w1-scrollWrap-E1-mesh",
       thumbWrapParentIsScene: this.thumbWrap.parent === this.thumbScene,
       thumbScrollWrapParentIsThumbWrap: this.thumbScrollWrap.parent === this.thumbWrap,
+      thumbWrapFrustumCulled: this.thumbWrap.frustumCulled,
       thumbSceneMode: "source-T1-square-height-target-orthographic",
       itemWidth: this.thumbItemWidth,
       totalItems: this.thumbTotalItems,
@@ -8092,6 +8094,8 @@ void main() {
         angle: this.spotLight.angle,
         penumbra: this.spotLight.penumbra,
         parallax: this.spotLightParallax,
+        castShadow: this.spotLight.castShadow,
+        projectionPath: "source-SpotLight.map-without-castShadow",
         mapColorSpace: this.thumbCompositeTarget.texture.colorSpace,
         shadowMatrix: this.spotLight.shadow.matrix.toArray(),
       },
@@ -8102,6 +8106,7 @@ void main() {
       samples,
       inMapCount: inMapSamples.length,
       projectionMatrixMode: "source-SD-SpotLight-map-through-three-shadow-matrix",
+      shadowPathMode: "source-map-projection-not-shadow-cast",
       threeChunkMode: "r164-lights_fragment_begin-multiplies-directLight-by-spotLightMap",
       sampleGridMode: "source-spotlight-map-3x3-active-bounds",
       sampleCount: samples.length,

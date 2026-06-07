@@ -136,15 +136,16 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `I1/C1` default screen output ownership was tightened without visual tuning:
-  - the source `I1.initSettings()` default is `renderToScreen:true`;
-  - the source `I1.update()` default branch renders `this.screen` directly to the canvas with `setRenderTarget(null)`;
-  - the rebuild no longer performs the extra default-path write of `mainPostScreen` into `renderTargetComposite` before `renderHomeCompositePass()`;
-  - runtime metadata now records `preCompositeTargetRole=source-I1-renderTargetComposite-unused-in-default-renderToScreen` and `defaultRenderToScreenWritesCompositeTarget=false`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` now guard that source default path so the old target write is not accidentally restored.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0058` and mobile center `+0.0311`, recorded only as regression evidence.
+- Source `T1/w1/SD` spotlight-map projection guardrails were tightened without visual tuning:
+  - source `w1` sets `frustumCulled=false` on the thumb-scene group;
+  - source `SD.init()` assigns the thumb composite texture to `J.workScene.spotLight.map`;
+  - source spotlight setup does not explicitly enable `castShadow`, so the map path is treated as `SpotLight.map` projection, not a shadow-cast path;
+  - local Three r164 `WebGLLights.js` evidence now guards that `light.map` feeds `state.spotLightMap`, `shadow.updateMatrices(light)` still updates the projection matrix, and `light.castShadow` only gates the shadow-count branch.
+- Runtime probes now expose/assert `thumbWrapFrustumCulled=false`, `projectionPath=source-SpotLight.map-without-castShadow`, `shadowPathMode=source-map-projection-not-shadow-cast`, and `castShadow=false`.
+- Shader dump now guards source spotlight-map shader anchors: `#include <shadowmap_pars_vertex>`, `#include <shadowmap_vertex>`, and `#include <lights_fragment_begin>` in ordinary `VA-work`.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe with `PROBE_WAIT=9000` after an async preload-window retry, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0042` and mobile center `+0.0313`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this was source render-manager path parity, not a visual closeout or accepted deviation.
+- Phase 1 remains open; this closes a projection-path attribution gap, not the remaining thumb projection/content feel or final visual parity.
 
 ## Validation Status
 
@@ -202,9 +203,9 @@ npm run dev
 
 Continue source-driven implementation in this order:
 
-1. Continue spotlight/thumb projection evidence.
+1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild has source spotlight-map ownership but the projected thumb feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, but the projected thumb feel is still not exact.
 2. Extract the original main composite/render-manager shader behavior from `bundle.250f01b7.js`.
    - Look near original `A1`, `OA`, `kA`, `Lu`, and main scene render manager code.
    - Port source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
