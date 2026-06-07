@@ -1183,6 +1183,26 @@ vec3 saturation(vec3 color, float amount) {
   return mix(vec3(gray), color, amount);
 }
 
+float luminance(vec3 rgb) {
+  const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+  return dot(rgb, W);
+}
+
+float random(vec2 st) {
+  return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
+  vec2 s = containerSize;
+  vec2 i = imgSize;
+  float rs = s.x / s.y;
+  float ri = i.x / i.y;
+  vec2 newSize = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
+  vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
+  vec2 uv = ouv * s / newSize + newOffset;
+  return texture(tex, uv);
+}
+
 vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
   return max(blend, base) * opacity + base * (1.0 - opacity);
 }
@@ -1191,9 +1211,9 @@ vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
   return min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity);
 }
 
-vec3 sourceBlend(int mode, vec3 base, vec3 blend, float opacity) {
-  if (mode == 1) return blendAdd(base, blend, opacity);
-  if (mode == 11) return blendLighten(base, blend, opacity);
+vec3 blend(int mode, vec3 base, vec3 blendColor, float opacity) {
+  if (mode == 1) return blendAdd(base, blendColor, opacity);
+  if (mode == 11) return blendLighten(base, blendColor, opacity);
   return base;
 }
 
@@ -1254,7 +1274,7 @@ void main() {
   color = mix(uBgColor, color, 1.0);
   color += mouseSim.rgb * 0.065;
   color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
-  color = sourceBlend(1, color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
+  color = blend(1, color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
   if (boolBloom) {
     vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
     float amount = 0.001 * 2.5;
@@ -1272,7 +1292,7 @@ void main() {
   color = contrast(color, uContrast);
   color *= uContrast;
   color = saturation(color, 1.15);
-  color = sourceBlend(11, color, uBgColor, 0.85);
+  color = blend(11, color, uBgColor, 0.85);
 
   vec4 media = rgbshift(tMedia, fluidUv, length(fluidUv + 2.5), 0.15 * length(fluid.xy) * uFluidStrength);
   color = mix(color, media.rgb, media.a * uMediaReveal);

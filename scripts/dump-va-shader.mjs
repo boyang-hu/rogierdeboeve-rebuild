@@ -443,6 +443,10 @@ function analyzeCompositeCore(sourceShader, rebuildShader) {
   if (!sourceShader) return null;
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const isA1PreComposite = source.includes("uniformsampler2DtWork")
+    && source.includes("uniformsampler2DtMedia")
+    && source.includes("uniformfloatuMediaReveal")
+    && source.includes("uniformfloatuDisplacement");
   const checks = {
     sceneRgbshift: ["rgbshift(tScene,uv,-1.,.0015)", "rgbshift(tScene,uv,-1.0,0.0015)"],
     bloomPrimaryRgbshift: ["rgbshift(tBloom,uv,-1.5,.02)", "rgbshift(tBloom,uv,-1.5,0.02)"],
@@ -454,13 +458,25 @@ function analyzeCompositeCore(sourceShader, rebuildShader) {
     lightenBlack: ["blend(11,", "sourceBlend(11,"],
     saturationTail: ["saturation("],
     tonemappingTail: ["#include<tonemapping_fragment>"],
+    ...(isA1PreComposite ? {
+      a1LuminanceHelper: ["floatluminance(vec3rgb)"],
+      a1CoverTextureHelper: ["vec4coverTexture(sampler2Dtex,vec2imgSize,vec2ouv,vec2containerSize)"],
+      a1RandomHelper: ["floatrandom(vec2st)"],
+      a1BlendCallName: ["blend(1,", "blend(11,"],
+      noA1SourceBlendCallName: ["sourceBlend("],
+    } : {}),
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
     name,
-    {
-      source: candidates.some((candidate) => source.includes(candidate)),
-      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
-    },
+    name.startsWith("no")
+      ? {
+          source: !candidates.some((candidate) => source.includes(candidate)),
+          rebuild: !candidates.some((candidate) => rebuild.includes(candidate)),
+        }
+      : {
+          source: candidates.some((candidate) => source.includes(candidate)),
+          rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+        },
   ]));
 }
 
