@@ -2665,6 +2665,8 @@ void main() {
 }
 `;
 
+const sourceMatrixFullscreenVertex = sourceTlFullscreenVertex;
+
 const thumbCompositeFragment = `
 precision highp float;
 
@@ -4905,7 +4907,7 @@ export class WebGLBackdrop {
 
   private createCompositeMaterial() {
     const settings = this.renderSettings;
-    dumpShader("OA-work-composite", sourceFullscreenVertex, homeCompositeFragment);
+    dumpShader("OA-work-composite", sourceMatrixFullscreenVertex, homeCompositeFragment);
     const fragmentShader = this.debugCompositeShader ? homeCompositeDebugFragment : homeCompositeFragment;
     const uniforms: Record<string, { value: any }> = {
       tScene: { value: this.compositeTarget.texture },
@@ -4933,7 +4935,7 @@ export class WebGLBackdrop {
         depthWrite: false,
         depthTest: false,
         uniforms,
-        vertexShader: sourceFullscreenVertex,
+        vertexShader: sourceMatrixFullscreenVertex,
         fragmentShader,
       });
     }
@@ -4945,13 +4947,13 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms,
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader,
     });
   }
 
   private createPreCompositeMaterial() {
-    dumpShader("A1-pre-composite", sourceFullscreenVertex, homePreCompositeFragment);
+    dumpShader("A1-pre-composite", sourceMatrixFullscreenVertex, homePreCompositeFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
@@ -4987,14 +4989,14 @@ export class WebGLBackdrop {
         uDisplacementSize: { value: new Vector2(1, 1) },
         uContainerSize: { value: new Vector2(1, 1) },
       },
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader: homePreCompositeFragment,
     });
   }
 
   private createMainCompositeMaterial() {
     const settings = this.sourceMainRenderSettings;
-    dumpShader("Lu-main-composite", sourceFullscreenVertex, mainCompositeFragment);
+    dumpShader("Lu-main-composite", sourceMatrixFullscreenVertex, mainCompositeFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
@@ -5011,7 +5013,7 @@ export class WebGLBackdrop {
         boolLuminosity: { value: settings.luminosity.enabled },
         boolFxaa: { value: settings.fxaa.enabled },
       },
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader: mainCompositeFragment,
     });
   }
@@ -5036,7 +5038,7 @@ export class WebGLBackdrop {
   }
 
   private createMediaCompositeMaterial() {
-    dumpShader("j1-media-composite", sourceFullscreenVertex, mediaCompositeFragment);
+    dumpShader("j1-media-composite", sourceMatrixFullscreenVertex, mediaCompositeFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
@@ -5055,7 +5057,7 @@ export class WebGLBackdrop {
         boolLuminosity: { value: false },
         boolFxaa: { value: false },
       },
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader: mediaCompositeFragment,
     });
   }
@@ -7250,6 +7252,7 @@ void main() {
       uniforms: {
         preComposite: {
           materialMode: "source-C1-raw-glsl3",
+          vertexMode: "source-D1-matrix-fullscreen",
           glslVersion: (this.preCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           blending: this.preCompositeMaterial.blending,
           tSceneSourceMode: "source-I1-renderTargetA-raw-main-scene",
@@ -7284,6 +7287,7 @@ void main() {
         },
         composite: {
           materialMode: this.debugCompositeShader ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3",
+          vertexMode: "source-el-matrix-fullscreen",
           glslVersion: (this.compositeMaterial as RawShaderMaterial).glslVersion ?? null,
           blending: this.compositeMaterial.blending,
           debugShaderActive: this.debugCompositeShader,
@@ -7319,6 +7323,7 @@ void main() {
           mainComposite: {
             blending: this.mainCompositeMaterial.blending,
             materialMode: "source-lA-raw-glsl3",
+            vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           },
           lensflare: {
@@ -7341,6 +7346,7 @@ void main() {
           mediaComposite: {
             blending: this.mediaCompositeMaterial.blending,
             materialMode: "source-W1-raw-glsl3",
+            vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mediaCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           },
           luminosity: {

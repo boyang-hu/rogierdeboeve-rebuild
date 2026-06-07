@@ -122,6 +122,9 @@ const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoaded
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
+const sourceTl = extractTemplate(bundle, "tl", "`;class g1");
+const sourceD1 = extractTemplate(bundle, "D1", "`;class C1");
+const sourceEl = extractTemplate(bundle, "el", "`;class lA");
 const sourceFloorS1 = extractTemplate(bundle, "s1", "`,r1=");
 const sourceDitherRandomTA = extractTemplate(bundle, "tA", "`,lg=");
 const sourceDitherLG = extractTemplate(bundle, "lg", "`,nA=");
@@ -415,6 +418,7 @@ const summary = {
         "class OA extends mt",
         "glslVersion:lt",
         "toneMapped:!1",
+        "vertexShader:el",
         "fragmentShader:CA",
         "blending:ot",
         "transparent:!0",
@@ -429,6 +433,7 @@ const summary = {
         "class C1 extends mt",
         "glslVersion:lt",
         "toneMapped:!1",
+        "vertexShader:D1",
         "fragmentShader:A1",
         "blending:ot",
         "depthWrite:!1",
@@ -456,6 +461,7 @@ const summary = {
         checks: checks(sourceLA.text, [
           "class lA extends mt",
           "glslVersion:lt",
+          "vertexShader:el",
           "fragmentShader:aA",
           "blending:ot",
           "depthWrite:!1",
@@ -468,12 +474,32 @@ const summary = {
         checks: checks(sourceW1.text, [
           "class W1 extends mt",
           "glslVersion:lt",
+          "vertexShader:el",
           "fragmentShader:G1",
           "transparent:!0",
           "depthWrite:!1",
           "depthTest:!1",
         ]),
         excerpt: compact(sourceW1.text),
+      },
+      sourceMatrixFullscreenVertex: {
+        D1EqualsEl: sourceD1.trim() === sourceEl.trim(),
+        TlEqualsD1: sourceTl.trim() === sourceD1.trim(),
+        TlEqualsEl: sourceTl.trim() === sourceEl.trim(),
+        rebuildAlias: rebuildWebgl.includes("const sourceMatrixFullscreenVertex = sourceTlFullscreenVertex;"),
+        rebuildC1UsesMatrixVertex:
+          rebuildWebgl.includes("dumpShader(\"A1-pre-composite\", sourceMatrixFullscreenVertex, homePreCompositeFragment)")
+          && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n      fragmentShader: homePreCompositeFragment"),
+        rebuildOAUsesMatrixVertex:
+          rebuildWebgl.includes("dumpShader(\"OA-work-composite\", sourceMatrixFullscreenVertex, homeCompositeFragment)")
+          && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n        fragmentShader")
+          && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n      fragmentShader"),
+        rebuildLAUsesMatrixVertex:
+          rebuildWebgl.includes("dumpShader(\"Lu-main-composite\", sourceMatrixFullscreenVertex, mainCompositeFragment)")
+          && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n      fragmentShader: mainCompositeFragment"),
+        rebuildW1UsesMatrixVertex:
+          rebuildWebgl.includes("dumpShader(\"j1-media-composite\", sourceMatrixFullscreenVertex, mediaCompositeFragment)")
+          && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n      fragmentShader: mediaCompositeFragment"),
       },
       sg: sourceSg && {
         index: sourceSg.index,

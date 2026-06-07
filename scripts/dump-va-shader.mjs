@@ -1189,6 +1189,10 @@ const sourceFragmentShaders = {
 };
 const sourceVertexShaders = {
   "VA-work": sourceH,
+  "A1-pre-composite": sourceShader(bundle, "D1"),
+  "Lu-main-composite": sourceShader(bundle, "el"),
+  "OA-work-composite": sourceShader(bundle, "el"),
+  "j1-media-composite": sourceShader(bundle, "el"),
   "M1-thumb-plane": sourceShader(bundle, "b1"),
   "z1-sky-composite": sourceShader(bundle, "tl"),
   "x1-thumb-composite": sourceShader(bundle, "tl"),

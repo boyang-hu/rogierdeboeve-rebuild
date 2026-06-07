@@ -130,23 +130,20 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild approximates these in a simpler Three shader pipeline.
-- The original projects the thumb render target through a spotlight map. The rebuild currently uses a reduced projection helper plus cube shader sampling. This is closer than a flat preview, but still not exact.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, but the projected thumb content/transfer feel is still not exact.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Mouse/fluid simulation is structurally source-shaped but not yet interactively verified 1:1.
 
 Latest Phase 1 batch:
 
-- Source `Xt/TextureLoader` loaded texture sampling defaults were restored without visual tuning:
-  - source `Xt.preloadTextures()` only applies wrap overrides after `TextureLoader` returns textures;
-  - `blueNoise`, `floorNormal`, and `perlin2` use `RepeatWrapping`;
-  - `perlin1` uses `MirroredRepeatWrapping`;
-  - source `Xt.loadImage/loadTexture` does not set `minFilter`, `magFilter`, `generateMipmaps`, or `anisotropy`.
-- The rebuild now applies only loaded texture `colorSpace` and keeps Three defaults for loaded image textures: `minFilter=LinearMipmapLinearFilter`, `magFilter=LinearFilter`, `generateMipmaps=true`, and `anisotropy=1`. `VideoTexture` keeps the Three/source-compatible video defaults separately.
-- Runtime probes now expose loaded texture state through `sourceTextureProbe(...)` and assert the source wrapping/default-sampling mode for noise/perlin/floor-normal textures and thumb plane maps. Render-target texture state is intentionally separate and unchanged.
-- Static audit now records source `Xt` wrapping evidence, local Three r164 `Texture`/`VideoTexture` defaults, and verifies that `applySourceLoadedTextureState()` does not override filters or anisotropy.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0049` and mobile center `+0.0294`, recorded only as regression evidence.
+- Source `C1/A1`, `OA/CA`, `lA/Lu`, and `W1/j1` fullscreen vertex ownership was restored without visual tuning.
+- The mirrored bundle binds `C1` to `vertexShader:D1`, and `OA`, `lA`, and `W1` to `vertexShader:el`. Source `tl`, `D1`, and `el` are byte-equivalent matrix fullscreen vertex templates using `modelMatrix`, `viewMatrix`, and `projectionMatrix`, not the direct clip-space helper used by `sg/rg/cg/Na/L1/FXAA`.
+- The rebuild now routes `A1-pre-composite`, `OA-work-composite`, `Lu-main-composite`, and `j1-media-composite` through `sourceMatrixFullscreenVertex`; helper passes that source maps to direct clip-space vertices were intentionally left unchanged.
+- Runtime probes expose/assert the new vertex modes: `source-D1-matrix-fullscreen` for pre-composite and `source-el-matrix-fullscreen` for work, main, and media composites.
+- Static audit records source `vertexShader:D1/el` anchors, proves `tl == D1 == el`, and verifies the rebuild material bindings. Shader dump now compares those four material vertices against source `D1/el`.
+- QA passed for renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0052` and mobile center `+0.0297`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a loaded-texture sampling source mismatch, not the remaining thumb projection/content feel, `A1/OA/kA/Lu` transfer graph, floor/environment residual, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a fullscreen vertex source-surface mismatch, not the remaining thumb projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -155,9 +152,16 @@ Last verified in the latest session:
 ```sh
 npm run build
 git diff --check
+node scripts/audit-renderer-output.mjs
+node scripts/dump-va-shader.mjs
+node scripts/probe-output-color.mjs
+node scripts/probe-thumb-spotlight.mjs
+node scripts/probe-project-media.mjs
+node scripts/capture.mjs
+node scripts/analyze-home-bands.mjs
 ```
 
-Both passed.
+All passed in the matrix-fullscreen vertex batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
