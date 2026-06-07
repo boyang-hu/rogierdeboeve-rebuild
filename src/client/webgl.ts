@@ -27,6 +27,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  NoBlending,
   NoColorSpace,
   NormalBlending,
   Object3D,
@@ -3502,7 +3503,7 @@ export class WebGLBackdrop {
     return new ShaderMaterial({
       toneMapped: false,
       transparent: true,
-      blending: NormalBlending,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms,
@@ -3515,7 +3516,7 @@ export class WebGLBackdrop {
     dumpShader("A1-pre-composite", backgroundVertex, homePreCompositeFragment);
     return new ShaderMaterial({
       toneMapped: false,
-      blending: NormalBlending,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3557,7 +3558,7 @@ export class WebGLBackdrop {
     dumpShader("Lu-main-composite", backgroundVertex, mainCompositeFragment);
     return new ShaderMaterial({
       toneMapped: false,
-      blending: NormalBlending,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3656,6 +3657,7 @@ export class WebGLBackdrop {
 
   private createFloorReflectionBlurMaterial() {
     return new ShaderMaterial({
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3933,6 +3935,7 @@ export class WebGLBackdrop {
       glslVersion: GLSL3,
       toneMapped: false,
       transparent: true,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -4022,6 +4025,7 @@ export class WebGLBackdrop {
   private createFloorMaterial() {
     return new RawShaderMaterial({
       glslVersion: GLSL3,
+      blending: NoBlending,
       defines: {
         USE_NORMALMAP: "",
       },
@@ -5358,6 +5362,7 @@ export class WebGLBackdrop {
       },
       uniforms: {
         preComposite: {
+          blending: this.preCompositeMaterial.blending,
           uBgColor: (this.preCompositeMaterial.uniforms.uBgColor.value as Color).toArray(),
           uContrast: this.preCompositeMaterial.uniforms.uContrast.value,
           uFluidStrength: this.preCompositeMaterial.uniforms.uFluidStrength.value,
@@ -5371,6 +5376,7 @@ export class WebGLBackdrop {
           boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
         },
         composite: {
+          blending: this.compositeMaterial.blending,
           uDarken: darkenValue,
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
           uDebugStage: this.compositeMaterial.uniforms.uDebugStage?.value ?? 0,
@@ -5382,6 +5388,12 @@ export class WebGLBackdrop {
           estimatedDarkenOpacityMouseOnly: mouseSimRed * 0.25 * darkenValue,
           boolBloom: this.compositeMaterial.uniforms.boolBloom.value,
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
+        },
+        mainComposite: {
+          blending: this.mainCompositeMaterial.blending,
+        },
+        thumbComposite: {
+          blending: this.thumbCompositeMaterial.blending,
         },
         floor: {
           visible: this.floorGroup.visible,
@@ -5577,6 +5589,7 @@ export class WebGLBackdrop {
         floorReflectUsesRaw: this.floorMaterial.uniforms.tReflect.value === this.floorReflectionTarget.texture,
         blurInputUsesRaw: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionTarget.texture,
         blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
+        blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
       },
     };
   }

@@ -3720,3 +3720,42 @@ Band snapshot from `/tmp/rd-s1-84-capture`:
 | Mobile source -> rebuild | `-0.0137` | `+0.0153` |
 
 Decision: keep the thumb shader-surface and audit-coverage alignment. It improves source attribution for the spotlight/thumb-map chain, but Phase 1 remains open for mobile/fog-bed and projection-feel residuals.
+
+### S1-85 Source Render-State `blending: ot` Parity
+
+This batch aligned a source draw-state residual across the active home render-target chain. In the source bundle, `ot=0`, which maps to Three `NoBlending`.
+
+Source evidence:
+
+- Source `C1` (`A1` pre-composite) constructs its material with `blending: ot`.
+- Source `OA` (`CA` work composite) constructs its material with `blending: ot`.
+- Source `lA` (`aA` main composite) constructs its material with `blending: ot`.
+- Source `_1` (`v1` thumb composite) constructs its material with `blending: ot`.
+- Source `t1` (`QA` floor-reflection blur) constructs its material with `blending: ot`.
+- Source `o1` (`s1/r1` floor material) constructs its material with `blending: ot`.
+- Source `W1` project media composite does not explicitly show `blending: ot`, so it was not changed in this batch.
+
+Runtime and tooling changes:
+
+- Imported `NoBlending` from Three and set the above six source-proven materials to `NoBlending`.
+- Added output/reflection probe fields for `preComposite.blending`, `composite.blending`, `mainComposite.blending`, `thumbComposite.blending`, `floor.material.blending`, and `floorReflection.blurMaterialBlending`.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors and unchanged core shader checks: `/tmp/rd-s1-85-shader`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-s1-85-output`.
+- Output probe confirms `preComposite.blending=0`, `composite.blending=0`, `mainComposite.blending=0`, `thumbComposite.blending=0`, `floor.material.blending=0`, and `blurMaterialBlending=0`.
+- Thumb spotlight probe passed and retained a non-empty thumb target/composite target plus spotlight map: `/tmp/rd-s1-85-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-s1-85-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-s1-85-capture`.
+
+Band snapshot from `/tmp/rd-s1-85-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0010` | `-0.0023` |
+| Mobile source -> rebuild | `-0.0126` | `+0.0150` |
+
+Decision: keep the source render-state parity. This removes a real draw-state divergence and slightly improves the mobile center-band delta versus S1-84, but Phase 1 remains open for the remaining mobile/fog-bed and projection-feel residuals.
