@@ -154,6 +154,13 @@ async function runProbe() {
   if (bloomClearingErrors.length) {
     throw new Error(`Lu bloom pass clearing source-shape mismatch: ${bloomClearingErrors.join(", ")}`);
   }
+  const sizingErrors = [];
+  if (workRenderSizing?.bloomStartMode !== "source-Lu-Fa-render-size-div-4") sizingErrors.push("workBloomStartMode");
+  if (mainRenderSizing?.bloomStartMode !== "source-I1-Fa-render-size-div-2") sizingErrors.push("mainBloomStartMode");
+  if (mainRenderSizing?.fluidSizeMode !== "source-I1-Fa-render-size-div-2-then-div-3") sizingErrors.push("mainFluidSizeMode");
+  if (sizingErrors.length) {
+    throw new Error(`Render-manager sizing source-shape mismatch: ${sizingErrors.join(", ")}`);
+  }
   const shaderConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
   if (shaderConsoleMessages.length) {
     throw new Error(`Shader/WebGL console errors: ${shaderConsoleMessages.join("\n")}`);

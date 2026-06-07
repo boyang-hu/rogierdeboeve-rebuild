@@ -4713,17 +4713,17 @@ export class WebGLBackdrop {
     this.mediaTarget.setSize(renderWidth, renderHeight);
     const workQuarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(workRenderWidth) / 4));
     const workQuarterMipHeight = Math.max(1, Math.round(floorPowerOfTwo(workRenderHeight) / 4));
-    const quarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 4));
-    const quarterMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 4));
+    const mainHalfMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 2));
+    const mainHalfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
     if (this.renderSettings.luminosity.enabled) this.bloomBrightTarget.setSize(workQuarterMipWidth, workQuarterMipHeight);
     if (this.renderSettings.bloom.enabled) {
       this.resizeBloomMipChain(this.bloomHorizontalTargets, this.bloomVerticalTargets, workQuarterMipWidth, workQuarterMipHeight);
     }
-    if (this.sourceMainRenderSettings.luminosity.enabled) this.mainBloomBrightTarget.setSize(quarterMipWidth, quarterMipHeight);
+    if (this.sourceMainRenderSettings.luminosity.enabled) this.mainBloomBrightTarget.setSize(mainHalfMipWidth, mainHalfMipHeight);
     if (this.sourceMainRenderSettings.bloom.enabled) {
-      this.resizeBloomMipChain(this.mainBloomHorizontalTargets, this.mainBloomVerticalTargets, quarterMipWidth, quarterMipHeight);
+      this.resizeBloomMipChain(this.mainBloomHorizontalTargets, this.mainBloomVerticalTargets, mainHalfMipWidth, mainHalfMipHeight);
     }
-    if (this.sourceMainRenderSettings.fluid.enabled) this.resizeMainFluidPass(quarterMipWidth / 3, quarterMipHeight / 3);
+    if (this.sourceMainRenderSettings.fluid.enabled) this.resizeMainFluidPass(mainHalfMipWidth / 3, mainHalfMipHeight / 3);
     const skySize = Math.max(1, Math.round(height * 0.75));
     this.skyRawTarget.setSize(skySize, skySize);
     this.skyCompositeTarget.setSize(skySize, skySize);
@@ -5444,9 +5444,9 @@ export class WebGLBackdrop {
             bloomStart: this.mainBloomHorizontalTargets[0]
               ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
               : null,
-            bloomStartMode: "source-Lu-Fa-render-size-div-4",
+            bloomStartMode: "source-I1-Fa-render-size-div-2",
             bloomPassClearing: "source-Lu-no-explicit-clear",
-            fluidSizeMode: "source-Lu-Fa-render-size-div-4-then-div-3",
+            fluidSizeMode: "source-I1-Fa-render-size-div-2-then-div-3",
             dprMode: "source-Pe-dpr-global",
           },
         },

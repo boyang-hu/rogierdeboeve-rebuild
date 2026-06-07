@@ -94,7 +94,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 17 | S1-81 | Source `i1` reflection target/camera initialization | Source `i1` creates the raw reflection target with `depthBuffer:false`, clones read/write targets, then toggles only the raw target to `depthBuffer=true`; it also uses a default `PerspectiveCamera` for the virtual reflector camera before copying the real projection each update. | Production now follows that create-clone-toggle sequence, keeps read/write targets depthless, uses the default reflector camera surface, and exposes reflector target/camera state in `reflectionStateProbe()`. | Low-medium | Keep as source-correct. Phase 1 remains open because this is reflector ownership parity, not a visual closeout for the remaining mobile/fog-bed and projection residuals. |
 | 18 | S1-82 | Source `V1/H1/Lo` sky render pass clearing | Source sky scene uses `H1 extends Lo`; source `Lo.update()` renders `renderTargetA` and `renderTargetComposite` directly without explicit `renderer.clear()` calls. The rebuild still cleared both sky raw and sky composite targets every frame. | Production now removes those rebuild-only sky target clears and reports `skyPassClearing=source-Lo-no-explicit-clear` in the output probe. | Low-medium | Keep as source-correct. The sky target remains non-empty and project pages remain stable, but Phase 1 remains open for mobile/fog-bed and projection residuals. |
 | 19 | S1-83 | Source `A1/C1` pre-composite shader flow | Source `A1` keeps the inert `displacementUv` and `vignetteF` computations and samples `tNoise` before contrast/saturation/media, then applies the two noise mixes after media. The rebuild had removed those two computations and relocated the noise sample to the tail. | Production now restores those source flow details without changing constants or final formula, and `scripts/audit-renderer-output.mjs` now reports `A1` order and inert-computation residuals accurately. | Low-medium | Keep as source-correct. This closes an audit residual in `A1/C1`; Phase 1 remains open because mobile/fog-bed and projection residuals still require source-backed attribution. |
-| 20 | S1-93 | Source `Lu` mip/fluid resize ownership | Source `Lu.resize()` sizes render targets at CSS DPR size, then switches to `Fa(renderSize)/4` for luminosity/bloom and `Fa(renderSize)/4/3` for fluid. The rebuild still used a main-only half-resolution start for the disabled-default main bloom/fluid branch. | Production now uses the same quarter-power-of-two start size for main render-manager bloom and fluid as source `Lu`; output probes report work/main sizing mode and primary depth ownership, and renderer audit checks the source resize anchors. | Low-medium | Keep as source-correct. This mainly removes a main render-manager ownership divergence; Phase 1 remains open because the visible mobile/fog-bed residual is still present. |
+| 20 | S1-93 | Source `Lu` mip/fluid resize ownership | Source `Lu.resize()` sizes work render-manager targets at CSS DPR size, then switches to `Fa(renderSize)/4` for luminosity/bloom and `Fa(renderSize)/4/3` for fluid. | Work `Lu/kA` quarter-POT ownership remains source-correct. The earlier extension of that conclusion to main `I1` was a historical misread and is corrected by S1-101. | Low-medium | Keep only the work `Lu/kA` part as source-correct. Main render-manager sizing must follow source `I1`, not `Lu`. |
 | 21 | S1-94 | Source `Pe/p1` DPR ownership split | Source `Pe` caps global DPR at `2` normally and `1.5` in low-res, while source `p1.resize()` passes `Math.min(n,1.5)` to the work scene, each `GA`, and about blocks. The rebuild had globally capped every render path at `1.5`. | Production now keeps global/main/media/canvas DPR on source `Pe.dpr`, while work raw/composite, work bloom, screen mouse simulation, and work item `uCoords` use source `p1` work DPR capped at `1.5`. Output probes expose `dprPolicy` and work/main target sizes. | Low-medium | Keep as source-correct. High-DPR QA confirms global/canvas/main at DPR `2` while work stays DPR `1.5`; Phase 1 remains open for mobile/fog-bed and strict projection/material residuals. |
 | 22 | S1-95 | Source `GA/Ka` mouse plane attribution | Source `GA.createPlane()` uses plane scale `35*1.3` by `23*1.3`, ray plane scaled again by `1.5`, `uUvOffset=(.25,.25)`, `uUvOffsetScale=1.5`, and `resize()` calls `mouseSim.onResize(plane.scale.x, plane.scale.y)`. | Production behavior was already source-shaped; this batch adds renderer-audit anchors and hard output-probe assertions for local target size, `uCoords`, UV offset/scale, ray-plane geometry/z, persistence, and thickness. | Low | Treat `GA/Ka` plane sizing as verified. Do not tune brightness through local mouse sim; remaining Phase 1 work should move to exact `VA` material/projection or mobile fog-bed evidence. |
 | 23 | S1-96 | Shader/WebGL QA gate and `VA` sheen attribution | A rejected test edit showed that changing r164 physical-material sheen chunks can compile-fail even when text-level shader residuals look plausible. Source `zA` declares `USE_SHEEN` through the material surface, but does not have the modern r164 outgoing-light sheen tail in the captured source body. | Production rendering is unchanged. Shader dump now splits `USE_SHEEN` declaration evidence from the r164 `sheenEnergyComp` outgoing-light tail, and the output probe now fails hard on shader/WebGL console errors instead of only reporting them. | Low | Keep as QA guardrail. Do not edit physical-material sheen chunks unless the dump/probe pair proves the exact source-safe replacement and project media probes remain green. |
@@ -102,6 +102,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 25 | S1-98 | Source `i1` reflector update ordering | Source `i1.update()` calls `virtualCamera.updateMatrixWorld()` before copying the source camera projection matrix, and clears the raw reflection target only through `renderer.autoClear===false && renderer.clear()`. | Production now follows that reflector camera/projection order and conditional raw-target clear. Renderer audit records the source anchors, and output probe fails if the reflection probe no longer reports the source clear/order modes. | Low-medium | Keep as source-correct reflector ownership. It is not expected to close Phase 1 alone; continue floor/environment target-content attribution and projection/material residual work. |
 | 26 | S1-99 | Source `VA/zA` material macro surface | Source `zA` uses old physical-material macro spellings such as `USE_SPECULARCOLORMAP`, `USE_SPECULARINTENSITYMAP`, `USE_SHEENCOLORMAP`, and `USE_SHEENROUGHNESSMAP`; the rebuild bridge still carried modern underscore spellings after prior material-body fixes. | Ordinary work-block `VA` now rewrites those four macro names to the source surface, and shader dump reports source-style specular and sheen-map macro checks true while modern underscore checks are false in both source and rebuild. | Low-medium | Keep as a source-correct material-surface alignment. This narrows shader residuals but does not close Phase 1; mobile/fog-bed, strict projection feel, and remaining source `bsdfs`/`opaque_fragment` bridge depth remain open. |
 | 27 | S1-100 | Source `Lu/kA` bloom pass clearing | Source `Lu.update()` renders luminosity, horizontal blur, vertical blur, and bloom-composite fullscreen passes directly after `setRenderTarget(...)` without explicit `renderer.clear()` calls. The rebuild still cleared those fullscreen pass targets before rendering. | Production now removes explicit clears from the shared `renderBloomChain()` passes and both work/main luminosity bright passes. Output probe reports `bloomPassClearing=source-Lu-no-explicit-clear` for work and main render managers, and fails if either drifts. | Low-medium | Keep as source-correct render-manager pass ownership. This does not close Phase 1; remaining gaps are still mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic render-manager structure. |
+| 28 | S1-101 | Source `I1` main render-manager sizing | Source `I1.resize()` uses `Fa(renderSize)/2` for main luminosity/bloom and then resizes main fluid with that half-POT size divided by `3`; this differs from work `Lu/kA`, which uses `/4`. | Production now restores main `I1` half-POT bloom/luminosity/fluid sizing while leaving work `Lu/kA` on quarter-POT. Output probe and renderer audit now assert the split so `I1` cannot be accidentally collapsed back into `Lu`. | Low-medium | Keep as source-correct sizing ownership. This is a structural correction, not a Phase 1 visual closeout. |
 
 ### Phase 1 Open Blocker Board
 
@@ -348,6 +349,43 @@ Verification:
 | Mobile center-band delta | `-0.0134` against source |
 
 Decision: keep this source-correct render-manager pass clearing alignment. It is a low-level source ownership fix, not a Phase 1 closeout; mobile/fog-bed and strict projection/material residuals remain open.
+
+### S1-101 Source `I1` Main Render-Manager Sizing
+
+This batch corrected a prior overgeneralization from source `Lu` to source `I1`.
+
+Source/runtime evidence:
+
+- Source `kA extends Lu` inherits `Lu.resize()`, which uses `Fa(renderSize)/4` for work luminosity/bloom and work fluid sizing.
+- Source `I1.resize()` is a separate main render manager and uses `Fa(renderSize)/2`, then calls `fluidSimulation.onResize(e/3,t/3)` from that half-POT size.
+- Older plan history already recorded the `I1` half-POT split; S1-93 later collapsed main sizing back to `Lu` quarter-POT and is now treated as a historical misread for main only.
+
+Production change:
+
+- Main bloom bright target now sizes from `Fa(renderSize)/2`.
+- Main bloom mip chain now starts from `Fa(renderSize)/2`.
+- Main fluid pass now resizes from `Fa(renderSize)/2/3`; at `1440x900` this is `171x85`, matching source `I1`.
+- Work bloom/fluid sizing remains on source `Lu/kA` `Fa(workRenderSize)/4`.
+- `__rogierOutputProbe` now reports `source-I1-Fa-render-size-div-2` and `source-I1-Fa-render-size-div-2-then-div-3` for main.
+- `scripts/probe-output-color.mjs` now fails if work and main render-manager sizing are collapsed into the same mode.
+- `scripts/audit-renderer-output.mjs` now extracts source `I1` and checks the half-POT, lensflare target, main-fluid resize, and `tLensflare` anchors.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `Lu` quarter-POT and source `I1` half-POT anchors present |
+| Output probe | Passed; work reports `source-Lu-Fa-render-size-div-4`, main reports `source-I1-Fa-render-size-div-2`, main fluid targets are `171x85` |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors; `VA` core checks unchanged |
+| Home source-vs-rebuild capture | Desktop/mobile home captures passed without failures or runtime exceptions |
+| Desktop center-band delta | `-0.0001` against source |
+| Mobile center-band delta | `-0.0121` against source |
+
+Decision: keep the source `I1` half-POT correction. It fixes a real render-manager ownership regression from S1-93; Phase 1 remains open for mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic renderer structure.
 
 ### S1-70 Source Floor Circle Geometry
 

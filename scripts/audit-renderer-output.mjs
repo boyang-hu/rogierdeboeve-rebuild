@@ -120,6 +120,7 @@ const sourceBlendMultiply = extractTemplate(bundle, "hg", "`,dg=");
 const sourceLu = extractAround(bundle, "class Lu", 200, 7200);
 const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
+const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
@@ -314,6 +315,18 @@ const summary = {
         "depthTest:!1",
       ]),
       excerpt: compact(sourceOA.text),
+    },
+    mainI1: sourceMainI1 && {
+      index: sourceMainI1.index,
+      checks: checks(sourceMainI1.text, [
+        "this.settings={renderToScreen:!0",
+        "this.renderTargetLensflare=this.renderTargetA.clone()",
+        "this.settings.lensflare.enabled&&this.lensflareMaterial.uniforms.uResolution.value.set(e/8,t/8)",
+        "e=Fa(e)/2,t=Fa(t)/2",
+        "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
+        "this.compositeMaterial.uniforms.tLensflare.value=v.texture",
+      ]),
+      excerpt: compact(sourceMainI1.text),
     },
     Pe: sourcePe && {
       index: sourcePe.index,
