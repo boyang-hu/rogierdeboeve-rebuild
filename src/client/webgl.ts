@@ -3767,9 +3767,9 @@ export class WebGLBackdrop {
   private displacementMaterial: ShaderMaterial;
   private displacementRawTarget = makeSourceRenderTarget(false);
   private displacementTarget = makeSourceRenderTarget(false);
-  private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
-  private floorReflectionReadTarget = makeSourceRenderTarget(false);
-  private floorReflectionWriteTarget = makeSourceRenderTarget(false);
+  private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false });
+  private floorReflectionReadTarget = this.floorReflectionTarget.clone();
+  private floorReflectionWriteTarget = this.floorReflectionTarget.clone();
   private floorReflectionCamera = new PerspectiveCamera();
   private floorReflectionMatrix = new Matrix4();
   private floorReflectorPlane = new Plane();
@@ -3798,7 +3798,7 @@ export class WebGLBackdrop {
   private characterTarget = makeSourceRenderTarget(false);
   private floorMaterial: ShaderMaterial;
   private floorGroup = new Group();
-  private floorReflector = new Object3D();
+  private floorReflector = new Group();
   private floorPlane: Mesh<CircleGeometry, ShaderMaterial>;
   private environmentMaterial: EnvironmentMaterial;
   private environmentGroup = new Group();
@@ -4022,15 +4022,6 @@ export class WebGLBackdrop {
     this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
     this.floorReflectionTarget.depthBuffer = true;
-    this.floorReflectionTarget.texture.generateMipmaps = false;
-    this.floorReflectionTarget.texture.minFilter = LinearFilter;
-    this.floorReflectionTarget.texture.magFilter = LinearFilter;
-    this.floorReflectionReadTarget.texture.generateMipmaps = false;
-    this.floorReflectionReadTarget.texture.minFilter = LinearFilter;
-    this.floorReflectionReadTarget.texture.magFilter = LinearFilter;
-    this.floorReflectionWriteTarget.texture.generateMipmaps = false;
-    this.floorReflectionWriteTarget.texture.minFilter = LinearFilter;
-    this.floorReflectionWriteTarget.texture.magFilter = LinearFilter;
     this.floorReflectionBlurMaterial = this.createFloorReflectionBlurMaterial();
     this.floorReflectionScreen = makeFullscreenTriangle(this.floorReflectionBlurMaterial);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
@@ -7603,6 +7594,7 @@ void main() {
             mode: "source-a1-floorGroup-floorPlane-reflector",
             groupChildren: this.floorGroup.children.length,
             planeChildren: this.floorPlane.children.length,
+            reflectorType: this.floorReflector.type,
             reflectorParentIsPlane: this.floorReflector.parent === this.floorPlane,
             planeParentIsGroup: this.floorPlane.parent === this.floorGroup,
             groupParentIsSceneWrap: this.floorGroup.parent === this.sceneWrap,
@@ -7619,6 +7611,14 @@ void main() {
           reflectionReadTargetSize: {
             width: this.floorReflectionReadTarget.width,
             height: this.floorReflectionReadTarget.height,
+            constructionMode: "source-i1-renderTargetRead-cloned-before-raw-depthBuffer-toggle",
+            depthBuffer: this.floorReflectionReadTarget.depthBuffer,
+          },
+          reflectionWriteTargetSize: {
+            width: this.floorReflectionWriteTarget.width,
+            height: this.floorReflectionWriteTarget.height,
+            constructionMode: "source-i1-renderTargetWrite-cloned-before-raw-depthBuffer-toggle",
+            depthBuffer: this.floorReflectionWriteTarget.depthBuffer,
           },
           reflectionSizing: "source-i1-css-viewport-0.75",
           reflectionExpectedCssSize: {
@@ -7865,11 +7865,12 @@ void main() {
           radius: this.floorPlane.geometry.parameters.radius,
           segments: this.floorPlane.geometry.parameters.segments,
         },
-        hierarchy: {
-          mode: "source-a1-floorGroup-floorPlane-reflector",
-          groupChildren: this.floorGroup.children.length,
-          planeChildren: this.floorPlane.children.length,
-          reflectorParentIsPlane: this.floorReflector.parent === this.floorPlane,
+          hierarchy: {
+            mode: "source-a1-floorGroup-floorPlane-reflector",
+            groupChildren: this.floorGroup.children.length,
+            planeChildren: this.floorPlane.children.length,
+            reflectorType: this.floorReflector.type,
+            reflectorParentIsPlane: this.floorReflector.parent === this.floorPlane,
           planeParentIsGroup: this.floorPlane.parent === this.floorGroup,
           groupParentIsSceneWrap: this.floorGroup.parent === this.sceneWrap,
           groupPositionY: this.floorGroup.position.y,
@@ -7931,6 +7932,10 @@ void main() {
         rawRuntimeDepthBuffer: this.floorReflectionTarget.depthBuffer,
         read: renderTargetSummary(this.floorReflectionReadTarget),
         write: renderTargetSummary(this.floorReflectionWriteTarget),
+        readConstructionMode: "source-i1-renderTargetRead-renderTarget-clone",
+        writeConstructionMode: "source-i1-renderTargetWrite-renderTarget-clone",
+        readDepthBufferFromCloneBeforeRawToggle: this.floorReflectionReadTarget.depthBuffer,
+        writeDepthBufferFromCloneBeforeRawToggle: this.floorReflectionWriteTarget.depthBuffer,
         floorReflectUsesRead: this.floorMaterial.uniforms.tReflect.value === this.floorReflectionReadTarget.texture,
         floorReflectUsesRaw: this.floorMaterial.uniforms.tReflect.value === this.floorReflectionTarget.texture,
         blurInputUsesRaw: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionTarget.texture,

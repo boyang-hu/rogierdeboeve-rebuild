@@ -797,6 +797,7 @@ async function runProbe() {
   if (floorUniforms?.hierarchy?.mode !== "source-a1-floorGroup-floorPlane-reflector") floorErrors.push("floorHierarchyMode");
   if (floorUniforms?.hierarchy?.groupChildren !== 1) floorErrors.push("floorGroupChildren");
   if (floorUniforms?.hierarchy?.planeChildren !== 1) floorErrors.push("floorPlaneChildren");
+  if (floorUniforms?.hierarchy?.reflectorType !== "Group") floorErrors.push("floorReflectorType");
   if (floorUniforms?.hierarchy?.reflectorParentIsPlane !== true) floorErrors.push("floorReflectorParent");
   if (floorUniforms?.hierarchy?.planeParentIsGroup !== true) floorErrors.push("floorPlaneParent");
   if (floorUniforms?.hierarchy?.groupParentIsSceneWrap !== true) floorErrors.push("floorGroupParent");
@@ -818,6 +819,7 @@ async function runProbe() {
   if (parsed.probe.reflectionState?.floor?.geometry && Math.abs((parsed.probe.reflectionState.floor.geometry.radius ?? 0) - 60) > 0.0001) floorErrors.push("reflectionFloorGeometryRadius");
   if (parsed.probe.reflectionState?.floor?.geometry?.segments !== 32) floorErrors.push("reflectionFloorGeometrySegments");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.mode !== "source-a1-floorGroup-floorPlane-reflector") floorErrors.push("reflectionFloorHierarchyMode");
+  if (parsed.probe.reflectionState?.floor?.hierarchy?.reflectorType !== "Group") floorErrors.push("reflectionFloorReflectorType");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.reflectorParentIsPlane !== true) floorErrors.push("reflectionFloorReflectorParent");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.planeParentIsGroup !== true) floorErrors.push("reflectionFloorPlaneParent");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.groupParentIsSceneWrap !== true) floorErrors.push("reflectionFloorGroupParent");
@@ -827,8 +829,16 @@ async function runProbe() {
   if (reflectionTargets?.clipBias !== 0) floorErrors.push("clipBias");
   if (reflectionTargets?.blurSwapMode !== "source-i1-write-target-loop-swap") floorErrors.push("blurSwapMode");
   if (reflectionTargets?.renderTargetUniformMode !== "source-i1-update-after-each-blur-swap") floorErrors.push("renderTargetUniformMode");
+  if (reflectionTargets?.readConstructionMode !== "source-i1-renderTargetRead-renderTarget-clone") floorErrors.push("reflectionReadCloneMode");
+  if (reflectionTargets?.writeConstructionMode !== "source-i1-renderTargetWrite-renderTarget-clone") floorErrors.push("reflectionWriteCloneMode");
+  if (reflectionTargets?.readDepthBufferFromCloneBeforeRawToggle !== false) floorErrors.push("reflectionReadCloneDepthBuffer");
+  if (reflectionTargets?.writeDepthBufferFromCloneBeforeRawToggle !== false) floorErrors.push("reflectionWriteCloneDepthBuffer");
   if (floorUniforms?.reflectionTargetSize?.constructionDepthBuffer !== false) floorErrors.push("floorRawConstructionDepthBuffer");
   if (floorUniforms?.reflectionTargetSize?.runtimeDepthBuffer !== true) floorErrors.push("floorRawRuntimeDepthBuffer");
+  if (floorUniforms?.reflectionReadTargetSize?.constructionMode !== "source-i1-renderTargetRead-cloned-before-raw-depthBuffer-toggle") floorErrors.push("floorReadCloneMode");
+  if (floorUniforms?.reflectionWriteTargetSize?.constructionMode !== "source-i1-renderTargetWrite-cloned-before-raw-depthBuffer-toggle") floorErrors.push("floorWriteCloneMode");
+  if (floorUniforms?.reflectionReadTargetSize?.depthBuffer !== false) floorErrors.push("floorReadCloneDepthBuffer");
+  if (floorUniforms?.reflectionWriteTargetSize?.depthBuffer !== false) floorErrors.push("floorWriteCloneDepthBuffer");
   if (reflectionTargets?.rawConstructionDepthBuffer !== false) floorErrors.push("reflectionRawConstructionDepthBuffer");
   if (reflectionTargets?.rawRuntimeDepthBuffer !== true) floorErrors.push("reflectionRawRuntimeDepthBuffer");
   if (floorErrors.length) {

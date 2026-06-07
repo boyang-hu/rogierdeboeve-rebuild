@@ -139,16 +139,16 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `Qe/Xt/p1` WebP-selected asset extension ownership was completed without visual tuning.
-- Source `Qe.init()` runs `await k0("lossy")` before texture and scene initialization, writing `Le.WEBP`.
-- Source `Xt.preloadTextures()` uses one `Le.WEBP ? "webp" : "jpg"` extension for `floor-normal`, `perlin-1`, and `perlin-2`.
-- Source `p1.addEnvironment()` uses the same WebP-selected extension for `/images/cubemaps/01/[px,nx,ny,py,pz,nz]`, then assigns `this.scene.environment=t`; it does not hardcode webp or do a webp-first/jpg-fallback path there.
-- The rebuild now detects lossy WebP once, stores `sourceWebpSupport` / `sourceAssetExt`, loads the three source-selected textures and six cubemap faces with that extension, and removes the hardcoded `const cubeExt = "webp"` plus unconditional cubemap fallback bridge.
-- Runtime probes expose/assert `sourceWebpDetectionMode`, support/ext consistency, `sceneEnvironmentLoadMode=source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback`, cubemap URL extension consistency, and loaded/failed state.
-- Static audit extracts source `Qe` WebP detection, `Xt.preloadTextures()`, and `p1.addEnvironment()` anchors and checks the rebuild source-extension ownership.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0045` and mobile center `+0.0299`, recorded only as regression evidence.
+- Source `a1/i1` floor reflector target clone ownership was completed without visual tuning.
+- Source `i1` is a `Group` subclass (`class i1 extends rt`) and source `a1` adds that reflector group as a child of the floor plane.
+- Source `i1` creates `renderTarget` with only `{ depthBuffer:false }`, clones `renderTargetRead` and `renderTargetWrite` from that raw target, then toggles `renderTarget.depthBuffer=true`.
+- Source `i1` relies on WebGLRenderTarget constructor/clone defaults and does not manually override reflection target texture `generateMipmaps`, `minFilter`, or `magFilter` after construction.
+- The rebuild now constructs `floorReflector` as `Group`, creates the raw reflection target with `{ depthBuffer:false }`, derives read/write targets via `floorReflectionTarget.clone()`, removes manual reflection-target texture default overrides, and keeps the source post-construction raw depth toggle.
+- Runtime probes expose/assert reflector type, read/write clone construction modes, read/write depth staying false, raw construction/runtime depth state, and the existing source blur-swap/render-target-uniform ownership.
+- Static audit checks source `i1` clone anchors, rebuild clone ownership, and absence of manual reflection target texture default overrides.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0046` and mobile center `+0.0291`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a `Qe/Xt/p1` resource-extension mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes an `a1/i1` reflector construction mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals beyond target construction, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -166,7 +166,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `Qe/Xt/p1` WebP-selected texture/cubemap extension batch.
+All passed in the `a1/i1` floor reflector target clone ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
