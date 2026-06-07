@@ -63,10 +63,18 @@ function bridgeStatus(entry) {
 function classify(name, entry) {
   const fragment = entry.fragment || {};
   const vertex = entry.vertex || {};
-  const sourceIncludeCount = fragment.includes?.onlySource?.length || 0;
-  const rebuildIncludeCount = fragment.includes?.onlyRebuild?.length || 0;
-  const sourceUniformCount = fragment.uniforms?.onlySource?.length || 0;
-  const rebuildUniformCount = fragment.uniforms?.onlyRebuild?.length || 0;
+  const sourceIncludes = fragment.includes?.onlySource || entry.fragmentIncludesOnlySource || [];
+  const rebuildIncludes = fragment.includes?.onlyRebuild || entry.fragmentIncludesOnlyRebuild || [];
+  const sourceUniforms = fragment.uniforms?.onlySource || entry.fragmentUniformsOnlySource || [];
+  const rebuildUniforms = fragment.uniforms?.onlyRebuild || entry.fragmentUniformsOnlyRebuild || [];
+  const sourceIncludeCount = sourceIncludes.length;
+  const rebuildIncludeCount = rebuildIncludes.length;
+  const sourceCommentedIncludes = entry.fragmentCommentedIncludesSource || entry.commentedIncludes?.fragmentSource || [];
+  const rebuildCommentedIncludes = entry.fragmentCommentedIncludesRebuild || entry.commentedIncludes?.fragmentRebuild || [];
+  const sourceCommentedIncludeCount = sourceCommentedIncludes.length;
+  const rebuildCommentedIncludeCount = rebuildCommentedIncludes.length;
+  const sourceUniformCount = sourceUniforms.length;
+  const rebuildUniformCount = rebuildUniforms.length;
   const relevantChecks = entry.vaFragmentCoreChecks
     || entry.compositeCoreChecks
     || entry.environmentCoreChecks
@@ -82,6 +90,7 @@ function classify(name, entry) {
     }
     return "open residual";
   }
+  if (sourceCommentedIncludeCount !== rebuildCommentedIncludeCount) return "commented include-surface residual";
   if ((fragment.lengths?.delta || 0) !== 0 || (vertex.lengths?.delta || 0) !== 0) return "source anchors match; text differs";
   return "source-shaped";
 }
@@ -93,12 +102,14 @@ const rows = focusOrder
     return {
       shader: name,
       status: classify(name, entry),
-      vertexDelta: entry.vertex?.lengths?.delta ?? null,
-      fragmentDelta: entry.fragment?.lengths?.delta ?? null,
-      fragmentOnlySourceIncludes: entry.fragment?.includes?.onlySource || [],
-      fragmentOnlyRebuildIncludes: entry.fragment?.includes?.onlyRebuild || [],
-      fragmentOnlySourceUniforms: entry.fragment?.uniforms?.onlySource || [],
-      fragmentOnlyRebuildUniforms: entry.fragment?.uniforms?.onlyRebuild || [],
+      vertexDelta: entry.vertex?.lengths?.delta ?? entry.vertexLengthDelta ?? null,
+      fragmentDelta: entry.fragment?.lengths?.delta ?? entry.fragmentLengthDelta ?? null,
+      fragmentOnlySourceIncludes: entry.fragment?.includes?.onlySource || entry.fragmentIncludesOnlySource || [],
+      fragmentOnlyRebuildIncludes: entry.fragment?.includes?.onlyRebuild || entry.fragmentIncludesOnlyRebuild || [],
+      fragmentCommentedIncludesSource: entry.fragmentCommentedIncludesSource || entry.commentedIncludes?.fragmentSource || [],
+      fragmentCommentedIncludesRebuild: entry.fragmentCommentedIncludesRebuild || entry.commentedIncludes?.fragmentRebuild || [],
+      fragmentOnlySourceUniforms: entry.fragment?.uniforms?.onlySource || entry.fragmentUniformsOnlySource || [],
+      fragmentOnlyRebuildUniforms: entry.fragment?.uniforms?.onlyRebuild || entry.fragmentUniformsOnlyRebuild || [],
       bridge: bridgeStatus(entry),
       coreChecks: checksStatus(
         entry.vaFragmentCoreChecks
@@ -117,8 +128,14 @@ const vaWorkHasIncludeResidual = Boolean(
   vaWorkRow
   && (vaWorkRow.fragmentOnlySourceIncludes.length || vaWorkRow.fragmentOnlyRebuildIncludes.length),
 );
+const vaWorkHasCommentedIncludeResidual = Boolean(
+  vaWorkRow
+  && vaWorkRow.fragmentCommentedIncludesSource.length !== vaWorkRow.fragmentCommentedIncludesRebuild.length,
+);
 const vaWorkReading = vaWorkHasIncludeResidual
   ? `- \`VA-work\` still has an include-surface residual: source-only ${values(vaWorkRow.fragmentOnlySourceIncludes)}, rebuild-only ${values(vaWorkRow.fragmentOnlyRebuildIncludes)}.`
+  : vaWorkHasCommentedIncludeResidual
+    ? `- \`VA-work\` still has a commented include-surface residual: source commented ${values(vaWorkRow.fragmentCommentedIncludesSource)}, rebuild commented ${values(vaWorkRow.fragmentCommentedIncludesRebuild)}.`
   : "- `VA-work` no longer has source/rebuild include or uniform residuals in this generated dump; the remaining `SPECULAR`/`USE_SPECULAR` define difference is classified separately as a Three r164 compile bridge when present.";
 
 const markdown = [
@@ -126,8 +143,8 @@ const markdown = [
   "",
   `Input: \`${inputDir}\``,
   "",
-  "| Shader | Status | Vertex Delta | Fragment Delta | Fragment Source-Only Includes | Fragment Rebuild-Only Includes | Fragment Source-Only Uniforms | Fragment Rebuild-Only Uniforms | Bridge Notes | Core Checks |",
-  "| --- | --- | ---: | ---: | --- | --- | --- | --- | --- | --- |",
+  "| Shader | Status | Vertex Delta | Fragment Delta | Fragment Source-Only Includes | Fragment Rebuild-Only Includes | Fragment Source Commented Includes | Fragment Rebuild Commented Includes | Fragment Source-Only Uniforms | Fragment Rebuild-Only Uniforms | Bridge Notes | Core Checks |",
+  "| --- | --- | ---: | ---: | --- | --- | --- | --- | --- | --- | --- | --- |",
   ...rows.map((row) => [
     `\`${row.shader}\``,
     row.status,
@@ -135,6 +152,8 @@ const markdown = [
     row.fragmentDelta ?? "-",
     values(row.fragmentOnlySourceIncludes),
     values(row.fragmentOnlyRebuildIncludes),
+    values(row.fragmentCommentedIncludesSource),
+    values(row.fragmentCommentedIncludesRebuild),
     values(row.fragmentOnlySourceUniforms),
     values(row.fragmentOnlyRebuildUniforms),
     row.bridge,
