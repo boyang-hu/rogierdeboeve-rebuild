@@ -579,19 +579,30 @@ function analyzeLensflareCore(sourceFragment, rebuildFragment) {
     exposureMultiply: ["color*=uExposure"],
     clampColor: ["clamp(color,0.0,uClamp)", "clamp(color,0.,uClamp)"],
   };
-  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
-    name,
-    {
-      source: candidates.some((candidate) => source.includes(candidate)),
-      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
-    },
-  ]));
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => {
+    const isNegative = name.startsWith("no");
+    const sourcePresent = candidates.some((candidate) => source.includes(candidate));
+    const rebuildPresent = candidates.some((candidate) => rebuild.includes(candidate));
+    return [
+      name,
+      {
+        source: isNegative ? !sourcePresent : sourcePresent,
+        rebuild: isNegative ? !rebuildPresent : rebuildPresent,
+      },
+    ];
+  }));
 }
 
 function analyzeVertexCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
   const checks = {
+    sourceVaryingUv: ["varyingvec2vUv"],
+    sourceVaryingInstanceAlpha: ["varyingfloatvInstanceAlpha"],
+    sourceVaryingOffset: ["varyingvec3vOffset"],
+    assignsSourceUv: ["vUv=uv"],
+    noRebuildLocalUv: ["vLocalUv"],
+    noRebuildAlphaVarying: ["vAlpha"],
     screenUvFromClip: ["gl_Position.xy/uCoords.xy"],
     newUvFromScreenUv: ["vec2newUv=screenUv"],
     localMouseSample: ["texture(tMouseSim,mouseUv)"],
@@ -604,13 +615,18 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
     sourceWorldInstanceMatrix: ["worldPosition=instanceMatrix*worldPosition"],
     noBatchingWorldMatrix: ["worldPosition=batchingMatrix*worldPosition"],
   };
-  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
-    name,
-    {
-      source: candidates.some((candidate) => source.includes(candidate)),
-      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
-    },
-  ]));
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => {
+    const isNegative = name.startsWith("no");
+    const sourcePresent = candidates.some((candidate) => source.includes(candidate));
+    const rebuildPresent = candidates.some((candidate) => rebuild.includes(candidate));
+    return [
+      name,
+      {
+        source: isNegative ? !sourcePresent : sourcePresent,
+        rebuild: isNegative ? !rebuildPresent : rebuildPresent,
+      },
+    ];
+  }));
 }
 
 function analyzeVaFragmentCore(sourceShader, rebuildShader) {
@@ -618,13 +634,22 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
   const checks = {
+    sourceVaryingUv: ["varyingvec2vUv"],
+    sourceVaryingInstanceAlpha: ["varyingfloatvInstanceAlpha"],
+    sourceVaryingOffset: ["varyingvec3vOffset"],
+    sourceRandomName: ["floatrandom(vec2st)"],
+    sourceVignetteName: ["floatvignette(vec2coords"],
+    noRebuildSourceRandomName: ["sourceRandom"],
+    noRebuildSourceVignetteName: ["sourceVignette"],
+    noRebuildLocalUv: ["vLocalUv"],
+    noRebuildAlphaVarying: ["vAlpha"],
     sourceTailOutput: ["#include<opaque_fragment>", "gl_FragColor=vec4(outgoingLight,diffuseColor.a)"],
     sourceMouseLightness: [
       "mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(mouseF),(1.-uMouseLightness))",
       "mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(mouseF),1.-uMouseLightness)",
       "mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(mouseF),1.0-uMouseLightness)",
     ],
-    sourceAlphaGrid: ["mixedAlpha=((alpha*alpha2)*vInstanceAlpha)", "floatalpha=alpha1*alpha2*vAlpha"],
+    sourceAlphaGrid: ["mixedAlpha=((alpha*alpha2)*vInstanceAlpha)", "mixedAlpha=alpha*alpha2*vInstanceAlpha", "floatalpha=alpha1*alpha2*vAlpha"],
     sourceDisplacementSample: ["vec4displacement=texture2D(tDisplacement,newUv)", "vec4displacement=texture(tDisplacement,newUv)"],
     sourceRevealRadius: ["2.0*pow(revealCombined,.25)", "2.0*pow(revealCombined,0.25)"],
     sourceMouseAlpha: [
@@ -640,13 +665,18 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
     sheenDeclaration: ["USE_SHEEN"],
     r164SheenOutgoingTail: ["sheenEnergyComp", "outgoingLight=outgoingLight*sheenEnergyComp+sheenSpecularDirect+sheenSpecularIndirect"],
   };
-  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
-    name,
-    {
-      source: candidates.some((candidate) => source.includes(candidate)),
-      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
-    },
-  ]));
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => {
+    const isNegative = name.startsWith("no");
+    const sourcePresent = candidates.some((candidate) => source.includes(candidate));
+    const rebuildPresent = candidates.some((candidate) => rebuild.includes(candidate));
+    return [
+      name,
+      {
+        source: isNegative ? !sourcePresent : sourcePresent,
+        rebuild: isNegative ? !rebuildPresent : rebuildPresent,
+      },
+    ];
+  }));
 }
 
 function analyzeVaBridgeCompatibility(sourceShader, rebuildShader) {

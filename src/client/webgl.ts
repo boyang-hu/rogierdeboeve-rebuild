@@ -409,10 +409,9 @@ attribute float instanceIndex;
 attribute float instanceAlpha;
 attribute vec3 instanceColor;
 
-varying vec2 vLocalUv;
-varying vec2 vOffset;
-varying float vMouseSim;
-varying float vAlpha;
+varying float vInstanceAlpha;
+varying vec3 vOffset;
+varying vec2 vUv;
 
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
@@ -433,6 +432,7 @@ uniform float uTime;
 
 const workBlockBeginVertexChunk = `
 vec3 transformed = vec3(position);
+vUv = uv;
 vec2 newUv = uv;
 newUv.x /= uGridSize.x;
 newUv.y /= uGridSize.y;
@@ -478,10 +478,8 @@ transformedSpread.z += spread * 0.5;
 transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
 transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
-vLocalUv = uv;
-vOffset = instanceOffset.xy;
-vMouseSim = mouseSim.r;
-vAlpha = instanceAlpha;
+vInstanceAlpha = instanceAlpha;
+vOffset = instanceOffset;
 #ifdef USE_ALPHAHASH
   vPosition = vec3(position);
 #endif
@@ -524,16 +522,15 @@ uniform sampler2D tMouseSim2;
 uniform sampler2D tDisplacement;
 uniform vec2 uCoords;
 
-varying vec2 vLocalUv;
-varying vec2 vOffset;
-varying float vMouseSim;
-varying float vAlpha;
+varying float vInstanceAlpha;
+varying vec3 vOffset;
+varying vec2 vUv;
 
-float sourceRandom(vec2 st) {
+float random(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
-float sourceVignette(vec2 coords, vec2 center, float vignin, float vignout, float vignfade, float fstop) {
+float vignette(vec2 coords, vec2 center, float vignin, float vignout, float vignfade, float fstop) {
   float dist = distance(coords.xy, center);
   dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
   return clamp(dist, 0.0, 1.0);
@@ -555,7 +552,7 @@ diffuseColor.a *= material.transmissionAlpha;
 #endif
 
 vec3 sourceColor = outgoingLight;
-vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
+vec2 sourceUv = vUv / uGridSize.xy + vOffset.xy;
 
 vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
 float simLight = texture2D(tMouseSim2, screenUv).r;
@@ -564,14 +561,14 @@ sourceColor = mix(sourceColor, sourceColor * vec3(mouseF), 1.0 - uMouseLightness
 
 vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
 vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
-float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
-float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
-float alpha = alpha1 * alpha2 * vAlpha;
+float alpha1 = mix(random(gridUv * vInstanceAlpha), random(gridUv), 1.0);
+float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.0);
+float alpha = alpha1 * alpha2 * vInstanceAlpha;
 float revealCombined = uReveal * uRevealProject;
 float fragmentReveal = mix(revealCombined, 1.0, uAuxiliaryMaterial);
 float revealRadius = 2.0 * pow(fragmentReveal, 0.25);
-float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+float centerAlpha = vignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+float revealAlpha = vignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
 float mouseAlphaFactor = mix(0.5, 0.15, uAuxiliaryMaterial);
 if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * mouseAlphaFactor), 0.0, 1.0);
 alpha += centerAlpha * 0.1;
@@ -584,7 +581,8 @@ gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 const workBlockSourceTailFragmentChunk = `
 #include <opaque_fragment>
 
-vec2 newUv = vLocalUv / uGridSize.xy + vOffset;
+float mixedAlpha = vInstanceAlpha;
+vec2 newUv = vUv / uGridSize.xy + vOffset.xy;
 vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
 float simLight = texture2D(tMouseSim2, screenUv).r;
 float mouseF = 1.0 - simLight;
@@ -592,20 +590,20 @@ gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), 1.0 - 
 
 vec2 gridUv = vec2(floor(newUv.x * uGridSize.x), floor(newUv.y * uGridSize.y));
 vec2 gridUv2 = vec2(floor(newUv.y * uGridSize.y), floor(newUv.x * uGridSize.y));
-float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
-float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
-float alpha = alpha1 * alpha2 * vAlpha;
+float alpha = mix(random(gridUv * vInstanceAlpha), random(gridUv), 1.0);
+float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.0);
+mixedAlpha = alpha * alpha2 * vInstanceAlpha;
 vec4 displacement = texture2D(tDisplacement, newUv);
 float revealCombined = uReveal * uRevealProject;
 float revealRadius = 2.0 * pow(revealCombined, 0.25);
-float centerAlpha = sourceVignette(newUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-float revealAlpha = sourceVignette(newUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
-alpha += centerAlpha * 0.1;
-alpha -= 1.0 - revealAlpha;
-alpha *= uRevealSides;
+float centerAlpha = vignette(newUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+float revealAlpha = vignette(newUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+if (screenUv.y > 0.1) mixedAlpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
+mixedAlpha += centerAlpha * 0.1;
+mixedAlpha -= 1.0 - revealAlpha;
+mixedAlpha *= uRevealSides;
 
-gl_FragColor.a = alpha;
+gl_FragColor.a = mixedAlpha;
 `;
 
 function stripSourceVaFragmentPaths(fragmentShader: string) {
