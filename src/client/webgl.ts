@@ -6039,21 +6039,44 @@ void main() {
     });
   }
 
-  private updateVisibleWorkItems(time: number) {
+  private updateVisibleWorkItems(time: number, delta: number) {
     this.workItems.forEach((item) => {
       item.material.uniforms.uTime.value = time;
+      item.material.uniforms.uCoords.value.set(this.workRawTarget.width, this.workRawTarget.height);
       const world = new Vector3();
       item.group.getWorldPosition(world);
       const visible = !(world.x > 5.5 || world.x < -5.5 || world.z > 5);
       item.group.visible = visible;
       if (!visible) return;
 
+      if (this.renderSettings.mousesim.enabled) {
+        const meshResult = this.updateMouseBrush(
+          item.mouseMaterial,
+          item.mouseScene,
+          item.mouseTargets,
+          item.mouseIndex,
+          item.mouseOld,
+          item.mouseNew,
+          item.mouseTarget,
+          time,
+          delta,
+          1,
+          0.85,
+          0.1,
+        );
+        item.mouseIndex = meshResult.index;
+        item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
+        item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta);
+        item.material.uniforms.uMouseSpeed.value = item.mouseSpeed;
+      }
+      item.mousePlane.material.uniforms.uTime.value = time;
+      item.material.uniforms.tDisplacement.value = this.displacementTarget.texture;
+
       const sideReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 0, 5, 0, 1), 0, 1);
       const sideSpreadReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 2, 6, 0, 1), 0, 1);
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
-      item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
     });
   }
@@ -6074,6 +6097,15 @@ void main() {
         revealSidesInSourceRange: item.material.uniforms.uRevealSides.value >= 0 && item.material.uniforms.uRevealSides.value <= 1,
         revealSpreadSidesInSourceRange:
           item.material.uniforms.uRevealSpreadSides.value >= 0 && item.material.uniforms.uRevealSpreadSides.value <= 1,
+        sourceGAUpdateMode: "source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal",
+        uCoords: item.material.uniforms.uCoords.value.toArray(),
+        uCoordsMatchesWorkTarget:
+          item.material.uniforms.uCoords.value.x === this.workRawTarget.width
+          && item.material.uniforms.uCoords.value.y === this.workRawTarget.height,
+        mousePlaneTimeMatchesMaterialTime:
+          item.mousePlane.material.uniforms.uTime.value === item.material.uniforms.uTime.value,
+        tDisplacementIsWavves: item.material.uniforms.tDisplacement.value === this.displacementTarget.texture,
+        uMouseSpeedMatchesLocal: item.material.uniforms.uMouseSpeed.value === item.mouseSpeed,
         tMouseSim2IsScreen: item.material.uniforms.tMouseSim2.value === this.screenMouseSimulationTexture,
         tMouseSimIsLocal: item.material.uniforms.tMouseSim.value === (item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder),
       };
@@ -6197,29 +6229,6 @@ void main() {
     return { speed, index: outputIndex };
   }
 
-  private updateWorkMouseSimulation(time: number, delta: number) {
-    if (!this.renderSettings.mousesim.enabled) return;
-    this.workItems.forEach((item) => {
-      if (!item.group.visible) return;
-      const meshResult = this.updateMouseBrush(
-        item.mouseMaterial,
-        item.mouseScene,
-        item.mouseTargets,
-        item.mouseIndex,
-        item.mouseOld,
-        item.mouseNew,
-        item.mouseTarget,
-        time,
-        delta,
-        1,
-        0.85,
-        0.1,
-      );
-      item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta);
-      item.mouseIndex = meshResult.index;
-    });
-  }
-
   private updateScreenMouseSimulation(time: number, delta: number) {
     if (!this.renderSettings.mousesim.enabled) return;
     const screenResult = this.updateMouseBrush(
@@ -6241,16 +6250,6 @@ void main() {
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
   }
 
-  private syncWorkMouseSimulationUniforms() {
-    if (!this.renderSettings.mousesim.enabled) return;
-    this.workItems.forEach((item) => {
-      if (!item.group.visible) return;
-      item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
-      item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
-      item.material.uniforms.uMouseSpeed.value = item.mouseSpeed;
-    });
-  }
-
   private updateWorkSceneForNextFrame(time: number, delta: number) {
     this.environmentMaterial.uniforms.uTime.value = time;
     this.updateHomeCamera(delta);
@@ -6264,10 +6263,8 @@ void main() {
     this.spotLight.position.copy(this.spotLightPosition);
     this.spotLight.target.position.copy(this.spotLightTarget);
     this.updateSpotLightBasis();
-    this.updateVisibleWorkItems(time);
+    this.updateVisibleWorkItems(time, delta);
     this.updateAuxiliaryBlocks(time, delta);
-    this.updateWorkMouseSimulation(time, delta);
-    this.syncWorkMouseSimulationUniforms();
     this.sourcePostRenderFrame += 1;
   }
 

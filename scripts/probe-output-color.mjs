@@ -247,6 +247,11 @@ async function runProbe() {
   const visibleP1Items = Array.isArray(p1UpdateCulling.items) ? p1UpdateCulling.items.filter((item) => item.visible) : [];
   if (!visibleP1Items.every((item) => item.tMouseSim2IsScreen === true)) cullingErrors.push("visibleTMouseSim2Screen");
   if (!visibleP1Items.every((item) => item.tMouseSimIsLocal === true)) cullingErrors.push("visibleTMouseSimLocal");
+  if (!visibleP1Items.every((item) => item.sourceGAUpdateMode === "source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal")) cullingErrors.push("sourceGAUpdateMode");
+  if (!visibleP1Items.every((item) => item.uCoordsMatchesWorkTarget === true)) cullingErrors.push("uCoordsMatchesWorkTarget");
+  if (!visibleP1Items.every((item) => item.mousePlaneTimeMatchesMaterialTime === true)) cullingErrors.push("mousePlaneTime");
+  if (!visibleP1Items.every((item) => item.tDisplacementIsWavves === true)) cullingErrors.push("tDisplacement");
+  if (!visibleP1Items.every((item) => item.uMouseSpeedMatchesLocal === true)) cullingErrors.push("uMouseSpeed");
   if (parsed.probe.settings?.updateOrder?.frameTail !== "source-work-renderManager-then-p1-update-before-main") {
     cullingErrors.push("frameTailOrder");
   }

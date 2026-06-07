@@ -1022,9 +1022,28 @@ const summary = {
         "this.rotationWrap.scale.set(i,i,i)",
         "this.rotationWrap.add(this.rayPlane)",
         "resize(e,t,n){this.mouseSim.onResize(this.plane.scale.x,this.plane.scale.y)}",
+        "update(e,t,n,i){this.material.update(e,t,n,i),this.mouseSim.update(e,t,n,i),this.material.customUniforms.tMouseSim.value=this.mouseSim.bufferSim.output.texture",
         "this.material.customUniforms.tMouseSim.value=this.mouseSim.bufferSim.output.texture",
         "this.mouseSpeed=Yi(this.mouseSpeed,this.mouseSim.simulationMaterial.uniforms.uSpeed.value,10,t)",
+        "this.material.customUniforms.uMouseSpeed.value=this.mouseSpeed",
+        "this.planeMaterial.uniforms.uTime.value=e",
+        "this.material.customUniforms.tDisplacement.value=J.wavvesScene.renderManager.renderTargetComposite.texture",
       ]),
+      rebuildUpdateChecks: checks(rebuildWebgl, [
+        "private updateVisibleWorkItems(time: number, delta: number)",
+        "item.material.uniforms.uTime.value = time",
+        "item.material.uniforms.uCoords.value.set(this.workRawTarget.width, this.workRawTarget.height)",
+        "const meshResult = this.updateMouseBrush(",
+        "item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder",
+        "item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta)",
+        "item.material.uniforms.uMouseSpeed.value = item.mouseSpeed",
+        "item.mousePlane.material.uniforms.uTime.value = time",
+        "item.material.uniforms.tDisplacement.value = this.displacementTarget.texture",
+        "sourceGAUpdateMode: \"source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal\"",
+      ]),
+      rebuildNoSplitLocalMouseUpdate:
+        !rebuildWebgl.includes("private updateWorkMouseSimulation(")
+        && !rebuildWebgl.includes("private syncWorkMouseSimulationUniforms("),
       excerpt: compact(sourceGA.text),
     },
     Ka: (() => {
