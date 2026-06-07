@@ -63,6 +63,7 @@ Recommended cadence:
 - Do 6-10 differences per batch only when they are low-risk constants, ownership, documentation, or route-state corrections in one chain.
 - Do 3-5 differences per batch for shader, render-target, render-order, or material-replacement changes.
 - Run full QA and commit once per batch, not once per tiny sub-step.
+- Per the 2026-06-06 cadence update, expand each implementation step from one tiny diff to a coherent batch of up to ten source-proven differences. Stop below ten when the chain is shader/render-target risky or when an early probe shows regression.
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work in this order: `VA/GA` output and spotlight/thumb projection, then `A1/OA/kA/Lu` render-manager graph parity, while keeping project pages as regression gates. Phase 2 should not start yet.
 
@@ -99,6 +100,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 23 | S1-96 | Shader/WebGL QA gate and `VA` sheen attribution | A rejected test edit showed that changing r164 physical-material sheen chunks can compile-fail even when text-level shader residuals look plausible. Source `zA` declares `USE_SHEEN` through the material surface, but does not have the modern r164 outgoing-light sheen tail in the captured source body. | Production rendering is unchanged. Shader dump now splits `USE_SHEEN` declaration evidence from the r164 `sheenEnergyComp` outgoing-light tail, and the output probe now fails hard on shader/WebGL console errors instead of only reporting them. | Low | Keep as QA guardrail. Do not edit physical-material sheen chunks unless the dump/probe pair proves the exact source-safe replacement and project media probes remain green. |
 | 24 | S1-97 | Source `VA/zA` r164 sheen outgoing tail | Source `zA` has the ordinary `USE_SHEEN` declaration/uniform surface but its captured outgoing-light body does not include the modern r164 `sheenEnergyComp` compensation tail. After S1-96, the shader dump can distinguish declaration parity from body residuals. | Production now strips only the r164 `sheenEnergyComp` outgoing-light tail from ordinary work-block `VA`, preserving the `USE_SHEEN` declaration surface and all existing material uniforms. Shader dump reports `r164SheenOutgoingTail` source false / rebuild false with no WebGL console errors. | Low-medium | Keep as a narrow source-correct material-body alignment. It does not close Phase 1; mobile/fog-bed and broader projection/material feel remain open. |
 | 25 | S1-98 | Source `i1` reflector update ordering | Source `i1.update()` calls `virtualCamera.updateMatrixWorld()` before copying the source camera projection matrix, and clears the raw reflection target only through `renderer.autoClear===false && renderer.clear()`. | Production now follows that reflector camera/projection order and conditional raw-target clear. Renderer audit records the source anchors, and output probe fails if the reflection probe no longer reports the source clear/order modes. | Low-medium | Keep as source-correct reflector ownership. It is not expected to close Phase 1 alone; continue floor/environment target-content attribution and projection/material residual work. |
+| 26 | S1-99 | Source `VA/zA` material macro surface | Source `zA` uses old physical-material macro spellings such as `USE_SPECULARCOLORMAP`, `USE_SPECULARINTENSITYMAP`, `USE_SHEENCOLORMAP`, and `USE_SHEENROUGHNESSMAP`; the rebuild bridge still carried modern underscore spellings after prior material-body fixes. | Ordinary work-block `VA` now rewrites those four macro names to the source surface, and shader dump reports source-style specular and sheen-map macro checks true while modern underscore checks are false in both source and rebuild. | Low-medium | Keep as a source-correct material-surface alignment. This narrows shader residuals but does not close Phase 1; mobile/fog-bed, strict projection feel, and remaining source `bsdfs`/`opaque_fragment` bridge depth remain open. |
 
 ### Phase 1 Open Blocker Board
 
@@ -274,6 +276,39 @@ Verification:
 | Mobile center-band delta | `-0.0130` against source |
 
 Decision: keep this as source-correct reflector lifecycle parity. Phase 1 remains open because this is a narrow reflector ownership fix, not a visual closeout for the remaining mobile/fog-bed and spotlight/projection residuals.
+
+### S1-99 Source `VA/zA` Material Macro Surface
+
+This batch stayed on the ordinary work-block `VA/zA` material surface and aligned four source-confirmed physical-material macro spellings.
+
+Source/runtime evidence:
+
+- Source `zA` uses `USE_SPECULARCOLORMAP` and `USE_SPECULARINTENSITYMAP` rather than the modern Three underscore spellings.
+- Source `zA` also uses `USE_SHEENCOLORMAP` and `USE_SHEENROUGHNESSMAP`.
+- S1-96 and S1-97 already made shader/WebGL console errors a hard gate before promoting physical-material body changes.
+
+Production change:
+
+- `patchWorkBlockShader()` now applies `alignSourceVaMaterialMacroSurface()` only for ordinary work-block `VA`, not auxiliary blocks.
+- The helper rewrites the four modern underscore macro spellings to the source spellings.
+- `scripts/dump-va-shader.mjs` now reports separate `sourceSheenMapMacro` and `modernSheenMapMacro` checks alongside the existing specular macro checks.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Passed; current source render-manager and reflector anchors remain present |
+| Shader dump | No shader/WebGL console errors; `sourceSpecularMacro` and `sourceSheenMapMacro` are source/rebuild true; modern underscore checks are source/rebuild false |
+| Output probe | Passed without failures, exceptions, or shader/WebGL console errors |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Desktop/mobile home captures passed without failures or runtime exceptions |
+| Desktop center-band delta | `+0.0006` against source |
+| Mobile center-band delta | `-0.0118` against source |
+
+Decision: keep this source-correct macro-surface alignment. It improves `VA/zA` shader surface parity but does not close Phase 1; the remaining strict 1:1 work is still mobile/fog-bed distribution, projection/material feel, and the deeper source `bsdfs`/`opaque_fragment` bridge gap.
 
 ### S1-70 Source Floor Circle Geometry
 

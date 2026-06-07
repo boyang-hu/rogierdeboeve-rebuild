@@ -507,6 +507,8 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
     ],
     sourceSpecularMacro: ["USE_SPECULARCOLORMAP", "USE_SPECULARINTENSITYMAP"],
     modernSpecularMacro: ["USE_SPECULAR_COLORMAP", "USE_SPECULAR_INTENSITYMAP"],
+    sourceSheenMapMacro: ["USE_SHEENCOLORMAP", "USE_SHEENROUGHNESSMAP"],
+    modernSheenMapMacro: ["USE_SHEEN_COLORMAP", "USE_SHEEN_ROUGHNESSMAP"],
     modernPhysicalResidual: ["USE_DISPERSION", "USE_ANISOTROPY"],
     sheenDeclaration: ["USE_SHEEN"],
     r164SheenOutgoingTail: ["sheenEnergyComp", "outgoingLight=outgoingLight*sheenEnergyComp+sheenSpecularDirect+sheenSpecularIndirect"],

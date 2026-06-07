@@ -665,6 +665,7 @@ function patchWorkBlockShader(
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", workBlockSourceTailFragmentChunk);
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
     shader.fragmentShader = stripSourceVaR164PhysicalBranches(shader.fragmentShader);
+    shader.fragmentShader = alignSourceVaMaterialMacroSurface(shader.fragmentShader);
   } else {
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", auxiliaryBlockOpaqueFragmentChunk);
   }
@@ -689,6 +690,14 @@ function stripSourceVaR164PhysicalBranches(fragmentShader: string) {
   return fragmentShader
     .replace(/#ifdef USE_DISPERSION[\s\S]*?uniform float dispersion;[\s\S]*?#endif/g, "// source VA omits r164 dispersion uniforms")
     .replace(/#ifdef USE_ANISOTROPY[\s\S]*?uniform vec2 anisotropyVector;[\s\S]*?#ifdef USE_ANISOTROPYMAP[\s\S]*?uniform sampler2D anisotropyMap;[\s\S]*?#endif[\s\S]*?#endif/g, "// source VA omits r164 anisotropy uniforms");
+}
+
+function alignSourceVaMaterialMacroSurface(fragmentShader: string) {
+  return fragmentShader
+    .replace(/USE_SPECULAR_COLORMAP/g, "USE_SPECULARCOLORMAP")
+    .replace(/USE_SPECULAR_INTENSITYMAP/g, "USE_SPECULARINTENSITYMAP")
+    .replace(/USE_SHEEN_COLORMAP/g, "USE_SHEENCOLORMAP")
+    .replace(/USE_SHEEN_ROUGHNESSMAP/g, "USE_SHEENROUGHNESSMAP");
 }
 
 const environmentVertexShader = `
