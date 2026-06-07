@@ -409,11 +409,11 @@ perlinDisplacement *= fade;
 vec3 perlinDisplaced = transformed;
 perlinDisplaced.z += perlinDisplacement - perlinHeight * 0.5;
 perlinDisplaced *= min(1.0, 1.0 - (perlinDisplacement - perlinHeight * 0.5) * 0.1);
+transformed *= 1.0 - mouseSim.r * 0.05;
 transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
 transformed *= fade * uRevealSides;
 
 float displacement = displacementMap.r;
-transformed *= 1.0 - mouseSim.r * 0.05;
 transformed.z -= 1.5;
 transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
 transformed.z += mouseSim.r * 15.0 * uMouseFactor;

@@ -3215,3 +3215,41 @@ Band snapshot from `/tmp/rd-phase1-order-capture`:
 | Mobile source -> rebuild | `-0.0143` | `+0.0039` |
 
 Decision: keep this source update-order alignment. It removes a real `Iu/p1/kA/GA` lifecycle drift without regressing project media pages. Phase 1 remains open because the visual hard horizon/fog-bed and exact `VA` shader bridge are still not fully source-identical.
+
+### S1-74 Source `HA/VA` Mouse Scale Ordering
+
+This batch continued the Phase 1 shader audit and promoted one source-proven `HA/VA` vertex-order correction.
+
+Source evidence:
+
+- Source `HA` computes the Perlin-displaced candidate, then applies `transformed *= 1. - mouseSim.r * .05` before mixing toward `perlinDisplaced`.
+- Source then applies `transformed = mix(transformed, perlinDisplaced, (1. - fadeDiplacement) * .25)`, reveal side masking, wave displacement, and the later world-position `transformed /= 1. - mouseSim.r * .2`.
+- The rebuild already had the same operations, but the `.05` mouse scale happened after the Perlin mix and reveal-side masking. That changes the relative weighting of mouse deformation versus cube reveal/collapse.
+
+Runtime changes:
+
+- Moved the work-cube vertex `transformed *= 1.0 - mouseSim.r * 0.05` line before the Perlin reveal mix, matching the source operation order.
+
+Non-fix source audit:
+
+- Rechecked source `i1/a1/o1` reflector/floor ownership. Current rebuild still matches the important source structure: `floorGroup -> floorPlane -> floorReflector`, group y `-1.65`, source `CircleGeometry(60,32)`, reflector hidden via the floor group during reflection render, raw reflection target depth enabled, read/write targets depthless, blur directions `(15,0)` then `(0,15)`, and floor shader sampling/formula.
+- Rechecked source `h1/u1` environment defaults. Current rebuild matches the source defaults that materially affect the environment: `uMultiplier=2`, `uShader1Alpha=.5`, `uShader1Speed=.5`, `uShader1Scale=5.5`, `uShader2Alpha=0`, `uShader2Scale=13`, `uShader3Alpha=0`, `uShader3Speed=0`, `uShader3Scale=0`, `uShader1Mix3=1.5`, `envMapIntensity=1`, `BackSide`, and `fog:false`. The declared but unused `uShader1Mix2` is not promoted as a production change.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no console messages: `/tmp/rd-phase1-va-order-shaders`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-phase1-va-order-output`.
+- Thumb spotlight probe passed and retained the source home map/position/target: `/tmp/rd-phase1-va-order-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-phase1-va-order-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-phase1-va-order-capture`.
+
+Band snapshot from `/tmp/rd-phase1-va-order-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `-0.0018` | `+0.0004` |
+| Mobile source -> rebuild | `-0.0143` | `+0.0107` |
+
+Decision: keep the `HA/VA` mouse-scale ordering correction. It is source-proven, low scope, and does not regress project media. Phase 1 remains open; remaining blockers are still exact generated `VA` material-body parity, thumb/spotlight projection feel, and the mobile/fog-bed visual residual.
