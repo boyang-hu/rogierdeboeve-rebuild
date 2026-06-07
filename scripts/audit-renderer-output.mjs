@@ -731,6 +731,7 @@ const summary = {
         "const e=new Du(300,10)",
         "this.material=new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})",
         "const t=new at(e,this.material);this.add(t),this.mesh=t",
+        "update(e,t,n){this.material.update(e,t,n)}",
       ]),
       excerpt: compact(sourceH1.text),
     },

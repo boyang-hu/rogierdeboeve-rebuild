@@ -473,12 +473,19 @@ async function runProbe() {
   if (updateOrder?.environmentUpdateOrder !== "source-p1-component-post-render") {
     throw new Error(`Environment update-order source-shape mismatch: ${updateOrder?.environmentUpdateOrder || "missing"}`);
   }
+  const diagnostics = parsed.probe.settings?.diagnostics;
+  if (diagnostics?.productionDebugClean !== true) {
+    throw new Error(`Production debug branch leaked into output probe: ${JSON.stringify(diagnostics || {})}`);
+  }
   const environmentUniforms = parsed.probe.uniforms?.environment;
   const environmentHierarchy = parsed.probe.reflectionState?.environment;
   const environmentErrors = [];
   if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
   if (environmentUniforms?.customUniformsAlias !== true) environmentErrors.push("customUniformsAlias");
   if (environmentUniforms?.hierarchyMode !== "source-h1-group-owns-transform") environmentErrors.push("hierarchyMode");
+  if (environmentUniforms?.updateMode !== "source-h1-material-update-only") environmentErrors.push("updateMode");
+  if (environmentUniforms?.rotationMode !== "source-p1-demorgen-initial-adjustment-only") environmentErrors.push("rotationMode");
+  if (environmentUniforms && Math.abs((environmentUniforms.speed ?? 0) - 0.00005) > 0.0000001) environmentErrors.push("speed");
   if (environmentUniforms?.geometry?.mode !== "source-Du-icosahedron") environmentErrors.push("geometryMode");
   if (environmentUniforms?.geometry?.type !== "IcosahedronGeometry") environmentErrors.push("geometryType");
   if (environmentUniforms?.geometry && Math.abs((environmentUniforms.geometry.radius ?? 0) - 300) > 0.0001) environmentErrors.push("geometryRadius");

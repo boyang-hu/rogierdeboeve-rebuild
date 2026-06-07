@@ -2956,6 +2956,7 @@ export class WebGLBackdrop {
   private environmentMaterial: EnvironmentMaterial;
   private environmentGroup = new Group();
   private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
+  private readonly environmentSpeed = 0.00005;
   private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private thumbCompositeTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
   private raycaster = new Raycaster();
@@ -6234,6 +6235,7 @@ void main() {
           floor: this.debugFloor,
           floorReflection: this.debugFloorReflection,
           environment: this.debugEnvironment,
+          productionDebugClean: !this.debugFloor && !this.debugFloorReflection && !this.debugEnvironment,
         },
         work: {
           bloom: this.renderSettings.bloom,
@@ -6570,6 +6572,8 @@ void main() {
             detail: this.environmentPlane.geometry.parameters.detail,
           },
           uTime: this.environmentMaterial.uniforms.uTime.value,
+          updateMode: "source-h1-material-update-only",
+          speed: this.environmentSpeed,
           uMultiplier: this.environmentMaterial.uniforms.uMultiplier.value,
           uDarken: this.environmentMaterial.uniforms.uDarken.value,
           uDarkenColor: (this.environmentMaterial.uniforms.uDarkenColor.value as Color).toArray(),
@@ -6597,6 +6601,7 @@ void main() {
           dithering: this.environmentMaterial.dithering,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
           hierarchyMode: "source-h1-group-owns-transform",
+          rotationMode: "source-p1-demorgen-initial-adjustment-only",
           groupRotationY: this.environmentGroup.rotation.y,
           groupPositionY: this.environmentGroup.position.y,
           meshRotationY: this.environmentPlane.rotation.y,
