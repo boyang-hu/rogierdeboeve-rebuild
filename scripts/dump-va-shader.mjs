@@ -936,6 +936,8 @@ function analyzeFloorCore(sourceShader, rebuildShader) {
     colorMapBranch: ["#ifdefUSE_MAP"],
     normalMapBranch: ["#ifdefUSE_NORMALMAP"],
     normalDistortion: ["normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.)", "normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.0)"],
+    sourceDitherRandomHelper: ["floatrandom(vec2co)"],
+    sourceDitherHelper: ["vec3dither(vec3color)", "dither_shift_RGB"],
     sourceDistortedUvName: ["vec2uv=coord.xy+coord.z*normal.xz*0.05"],
     sourceDistortedUvSample: ["texture(tReflect,uv)"],
     projectedRawReflect: ["textureProj(tReflect,vCoord)"],

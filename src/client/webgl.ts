@@ -2017,9 +2017,7 @@ void main() {
 }
 `;
 
-const homeBloomCompositeFragment = `
-precision mediump float;
-
+const sourceDitherHelper = `
 float random(vec2 co) {
   return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
@@ -2030,6 +2028,12 @@ vec3 dither(vec3 color) {
   dither_shift_RGB = mix(2.0 * dither_shift_RGB, -2.0 * dither_shift_RGB, grid_position);
   return color + dither_shift_RGB;
 }
+`;
+
+const homeBloomCompositeFragment = `
+precision mediump float;
+
+${sourceDitherHelper}
 
 uniform sampler2D tBlur1;
 uniform sampler2D tBlur2;
@@ -2791,6 +2795,8 @@ void main() {
 
 const floorFragment = `
 precision mediump float;
+
+${sourceDitherHelper}
 
 uniform sampler2D tReflect;
 uniform vec3 uColor;
