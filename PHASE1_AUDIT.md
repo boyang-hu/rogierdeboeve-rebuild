@@ -3830,3 +3830,40 @@ Band snapshot from `/tmp/rd-s1-87-capture`:
 | Mobile source -> rebuild | `-0.0126` | `+0.0190` |
 
 Decision: keep the source environment runtime-surface alignment. It removes a real helper/runtime-binding drift and slightly improves the desktop band delta, but Phase 1 remains open for the remaining mobile/fog-bed, generated `VA/GA` material-body, and spotlight/thumb projection residuals.
+
+### S1-88 `VA/GA` Shader Residual Attribution
+
+This batch improved `VA/GA` shader attribution before making another production shader-body change.
+
+Tooling changes:
+
+- `scripts/dump-va-shader.mjs` now maps generic `VA-work` shader dumps to source `zA` and source `HA`, instead of treating `VA-work` as source-less generic output.
+- Generic shader summaries now include `vaFragmentCoreChecks` for the source tail output, mouse-lightness mix, alpha grid, reveal radius, mouse alpha, source specular macro spelling, modern specular macro spelling, modern physical residuals, and sheen presence.
+- The dump writes source/rebuild files for `VA-work` under the same generic shader summary path, making future work compare the active source and rebuild shader pair directly.
+
+Current evidence:
+
+- `VA-work` source mapping reports `vertexLengthDelta=-168` and `fragmentLengthDelta=+902`.
+- Live uniform deltas are empty.
+- Live include deltas are now explicit: source-only `bsdfs` and `opaque_fragment`; rebuild-only live includes are empty.
+- Core active `VA` anchors are present in both source and rebuild: tail output, mouse-lightness mix, alpha grid, reveal radius, and mouse alpha.
+- The earlier broad “generated material-body” bucket is now narrowed: the remaining clear material-body residuals are source `bsdfs`/`opaque_fragment` include shape and source old specular map macro spelling (`USE_SPECULARCOLORMAP`, `USE_SPECULARINTENSITYMAP`) versus rebuild modern underscore spelling (`USE_SPECULAR_COLORMAP`, `USE_SPECULAR_INTENSITYMAP`).
+- The previously stripped modern physical branches remain absent: `modernPhysicalResidual.source=false` and `rebuild=false`.
+- `USE_SHEEN` remains present in both source and rebuild, so the previous warning still stands: do not broad-strip sheen code without a safer source-backed extraction.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s1-88-va-audit-3`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-s1-88-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-s1-88-capture`.
+
+Band snapshot from `/tmp/rd-s1-88-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0002` | `-0.0020` |
+| Mobile source -> rebuild | `-0.0129` | `+0.0183` |
+
+Decision: keep the `VA/GA` attribution upgrade. It does not change runtime behavior or close Phase 1, but it prevents another unsafe broad material-body edit. The next production candidates should be isolated against this evidence: specular macro/interface compatibility if proven non-inert, source `bsdfs`/`opaque_fragment` shape if it affects generated output, or the separate spotlight/thumb projection chain.

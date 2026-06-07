@@ -487,12 +487,45 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
   ]));
 }
 
+function analyzeVaFragmentCore(sourceShader, rebuildShader) {
+  if (!sourceShader) return null;
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const checks = {
+    sourceTailOutput: ["#include<opaque_fragment>", "gl_FragColor=vec4(outgoingLight,diffuseColor.a)"],
+    sourceMouseLightness: [
+      "mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(mouseF),(1.-uMouseLightness))",
+      "mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(mouseF),1.-uMouseLightness)",
+      "mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(mouseF),1.0-uMouseLightness)",
+    ],
+    sourceAlphaGrid: ["mixedAlpha=((alpha*alpha2)*vInstanceAlpha)", "floatalpha=alpha1*alpha2*vAlpha"],
+    sourceRevealRadius: ["2.0*pow(revealCombined,.25)", "2.0*pow(revealCombined,0.25)"],
+    sourceMouseAlpha: [
+      "mixedAlpha+=clamp(mouseSim.r*(uMouseFactor*0.5),0.,1.)",
+      "clamp(simLight*(uMouseFactor*.5),0.,1.)",
+      "clamp(simLight*(uMouseFactor*0.5),0.0,1.0)",
+    ],
+    sourceSpecularMacro: ["USE_SPECULARCOLORMAP", "USE_SPECULARINTENSITYMAP"],
+    modernSpecularMacro: ["USE_SPECULAR_COLORMAP", "USE_SPECULAR_INTENSITYMAP"],
+    modernPhysicalResidual: ["USE_DISPERSION", "USE_ANISOTROPY"],
+    sheenResidual: ["USE_SHEEN"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
+    name,
+    {
+      source: candidates.some((candidate) => source.includes(candidate)),
+      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+    },
+  ]));
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
 const sourceZ = extractSourceShader(bundle, "zA", "`,HA=`");
 const sourceH = extractSourceShader(bundle, "HA", "`;class VA extends");
 const sourceFragmentShaders = {
+  "VA-work": sourceZ,
   "A1-pre-composite": tryExtractSourceShader(bundle, "A1"),
   "Lu-main-composite": tryExtractSourceShader(bundle, "aA"),
   "OA-work-composite": tryExtractSourceShader(bundle, "CA"),
@@ -503,6 +536,7 @@ const sourceFragmentShaders = {
   "u1-environment": tryExtractSourceShader(bundle, "l1"),
 };
 const sourceVertexShaders = {
+  "VA-work": sourceH,
   "M1-thumb-plane": tryExtractSourceShader(bundle, "b1"),
 };
 writeFileSync(path.join(outDir, "source-HA.glsl"), sourceH);
@@ -573,6 +607,7 @@ try {
       vertex: summarizeGenericShader(sourceVertex, entry.vertexShader),
       fragment: summarizeGenericShader(sourceFragment, entry.fragmentShader),
       compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
+      vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       commentedIncludes: {
         fragmentSource: sourceFragment ? collectCommentedIncludes(sourceFragment) : [],
         fragmentRebuild: collectCommentedIncludes(entry.fragmentShader),
@@ -645,6 +680,7 @@ try {
         fragmentCommentedIncludesSource: analysis.commentedIncludes.fragmentSource,
         fragmentCommentedIncludesRebuild: analysis.commentedIncludes.fragmentRebuild,
         compositeCoreChecks: analysis.compositeCoreChecks,
+        vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
         files: analysis.files,
       },
     ])),
