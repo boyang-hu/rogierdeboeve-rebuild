@@ -282,6 +282,7 @@ async function runProbe() {
   }
   const workOwnership = parsed.probe.settings?.work?.renderManagerOwnership;
   const mainOwnership = parsed.probe.settings?.main?.renderManagerOwnership;
+  const mainSettings = parsed.probe.settings?.main || {};
   const ownershipErrors = [];
   if (workOwnership?.source !== "Lu-single-screen-mesh-material-swap") ownershipErrors.push("workSourceOwnership");
   if (workOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("workBridgeOwnership");
@@ -291,6 +292,13 @@ async function runProbe() {
   if (mainOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("mainBridgeOwnership");
   if (mainOwnership?.finalScreenMode !== "source-main-post-screen") ownershipErrors.push("mainFinalScreenMode");
   if (mainOwnership?.productionOutputChanged !== true) ownershipErrors.push("mainProductionOutputChanged");
+  if (mainSettings?.mainRawSceneMode !== "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb") {
+    ownershipErrors.push("mainRawSceneMode");
+  }
+  const sourceMainBackground = mainSettings?.mainRawSceneBackground || [];
+  if (!Array.isArray(sourceMainBackground) || sourceMainBackground.some((value) => Math.abs(value - 0.8509825995357807) > 0.0001)) {
+    ownershipErrors.push("mainRawSceneBackground");
+  }
   if (ownershipErrors.length) {
     throw new Error(`Render-manager ownership attribution mismatch: ${ownershipErrors.join(", ")}`);
   }

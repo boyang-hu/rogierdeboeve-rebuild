@@ -311,6 +311,7 @@ const SCREEN_MOUSE_SIM_SCALE = 10;
 const ABOUT_TRACK_SCALE = 0.005;
 const AUX_BLOCK_SCALE = 0.09;
 const SOURCE_BLOOM_KERNELS = [3, 5, 7, 9, 11];
+const SOURCE_MAIN_SCENE_BACKGROUND = "#D9D9D9";
 
 function sourceRound(value: number, precision = 4) {
   const multiplier = Math.pow(10, precision);
@@ -3220,6 +3221,7 @@ function tweenColorOwned(target: Color, value?: string, duration = 1.6, tweens?:
 export class WebGLBackdrop {
   private root: HTMLElement;
   private renderer: WebGLRenderer;
+  private mainScene = new Scene();
   private backgroundScene = new Scene();
   private homeScene = new Scene();
   private skyScene = new Scene();
@@ -3498,6 +3500,7 @@ export class WebGLBackdrop {
     this.characterCamera.position.set(0, 0, 12);
     this.characterCamera.lookAt(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
+    this.mainScene.background = sourceLinearToSrgbColor(SOURCE_MAIN_SCENE_BACKGROUND, SOURCE_MAIN_SCENE_BACKGROUND);
     this.skyScene.background = sourceLinearToSrgbColor("#666666", "#666666");
     this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG);
@@ -6751,6 +6754,8 @@ void main() {
             sourceFinalRender: "settings.renderToScreen -> setRenderTarget(null), render(this.screen,this.screenCamera)",
             productionOutputChanged: true,
           },
+          mainRawSceneMode: "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb",
+          mainRawSceneBackground: this.mainScene.background instanceof Color ? this.mainScene.background.toArray() : null,
         },
         updateOrder: {
           source: this.sourceUpdateOrder,
@@ -7745,7 +7750,7 @@ void main() {
     }
     this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
     this.renderer.setRenderTarget(this.mainRawTarget);
-    this.renderer.render(this.backgroundScene, this.backgroundCamera);
+    this.renderer.render(this.mainScene, this.homeCamera);
     this.preCompositeMaterial.uniforms.tScene.value = this.mainRawTarget.texture;
     this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
     this.renderMediaCompositeTarget(isProjectView && hasMedia);
