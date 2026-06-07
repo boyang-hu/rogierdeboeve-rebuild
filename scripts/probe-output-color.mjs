@@ -170,6 +170,16 @@ async function runProbe() {
   if (sizingErrors.length) {
     throw new Error(`Render-manager sizing source-shape mismatch: ${sizingErrors.join(", ")}`);
   }
+  const materialSurfaceErrors = [];
+  const preCompositeUniforms = parsed.probe.uniforms?.preComposite;
+  const workCompositeUniforms = parsed.probe.uniforms?.composite;
+  if (preCompositeUniforms?.materialMode !== "source-C1-raw-glsl3") materialSurfaceErrors.push("preCompositeMaterialMode");
+  if (preCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("preCompositeGlslVersion");
+  if (workCompositeUniforms?.materialMode !== "source-OA-raw-glsl3") materialSurfaceErrors.push("workCompositeMaterialMode");
+  if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
+  if (materialSurfaceErrors.length) {
+    throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);
+  }
   const updateOrder = parsed.probe.settings?.updateOrder;
   if (updateOrder?.environmentUpdateOrder !== "source-p1-component-post-render") {
     throw new Error(`Environment update-order source-shape mismatch: ${updateOrder?.environmentUpdateOrder || "missing"}`);

@@ -113,6 +113,7 @@ const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
+const sourceC1 = extractAround(bundle, "class C1 extends", 320, 1600);
 const rebuildA1 = extractConstTemplate(rebuildWebgl, "homePreCompositeFragment");
 const sourcePo = extractTemplate(bundle, "Po", "`,CA=");
 const sourceBlendLighten = extractTemplate(bundle, "fg", "`,yA=");
@@ -325,6 +326,8 @@ const summary = {
     OA: sourceOA && {
       index: sourceOA.index,
       checks: checks(sourceOA.text, [
+        "class OA extends mt",
+        "glslVersion:lt",
         "toneMapped:!1",
         "fragmentShader:CA",
         "blending:ot",
@@ -333,6 +336,19 @@ const summary = {
         "depthTest:!1",
       ]),
       excerpt: compact(sourceOA.text),
+    },
+    C1: sourceC1 && {
+      index: sourceC1.index,
+      checks: checks(sourceC1.text, [
+        "class C1 extends mt",
+        "glslVersion:lt",
+        "toneMapped:!1",
+        "fragmentShader:A1",
+        "blending:ot",
+        "depthWrite:!1",
+        "depthTest:!1",
+      ]),
+      excerpt: compact(sourceC1.text),
     },
     mainI1: sourceMainI1 && {
       index: sourceMainI1.index,

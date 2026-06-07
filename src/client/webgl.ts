@@ -962,7 +962,8 @@ uniform bool boolFxaa;
 uniform float uDarken;
 uniform float uSaturation;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 vec3 saturation(vec3 color, float amount) {
   float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
@@ -985,17 +986,17 @@ vec3 sourceBlend(int mode, vec3 base, vec3 blend, float opacity) {
 
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   vec2 offset = vec2(cos(angle), sin(angle)) * amount;
-  float r = texture2D(tex, uv + offset).r;
-  float g = texture2D(tex, uv).g;
-  float b = texture2D(tex, uv - offset).b;
-  float a = texture2D(tex, uv).a;
+  float r = texture(tex, uv + offset).r;
+  float g = texture(tex, uv).g;
+  float b = texture(tex, uv - offset).b;
+  float a = texture(tex, uv).a;
   return vec4(r, g, b, a);
 }
 
 void main() {
   vec2 uv = vUv;
-  vec4 fluid = texture2D(tFluid, uv);
-  vec4 mouseSim = texture2D(tMouseSim, uv);
+  vec4 fluid = texture(tFluid, uv);
+  vec4 mouseSim = texture(tMouseSim, uv);
   vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
   if (boolBloom) {
     vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
@@ -1011,7 +1012,7 @@ void main() {
   color = sourceBlend(11, color, vec3(0.095), 1.0);
   color = saturation(color, uSaturation);
 
-  gl_FragColor = vec4(color, 1.0);
+  FragColor = vec4(color, 1.0);
   #include <tonemapping_fragment>
 }
 `;
@@ -1108,7 +1109,8 @@ uniform vec3 uBgColor;
 uniform vec2 uDisplacementSize;
 uniform vec2 uContainerSize;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 vec3 contrast(vec3 color, float amount) {
   return (color - 0.5) * amount + 0.5;
@@ -1135,10 +1137,10 @@ vec3 sourceBlend(int mode, vec3 base, vec3 blend, float opacity) {
 
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   vec2 offset = vec2(cos(angle), sin(angle)) * amount;
-  float r = texture2D(tex, uv + offset).r;
-  float g = texture2D(tex, uv).g;
-  float b = texture2D(tex, uv - offset).b;
-  float a = texture2D(tex, uv).a;
+  float r = texture(tex, uv + offset).r;
+  float g = texture(tex, uv).g;
+  float b = texture(tex, uv - offset).b;
+  float a = texture(tex, uv).a;
   return vec4(r, g, b, a);
 }
 
@@ -1161,7 +1163,7 @@ void main() {
   perlinUv.y -= uTime * 0.005;
   perlinUv.x += uTransformX;
 
-  vec4 perlin = texture2D(tPerlin, perlinUv);
+  vec4 perlin = texture(tPerlin, perlinUv);
   perlin.rgb = contrast(perlin.rgb, 5.0);
 
   vec2 displacementUv = vUv * 2.0;
@@ -1169,7 +1171,7 @@ void main() {
   displacementUv.x *= uRatio;
   displacementUv += 0.5;
 
-  vec4 fluid = texture2D(tFluid, uv);
+  vec4 fluid = texture(tFluid, uv);
   vec2 fluidUv = uv + fluid.rg * -0.2 * uFluidStrength;
   uv = fluidUv;
   vec2 perlinCoords = baseUv;
@@ -1179,7 +1181,7 @@ void main() {
     perlinCoords -= uPerlin * 0.065;
   }
 
-  vec4 mouseSim = texture2D(tMouseSim, mix(perlinCoords, uv, 2.5));
+  vec4 mouseSim = texture(tMouseSim, mix(perlinCoords, uv, 2.5));
   mouseSim.rgb = contrast(mouseSim.rgb, 1.0);
 
   float perlinVignette = vignette(perlinCoords, 0.1, 0.35, 2.0, 0.5);
@@ -1203,7 +1205,7 @@ void main() {
   noiseUv.x *= uRatio;
   noiseUv += 0.5;
   noiseUv *= 15.0;
-  vec4 noise = texture2D(tNoise, noiseUv);
+  vec4 noise = texture(tNoise, noiseUv);
 
   color = contrast(color, uContrast);
   color *= uContrast;
@@ -1214,7 +1216,7 @@ void main() {
   color = mix(color, media.rgb, media.a * uMediaReveal);
   color = mix(color * noise.rgb, color, 0.75);
   color = mix(color * noise.rgb, color, 1.5);
-  gl_FragColor = vec4(color, 1.0);
+  FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -1661,6 +1663,17 @@ varying vec2 vUv;
 void main() {
   vUv = uv;
   gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`;
+
+const sourceFullscreenVertex = `
+in vec3 position;
+in vec2 uv;
+out vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position, 1.0);
 }
 `;
 
@@ -3586,7 +3599,7 @@ export class WebGLBackdrop {
 
   private createCompositeMaterial() {
     const settings = this.renderSettings;
-    dumpShader("OA-work-composite", backgroundVertex, homeCompositeFragment);
+    dumpShader("OA-work-composite", sourceFullscreenVertex, homeCompositeFragment);
     const fragmentShader = this.debugCompositeShader ? homeCompositeDebugFragment : homeCompositeFragment;
     const uniforms: Record<string, { value: any }> = {
       tScene: { value: this.compositeTarget.texture },
@@ -3606,22 +3619,34 @@ export class WebGLBackdrop {
       uniforms.uDebugDarkenMode = { value: this.debugCompositeDarkenMode };
       uniforms.uDebugTransferMode = { value: this.debugCompositeTransferMode };
       uniforms.uDebugLightenMode = { value: this.debugCompositeLightenMode };
+      return new ShaderMaterial({
+        toneMapped: false,
+        transparent: true,
+        blending: NoBlending,
+        depthWrite: false,
+        depthTest: false,
+        uniforms,
+        vertexShader: backgroundVertex,
+        fragmentShader,
+      });
     }
-    return new ShaderMaterial({
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       toneMapped: false,
       transparent: true,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms,
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader,
     });
   }
 
   private createPreCompositeMaterial() {
-    dumpShader("A1-pre-composite", backgroundVertex, homePreCompositeFragment);
-    return new ShaderMaterial({
+    dumpShader("A1-pre-composite", sourceFullscreenVertex, homePreCompositeFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       toneMapped: false,
       blending: NoBlending,
       depthWrite: false,
@@ -3655,7 +3680,7 @@ export class WebGLBackdrop {
         uDisplacementSize: { value: new Vector2(1, 1) },
         uContainerSize: { value: new Vector2(1, 1) },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader: homePreCompositeFragment,
     });
   }
@@ -5536,6 +5561,8 @@ export class WebGLBackdrop {
       },
       uniforms: {
         preComposite: {
+          materialMode: "source-C1-raw-glsl3",
+          glslVersion: (this.preCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           blending: this.preCompositeMaterial.blending,
           uBgColor: (this.preCompositeMaterial.uniforms.uBgColor.value as Color).toArray(),
           uContrast: this.preCompositeMaterial.uniforms.uContrast.value,
@@ -5550,6 +5577,8 @@ export class WebGLBackdrop {
           boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
         },
         composite: {
+          materialMode: this.debugCompositeShader ? "debug-OA-shadermaterial" : "source-OA-raw-glsl3",
+          glslVersion: this.debugCompositeShader ? null : ((this.compositeMaterial as RawShaderMaterial).glslVersion ?? null),
           blending: this.compositeMaterial.blending,
           uDarken: darkenValue,
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
