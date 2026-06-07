@@ -483,6 +483,16 @@ async function runProbe() {
   if (updateOrder?.environmentUpdateOrder !== "source-p1-component-post-render") {
     throw new Error(`Environment update-order source-shape mismatch: ${updateOrder?.environmentUpdateOrder || "missing"}`);
   }
+  const expectedSourceSceneOrder = ["sky", "media", "work", "main", "workthumb", "wavves", "character"];
+  if (JSON.stringify(updateOrder?.sourceSceneOrder) !== JSON.stringify(expectedSourceSceneOrder)) {
+    throw new Error(`Source scene order probe mismatch: ${JSON.stringify(updateOrder?.sourceSceneOrder || null)}`);
+  }
+  if (!Array.isArray(updateOrder?.rebuildFrameOrder) || !updateOrder.rebuildFrameOrder.includes("sky") || !updateOrder.rebuildFrameOrder.includes("work") || !updateOrder.rebuildFrameOrder.includes("main")) {
+    throw new Error(`Rebuild frame order probe missing core passes: ${JSON.stringify(updateOrder?.rebuildFrameOrder || null)}`);
+  }
+  if (updateOrder?.preloadGate !== "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in") {
+    throw new Error(`Texture preload gate source-shape mismatch: ${updateOrder?.preloadGate || "missing"}`);
+  }
   const diagnostics = parsed.probe.settings?.diagnostics;
   if (diagnostics?.productionDebugClean !== true) {
     throw new Error(`Production debug branch leaked into output probe: ${JSON.stringify(diagnostics || {})}`);
@@ -522,6 +532,11 @@ async function runProbe() {
   if (floorUniforms?.reflectionVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("reflectionVisibilityMode");
   if (floorUniforms?.materialMode !== "source-o1-raw-glsl3") floorErrors.push("materialMode");
   if (floorUniforms?.reflectionBlurMode !== "source-t1-raw-glsl3") floorErrors.push("reflectionBlurMode");
+  if (floorUniforms?.normalMap?.bindingMode !== "source-a1-Xt-floorNormal-repeat-45-updateMatrix") floorErrors.push("floorNormalBindingMode");
+  if (floorUniforms?.normalMap?.isLoadedTexture !== true) floorErrors.push("floorNormalLoaded");
+  if (!Array.isArray(floorUniforms?.normalMap?.repeat) || Math.abs((floorUniforms.normalMap.repeat[0] ?? 0) - 45) > 0.0001 || Math.abs((floorUniforms.normalMap.repeat[1] ?? 0) - 45) > 0.0001) floorErrors.push("floorNormalRepeat");
+  if (!Array.isArray(floorUniforms?.normalMap?.matrix) || floorUniforms.normalMap.matrix.length !== 9) floorErrors.push("floorNormalMatrix");
+  if (floorUniforms?.normalMap?.colorSpace !== "") floorErrors.push("floorNormalColorSpace");
   if (floorUniforms?.shaderBranches?.normalMap !== true) floorErrors.push("floorNormalMapBranch");
   if (floorUniforms?.shaderBranches?.map !== false) floorErrors.push("floorMapBranch");
   if (floorUniforms?.shaderBranches?.fog !== false) floorErrors.push("floorFogBranch");

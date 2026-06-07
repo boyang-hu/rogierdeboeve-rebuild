@@ -6732,12 +6732,15 @@ void main() {
         },
         updateOrder: {
           source: this.sourceUpdateOrder,
+          sourceSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
+          rebuildFrameOrder: ["main-fluid", "media-position", "screen-mouse", "sky", "work", "media", "main", "workthumb", "p1-post-render", "wavves", "character-when-about"],
           frameTail: "source-main/work-render-then-p1-update-before-wavves-displacement",
           postRenderFrame: this.sourcePostRenderFrame,
           environmentUpdateOrder: "source-p1-component-post-render",
           skyPassClearing: "source-Lo-no-explicit-clear",
           skyUpdateMode: "source-V1-low-res-freezes-time",
           skyEnvironmentBinding: "source-nD-resize-delay-then-repeat-composite-bind",
+          preloadGate: "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in",
         },
       },
       uniforms: {
@@ -6941,6 +6944,20 @@ void main() {
             height: Math.max(1, Math.round(window.innerHeight * 0.75)),
           },
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
+          normalMap: {
+            bindingMode: "source-a1-Xt-floorNormal-repeat-45-updateMatrix",
+            isLoadedTexture: this.floorMaterial.uniforms.tNormalMap.value !== this.placeholder,
+            repeat: this.floorMaterial.uniforms.tNormalMap.value instanceof Texture
+              ? this.floorMaterial.uniforms.tNormalMap.value.repeat.toArray()
+              : null,
+            matrix: this.floorMaterial.uniforms.uMapTransform.value instanceof Matrix3
+              ? this.floorMaterial.uniforms.uMapTransform.value.toArray()
+              : null,
+            colorSpace: (this.floorMaterial.uniforms.tNormalMap.value as Texture).colorSpace,
+            matrixAutoUpdate: this.floorMaterial.uniforms.tNormalMap.value instanceof Texture
+              ? this.floorMaterial.uniforms.tNormalMap.value.matrixAutoUpdate
+              : null,
+          },
           materialMode: "source-o1-raw-glsl3",
           reflectionBlurMode: "source-t1-raw-glsl3",
         },

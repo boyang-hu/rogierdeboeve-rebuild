@@ -652,8 +652,14 @@ const summary = {
       index: sourceCanvasManager.index,
       checks: checks(sourceCanvasManager.text, [
         "for(let r=0;r<this.scenes.length;r++)this.scenes[r].instance.update(e,t,n,i)",
+        "this.addScene(this.skyScene,\"sky\")",
+        "this.addScene(this.mediaScene,\"media\")",
         "this.addScene(this.workScene,\"work\")",
         "this.addScene(this.mainScene,\"main\")",
+        "this.addScene(this.workThumbScene,\"workthumb\")",
+        "this.addScene(this.wavvesScene,\"wavves\")",
+        "this.addScene(this.characterScene,\"character\")",
+        "await Xt.blueNoise,await Xt.floorNormal,await Xt.perlin1,await Xt.perlin2",
         "pe.emit(xe.RESIZE),await fn(100)",
         "const e=this.skyScene.renderManager.renderTargetComposite.texture;e.wrapS=e.wrapT=ci",
         "this.workScene.env.material.customUniforms.tSky.value=e",
@@ -804,6 +810,7 @@ const summary = {
       checks: checks(sourceA1Floor.text, [
         "class a1 extends rt",
         "this.reflector=new i1",
+        "const e=await Xt.floorNormal;e.repeat.set(45,45)",
         "i.onBeforeRender=(r,o,a)=>{this.visible=!1,this.reflector.update(this.renderer,this.scene,this.camera),this.visible=!0}",
         "this.add(i),this.material=n",
       ]),
