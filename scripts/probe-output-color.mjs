@@ -201,6 +201,17 @@ async function runProbe() {
     if (JSON.stringify(material?.sigmaDefines) !== JSON.stringify(expectedBloomKernels)) materialSurfaceErrors.push(`${key}SigmaDefines`);
     if (material?.runtimeKernelUniforms !== false) materialSurfaceErrors.push(`${key}RuntimeKernelUniforms`);
   }
+  const standardBlur = passMaterials.standardBlur || {};
+  for (const key of ["horizontal", "vertical"]) {
+    const material = standardBlur[key];
+    if (material?.materialMode !== "source-Na-raw-glsl3") materialSurfaceErrors.push(`standardBlur${key}MaterialMode`);
+    if (material?.glslVersion !== "300 es") materialSurfaceErrors.push(`standardBlur${key}GlslVersion`);
+    if (material?.blending !== 0) materialSurfaceErrors.push(`standardBlur${key}Blending`);
+    if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`standardBlur${key}BlurinessUniform`);
+    if (material?.hasKernelDefines !== false) materialSurfaceErrors.push(`standardBlur${key}KernelDefines`);
+  }
+  if (JSON.stringify(standardBlur.horizontal?.direction) !== JSON.stringify([1, 0])) materialSurfaceErrors.push("standardBlurHorizontalDirection");
+  if (JSON.stringify(standardBlur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push("standardBlurVerticalDirection");
   if (passMaterials.fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("fxaaVertexMode");
   if (materialSurfaceErrors.length) {
     throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);

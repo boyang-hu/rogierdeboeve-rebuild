@@ -117,6 +117,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 40 | S1-113 | Source `OA/C1` composite raw GLSL3 surface | Source `OA` and `C1` both extend the raw material surface with `glslVersion:lt`; `OA` uses `fragmentShader:CA`, and `C1` uses `fragmentShader:A1`. The rebuild formulas were source-shaped but still ran through regular `ShaderMaterial` bridge surfaces. | Production now uses `RawShaderMaterial`/`GLSL3` for default work `OA` and pre-composite `C1/A1`, converts both shader surfaces to `in/out`, `texture(...)`, and `FragColor`, dumps them with the raw fullscreen vertex, and hard-fails output probes on material-mode or GLSL-version drift. Debug composite keeps the old bridge path for query-only diagnostics. | Low-medium | Keep as source-correct core composite surface alignment. This narrows the most central `OA/C1` bridge without tuning color constants, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 41 | S1-114 | Source `lA/W1/sg/rg/cg/ig` helper pass raw GLSL3 surface | Source main/media/helper pass materials extend the raw material surface with `glslVersion:lt`: `lA` uses `aA`, `W1` uses `G1`, `sg` uses `NT`, `rg` uses `kT`, `cg` uses `nA`, and `ig` uses `UT`; source `sg/NT` binds its input as `tMap`. | Production now uses `RawShaderMaterial`/`GLSL3` and source fullscreen vertex surface for main composite, media composite, luminosity, bloom blur, bloom composite, and FXAA helper passes. Shader surfaces use `in/out`, `texture(...)`, and `FragColor`; `sg` now uses source `tMap`; output probes hard-fail on material mode or GLSL drift; shader dump compares all helper fragments/vertices against source. | Low-medium | Keep as source-correct helper render-manager surface alignment. This removes another bridge layer without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 42 | S1-115 | Source `rg/ig` blur and FXAA shader body surface | Source `Lu.initRenderer()` creates five blur materials with `new rg(e[t])` for `[3,5,7,9,11]`; source `rg/kT` uses compile-time `defines:{KERNEL_RADIUS:e,SIGMA:e}` rather than runtime kernel uniforms. Source `ig` binds vertex shader `FT`, which computes `v_rgbNW/NE/SW/SE/M` neighbor UVs for fragment `UT`. | Production now creates one `rg` material/scene per mip for work and main bloom chains, moves kernel radius/sigma into material defines, removes runtime `uKernelRadius/uSigma`, and switches FXAA to the source `FT/UT` neighbor-UV surface. Output probe and shader dump now hard-check blur material count/defines/no runtime kernel uniforms and FXAA neighbor-UV macros/call shape. | Low-medium | Keep as source-correct helper shader-body alignment. This narrows the helper pass bridge without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 43 | S1-116 | Source `Na/HT/zT` standard blur pass surface | Source `Lu/I1` ordinary blur pass uses `hBlurMaterial=new Na(...)` and `vBlurMaterial=new Na(...)`; source `Na` is a raw GLSL3 material with `uBluriness`, `uDirection`, `uResolution`, vertex `HT`, and fragment `zT` using the shared 9-tap `og` blur helper. This is separate from bloom `rg/kT`. | Production now uses a dedicated `Na-standard-blur` raw GLSL3 material for the horizontal/vertical ordinary blur pass instead of reusing bloom `rg`. Output probe asserts `source-Na-raw-glsl3`, `uBluriness`, no bloom kernel defines, and source directions. Shader dump expands `og` into `zT` and hard-checks the 9-tap blur body. | Low-medium | Keep as source-correct render-manager branch alignment. The branch is source-disabled by default, so this is not a visual closeout. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -912,6 +913,43 @@ Verification:
 | Mobile center-band delta | `-0.0120` against source |
 
 Decision: keep this source-correct `rg/ig` helper shader-body alignment. It removes a real source implementation mismatch in bloom/FXAA without changing constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-116 Source `Na/HT/zT` Standard Blur Pass Surface
+
+This batch aligned the ordinary render-manager blur pass with source `Na`. It did not change source constants or the default home visual path, because source and rebuild both keep ordinary blur disabled by default.
+
+Source/runtime evidence:
+
+- Source `Lu.initRenderer()` creates `hBlurMaterial=new Na(bf)` and `vBlurMaterial=new Na(Mf)`, then sets both `uBluriness` values to `0`.
+- Source `I1.initRenderer()` creates the same ordinary blur pair with `new Na(wf)` and `new Na(Tf)`.
+- Source `Na` is separate from bloom `rg`: `Na` uses vertex `HT`, fragment `zT`, uniform `uBluriness`, and shared 9-tap helper `og`; `rg` uses gaussian `kT` with compile-time kernel defines.
+- Source `zT` calls `blur(tMap, vUv, uResolution, uBluriness * uDirection)`.
+
+Production now exposes and asserts:
+
+- horizontal and vertical ordinary blur use dedicated `Na-standard-blur` `RawShaderMaterial`/`GLSL3` instances,
+- the ordinary blur shader carries the source 9-tap `og` helper and `uBluriness` uniform,
+- ordinary blur no longer reuses the bloom `rg` gaussian blur material or its `KERNEL_RADIUS/SIGMA` defines,
+- output probe reports `standardBlur.horizontal/vertical` material mode, GLSL version, `uBluriness`, no kernel defines, and directions `[1,0]` / `[0,1]`,
+- renderer audit records source `Na` anchors,
+- shader dump expands source `${og}` into `zT` and checks the 9-tap body against the rebuild.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `Na` raw GLSL3 anchors recorded |
+| Output probe | Passed; ordinary blur reports `source-Na-raw-glsl3`, `uBluriness`, no kernel defines, and source directions |
+| Shader dump | Passed with no shader/WebGL console errors; `standardBlurCoreChecks` are source/rebuild true |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | Project detail pages retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `+0.0008` against source |
+| Mobile center-band delta | `-0.0120` against source |
+
+Decision: keep this source-correct `Na` standard blur alignment. It removes a real implementation mismatch in the render-manager disabled branch without tuning output. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

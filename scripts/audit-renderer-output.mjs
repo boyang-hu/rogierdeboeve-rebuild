@@ -125,6 +125,7 @@ const sourceLA = extractAround(bundle, "class lA extends", 320, 1100);
 const sourceW1 = extractAround(bundle, "class W1 extends", 320, 1100);
 const sourceSg = extractAround(bundle, "class sg extends", 320, 900);
 const sourceRg = extractAround(bundle, "class rg extends", 320, 1100);
+const sourceNa = extractAround(bundle, "class Na extends", 420, 900);
 const sourceCg = extractAround(bundle, "class cg extends", 320, 1000);
 const sourceIg = extractAround(bundle, "class ig extends", 320, 900);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
@@ -406,6 +407,20 @@ const summary = {
         ]),
         kernelConstruction: [...bundle.matchAll(/new rg\(e\[t\]\)/g)].length,
         excerpt: compact(sourceRg.text),
+      },
+      Na: sourceNa && {
+        index: sourceNa.index,
+        checks: checks(sourceNa.text, [
+          "class Na extends mt",
+          "glslVersion:lt",
+          "uniforms:{tMap:new I(null),uBluriness:new I(0),uDirection:new I(e),uResolution:new I(new Q)}",
+          "vertexShader:HT",
+          "fragmentShader:zT",
+          "blending:ot",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        excerpt: compact(sourceNa.text),
       },
       cg: sourceCg && {
         index: sourceCg.index,

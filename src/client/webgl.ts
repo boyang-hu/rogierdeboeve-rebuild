@@ -1317,6 +1317,40 @@ void main() {
 }
 `;
 
+const sourceBlurHelper = `
+vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
+  vec4 sum = vec4(0.0);
+  vec2 pixel = 1.0 / resolution;
+  sum += texture(image, uv - 4.0 * pixel * direction) * 0.051;
+  sum += texture(image, uv - 3.0 * pixel * direction) * 0.0918;
+  sum += texture(image, uv - 2.0 * pixel * direction) * 0.12245;
+  sum += texture(image, uv - 1.0 * pixel * direction) * 0.1531;
+  sum += texture(image, uv) * 0.1633;
+  sum += texture(image, uv + 1.0 * pixel * direction) * 0.1531;
+  sum += texture(image, uv + 2.0 * pixel * direction) * 0.12245;
+  sum += texture(image, uv + 3.0 * pixel * direction) * 0.0918;
+  sum += texture(image, uv + 4.0 * pixel * direction) * 0.051;
+  return sum;
+}
+`;
+
+const homeBlurFragment = `
+precision highp float;
+
+${sourceBlurHelper}
+
+uniform sampler2D tMap;
+uniform float uBluriness;
+uniform vec2 uDirection;
+uniform vec2 uResolution;
+in vec2 vUv;
+out vec4 FragColor;
+
+void main() {
+  FragColor = blur(tMap, vUv, uResolution, uBluriness * uDirection);
+}
+`;
+
 const floorReflectionBlurVertex = `
 in vec3 position;
 in vec2 uv;
@@ -2746,10 +2780,10 @@ export class WebGLBackdrop {
     this.mainBloomCompositeScene.add(makeFullscreenTriangle(this.mainBloomCompositeMaterial));
     this.mediaCompositeMaterial = this.createMediaCompositeMaterial();
     this.mediaCompositeScene.add(makeFullscreenTriangle(this.mediaCompositeMaterial));
-    this.blurHorizontalMaterial = this.createBloomBlurMaterial(this.renderSettings.blur.strength);
+    this.blurHorizontalMaterial = this.createBlurMaterial(1, 0);
     this.blurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
     this.blurHorizontalScene.add(makeFullscreenTriangle(this.blurHorizontalMaterial));
-    this.blurVerticalMaterial = this.createBloomBlurMaterial(this.renderSettings.blur.strength);
+    this.blurVerticalMaterial = this.createBlurMaterial(0, 1);
     this.blurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
     this.blurVerticalScene.add(makeFullscreenTriangle(this.blurVerticalMaterial));
     this.fxaaMaterial = this.createFxaaMaterial();
@@ -3844,6 +3878,24 @@ export class WebGLBackdrop {
 
   private createBloomBlurMaterials() {
     return SOURCE_BLOOM_KERNELS.map((kernelRadius) => this.createBloomBlurMaterial(kernelRadius));
+  }
+
+  private createBlurMaterial(directionX: number, directionY: number) {
+    dumpShader("Na-standard-blur", sourceFullscreenVertex, homeBlurFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
+      blending: NoBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tMap: { value: this.compositeTarget.texture },
+        uBluriness: { value: 0 },
+        uDirection: { value: new Vector2(directionX, directionY) },
+        uResolution: { value: new Vector2(1, 1) },
+      },
+      vertexShader: sourceFullscreenVertex,
+      fragmentShader: homeBlurFragment,
+    });
   }
 
   private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[], settings = this.renderSettings) {
@@ -5721,6 +5773,26 @@ export class WebGLBackdrop {
             materialMode: "source-cg-raw-glsl3",
             glslVersion: (this.mainBloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           },
+          standardBlur: {
+            horizontal: {
+              blending: this.blurHorizontalMaterial.blending,
+              materialMode: "source-Na-raw-glsl3",
+              glslVersion: (this.blurHorizontalMaterial as RawShaderMaterial).glslVersion ?? null,
+              hasBlurinessUniform: "uBluriness" in this.blurHorizontalMaterial.uniforms,
+              hasKernelDefines: Boolean(this.blurHorizontalMaterial.defines?.KERNEL_RADIUS || this.blurHorizontalMaterial.defines?.SIGMA),
+              direction: (this.blurHorizontalMaterial.uniforms.uDirection.value as Vector2).toArray(),
+              bluriness: this.blurHorizontalMaterial.uniforms.uBluriness.value,
+            },
+            vertical: {
+              blending: this.blurVerticalMaterial.blending,
+              materialMode: "source-Na-raw-glsl3",
+              glslVersion: (this.blurVerticalMaterial as RawShaderMaterial).glslVersion ?? null,
+              hasBlurinessUniform: "uBluriness" in this.blurVerticalMaterial.uniforms,
+              hasKernelDefines: Boolean(this.blurVerticalMaterial.defines?.KERNEL_RADIUS || this.blurVerticalMaterial.defines?.SIGMA),
+              direction: (this.blurVerticalMaterial.uniforms.uDirection.value as Vector2).toArray(),
+              bluriness: this.blurVerticalMaterial.uniforms.uBluriness.value,
+            },
+          },
           fxaa: {
             blending: this.fxaaMaterial.blending,
             materialMode: "source-ig-raw-glsl3",
@@ -6212,6 +6284,8 @@ export class WebGLBackdrop {
   }
 
   private renderHomeBlurPass() {
+    this.blurHorizontalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
+    this.blurVerticalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
     this.blurHorizontalMaterial.uniforms.tMap.value = this.compositeTarget.texture;
     this.renderer.setRenderTarget(this.blurTargetA);
     this.renderer.render(this.blurHorizontalScene, this.backgroundCamera);

@@ -519,6 +519,33 @@ function analyzeIgFxaaCore(sourceVertex, sourceFragment, rebuildVertex, rebuildF
   ]));
 }
 
+function analyzeStandardBlurCore(sourceFragment, rebuildFragment) {
+  if (!sourceFragment) return null;
+  const source = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuild = normalizeShaderForCoreChecks(rebuildFragment);
+  const checks = {
+    blurinessUniform: ["uniformfloatuBluriness"],
+    directionUniform: ["uniformvec2uDirection"],
+    nineTapMin4: ["uv-4.0*pixel*direction"],
+    nineTapCenter: ["texture(image,uv)*0.1633"],
+    nineTapPlus4: ["uv+4.0*pixel*direction"],
+    blurinessDirectionCall: ["blur(tMap,vUv,uResolution,uBluriness*uDirection)"],
+    noBloomKernelDefine: ["KERNEL_RADIUS", "SIGMA"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => {
+    const isNegative = name.startsWith("no");
+    const sourcePresent = candidates.some((candidate) => source.includes(candidate));
+    const rebuildPresent = candidates.some((candidate) => rebuild.includes(candidate));
+    return [
+      name,
+      {
+        source: isNegative ? !sourcePresent : sourcePresent,
+        rebuild: isNegative ? !rebuildPresent : rebuildPresent,
+      },
+    ];
+  }));
+}
+
 function analyzeVertexCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
@@ -664,6 +691,11 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const sourceZ = extractSourceShader(bundle, "zA", "`,HA=`");
 const sourceH = extractSourceShader(bundle, "HA", "`;class VA extends");
+const sourceStandardBlurFragment = (() => {
+  const helper = tryExtractSourceShader(bundle, "og");
+  const fragment = tryExtractSourceShader(bundle, "zT");
+  return helper && fragment ? fragment.replace("${og}", helper) : fragment;
+})();
 const sourceFragmentShaders = {
   "VA-work": sourceZ,
   "A1-pre-composite": tryExtractSourceShader(bundle, "A1"),
@@ -673,6 +705,7 @@ const sourceFragmentShaders = {
   "M1-thumb-plane": tryExtractSourceShader(bundle, "S1"),
   "j1-media-composite": tryExtractSourceShader(bundle, "G1"),
   "sg-luminosity": tryExtractSourceShader(bundle, "NT"),
+  "Na-standard-blur": sourceStandardBlurFragment,
   "rg-bloom-blur": tryExtractSourceShader(bundle, "kT"),
   "cg-bloom-composite": tryExtractSourceShader(bundle, "nA"),
   "ig-fxaa": tryExtractSourceShader(bundle, "UT"),
@@ -687,6 +720,7 @@ const sourceVertexShaders = {
   "M1-thumb-plane": tryExtractSourceShader(bundle, "b1"),
   "z1-sky-composite": tryExtractSourceShader(bundle, "tl"),
   "sg-luminosity": tryExtractSourceShader(bundle, "OT"),
+  "Na-standard-blur": tryExtractSourceShader(bundle, "HT"),
   "rg-bloom-blur": tryExtractSourceShader(bundle, "BT"),
   "cg-bloom-composite": tryExtractSourceShader(bundle, "iA"),
   "ig-fxaa": tryExtractSourceShader(bundle, "FT"),
@@ -762,6 +796,7 @@ try {
       fragment: summarizeGenericShader(sourceFragment, entry.fragmentShader),
       compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
       rgBlurCoreChecks: entry.name === "rg-bloom-blur" ? analyzeRgBlurCore(sourceFragment, entry.fragmentShader) : null,
+      standardBlurCoreChecks: entry.name === "Na-standard-blur" ? analyzeStandardBlurCore(sourceFragment, entry.fragmentShader) : null,
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       environmentCoreChecks: entry.name === "u1-environment" ? analyzeEnvironmentCore(sourceFragment, entry.fragmentShader) : null,
@@ -840,6 +875,7 @@ try {
         fragmentCommentedIncludesRebuild: analysis.commentedIncludes.fragmentRebuild,
         compositeCoreChecks: analysis.compositeCoreChecks,
         rgBlurCoreChecks: analysis.rgBlurCoreChecks,
+        standardBlurCoreChecks: analysis.standardBlurCoreChecks,
         igFxaaCoreChecks: analysis.igFxaaCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
         environmentCoreChecks: analysis.environmentCoreChecks,
