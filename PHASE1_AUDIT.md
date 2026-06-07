@@ -120,6 +120,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 43 | S1-116 | Source `Na/HT/zT` standard blur pass surface | Source `Lu/I1` ordinary blur pass uses `hBlurMaterial=new Na(...)` and `vBlurMaterial=new Na(...)`; source `Na` is a raw GLSL3 material with `uBluriness`, `uDirection`, `uResolution`, vertex `HT`, and fragment `zT` using the shared 9-tap `og` blur helper. This is separate from bloom `rg/kT`. | Production now uses a dedicated `Na-standard-blur` raw GLSL3 material for the horizontal/vertical ordinary blur pass instead of reusing bloom `rg`. Output probe asserts `source-Na-raw-glsl3`, `uBluriness`, no bloom kernel defines, and source directions. Shader dump expands `og` into `zT` and hard-checks the 9-tap blur body. | Low-medium | Keep as source-correct render-manager branch alignment. The branch is source-disabled by default, so this is not a visual closeout. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 44 | S1-117 | Source `L1/R1/P1` lensflare pass surface | Source `I1.initSettings()` defines `lensflare:{scale:(1.5,1.5), exposure:1, clamp:1, enabled:false}`; source `I1.initRenderer()` owns `renderTargetLensflare`; source `L1` is a raw GLSL3 material using vertex `R1`, fragment `P1`, uniforms `tMap/uLightPosition/uScale/uExposure/uClamp/uResolution`, and `depthTest/depthWrite:false`. | Production now has a source-shaped `L1-lensflare` raw GLSL3 material/scene, keeps the full-resolution lensflare target wired into `C1/A1.tLensflare`, gates rendering behind the source default `enabled:false`, and records the source explicit-clear pass shape. Output probe and shader dump hard-check `L1` uniforms/defaults, GLSL surface, clear mode, and core `P1` fragment anchors. | Low | Keep as source-correct default-disabled render-manager surface alignment. This should not alter the current visual output; it closes the missing lensflare branch surface but Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 45 | S1-118 | Source `ag/GT/qT/jT/KT/JT` main-fluid pass surface | Source `ag` owns float FBOs with `depthBuffer:false`, `stencilBuffer:false`, `type:FloatType`; source `GT/qT/jT/KT/JT` use raw GLSL3 materials, source advection/divergence/poisson/pressure use `blending:ot`, and source force uses `blending:Uc`. | Production main-fluid passes now use `RawShaderMaterial`/`GLSL3`, source-style `in/out`, `texture(...)`, and `FragColor`, with `NoBlending` for advection/divergence/poisson/pressure and `AdditiveBlending` for force. Output probe now hard-checks material modes, GLSL versions, depth flags, blending, and float target ownership; shader dump maps the five `ag-*` pass shaders to source `Co/XT/Sf/$T/WT/YT/ZT`; renderer audit records source `ag` and pass material anchors. | Low-medium | Keep as source-correct main-fluid render-manager surface alignment. This removes a real source pass-surface mismatch without tuning visual constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 46 | S1-119 | Source `GT.createBounds()` advection boundary pass | Source `GT.init()` calls `createBounds()`, which adds a line segment geometry around the fluid domain with vertex shader `VT`, fragment `Sf`, `glslVersion:lt`, `blending:ot`, and the same advection uniforms as the main `Co/Sf` material. | Production now adds the source `VT/Sf` `ag-advection-bounds` line pass to the advection scene, using `LineSegments`, the source boundary vertex coordinates, shared advection uniforms, and raw GLSL3/no-blending material state. Output probe asserts the boundary material, shared uniforms, and two-child advection scene; shader dump maps `ag-advection-bounds` to source `VT/Sf`; renderer audit checks the source geometry and line-add anchors. | Low-medium | Keep as source-correct advection boundary ownership. This completes the missing source `GT` boundary surface but does not close Phase 1; remaining blockers are still mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -1027,6 +1028,43 @@ Verification:
 | Mobile center-band delta | `-0.0138` against source |
 
 Decision: keep the source main-fluid pass surface. It removes a real source material/GLSL/FBO mismatch while preserving project media. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-119 Source `GT.createBounds()` Advection Boundary Pass
+
+This batch completed the source `GT` advection pass shape by adding the missing boundary line pass. It is a source structure fix, not a visual constant tune.
+
+Source evidence:
+
+- Source `GT.init()` calls `createBounds()` immediately after the base `Ir.init()` plane setup.
+- Source `GT.createBounds()` creates a `Float32Array([-1,-1,0,-1,1,0,-1,1,0,1,1,0,1,1,0,1,-1,0,1,-1,0,-1,-1,0])` boundary geometry.
+- Source boundary material is raw GLSL3 with vertex `VT`, fragment `Sf`, `blending:ot`, `depthWrite:false`, `depthTest:false`, and the same `uniforms` object as the main advection material.
+- Source `VT` offsets edge positions inward by `px` while preserving boundary UVs, so it is not equivalent to the main `Co` fullscreen/plane vertex.
+
+Runtime and tooling changes:
+
+- Added `fluidBoundsVertex` from source `VT`.
+- Added an `ag-advection-bounds` `RawShaderMaterial` using the same uniforms object as the main advection material.
+- Added a `LineSegments` boundary geometry to the advection scene, so the scene now mirrors source `GT` as main plane plus boundary line pass.
+- Added output-probe assertions for `source-GT-bounds-raw-glsl3`, shared uniforms, no blending, and two advection scene children.
+- Added shader-dump mapping for `ag-advection-bounds` to source `VT/Sf`.
+- Expanded renderer audit checks for the source `GT.createBounds()` geometry and line-add anchors.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `GT.createBounds()` geometry and line-add anchors recorded |
+| Output probe | Passed with `PROBE_WAIT=9000`; boundary pass material/shared-uniform/scene-child assertions passed |
+| Shader dump | Passed; `ag-advection-bounds` was dumped against source `VT/Sf` |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight map retained |
+| Project media probe | Passed; project detail pages retain five visible media tracks |
+| Full source-vs-rebuild capture | Passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/` |
+| Desktop center-band delta | `+0.0013` against source |
+| Mobile center-band delta | `-0.0135` against source |
+
+Decision: keep the source `GT.createBounds()` boundary pass. It closes a concrete main-fluid pass-shape residual and preserves project media. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

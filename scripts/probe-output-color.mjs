@@ -226,6 +226,7 @@ async function runProbe() {
   const mainFluidMaterials = parsed.probe.mainFluid?.materialSurface || {};
   for (const [key, expectedMode] of Object.entries({
     advection: "source-GT-raw-glsl3",
+    advectionBounds: "source-GT-bounds-raw-glsl3",
     force: "source-qT-raw-glsl3",
     divergence: "source-jT-raw-glsl3",
     poisson: "source-KT-raw-glsl3",
@@ -239,6 +240,9 @@ async function runProbe() {
   for (const key of ["advection", "divergence", "poisson", "pressure"]) {
     if (mainFluidMaterials[key]?.blending !== 0) materialSurfaceErrors.push(`mainFluid${key}Blending`);
   }
+  if (mainFluidMaterials.advectionBounds?.blending !== 0) materialSurfaceErrors.push("mainFluidAdvectionBoundsBlending");
+  if (mainFluidMaterials.advectionBounds?.sharedUniforms !== true) materialSurfaceErrors.push("mainFluidAdvectionBoundsSharedUniforms");
+  if (mainFluidMaterials.advectionBounds?.sceneChildren !== 2) materialSurfaceErrors.push("mainFluidAdvectionBoundsSceneChildren");
   if (mainFluidMaterials.force?.blending !== 2) materialSurfaceErrors.push("mainFluidForceBlending");
   const mainFluidTargets = parsed.probe.mainFluid?.targets || {};
   for (const key of ["main", "velocity", "divergence", "pressureA", "pressureB"]) {

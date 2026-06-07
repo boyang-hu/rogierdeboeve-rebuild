@@ -21,6 +21,7 @@ import {
   InstancedMesh,
   LinearFilter,
   LinearSRGBColorSpace,
+  LineSegments,
   MathUtils,
   Matrix3,
   Matrix4,
@@ -222,6 +223,7 @@ type MediaPlane = {
 
 type MainFluidPass = {
   advectionMaterial: ShaderMaterial;
+  advectionBoundsMaterial: ShaderMaterial;
   advectionScene: Scene;
   forceMaterial: ShaderMaterial;
   forceScene: Scene;
@@ -1846,6 +1848,25 @@ void main() {
   vec2 scale = 1.0 - bounds * 2.0;
   pos.xy *= scale;
   vUv = vec2(0.5) + pos.xy * 0.5;
+  gl_Position = vec4(pos, 1.0);
+}
+`;
+
+const fluidBoundsVertex = `
+precision mediump float;
+
+in vec3 position;
+in vec2 uv;
+uniform vec2 px;
+
+out vec2 vUv;
+
+void main() {
+  vec3 pos = position;
+  vUv = 0.5 + pos.xy * 0.5;
+  vec2 n = sign(pos.xy);
+  pos.xy = abs(pos.xy) - px * 1.0;
+  pos.xy *= n;
   gl_Position = vec4(pos, 1.0);
 }
 `;
@@ -4199,7 +4220,26 @@ export class WebGLBackdrop {
       scene.add(makeFullscreenTriangle(material));
       return scene;
     };
+    const makeAdvectionScene = (material: ShaderMaterial, boundsMaterial: ShaderMaterial) => {
+      const scene = makeBoundedScene(material);
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new Float32BufferAttribute([
+        -1, -1, 0,
+        -1, 1, 0,
+        -1, 1, 0,
+        1, 1, 0,
+        1, 1, 0,
+        1, -1, 0,
+        1, -1, 0,
+        -1, -1, 0,
+      ], 3));
+      const line = new LineSegments(geometry, boundsMaterial);
+      line.frustumCulled = false;
+      scene.add(line);
+      return scene;
+    };
     dumpShader("ag-advection", fluidBoundedVertex, fluidAdvectionFragment);
+    dumpShader("ag-advection-bounds", fluidBoundsVertex, fluidAdvectionFragment);
     dumpShader("ag-force", fluidForceVertex, fluidForceFragment);
     dumpShader("ag-divergence", fluidBoundedVertex, fluidDivergenceFragment);
     dumpShader("ag-poisson", fluidBoundedVertex, fluidPoissonFragment);
@@ -4216,6 +4256,15 @@ export class WebGLBackdrop {
         dt: { value: settings.delta },
       },
       vertexShader: fluidBoundedVertex,
+      fragmentShader: fluidAdvectionFragment,
+    });
+    const advectionBoundsMaterial = new RawShaderMaterial({
+      glslVersion: GLSL3,
+      blending: NoBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: advectionMaterial.uniforms,
+      vertexShader: fluidBoundsVertex,
       fragmentShader: fluidAdvectionFragment,
     });
     const forceMaterial = new RawShaderMaterial({
@@ -4280,7 +4329,8 @@ export class WebGLBackdrop {
     });
     return {
       advectionMaterial,
-      advectionScene: makeBoundedScene(advectionMaterial),
+      advectionBoundsMaterial,
+      advectionScene: makeAdvectionScene(advectionMaterial, advectionBoundsMaterial),
       forceMaterial,
       forceScene,
       divergenceMaterial,
@@ -4308,6 +4358,7 @@ export class WebGLBackdrop {
   private disposeMainFluidPass() {
     const pass = this.mainFluidPass;
     pass.advectionMaterial.dispose();
+    pass.advectionBoundsMaterial.dispose();
     pass.forceMaterial.dispose();
     pass.divergenceMaterial.dispose();
     pass.poissonMaterial.dispose();
@@ -6243,6 +6294,11 @@ export class WebGLBackdrop {
       pointerOld: pass.pointerOld.toArray(),
       materialSurface: {
         advection: sourceMaterialProbe(pass.advectionMaterial, "source-GT-raw-glsl3"),
+        advectionBounds: {
+          ...sourceMaterialProbe(pass.advectionBoundsMaterial, "source-GT-bounds-raw-glsl3"),
+          sharedUniforms: pass.advectionBoundsMaterial.uniforms === pass.advectionMaterial.uniforms,
+          sceneChildren: pass.advectionScene.children.length,
+        },
         force: sourceMaterialProbe(pass.forceMaterial, "source-qT-raw-glsl3"),
         divergence: sourceMaterialProbe(pass.divergenceMaterial, "source-jT-raw-glsl3"),
         poisson: sourceMaterialProbe(pass.poissonMaterial, "source-KT-raw-glsl3"),

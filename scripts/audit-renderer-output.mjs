@@ -498,6 +498,8 @@ const summary = {
             "fragmentShader:Sf",
             "this.createBounds()",
             "vertexShader:VT",
+            "new Float32Array([-1,-1,0,-1,1,0,-1,1,0,1,1,0,1,1,0,1,-1,0,1,-1,0,-1,-1,0])",
+            "this.line=new Wm(e,n),this.scene.add(this.line)",
           ]),
           excerpt: compact(sourceGT.text),
         },
