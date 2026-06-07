@@ -86,6 +86,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 10 | S1-71 | Home spotlight target / thumb projection depth | Source `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, then sets spotlight position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`. The rebuild had the map and position right but reset the home target to `(0,0,0)`. | Production now keeps the home spotlight target at `(0,0,-8)` in constructor/default state and `initHomeSpotlight()`. Thumb spotlight probe confirms `hasMap=true`, target `[-8 z]`, intensity `220`, and no runtime errors. | Low-medium | Keep as source-correct. Continue projection parity from remaining `SpotLight.map` transfer/light multiplication and `VA` shader bridge, not by changing source spotlight position/intensity constants. |
 | 11 | S1-72 | Main `I1/Lu` default screen path | Source `I1.initSettings()` defaults main `renderToScreen=true` with bloom/luminosity/blur/fxaa disabled, and `I1.update()` renders its `C1/A1` `compositeMaterial` directly to screen in that default branch. The rebuild still sent the completed `A1/C1` target through an additional generic `mainCompositeFragment`, adding a non-source rgbshift/fluid-light tail even when all main post passes were disabled. | Production now short-circuits the default main path and renders `preCompositeScene` directly to the canvas when source main blur/bloom/fxaa are all disabled. The optional main-composite path remains available only for enabled source main post passes. | Low-medium | Keep as source-correct. QA shows stable home/project captures and center-band parity remains close; remaining Phase 1 work should target the hard horizontal boundary and residual `VA`/projection feel, not reintroduce the extra main composite pass. |
 | 12 | S1-73 | Source `IT` camera controller matrix path | Source `IT` drives the real camera through `group -> rotateGroup -> innerGroup`, keeps all three groups `matrixAutoUpdate=false`, sets `rotateGroup.rotation.y=Math.PI`, lerps `group.position`, applies roll to `rotateGroup.rotation.z`, then decomposes `innerGroup.matrixWorld` into the camera. | Production now uses the same controller group structure instead of directly calling `camera.lookAt()` and mutating `camera.rotation.z`. Output probe exposes camera quaternion/controller/rotate-group state. | Low-medium | Keep as source-correct. This fixes camera matrix ownership for spotlight/floor-reflection projection attribution; remaining visual gaps should continue from `VA`/projection and render-target transfer, not from direct camera rotation tweaks. |
+| 13 | S1-74 | Source `IT` pointer sampling lifecycle | Source `IT.addListeners()` registers `pointerdown`, `pointermove`, and `pointerup`; down/up both call `onPointerMove`, so camera mouse state updates immediately on press/release as well as move. | Production now binds/removes all three pointer events to the shared pointer handler instead of only listening to `pointermove`. | Low | Keep as source-correct interaction sampling. This does not claim a static visual fix; it keeps camera/mouse/fluid input lifecycle aligned for interactive QA. |
 
 ### Phase 1 Open Blocker Board
 
@@ -200,6 +201,31 @@ Verification:
 | Mobile center-band delta | `-0.0129` against source |
 
 Decision: keep the source-shaped `IT` matrix path. This is an attribution and projection-ownership fix; Phase 1 remains open for the remaining mobile/background distribution and cube/thumb projection feel.
+
+### S1-74 Source IT Pointer Sampling Lifecycle
+
+This batch corrected one source-confirmed camera/mouse input lifecycle mismatch.
+
+Source/runtime evidence:
+
+- Source `IT.addListeners()` registers `pointerdown`, `pointermove`, and `pointerup`.
+- Source `onPointerDown` and `onPointerUp` both delegate to `onPointerMove`, so the same mouse state used by camera parallax/roll updates on press, movement, and release.
+- The rebuild previously updated `pointerPixels`, `targetPointer`, and screen mouse simulation target only on `pointermove`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Output probe | No failures/exceptions |
+| Thumb spotlight probe | `hasMap=true`, target `[0,0,-8]`, intensity `220`, no runtime errors |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` keep 5 visible media tracks |
+| Full source-vs-rebuild capture | Home/about/project pages captured without failures/exceptions |
+| Desktop center-band delta | `-0.0008` against source |
+| Mobile center-band delta | `-0.0133` against source |
+
+Decision: keep the source pointer lifecycle. This is an interactive input parity fix, not a static brightness fix. Phase 1 remains open for the remaining mobile/background distribution, hard band attribution, and cube/thumb projection feel.
 
 ### S1-54 Source Non-Fix Audit
 

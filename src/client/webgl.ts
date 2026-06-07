@@ -2977,7 +2977,9 @@ export class WebGLBackdrop {
   destroy() {
     cancelAnimationFrame(this.raf);
     window.removeEventListener("resize", this.resize);
+    window.removeEventListener("pointerdown", this.onPointerMove);
     window.removeEventListener("pointermove", this.onPointerMove);
+    window.removeEventListener("pointerup", this.onPointerMove);
     window.removeEventListener("scroll", this.onScroll);
     this.textureCache.forEach((texture) => texture.dispose());
     this.noiseTexture.dispose();
@@ -4590,7 +4592,9 @@ export class WebGLBackdrop {
 
   private bind() {
     window.addEventListener("resize", this.resize);
+    window.addEventListener("pointerdown", this.onPointerMove, { passive: true });
     window.addEventListener("pointermove", this.onPointerMove, { passive: true });
+    window.addEventListener("pointerup", this.onPointerMove, { passive: true });
     window.addEventListener("scroll", this.onScroll, { passive: true });
   }
 
