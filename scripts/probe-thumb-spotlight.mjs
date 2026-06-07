@@ -140,6 +140,15 @@ async function runProbe() {
   if (probe.thumbPositionMode !== "source-w1-centered-x-wrap") {
     sourceShapeErrors.push(`thumbPositionMode=${probe.thumbPositionMode}`);
   }
+  if (probe.thumbHierarchyMode !== "source-T1-w1-scrollWrap-E1-mesh") {
+    sourceShapeErrors.push(`thumbHierarchyMode=${probe.thumbHierarchyMode}`);
+  }
+  if (probe.thumbWrapParentIsScene !== true) {
+    sourceShapeErrors.push(`thumbWrapParentIsScene=${probe.thumbWrapParentIsScene}`);
+  }
+  if (probe.thumbScrollWrapParentIsThumbWrap !== true) {
+    sourceShapeErrors.push(`thumbScrollWrapParentIsThumbWrap=${probe.thumbScrollWrapParentIsThumbWrap}`);
+  }
   if (probe.thumbSceneMode !== "source-T1-square-height-target-orthographic") {
     sourceShapeErrors.push(`thumbSceneMode=${probe.thumbSceneMode}`);
   }

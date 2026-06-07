@@ -151,6 +151,9 @@ type ThumbProbeWindow = Window & {
     galleryProgress: number;
     thumbProgress: number;
     thumbPositionMode: string;
+    thumbHierarchyMode: string;
+    thumbWrapParentIsScene: boolean;
+    thumbScrollWrapParentIsThumbWrap: boolean;
     itemWidth: number;
     totalItems: number;
     totalWidth: number;
@@ -3231,6 +3234,7 @@ export class WebGLBackdrop {
   private aboutBlocks?: AuxiliaryBlockItem;
   private floatingBlocks?: AuxiliaryBlockItem;
   private thumbWrap = new Group();
+  private thumbScrollWrap = new Group();
   private workItems: WorkItem[] = [];
   private mediaPlanes: MediaPlane[] = [];
   private loader = new TextureLoader();
@@ -3610,6 +3614,7 @@ export class WebGLBackdrop {
     this.sceneWrap.add(this.floorGroup);
     this.sceneWrap.add(this.environmentGroup);
     this.thumbScene.background = sourceLinearToSrgbColor("#222222");
+    this.thumbWrap.add(this.thumbScrollWrap);
     this.thumbScene.add(this.thumbWrap);
 
     this.createWorkScene();
@@ -4098,7 +4103,7 @@ export class WebGLBackdrop {
       group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
       group.lookAt(0, 0, 0);
       this.blocksWrap.add(group);
-      this.thumbWrap.add(thumb);
+      this.thumbScrollWrap.add(thumb);
       this.workItems.push({
         slug: card.dataset.slug ?? String(index),
         payload,
@@ -6473,6 +6478,9 @@ void main() {
         thumbMouseLightness: SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS,
       },
       thumbPositionMode: "source-w1-centered-x-wrap",
+      thumbHierarchyMode: "source-T1-w1-scrollWrap-E1-mesh",
+      thumbWrapParentIsScene: this.thumbWrap.parent === this.thumbScene,
+      thumbScrollWrapParentIsThumbWrap: this.thumbScrollWrap.parent === this.thumbWrap,
       thumbSceneMode: "source-T1-square-height-target-orthographic",
       itemWidth: this.thumbItemWidth,
       totalItems: this.thumbTotalItems,
