@@ -701,6 +701,17 @@ const summary = {
         "this.maxDpr=Le.LOW_RES?1.5:2",
         "this.dpr=Math.min(this.maxDpr,window.devicePixelRatio)",
         "static updateDpr(e){this.maxDpr=e,this.dpr=um&&!this.isMobile?1:this.maxDpr,this.onResize()}",
+        "addEventListener(\"mousemove\",this.onMouseMove)",
+        "this.mouse.normalized={x:this.mouse.x/this.w,y:1-this.mouse.y/this.h}",
+        "pe.emit(xe.MOUSE_MOVE,this.mouse,{w:this.w,h:this.h})",
+      ]),
+      rebuildMouseChecks: checks(rebuildWebgl, [
+        "window.addEventListener(\"mousemove\", this.onMouseMove, { passive: true })",
+        "const sourceWidth = Math.max(1, this.root.offsetWidth || window.innerWidth)",
+        "const sourceHeight = Math.max(1, this.root.offsetHeight || window.innerHeight)",
+        "this.targetPointer.x = (event.clientX / sourceWidth - 0.5) * 2",
+        "this.targetPointer.y = -(event.clientY / sourceHeight - 0.5) * 2",
+        "this.screenMouseSimTargetPos.set(event.clientX / sourceWidth, 1 - event.clientY / sourceHeight)",
       ]),
       excerpt: compact(sourcePe.text),
     },
@@ -1034,10 +1045,14 @@ const summary = {
             rebuildRaycastChecks: checks(rebuildWebgl, [
               "private pointerRay = new Vector2()",
               "this.pointerRay.set(this.targetPointer.x, this.targetPointer.y)",
+              "private onMouseMove = (event: MouseEvent) => {",
+              "this.updatePointerProjection()",
               "this.raycaster.setFromCamera(this.pointerRay, this.homeCamera)",
               "const hit = this.raycaster.intersectObject(item.rayPlane, false)[0]",
-              "raycastMode: \"source-Ka-per-item-raycast-immediate-pointer\"",
+              "raycastMode: \"source-Ka-onMouseMove-per-item-raycast-immediate-pointer\"",
+              "raycastEventMode: \"source-Ka-raycast-during-mousemove-not-raf-tail\"",
             ]),
+            rebuildNoRafRaycast: !rebuildWebgl.includes("this.updateAuxiliaryBlocks(time, delta);\n    this.updatePointerProjection();"),
             excerpt: compact(sourceKa),
           }
         : null;

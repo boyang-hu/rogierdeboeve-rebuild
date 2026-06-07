@@ -289,13 +289,21 @@ async function runProbe() {
       .map(([key]) => key);
     if (gaShape.targetSizingMode !== "source-GA-resize-plane-scale-no-pre-rounding") shapeErrors.push("targetSizingMode");
     if (gaShape.updateLerpMode !== "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp") shapeErrors.push("updateLerpMode");
-    if (gaShape.raycastMode !== "source-Ka-per-item-raycast-immediate-pointer") shapeErrors.push("raycastMode");
+    if (gaShape.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") shapeErrors.push("raycastMode");
+    if (gaShape.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") shapeErrors.push("raycastEventMode");
+    if (gaShape.raycastNormalizationMode !== "source-Pe-width-height") shapeErrors.push("raycastNormalizationMode");
     if (shapeErrors.length) {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
   }
-  if (activeMouse?.raycastMode !== "source-Ka-per-item-raycast-immediate-pointer") {
+  if (activeMouse?.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") {
     throw new Error(`GA/Ka raycast mode mismatch: ${activeMouse?.raycastMode || "missing"}`);
+  }
+  if (activeMouse?.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") {
+    throw new Error(`GA/Ka raycast event mode mismatch: ${activeMouse?.raycastEventMode || "missing"}`);
+  }
+  if (activeMouse?.raycastNormalizationMode !== "source-Pe-width-height") {
+    throw new Error(`GA/Ka raycast normalization mismatch: ${activeMouse?.raycastNormalizationMode || "missing"}`);
   }
   if (activeMouse?.allVisibleHaveIndependentTargets !== true) {
     throw new Error("GA/Ka visible item target ownership mismatch");

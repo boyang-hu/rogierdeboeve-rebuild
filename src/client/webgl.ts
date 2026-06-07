@@ -4025,9 +4025,7 @@ export class WebGLBackdrop {
   destroy() {
     cancelAnimationFrame(this.raf);
     window.removeEventListener("resize", this.resize);
-    window.removeEventListener("pointerdown", this.onPointerMove);
-    window.removeEventListener("pointermove", this.onPointerMove);
-    window.removeEventListener("pointerup", this.onPointerMove);
+    window.removeEventListener("mousemove", this.onMouseMove);
     window.removeEventListener("scroll", this.onScroll);
     this.textureCache.forEach((texture) => texture.dispose());
     this.noiseTexture.dispose();
@@ -5841,18 +5839,19 @@ void main() {
 
   private bind() {
     window.addEventListener("resize", this.resize);
-    window.addEventListener("pointerdown", this.onPointerMove, { passive: true });
-    window.addEventListener("pointermove", this.onPointerMove, { passive: true });
-    window.addEventListener("pointerup", this.onPointerMove, { passive: true });
+    window.addEventListener("mousemove", this.onMouseMove, { passive: true });
     window.addEventListener("scroll", this.onScroll, { passive: true });
   }
 
-  private onPointerMove = (event: PointerEvent) => {
+  private onMouseMove = (event: MouseEvent) => {
+    const sourceWidth = Math.max(1, this.root.offsetWidth || window.innerWidth);
+    const sourceHeight = Math.max(1, this.root.offsetHeight || window.innerHeight);
     this.pointerPixels.set(event.clientX, event.clientY);
-    this.targetPointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
-    this.targetPointer.y = -(event.clientY / window.innerHeight - 0.5) * 2;
+    this.targetPointer.x = (event.clientX / sourceWidth - 0.5) * 2;
+    this.targetPointer.y = -(event.clientY / sourceHeight - 0.5) * 2;
     this.pointerRay.set(this.targetPointer.x, this.targetPointer.y);
-    this.screenMouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
+    this.screenMouseSimTargetPos.set(event.clientX / sourceWidth, 1 - event.clientY / sourceHeight);
+    this.updatePointerProjection();
   };
 
   private onScroll = () => {
@@ -6267,7 +6266,6 @@ void main() {
     this.updateSpotLightBasis();
     this.updateVisibleWorkItems(time);
     this.updateAuxiliaryBlocks(time, delta);
-    this.updatePointerProjection();
     this.updateWorkMouseSimulation(time, delta);
     this.syncWorkMouseSimulationUniforms();
     this.sourcePostRenderFrame += 1;
@@ -6670,6 +6668,8 @@ void main() {
         updateTargetMode: "source-IT-origin-plus-targetXY-and-y-z-depth-coupling",
         entrySettingsMode: "source-SD-yD-targetXY-1-0_5-rotateAngle-20",
         matrixMode: "source-IT-group-rotateGroup-innerGroup-manual-matrices",
+        mouseEventMode: "source-Pe-window-mousemove-only",
+        mouseNormalizationMode: "source-Pe-gl-root-width-height",
         lastLerp: this.cameraLastLerp,
         mousePixels: this.pointerPixels.toArray(),
         pointerRay: this.pointerRay.toArray(),
@@ -7449,7 +7449,9 @@ void main() {
       },
       active: active && activeTarget && activeCoords ? {
         slug: active.slug,
-        raycastMode: "source-Ka-per-item-raycast-immediate-pointer",
+        raycastMode: "source-Ka-onMouseMove-per-item-raycast-immediate-pointer",
+        raycastEventMode: "source-Ka-raycast-during-mousemove-not-raf-tail",
+        raycastNormalizationMode: "source-Pe-width-height",
         pointerRay: this.pointerRay.toArray(),
         smoothedPointer: this.pointer.toArray(),
         visibleWorkItemCount: visibleWorkItems.length,
@@ -7532,8 +7534,12 @@ void main() {
             && activeTarget.texture.generateMipmaps === false,
           renderClearModeMatchesSource: active.mouseRenderClearMode === "source-sA-no-explicit-clear",
           updateLerpMode: "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp",
-          raycastMode: "source-Ka-per-item-raycast-immediate-pointer",
+          raycastMode: "source-Ka-onMouseMove-per-item-raycast-immediate-pointer",
+          raycastEventMode: "source-Ka-raycast-during-mousemove-not-raf-tail",
+          raycastNormalizationMode: "source-Pe-width-height",
           raycastModeMatchesSource: true,
+          raycastEventModeMatchesSource: true,
+          raycastNormalizationModeMatchesSource: true,
           allVisibleHaveIndependentTargets: visibleWorkItems.every((item) => item.mouseTarget instanceof Vector2),
           uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
           mousePlaneScaleMatchesSource:
