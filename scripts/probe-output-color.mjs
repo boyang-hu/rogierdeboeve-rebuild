@@ -239,6 +239,20 @@ async function runProbe() {
     throw new Error(`p1.update source culling mismatch: ${cullingErrors.join(", ")}`);
   }
   const gaShape = parsed.probe.mouseSimulation?.active?.sourceShape;
+  const screenMouse = parsed.probe.mouseSimulation?.screen;
+  const activeMouse = parsed.probe.mouseSimulation?.active;
+  const uniformSurfaceErrors = [];
+  for (const [label, mouse] of [["screen", screenMouse], ["active", activeMouse]]) {
+    if (mouse?.uniformSurfaceMode !== "source-Ka-simulationMaterial-uniform-surface") uniformSurfaceErrors.push(`${label}UniformSurfaceMode`);
+    if (mouse?.hasNoiseTexture !== true) uniformSurfaceErrors.push(`${label}NoiseTexture`);
+    if (mouse?.noiseTextureIsBlueNoise !== true) uniformSurfaceErrors.push(`${label}NoiseTextureBinding`);
+    if (mouse?.diffusion !== 0) uniformSurfaceErrors.push(`${label}Diffusion`);
+    if (mouse?.diffusionSize !== 0) uniformSurfaceErrors.push(`${label}DiffusionSize`);
+    if (JSON.stringify(mouse?.color) !== JSON.stringify([1, 1, 1])) uniformSurfaceErrors.push(`${label}Color`);
+  }
+  if (uniformSurfaceErrors.length) {
+    throw new Error(`Ka simulation uniform source-shape mismatch: ${uniformSurfaceErrors.join(", ")}`);
+  }
   if (gaShape) {
     const shapeErrors = Object.entries(gaShape)
       .filter(([, value]) => typeof value === "boolean" && value !== true)
@@ -247,7 +261,6 @@ async function runProbe() {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
   }
-  const activeMouse = parsed.probe.mouseSimulation?.active;
   if (activeMouse && activeMouse.renderClearMode !== "source-sA-no-explicit-clear") {
     throw new Error(`Ka/sA mouse simulation clear mode mismatch: ${activeMouse.renderClearMode}`);
   }
