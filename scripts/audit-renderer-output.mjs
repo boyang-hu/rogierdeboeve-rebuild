@@ -152,7 +152,7 @@ const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
 const sourceThumbT1 = extractAround(bundle, "class T1 extends Uu", 500, 1000);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
-const sourceU1 = extractAround(bundle, "class u1 extends", 400, 1700);
+const sourceU1 = extractAround(bundle, "class u1 extends", 900, 1700);
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
 const sourceA1Floor = extractAround(bundle, "class a1 extends", 300, 1400);
 const sourceO1FloorMaterial = extractAround(bundle, "class o1 extends", 700, 1600);
@@ -736,6 +736,10 @@ const summary = {
           "this.spotLight.position.set(0,0,3.7)",
           "this.spotLight.angle=Math.PI/4",
           "this.spotLight.penumbra=.95",
+          "this.directionalLight.position.set(10.5,10,1)",
+          "this.directionalLight2=new So(new ye(\"white\"),1)",
+          "this.directionalLight2.position.set(-10.5,5,-1)",
+          "this.scene.add(this.directionalLight)}",
         ]),
         excerpt: compact(sourceP1SetLights.text),
       },
@@ -794,6 +798,10 @@ const summary = {
       index: sourceU1.index,
       checks: checks(sourceU1.text, [
         "class u1 extends Ao",
+        "ROUGHNESS_INTENSITY:.94",
+        "METALNESS_INTENSITY:1",
+        "EMISSIVE_INTENSITY:.5",
+        "constructor(e){super(e)",
         "this.dithering=!0",
         "this.customUniforms={uTime:new I(0)",
         "uMultiplier:new I(2)",

@@ -536,6 +536,11 @@ async function runProbe() {
   if (environmentUniforms?.fog !== false) environmentErrors.push("materialFog");
   if (environmentUniforms?.dithering !== true) environmentErrors.push("materialDithering");
   if (environmentUniforms && Math.abs((environmentUniforms.envMapIntensity ?? 0) - 1) > 0.0001) environmentErrors.push("envMapIntensity");
+  if (environmentUniforms?.constructorParamsMode !== "source-h1-passes-side-envMapIntensity-fog-only") environmentErrors.push("constructorParamsMode");
+  if (environmentUniforms?.defaultStandardParamsMode !== "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants") environmentErrors.push("defaultStandardParamsMode");
+  if (environmentUniforms && Math.abs((environmentUniforms.roughness ?? -1) - 1) > 0.0001) environmentErrors.push("roughnessDefault");
+  if (environmentUniforms && Math.abs((environmentUniforms.metalness ?? -1) - 0) > 0.0001) environmentErrors.push("metalnessDefault");
+  if (environmentUniforms && Math.abs((environmentUniforms.emissiveIntensity ?? -1) - 1) > 0.0001) environmentErrors.push("emissiveIntensityDefault");
   if (environmentUniforms && Math.abs((environmentUniforms.groupPositionY ?? 0) + 12.65) > 0.0001) environmentErrors.push("groupPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshPositionY ?? 0) > 0.0001) environmentErrors.push("meshPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshRotationY ?? 0) > 0.0001) environmentErrors.push("meshRotationY");
@@ -547,8 +552,20 @@ async function runProbe() {
   if (environmentHierarchy?.geometry?.detail !== 10) environmentErrors.push("reflectionGeometryDetail");
   if (environmentHierarchy?.material?.mode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("reflectionMaterialMode");
   if (environmentHierarchy?.material?.customUniformsAlias !== true) environmentErrors.push("reflectionCustomUniformsAlias");
+  if (environmentHierarchy?.material?.constructorParamsMode !== "source-h1-passes-side-envMapIntensity-fog-only") environmentErrors.push("reflectionConstructorParamsMode");
+  if (environmentHierarchy?.material?.defaultStandardParamsMode !== "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants") environmentErrors.push("reflectionDefaultStandardParamsMode");
   if (environmentErrors.length) {
     throw new Error(`Environment hierarchy source-shape mismatch: ${environmentErrors.join(", ")}`);
+  }
+  const lights = parsed.probe.reflectionState?.lights;
+  const lightErrors = [];
+  if (lights?.ownershipMode !== "source-p1-adds-ambient-spot-target-directionalLight-only") lightErrors.push("ownershipMode");
+  if (lights?.directionalLight1InScene !== true) lightErrors.push("directionalLight1InScene");
+  if (lights?.directionalLight2InScene !== false) lightErrors.push("directionalLight2InScene");
+  if (!Array.isArray(lights?.directionalLight1Position) || Math.abs((lights.directionalLight1Position[0] ?? 0) - 10.5) > 0.0001 || Math.abs((lights.directionalLight1Position[1] ?? 0) - 10) > 0.0001 || Math.abs((lights.directionalLight1Position[2] ?? 0) - 1) > 0.0001) lightErrors.push("directionalLight1Position");
+  if (!Array.isArray(lights?.directionalLight2Position) || Math.abs((lights.directionalLight2Position[0] ?? 0) + 10.5) > 0.0001 || Math.abs((lights.directionalLight2Position[1] ?? 0) - 5) > 0.0001 || Math.abs((lights.directionalLight2Position[2] ?? 0) + 1) > 0.0001) lightErrors.push("directionalLight2Position");
+  if (lightErrors.length) {
+    throw new Error(`p1 light ownership source-shape mismatch: ${lightErrors.join(", ")}`);
   }
   const floorUniforms = parsed.probe.uniforms?.floor;
   const floorErrors = [];

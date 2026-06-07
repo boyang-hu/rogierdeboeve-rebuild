@@ -107,6 +107,7 @@ type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { val
 type EnvironmentMaterial = MeshStandardMaterial & {
   uniforms: Record<string, { value: any }>;
   customUniforms: Record<string, { value: any }>;
+  sourceConstructorParams?: Record<string, any>;
 };
 type ShaderDumpWindow = Window & {
   __rogierVaShaderDump?: Array<{
@@ -5216,6 +5217,11 @@ void main() {
     }) as EnvironmentMaterial;
     material.uniforms = uniforms;
     material.customUniforms = uniforms;
+    material.sourceConstructorParams = {
+      side: BackSide,
+      envMapIntensity: 1,
+      fog: false,
+    };
     material.onBeforeCompile = (shader) => {
       patchEnvironmentShader(shader, material.customUniforms);
     };
@@ -7016,6 +7022,12 @@ void main() {
           fog: this.environmentMaterial.fog,
           dithering: this.environmentMaterial.dithering,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
+          constructorParamsMode: "source-h1-passes-side-envMapIntensity-fog-only",
+          constructorParams: this.environmentMaterial.sourceConstructorParams ?? null,
+          defaultStandardParamsMode: "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants",
+          roughness: this.environmentMaterial.roughness,
+          metalness: this.environmentMaterial.metalness,
+          emissiveIntensity: this.environmentMaterial.emissiveIntensity,
           hierarchyMode: "source-h1-group-owns-transform",
           rotationMode: "source-p1-demorgen-initial-adjustment-only",
           groupRotationY: this.environmentGroup.rotation.y,
@@ -7162,6 +7174,13 @@ void main() {
         rotation: [this.sceneWrap.rotation.x, this.sceneWrap.rotation.y, this.sceneWrap.rotation.z],
         children: this.sceneWrap.children.map(objectSummary),
       },
+      lights: {
+        ownershipMode: "source-p1-adds-ambient-spot-target-directionalLight-only",
+        directionalLight1InScene: this.directionalLight.parent === this.homeScene,
+        directionalLight2InScene: this.directionalLight2.parent === this.homeScene,
+        directionalLight1Position: this.directionalLight.position.toArray(),
+        directionalLight2Position: this.directionalLight2.position.toArray(),
+      },
       auxiliary: {
         aboutVisible: this.aboutBlocks?.group.visible ?? null,
         floatingVisible: this.floatingBlocks?.group.visible ?? null,
@@ -7205,6 +7224,12 @@ void main() {
           fog: this.environmentMaterial.fog,
           dithering: this.environmentMaterial.dithering,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
+          constructorParamsMode: "source-h1-passes-side-envMapIntensity-fog-only",
+          constructorParams: this.environmentMaterial.sourceConstructorParams ?? null,
+          defaultStandardParamsMode: "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants",
+          roughness: this.environmentMaterial.roughness,
+          metalness: this.environmentMaterial.metalness,
+          emissiveIntensity: this.environmentMaterial.emissiveIntensity,
         },
       },
       camera: {
