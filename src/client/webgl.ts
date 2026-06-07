@@ -1919,6 +1919,9 @@ const fluidForceFragment = `
 precision mediump float;
 
 uniform vec2 force;
+uniform vec2 center;
+uniform vec2 scale;
+uniform vec2 px;
 
 in vec2 vUv;
 out vec4 FragColor;

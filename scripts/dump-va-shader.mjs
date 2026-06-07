@@ -934,6 +934,8 @@ try {
     },
   };
   writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(summary, null, 2));
+  process.env.IN_DIR = outDir;
+  await import("./summarize-phase1-shader-gaps.mjs");
   console.log(JSON.stringify(summary, null, 2));
   ws.close();
 } finally {
