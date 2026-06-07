@@ -6660,13 +6660,18 @@ export class WebGLBackdrop {
     const box = new Box3().setFromObject(active.mesh);
     const center = box.getCenter(new Vector3());
     const size = box.getSize(new Vector3());
-    const samples = [
+    const sampleOffsets = [
       { label: "center", offset: new Vector3(0, 0, 0) },
       { label: "left", offset: new Vector3(-0.5, 0, 0) },
       { label: "right", offset: new Vector3(0.5, 0, 0) },
       { label: "top", offset: new Vector3(0, 0.5, 0) },
       { label: "bottom", offset: new Vector3(0, -0.5, 0) },
-    ].map(({ label, offset }) => {
+      { label: "top-left", offset: new Vector3(-0.5, 0.5, 0) },
+      { label: "top-right", offset: new Vector3(0.5, 0.5, 0) },
+      { label: "bottom-left", offset: new Vector3(-0.5, -0.5, 0) },
+      { label: "bottom-right", offset: new Vector3(0.5, -0.5, 0) },
+    ];
+    const samples = sampleOffsets.map(({ label, offset }) => {
       const world = center.clone().add(new Vector3(size.x * offset.x, size.y * offset.y, size.z * offset.z));
       const projected = world.clone().applyMatrix4(this.spotLight.shadow.matrix);
       const uv = new Vector2(projected.x, projected.y);
@@ -6684,11 +6689,16 @@ export class WebGLBackdrop {
     const mapLumaMean = inMapSamples.length
       ? inMapSamples.reduce((sum, sample) => sum + sample.mapPixel.luma, 0) / inMapSamples.length
       : 0;
+    const uvBounds = samples.reduce((bounds, sample) => ({
+      min: [Math.min(bounds.min[0], sample.uv[0]), Math.min(bounds.min[1], sample.uv[1])],
+      max: [Math.max(bounds.max[0], sample.uv[0]), Math.max(bounds.max[1], sample.uv[1])],
+    }), { min: [Infinity, Infinity], max: [-Infinity, -Infinity] });
     return {
       activeSlug: active.slug,
       spotlight: {
         intensity: this.spotLight.intensity,
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
+        mapMode: this.spotLight.map === this.thumbCompositeTarget.texture ? "source-thumb-composite-target" : "missing-or-debug-disabled",
         position: this.spotLight.position.toArray(),
         target: this.spotLight.target.position.toArray(),
         parallax: this.spotLightParallax,
@@ -6700,6 +6710,10 @@ export class WebGLBackdrop {
       },
       samples,
       inMapCount: inMapSamples.length,
+      sampleGridMode: "source-spotlight-map-3x3-active-bounds",
+      sampleCount: samples.length,
+      inMapCoverage: samples.length ? inMapSamples.length / samples.length : 0,
+      uvBounds,
       mapLumaMean,
     };
   }

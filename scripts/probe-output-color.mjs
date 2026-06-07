@@ -153,6 +153,18 @@ async function runProbe() {
   if (sourceDefaultErrors.length) {
     throw new Error(`Se/xt source default mismatch: ${sourceDefaultErrors.join(", ")}`);
   }
+  const spotlight = parsed.probe.spotlightProjection;
+  const spotlightErrors = [];
+  if (!spotlight) spotlightErrors.push("missing");
+  if (spotlight?.spotlight?.mapMode !== "source-thumb-composite-target") spotlightErrors.push("mapMode");
+  if (spotlight?.sampleGridMode !== "source-spotlight-map-3x3-active-bounds") spotlightErrors.push("sampleGridMode");
+  if (spotlight?.sampleCount !== 9) spotlightErrors.push("sampleCount");
+  if (spotlight?.inMapCount !== 9) spotlightErrors.push("inMapCount");
+  if (spotlight?.inMapCoverage !== 1) spotlightErrors.push("inMapCoverage");
+  if ((spotlight?.mapLumaMean ?? 0) <= 0) spotlightErrors.push("mapLumaMean");
+  if (spotlightErrors.length) {
+    throw new Error(`Spotlight/thumb projection source-shape mismatch: ${spotlightErrors.join(", ")}`);
+  }
   const camera = parsed.probe.camera || {};
   const resizeErrors = [];
   const expectedMobile = viewport.width < 800;
