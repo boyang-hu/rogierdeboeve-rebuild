@@ -89,6 +89,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 13 | S1-74 | Source `IT` pointer sampling lifecycle | Source `IT.addListeners()` registers `pointerdown`, `pointermove`, and `pointerup`; down/up both call `onPointerMove`, so camera mouse state updates immediately on press/release as well as move. | Production now binds/removes all three pointer events to the shared pointer handler instead of only listening to `pointermove`. | Low | Keep as source-correct interaction sampling. This does not claim a static visual fix; it keeps camera/mouse/fluid input lifecycle aligned for interactive QA. |
 | 14 | S1-75 | `OA/CA` core formula audit tooling | Source `OA` uses `CA` for the work render-manager composite. Manual diff showed the remaining `OA` shader delta is helper expansion / unused variable surface, while the live formula anchors are the same: scene rgbshift, bloom rgbshift/addition, fluid luminance add, darken opacity, multiply-darken, lighten-black, saturation, and tonemapping. | `scripts/dump-va-shader.mjs` now reports `compositeCoreChecks` for dumped shaders. Current `OA-work-composite` reports all core anchors present in both source and rebuild. | Low | Treat `OA/CA` formula edits and gamma-like transfer promotion as unsupported. Continue Phase 1 from upstream `VA`/spotlight-map content/transfer or source renderer/target interpretation evidence. |
 | 15 | S1-76 | `VA/HA` vertex core audit tooling | Source `HA` and the rebuild work vertex shader both include the core screen-UV, local mouse, perlin-height, pre-perlin mouse scale, reveal mix, mouse-z, spread, and source-world divide anchors after normalization. The older text-level key check could misread formatting/spelling differences such as `fadeDiplacement`/`fadeDisplacement` and `.05`/`0.05` as a production mismatch. | `scripts/dump-va-shader.mjs` now reports `vertexAnalysis.coreChecks` separately from broader residual diffs. Current checks show every core anchor present in both source and rebuild. | Low | Treat the old `transformed *= 1.0 - mouse` key-check mismatch as a diagnostic false positive. Do not tune the vertex path without a narrower source-backed residual tied to visible output. |
+| 16 | S1-77 | `T1/x1/Lo` thumb render pass clearing | Source `Lo.update()` renders the thumb raw target and composite target with `setRenderTarget(...); render(...)` and does not explicitly call `renderer.clear()` between those passes. The rebuild still cleared both thumb targets every frame before rendering. | Production now removes the rebuild-only explicit clears from `renderThumbTargets()`, keeping source `Lo/x1` pass ownership for the spotlight map target. | Low-medium | Keep as source-correct after QA. Do not generalize this to `Lu/kA` work render-manager clears without porting the full source render-manager structure. |
 
 ### Phase 1 Open Blocker Board
 
@@ -268,6 +269,30 @@ Verification:
 | Shader dump | `VA.vertexAnalysis.coreChecks` all true for source and rebuild |
 
 Decision: keep this as audit tooling only. The remaining Phase 1 cube/projection gap should not be chased by reordering or retuning the already matched `HA` vertex core unless a narrower source difference is found.
+
+### S1-77 T1/x1/Lo Thumb Render Pass Clear Alignment
+
+This batch corrected one source-confirmed thumb render-manager pass-order detail.
+
+Source/runtime evidence:
+
+- Source `Lo.update()` renders to `renderTargetA`, wires that texture into the composite material, then renders to `renderTargetComposite` without explicit `renderer.clear()` calls.
+- Source `x1` extends `Lo` for the work-thumb scene, and `T1.resize()` sizes the render manager to a square `height x height` target with DPR `1`.
+- The rebuild already had the source square target, orthographic camera, thumb scale, visible range, and spotlight map ownership, but still cleared both thumb targets in the custom `renderThumbTargets()` implementation.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Thumb spotlight probe | `hasMap=true`, target `[0,0,-8]`, intensity `220`, no failures/exceptions |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` keep 5 visible media tracks |
+| Full source-vs-rebuild capture | Home/about/project pages captured without failures/exceptions |
+| Desktop center-band delta | `-0.0009` against source |
+| Mobile center-band delta | `-0.0129` against source |
+
+Decision: keep the no-clear thumb pass alignment. This applies only to the `T1/x1/Lo` thumb render-manager path; it does not justify a partial no-clear rewrite of the more complex `Lu/kA` work render manager.
 
 ### S1-54 Source Non-Fix Audit
 

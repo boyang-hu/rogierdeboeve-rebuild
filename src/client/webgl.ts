@@ -5218,10 +5218,8 @@ export class WebGLBackdrop {
 
   private renderThumbTargets() {
     this.renderer.setRenderTarget(this.thumbTarget);
-    this.renderer.clear();
     this.renderer.render(this.thumbScene, this.thumbCamera);
     this.renderer.setRenderTarget(this.thumbCompositeTarget);
-    this.renderer.clear();
     this.renderer.render(this.thumbCompositeScene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
   }
