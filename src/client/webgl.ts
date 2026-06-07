@@ -890,6 +890,28 @@ float snoise(vec2 v) {
 `;
 
 const sourceNoiseShaderHelper = `
+float randomF(vec2 st) {
+  return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float customRoughness(float roughness, vec2 vUv, float size, float time) {
+  float roughnessFactor = roughness;
+  vec2 triangle = vec2(mod(vUv.x * size, 1.0), mod(vUv.y * size, 1.0));
+  vec2 cell = floor(vUv * size);
+  float shade = randomF(cell) * 0.8 + 0.1;
+  vec4 roughnessColor = vec4(1.0);
+
+  if (triangle.y > triangle.x) {
+    roughnessColor = vec4(vec3(shade), 1.0);
+  } else {
+    roughnessColor = vec4(vec3(1.0 - shade), 1.0);
+  }
+
+  roughnessFactor *= roughnessColor.g;
+
+  return roughnessFactor;
+}
+
 float noiseShaderRandom(vec2 n) {
   return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
 }
@@ -6933,6 +6955,8 @@ void main() {
           reflectionTargetSize: {
             width: this.floorReflectionTarget.width,
             height: this.floorReflectionTarget.height,
+            constructionDepthBuffer: false,
+            runtimeDepthBuffer: this.floorReflectionTarget.depthBuffer,
           },
           reflectionReadTargetSize: {
             width: this.floorReflectionReadTarget.width,
@@ -7220,6 +7244,8 @@ void main() {
       },
       targets: {
         raw: renderTargetSummary(this.floorReflectionTarget),
+        rawConstructionDepthBuffer: false,
+        rawRuntimeDepthBuffer: this.floorReflectionTarget.depthBuffer,
         read: renderTargetSummary(this.floorReflectionReadTarget),
         write: renderTargetSummary(this.floorReflectionWriteTarget),
         floorReflectUsesRead: this.floorMaterial.uniforms.tReflect.value === this.floorReflectionReadTarget.texture,

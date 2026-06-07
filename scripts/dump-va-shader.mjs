@@ -861,6 +861,7 @@ function analyzeEnvironmentCore(sourceShader, rebuildShader) {
     sourceFullBlendDispatcher: ["if(mode==25){returnblendVividLight(base,blend,opacity);}"],
     sourceOilHelperSurface: ["vec4oil(vec2uv,floattime,floatstrength)"],
     sourceSimplexNoiseSurface: ["floatsnoise(vec2v)"],
+    sourceRoughnessHelperSurface: ["floatcustomRoughness(floatroughness,vec2vUv,floatsize,floattime)", "floatrandomF(vec2st)"],
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
     name,
@@ -886,6 +887,7 @@ function analyzeSkyCompositeCore(sourceShader, rebuildShader) {
     sourceSkyBlendSurface: ["vec3blendColorBurn(vec3base,vec3blend,floatopacity)", "vec3blendNegation(vec3base,vec3blend,floatopacity)", "vec3blendReflect(vec3base,vec3blend,floatopacity)"],
     sourceOilHelperSurface: ["vec4oil(vec2uv,floattime,floatstrength)"],
     sourceSimplexNoiseSurface: ["floatsnoise(vec2v)"],
+    sourceRoughnessHelperSurface: ["floatcustomRoughness(floatroughness,vec2vUv,floatsize,floattime)", "floatrandomF(vec2st)"],
     noRebuildProceduralName: ["vec4procedural="],
     noRebuildContrastColorName: ["contrastColor("],
   };

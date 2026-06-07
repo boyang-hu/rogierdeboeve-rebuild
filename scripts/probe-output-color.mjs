@@ -552,6 +552,10 @@ async function runProbe() {
   if (reflectionTargets?.clipBias !== 0) floorErrors.push("clipBias");
   if (reflectionTargets?.blurSwapMode !== "source-i1-write-target-loop-swap") floorErrors.push("blurSwapMode");
   if (reflectionTargets?.renderTargetUniformMode !== "source-i1-update-after-each-blur-swap") floorErrors.push("renderTargetUniformMode");
+  if (floorUniforms?.reflectionTargetSize?.constructionDepthBuffer !== false) floorErrors.push("floorRawConstructionDepthBuffer");
+  if (floorUniforms?.reflectionTargetSize?.runtimeDepthBuffer !== true) floorErrors.push("floorRawRuntimeDepthBuffer");
+  if (reflectionTargets?.rawConstructionDepthBuffer !== false) floorErrors.push("reflectionRawConstructionDepthBuffer");
+  if (reflectionTargets?.rawRuntimeDepthBuffer !== true) floorErrors.push("reflectionRawRuntimeDepthBuffer");
   if (floorErrors.length) {
     throw new Error(`Floor reflection visibility source-shape mismatch: ${floorErrors.join(", ")}`);
   }
