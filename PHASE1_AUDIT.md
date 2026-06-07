@@ -118,6 +118,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 41 | S1-114 | Source `lA/W1/sg/rg/cg/ig` helper pass raw GLSL3 surface | Source main/media/helper pass materials extend the raw material surface with `glslVersion:lt`: `lA` uses `aA`, `W1` uses `G1`, `sg` uses `NT`, `rg` uses `kT`, `cg` uses `nA`, and `ig` uses `UT`; source `sg/NT` binds its input as `tMap`. | Production now uses `RawShaderMaterial`/`GLSL3` and source fullscreen vertex surface for main composite, media composite, luminosity, bloom blur, bloom composite, and FXAA helper passes. Shader surfaces use `in/out`, `texture(...)`, and `FragColor`; `sg` now uses source `tMap`; output probes hard-fail on material mode or GLSL drift; shader dump compares all helper fragments/vertices against source. | Low-medium | Keep as source-correct helper render-manager surface alignment. This removes another bridge layer without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 42 | S1-115 | Source `rg/ig` blur and FXAA shader body surface | Source `Lu.initRenderer()` creates five blur materials with `new rg(e[t])` for `[3,5,7,9,11]`; source `rg/kT` uses compile-time `defines:{KERNEL_RADIUS:e,SIGMA:e}` rather than runtime kernel uniforms. Source `ig` binds vertex shader `FT`, which computes `v_rgbNW/NE/SW/SE/M` neighbor UVs for fragment `UT`. | Production now creates one `rg` material/scene per mip for work and main bloom chains, moves kernel radius/sigma into material defines, removes runtime `uKernelRadius/uSigma`, and switches FXAA to the source `FT/UT` neighbor-UV surface. Output probe and shader dump now hard-check blur material count/defines/no runtime kernel uniforms and FXAA neighbor-UV macros/call shape. | Low-medium | Keep as source-correct helper shader-body alignment. This narrows the helper pass bridge without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 43 | S1-116 | Source `Na/HT/zT` standard blur pass surface | Source `Lu/I1` ordinary blur pass uses `hBlurMaterial=new Na(...)` and `vBlurMaterial=new Na(...)`; source `Na` is a raw GLSL3 material with `uBluriness`, `uDirection`, `uResolution`, vertex `HT`, and fragment `zT` using the shared 9-tap `og` blur helper. This is separate from bloom `rg/kT`. | Production now uses a dedicated `Na-standard-blur` raw GLSL3 material for the horizontal/vertical ordinary blur pass instead of reusing bloom `rg`. Output probe asserts `source-Na-raw-glsl3`, `uBluriness`, no bloom kernel defines, and source directions. Shader dump expands `og` into `zT` and hard-checks the 9-tap blur body. | Low-medium | Keep as source-correct render-manager branch alignment. The branch is source-disabled by default, so this is not a visual closeout. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 44 | S1-117 | Source `L1/R1/P1` lensflare pass surface | Source `I1.initSettings()` defines `lensflare:{scale:(1.5,1.5), exposure:1, clamp:1, enabled:false}`; source `I1.initRenderer()` owns `renderTargetLensflare`; source `L1` is a raw GLSL3 material using vertex `R1`, fragment `P1`, uniforms `tMap/uLightPosition/uScale/uExposure/uClamp/uResolution`, and `depthTest/depthWrite:false`. | Production now has a source-shaped `L1-lensflare` raw GLSL3 material/scene, keeps the full-resolution lensflare target wired into `C1/A1.tLensflare`, gates rendering behind the source default `enabled:false`, and records the source explicit-clear pass shape. Output probe and shader dump hard-check `L1` uniforms/defaults, GLSL surface, clear mode, and core `P1` fragment anchors. | Low | Keep as source-correct default-disabled render-manager surface alignment. This should not alter the current visual output; it closes the missing lensflare branch surface but Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -950,6 +951,43 @@ Verification:
 | Mobile center-band delta | `-0.0120` against source |
 
 Decision: keep this source-correct `Na` standard blur alignment. It removes a real implementation mismatch in the render-manager disabled branch without tuning output. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-117 Source `L1/R1/P1` Lensflare Pass Surface
+
+This batch aligned the source `I1` lensflare branch surface without enabling it. It is a render-manager parity fix, not a visual tune.
+
+Source evidence:
+
+- Source `I1.initSettings()` declares `lensflare:{scale:new Q(1.5,1.5),exposure:1,clamp:1,enabled:!1}`.
+- Source `I1.initRenderer()` creates `renderTargetLensflare=this.renderTargetA.clone()` and wires `C1.tLensflare` from that target in `I1.update()`.
+- Source `L1` extends the raw material surface with `glslVersion:lt`, vertex `R1`, fragment `P1`, uniforms `tMap`, `uLightPosition`, `uScale`, `uExposure`, `uClamp`, and `uResolution`, plus `depthTest:false` and `depthWrite:false`.
+- Source `I1.resize()` sets lensflare `uResolution` to `(width/8,height/8)` only when the source lensflare branch is enabled.
+- Source `I1.update()` explicitly clears `renderTargetLensflare` when the branch is enabled, then always assigns `compositeMaterial.uniforms.tLensflare.value` to that target.
+
+Runtime and tooling changes:
+
+- Added a source-shaped `L1-lensflare` `RawShaderMaterial` using the source fullscreen vertex surface and source `P1` lensflare formula.
+- Added a dedicated lensflare scene and render pass, gated by `SOURCE_MAIN_LENSFLARE_SETTINGS.enabled=false`.
+- Kept the existing full-resolution `mainLensflareTarget` wired into `C1/A1.tLensflare`.
+- Added output-probe metadata and assertions for default `enabled=false`, clear mode, target size, light position `(0.5,0.5)`, scale `(1.5,1.5)`, exposure `1`, clamp `1`, material mode, and GLSL version.
+- Added renderer-audit extraction for source `L1` and shader-dump source/rebuild checks for the `P1` core anchors.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `L1` raw GLSL3 anchors recorded |
+| Output probe | Passed with `PROBE_WAIT=9000`; shorter default wait exposed async texture-wrap timing unrelated to this change |
+| Shader dump | Passed; `L1-lensflare` core checks are source/rebuild true |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight map retained |
+| Project media probe | Passed; project detail pages retain five visible media tracks |
+| Full source-vs-rebuild capture | Passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/` |
+| Desktop center-band delta | `+0.0009` against source |
+| Mobile center-band delta | `-0.0133` against source |
+
+Decision: keep the source `L1/I1` lensflare pass surface. It closes a default-disabled branch that was missing from the rebuild render manager, while preserving current visual output and project media. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

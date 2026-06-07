@@ -1749,6 +1749,63 @@ void main() {
 }
 `;
 
+const sourceLensflareFragment = `
+precision highp float;
+
+uniform sampler2D tMap;
+uniform vec2 uLightPosition;
+uniform vec2 uScale;
+uniform float uExposure;
+uniform float uClamp;
+uniform vec2 uResolution;
+
+in vec2 vUv;
+out vec4 FragColor;
+
+vec3 lensflare(vec2 uv, vec2 pos) {
+  vec2 uvd = uv * length(uv);
+
+  float f21 = max(1.0 / (1.0 + 32.0 * pow(length(uvd + 0.8 * pos), 2.0)), 0.0) * 0.25;
+  float f22 = max(1.0 / (1.0 + 32.0 * pow(length(uvd + 0.85 * pos), 2.0)), 0.0) * 0.23;
+  float f23 = max(1.0 / (1.0 + 32.0 * pow(length(uvd + 0.9 * pos), 2.0)), 0.0) * 0.21;
+
+  vec2 uvx = mix(uv, uvd, -0.5);
+  float f41 = max(0.01 - pow(length(uvx + 0.4 * pos), 2.4), 0.0) * 6.0;
+  float f42 = max(0.01 - pow(length(uvx + 0.45 * pos), 2.4), 0.0) * 5.0;
+  float f43 = max(0.01 - pow(length(uvx + 0.5 * pos), 2.4), 0.0) * 3.0;
+
+  uvx = mix(uv, uvd, -0.4);
+  float f51 = max(0.01 - pow(length(uvx + 0.2 * pos), 5.5), 0.0) * 2.0;
+  float f52 = max(0.01 - pow(length(uvx + 0.4 * pos), 5.5), 0.0) * 2.0;
+  float f53 = max(0.01 - pow(length(uvx + 0.6 * pos), 5.5), 0.0) * 2.0;
+
+  uvx = mix(uv, uvd, -0.5);
+  float f61 = max(0.01 - pow(length(uvx - 0.3 * pos), 1.6), 0.0) * 6.0;
+  float f62 = max(0.01 - pow(length(uvx - 0.325 * pos), 1.6), 0.0) * 3.0;
+  float f63 = max(0.01 - pow(length(uvx - 0.35 * pos), 1.6), 0.0) * 5.0;
+
+  return vec3(f21 + f41 + f51 + f61, f22 + f42 + f52 + f62, f23 + f43 + f53 + f63);
+}
+
+void main() {
+  vec2 uv = vUv - 0.5;
+  vec2 pos = uLightPosition - 0.5;
+
+  uv.x *= uResolution.x / uResolution.y;
+  pos.x *= uResolution.x / uResolution.y;
+
+  uv *= uScale;
+  pos *= uScale;
+
+  vec3 color = lensflare(uv, pos) * texture(tMap, uLightPosition).rgb * 2.0;
+  color = pow(color, vec3(0.5));
+  color *= uExposure;
+  color = clamp(color, 0.0, uClamp);
+
+  FragColor = vec4(color, 1.0);
+}
+`;
+
 const sourceFxaaVertex = `
 precision mediump float;
 
@@ -2515,6 +2572,8 @@ export class WebGLBackdrop {
   private mainCompositeMaterial: ShaderMaterial;
   private mainCompositeScene = new Scene();
   private mainLensflareTarget = makeSourceRenderTarget(false);
+  private lensflareMaterial: ShaderMaterial;
+  private lensflareScene = new Scene();
   private mainBloomBrightTarget = makeSourceRenderTarget(false);
   private mainBloomHorizontalTargets: WebGLRenderTarget[] = [];
   private mainBloomVerticalTargets: WebGLRenderTarget[] = [];
@@ -2754,6 +2813,8 @@ export class WebGLBackdrop {
     this.preCompositeScene.add(makeFullscreenTriangle(this.preCompositeMaterial));
     this.mainCompositeMaterial = this.createMainCompositeMaterial();
     this.mainCompositeScene.add(makeFullscreenTriangle(this.mainCompositeMaterial));
+    this.lensflareMaterial = this.createLensflareMaterial();
+    this.lensflareScene.add(makeFullscreenTriangle(this.lensflareMaterial));
     this.compositeMaterial = this.createCompositeMaterial();
     this.compositeScene.add(makeFullscreenTriangle(this.compositeMaterial));
     this.bloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
@@ -3254,6 +3315,7 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
     this.mainCompositeMaterial.dispose();
+    this.lensflareMaterial.dispose();
     this.mainLensflareTarget.dispose();
     this.mediaRawTarget.dispose();
     this.mediaTarget.dispose();
@@ -3809,6 +3871,25 @@ export class WebGLBackdrop {
       },
       vertexShader: sourceFullscreenVertex,
       fragmentShader: mainCompositeFragment,
+    });
+  }
+
+  private createLensflareMaterial() {
+    dumpShader("L1-lensflare", sourceFullscreenVertex, sourceLensflareFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tMap: { value: this.compositeTarget.texture },
+        uLightPosition: { value: new Vector2(0.5, 0.5) },
+        uScale: { value: SOURCE_MAIN_LENSFLARE_SETTINGS.scale.clone() },
+        uExposure: { value: SOURCE_MAIN_LENSFLARE_SETTINGS.exposure },
+        uClamp: { value: SOURCE_MAIN_LENSFLARE_SETTINGS.clamp },
+        uResolution: { value: new Vector2() },
+      },
+      vertexShader: sourceFullscreenVertex,
+      fragmentShader: sourceLensflareFragment,
     });
   }
 
@@ -4935,6 +5016,9 @@ export class WebGLBackdrop {
     this.backgroundTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
     this.mainLensflareTarget.setSize(renderWidth, renderHeight);
+    if (SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) {
+      this.lensflareMaterial.uniforms.uResolution.value.set(width / 8, height / 8);
+    }
     this.mediaRawTarget.setSize(renderWidth, renderHeight);
     this.mediaTarget.setSize(renderWidth, renderHeight);
     const workQuarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(workRenderWidth) / 4));
@@ -5684,6 +5768,7 @@ export class WebGLBackdrop {
           renderManagerClearing: {
             frameStart: "source-nD-no-explicit-clear",
             preCompositePass: "source-I1-no-explicit-clear",
+            lensflarePass: "source-I1-lensflare-explicit-clear",
             blurPass: "source-I1-no-explicit-clear",
             fxaaPass: "source-I1-no-explicit-clear",
           },
@@ -5729,11 +5814,27 @@ export class WebGLBackdrop {
           boolBloom: this.compositeMaterial.uniforms.boolBloom.value,
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
         },
-        mainComposite: {
-          blending: this.mainCompositeMaterial.blending,
-          materialMode: "source-lA-raw-glsl3",
-          glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
-        },
+          mainComposite: {
+            blending: this.mainCompositeMaterial.blending,
+            materialMode: "source-lA-raw-glsl3",
+            glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          lensflare: {
+            blending: this.lensflareMaterial.blending,
+            materialMode: "source-L1-raw-glsl3",
+            glslVersion: (this.lensflareMaterial as RawShaderMaterial).glslVersion ?? null,
+            enabled: SOURCE_MAIN_LENSFLARE_SETTINGS.enabled,
+            clearMode: "source-I1-lensflare-explicit-clear",
+            targetSize: {
+              width: this.mainLensflareTarget.width,
+              height: this.mainLensflareTarget.height,
+            },
+            lightPosition: (this.lensflareMaterial.uniforms.uLightPosition.value as Vector2).toArray(),
+            scale: (this.lensflareMaterial.uniforms.uScale.value as Vector2).toArray(),
+            exposure: this.lensflareMaterial.uniforms.uExposure.value,
+            clamp: this.lensflareMaterial.uniforms.uClamp.value,
+            resolution: (this.lensflareMaterial.uniforms.uResolution.value as Vector2).toArray(),
+          },
         passMaterials: {
           mediaComposite: {
             blending: this.mediaCompositeMaterial.blending,
@@ -6294,6 +6395,14 @@ export class WebGLBackdrop {
     this.renderer.render(this.blurVerticalScene, this.backgroundCamera);
   }
 
+  private renderMainLensflarePass(sourceTarget: WebGLRenderTarget) {
+    if (!SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) return;
+    this.lensflareMaterial.uniforms.tMap.value = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB.texture : sourceTarget.texture;
+    this.renderer.setRenderTarget(this.mainLensflareTarget);
+    this.renderer.clear();
+    this.renderer.render(this.lensflareScene, this.backgroundCamera);
+  }
+
   private renderBloomChain(
     sourceTarget: WebGLRenderTarget,
     horizontalTargets: WebGLRenderTarget[],
@@ -6469,6 +6578,7 @@ export class WebGLBackdrop {
     if (this.sourceMainRenderSettings.blur.enabled) {
       this.renderHomeBlurPass();
     }
+    this.renderMainLensflarePass(sceneSourceTarget);
     if (this.sourceMainRenderSettings.bloom.enabled) {
       this.renderMainBloomPass(sceneSourceTarget);
     }

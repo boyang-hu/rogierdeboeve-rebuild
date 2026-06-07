@@ -158,6 +158,7 @@ async function runProbe() {
   if (workClearing?.compositePass !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workCompositePassClearing");
   if (mainClearing?.frameStart !== "source-nD-no-explicit-clear") bloomClearingErrors.push("mainFrameStartClearing");
   if (mainClearing?.preCompositePass !== "source-I1-no-explicit-clear") bloomClearingErrors.push("mainPreCompositePassClearing");
+  if (mainClearing?.lensflarePass !== "source-I1-lensflare-explicit-clear") bloomClearingErrors.push("mainLensflarePassClearing");
   if (mainClearing?.blurPass !== "source-I1-no-explicit-clear") bloomClearingErrors.push("mainBlurPassClearing");
   if (mainClearing?.fxaaPass !== "source-I1-no-explicit-clear") bloomClearingErrors.push("mainFxaaPassClearing");
   if (bloomClearingErrors.length) {
@@ -181,6 +182,15 @@ async function runProbe() {
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
   if (mainCompositeUniforms?.materialMode !== "source-lA-raw-glsl3") materialSurfaceErrors.push("mainCompositeMaterialMode");
   if (mainCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("mainCompositeGlslVersion");
+  const lensflareUniforms = parsed.probe.uniforms?.lensflare;
+  if (lensflareUniforms?.materialMode !== "source-L1-raw-glsl3") materialSurfaceErrors.push("lensflareMaterialMode");
+  if (lensflareUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("lensflareGlslVersion");
+  if (lensflareUniforms?.enabled !== false) materialSurfaceErrors.push("lensflareDefaultEnabled");
+  if (lensflareUniforms?.clearMode !== "source-I1-lensflare-explicit-clear") materialSurfaceErrors.push("lensflareClearMode");
+  if (JSON.stringify(lensflareUniforms?.lightPosition) !== JSON.stringify([0.5, 0.5])) materialSurfaceErrors.push("lensflareLightPosition");
+  if (JSON.stringify(lensflareUniforms?.scale) !== JSON.stringify([1.5, 1.5])) materialSurfaceErrors.push("lensflareScale");
+  if (lensflareUniforms?.exposure !== 1) materialSurfaceErrors.push("lensflareExposure");
+  if (lensflareUniforms?.clamp !== 1) materialSurfaceErrors.push("lensflareClamp");
   for (const [key, expectedMode] of Object.entries({
     mediaComposite: "source-W1-raw-glsl3",
     luminosity: "source-sg-raw-glsl3",

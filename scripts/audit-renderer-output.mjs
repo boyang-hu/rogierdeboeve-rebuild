@@ -128,6 +128,7 @@ const sourceRg = extractAround(bundle, "class rg extends", 320, 1100);
 const sourceNa = extractAround(bundle, "class Na extends", 420, 900);
 const sourceCg = extractAround(bundle, "class cg extends", 320, 1000);
 const sourceIg = extractAround(bundle, "class ig extends", 320, 900);
+const sourceL1 = extractAround(bundle, "class L1 extends", 320, 1000);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
@@ -446,6 +447,24 @@ const summary = {
           "depthTest:!1",
         ]),
         excerpt: compact(sourceIg.text),
+      },
+      L1: sourceL1 && {
+        index: sourceL1.index,
+        checks: checks(sourceL1.text, [
+          "class L1 extends mt",
+          "glslVersion:lt",
+          "tMap:{value:null}",
+          "uLightPosition:{value:new Q(.5,.5)}",
+          "uScale:{value:new Q(1.5,1.5)}",
+          "uExposure:{value:1}",
+          "uClamp:{value:1}",
+          "uResolution:{value:new Q}",
+          "vertexShader:R1",
+          "fragmentShader:P1",
+          "depthTest:!1",
+          "depthWrite:!1",
+        ]),
+        excerpt: compact(sourceL1.text),
       },
     },
     mainI1: sourceMainI1 && {

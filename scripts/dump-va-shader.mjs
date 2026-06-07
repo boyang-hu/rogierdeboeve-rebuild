@@ -546,6 +546,30 @@ function analyzeStandardBlurCore(sourceFragment, rebuildFragment) {
   }));
 }
 
+function analyzeLensflareCore(sourceFragment, rebuildFragment) {
+  if (!sourceFragment) return null;
+  const source = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuild = normalizeShaderForCoreChecks(rebuildFragment);
+  const checks = {
+    lightPositionUniform: ["uniformvec2uLightPosition"],
+    scaleUniform: ["uniformvec2uScale"],
+    exposureUniform: ["uniformfloatuExposure"],
+    clampUniform: ["uniformfloatuClamp"],
+    lensflareFunction: ["vec3lensflare(vec2uv,vec2pos)"],
+    mapSampleAtLight: ["texture(tMap,uLightPosition).rgb*2.0", "texture(tMap,uLightPosition).rgb*2."],
+    gammaPow: ["pow(color,vec3(0.5))", "pow(color,vec3(.5))"],
+    exposureMultiply: ["color*=uExposure"],
+    clampColor: ["clamp(color,0.0,uClamp)", "clamp(color,0.,uClamp)"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
+    name,
+    {
+      source: candidates.some((candidate) => source.includes(candidate)),
+      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+    },
+  ]));
+}
+
 function analyzeVertexCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
@@ -709,6 +733,7 @@ const sourceFragmentShaders = {
   "rg-bloom-blur": tryExtractSourceShader(bundle, "kT"),
   "cg-bloom-composite": tryExtractSourceShader(bundle, "nA"),
   "ig-fxaa": tryExtractSourceShader(bundle, "UT"),
+  "L1-lensflare": tryExtractSourceShader(bundle, "P1"),
   "UD-project-media": tryExtractSourceShader(bundle, "LD"),
   "z1-sky-composite": tryExtractSourceShader(bundle, "B1"),
   "u1-environment": tryExtractSourceShader(bundle, "l1"),
@@ -724,6 +749,7 @@ const sourceVertexShaders = {
   "rg-bloom-blur": tryExtractSourceShader(bundle, "BT"),
   "cg-bloom-composite": tryExtractSourceShader(bundle, "iA"),
   "ig-fxaa": tryExtractSourceShader(bundle, "FT"),
+  "L1-lensflare": tryExtractSourceShader(bundle, "R1"),
   "o1-floor-material": tryExtractSourceShader(bundle, "r1"),
   "t1-floor-reflection-blur": tryExtractSourceShader(bundle, "e1"),
 };
@@ -797,6 +823,7 @@ try {
       compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
       rgBlurCoreChecks: entry.name === "rg-bloom-blur" ? analyzeRgBlurCore(sourceFragment, entry.fragmentShader) : null,
       standardBlurCoreChecks: entry.name === "Na-standard-blur" ? analyzeStandardBlurCore(sourceFragment, entry.fragmentShader) : null,
+      lensflareCoreChecks: entry.name === "L1-lensflare" ? analyzeLensflareCore(sourceFragment, entry.fragmentShader) : null,
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       environmentCoreChecks: entry.name === "u1-environment" ? analyzeEnvironmentCore(sourceFragment, entry.fragmentShader) : null,
@@ -876,6 +903,7 @@ try {
         compositeCoreChecks: analysis.compositeCoreChecks,
         rgBlurCoreChecks: analysis.rgBlurCoreChecks,
         standardBlurCoreChecks: analysis.standardBlurCoreChecks,
+        lensflareCoreChecks: analysis.lensflareCoreChecks,
         igFxaaCoreChecks: analysis.igFxaaCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
         environmentCoreChecks: analysis.environmentCoreChecks,
