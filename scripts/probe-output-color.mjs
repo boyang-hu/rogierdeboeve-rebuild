@@ -406,7 +406,7 @@ async function runProbe() {
   }
   const mainPassInputs = mainSettings?.renderManagerPassInputs || {};
   for (const [key, expected] of Object.entries({
-    blurSource: "source-I1-renderTargetA",
+    blurSource: "source-I1-renderTargetA-to-renderTargetComposite-then-renderTargetBlurB",
     lensflareSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
     luminositySource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
     bloomSource: "source-I1-renderTargetBright-if-luminosity-else-renderTargetA",
@@ -450,11 +450,17 @@ async function runProbe() {
     if (target.texture?.magFilter !== LinearFilter) targetStateErrors.push(`${label}MagFilter`);
     if (target.texture?.generateMipmaps !== false) targetStateErrors.push(`${label}Mipmaps`);
   }
-  if (workTargetState.sourceMode !== "source-Lu-target-state-renderTargetA-depthBuffer-true-clones-false") {
+  if (workTargetState.sourceMode !== "source-Lu-target-state-renderTargetA-depthBuffer-true-derived-clones") {
     targetStateErrors.push("workTargetStateMode");
   }
-  if (mainTargetState.sourceMode !== "source-I1-target-default-state-depthBuffer-false-clones-false") {
+  if (workTargetState.targetOwnershipMode !== "source-Lu-renderTargetA-clone-graph-depth-toggle-after-clones") {
+    targetStateErrors.push("workTargetOwnershipMode");
+  }
+  if (mainTargetState.sourceMode !== "source-I1-target-state-renderTargetA-depthBuffer-false-derived-clones") {
     targetStateErrors.push("mainTargetStateMode");
+  }
+  if (mainTargetState.targetOwnershipMode !== "source-I1-renderTargetA-clone-graph-depthless-raw") {
+    targetStateErrors.push("mainTargetOwnershipMode");
   }
   const mainRawProbe = parsed.probe.targets?.mainRaw;
   const preCompositeProbe = parsed.probe.targets?.preComposite;
@@ -466,6 +472,7 @@ async function runProbe() {
   }
   assertDefaultTargetState(workTargetState, "renderTargetA", true, "workRenderTargetA");
   for (const key of [
+    "renderTargetB",
     "renderTargetBright",
     "renderTargetsHorizontal0",
     "renderTargetsVertical0",

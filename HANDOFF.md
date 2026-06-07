@@ -132,24 +132,24 @@ Known remaining gaps:
 - Home is still not 1:1.
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
-  - rebuild approximates these in a simpler Three shader pipeline.
+  - rebuild has source-shaped passes and target clone ownership, but material ownership, transfer interpretation, and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, but the projected thumb content/transfer feel is still not exact.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders, but interactive mouse/fluid feel is still not verified 1:1.
 
 Latest Phase 1 batch:
 
-- Source `Lo/H1/O1/x1` derived target clone ownership was completed without visual tuning.
-- Source `Lo.initRenderer()` creates `renderTargetA` with `{ depthBuffer:false, stencilBuffer:false }` and derives `renderTargetComposite=this.renderTargetA.clone()`.
-- Source `H1`, `O1`, and `x1` extend `Lo` and only replace `compositeMaterial` with `z1`, `N1`, or `_1`; source `T1.resize()` resizes the `x1` manager to `height,height,1`.
-- Source does not create independent thumb `1024x1024` targets and does not manually override thumb render-target texture defaults after construction.
-- The rebuild now derives `skyCompositeTarget` from `skyRawTarget.clone()`, `displacementTarget` from `displacementRawTarget.clone()`, and `thumbCompositeTarget` from `thumbTarget.clone()`.
-- The rebuild removed the independent `new WebGLRenderTarget(1024,1024,...)` thumb target bridge and the manual thumb-target `generateMipmaps/minFilter/magFilter/wrapS/wrapT` overrides.
-- Runtime probes expose/assert raw and composite target construction modes for sky, displacement, and thumb; thumb spotlight probe guards the source clone ownership on the `SpotLight.map` thumb path.
-- Static audit checks source `Lo` clone anchors, rebuild clone ownership for all three derived managers, absence of independent thumb 1024 targets, and absence of manual thumb target texture defaults.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0048` and mobile center `+0.0295`, recorded only as regression evidence.
+- Source `Lu/I1/kA` render-target clone graph ownership was completed without visual tuning.
+- Source `Lu.initRenderer()` creates depthless/stencilless `renderTargetA`, derives `renderTargetB`, bright/composite, all bloom mip, blur, and FXAA targets from `renderTargetA.clone()`, then toggles only `renderTargetA.depthBuffer=true` after the clones exist.
+- Source `kA` extends `Lu` and keeps that target graph while replacing the composite material with `OA`.
+- Source `I1.initRenderer()` uses the same depthless clone graph plus `renderTargetLensflare`, and does not toggle `renderTargetA.depthBuffer`.
+- Source `I1.update()` writes the first optional blur pass into `renderTargetComposite`, then writes the vertical blur into `renderTargetBlurB`.
+- The rebuild now derives all work targets from `workRawTarget.clone()`, toggles `workRawTarget.depthBuffer=true` after clone construction, derives all main targets from `mainRawTarget.clone()` while leaving it depthless, and removes the old independent shared work/main bloom, blur, and FXAA targets.
+- Runtime probes expose/assert `source-Lu-target-state-renderTargetA-depthBuffer-true-derived-clones`, `source-Lu-renderTargetA-clone-graph-depth-toggle-after-clones`, `source-I1-target-state-renderTargetA-depthBuffer-false-derived-clones`, and `source-I1-renderTargetA-clone-graph-depthless-raw`; they also preserve the source unused 1x1 `renderTargetB` clone state.
+- Static audit checks source/rebuild `Lu` and `I1` clone graph anchors, absence of old independent targets, and source `I1` blur composite reuse.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0060` and mobile center `+0.0311`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a `Lo/H1/O1/x1` derived target construction mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a `Lu/I1/kA` target clone ownership mismatch, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu` material/transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -167,7 +167,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `Lo/H1/O1/x1` derived target clone ownership batch.
+All passed in the `Lu/I1/kA` render target clone graph ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
