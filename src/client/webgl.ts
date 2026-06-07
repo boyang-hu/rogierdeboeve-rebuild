@@ -532,6 +532,17 @@ worldPosition = instanceMatrix * worldPosition;
 worldPosition = modelMatrix * worldPosition;
 `;
 
+const workBlockSourceProjectVertexChunk = `
+vec4 mvPosition = vec4( transformed, 1.0 );
+
+#ifdef USE_INSTANCING
+  mvPosition = instanceMatrix * mvPosition;
+#endif
+
+mvPosition = modelViewMatrix * mvPosition;
+gl_Position = projectionMatrix * mvPosition;
+`;
+
 const workBlockFragmentPars = `
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
@@ -699,6 +710,9 @@ function patchWorkBlockShader(
     .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
     .replace("#include <begin_vertex>", workBlockSourceScreenUvBeginVertexChunk)
     .replace("#include <worldpos_vertex>", workBlockSourceWorldPositionChunk);
+  if (variant === "work") {
+    shader.vertexShader = stripSourceHaR164VertexSurface(shader.vertexShader);
+  }
   shader.fragmentShader = shader.fragmentShader
     .replace("#include <common>", `${workBlockFragmentPars}\n${variant === "auxiliary" ? auxiliaryBlockFragmentPars : ""}\n#include <common>`)
     .replace("#include <tonemapping_fragment>", variant === "work" ? "// #include <tonemapping_fragment>" : "// source VA omits tonemapping_fragment")
@@ -730,6 +744,28 @@ function patchWorkBlockShader(
       fragmentShader: shader.fragmentShader,
     });
   }
+}
+
+function stripSourceHaR164VertexSurface(vertexShader: string) {
+  return vertexShader
+    .replace("#include <batching_pars_vertex>", "// source HA omits batching_pars_vertex")
+    .replace("#include <displacementmap_pars_vertex>", "// source HA omits displacementmap_pars_vertex")
+    .replace("#include <morphtarget_pars_vertex>", "// source HA omits morphtarget_pars_vertex")
+    .replace("#include <skinning_pars_vertex>", "// source HA omits skinning_pars_vertex")
+    .replace("#include <logdepthbuf_pars_vertex>", "// source HA omits logdepthbuf_pars_vertex")
+    .replace("#include <clipping_planes_pars_vertex>", "// source HA omits clipping_planes_pars_vertex")
+    .replace("#include <morphinstance_vertex>", "// source HA omits morphinstance_vertex")
+    .replace("#include <morphcolor_vertex>", "// source HA omits morphcolor_vertex")
+    .replace("#include <batching_vertex>", "// source HA omits batching_vertex")
+    .replace("#include <morphnormal_vertex>", "// source HA omits morphnormal_vertex")
+    .replace("#include <skinbase_vertex>", "// source HA omits skinbase_vertex")
+    .replace("#include <skinnormal_vertex>", "// source HA omits skinnormal_vertex")
+    .replace("#include <morphtarget_vertex>", "// source HA omits morphtarget_vertex")
+    .replace("#include <skinning_vertex>", "// source HA omits skinning_vertex")
+    .replace("#include <displacementmap_vertex>", "// source HA omits displacementmap_vertex")
+    .replace("#include <project_vertex>", workBlockSourceProjectVertexChunk)
+    .replace("#include <logdepthbuf_vertex>", "// source HA omits logdepthbuf_vertex")
+    .replace("#include <clipping_planes_vertex>", "// source HA omits clipping_planes_vertex");
 }
 
 function stripSourceVaR164PhysicalBranches(fragmentShader: string) {
