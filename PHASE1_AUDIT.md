@@ -75,6 +75,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 56 | S1-129 | Source `GA.createPlane()` / local `Ka` mesh ownership | Source `GA.createPlane()` creates a simulation `plane` scaled `35*1.3` by `23*1.3`, creates a separate `rayPlane`, scales the ray plane by `1.5`, attaches only `rayPlane` to `rotationWrap`, and resizes local `Ka` from `this.plane.scale.x/y`. | Production now keeps an explicit per-work `mousePlane` with the source unscaled size/z, leaves it out of the scene graph like source, keeps `rayPlane` parented under `rotationWrap`, and derives local mouse-simulation target sizing/`uCoords` from `mousePlane.scale`. Output probe hard-asserts plane/ray parentage, scale, z, target sizing, UV offset/scale, persistence, and thickness. | Low-medium | Keep as source-correct `GA/Ka` ownership. This improves structural parity and attribution only; Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 1 | S1-43 | Ordinary `VA` vertex/body residual diff | Source `VA` still fully assigns `HA/zA`; rebuild uses a stable chunk bridge. Recent evidence says fragment light chunks, physical response variants, world-position unclamp, and source-like early vertex `screenUv` attribution are low-impact. | Stable bridge is close and production-safe; full `HA` replacement was rejected by console-aware QA. | Medium-high | Stop chasing single `HA` UV/world-position deltas as the main brightness gap. Continue only with residual generated-vs-source body/vertex diagnostics if a specific visible mismatch appears; otherwise prioritize proven transfer/projection contributors. |
 | 2 | S1-44 | `OA/CA` final `tScene` transfer | Source `CA` darken formula, blend table, `uDarken=.2`, renderer output `srgb`, and render-target defaults are confirmed. `debug-composite-transfer=1` still moves final home luma strongly, but no source evidence supports promoting it. | Rebuild has source-shaped darken, saturation, bloom and stage probes. Transfer debug is useful as attribution only. | Medium-high | Keep open for source-backed evidence. Do not close Phase 1 by accepting this deviation unless the user explicitly approves that visual gap. Do not promote gamma-like transfer or tune darken constants. |
 | 3 | S1-45 | Spotlight map content/projection after texture fix | Source assigns thumb composite target as `SpotLight.map`; S1-40 made ordinary loaded textures source-default and raised thumb/composite luma substantially. S1-49 confirms the active block projects into the expected center region of the thumb map. | Map ownership, position, intensity, target size, thumb visibility, and active-block map coverage are source-shaped. Remaining risk is map transfer/light multiplication, not gross projection miss. | Medium | Do not change intensity, map assignment, target, or thumb darkness constants. Keep transfer/projection diagnostics; prioritize `OA/CA` input transfer and accepted-deviation decision next. |
@@ -1320,6 +1321,37 @@ Verification notes:
 - Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`: `/tmp/rd-s128-capture`.
 - Band analysis: desktop center-band delta `-0.0015`; mobile center-band delta `-0.0153`.
 - Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-129 Source `GA.createPlane()` / Local `Ka` Mesh Ownership
+
+This batch narrowed per-work `GA/Ka` object ownership toward source `GA.createPlane()`. It did not change visual constants, shader formulas, spotlight intensity, thumb darkness, or render-target transfer.
+
+Source evidence:
+
+- Source `GA.createPlane()` creates `this.plane` and `this.rayPlane` separately.
+- Source simulation plane is scaled to `35*1.3` by `23*1.3` and positioned at `23*1.3/2`.
+- Source ray plane starts at the same size, is positioned at `23*1.3/2+.01`, then is multiplied by `1.5`.
+- Source attaches only `rayPlane` to `rotationWrap`; the simulation `plane` is passed to `new Ka({ mesh:this.plane, rayCastMesh:this.rayPlane })`.
+- Source `GA.resize()` calls `this.mouseSim.onResize(this.plane.scale.x,this.plane.scale.y)`.
+
+Runtime and tooling changes:
+
+- Each work item now keeps an explicit invisible `mousePlane` with source scale and z position.
+- `rayPlane` now uses source-style unit geometry plus source scale instead of baking the size into geometry.
+- Per-work mouse simulation targets and `uCoords` are resized from `mousePlane.scale`, mirroring source `mouseSim.onResize(this.plane.scale.x,this.plane.scale.y)`.
+- Output probe now reports and hard-asserts `mousePlane` scale/z/parentage, `rayPlane` scale/z/parentage, target sizing, `uCoords`, UV offset/scale, persistence, and thickness.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s129-shader`.
+- Output probe passed with the expanded `GA/Ka` source-shape assertions: `/tmp/rd-s129-output`.
+- Thumb spotlight probe passed: `/tmp/rd-s129-thumb`.
+- Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks: `/tmp/rd-s129-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`: `/tmp/rd-s129-capture`.
+- Band analysis: desktop center-band delta `-0.0003`; mobile center-band delta `-0.0159`.
+- Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and transfer interpretation.
 
 ### S1-122 `VA/zA` r164 Bridge Attribution
 

@@ -89,6 +89,7 @@ type WorkItem = {
   thumb: Mesh<PlaneGeometry, ShaderMaterial>;
   thumbXHook: number;
   thumbYHook: number;
+  mousePlane: Mesh<PlaneGeometry, ShaderMaterial>;
   rayPlane: Mesh<PlaneGeometry, MeshBasicMaterial>;
   mouseMaterial: ShaderMaterial;
   mouseScene: Scene;
@@ -2607,11 +2608,21 @@ function sourceLowRes() {
 }
 
 function sourceMouseUvOffset() {
-  const planeWidth = GRID_COLS * MOUSE_PLANE_SCALE;
-  const planeHeight = GRID_ROWS * MOUSE_PLANE_SCALE;
-  const rayWidth = planeWidth * MOUSE_RAY_SCALE;
-  const rayHeight = planeHeight * MOUSE_RAY_SCALE;
-  return new Vector3((rayWidth - planeWidth) / 2 / planeWidth, (rayHeight - planeHeight) / 2 / planeHeight, 0);
+  const planeSize = sourceWorkMousePlaneSize();
+  const raySize = sourceWorkRayPlaneSize();
+  return new Vector3(
+    (raySize.x - planeSize.x) / 2 / planeSize.x,
+    (raySize.y - planeSize.y) / 2 / planeSize.y,
+    0,
+  );
+}
+
+function sourceWorkMousePlaneSize() {
+  return new Vector2(GRID_COLS * MOUSE_PLANE_SCALE, GRID_ROWS * MOUSE_PLANE_SCALE);
+}
+
+function sourceWorkRayPlaneSize() {
+  return sourceWorkMousePlaneSize().multiplyScalar(MOUSE_RAY_SCALE);
 }
 
 function tweenColorOwned(target: Color, value?: string, duration = 1.6, tweens?: gsap.core.Tween[], fallback?: string) {
@@ -3412,6 +3423,8 @@ export class WebGLBackdrop {
       item.material.dispose();
       item.thumb.geometry.dispose();
       item.thumb.material.dispose();
+      item.mousePlane.geometry.dispose();
+      item.mousePlane.material.dispose();
       item.rayPlane.geometry.dispose();
       item.rayPlane.material.dispose();
       item.mouseTargets.forEach((target) => target.dispose());
@@ -3496,6 +3509,7 @@ export class WebGLBackdrop {
       const material = this.createWorkBlockMaterial(payload, card.classList.contains("is-active") ? 1 : 0);
       const mesh = this.createBlockMesh(material);
       const thumb = this.createThumbPlane(payload);
+      const mousePlane = this.createWorkMousePlane();
       const rayPlane = this.createWorkRayPlane();
       const mouseSimulation = this.createWorkMouseSimulation();
       const group = new Group();
@@ -3520,6 +3534,7 @@ export class WebGLBackdrop {
         thumb,
         thumbXHook: 0,
         thumbYHook: 0,
+        mousePlane,
         rayPlane,
         mouseMaterial: mouseSimulation.material,
         mouseScene: mouseSimulation.scene,
@@ -4597,16 +4612,22 @@ export class WebGLBackdrop {
     return material;
   }
 
+  private createWorkMousePlane() {
+    const planeSize = sourceWorkMousePlaneSize();
+    const material = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
+    const mesh = new Mesh(new PlaneGeometry(1, 1), material);
+    mesh.scale.set(planeSize.x, planeSize.y, 1);
+    mesh.position.set(0, 0, planeSize.y / 2);
+    mesh.visible = false;
+    return mesh;
+  }
+
   private createWorkRayPlane() {
+    const raySize = sourceWorkRayPlaneSize();
     const material = new MeshBasicMaterial({ visible: false });
-    const mesh = new Mesh(
-      new PlaneGeometry(
-        GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
-        GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
-      ),
-      material,
-    );
-    mesh.position.set(0, 0, GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01);
+    const mesh = new Mesh(new PlaneGeometry(1, 1), material);
+    mesh.scale.set(raySize.x, raySize.y, 1);
+    mesh.position.set(0, 0, sourceWorkMousePlaneSize().y / 2 + 0.01);
     return mesh;
   }
 
@@ -5219,12 +5240,12 @@ export class WebGLBackdrop {
       this.screenMouseSimulationTargets.forEach((target) => target.setSize(screenSimWidth, screenSimHeight));
       this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(screenSimWidth, screenSimHeight);
     }
-    const meshSimWidth = Math.max(1, Math.round(GRID_COLS * MOUSE_PLANE_SCALE));
-    const meshSimHeight = Math.max(1, Math.round(GRID_ROWS * MOUSE_PLANE_SCALE));
     if (this.renderSettings.mousesim.enabled) {
       this.workItems.forEach((item) => {
-        item.mouseTargets.forEach((target) => target.setSize(meshSimWidth, meshSimHeight));
-        item.mouseMaterial.uniforms.uCoords.value.set(meshSimWidth, meshSimHeight);
+        const planeWidth = Math.max(1, Math.round(item.mousePlane.scale.x));
+        const planeHeight = Math.max(1, Math.round(item.mousePlane.scale.y));
+        item.mouseTargets.forEach((target) => target.setSize(planeWidth, planeHeight));
+        item.mouseMaterial.uniforms.uCoords.value.set(planeWidth, planeHeight);
       });
     }
     const thumbSize = Math.max(1, Math.round(height));
@@ -6454,14 +6475,11 @@ export class WebGLBackdrop {
     const activeTarget = active?.mouseTargets[active.mouseIndex];
     const uvOffset = active?.material.uniforms.uUvOffset.value as Vector3 | undefined;
     const uvOffsetScale = active?.material.uniforms.uUvOffsetScale.value as number | undefined;
-    const sourcePlaneSize = [GRID_COLS * MOUSE_PLANE_SCALE, GRID_ROWS * MOUSE_PLANE_SCALE];
-    const sourceRayPlaneSize = [
-      GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
-      GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
-    ];
+    const sourcePlaneSize = sourceWorkMousePlaneSize();
+    const sourceRayPlaneSize = sourceWorkRayPlaneSize();
     const expectedTargetSize = {
-      width: Math.max(1, Math.round(GRID_COLS * MOUSE_PLANE_SCALE)),
-      height: Math.max(1, Math.round(GRID_ROWS * MOUSE_PLANE_SCALE)),
+      width: Math.max(1, Math.round(sourcePlaneSize.x)),
+      height: Math.max(1, Math.round(sourcePlaneSize.y)),
     };
     const expectedUvOffset = sourceMouseUvOffset();
     return {
@@ -6492,15 +6510,16 @@ export class WebGLBackdrop {
         thickness: active.mouseMaterial.uniforms.uThickness.value,
         uvOffset: uvOffset?.toArray() ?? null,
         uvOffsetScale: uvOffsetScale ?? null,
+        mousePlaneScale: active.mousePlane.scale.toArray(),
+        mousePlanePosition: active.mousePlane.position.toArray(),
+        mousePlaneParentIsNull: active.mousePlane.parent === null,
         rotationWrapScale: active.rotationWrap.scale.toArray(),
         meshScale: active.mesh.scale.toArray(),
         rayPlaneScale: active.rayPlane.scale.toArray(),
-        rayPlaneGeometrySize: [
-          GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
-          GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
-        ],
-        sourcePlaneSize,
-        sourceRayPlaneSize,
+        rayPlanePosition: active.rayPlane.position.toArray(),
+        rayPlaneParentIsRotationWrap: active.rayPlane.parent === active.rotationWrap,
+        sourcePlaneSize: sourcePlaneSize.toArray(),
+        sourceRayPlaneSize: sourceRayPlaneSize.toArray(),
         expectedTargetSize,
         sourceShape: {
           planeScale: MOUSE_PLANE_SCALE,
@@ -6516,17 +6535,27 @@ export class WebGLBackdrop {
             && Math.abs(active.mesh.scale.z - 1) < 1e-6,
           targetSizeMatchesPlane: activeTarget.width === expectedTargetSize.width && activeTarget.height === expectedTargetSize.height,
           uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
+          mousePlaneScaleMatchesSource:
+            Math.abs(active.mousePlane.scale.x - sourcePlaneSize.x) < 1e-6
+            && Math.abs(active.mousePlane.scale.y - sourcePlaneSize.y) < 1e-6,
+          mousePlaneZMatchesSource:
+            Math.abs(active.mousePlane.position.z - sourcePlaneSize.y / 2) < 1e-6,
+          mousePlaneNotInScene: active.mousePlane.parent === null,
           uvOffsetMatchesSource: Boolean(
             uvOffset
               && Math.abs(uvOffset.x - expectedUvOffset.x) < 1e-6
               && Math.abs(uvOffset.y - expectedUvOffset.y) < 1e-6,
           ),
           uvOffsetScaleMatchesSource: uvOffsetScale === MOUSE_RAY_SCALE,
+          rayPlaneScaleMatchesSource:
+            Math.abs(active.rayPlane.scale.x - sourceRayPlaneSize.x) < 1e-6
+            && Math.abs(active.rayPlane.scale.y - sourceRayPlaneSize.y) < 1e-6,
           rayPlaneGeometryMatchesSource:
-            Math.abs(active.rayPlane.geometry.parameters.width - sourceRayPlaneSize[0]) < 1e-6
-            && Math.abs(active.rayPlane.geometry.parameters.height - sourceRayPlaneSize[1]) < 1e-6,
+            Math.abs(active.rayPlane.geometry.parameters.width - 1) < 1e-6
+            && Math.abs(active.rayPlane.geometry.parameters.height - 1) < 1e-6,
+          rayPlaneParentMatchesSource: active.rayPlane.parent === active.rotationWrap,
           rayPlaneZMatchesSource:
-            Math.abs(active.rayPlane.position.z - (GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01)) < 1e-6,
+            Math.abs(active.rayPlane.position.z - (sourcePlaneSize.y / 2 + 0.01)) < 1e-6,
           persistenceMatchesSource: Math.abs((active.mouseMaterial.uniforms.uPersistance.value as number) - Math.pow(0.85, 1 / 60 * 10)) < 0.2,
           thicknessMatchesSource: Math.abs((active.mouseMaterial.uniforms.uThickness.value as number) - 0.1) < 1e-6,
         },
