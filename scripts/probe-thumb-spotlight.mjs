@@ -177,6 +177,9 @@ async function runProbe() {
     if (thumb.visible !== (x >= -1.5 && x <= 1.5)) {
       sourceShapeErrors.push(`${thumb.slug}:visible=${thumb.visible},x=${x}`);
     }
+    if (thumb.sourceInitialVisibleMode !== "source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible") {
+      sourceShapeErrors.push(`${thumb.slug}:initialVisibleMode=${thumb.sourceInitialVisibleMode}`);
+    }
     if (Math.abs(y) > 1e-6 || Math.abs(z) > 1e-6) {
       sourceShapeErrors.push(`${thumb.slug}:position=${JSON.stringify(thumb.position)}`);
     }
@@ -192,6 +195,7 @@ async function runProbe() {
     if (material.glslVersion !== "300 es") sourceShapeErrors.push(`thumbGlsl=${material.glslVersion}`);
     if (material.toneMapped !== false) sourceShapeErrors.push(`thumbToneMapped=${material.toneMapped}`);
     if (material.transparent !== false) sourceShapeErrors.push(`thumbTransparent=${material.transparent}`);
+    if (material.blending !== 1) sourceShapeErrors.push(`thumbBlending=${material.blending}`);
     if (material.depthWrite !== false) sourceShapeErrors.push(`thumbDepthWrite=${material.depthWrite}`);
     if (material.depthTest !== false) sourceShapeErrors.push(`thumbDepthTest=${material.depthTest}`);
     if (material.uProgress !== 1) sourceShapeErrors.push(`thumbProgressUniform=${material.uProgress}`);

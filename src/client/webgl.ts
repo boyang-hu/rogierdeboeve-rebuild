@@ -167,12 +167,14 @@ type ThumbProbeWindow = Window & {
       position: [number, number, number];
       scale: [number, number, number];
       visible: boolean;
+      sourceInitialVisibleMode: string;
     }>;
     thumbMaterial: {
       mode: string;
       glslVersion: string | null;
       toneMapped: boolean;
       transparent: boolean;
+      blending: number;
       depthWrite: boolean;
       depthTest: boolean;
       uProgress: number;
@@ -4882,7 +4884,6 @@ export class WebGLBackdrop {
     });
     const mesh = new Mesh(new PlaneGeometry(1, 1), material);
     mesh.scale.set(2, 2, 2);
-    mesh.visible = false;
     return mesh;
   }
 
@@ -6941,6 +6942,7 @@ void main() {
         position: item.thumb.position.toArray() as [number, number, number],
         scale: item.thumb.scale.toArray() as [number, number, number],
         visible: item.thumb.visible,
+        sourceInitialVisibleMode: "source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible",
       })),
       thumbMaterial: (() => {
         const first = this.workItems[0]?.thumb.material as RawShaderMaterial | undefined;
@@ -6950,6 +6952,7 @@ void main() {
           glslVersion: first.glslVersion ?? null,
           toneMapped: first.toneMapped,
           transparent: first.transparent,
+          blending: first.blending,
           depthWrite: first.depthWrite,
           depthTest: first.depthTest,
           uProgress: first.uniforms.uProgress.value as number,

@@ -136,14 +136,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `C1/A1`, `OA/CA`, `lA/Lu`, and `W1/j1` fullscreen vertex ownership was restored without visual tuning.
-- The mirrored bundle binds `C1` to `vertexShader:D1`, and `OA`, `lA`, and `W1` to `vertexShader:el`. Source `tl`, `D1`, and `el` are byte-equivalent matrix fullscreen vertex templates using `modelMatrix`, `viewMatrix`, and `projectionMatrix`, not the direct clip-space helper used by `sg/rg/cg/Na/L1/FXAA`.
-- The rebuild now routes `A1-pre-composite`, `OA-work-composite`, `Lu-main-composite`, and `j1-media-composite` through `sourceMatrixFullscreenVertex`; helper passes that source maps to direct clip-space vertices were intentionally left unchanged.
-- Runtime probes expose/assert the new vertex modes: `source-D1-matrix-fullscreen` for pre-composite and `source-el-matrix-fullscreen` for work, main, and media composites.
-- Static audit records source `vertexShader:D1/el` anchors, proves `tl == D1 == el`, and verifies the rebuild material bindings. Shader dump now compares those four material vertices against source `D1/el`.
-- QA passed for renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0052` and mobile center `+0.0297`, recorded only as regression evidence.
+- Source `E1/M1/w1` thumb-plane creation and visibility ownership was restored without visual tuning.
+- The mirrored `E1` constructor creates the mesh, assigns `new M1`, scales it to `2,2,2`, and does not set `mesh.visible=false`. Source `w1.updateGalleryProgress()` owns thumb visibility through the x-wrap rule `c < -1.5 || c > 1.5`.
+- The rebuild removed the rebuild-only initial `mesh.visible = false` from thumb-plane creation, leaving visibility to the source-shaped `updateThumbGallery()` path.
+- Thumb runtime probes now expose/assert `sourceInitialVisibleMode=source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible` for each thumb and assert source `M1` default blending `NormalBlending=1`.
+- Static audit now extracts source `E1`, verifies the no-initial-hidden source shape, and verifies the rebuild no longer contains the rebuild-only hidden state.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0053` and mobile center `+0.0295`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a fullscreen vertex source-surface mismatch, not the remaining thumb projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a thumb-plane creation/visibility ownership mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 

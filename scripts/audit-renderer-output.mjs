@@ -165,6 +165,7 @@ const sourceSDInitSpotlight = extractAround(bundle, "J.workScene.spotLight.map=J
 const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
 const sourceThumbT1 = extractAround(bundle, "class T1 extends Uu", 500, 1000);
+const sourceThumbE1 = extractAround(bundle, "class E1", 360, 900);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 900, 1700);
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
@@ -1067,6 +1068,25 @@ const summary = {
         "c<-1.5||c>1.5?r.mesh.visible=!1:r.mesh.visible=!0",
       ]),
       excerpt: compact(sourceThumbW1.text),
+    },
+    thumbE1: sourceThumbE1 && {
+      index: sourceThumbE1.index,
+      checks: checks(sourceThumbE1.text, [
+        "class E1",
+        "this.material=new M1",
+        "this.mesh=new at(this.geometry,this.material)",
+        "this.mesh.scale.set(2,2,2)",
+      ]),
+      ownership: {
+        sourceHasNoInitialHiddenState:
+          sourceThumbE1.text.includes("this.mesh=new at(this.geometry,this.material),this.mesh.scale.set(2,2,2)")
+          && !sourceThumbE1.text.includes("this.mesh.visible=!1")
+          && !sourceThumbE1.text.includes("visible=!1"),
+        rebuildHasNoInitialHiddenState:
+          !rebuildWebgl.includes("mesh.visible = false;")
+          && rebuildWebgl.includes("sourceInitialVisibleMode: \"source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible\""),
+      },
+      excerpt: compact(sourceThumbE1.text),
     },
     thumbX1: sourceThumbX1 && {
       index: sourceThumbX1.index,
