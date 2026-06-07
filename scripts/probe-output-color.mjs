@@ -329,6 +329,14 @@ async function runProbe() {
   if (mainTargetState.sourceMode !== "source-I1-target-default-state-depthBuffer-false-clones-false") {
     targetStateErrors.push("mainTargetStateMode");
   }
+  const mainRawProbe = parsed.probe.targets?.mainRaw;
+  const preCompositeProbe = parsed.probe.targets?.preComposite;
+  if (!mainRawProbe || typeof mainRawProbe.width !== "number" || !mainRawProbe.texture || !mainRawProbe.stats) {
+    targetStateErrors.push("mainRawTargetProbe");
+  }
+  if (!preCompositeProbe || typeof preCompositeProbe.width !== "number" || !preCompositeProbe.texture || !preCompositeProbe.stats) {
+    targetStateErrors.push("preCompositeTargetProbe");
+  }
   assertDefaultTargetState(workTargetState, "renderTargetA", true, "workRenderTargetA");
   for (const key of [
     "renderTargetBright",
@@ -365,6 +373,9 @@ async function runProbe() {
   const passMaterials = parsed.probe.uniforms?.passMaterials || {};
   if (preCompositeUniforms?.materialMode !== "source-C1-raw-glsl3") materialSurfaceErrors.push("preCompositeMaterialMode");
   if (preCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("preCompositeGlslVersion");
+  if (preCompositeUniforms?.tSceneSourceMode !== "source-I1-renderTargetA-raw-main-scene") materialSurfaceErrors.push("preCompositeSceneSourceMode");
+  if (preCompositeUniforms?.tSceneIsMainRawTarget !== true) materialSurfaceErrors.push("preCompositeSceneMainRawBinding");
+  if (preCompositeUniforms?.tSceneIsCompositeTarget !== false) materialSurfaceErrors.push("preCompositeSceneCompositeSelfBinding");
   const expectedWorkCompositeMaterialMode = debugCompositeProbe ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3";
   if (workCompositeUniforms?.materialMode !== expectedWorkCompositeMaterialMode) materialSurfaceErrors.push("workCompositeMaterialMode");
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");

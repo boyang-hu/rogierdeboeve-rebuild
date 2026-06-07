@@ -3270,6 +3270,7 @@ export class WebGLBackdrop {
   private compositeScene = new Scene();
   private workRawTarget = makeSourceRenderTarget(true);
   private workCompositeTarget = makeSourceRenderTarget(false);
+  private mainRawTarget = makeSourceRenderTarget(false);
   private backgroundTarget = makeSourceRenderTarget(false);
   private preCompositeMaterial: ShaderMaterial;
   private preCompositeScene = new Scene();
@@ -4024,6 +4025,7 @@ export class WebGLBackdrop {
     this.backgroundMaterial.dispose();
     this.workRawTarget.dispose();
     this.workCompositeTarget.dispose();
+    this.mainRawTarget.dispose();
     this.backgroundTarget.dispose();
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
@@ -4534,7 +4536,7 @@ export class WebGLBackdrop {
       depthTest: false,
       uniforms: {
         tWork: { value: this.workRawTarget.texture },
-        tScene: { value: this.compositeTarget.texture },
+        tScene: { value: this.mainRawTarget.texture },
         tFluid: { value: this.fluidPlaceholder },
         tMouseSim: { value: this.screenMouseSimulationTexture },
         tNoise: { value: this.noiseTexture },
@@ -5832,6 +5834,7 @@ void main() {
     }
     this.workRawTarget.setSize(workRenderWidth, workRenderHeight);
     this.workCompositeTarget.setSize(workRenderWidth, workRenderHeight);
+    this.mainRawTarget.setSize(renderWidth, renderHeight);
     this.backgroundTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
     this.mainLensflareTarget.setSize(renderWidth, renderHeight);
@@ -6712,8 +6715,8 @@ void main() {
           mousesim: this.sourceMainRenderSettings.mousesim,
           fluid: this.sourceMainRenderSettings.fluid,
           renderManagerSizing: {
-            primaryDepthBuffer: this.compositeTarget.depthBuffer,
-            renderTargetSize: { width: this.compositeTarget.width, height: this.compositeTarget.height },
+            primaryDepthBuffer: this.mainRawTarget.depthBuffer,
+            renderTargetSize: { width: this.mainRawTarget.width, height: this.mainRawTarget.height },
             bloomStart: this.mainBloomHorizontalTargets[0]
               ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
               : null,
@@ -6723,7 +6726,7 @@ void main() {
             dprMode: "source-Pe-dpr-global",
           },
           renderTargetState: sourceRenderTargetStateBoard({
-            renderTargetA: this.compositeTarget,
+            renderTargetA: this.mainRawTarget,
             renderTargetB: this.backgroundTarget,
             renderTargetLensflare: this.mainLensflareTarget,
             renderTargetBright: this.mainBloomBrightTarget,
@@ -6767,6 +6770,9 @@ void main() {
           materialMode: "source-C1-raw-glsl3",
           glslVersion: (this.preCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           blending: this.preCompositeMaterial.blending,
+          tSceneSourceMode: "source-I1-renderTargetA-raw-main-scene",
+          tSceneIsMainRawTarget: this.preCompositeMaterial.uniforms.tScene.value === this.mainRawTarget.texture,
+          tSceneIsCompositeTarget: this.preCompositeMaterial.uniforms.tScene.value === this.compositeTarget.texture,
           uBgColor: (this.preCompositeMaterial.uniforms.uBgColor.value as Color).toArray(),
           uContrast: this.preCompositeMaterial.uniforms.uContrast.value,
           uFluidStrength: this.preCompositeMaterial.uniforms.uFluidStrength.value,
@@ -7062,6 +7068,7 @@ void main() {
       targets: {
         workRaw: renderTargetProbe(this.renderer, this.workRawTarget),
         workComposite: renderTargetProbe(this.renderer, this.workCompositeTarget),
+        mainRaw: renderTargetProbe(this.renderer, this.mainRawTarget),
         preComposite: renderTargetProbe(this.renderer, this.compositeTarget),
         bloomBright: renderTargetProbe(this.renderer, this.bloomBrightTarget),
         bloom: renderTargetProbe(this.renderer, this.bloomHorizontalTargets[0]),
@@ -7737,7 +7744,9 @@ void main() {
       preCompositeWorkTarget = this.workCompositeTarget;
     }
     this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
-    this.preCompositeMaterial.uniforms.tScene.value = this.compositeTarget.texture;
+    this.renderer.setRenderTarget(this.mainRawTarget);
+    this.renderer.render(this.backgroundScene, this.backgroundCamera);
+    this.preCompositeMaterial.uniforms.tScene.value = this.mainRawTarget.texture;
     this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
     this.renderMediaCompositeTarget(isProjectView && hasMedia);
     this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
