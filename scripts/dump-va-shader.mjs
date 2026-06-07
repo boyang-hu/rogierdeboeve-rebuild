@@ -97,6 +97,22 @@ function tryExtractSourceShader(bundle, name, terminator) {
   }
 }
 
+function expandSourceTemplate(bundle, shader, stack = []) {
+  if (!shader) return shader;
+  if (stack.length > 40) return shader;
+  return shader.replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (match, name) => {
+    if (stack.includes(name)) return match;
+    const helper = tryExtractSourceShader(bundle, name);
+    if (!helper) return match;
+    return expandSourceTemplate(bundle, helper, [...stack, name]);
+  });
+}
+
+function sourceShader(bundle, name, terminator) {
+  const shader = tryExtractSourceShader(bundle, name, terminator);
+  return expandSourceTemplate(bundle, shader);
+}
+
 function summarizeShader(label, shader, sourceShader) {
   const checks = [
     "#include <uv_pars_vertex>",
@@ -441,8 +457,9 @@ function normalizeShaderForCoreChecks(shader = "") {
     .replace(/texture2D/g, "texture");
 }
 
-function analyzeCompositeCore(sourceShader, rebuildShader) {
+function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
   if (!sourceShader) return null;
+  if (!["A1-pre-composite", "OA-work-composite", "Lu-main-composite", "x1-thumb-composite"].includes(shaderName)) return null;
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
   const isA1PreComposite = source.includes("uniformsampler2DtWork")
@@ -943,60 +960,60 @@ function analyzeFloorBlurCore(sourceShader, rebuildShader) {
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
-const sourceZ = extractSourceShader(bundle, "zA", "`,HA=`");
-const sourceH = extractSourceShader(bundle, "HA", "`;class VA extends");
+const sourceZ = expandSourceTemplate(bundle, extractSourceShader(bundle, "zA", "`,HA=`"));
+const sourceH = expandSourceTemplate(bundle, extractSourceShader(bundle, "HA", "`;class VA extends"));
 const sourceStandardBlurFragment = (() => {
   const helper = tryExtractSourceShader(bundle, "og");
   const fragment = tryExtractSourceShader(bundle, "zT");
-  return helper && fragment ? fragment.replace("${og}", helper) : fragment;
+  return helper && fragment ? expandSourceTemplate(bundle, fragment.replace("${og}", helper)) : expandSourceTemplate(bundle, fragment);
 })();
 const sourceFragmentShaders = {
   "VA-work": sourceZ,
-  "A1-pre-composite": tryExtractSourceShader(bundle, "A1"),
-  "Lu-main-composite": tryExtractSourceShader(bundle, "aA"),
-  "OA-work-composite": tryExtractSourceShader(bundle, "CA"),
-  "x1-thumb-composite": tryExtractSourceShader(bundle, "v1"),
-  "M1-thumb-plane": tryExtractSourceShader(bundle, "S1"),
-  "j1-media-composite": tryExtractSourceShader(bundle, "G1"),
-  "sg-luminosity": tryExtractSourceShader(bundle, "NT"),
+  "A1-pre-composite": sourceShader(bundle, "A1"),
+  "Lu-main-composite": sourceShader(bundle, "aA"),
+  "OA-work-composite": sourceShader(bundle, "CA"),
+  "x1-thumb-composite": sourceShader(bundle, "v1"),
+  "M1-thumb-plane": sourceShader(bundle, "S1"),
+  "j1-media-composite": sourceShader(bundle, "G1"),
+  "sg-luminosity": sourceShader(bundle, "NT"),
   "Na-standard-blur": sourceStandardBlurFragment,
-  "rg-bloom-blur": tryExtractSourceShader(bundle, "kT"),
-  "cg-bloom-composite": tryExtractSourceShader(bundle, "nA"),
-  "ig-fxaa": tryExtractSourceShader(bundle, "UT"),
-  "L1-lensflare": tryExtractSourceShader(bundle, "P1"),
-  "N1-displacement-composite": tryExtractSourceShader(bundle, "F1"),
-  "ag-advection": tryExtractSourceShader(bundle, "Sf"),
-  "ag-advection-bounds": tryExtractSourceShader(bundle, "Sf"),
-  "ag-force": tryExtractSourceShader(bundle, "$T"),
-  "ag-divergence": tryExtractSourceShader(bundle, "WT"),
-  "ag-poisson": tryExtractSourceShader(bundle, "YT"),
-  "ag-pressure": tryExtractSourceShader(bundle, "ZT"),
-  "UD-project-media": tryExtractSourceShader(bundle, "LD"),
-  "z1-sky-composite": tryExtractSourceShader(bundle, "B1"),
-  "u1-environment": tryExtractSourceShader(bundle, "l1"),
-  "o1-floor-material": tryExtractSourceShader(bundle, "s1"),
-  "t1-floor-reflection-blur": tryExtractSourceShader(bundle, "QA"),
+  "rg-bloom-blur": sourceShader(bundle, "kT"),
+  "cg-bloom-composite": sourceShader(bundle, "nA"),
+  "ig-fxaa": sourceShader(bundle, "UT"),
+  "L1-lensflare": sourceShader(bundle, "P1"),
+  "N1-displacement-composite": sourceShader(bundle, "F1"),
+  "ag-advection": sourceShader(bundle, "Sf"),
+  "ag-advection-bounds": sourceShader(bundle, "Sf"),
+  "ag-force": sourceShader(bundle, "$T"),
+  "ag-divergence": sourceShader(bundle, "WT"),
+  "ag-poisson": sourceShader(bundle, "YT"),
+  "ag-pressure": sourceShader(bundle, "ZT"),
+  "UD-project-media": sourceShader(bundle, "LD"),
+  "z1-sky-composite": sourceShader(bundle, "B1"),
+  "u1-environment": sourceShader(bundle, "l1"),
+  "o1-floor-material": sourceShader(bundle, "s1"),
+  "t1-floor-reflection-blur": sourceShader(bundle, "QA"),
 };
 const sourceVertexShaders = {
   "VA-work": sourceH,
-  "M1-thumb-plane": tryExtractSourceShader(bundle, "b1"),
-  "z1-sky-composite": tryExtractSourceShader(bundle, "tl"),
-  "x1-thumb-composite": tryExtractSourceShader(bundle, "tl"),
-  "sg-luminosity": tryExtractSourceShader(bundle, "OT"),
-  "Na-standard-blur": tryExtractSourceShader(bundle, "HT"),
-  "rg-bloom-blur": tryExtractSourceShader(bundle, "BT"),
-  "cg-bloom-composite": tryExtractSourceShader(bundle, "iA"),
-  "ig-fxaa": tryExtractSourceShader(bundle, "FT"),
-  "L1-lensflare": tryExtractSourceShader(bundle, "R1"),
-  "N1-displacement-composite": tryExtractSourceShader(bundle, "tl"),
-  "ag-advection": tryExtractSourceShader(bundle, "Co"),
-  "ag-advection-bounds": tryExtractSourceShader(bundle, "VT"),
-  "ag-force": tryExtractSourceShader(bundle, "XT"),
-  "ag-divergence": tryExtractSourceShader(bundle, "Co"),
-  "ag-poisson": tryExtractSourceShader(bundle, "Co"),
-  "ag-pressure": tryExtractSourceShader(bundle, "Co"),
-  "o1-floor-material": tryExtractSourceShader(bundle, "r1"),
-  "t1-floor-reflection-blur": tryExtractSourceShader(bundle, "e1"),
+  "M1-thumb-plane": sourceShader(bundle, "b1"),
+  "z1-sky-composite": sourceShader(bundle, "tl"),
+  "x1-thumb-composite": sourceShader(bundle, "tl"),
+  "sg-luminosity": sourceShader(bundle, "OT"),
+  "Na-standard-blur": sourceShader(bundle, "HT"),
+  "rg-bloom-blur": sourceShader(bundle, "BT"),
+  "cg-bloom-composite": sourceShader(bundle, "iA"),
+  "ig-fxaa": sourceShader(bundle, "FT"),
+  "L1-lensflare": sourceShader(bundle, "R1"),
+  "N1-displacement-composite": sourceShader(bundle, "tl"),
+  "ag-advection": sourceShader(bundle, "Co"),
+  "ag-advection-bounds": sourceShader(bundle, "VT"),
+  "ag-force": sourceShader(bundle, "XT"),
+  "ag-divergence": sourceShader(bundle, "Co"),
+  "ag-poisson": sourceShader(bundle, "Co"),
+  "ag-pressure": sourceShader(bundle, "Co"),
+  "o1-floor-material": sourceShader(bundle, "r1"),
+  "t1-floor-reflection-blur": sourceShader(bundle, "e1"),
 };
 writeFileSync(path.join(outDir, "source-HA.glsl"), sourceH);
 writeFileSync(path.join(outDir, "source-zA.glsl"), sourceZ);
@@ -1065,7 +1082,7 @@ try {
     genericShaderAnalysis[entry.name] = {
       vertex: summarizeGenericShader(sourceVertex, entry.vertexShader),
       fragment: summarizeGenericShader(sourceFragment, entry.fragmentShader),
-      compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
+      compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader, entry.name),
       rgBlurCoreChecks: entry.name === "rg-bloom-blur" ? analyzeRgBlurCore(sourceFragment, entry.fragmentShader) : null,
       standardBlurCoreChecks: entry.name === "Na-standard-blur" ? analyzeStandardBlurCore(sourceFragment, entry.fragmentShader) : null,
       lensflareCoreChecks: entry.name === "L1-lensflare" ? analyzeLensflareCore(sourceFragment, entry.fragmentShader) : null,
