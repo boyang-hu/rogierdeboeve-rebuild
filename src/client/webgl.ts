@@ -1408,29 +1408,38 @@ void main() {
 `;
 
 const homeBloomCompositeFragment = `
-precision highp float;
+precision mediump float;
 
-uniform sampler2D tBloom1;
-uniform sampler2D tBloom2;
-uniform sampler2D tBloom3;
-uniform sampler2D tBloom4;
-uniform sampler2D tBloom5;
-uniform float uFactor1;
-uniform float uFactor2;
-uniform float uFactor3;
-uniform float uFactor4;
-uniform float uFactor5;
+float random(vec2 co) {
+  return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+vec3 dither(vec3 color) {
+  float grid_position = random(gl_FragCoord.xy);
+  vec3 dither_shift_RGB = vec3(0.25 / 255.0, -0.25 / 255.0, 0.25 / 255.0);
+  dither_shift_RGB = mix(2.0 * dither_shift_RGB, -2.0 * dither_shift_RGB, grid_position);
+  return color + dither_shift_RGB;
+}
+
+uniform sampler2D tBlur1;
+uniform sampler2D tBlur2;
+uniform sampler2D tBlur3;
+uniform sampler2D tBlur4;
+uniform sampler2D tBlur5;
+uniform float uBloomFactors[NUM_MIPS];
 
 in vec2 vUv;
 out vec4 FragColor;
 
 void main() {
-  vec3 color = texture(tBloom1, vUv).rgb * uFactor1;
-  color += texture(tBloom2, vUv).rgb * uFactor2;
-  color += texture(tBloom3, vUv).rgb * uFactor3;
-  color += texture(tBloom4, vUv).rgb * uFactor4;
-  color += texture(tBloom5, vUv).rgb * uFactor5;
-  FragColor = vec4(color, 1.0);
+  FragColor = uBloomFactors[0] * texture(tBlur1, vUv) +
+    uBloomFactors[1] * texture(tBlur2, vUv) +
+    uBloomFactors[2] * texture(tBlur3, vUv) +
+    uBloomFactors[3] * texture(tBlur4, vUv) +
+    uBloomFactors[4] * texture(tBlur5, vUv);
+    #ifdef DITHERING
+  FragColor.rgb = dither(FragColor.rgb);
+    #endif
 }
 `;
 
@@ -4068,20 +4077,19 @@ export class WebGLBackdrop {
     dumpShader("cg-bloom-composite", sourceFullscreenVertex, homeBloomCompositeFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
+      defines: {
+        NUM_MIPS: 5,
+      },
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tBloom1: { value: verticalTargets[0].texture },
-        tBloom2: { value: verticalTargets[1].texture },
-        tBloom3: { value: verticalTargets[2].texture },
-        tBloom4: { value: verticalTargets[3].texture },
-        tBloom5: { value: verticalTargets[4].texture },
-        uFactor1: { value: factors[0] },
-        uFactor2: { value: factors[1] },
-        uFactor3: { value: factors[2] },
-        uFactor4: { value: factors[3] },
-        uFactor5: { value: factors[4] },
+        tBlur1: { value: verticalTargets[0].texture },
+        tBlur2: { value: verticalTargets[1].texture },
+        tBlur3: { value: verticalTargets[2].texture },
+        tBlur4: { value: verticalTargets[3].texture },
+        tBlur5: { value: verticalTargets[4].texture },
+        uBloomFactors: { value: factors },
       },
       vertexShader: sourceFullscreenVertex,
       fragmentShader: homeBloomCompositeFragment,
@@ -6005,6 +6013,13 @@ export class WebGLBackdrop {
             blending: this.bloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
             glslVersion: (this.bloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            uniformMode: "source-cg-tBlur-uBloomFactors",
+            numMipsDefine: this.bloomCompositeMaterial.defines?.NUM_MIPS ?? null,
+            ditheringDefine: this.bloomCompositeMaterial.defines?.DITHERING ?? null,
+            hasBloomFactorsArray: Array.isArray(this.bloomCompositeMaterial.uniforms.uBloomFactors?.value),
+            hasSourceBlurUniforms: [1, 2, 3, 4, 5].every((index) => `tBlur${index}` in this.bloomCompositeMaterial.uniforms),
+            hasRebuildBloomUniforms: [1, 2, 3, 4, 5].some((index) => `tBloom${index}` in this.bloomCompositeMaterial.uniforms),
+            hasRebuildFactorUniforms: [1, 2, 3, 4, 5].some((index) => `uFactor${index}` in this.bloomCompositeMaterial.uniforms),
           },
           mainBloomBlur: {
             blending: this.mainBloomBlurMaterials[0]?.blending ?? null,
@@ -6019,6 +6034,13 @@ export class WebGLBackdrop {
             blending: this.mainBloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
             glslVersion: (this.mainBloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            uniformMode: "source-cg-tBlur-uBloomFactors",
+            numMipsDefine: this.mainBloomCompositeMaterial.defines?.NUM_MIPS ?? null,
+            ditheringDefine: this.mainBloomCompositeMaterial.defines?.DITHERING ?? null,
+            hasBloomFactorsArray: Array.isArray(this.mainBloomCompositeMaterial.uniforms.uBloomFactors?.value),
+            hasSourceBlurUniforms: [1, 2, 3, 4, 5].every((index) => `tBlur${index}` in this.mainBloomCompositeMaterial.uniforms),
+            hasRebuildBloomUniforms: [1, 2, 3, 4, 5].some((index) => `tBloom${index}` in this.mainBloomCompositeMaterial.uniforms),
+            hasRebuildFactorUniforms: [1, 2, 3, 4, 5].some((index) => `uFactor${index}` in this.mainBloomCompositeMaterial.uniforms),
           },
           standardBlur: {
             horizontal: {

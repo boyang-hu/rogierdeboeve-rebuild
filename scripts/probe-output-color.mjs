@@ -226,6 +226,16 @@ async function runProbe() {
     if (JSON.stringify(material?.sigmaDefines) !== JSON.stringify(expectedBloomKernels)) materialSurfaceErrors.push(`${key}SigmaDefines`);
     if (material?.runtimeKernelUniforms !== false) materialSurfaceErrors.push(`${key}RuntimeKernelUniforms`);
   }
+  for (const key of ["bloomComposite", "mainBloomComposite"]) {
+    const material = passMaterials[key];
+    if (material?.uniformMode !== "source-cg-tBlur-uBloomFactors") materialSurfaceErrors.push(`${key}UniformMode`);
+    if (material?.numMipsDefine !== 5) materialSurfaceErrors.push(`${key}NumMipsDefine`);
+    if (material?.ditheringDefine != null) materialSurfaceErrors.push(`${key}DitheringDefine`);
+    if (material?.hasBloomFactorsArray !== true) materialSurfaceErrors.push(`${key}BloomFactorsArray`);
+    if (material?.hasSourceBlurUniforms !== true) materialSurfaceErrors.push(`${key}SourceBlurUniforms`);
+    if (material?.hasRebuildBloomUniforms !== false) materialSurfaceErrors.push(`${key}RebuildBloomUniforms`);
+    if (material?.hasRebuildFactorUniforms !== false) materialSurfaceErrors.push(`${key}RebuildFactorUniforms`);
+  }
   const standardBlur = passMaterials.standardBlur || {};
   for (const key of ["horizontal", "vertical"]) {
     const material = standardBlur[key];
