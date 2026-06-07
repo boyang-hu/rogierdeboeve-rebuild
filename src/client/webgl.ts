@@ -4437,6 +4437,50 @@ export class WebGLBackdrop {
     };
   }
 
+  private createSourceWorkMousePlaneMaterial() {
+    const material = new ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        uUvOffset: { value: new Vector2(0, 0) },
+        tMouseSim: { value: null },
+        uTime: { value: 0 },
+        uRatio: { value: GRID_COLS / GRID_ROWS },
+      },
+      vertexShader: `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`,
+      fragmentShader: `
+uniform vec2 uUvOffset;
+uniform float uTime;
+uniform sampler2D tMouseSim;
+varying vec2 vUv;
+uniform float uRatio;
+void main() {
+  vec2 uvOff = vUv;
+  uvOff.x -= 0.5;
+  uvOff.x *= uRatio;
+  uvOff.x += 0.5;
+  vec2 p = uvOff.xy * 2.0 - 1.0;
+  float r = length(p) * 0.9;
+  vec3 color = vec3(0.24, 0.7, 0.4);
+  float a = pow(r, 0.25);
+  float b = sin(r * 0.8 - 1.6);
+  float c = sin(r - 0.010);
+  float s = sin(a - uTime * 1.0 + b);
+  color *= abs(1.0 / (s * 10.8)) - 0.1;
+  gl_FragColor = vec4(color, 1.0);
+}
+`,
+    });
+    return material;
+  }
+
   private createMainFluidPass(): MainFluidPass {
     const settings = this.sourceMainRenderSettings.fluid;
     const cellScale = new Vector2();
@@ -4749,17 +4793,21 @@ export class WebGLBackdrop {
 
   private createWorkMousePlane() {
     const planeSize = sourceWorkMousePlaneSize();
-    const material = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
+    const material = this.createSourceWorkMousePlaneMaterial();
     const mesh = new Mesh(new PlaneGeometry(1, 1), material);
     mesh.scale.set(planeSize.x, planeSize.y, 1);
     mesh.position.set(0, 0, planeSize.y / 2);
-    mesh.visible = false;
     return mesh;
   }
 
   private createWorkRayPlane() {
     const raySize = sourceWorkRayPlaneSize();
-    const material = new MeshBasicMaterial({ visible: false });
+    const material = new MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      depthTest: false,
+    });
     const mesh = new Mesh(new PlaneGeometry(1, 1), material);
     mesh.scale.set(raySize.x, raySize.y, 1);
     mesh.position.set(0, 0, sourceWorkMousePlaneSize().y / 2 + 0.01);
@@ -6744,12 +6792,26 @@ export class WebGLBackdrop {
         uvOffsetScale: uvOffsetScale ?? null,
         mousePlaneScale: active.mousePlane.scale.toArray(),
         mousePlanePosition: active.mousePlane.position.toArray(),
+        mousePlaneVisible: active.mousePlane.visible,
         mousePlaneParentIsNull: active.mousePlane.parent === null,
+        mousePlaneMaterial: {
+          transparent: active.mousePlane.material.transparent,
+          depthWrite: active.mousePlane.material.depthWrite,
+          depthTest: active.mousePlane.material.depthTest,
+          ratio: active.mousePlane.material.uniforms.uRatio.value,
+        },
         rotationWrapScale: active.rotationWrap.scale.toArray(),
         meshScale: active.mesh.scale.toArray(),
         rayPlaneScale: active.rayPlane.scale.toArray(),
         rayPlanePosition: active.rayPlane.position.toArray(),
         rayPlaneParentIsRotationWrap: active.rayPlane.parent === active.rotationWrap,
+        rayPlaneVisible: active.rayPlane.visible,
+        rayPlaneMaterial: {
+          transparent: active.rayPlane.material.transparent,
+          opacity: active.rayPlane.material.opacity,
+          depthWrite: active.rayPlane.material.depthWrite,
+          depthTest: active.rayPlane.material.depthTest,
+        },
         sourcePlaneSize: sourcePlaneSize.toArray(),
         sourceRayPlaneSize: sourceRayPlaneSize.toArray(),
         expectedTargetSize,
@@ -6773,7 +6835,13 @@ export class WebGLBackdrop {
             && Math.abs(active.mousePlane.scale.y - sourcePlaneSize.y) < 1e-6,
           mousePlaneZMatchesSource:
             Math.abs(active.mousePlane.position.z - sourcePlaneSize.y / 2) < 1e-6,
+          mousePlaneVisibleMatchesSource: active.mousePlane.visible === true,
           mousePlaneNotInScene: active.mousePlane.parent === null,
+          mousePlaneMaterialMatchesSource:
+            active.mousePlane.material.transparent === true
+            && active.mousePlane.material.depthWrite === false
+            && active.mousePlane.material.depthTest === false
+            && Math.abs((active.mousePlane.material.uniforms.uRatio.value as number) - GRID_COLS / GRID_ROWS) < 1e-6,
           uvOffsetMatchesSource: Boolean(
             uvOffset
               && uvOffset.isVector2
@@ -6791,6 +6859,12 @@ export class WebGLBackdrop {
           rayPlaneParentMatchesSource: active.rayPlane.parent === active.rotationWrap,
           rayPlaneZMatchesSource:
             Math.abs(active.rayPlane.position.z - (sourcePlaneSize.y / 2 + 0.01)) < 1e-6,
+          rayPlaneVisibleMatchesSource: active.rayPlane.visible === true,
+          rayPlaneMaterialMatchesSource:
+            active.rayPlane.material.transparent === true
+            && active.rayPlane.material.opacity === 0
+            && active.rayPlane.material.depthWrite === false
+            && active.rayPlane.material.depthTest === false,
           persistenceMatchesSource: Math.abs((active.mouseMaterial.uniforms.uPersistance.value as number) - Math.pow(0.85, 1 / 60 * 10)) < 0.2,
           thicknessMatchesSource: Math.abs((active.mouseMaterial.uniforms.uThickness.value as number) - 0.1) < 1e-6,
         },
