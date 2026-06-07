@@ -125,6 +125,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 48 | S1-121 | Source `VA/zA` include surface | Source `zA` keeps `#include <bsdfs>` before lights parsing and `#include <opaque_fragment>` before the source `gl_FragColor.rgb/a` tail mutations. The rebuild had manually expanded the opaque output tail, leaving an avoidable include-surface residual even though core checks matched. | Ordinary work-block `VA` now restores the source include surface by inserting `bsdfs` in the work variant and using `#include <opaque_fragment>` before the existing source-style tail mutations. The shader residual report text is now conditional so it cannot keep reporting a stale `VA-work` include residual after the generated dump clears it. | Low-medium | Keep as source-correct `VA/zA` surface alignment. Shader dump now reports no `VA-work` source/rebuild include or uniform residuals, but Phase 1 remains open for generated shader text/bridge depth, mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 49 | S1-122 | `VA/zA` r164 bridge attribution | Source `zA` uses the old `SPECULAR` define surface under `PHYSICAL`, but the local Three r164 `lights_physical_fragment` chunk requires `USE_SPECULAR` and does not accept `SPECULAR`. The remaining `VA-work` text diff therefore needed to be classified so it is not mistaken for a safe source-constant or visual tweak. | Production rendering is unchanged. Shader dump now records `vaBridgeCompatibility`, reports the Three r164 `lights_physical_fragment` chunk surface, and `phase1-shader-residuals.md` adds a Bridge Notes column that classifies `VA-work` as an `r164 compile bridge` while still showing include/uniform/core anchors matched. | Low | Keep as QA attribution. Do not replace `USE_SPECULAR` with `SPECULAR` unless the entire `lights_physical_fragment` dependency is source-ported and WebGL-verified. Phase 1 remains open for visual parity, but this removes one false implementation target. |
 | 50 | S1-123 | Source `xt/Se` visual defaults | Source `xt` defines `darken=.2`, `saturation=.35`, `contrast=1.1`, `thumbDarknessIntensity=.5`, `thumbDarknessColor="#000000"`, while `Se.init()` seeds those settings before route payloads take over. The rebuild still had pre-route/fallback state at `darken=.1`, `saturation=1.15`, and thumb darkness fallback `0`. | Production now names and uses source visual defaults for WebGL initial state, home fallback darken/saturation, about defaults, thumb fallback darkness/color/saturation/mouse-lightness, and separate project-detail fallback constants. Output and thumb probes expose and assert the source defaults. | Low | Keep as source-correct visual-state ownership. This removes a route-boundary/fallback mismatch without tuning projection or shader formulas. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 51 | S1-124 | Source `k1/O1/N1/F1` displacement pass | Source `k1` owns a wavves/displacement scene through `O1 extends Lo`; source `N1` is a raw GLSL3 material using fragment `F1`, source fullscreen vertex `tl`, tonemapping includes, direct `Lo.update()` render calls, and a square target sized at `height/10`. The rebuild still used a bridge `ShaderMaterial`, bridge vertex, `gl_FragColor` surface, and an explicit clear before rendering the displacement target. | Production now uses `RawShaderMaterial`/`GLSL3` for the displacement composite, source fullscreen vertex surface, source-style `in/out` and `FragColor` fragment output, tonemapping include surface, transparent/no-blending material state, target resize metadata, and source `Lo` no-explicit-clear ownership. Output probe and shader dump expose and assert the new pass surface. | Low-medium | Keep as source-correct displacement render-manager alignment. The source-only `tScene` uniform remains an unused source surface residual to revisit only if a narrower `N1/F1` evidence pass requires it. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -1160,6 +1161,39 @@ Verification notes:
 - Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks.
 - Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
 - Band analysis: desktop center-band delta `-0.0010`; mobile center-band delta `-0.0136`.
+- Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-124 Source `k1/O1/N1/F1` Displacement Pass
+
+This batch aligned the work-scene wavves/displacement render pass surface with source. It did not tune visual constants, spotlight values, cube material brightness, or project media mapping.
+
+Source evidence:
+
+- Source `k1` constructs its displacement scene with `renderManager = new O1(J.renderer, J.debug, "wavves")`.
+- Source `O1 extends Lo` and source `Lo.update()` renders raw/composite targets through `setRenderTarget(...); render(...)` without a rebuild-only explicit clear.
+- Source `N1 extends mt` binds fragment `F1`, source fullscreen vertex `tl`, and `glslVersion:lt`.
+- Source `F1` uses the raw GLSL3 surface with `in vec2 vUv`, `out vec4 FragColor`, and `#include <tonemapping_pars_fragment>` / `#include <tonemapping_fragment>`.
+- Source `k1.resize()` calls `renderManager.resize(t / 10, t / 10, n)` and sets `uRatio = e / t`.
+
+Runtime and tooling changes:
+
+- The displacement composite now uses `RawShaderMaterial` with `GLSL3`, `NoBlending`, `transparent:true`, and `toneMapped:false`.
+- The displacement fragment now uses source-style `in/out`, `FragColor`, and tonemapping includes.
+- The displacement pass now uses the same fullscreen vertex surface as other source `tl` fullscreen passes.
+- The rebuild-only explicit `renderer.clear()` before the displacement render was removed.
+- Shader dump now maps `N1-displacement-composite` to source `F1/tl`.
+- Output probe now reports and hard-asserts displacement material mode, GLSL version, no-blending state, no-explicit-clear mode, target size, ratio, transparency, and tone-mapping state.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed and wrote `/tmp/rd-s124-shader/`; `N1-displacement-composite` source/rebuild files were generated, with fragment includes matched and the remaining source-only `tScene` uniform recorded.
+- Output probe passed and reported `source-N1-raw-glsl3`, `glslVersion="300 es"`, `clearMode=source-Lo-no-explicit-clear`, target size `90x90` at `1440x900`, and ratio `1.6`.
+- Thumb spotlight probe passed and retained source thumb strip shape, spotlight map, target `(0,0,-8)`, and intensity `220`.
+- Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
+- Band analysis: desktop center-band delta `-0.0005`; mobile center-band delta `-0.0161`.
 - Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-122 `VA/zA` r164 Bridge Attribution

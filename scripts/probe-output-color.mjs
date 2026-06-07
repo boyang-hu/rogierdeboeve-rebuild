@@ -238,6 +238,21 @@ async function runProbe() {
   if (JSON.stringify(standardBlur.horizontal?.direction) !== JSON.stringify([1, 0])) materialSurfaceErrors.push("standardBlurHorizontalDirection");
   if (JSON.stringify(standardBlur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push("standardBlurVerticalDirection");
   if (passMaterials.fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("fxaaVertexMode");
+  const displacement = passMaterials.displacement || {};
+  const rendererSize = parsed.probe.renderer?.size || {};
+  const expectedDisplacementSize = Math.max(1, Math.round((rendererSize.height || 0) / 10));
+  if (displacement.materialMode !== "source-N1-raw-glsl3") materialSurfaceErrors.push("displacementMaterialMode");
+  if (displacement.glslVersion !== "300 es") materialSurfaceErrors.push("displacementGlslVersion");
+  if (displacement.blending !== 0) materialSurfaceErrors.push("displacementBlending");
+  if (displacement.clearMode !== "source-Lo-no-explicit-clear") materialSurfaceErrors.push("displacementClearMode");
+  if (displacement.toneMapped !== false) materialSurfaceErrors.push("displacementToneMapped");
+  if (displacement.transparent !== true) materialSurfaceErrors.push("displacementTransparent");
+  if (displacement.targetSize && (
+    displacement.targetSize.width !== expectedDisplacementSize ||
+    displacement.targetSize.height !== expectedDisplacementSize
+  )) {
+    materialSurfaceErrors.push("displacementTargetSize");
+  }
   const mainFluidMaterials = parsed.probe.mainFluid?.materialSurface || {};
   for (const [key, expectedMode] of Object.entries({
     advection: "source-GT-raw-glsl3",

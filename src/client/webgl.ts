@@ -2169,10 +2169,13 @@ void main() {
 const displacementFragment = `
 precision highp float;
 
+#include <tonemapping_pars_fragment>
+
 uniform float uTime;
 uniform float uRatio;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 float vignette(vec2 coords, float vignin, float vignout, float vignfade, float fstop) {
   float dist = distance(coords.xy, vec2(0.5));
@@ -2193,7 +2196,10 @@ void main() {
 
   float strength = 1.0 - abs(sin(distance(uvOff, vec2(0.5)) - 0.5 - uTime));
   float vignetteF = vignette(uvVignette, 0.01, 0.5, 2.0, 0.4);
-  gl_FragColor = vec4(vec3(strength * (1.0 - vignetteF)), 1.0);
+  FragColor = vec4(vec3(strength), 1.0);
+  FragColor.rgb *= 1.0 - vignetteF;
+
+  #include <tonemapping_fragment>
 }
 `;
 
@@ -4169,15 +4175,19 @@ export class WebGLBackdrop {
   }
 
   private createDisplacementMaterial() {
-    return new ShaderMaterial({
+    dumpShader("N1-displacement-composite", thumbCompositeVertex, displacementFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
+      toneMapped: false,
       blending: NoBlending,
+      transparent: true,
       depthWrite: false,
       depthTest: false,
       uniforms: {
         uTime: { value: 0 },
         uRatio: { value: 1 },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: thumbCompositeVertex,
       fragmentShader: displacementFragment,
     });
   }
@@ -5681,7 +5691,6 @@ export class WebGLBackdrop {
   private renderDisplacementTarget(time: number) {
     this.displacementMaterial.uniforms.uTime.value = time;
     this.renderer.setRenderTarget(this.displacementTarget);
-    this.renderer.clear();
     this.renderer.render(this.displacementScene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
   }
@@ -6013,8 +6022,16 @@ export class WebGLBackdrop {
           },
           displacement: {
             blending: this.displacementMaterial.blending,
-            materialMode: "bridge-displacement-shadermaterial",
-            glslVersion: null,
+            materialMode: "source-N1-raw-glsl3",
+            glslVersion: (this.displacementMaterial as RawShaderMaterial).glslVersion ?? null,
+            clearMode: "source-Lo-no-explicit-clear",
+            targetSize: {
+              width: this.displacementTarget.width,
+              height: this.displacementTarget.height,
+            },
+            ratio: this.displacementMaterial.uniforms.uRatio.value,
+            toneMapped: this.displacementMaterial.toneMapped,
+            transparent: this.displacementMaterial.transparent,
           },
         },
         thumbComposite: {
