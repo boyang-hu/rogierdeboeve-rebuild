@@ -876,6 +876,10 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
       source: countOccurrences(sourceShader, "vWorldPosition = worldPosition.xyz") === 1,
       rebuild: countOccurrences(rebuildShader, "vWorldPosition = worldPosition.xyz") === 1,
     }],
+    ["noR164StripCommentsInWorkVertex", {
+      source: !sourceShader.includes("source HA omits"),
+      rebuild: !rebuildShader.includes("source HA omits"),
+    }],
   ]));
 }
 

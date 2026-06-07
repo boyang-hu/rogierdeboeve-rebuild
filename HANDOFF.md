@@ -135,13 +135,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `HA` main-function varying assignment order was tightened without visual tuning:
-  - `vUv = uv;` now sits immediately after `void main() {` and before `#include <uv_vertex>`, matching source `HA`;
-  - instance varying assignments now sit after `#include <shadowmap_vertex>` / `#include <fog_vertex>`;
-  - `vWorldPosition` now appears between `vOffset` and `vPosition`, matching the source ordering;
-  - the local Three r164 `USE_TRANSMISSION` tail is stripped so `vWorldPosition = worldPosition.xyz` appears exactly once;
-  - shader dump now records/asserts `sourceUvAssignedBeforeUvChunk`, `sourceInstanceVaryingsAfterFog`, and `singleTransmissionWorldPositionAssignment`.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final post-cleanup desktop output and project-media smoke also passed.
+- Source `HA` ordinary work vertex generation was tightened without visual tuning:
+  - the `VA-work` vertex shader now uses a direct source-shaped `HA` template instead of patching/stripping Three r164's `meshphysical` vertex template;
+  - source formulas, constants, include order, world-position path, and main varying assignment order are preserved;
+  - the documented `uUvOffset` `vec2` technical bridge remains because source runtime constructs it as a `Vector2` and writes only `.x/.y`;
+  - auxiliary block shaders remain on the safer r164 bridge because they are not the ordinary source `VA-work` shader;
+  - shader dump now records/asserts `noR164StripCommentsInWorkVertex`.
+- `VA-work` vertex text delta narrowed from `+275` to `-28`; the final vertex diff is limited to the `uUvOffset` bridge plus whitespace normalization.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open; this was source surface parity, not a visual closeout or accepted deviation.
 
