@@ -241,6 +241,10 @@ async function runProbe() {
   const gaShape = parsed.probe.mouseSimulation?.active?.sourceShape;
   const screenMouse = parsed.probe.mouseSimulation?.screen;
   const activeMouse = parsed.probe.mouseSimulation?.active;
+  const FloatType = 1015;
+  const LinearFilter = 1006;
+  const RGBAFormat = 1023;
+  const ClampToEdgeWrapping = 1001;
   const uniformSurfaceErrors = [];
   for (const [label, mouse] of [["screen", screenMouse], ["active", activeMouse]]) {
     if (mouse?.uniformSurfaceMode !== "source-Ka-simulationMaterial-uniform-surface") uniformSurfaceErrors.push(`${label}UniformSurfaceMode`);
@@ -249,6 +253,17 @@ async function runProbe() {
     if (mouse?.diffusion !== 0) uniformSurfaceErrors.push(`${label}Diffusion`);
     if (mouse?.diffusionSize !== 0) uniformSurfaceErrors.push(`${label}DiffusionSize`);
     if (JSON.stringify(mouse?.color) !== JSON.stringify([1, 1, 1])) uniformSurfaceErrors.push(`${label}Color`);
+    const target = mouse?.targetState;
+    if (!target) uniformSurfaceErrors.push(`${label}TargetState`);
+    if (target?.depthBuffer !== false) uniformSurfaceErrors.push(`${label}TargetDepth`);
+    if (target?.stencilBuffer !== false) uniformSurfaceErrors.push(`${label}TargetStencil`);
+    if (target?.texture?.wrapS !== ClampToEdgeWrapping) uniformSurfaceErrors.push(`${label}TargetWrapS`);
+    if (target?.texture?.wrapT !== ClampToEdgeWrapping) uniformSurfaceErrors.push(`${label}TargetWrapT`);
+    if (target?.texture?.minFilter !== LinearFilter) uniformSurfaceErrors.push(`${label}TargetMinFilter`);
+    if (target?.texture?.magFilter !== LinearFilter) uniformSurfaceErrors.push(`${label}TargetMagFilter`);
+    if (target?.texture?.format !== RGBAFormat) uniformSurfaceErrors.push(`${label}TargetFormat`);
+    if (target?.texture?.type !== FloatType) uniformSurfaceErrors.push(`${label}TargetType`);
+    if (target?.texture?.generateMipmaps !== false) uniformSurfaceErrors.push(`${label}TargetMipmaps`);
   }
   if (uniformSurfaceErrors.length) {
     throw new Error(`Ka simulation uniform source-shape mismatch: ${uniformSurfaceErrors.join(", ")}`);
@@ -258,6 +273,7 @@ async function runProbe() {
       .filter(([, value]) => typeof value === "boolean" && value !== true)
       .map(([key]) => key);
     if (gaShape.targetSizingMode !== "source-GA-resize-plane-scale-no-pre-rounding") shapeErrors.push("targetSizingMode");
+    if (gaShape.updateLerpMode !== "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp") shapeErrors.push("updateLerpMode");
     if (shapeErrors.length) {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
@@ -328,8 +344,6 @@ async function runProbe() {
     throw new Error(`Render-manager sizing source-shape mismatch: ${sizingErrors.join(", ")}`);
   }
   const targetStateErrors = [];
-  const LinearFilter = 1006;
-  const RGBAFormat = 1023;
   const UnsignedByteType = 1009;
   const NoColorSpace = "";
   const workTargetState = parsed.probe.settings?.work?.renderTargetState || {};

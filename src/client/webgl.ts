@@ -2183,7 +2183,7 @@ void main() {
     col.rgb = clamp(col.rgb, vec3(0.0), vec3(1.0));
   }
 
-  gl_FragColor = vec4(col.rgb, 1.0);
+  gl_FragColor = vec4(col);
 }
 `;
 
@@ -2927,12 +2927,17 @@ function makePlaceholderTexture(color = [20, 20, 20, 255]) {
 }
 
 function makeSimulationTarget() {
-  const target = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
+  const target = new WebGLRenderTarget(1, 1, {
+    wrapS: ClampToEdgeWrapping,
+    wrapT: ClampToEdgeWrapping,
+    minFilter: LinearFilter,
+    magFilter: LinearFilter,
+    format: RGBAFormat,
+    type: FloatType,
+    stencilBuffer: false,
+    depthBuffer: false,
+  });
   target.texture.generateMipmaps = false;
-  target.texture.wrapS = ClampToEdgeWrapping;
-  target.texture.wrapT = ClampToEdgeWrapping;
-  target.texture.minFilter = LinearFilter;
-  target.texture.magFilter = LinearFilter;
   return target;
 }
 
@@ -6137,8 +6142,7 @@ void main() {
     persistance: number,
     thickness: number,
   ) {
-    const lerpFactor = MathUtils.clamp(delta * 7.5, 0, 1);
-    newPos.lerp(targetPos, lerpFactor);
+    newPos.lerp(targetPos, delta * 7.5);
     const speed = sourceRound(newPos.distanceTo(oldPos));
     const outputIndex = 1 - currentIndex;
     material.uniforms.uTexture.value = targets[currentIndex].texture;
@@ -7363,6 +7367,7 @@ void main() {
       screen: {
         index: this.screenMouseSimulationIndex,
         targetSize: screenTarget ? { width: screenTarget.width, height: screenTarget.height } : null,
+        targetState: screenTarget ? renderTargetStateProbe(screenTarget, "screenMouseSim") : null,
         uCoords: screenCoords.toArray(),
         uniformSurfaceMode: "source-Ka-simulationMaterial-uniform-surface",
         hasNoiseTexture: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value instanceof Texture,
@@ -7382,6 +7387,7 @@ void main() {
         slug: active.slug,
         index: active.mouseIndex,
         targetSize: { width: activeTarget.width, height: activeTarget.height },
+        targetState: renderTargetStateProbe(activeTarget, "activeMouseSim"),
         uCoords: activeCoords.toArray(),
         mouseTarget: active.mouseTarget.toArray(),
         mouseOld: active.mouseOld.toArray(),
@@ -7438,7 +7444,18 @@ void main() {
             && Math.abs(active.mesh.scale.y - 1) < 1e-6
             && Math.abs(active.mesh.scale.z - 1) < 1e-6,
           targetSizeMatchesPlane: activeTarget.width === expectedTargetSize.width && activeTarget.height === expectedTargetSize.height,
+          targetStateMatchesSource:
+            activeTarget.depthBuffer === false
+            && activeTarget.stencilBuffer === false
+            && activeTarget.texture.wrapS === ClampToEdgeWrapping
+            && activeTarget.texture.wrapT === ClampToEdgeWrapping
+            && activeTarget.texture.minFilter === LinearFilter
+            && activeTarget.texture.magFilter === LinearFilter
+            && activeTarget.texture.format === RGBAFormat
+            && activeTarget.texture.type === FloatType
+            && activeTarget.texture.generateMipmaps === false,
           renderClearModeMatchesSource: active.mouseRenderClearMode === "source-sA-no-explicit-clear",
+          updateLerpMode: "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp",
           uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
           mousePlaneScaleMatchesSource:
             Math.abs(active.mousePlane.scale.x - sourcePlaneSize.x) < 1e-6
