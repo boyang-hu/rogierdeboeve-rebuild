@@ -492,8 +492,10 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
       sourceBlendLightenSurface: ["vec3blendLighten(vec3base,vec3blend,floatopacity)"],
     } : {}),
     ...(isA1PreComposite ? {
+      a1HelperBeforeUniforms: ["vec3saturation(vec3rgb,floatadjustment)"],
       a1LuminanceHelper: ["floatluminance(vec3rgb)"],
       a1CoverTextureHelper: ["vec4coverTexture(sampler2Dtex,vec2imgSize,vec2ouv,vec2containerSize)"],
+      a1CoverTextureTemporary: ["vec4color=texture(tex,uv)", "returncolor;"],
       a1RandomHelper: ["floatrandom(vec2st)"],
       a1BlendCallName: ["blend(1,", "blend(11,"],
       noA1SourceBlendCallName: ["sourceBlend("],
@@ -518,7 +520,17 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
           source: candidates.some((candidate) => source.includes(candidate)),
           rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
         },
-  ]));
+  ]).concat(isA1PreComposite ? [[
+    "a1SourceDeclarationOrder",
+    {
+      source: source.indexOf("vec3saturation(vec3rgb,floatadjustment)") < source.indexOf("uniformsampler2DtScene")
+        && source.indexOf("vec4coverTexture(sampler2Dtex,vec2imgSize,vec2ouv,vec2containerSize)") < source.indexOf("uniformsampler2DtScene")
+        && source.indexOf("uniformfloatuTransformX") < source.indexOf("floatrandom(vec2st)"),
+      rebuild: rebuild.indexOf("vec3saturation(vec3rgb,floatadjustment)") < rebuild.indexOf("uniformsampler2DtScene")
+        && rebuild.indexOf("vec4coverTexture(sampler2Dtex,vec2imgSize,vec2ouv,vec2containerSize)") < rebuild.indexOf("uniformsampler2DtScene")
+        && rebuild.indexOf("uniformfloatuTransformX") < rebuild.indexOf("floatrandom(vec2st)"),
+    },
+  ]] : []));
 }
 
 function analyzeRgBlurCore(sourceFragment, rebuildFragment) {

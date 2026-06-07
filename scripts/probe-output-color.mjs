@@ -480,8 +480,12 @@ async function runProbe() {
     "hasSourceHueHelper",
     "hasSourceRgbshiftHelper",
     "hasNoRatioVignetteBridge",
+    "hasSourceCoverTextureTemporary",
   ]) {
     if (preCompositeSurface[key] !== true) materialSurfaceErrors.push(`preComposite${key[0].toUpperCase()}${key.slice(1)}`);
+  }
+  if (preCompositeSurface.helperOrderMode !== "source-A1-helpers-coverTexture-before-uniforms-random-after-uniforms") {
+    materialSurfaceErrors.push("preCompositeHelperOrderMode");
   }
   const workCompositeSurface = workCompositeUniforms?.shaderSurface || {};
   if (workCompositeSurface.formulaMode !== "source-CA-mixed-blend-surface") materialSurfaceErrors.push("workCompositeFormulaMode");

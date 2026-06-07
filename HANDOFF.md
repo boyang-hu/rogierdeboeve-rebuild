@@ -135,12 +135,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `a1/o1/s1` floor-chain parity was tightened without visual tuning:
-  - floor fragment normal-map uniform order now matches source `s1` (`tNormalMap` before `uNormalScale`);
-  - normal distortion / zero-vector literal surfaces now match source `s1`;
-  - output probes now assert source `o1` material defaults: `transparent=false`, `depthWrite=true`, `depthTest=true`, `blending=NoBlending`, inherited `toneMapped=true`;
-  - output probes now assert source `a1` geometry/hierarchy: `CircleGeometry(60,32)`, `floorGroup -> floorPlane -> reflector`, group y `-1.65`, plane rotation `-PI/2`;
-  - shader residual summaries now include `o1-floor-material` and `t1-floor-reflection-blur`, both with source/rebuild core anchors matched.
+- Source `A1/C1` pre-composite shader surface parity was tightened without visual tuning:
+  - `homePreCompositeFragment` now places shared color helpers/full blend dispatcher before `luminance(...)` and `coverTexture(...)`, matching source `A1`;
+  - pre-composite uniforms now follow the source declaration order;
+  - `random(vec2 st)` now sits after `in/out`, like source `A1`;
+  - `coverTexture(...)` now keeps the source temporary `vec4 color = texture(tex, uv); return color;`;
+  - output probes and shader dump now assert this source declaration order and cover-texture temporary.
 - QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open; this was source surface parity, not visual closeout.

@@ -1715,46 +1715,12 @@ uniform int uDebugLightenMode;`,
 const homePreCompositeFragment = `
 precision highp float;
 
-uniform sampler2D tWork;
-uniform sampler2D tScene;
-uniform sampler2D tFluid;
-uniform sampler2D tMouseSim;
-uniform sampler2D tNoise;
-uniform sampler2D tPerlin;
-uniform sampler2D tBloom;
-uniform sampler2D tMedia;
-uniform sampler2D tBlur;
-uniform sampler2D tLensflare;
-uniform bool boolBloom;
-uniform bool boolFluid;
-uniform bool boolLuminosity;
-uniform bool boolFxaa;
-uniform float uTime;
-uniform float uRatio;
-uniform float uTransformX;
-uniform float uFluidStrength;
-uniform float uMediaReveal;
-uniform float uDisplacement;
-uniform float uPerlin;
-uniform float uReveal;
-uniform float uContrast;
-uniform vec3 uBgColor;
-uniform vec2 uDisplacementSize;
-uniform vec2 uContainerSize;
-
 ${sourceCompositeColorHelper}
 ${sourceBlendHelper}
-
-in vec2 vUv;
-out vec4 FragColor;
 
 float luminance(vec3 rgb) {
   const vec3 W = vec3(0.2125, 0.7154, 0.0721);
   return dot(rgb, W);
-}
-
-float random(vec2 st) {
-  return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
@@ -1762,10 +1728,51 @@ vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   vec2 i = imgSize;
   float rs = s.x / s.y;
   float ri = i.x / i.y;
-  vec2 newSize = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
-  vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
-  vec2 uv = ouv * s / newSize + newOffset;
-  return texture(tex, uv);
+  vec2 new = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
+  vec2 newOffset = (rs < ri ? vec2((new.x - s.x) / 2.0, 0.0) : vec2(0.0, (new.y - s.y) / 2.0)) / new;
+  vec2 uv = ouv * s / new + newOffset;
+  vec4 color = texture(tex, uv);
+
+  return color;
+}
+
+uniform sampler2D tScene;
+uniform sampler2D tWork;
+uniform sampler2D tBloom;
+uniform sampler2D tMouseSim;
+uniform sampler2D tFluid;
+uniform sampler2D tBlur;
+uniform sampler2D tNoise;
+uniform sampler2D tLensflare;
+
+uniform sampler2D tMedia;
+uniform float uMediaReveal;
+uniform float uFluidStrength;
+
+uniform float uRatio;
+uniform float uReveal;
+uniform vec3 uBgColor;
+
+uniform bool boolBloom;
+uniform bool boolFluid;
+uniform bool boolLuminosity;
+uniform bool boolFxaa;
+
+uniform vec2 uDisplacementSize;
+uniform vec2 uContainerSize;
+uniform float uDisplacement;
+uniform float uPerlin;
+uniform float uContrast;
+uniform sampler2D tPerlin;
+uniform float uTime;
+uniform float uTransformX;
+
+in vec2 vUv;
+out vec4 FragColor;
+
+float random(vec2 st)
+{
+  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
 void main() {
@@ -6890,6 +6897,12 @@ void main() {
             hasSourceContrastHelper: homePreCompositeFragment.includes("vec3 contrast(vec3 color, float value)"),
             hasSourceHueHelper: homePreCompositeFragment.includes("vec3 hue(vec3 color, float hue)"),
             hasSourceRgbshiftHelper: homePreCompositeFragment.includes("vec4 rgbshift(sampler2D image"),
+            helperOrderMode: homePreCompositeFragment.indexOf("vec3 saturation(vec3 rgb, float adjustment)") < homePreCompositeFragment.indexOf("uniform sampler2D tScene")
+              && homePreCompositeFragment.indexOf("vec4 coverTexture(sampler2D tex") < homePreCompositeFragment.indexOf("uniform sampler2D tScene")
+              && homePreCompositeFragment.indexOf("uniform float uTransformX") < homePreCompositeFragment.indexOf("float random(vec2 st")
+              ? "source-A1-helpers-coverTexture-before-uniforms-random-after-uniforms"
+              : "rebuild-order",
+            hasSourceCoverTextureTemporary: homePreCompositeFragment.includes("vec4 color = texture(tex, uv)") && homePreCompositeFragment.includes("return color;"),
             hasNoRatioVignetteBridge: !homePreCompositeFragment.includes("p.x *= uRatio"),
           },
         },
