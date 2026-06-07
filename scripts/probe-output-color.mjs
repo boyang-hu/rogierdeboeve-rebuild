@@ -378,6 +378,8 @@ async function runProbe() {
   if (mainOwnership?.source !== "I1-single-screen-mesh-material-swap") ownershipErrors.push("mainSourceOwnership");
   if (mainOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("mainBridgeOwnership");
   if (mainOwnership?.finalScreenMode !== "source-main-post-screen") ownershipErrors.push("mainFinalScreenMode");
+  if (mainOwnership?.optionalBlurScreenMode !== "source-I1-mainPostScreen-material-swap") ownershipErrors.push("mainOptionalBlurScreenMode");
+  if (mainOwnership?.lensflareScreenMode !== "source-I1-mainPostScreen-material-swap") ownershipErrors.push("mainLensflareScreenMode");
   if (mainOwnership?.defaultScreenMaterialMode !== "source-I1-default-direct-C1-screen-render-fxaa-tail-only") ownershipErrors.push("mainDefaultScreenMaterialMode");
   if (mainOwnership?.preCompositeTargetRole !== "source-I1-renderTargetComposite-unused-in-default-renderToScreen") {
     ownershipErrors.push("mainPreCompositeTargetRole");
@@ -536,6 +538,7 @@ async function runProbe() {
   const lensflareUniforms = parsed.probe.uniforms?.lensflare;
   if (lensflareUniforms?.materialMode !== "source-L1-raw-glsl3") materialSurfaceErrors.push("lensflareMaterialMode");
   if (lensflareUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("lensflareGlslVersion");
+  if (lensflareUniforms?.screenMode !== "source-I1-mainPostScreen-material-swap") materialSurfaceErrors.push("lensflareScreenMode");
   if (lensflareUniforms?.enabled !== false) materialSurfaceErrors.push("lensflareDefaultEnabled");
   if (lensflareUniforms?.clearMode !== "source-I1-lensflare-explicit-clear") materialSurfaceErrors.push("lensflareClearMode");
   if (JSON.stringify(lensflareUniforms?.lightPosition) !== JSON.stringify([0.5, 0.5])) materialSurfaceErrors.push("lensflareLightPosition");
@@ -581,6 +584,7 @@ async function runProbe() {
     const material = standardBlur[key];
     if (material?.materialMode !== "source-Na-raw-glsl3") materialSurfaceErrors.push(`standardBlur${key}MaterialMode`);
     if (material?.glslVersion !== "300 es") materialSurfaceErrors.push(`standardBlur${key}GlslVersion`);
+    if (material?.screenMode !== "source-I1-mainPostScreen-material-swap") materialSurfaceErrors.push(`standardBlur${key}ScreenMode`);
     if (material?.blending !== 0) materialSurfaceErrors.push(`standardBlur${key}Blending`);
     if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`standardBlur${key}BlurinessUniform`);
     if (material?.hasKernelDefines !== false) materialSurfaceErrors.push(`standardBlur${key}KernelDefines`);

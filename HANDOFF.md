@@ -136,16 +136,16 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `Lo/H1/O1/x1` screen-pass ownership was restored without visual tuning.
-- Source `Lo.update()` renders the raw scene to `renderTargetA`, binds `compositeMaterial.uniforms.tScene` to the raw texture, swaps `this.screen.material=this.compositeMaterial`, and renders that same screen mesh through `screenCamera`. Source `H1`, `O1`, and `x1` reuse that path by replacing `compositeMaterial` with `z1`, `N1`, and `_1`.
-- The rebuild now uses dedicated `skyPostScreen`, `displacementPostScreen`, and `thumbPostScreen` meshes via `makeSourcePassScreen()` and removes the previous independent composite scenes.
-- Displacement now has a raw source scene/target and a composite target. The raw scene background is source `red`, and `N1/F1.tScene` reads the raw wavves target instead of self-binding to the composite output.
-- Runtime probes expose/assert `source-H1-Lo-single-screen-material-swap`, `source-O1-Lo-single-screen-material-swap`, `source-x1-Lo-single-screen-material-swap`, `screenMode=source-Lo-screen-material-composite`, sky/displacement raw target bindings, and displacement raw/composite target sizing.
-- Static audit now extracts source `O1` and checks `Lo.update()` plus `H1/O1/x1` subclass ownership. Output and thumb probes hard-fail on ownership drift.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0041` and mobile center `+0.0295`, recorded only as regression evidence.
+- Source `Lu/I1` remaining screen-pass ownership cleanup was completed without visual tuning.
+- Source `Lu.update()` and `I1.update()` use one fullscreen `screen` mesh and repeatedly swap `this.screen.material` for optional blur, lensflare, luminosity, bloom blur/composite, composite, and FXAA passes.
+- The rebuild had already moved the central production passes to `workPostScreen/mainPostScreen`, but still retained old dedicated pass scenes and still rendered main optional blur/lensflare through dedicated scene meshes.
+- The rebuild now removes those old dedicated pass-scene fields/initializers for work/main composite, pre-composite, bloom/luminosity/fxaa helpers, and main optional blur/lensflare.
+- `renderHomeBlurPass()` now renders `Na` horizontal/vertical blur through `mainPostScreen`; `renderMainLensflarePass()` now renders `L1` through `mainPostScreen` after the source explicit lensflare clear.
+- Runtime probes expose/assert `optionalBlurScreenMode=source-I1-mainPostScreen-material-swap`, `lensflareScreenMode=source-I1-mainPostScreen-material-swap`, and per-material screen modes for `standardBlur` and `lensflare`.
+- Static audit checks source `I1` material-swap anchors, rebuild `mainPostScreen` blur/lensflare assignments, and `rebuildNoDedicatedPassScenes=true`.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0065` and mobile center `+0.0301`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- A prior project-media run showed a transient `Uncaught (in promise)`, but the final rerun had empty exceptions and console messages for both checked project pages.
-- Phase 1 remains open; this closes a `Lo/H1/O1/x1` screen-pass ownership mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a `Lu/I1` remaining pass-scene ownership mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -163,7 +163,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `Lo/H1/O1/x1` screen-pass ownership batch.
+All passed in the `Lu/I1` remaining screen-pass ownership cleanup batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
