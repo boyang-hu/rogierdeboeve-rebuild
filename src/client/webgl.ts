@@ -517,10 +517,8 @@ vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
 
 vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
 float simLight = texture2D(tMouseSim2, screenUv).r;
-vec4 sourceDisplacement = texture2D(tDisplacement, sourceUv);
 float mouseF = 1.0 - simLight;
 sourceColor = mix(sourceColor, sourceColor * vec3(mouseF), 1.0 - uMouseLightness);
-sourceColor += sourceDisplacement.rgb * 0.0;
 
 vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
 vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
@@ -553,12 +551,10 @@ diffuseColor.a *= material.transmissionAlpha;
 gl_FragColor = vec4(outgoingLight, diffuseColor.a);
 
 vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
-vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
+vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
 float simLight = texture2D(tMouseSim2, screenUv).r;
-vec4 sourceDisplacement = texture2D(tDisplacement, sourceUv);
 float mouseF = 1.0 - simLight;
 gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), 1.0 - uMouseLightness);
-gl_FragColor.rgb += sourceDisplacement.rgb * 0.0;
 
 vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
 vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
@@ -574,7 +570,7 @@ alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
 alpha *= uRevealSides;
 
-gl_FragColor.a = alpha * diffuseColor.a;
+gl_FragColor.a = alpha;
 `;
 
 function stripSourceVaFragmentPaths(fragmentShader: string) {

@@ -3253,3 +3253,39 @@ Band snapshot from `/tmp/rd-phase1-va-order-capture`:
 | Mobile source -> rebuild | `-0.0143` | `+0.0107` |
 
 Decision: keep the `HA/VA` mouse-scale ordering correction. It is source-proven, low scope, and does not regress project media. Phase 1 remains open; remaining blockers are still exact generated `VA` material-body parity, thumb/spotlight projection feel, and the mobile/fog-bed visual residual.
+
+### S1-75 Source `zA/VA` Fragment Tail Surface
+
+This batch continued the source shader audit and promoted three source-proven `zA/VA` fragment-tail differences in the production work block shader.
+
+Source evidence:
+
+- Source `zA` computes `screenUv` as `gl_FragCoord.xy / uCoords.xy`; the rebuild had a defensive `max(uCoords, vec2(1.0))` wrapper that is not in source.
+- Source `zA` mutates `gl_FragColor.rgb` from the lit material output and does not keep a dead `sourceDisplacement * 0.0` color path.
+- Source `zA` assigns `gl_FragColor.a = alpha` after reveal-side alpha calculation; the rebuild multiplied by `diffuseColor.a`.
+
+Runtime changes:
+
+- Updated the production work fragment tail to use the source `screenUv` expression.
+- Removed the dead `sourceDisplacement` sample and zero-weight color add from the production work fragment tail.
+- Updated production work alpha assignment to `gl_FragColor.a = alpha`.
+- Removed the same dead displacement sample from the auxiliary block tail, but kept its defensive coordinate and alpha behavior because that auxiliary shader is not the ordinary source `VA` work shader.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Fresh shader dump passed after restarting the static rebuild server and confirmed the production work fragment contains `vec2 screenUv = gl_FragCoord.xy / uCoords.xy;`, `gl_FragColor.a = alpha;`, and no `sourceDisplacement`: `/tmp/rd-phase1-za-tail-shaders-fresh`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-phase1-za-tail-output`.
+- Thumb spotlight probe passed and retained the source home map/position/path: `/tmp/rd-phase1-za-tail-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining visible project media: `/tmp/rd-phase1-za-tail-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-phase1-za-tail-capture`.
+
+Band snapshot from `/tmp/rd-phase1-za-tail-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `-0.0013` | `+0.0041` |
+| Mobile source -> rebuild | `-0.0131` | `+0.0111` |
+
+Decision: keep this `zA/VA` fragment-tail correction. It removes real source-surface drift without relying on visual tuning. Phase 1 remains open because the remaining visible residual is now less about broad center brightness and more about localized horizon/fog-bed structure, thumb/spotlight projection fidelity, and any remaining generated material-body differences.
