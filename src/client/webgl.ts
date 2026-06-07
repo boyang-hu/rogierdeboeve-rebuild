@@ -3632,7 +3632,7 @@ export class WebGLBackdrop {
   private createLuminosityMaterial() {
     const { luminosity } = this.renderSettings;
     return new ShaderMaterial({
-      blending: NormalBlending,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3647,6 +3647,7 @@ export class WebGLBackdrop {
 
   private createBloomBlurMaterial() {
     return new ShaderMaterial({
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3664,7 +3665,7 @@ export class WebGLBackdrop {
   private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[], settings = this.renderSettings) {
     const factors = sourceBloomFactors(settings.bloom.strength, settings.bloom.radius);
     return new ShaderMaterial({
-      blending: NormalBlending,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3701,7 +3702,7 @@ export class WebGLBackdrop {
 
   private createFxaaMaterial() {
     return new ShaderMaterial({
-      blending: NormalBlending,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -3777,7 +3778,7 @@ export class WebGLBackdrop {
       transparent: true,
       depthWrite: false,
       depthTest: false,
-      blending: NormalBlending,
+      blending: NoBlending,
       uniforms: {
         tScene: { value: this.skyRawTarget.texture },
         uTime: { value: 0 },
@@ -3797,6 +3798,7 @@ export class WebGLBackdrop {
 
   private createDisplacementMaterial() {
     return new ShaderMaterial({
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -5432,6 +5434,16 @@ export class WebGLBackdrop {
         },
         mainComposite: {
           blending: this.mainCompositeMaterial.blending,
+        },
+        passMaterials: {
+          luminosity: this.luminosityMaterial.blending,
+          bloomBlur: this.bloomBlurMaterial.blending,
+          bloomComposite: this.bloomCompositeMaterial.blending,
+          mainBloomBlur: this.mainBloomBlurMaterial.blending,
+          mainBloomComposite: this.mainBloomCompositeMaterial.blending,
+          fxaa: this.fxaaMaterial.blending,
+          skyComposite: this.skyCompositeMaterial.blending,
+          displacement: this.displacementMaterial.blending,
         },
         thumbComposite: {
           blending: this.thumbCompositeMaterial.blending,

@@ -3937,3 +3937,38 @@ Band snapshot from `/tmp/rd-s1-90-capture`:
 | Mobile source -> rebuild | `-0.0131` | `+0.0246` |
 
 Decision: keep the source environment body attribution. The active `u1/l1` formula is now covered by dedicated checks, so the remaining mobile/fog-bed residual is less likely to be an untracked environment formula typo. Phase 1 remains open for mobile/fog-bed structure, exact `VA/GA` material-body residuals, and spotlight/projection feel.
+
+### S1-91 Source Helper-Pass `NoBlending` Draw State
+
+This batch aligned a grouped render-manager draw-state residual across fullscreen/helper passes. It did not change shader formulas, constants, project data, or route transitions.
+
+Source evidence:
+
+- Source `H1/z1` sky composite material is constructed with `blending: ot`, where Three r164 defines `ot=0` (`NoBlending`).
+- Source `sg` luminosity, `rg` gaussian bloom blur, `cg` bloom composite, `ig` FXAA, and the displacement-style offscreen helper materials are also fullscreen render-target passes with `blending: ot`.
+- The rebuild had already aligned the major `A1/C1`, `OA/CA`, `lA/aA`, `x1/v1`, `i1/t1`, and floor material draw states, but still left these helper passes on `NormalBlending` or implicit default blending.
+
+Runtime and tooling changes:
+
+- Set source `NoBlending` on the rebuild luminosity, bloom blur, bloom composite, FXAA, sky composite, and displacement helper materials.
+- Added `uniforms.passMaterials` to `__rogierOutputProbe` so QA records the helper pass blending values directly for both active and default-disabled paths.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-pass-blending-output`.
+- Output probe confirms `passMaterials.luminosity`, `bloomBlur`, `bloomComposite`, `mainBloomBlur`, `mainBloomComposite`, `fxaa`, `skyComposite`, and `displacement` all report `0`.
+- Shader dump passed with no WebGL shader errors and retained the existing `VA`, `OA`, `A1`, and `u1` core-check status: `/tmp/rd-pass-blending-shader`.
+- Thumb spotlight probe passed and retained the source thumb strip shape plus spotlight map: `/tmp/rd-pass-blending-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-pass-blending-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-pass-blending-capture`.
+
+Band snapshot from `/tmp/rd-pass-blending-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0007` | `-0.0021` |
+| Mobile source -> rebuild | `-0.0131` | `+0.0148` |
+
+Decision: keep the helper-pass draw-state alignment. This removes a real source-state divergence and does not regress project media. Phase 1 remains open because the mobile/fog-bed residual and strict `VA/GA`/projection feel are still unresolved.
