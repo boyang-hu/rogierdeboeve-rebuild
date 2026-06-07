@@ -156,6 +156,7 @@ const sourceT1FloorBlur = extractAround(bundle, "class t1 extends", 800, 900);
 const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
+const sourceSA = bundle.match(/class sA\{[\s\S]*?class Ka\{/)?.[0] ?? null;
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
@@ -895,6 +896,17 @@ const summary = {
       ]),
       excerpt: compact(sourceGA.text),
     },
+    sA: sourceSA
+      ? {
+          checks: checks(sourceSA, [
+            "this.renderer.setRenderTarget(this.output)",
+            "this.renderer.render(this.orthoScene,this.orthoCamera)",
+            "this.renderer.setRenderTarget(null)",
+          ]),
+          noExplicitClear: !sourceSA.includes(".clear()"),
+          excerpt: compact(sourceSA),
+        }
+      : null,
     i1: sourceI1 && {
       index: sourceI1.index,
       checks: checks(sourceI1.text, [

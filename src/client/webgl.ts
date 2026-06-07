@@ -95,6 +95,7 @@ type WorkItem = {
   mouseScene: Scene;
   mouseTargets: WebGLRenderTarget[];
   mouseIndex: number;
+  mouseRenderClearMode: "source-sA-no-explicit-clear";
   mouseTarget: Vector2;
   mouseOld: Vector2;
   mouseNew: Vector2;
@@ -3674,6 +3675,7 @@ export class WebGLBackdrop {
         mouseScene: mouseSimulation.scene,
         mouseTargets: mouseSimulation.targets,
         mouseIndex: 0,
+        mouseRenderClearMode: "source-sA-no-explicit-clear",
         mouseTarget: new Vector2(0.5, 0.5),
         mouseOld: new Vector2(0.5, 0.5),
         mouseNew: new Vector2(0.5, 0.5),
@@ -5597,7 +5599,6 @@ export class WebGLBackdrop {
     material.uniforms.uThickness.value = thickness * strength;
     material.uniforms.uTime.value = time;
     this.renderer.setRenderTarget(targets[outputIndex]);
-    this.renderer.clear();
     this.renderer.render(scene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
     oldPos.copy(newPos);
@@ -6734,6 +6735,7 @@ export class WebGLBackdrop {
         mouseOld: active.mouseOld.toArray(),
         mouseNew: active.mouseNew.toArray(),
         mouseSpeed: active.mouseSpeed,
+        renderClearMode: active.mouseRenderClearMode,
         uniformSpeed: active.mouseMaterial.uniforms.uSpeed.value,
         persistence: active.mouseMaterial.uniforms.uPersistance.value,
         thickness: active.mouseMaterial.uniforms.uThickness.value,
@@ -6764,6 +6766,7 @@ export class WebGLBackdrop {
             && Math.abs(active.mesh.scale.y - 1) < 1e-6
             && Math.abs(active.mesh.scale.z - 1) < 1e-6,
           targetSizeMatchesPlane: activeTarget.width === expectedTargetSize.width && activeTarget.height === expectedTargetSize.height,
+          renderClearModeMatchesSource: active.mouseRenderClearMode === "source-sA-no-explicit-clear",
           uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
           mousePlaneScaleMatchesSource:
             Math.abs(active.mousePlane.scale.x - sourcePlaneSize.x) < 1e-6

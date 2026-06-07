@@ -217,6 +217,10 @@ async function runProbe() {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
   }
+  const activeMouse = parsed.probe.mouseSimulation?.active;
+  if (activeMouse && activeMouse.renderClearMode !== "source-sA-no-explicit-clear") {
+    throw new Error(`Ka/sA mouse simulation clear mode mismatch: ${activeMouse.renderClearMode}`);
+  }
   const reflectionTargets = parsed.probe.reflectionState?.targets;
   const reflectionErrors = [];
   if (reflectionTargets) {
