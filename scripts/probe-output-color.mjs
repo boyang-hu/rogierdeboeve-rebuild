@@ -146,6 +146,14 @@ async function runProbe() {
   if (reflectionErrors.length) {
     throw new Error(`Floor reflection source-shape mismatch: ${reflectionErrors.join(", ")}`);
   }
+  const workRenderSizing = parsed.probe.settings?.work?.renderManagerSizing;
+  const mainRenderSizing = parsed.probe.settings?.main?.renderManagerSizing;
+  const bloomClearingErrors = [];
+  if (workRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workBloomPassClearing");
+  if (mainRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("mainBloomPassClearing");
+  if (bloomClearingErrors.length) {
+    throw new Error(`Lu bloom pass clearing source-shape mismatch: ${bloomClearingErrors.join(", ")}`);
+  }
   const shaderConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
   if (shaderConsoleMessages.length) {
     throw new Error(`Shader/WebGL console errors: ${shaderConsoleMessages.join("\n")}`);

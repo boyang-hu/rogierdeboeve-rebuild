@@ -5418,6 +5418,7 @@ export class WebGLBackdrop {
               ? { width: this.bloomHorizontalTargets[0].width, height: this.bloomHorizontalTargets[0].height }
               : null,
             bloomStartMode: "source-Lu-Fa-render-size-div-4",
+            bloomPassClearing: "source-Lu-no-explicit-clear",
             dprMode: "source-p1-resize-min-Pe-dpr-1.5",
             mouseSimScale: SCREEN_MOUSE_SIM_SCALE,
           },
@@ -5444,6 +5445,7 @@ export class WebGLBackdrop {
               ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
               : null,
             bloomStartMode: "source-Lu-Fa-render-size-div-4",
+            bloomPassClearing: "source-Lu-no-explicit-clear",
             fluidSizeMode: "source-Lu-Fa-render-size-div-4-then-div-3",
             dprMode: "source-Pe-dpr-global",
           },
@@ -5912,7 +5914,6 @@ export class WebGLBackdrop {
       blurMaterial.uniforms.uKernelRadius.value = kernelRadius;
       blurMaterial.uniforms.uSigma.value = kernelRadius;
       this.renderer.setRenderTarget(horizontalTarget);
-      this.renderer.clear();
       this.renderer.render(blurScene, this.backgroundCamera);
       blurMaterial.uniforms.tMap.value = horizontalTarget.texture;
       blurMaterial.uniforms.uResolution.value.set(verticalTarget.width, verticalTarget.height);
@@ -5920,12 +5921,10 @@ export class WebGLBackdrop {
       blurMaterial.uniforms.uKernelRadius.value = kernelRadius;
       blurMaterial.uniforms.uSigma.value = kernelRadius;
       this.renderer.setRenderTarget(verticalTarget);
-      this.renderer.clear();
       this.renderer.render(blurScene, this.backgroundCamera);
       bloomSource = verticalTarget;
     });
     this.renderer.setRenderTarget(horizontalTargets[0]);
-    this.renderer.clear();
     this.renderer.render(compositeScene, this.backgroundCamera);
   }
 
@@ -5934,7 +5933,6 @@ export class WebGLBackdrop {
     if (this.renderSettings.luminosity.enabled) {
       this.luminosityMaterial.uniforms.tScene.value = sourceTarget.texture;
       this.renderer.setRenderTarget(this.bloomBrightTarget);
-      this.renderer.clear();
       this.renderer.render(this.luminosityScene, this.backgroundCamera);
       brightTarget = this.bloomBrightTarget;
     }
@@ -5954,7 +5952,6 @@ export class WebGLBackdrop {
     if (this.sourceMainRenderSettings.luminosity.enabled) {
       this.luminosityMaterial.uniforms.tScene.value = sourceTarget.texture;
       this.renderer.setRenderTarget(this.mainBloomBrightTarget);
-      this.renderer.clear();
       this.renderer.render(this.luminosityScene, this.backgroundCamera);
       brightTarget = this.mainBloomBrightTarget;
     }

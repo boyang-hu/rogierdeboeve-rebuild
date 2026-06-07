@@ -101,6 +101,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 24 | S1-97 | Source `VA/zA` r164 sheen outgoing tail | Source `zA` has the ordinary `USE_SHEEN` declaration/uniform surface but its captured outgoing-light body does not include the modern r164 `sheenEnergyComp` compensation tail. After S1-96, the shader dump can distinguish declaration parity from body residuals. | Production now strips only the r164 `sheenEnergyComp` outgoing-light tail from ordinary work-block `VA`, preserving the `USE_SHEEN` declaration surface and all existing material uniforms. Shader dump reports `r164SheenOutgoingTail` source false / rebuild false with no WebGL console errors. | Low-medium | Keep as a narrow source-correct material-body alignment. It does not close Phase 1; mobile/fog-bed and broader projection/material feel remain open. |
 | 25 | S1-98 | Source `i1` reflector update ordering | Source `i1.update()` calls `virtualCamera.updateMatrixWorld()` before copying the source camera projection matrix, and clears the raw reflection target only through `renderer.autoClear===false && renderer.clear()`. | Production now follows that reflector camera/projection order and conditional raw-target clear. Renderer audit records the source anchors, and output probe fails if the reflection probe no longer reports the source clear/order modes. | Low-medium | Keep as source-correct reflector ownership. It is not expected to close Phase 1 alone; continue floor/environment target-content attribution and projection/material residual work. |
 | 26 | S1-99 | Source `VA/zA` material macro surface | Source `zA` uses old physical-material macro spellings such as `USE_SPECULARCOLORMAP`, `USE_SPECULARINTENSITYMAP`, `USE_SHEENCOLORMAP`, and `USE_SHEENROUGHNESSMAP`; the rebuild bridge still carried modern underscore spellings after prior material-body fixes. | Ordinary work-block `VA` now rewrites those four macro names to the source surface, and shader dump reports source-style specular and sheen-map macro checks true while modern underscore checks are false in both source and rebuild. | Low-medium | Keep as a source-correct material-surface alignment. This narrows shader residuals but does not close Phase 1; mobile/fog-bed, strict projection feel, and remaining source `bsdfs`/`opaque_fragment` bridge depth remain open. |
+| 27 | S1-100 | Source `Lu/kA` bloom pass clearing | Source `Lu.update()` renders luminosity, horizontal blur, vertical blur, and bloom-composite fullscreen passes directly after `setRenderTarget(...)` without explicit `renderer.clear()` calls. The rebuild still cleared those fullscreen pass targets before rendering. | Production now removes explicit clears from the shared `renderBloomChain()` passes and both work/main luminosity bright passes. Output probe reports `bloomPassClearing=source-Lu-no-explicit-clear` for work and main render managers, and fails if either drifts. | Low-medium | Keep as source-correct render-manager pass ownership. This does not close Phase 1; remaining gaps are still mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic render-manager structure. |
 
 ### Phase 1 Open Blocker Board
 
@@ -309,6 +310,44 @@ Verification:
 | Mobile center-band delta | `-0.0118` against source |
 
 Decision: keep this source-correct macro-surface alignment. It improves `VA/zA` shader surface parity but does not close Phase 1; the remaining strict 1:1 work is still mobile/fog-bed distribution, projection/material feel, and the deeper source `bsdfs`/`opaque_fragment` bridge gap.
+
+### S1-100 Source `Lu/kA` Bloom Pass Clearing
+
+This batch stayed on the `Lu/kA` render-manager pass ownership chain and removed rebuild-only clears from fullscreen luminosity/bloom passes.
+
+Source/runtime evidence:
+
+- Source `Lu.update()` renders the luminosity bright target with `setRenderTarget(u); render(screen, screenCamera)` and no explicit clear.
+- Source bloom mip passes render horizontal targets `d[p]`, vertical targets `l[p]`, and the final bloom composite target `d[0]` directly.
+- The current rebuild already matched this no-explicit-clear pattern for `Lo` thumb/sky passes and `i1` blur passes; bloom still had rebuild-only clears.
+
+Production change:
+
+- Removed explicit `renderer.clear()` before horizontal bloom blur passes.
+- Removed explicit `renderer.clear()` before vertical bloom blur passes.
+- Removed explicit `renderer.clear()` before the bloom composite pass.
+- Removed explicit `renderer.clear()` before the work luminosity bright pass.
+- Removed explicit `renderer.clear()` before the main luminosity bright pass.
+- `__rogierOutputProbe` now reports `bloomPassClearing=source-Lu-no-explicit-clear` for work and main render-manager sizing.
+- `scripts/probe-output-color.mjs` now fails if either work or main bloom clearing mode drifts.
+- `scripts/audit-renderer-output.mjs` now extracts enough of source `Lu.update()` to verify the luminosity, horizontal, vertical, and composite set-render-target/render anchors.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `Lu` luminosity/bloom fullscreen pass anchors present |
+| Shader dump | No shader/WebGL console errors; `VA` core checks unchanged |
+| Output probe | Passed; work/main report `bloomPassClearing=source-Lu-no-explicit-clear` |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Desktop/mobile home captures passed without failures or runtime exceptions |
+| Desktop center-band delta | `-0.0001` against source |
+| Mobile center-band delta | `-0.0134` against source |
+
+Decision: keep this source-correct render-manager pass clearing alignment. It is a low-level source ownership fix, not a Phase 1 closeout; mobile/fog-bed and strict projection/material residuals remain open.
 
 ### S1-70 Source Floor Circle Geometry
 
