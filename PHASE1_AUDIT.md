@@ -113,6 +113,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 36 | S1-109 | Source `o1/t1` floor material and reflection blur shader surface | Source floor material `o1` and reflection blur material `t1` use raw shader surfaces; source blur fragment `QA` is GLSL3-shaped with `in vUv`, `out FragColor`, `texture(...)`, and `mix(tMapped, blurred, 1.25)`. | Production now reports the floor material as `source-o1-raw-glsl3`, uses `RawShaderMaterial`/`GLSL3` for the reflection blur material, dumps both `o1-floor-material` and `t1-floor-reflection-blur`, and hard-fails output probes if the floor/blur material modes drift. | Low-medium | Keep as source-correct floor shader-surface alignment. This narrows the floor/reflector bridge, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 37 | S1-110 | Source `o1` floor fragment branch surface | Source `o1` keeps conditional `USE_MAP`, `USE_NORMALMAP`, `USE_FOG`, and `DITHERING` branches in the raw fragment shader; runtime `a1` constructs it with `normalMap` only. | Production now restores the full conditional fragment branch surface while preserving source runtime branch state: `USE_NORMALMAP=true`, `USE_MAP=false`, `USE_FOG=false`, `DITHERING=false`. Shader dump hardens floor core checks and output probe asserts the branch state. | Low-medium | Keep as source-correct floor shader-body alignment. Do not enable floor fog/map/dithering as a visual tweak; Phase 1 remains open for the mobile fog-bed residual and projection/material parity. |
 | 38 | S1-111 | Source `h1/V1/Du` environment geometry and sky target QA surface | Source `h1` creates `new Du(300,10)` with `speed=5e-5`; `Du` is an `IcosahedronGeometry` with radius/detail parameters. Source `V1` sizes its sky render targets as a square `height*.75`, and low-res mode freezes sky `uTime` at `0`. | Production rendering is unchanged, but output probes now report and assert the source `Du` geometry metadata, sky target sizing mode, expected target size, and source low-res/live sky time mode. Renderer audit now extracts and checks `h1`, `V1`, and `Du` anchors. | Low | Keep as source-correct environment/sky QA hardening. This prevents future fog-bed work from drifting geometry or sky target ownership, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
+| 39 | S1-112 | Source `z1` sky composite raw GLSL3 surface | Source `z1` extends the raw material surface with `glslVersion:lt`, `fragmentShader:B1`, `blending:ot`, `transparent:true`, `depthWrite:false`, and `depthTest:false`. The rebuild still used a regular `ShaderMaterial` bridge for the sky composite. | Production now uses `RawShaderMaterial`/`GLSL3` for the sky composite, converts the shader to the source-style `in/out` and `texture(...)` surface, dumps `z1-sky-composite` against source `B1/tl`, and hard-fails output probes on material-mode or GLSL version drift. | Low-medium | Keep as source-correct sky render-manager surface alignment. This narrows the `V1/H1/z1` bridge, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -759,6 +760,43 @@ Verification:
 | Mobile center-band delta | `-0.0116` against source |
 
 Decision: keep this as source-correct environment/sky QA hardening. It reduces the chance that later fog-bed work misattributes geometry, target sizing, or low-res time behavior, but it does not close Phase 1; the remaining visual residuals are still mobile fog-bed distribution, strict projection/material feel, and transfer interpretation.
+
+### S1-112 Source `z1` Sky Composite Raw GLSL3 Surface
+
+This batch stayed on the environment/sky render chain and aligned the `z1` sky composite material surface with the source raw GLSL3 path.
+
+Source/runtime evidence:
+
+- Source `z1` extends `mt` and is constructed with `glslVersion:lt`.
+- Source `z1` uses `fragmentShader:B1`, `blending:ot`, `transparent:true`, `depthWrite:false`, and `depthTest:false`.
+- Source `B1` is GLSL3-shaped: `in vec2 vUv`, `out vec4 FragColor`, `texture(...)`, and `FragColor = vec4(.9 - diffuseColor.rgb, 1.)`.
+- Source `V1/H1` sizing and low-res time ownership remain the S1-111 source shape.
+
+Production now exposes and asserts:
+
+- `createSkyCompositeMaterial()` uses `RawShaderMaterial` with `GLSL3`,
+- the sky composite shader uses `in/out` and `texture(...)` instead of the bridge `varying/gl_FragColor/texture2D` surface,
+- output probe reports `materialMode=source-z1-raw-glsl3` and `glslVersion=300 es`,
+- output probe hard-fails if sky material mode or GLSL version drifts,
+- shader dump includes `z1-sky-composite` and writes source `B1` plus vertex `tl` files for future residual audits,
+- renderer audit now asserts source `class z1 extends mt` and `glslVersion:lt`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `z1` raw GLSL3 anchors present |
+| Output probe | Passed after rebuild server restart; sky material mode and GLSL3 assertions passed |
+| Shader dump | Passed with no shader/WebGL console errors; `z1-sky-composite` dump present |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `+0.0004` against source |
+| Mobile center-band delta | `-0.0129` against source |
+
+Decision: keep this source-correct `z1` sky composite surface alignment. It closes a concrete material-surface bridge mismatch in `V1/H1/z1`, but it does not close Phase 1; the remaining blockers are still mobile fog-bed distribution, strict projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

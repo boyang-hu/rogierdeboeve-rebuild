@@ -513,6 +513,8 @@ const summary = {
     skyZ1: sourceSkyZ1 && {
       index: sourceSkyZ1.index,
       checks: checks(sourceSkyZ1.text, [
+        "class z1 extends mt",
+        "glslVersion:lt",
         "uniforms:{tScene:new I(null),uTime:new I(0),uShader1Alpha:new I(Zs.SHADER_1_ALPHA),uShader1Speed:new I(Zs.SHADER_1_SPEED),uShader2Speed:new I(Zs.SHADER_2_SPEED),uShader1Scale:new I(Zs.SHADER_1_SCALE),uShader2Scale:new I(Zs.SHADER_2_SCALE),uShaderMix:new I(Zs.SHADER_1_MIX_3)}",
         "fragmentShader:B1",
         "blending:ot",

@@ -618,6 +618,7 @@ const sourceFragmentShaders = {
   "M1-thumb-plane": tryExtractSourceShader(bundle, "S1"),
   "j1-media-composite": tryExtractSourceShader(bundle, "G1"),
   "UD-project-media": tryExtractSourceShader(bundle, "LD"),
+  "z1-sky-composite": tryExtractSourceShader(bundle, "B1"),
   "u1-environment": tryExtractSourceShader(bundle, "l1"),
   "o1-floor-material": tryExtractSourceShader(bundle, "s1"),
   "t1-floor-reflection-blur": tryExtractSourceShader(bundle, "QA"),
@@ -625,6 +626,7 @@ const sourceFragmentShaders = {
 const sourceVertexShaders = {
   "VA-work": sourceH,
   "M1-thumb-plane": tryExtractSourceShader(bundle, "b1"),
+  "z1-sky-composite": tryExtractSourceShader(bundle, "tl"),
   "o1-floor-material": tryExtractSourceShader(bundle, "r1"),
   "t1-floor-reflection-blur": tryExtractSourceShader(bundle, "e1"),
 };

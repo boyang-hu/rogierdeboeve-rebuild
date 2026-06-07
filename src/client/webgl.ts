@@ -1883,7 +1883,8 @@ uniform float uShader1Mix3;
 uniform float uShader3Scale;
 uniform float uShaderMix;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 float noiseShaderRandom(vec2 n) {
   return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
@@ -1950,13 +1951,13 @@ void main() {
   pos.x *= 1.5;
 
   vec4 procedural = noiseShader(pos, uTime, uShader1Speed * 0.1);
-  vec4 diffuseColor = texture2D(tScene, vUv);
+  vec4 diffuseColor = texture(tScene, vUv);
 
   diffuseColor.rgb = blendReflect(diffuseColor.rgb, procedural.rgb, 0.5);
   diffuseColor.rgb = contrastColor(diffuseColor.rgb, 2.0);
   diffuseColor.rgb *= 2.0;
 
-  gl_FragColor = vec4(0.9 - diffuseColor.rgb, 1.0);
+  FragColor = vec4(0.9 - diffuseColor.rgb, 1.0);
   #include <tonemapping_fragment>
 }
 `;
@@ -3853,7 +3854,9 @@ export class WebGLBackdrop {
   }
 
   private createSkyCompositeMaterial() {
-    return new ShaderMaterial({
+    dumpShader("z1-sky-composite", thumbCompositeVertex, skyCompositeFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       toneMapped: false,
       transparent: true,
       depthWrite: false,
@@ -3869,7 +3872,7 @@ export class WebGLBackdrop {
         uShader2Scale: { value: 0 },
         uShaderMix: { value: 1.5 },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: thumbCompositeVertex,
       fragmentShader: skyCompositeFragment,
     });
   }
@@ -5681,9 +5684,11 @@ export class WebGLBackdrop {
           wrapT: this.noiseTexture.wrapT,
         },
         skyComposite: {
+          materialMode: "source-z1-raw-glsl3",
           sizingMode: "source-V1-height-0.75-square",
           expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",
+          glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           wrapS: this.skyCompositeTarget.texture.wrapS,
           wrapT: this.skyCompositeTarget.texture.wrapT,
           colorSpace: this.skyCompositeTarget.texture.colorSpace,
