@@ -368,11 +368,32 @@ async function runProbe() {
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
   if (!debugCompositeProbe && workCompositeUniforms?.debugShaderActive !== false) materialSurfaceErrors.push("workCompositeDebugShaderActive");
   if (!debugCompositeProbe && workCompositeUniforms?.productionShaderIsSourceSurface !== true) materialSurfaceErrors.push("workCompositeProductionShader");
+  const preCompositeSurface = preCompositeUniforms?.shaderSurface || {};
+  for (const key of [
+    "hasSourceSaturationHelper",
+    "hasSourceVignetteHelper",
+    "hasSourceCircleHelper",
+    "hasSourceContrastHelper",
+    "hasSourceHueHelper",
+    "hasSourceRgbshiftHelper",
+    "hasNoRatioVignetteBridge",
+  ]) {
+    if (preCompositeSurface[key] !== true) materialSurfaceErrors.push(`preComposite${key[0].toUpperCase()}${key.slice(1)}`);
+  }
   const workCompositeSurface = workCompositeUniforms?.shaderSurface || {};
   if (workCompositeSurface.formulaMode !== "source-CA-mixed-blend-surface") materialSurfaceErrors.push("workCompositeFormulaMode");
   if (workCompositeSurface.blendEntry !== "source-Po-blend") materialSurfaceErrors.push("workCompositeBlendEntry");
   if (workCompositeSurface.hasLuminanceHelper !== true) materialSurfaceErrors.push("workCompositeLuminanceHelper");
-  if (workCompositeSurface.hasVignetteHelper !== true) materialSurfaceErrors.push("workCompositeVignetteHelper");
+  for (const key of [
+    "hasSourceSaturationHelper",
+    "hasSourceVignetteHelper",
+    "hasSourceCircleHelper",
+    "hasSourceContrastHelper",
+    "hasSourceHueHelper",
+    "hasSourceRgbshiftHelper",
+  ]) {
+    if (workCompositeSurface[key] !== true) materialSurfaceErrors.push(`workComposite${key[0].toUpperCase()}${key.slice(1)}`);
+  }
   if (workCompositeSurface.hasSourceVignetteLocals !== true) materialSurfaceErrors.push("workCompositeVignetteLocals");
   if (workCompositeSurface.hasInertColorLocals !== true) materialSurfaceErrors.push("workCompositeInertColorLocals");
   if (workCompositeSurface.usesMixedVariable !== true) materialSurfaceErrors.push("workCompositeMixedVariable");

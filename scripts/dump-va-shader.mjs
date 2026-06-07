@@ -479,6 +479,12 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
     saturationTail: ["saturation("],
     tonemappingTail: ["#include<tonemapping_fragment>"],
     ...(usesSourceFullBlendDispatcher ? {
+      sourceSaturationHelper: ["vec3saturation(vec3rgb,floatadjustment)"],
+      sourceVignetteHelper: ["floatvignette(vec2coords,floatvignin,floatvignout,floatvignfade,floatfstop)"],
+      sourceCircleHelper: ["vec3circle(vec2uv,vec2center,vec3color,floatsize)"],
+      sourceContrastHelper: ["vec3contrast(vec3color,floatvalue)"],
+      sourceHueHelper: ["vec3hue(vec3color,floathue)"],
+      sourceRgbshiftHelper: ["vec4rgbshift(sampler2Dimage,vec2uv,floatangle,floatamount)"],
       sourceFullBlendDispatcher: ["if(mode==25){returnblendVividLight(base,blend,opacity);}"],
       sourceBlendAddSurface: ["vec3blendAdd(vec3base,vec3blend,floatopacity)"],
       sourceBlendMultiplySurface: ["vec3blendMultiply(vec3base,vec3blend,floatopacity)"],
@@ -490,6 +496,7 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
       a1RandomHelper: ["floatrandom(vec2st)"],
       a1BlendCallName: ["blend(1,", "blend(11,"],
       noA1SourceBlendCallName: ["sourceBlend("],
+      noA1RatioVignetteBridge: ["p.x*=uRatio"],
     } : {}),
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [

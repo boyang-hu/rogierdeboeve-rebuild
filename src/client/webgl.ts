@@ -852,6 +852,44 @@ vec3 contrast(vec3 color, float value) {
 }
 `;
 
+const sourceCompositeColorHelper = `
+vec3 saturation(vec3 rgb, float adjustment) {
+  const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+  vec3 intensity = vec3(dot(rgb, W));
+  return mix(intensity, rgb, adjustment);
+}
+
+float vignette(vec2 coords, float vignin, float vignout, float vignfade, float fstop) {
+  float dist = distance(coords.xy, vec2(0.5, 0.5));
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
+}
+
+vec3 circle(vec2 uv, vec2 center, vec3 color, float size) {
+  float circle = length(uv - center);
+  circle = 1.0 - smoothstep(0.0, size, circle);
+  return color * circle;
+}
+
+vec3 contrast(vec3 color, float value) {
+  return 0.5 + value * (color - 0.5);
+}
+
+vec3 hue(vec3 color, float hue) {
+  const vec3 k = vec3(0.57735, 0.57735, 0.57735);
+  float cosAngle = cos(hue);
+  return vec3(color * cosAngle + cross(k, color) * sin(hue) + k * dot(k, color) * (1.0 - cosAngle));
+}
+
+vec4 rgbshift(sampler2D image, vec2 uv, float angle, float amount) {
+  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
+  vec4 r = texture(image, uv + offset);
+  vec4 g = texture(image, uv);
+  vec4 b = texture(image, uv - offset);
+  return vec4(r.r, g.g, b.b, g.a);
+}
+`;
+
 const sourceSimplexNoiseHelper = `
 vec3 mod289(vec3 x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0;
@@ -1548,6 +1586,7 @@ uniform bool boolFxaa;
 uniform float uDarken;
 uniform float uSaturation;
 
+${sourceCompositeColorHelper}
 ${sourceBlendHelper}
 
 float vignout = 0.55;
@@ -1560,26 +1599,6 @@ out vec4 FragColor;
 float luminance(vec3 rgb) {
   const vec3 W = vec3(0.2125, 0.7154, 0.0721);
   return dot(rgb, W);
-}
-
-vec3 saturation(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
-  return mix(vec3(gray), color, amount);
-}
-
-vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
-  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
-  float r = texture(tex, uv + offset).r;
-  float g = texture(tex, uv).g;
-  float b = texture(tex, uv - offset).b;
-  float a = texture(tex, uv).a;
-  return vec4(r, g, b, a);
-}
-
-float vignette(vec2 uv, float vignin, float vignout, float vignfade, float fstop) {
-  float dist = distance(uv.xy, vec2(0.5, 0.5));
-  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
-  return clamp(dist, 0.0, 1.0);
 }
 
 void main() {
@@ -1705,19 +1724,11 @@ uniform vec3 uBgColor;
 uniform vec2 uDisplacementSize;
 uniform vec2 uContainerSize;
 
+${sourceCompositeColorHelper}
 ${sourceBlendHelper}
 
 in vec2 vUv;
 out vec4 FragColor;
-
-vec3 contrast(vec3 color, float amount) {
-  return (color - 0.5) * amount + 0.5;
-}
-
-vec3 saturation(vec3 color, float amount) {
-  float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
-  return mix(vec3(gray), color, amount);
-}
 
 float luminance(vec3 rgb) {
   const vec3 W = vec3(0.2125, 0.7154, 0.0721);
@@ -1737,23 +1748,6 @@ vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
   vec2 uv = ouv * s / newSize + newOffset;
   return texture(tex, uv);
-}
-
-vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
-  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
-  float r = texture(tex, uv + offset).r;
-  float g = texture(tex, uv).g;
-  float b = texture(tex, uv - offset).b;
-  float a = texture(tex, uv).a;
-  return vec4(r, g, b, a);
-}
-
-float vignette(vec2 uv, float vignin, float vignout, float vignfade, float fstop) {
-  vec2 p = uv - 0.5;
-  p.x *= uRatio;
-  float dist = length(p);
-  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
-  return clamp(dist, 0.0, 1.0);
 }
 
 void main() {
@@ -6757,6 +6751,15 @@ void main() {
           },
           boolBloom: this.preCompositeMaterial.uniforms.boolBloom.value,
           boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
+          shaderSurface: {
+            hasSourceSaturationHelper: homePreCompositeFragment.includes("vec3 saturation(vec3 rgb, float adjustment)"),
+            hasSourceVignetteHelper: homePreCompositeFragment.includes("float vignette(vec2 coords"),
+            hasSourceCircleHelper: homePreCompositeFragment.includes("vec3 circle(vec2 uv"),
+            hasSourceContrastHelper: homePreCompositeFragment.includes("vec3 contrast(vec3 color, float value)"),
+            hasSourceHueHelper: homePreCompositeFragment.includes("vec3 hue(vec3 color, float hue)"),
+            hasSourceRgbshiftHelper: homePreCompositeFragment.includes("vec4 rgbshift(sampler2D image"),
+            hasNoRatioVignetteBridge: !homePreCompositeFragment.includes("p.x *= uRatio"),
+          },
         },
         composite: {
           materialMode: this.debugCompositeShader ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3",
@@ -6774,7 +6777,12 @@ void main() {
             formulaMode: "source-CA-mixed-blend-surface",
             blendEntry: "source-Po-blend",
             hasLuminanceHelper: homeCompositeFragment.includes("float luminance(vec3 rgb)"),
-            hasVignetteHelper: homeCompositeFragment.includes("float vignette(vec2 uv"),
+            hasSourceSaturationHelper: homeCompositeFragment.includes("vec3 saturation(vec3 rgb, float adjustment)"),
+            hasSourceVignetteHelper: homeCompositeFragment.includes("float vignette(vec2 coords"),
+            hasSourceCircleHelper: homeCompositeFragment.includes("vec3 circle(vec2 uv"),
+            hasSourceContrastHelper: homeCompositeFragment.includes("vec3 contrast(vec3 color, float value)"),
+            hasSourceHueHelper: homeCompositeFragment.includes("vec3 hue(vec3 color, float hue)"),
+            hasSourceRgbshiftHelper: homeCompositeFragment.includes("vec4 rgbshift(sampler2D image"),
             hasSourceVignetteLocals: homeCompositeFragment.includes("float vignout") && homeCompositeFragment.includes("float vignin") && homeCompositeFragment.includes("float vignfade"),
             hasInertColorLocals: homeCompositeFragment.includes("vec3 green =") && homeCompositeFragment.includes("vec3 greenLight ="),
             usesMixedVariable: homeCompositeFragment.includes("vec4 mixed = rgbshift(tScene"),
