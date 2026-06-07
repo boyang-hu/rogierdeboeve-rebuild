@@ -2377,6 +2377,9 @@ export class WebGLBackdrop {
   private cameraTargetXY = new Vector2(0.25, 0.25);
   private cameraRoll = 0;
   private cameraRotateAngle = MathUtils.degToRad(10);
+  private cameraControllerGroup = new Group();
+  private cameraRotateGroup = new Group();
+  private cameraInnerGroup = new Group();
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
@@ -2482,6 +2485,14 @@ export class WebGLBackdrop {
     document.body.classList.add("has-webgl");
 
     this.homeCamera.position.set(0, 0, 5.5);
+    this.cameraControllerGroup.position.copy(this.homeCamera.position);
+    this.cameraControllerGroup.matrixAutoUpdate = false;
+    this.cameraRotateGroup.matrixAutoUpdate = false;
+    this.cameraInnerGroup.matrixAutoUpdate = false;
+    this.cameraRotateGroup.rotation.y = Math.PI;
+    this.cameraRotateGroup.add(this.cameraInnerGroup);
+    this.cameraControllerGroup.add(this.cameraRotateGroup);
+    this.cameraOrigin.copy(this.cameraControllerGroup.position);
     this.thumbCamera.position.set(0, 0, 0);
     this.characterCamera.position.set(0, 0, 12);
     this.characterCamera.lookAt(0, 0, 0);
@@ -4640,6 +4651,7 @@ export class WebGLBackdrop {
     this.homeCamera.aspect = width / height;
     this.homeCamera.updateProjectionMatrix();
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
+    this.cameraControllerGroup.lookAt(this.cameraLookAt);
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uContainerSize.value.set(renderWidth, renderHeight);
@@ -5059,13 +5071,22 @@ export class WebGLBackdrop {
       this.cameraOrigin.y + this.cameraTargetXY.y * mouseY,
       this.cameraOrigin.z + this.cameraTargetXY.y * (mouseY * 1.25),
     );
-    this.homeCamera.position.lerp(this.cameraTarget, cameraLerp);
-    this.homeCamera.lookAt(this.cameraLookAt);
+    this.cameraControllerGroup.position.lerp(this.cameraTarget, cameraLerp);
+    this.cameraControllerGroup.lookAt(this.cameraLookAt);
 
     const rollInput = MathUtils.mapLinear(Math.abs(this.pointerDeltaPixels.x) / width, 0, 0.02, 0, 0.5);
     const rollTarget = this.cameraRotateAngle * rollInput * Math.sign(this.pointerDeltaPixels.x);
     this.cameraRoll += (rollTarget - this.cameraRoll) * cameraLerp;
-    this.homeCamera.rotation.z += (this.cameraRoll - this.homeCamera.rotation.z) * cameraLerp;
+    this.cameraRotateGroup.rotation.z += (this.cameraRoll - this.cameraRotateGroup.rotation.z) * cameraLerp;
+    this.cameraControllerGroup.updateMatrix();
+    this.cameraRotateGroup.updateMatrix();
+    this.cameraInnerGroup.updateMatrix();
+    this.cameraControllerGroup.updateMatrixWorld();
+    this.cameraInnerGroup.matrixWorld.decompose(
+      this.homeCamera.position,
+      this.homeCamera.quaternion,
+      this.homeCamera.scale,
+    );
   }
 
   private renderFloorReflection() {
@@ -5264,7 +5285,19 @@ export class WebGLBackdrop {
       },
       camera: {
         position: this.homeCamera.position.toArray(),
+        quaternion: this.homeCamera.quaternion.toArray(),
         origin: this.cameraOrigin.toArray(),
+        controllerPosition: this.cameraControllerGroup.position.toArray(),
+        controllerRotation: [
+          this.cameraControllerGroup.rotation.x,
+          this.cameraControllerGroup.rotation.y,
+          this.cameraControllerGroup.rotation.z,
+        ],
+        rotateGroupRotation: [
+          this.cameraRotateGroup.rotation.x,
+          this.cameraRotateGroup.rotation.y,
+          this.cameraRotateGroup.rotation.z,
+        ],
         targetXY: this.cameraTargetXY.toArray(),
         lookAt: this.cameraLookAt.toArray(),
         rotateAngle: MathUtils.radToDeg(this.cameraRotateAngle),

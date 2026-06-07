@@ -85,6 +85,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 9 | S1-70 | Source `a1` floor geometry | Source `class Tu extends Vt` is Three `CircleGeometry`; `a1.init()` creates `new Tu(60,32)`, rotates it by `-PI/2`, and attaches the reflector. The rebuild had incorrectly used `PlaneGeometry(60,32)`, creating a rectangular floor/reflection surface. | Production now uses `CircleGeometry(60,32)` for the floor mesh and the output probe reports floor/reflection scene state for future attribution. Desktop center-band delta moved to roughly `+0.001` against source and the previous mid-page floor/reflection collapse is gone. | Low-medium | Keep as source-correct. Continue Phase 1 from remaining mobile/background and cube/thumb projection deltas; do not reintroduce plane floor geometry. |
 | 10 | S1-71 | Home spotlight target / thumb projection depth | Source `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`, then sets spotlight position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`. The rebuild had the map and position right but reset the home target to `(0,0,0)`. | Production now keeps the home spotlight target at `(0,0,-8)` in constructor/default state and `initHomeSpotlight()`. Thumb spotlight probe confirms `hasMap=true`, target `[-8 z]`, intensity `220`, and no runtime errors. | Low-medium | Keep as source-correct. Continue projection parity from remaining `SpotLight.map` transfer/light multiplication and `VA` shader bridge, not by changing source spotlight position/intensity constants. |
 | 11 | S1-72 | Main `I1/Lu` default screen path | Source `I1.initSettings()` defaults main `renderToScreen=true` with bloom/luminosity/blur/fxaa disabled, and `I1.update()` renders its `C1/A1` `compositeMaterial` directly to screen in that default branch. The rebuild still sent the completed `A1/C1` target through an additional generic `mainCompositeFragment`, adding a non-source rgbshift/fluid-light tail even when all main post passes were disabled. | Production now short-circuits the default main path and renders `preCompositeScene` directly to the canvas when source main blur/bloom/fxaa are all disabled. The optional main-composite path remains available only for enabled source main post passes. | Low-medium | Keep as source-correct. QA shows stable home/project captures and center-band parity remains close; remaining Phase 1 work should target the hard horizontal boundary and residual `VA`/projection feel, not reintroduce the extra main composite pass. |
+| 12 | S1-73 | Source `IT` camera controller matrix path | Source `IT` drives the real camera through `group -> rotateGroup -> innerGroup`, keeps all three groups `matrixAutoUpdate=false`, sets `rotateGroup.rotation.y=Math.PI`, lerps `group.position`, applies roll to `rotateGroup.rotation.z`, then decomposes `innerGroup.matrixWorld` into the camera. | Production now uses the same controller group structure instead of directly calling `camera.lookAt()` and mutating `camera.rotation.z`. Output probe exposes camera quaternion/controller/rotate-group state. | Low-medium | Keep as source-correct. This fixes camera matrix ownership for spotlight/floor-reflection projection attribution; remaining visual gaps should continue from `VA`/projection and render-target transfer, not from direct camera rotation tweaks. |
 
 ### Phase 1 Open Blocker Board
 
@@ -173,6 +174,32 @@ Verification:
 | Mobile center-band delta | `-0.0168` against source |
 
 Decision: keep the direct `A1/C1` default screen path. This is a source-structure fix, not a global brightness tune. Phase 1 remains open because the screenshot band analysis still shows a residual horizontal boundary distribution mismatch and cube/thumb projection feel is not yet fully 1:1.
+
+### S1-73 Source IT Camera Controller Matrix Path
+
+This batch corrected one source-confirmed camera-controller structure mismatch without changing visual constants.
+
+Source/runtime evidence:
+
+- Source `IT` owns three nested groups: `group -> rotateGroup -> innerGroup`.
+- Source disables matrix auto-update on all three groups, sets `rotateGroup.rotation.y = Math.PI`, lerps `group.position` toward the pointer target, applies camera roll to `rotateGroup.rotation.z`, then decomposes `innerGroup.matrixWorld` into the camera position/quaternion/scale.
+- The rebuild previously approximated this by lerping `homeCamera.position`, calling `homeCamera.lookAt()`, then mutating `homeCamera.rotation.z`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Output probe | Camera quaternion/controller/rotate-group fields present; no failures/exceptions |
+| Shader dump | No console or shader runtime errors |
+| Thumb spotlight probe | `hasMap=true`, target `[0,0,-8]`, intensity `220`, no runtime errors |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` keep 5 visible media tracks |
+| Full source-vs-rebuild capture | Home/about/project pages captured without failures/exceptions |
+| Desktop center-band delta | `-0.0009` against source |
+| Mobile center-band delta | `-0.0129` against source |
+
+Decision: keep the source-shaped `IT` matrix path. This is an attribution and projection-ownership fix; Phase 1 remains open for the remaining mobile/background distribution and cube/thumb projection feel.
 
 ### S1-54 Source Non-Fix Audit
 
