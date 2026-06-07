@@ -410,8 +410,12 @@ attribute float instanceAlpha;
 attribute vec3 instanceColor;
 
 varying float vInstanceAlpha;
+varying float vInstanceIndex;
+varying vec3 vInstanceColor;
+varying vec3 vPosition;
 varying vec3 vOffset;
 varying vec2 vUv;
+varying float vNoise;
 
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
@@ -479,10 +483,10 @@ transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
 transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
 vInstanceAlpha = instanceAlpha;
+vInstanceIndex = instanceIndex;
 vOffset = instanceOffset;
-#ifdef USE_ALPHAHASH
-  vPosition = vec3(position);
-#endif
+vPosition = position;
+vInstanceColor = instanceColor;
 `;
 
 const workBlockSourceScreenUvBeginVertexChunk = workBlockBeginVertexChunk.replace(
@@ -523,6 +527,9 @@ uniform sampler2D tDisplacement;
 uniform vec2 uCoords;
 
 varying float vInstanceAlpha;
+varying float vInstanceIndex;
+varying vec3 vInstanceColor;
+varying vec3 vPosition;
 varying vec3 vOffset;
 varying vec2 vUv;
 
