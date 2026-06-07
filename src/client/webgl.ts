@@ -2273,7 +2273,7 @@ vec4 noiseShader(vec2 uv, float time, float speed) {
   return vec4(vec3(shade), shade);
 }
 
-vec3 contrastColor(vec3 color, float amount) {
+vec3 contrast(vec3 color, float amount) {
   return (color - 0.5) * amount + 0.5;
 }
 
@@ -2287,15 +2287,17 @@ vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
 }
 
 void main() {
+  vec2 uv = vUv;
+
   vec2 pos = vUv.xy * 4.0;
   pos.x *= 1.5;
 
-  vec4 procedural = noiseShader(pos, uTime, uShader1Speed * 0.1);
+  vec4 noise = noiseShader(pos, uTime, uShader1Speed * 0.1);
   vec4 diffuseColor = texture(tScene, vUv);
 
-  diffuseColor.rgb = blendReflect(diffuseColor.rgb, procedural.rgb, 0.5);
-  diffuseColor.rgb = contrastColor(diffuseColor.rgb, 2.0);
-  diffuseColor.rgb *= 2.0;
+  diffuseColor.rgb = blendReflect(diffuseColor.rgb, noise.rgb, 0.5);
+  diffuseColor.rgb = contrast(diffuseColor.rgb, 2.0);
+  diffuseColor.rgb = diffuseColor.rgb * 2.0;
 
   FragColor = vec4(0.9 - diffuseColor.rgb, 1.0);
   #include <tonemapping_fragment>
@@ -2391,16 +2393,18 @@ void main() {
     normalColor.g * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0)
   ));
   vec3 coord = vCoord.xyz / vCoord.w;
-  vec2 reflectUv = coord.xy + coord.z * normal.xz * 0.05;
-  vec4 reflectColor = texture(tReflect, reflectUv);
+  vec2 uv = coord.xy + coord.z * normal.xz * 0.05;
+  vec4 reflectColor = texture(tReflect, uv);
 #else
   vec3 normal = vNormal;
   vec4 reflectColor = textureProj(tReflect, vCoord);
 #endif
 
+  // Fresnel term
   vec3 toEye = normalize(vToEye);
   float theta = max(dot(toEye, normal), 0.0);
   float reflectance = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow((1.0 - theta), 5.0), 1.0));
+
   reflectColor = mix(vec4(0.0), reflectColor, reflectance);
 
   FragColor.rgb = color.rgb * ((1.0 - min(1.0, uMirror)) + reflectColor.rgb * uFloorMixStrength);

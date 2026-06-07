@@ -809,6 +809,35 @@ function analyzeEnvironmentCore(sourceShader, rebuildShader) {
   ]));
 }
 
+function analyzeSkyCompositeCore(sourceShader, rebuildShader) {
+  if (!sourceShader) return null;
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const checks = {
+    uvTemporary: ["vec2uv=vUv"],
+    sourceNoiseTemporary: ["vec4noise=noiseShader(pos,uTime,uShader1Speed*.1)", "vec4noise=noiseShader(pos,uTime,uShader1Speed*0.1)"],
+    sourceContrastFunction: ["vec3contrast(vec3color,floatamount)"],
+    blendReflectNoise: ["diffuseColor.rgb=blendReflect(diffuseColor.rgb,noise.rgb,.5)", "diffuseColor.rgb=blendReflect(diffuseColor.rgb,noise.rgb,0.5)"],
+    contrastCall: ["diffuseColor.rgb=contrast(diffuseColor.rgb,2.)", "diffuseColor.rgb=contrast(diffuseColor.rgb,2.0)"],
+    multiplyStep: ["diffuseColor.rgb=diffuseColor.rgb*2.", "diffuseColor.rgb=diffuseColor.rgb*2.0"],
+    sourceOutput: ["FragColor=vec4(.9-diffuseColor.rgb,1.)", "FragColor=vec4(0.9-diffuseColor.rgb,1.0)"],
+    noRebuildProceduralName: ["vec4procedural="],
+    noRebuildContrastColorName: ["contrastColor("],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => {
+    const sourceHas = candidates.some((candidate) => source.includes(candidate));
+    const rebuildHas = candidates.some((candidate) => rebuild.includes(candidate));
+    const isNegative = name.startsWith("noRebuild");
+    return [
+      name,
+      {
+        source: isNegative ? !sourceHas : sourceHas,
+        rebuild: isNegative ? !rebuildHas : rebuildHas,
+      },
+    ];
+  }));
+}
+
 function analyzeFloorCore(sourceShader, rebuildShader) {
   if (!sourceShader) return null;
   const source = normalizeShaderForCoreChecks(sourceShader);
@@ -817,6 +846,8 @@ function analyzeFloorCore(sourceShader, rebuildShader) {
     colorMapBranch: ["#ifdefUSE_MAP"],
     normalMapBranch: ["#ifdefUSE_NORMALMAP"],
     normalDistortion: ["normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.)", "normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.0)"],
+    sourceDistortedUvName: ["vec2uv=coord.xy+coord.z*normal.xz*0.05"],
+    sourceDistortedUvSample: ["texture(tReflect,uv)"],
     projectedRawReflect: ["textureProj(tReflect,vCoord)"],
     normalDistortedReflect: ["coord.xy+coord.z*normal.xz*0.05"],
     fresnelReflectance: ["pow((1.-theta),5.)", "pow((1.0-theta),5.0)"],
@@ -824,15 +855,21 @@ function analyzeFloorCore(sourceShader, rebuildShader) {
     fogBranch: ["#ifdefUSE_FOG"],
     ditheringBranch: ["#ifdefDITHERING"],
     ditherCall: ["dither(FragColor.rgb)"],
+    noRebuildReflectUvName: ["reflectUv"],
     fragColor: ["FragColor.rgb=", "FragColor=vec4"],
   };
-  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
-    name,
-    {
-      source: candidates.some((candidate) => source.includes(candidate)),
-      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
-    },
-  ]));
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => {
+    const sourceHas = candidates.some((candidate) => source.includes(candidate));
+    const rebuildHas = candidates.some((candidate) => rebuild.includes(candidate));
+    const isNegative = name.startsWith("noRebuild");
+    return [
+      name,
+      {
+        source: isNegative ? !sourceHas : sourceHas,
+        rebuild: isNegative ? !rebuildHas : rebuildHas,
+      },
+    ];
+  }));
 }
 
 function analyzeFloorBlurCore(sourceShader, rebuildShader) {
@@ -988,6 +1025,7 @@ try {
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       vaBridgeCompatibility: entry.name === "VA-work" ? analyzeVaBridgeCompatibility(sourceFragment, entry.fragmentShader) : null,
+      skyCompositeCoreChecks: entry.name === "z1-sky-composite" ? analyzeSkyCompositeCore(sourceFragment, entry.fragmentShader) : null,
       environmentCoreChecks: entry.name === "u1-environment" ? analyzeEnvironmentCore(sourceFragment, entry.fragmentShader) : null,
       floorCoreChecks: entry.name === "o1-floor-material" ? analyzeFloorCore(sourceFragment, entry.fragmentShader) : null,
       floorBlurCoreChecks: entry.name === "t1-floor-reflection-blur" ? analyzeFloorBlurCore(sourceFragment, entry.fragmentShader) : null,
@@ -1073,7 +1111,9 @@ try {
         igFxaaCoreChecks: analysis.igFxaaCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
         vaBridgeCompatibility: analysis.vaBridgeCompatibility,
+        skyCompositeCoreChecks: analysis.skyCompositeCoreChecks,
         environmentCoreChecks: analysis.environmentCoreChecks,
+        floorCoreChecks: analysis.floorCoreChecks,
         files: analysis.files,
       },
     ])),
