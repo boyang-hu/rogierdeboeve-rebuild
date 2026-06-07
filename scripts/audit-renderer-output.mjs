@@ -13,6 +13,7 @@ import {
 const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-renderer-output-audit");
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
 const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
+const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
 
@@ -113,6 +114,7 @@ mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
+const rebuildMain = readFileSync(rebuildMainPath, "utf8");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
 const sourceC1 = extractAround(bundle, "class C1 extends", 320, 1600);
@@ -1050,6 +1052,24 @@ const summary = {
     index: entry.index,
     excerpt: compact(entry.text),
   })),
+  rebuildRuntime: {
+    texturePreloadAnimateIn: checks(rebuildWebgl, [
+      "async animateIn()",
+      "this.sourceTexturePreloadPromise.then(() => {",
+      "Promise.all([blueNoise, floorNormal, perlin1, perlin2])",
+      "this.sourceTexturePreloadState.blueNoise = true",
+      "this.sourceTexturePreloadState.floorNormal = true",
+      "this.sourceTexturePreloadState.perlin1 = true",
+      "this.sourceTexturePreloadState.perlin2 = true",
+      "animateInMode: \"source-nD-animateIn-awaits-init-and-four-preloaded-textures\"",
+      "animateInResolvedMode: \"source-nD-animateIn-resolves-after-fade-scheduled\"",
+    ]),
+    mainHomeEnter: checks(rebuildMain, [
+      "animateIn?(): Promise<void>",
+      "void webgl?.animateIn?.()",
+      "window.dispatchEvent(new CustomEvent(\"rd:home-gallery-in\"))",
+    ]),
+  },
   localThree: {
     revision: REVISION,
     constants: {

@@ -582,6 +582,18 @@ async function runProbe() {
   if (updateOrder?.preloadGate !== "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in") {
     throw new Error(`Texture preload gate source-shape mismatch: ${updateOrder?.preloadGate || "missing"}`);
   }
+  const preloadState = updateOrder?.sourceTexturePreloadState || {};
+  const preloadErrors = [];
+  if (updateOrder?.animateInMode !== "source-nD-animateIn-awaits-init-and-four-preloaded-textures") preloadErrors.push("animateInMode");
+  if (updateOrder?.animateInStarted !== true) preloadErrors.push("animateInStarted");
+  if (updateOrder?.animateInResolvedMode !== "source-nD-animateIn-resolves-after-fade-scheduled") preloadErrors.push("animateInResolvedMode");
+  if (updateOrder?.sourceTexturePreloadComplete !== true) preloadErrors.push("sourceTexturePreloadComplete");
+  for (const key of ["blueNoise", "floorNormal", "perlin1", "perlin2"]) {
+    if (preloadState[key] !== true) preloadErrors.push(`preload-${key}`);
+  }
+  if (preloadErrors.length) {
+    throw new Error(`nD.animateIn texture preload source-shape mismatch: ${preloadErrors.join(", ")}`);
+  }
   const diagnostics = parsed.probe.settings?.diagnostics;
   if (diagnostics?.productionDebugClean !== true) {
     throw new Error(`Production debug branch leaked into output probe: ${JSON.stringify(diagnostics || {})}`);

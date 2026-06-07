@@ -32,6 +32,7 @@ type WebGLLike = {
   initHomeSpotlight?(): void;
   setPreviewMode?(enabled: boolean): void;
   animateWorkMouseIn?(): void;
+  animateIn?(): Promise<void>;
   showScene?(): void;
   hideWorkScene?(): void;
   mediaAnimateIn?(): void;
@@ -1192,9 +1193,13 @@ function boot() {
       if (routeSwapping) webgl?.prepareHomeVisualState?.(payload);
       else webgl?.setProject(payload);
       onPageEntered(() => {
-        webgl?.showScene?.();
-        homeGalleryEntered = true;
-        window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
+        void webgl?.animateIn?.();
+        const enter = () => {
+          webgl?.showScene?.();
+          homeGalleryEntered = true;
+          window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
+        };
+        enter();
       }, callbacks);
     } else if (document.querySelector("[data-view='about']")) {
       webgl?.enterAboutVisualState?.(

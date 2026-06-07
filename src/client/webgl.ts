@@ -3470,6 +3470,16 @@ export class WebGLBackdrop {
   private spotLight = new SpotLight(colorFrom("white"), 220);
   private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
   private directionalLight2 = new DirectionalLight(colorFrom("white"), 1);
+  private sourceTexturePreloadPromise: Promise<void> = Promise.resolve();
+  private sourceTexturePreloadState = {
+    blueNoise: false,
+    floorNormal: false,
+    perlin1: false,
+    perlin2: false,
+  };
+  private canvasAnimateInPromise?: Promise<void>;
+  private canvasAnimateInStarted = false;
+  private canvasFadeCompleted = false;
 
   private loadedTextureColorSpace() {
     return this.debugTextureColorSpace === "srgb" ? SRGBColorSpace : "";
@@ -3782,6 +3792,22 @@ export class WebGLBackdrop {
   animateWorkMouseIn() {
     this.setMouseFactor(0, 0);
     this.setMouseFactor(1, 3);
+  }
+
+  async animateIn() {
+    if (this.canvasAnimateInPromise) return this.canvasAnimateInPromise;
+    this.canvasAnimateInStarted = true;
+    this.canvasAnimateInPromise = this.sourceTexturePreloadPromise.then(() => {
+      gsap.fromTo(this.renderer.domElement, { opacity: 0 }, {
+        opacity: 1,
+        duration: 0.5,
+        ease: "none",
+        onComplete: () => {
+          this.canvasFadeCompleted = true;
+        },
+      });
+    });
+    return this.canvasAnimateInPromise;
   }
 
   showScene() {
@@ -4764,7 +4790,7 @@ export class WebGLBackdrop {
   }
 
   private loadCompositeTextures() {
-    this.loadTexture("/images/textures/blue-noise.png", (texture) => {
+    const blueNoise = this.loadTextureAsync("/images/textures/blue-noise.png").then((texture) => {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
       this.noiseTexture = texture;
@@ -4773,14 +4799,16 @@ export class WebGLBackdrop {
         item.mouseMaterial.uniforms.uNoiseTexture.value = texture;
       });
       this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
+      this.sourceTexturePreloadState.blueNoise = true;
     });
-    this.loadTexture("/images/textures/perlin-2.webp", (texture) => {
+    const perlin2 = this.loadTextureAsync("/images/textures/perlin-2.webp").then((texture) => {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
       this.perlinTexture = texture;
       this.preCompositeMaterial.uniforms.tPerlin.value = texture;
+      this.sourceTexturePreloadState.perlin2 = true;
     });
-    this.loadTexture("/images/textures/perlin-1.webp", (texture) => {
+    const perlin1 = this.loadTextureAsync("/images/textures/perlin-1.webp").then((texture) => {
       texture.wrapS = MirroredRepeatWrapping;
       texture.wrapT = MirroredRepeatWrapping;
       this.workPerlinTexture = texture;
@@ -4789,8 +4817,9 @@ export class WebGLBackdrop {
       });
       if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = texture;
       if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = texture;
+      this.sourceTexturePreloadState.perlin1 = true;
     });
-    this.loadTexture("/images/textures/floor-normal.webp", (texture) => {
+    const floorNormal = this.loadTextureAsync("/images/textures/floor-normal.webp").then((texture) => {
       texture.colorSpace = NoColorSpace;
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
@@ -4798,7 +4827,9 @@ export class WebGLBackdrop {
       texture.updateMatrix();
       this.floorMaterial.uniforms.tNormalMap.value = texture;
       this.floorMaterial.uniforms.uMapTransform.value = texture.matrix;
+      this.sourceTexturePreloadState.floorNormal = true;
     });
+    this.sourceTexturePreloadPromise = Promise.all([blueNoise, floorNormal, perlin1, perlin2]).then(() => undefined);
     this.loadTexture("/models/me/model_T.jpg", (texture) => {
       this.characterMaterial.uniforms.tMap.value = texture;
     });
@@ -5761,15 +5792,23 @@ void main() {
   }
 
   private loadTexture(src: string, onLoad: (texture: Texture) => void) {
+    void this.loadTextureAsync(src).then(onLoad);
+  }
+
+  private loadTextureAsync(src: string) {
     const cached = this.textureCache.get(src);
-    if (cached) {
-      onLoad(cached);
-      return;
-    }
-    this.loader.load(src, (texture) => {
-      setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
-      this.textureCache.set(src, texture);
-      onLoad(texture);
+    if (cached) return Promise.resolve(cached);
+    return new Promise<Texture>((resolve, reject) => {
+      this.loader.load(
+        src,
+        (texture) => {
+          setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
+          this.textureCache.set(src, texture);
+          resolve(texture);
+        },
+        undefined,
+        reject,
+      );
     });
   }
 
@@ -6787,6 +6826,12 @@ void main() {
           skyUpdateMode: "source-V1-low-res-freezes-time",
           skyEnvironmentBinding: "source-nD-resize-delay-then-repeat-composite-bind",
           preloadGate: "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in",
+          animateInMode: "source-nD-animateIn-awaits-init-and-four-preloaded-textures",
+          animateInStarted: this.canvasAnimateInStarted,
+          animateInResolvedMode: "source-nD-animateIn-resolves-after-fade-scheduled",
+          canvasFadeCompleted: this.canvasFadeCompleted,
+          sourceTexturePreloadState: { ...this.sourceTexturePreloadState },
+          sourceTexturePreloadComplete: Object.values(this.sourceTexturePreloadState).every(Boolean),
         },
       },
       uniforms: {
