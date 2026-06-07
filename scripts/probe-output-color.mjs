@@ -562,20 +562,41 @@ async function runProbe() {
   if (lensflareUniforms?.materialMode !== "source-L1-raw-glsl3") materialSurfaceErrors.push("lensflareMaterialMode");
   if (lensflareUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("lensflareGlslVersion");
   if (lensflareUniforms?.screenMode !== "source-I1-mainPostScreen-material-swap") materialSurfaceErrors.push("lensflareScreenMode");
+  if (lensflareUniforms?.ownership !== "source-I1-lensflareMaterial-main-render-manager") materialSurfaceErrors.push("lensflareOwnership");
   if (lensflareUniforms?.enabled !== false) materialSurfaceErrors.push("lensflareDefaultEnabled");
   if (lensflareUniforms?.clearMode !== "source-I1-lensflare-explicit-clear") materialSurfaceErrors.push("lensflareClearMode");
   if (JSON.stringify(lensflareUniforms?.lightPosition) !== JSON.stringify([0.5, 0.5])) materialSurfaceErrors.push("lensflareLightPosition");
   if (JSON.stringify(lensflareUniforms?.scale) !== JSON.stringify([1.5, 1.5])) materialSurfaceErrors.push("lensflareScale");
   if (lensflareUniforms?.exposure !== 1) materialSurfaceErrors.push("lensflareExposure");
   if (lensflareUniforms?.clamp !== 1) materialSurfaceErrors.push("lensflareClamp");
+  const passMaterialOwnership = passMaterials.ownership || {};
+  if (passMaterialOwnership.source !== "Lu-and-I1-each-create-owned-pass-materials-in-initRenderer") {
+    materialSurfaceErrors.push("passMaterialOwnershipSource");
+  }
+  if (passMaterialOwnership.workMaterialOwnership !== "source-Lu-pass-materials-owned-by-work-render-manager") {
+    materialSurfaceErrors.push("workPassMaterialOwnership");
+  }
+  if (passMaterialOwnership.mainMaterialOwnership !== "source-I1-pass-materials-owned-by-main-render-manager") {
+    materialSurfaceErrors.push("mainPassMaterialOwnership");
+  }
+  if (passMaterialOwnership.workMainLuminosityShared !== false) materialSurfaceErrors.push("workMainLuminosityShared");
+  if (passMaterialOwnership.workMainStandardBlurShared !== false) materialSurfaceErrors.push("workMainStandardBlurShared");
+  if (passMaterialOwnership.workMainFxaaShared !== false) materialSurfaceErrors.push("workMainFxaaShared");
+  if (passMaterialOwnership.workMainBloomBlurShared !== false) materialSurfaceErrors.push("workMainBloomBlurShared");
+  if (passMaterialOwnership.workMainBloomCompositeShared !== false) materialSurfaceErrors.push("workMainBloomCompositeShared");
+  if (passMaterialOwnership.allOwnedMaterialsSeparate !== true) materialSurfaceErrors.push("allOwnedMaterialsSeparate");
   for (const [key, expectedMode] of Object.entries({
     mediaComposite: "source-W1-raw-glsl3",
     luminosity: "source-sg-raw-glsl3",
+    workLuminosity: "source-sg-raw-glsl3",
+    mainLuminosity: "source-sg-raw-glsl3",
     bloomBlur: "source-rg-raw-glsl3",
     bloomComposite: "source-cg-raw-glsl3",
     mainBloomBlur: "source-rg-raw-glsl3",
     mainBloomComposite: "source-cg-raw-glsl3",
     fxaa: "source-ig-raw-glsl3",
+    workFxaa: "source-ig-raw-glsl3",
+    mainFxaa: "source-ig-raw-glsl3",
   })) {
     if (passMaterials[key]?.materialMode !== expectedMode) materialSurfaceErrors.push(`${key}MaterialMode`);
     if (passMaterials[key]?.glslVersion !== "300 es") materialSurfaceErrors.push(`${key}GlslVersion`);
@@ -603,18 +624,28 @@ async function runProbe() {
     if (material?.hasRebuildFactorUniforms !== false) materialSurfaceErrors.push(`${key}RebuildFactorUniforms`);
   }
   const standardBlur = passMaterials.standardBlur || {};
-  for (const key of ["horizontal", "vertical"]) {
-    const material = standardBlur[key];
-    if (material?.materialMode !== "source-Na-raw-glsl3") materialSurfaceErrors.push(`standardBlur${key}MaterialMode`);
-    if (material?.glslVersion !== "300 es") materialSurfaceErrors.push(`standardBlur${key}GlslVersion`);
-    if (material?.screenMode !== "source-I1-mainPostScreen-material-swap") materialSurfaceErrors.push(`standardBlur${key}ScreenMode`);
-    if (material?.blending !== 0) materialSurfaceErrors.push(`standardBlur${key}Blending`);
-    if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`standardBlur${key}BlurinessUniform`);
-    if (material?.hasKernelDefines !== false) materialSurfaceErrors.push(`standardBlur${key}KernelDefines`);
+  const workStandardBlur = passMaterials.workStandardBlur || {};
+  const mainStandardBlur = passMaterials.mainStandardBlur || {};
+  for (const [group, blur, expectedScreenMode] of [
+    ["standardBlur", standardBlur, "source-I1-mainPostScreen-material-swap"],
+    ["workStandardBlur", workStandardBlur, "source-Lu-workPostScreen-material-swap"],
+    ["mainStandardBlur", mainStandardBlur, "source-I1-mainPostScreen-material-swap"],
+  ]) {
+    for (const key of ["horizontal", "vertical"]) {
+      const material = blur[key];
+      if (material?.materialMode !== "source-Na-raw-glsl3") materialSurfaceErrors.push(`${group}${key}MaterialMode`);
+      if (material?.glslVersion !== "300 es") materialSurfaceErrors.push(`${group}${key}GlslVersion`);
+      if (material?.screenMode !== expectedScreenMode) materialSurfaceErrors.push(`${group}${key}ScreenMode`);
+      if (material?.blending !== 0) materialSurfaceErrors.push(`${group}${key}Blending`);
+      if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`${group}${key}BlurinessUniform`);
+      if (material?.hasKernelDefines !== false) materialSurfaceErrors.push(`${group}${key}KernelDefines`);
+    }
+    if (JSON.stringify(blur.horizontal?.direction) !== JSON.stringify([1, 0])) materialSurfaceErrors.push(`${group}HorizontalDirection`);
+    if (JSON.stringify(blur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push(`${group}VerticalDirection`);
   }
-  if (JSON.stringify(standardBlur.horizontal?.direction) !== JSON.stringify([1, 0])) materialSurfaceErrors.push("standardBlurHorizontalDirection");
-  if (JSON.stringify(standardBlur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push("standardBlurVerticalDirection");
   if (passMaterials.fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("fxaaVertexMode");
+  if (passMaterials.workFxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("workFxaaVertexMode");
+  if (passMaterials.mainFxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("mainFxaaVertexMode");
   const displacement = passMaterials.displacement || {};
   const rendererSize = parsed.probe.renderer?.size || {};
   const expectedDisplacementSize = Math.max(1, Math.round((rendererSize.height || 0) / 10));

@@ -132,24 +132,23 @@ Known remaining gaps:
 - Home is still not 1:1.
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
-  - rebuild has source-shaped passes and target clone ownership, but material ownership, transfer interpretation, and exact composite behavior are still not complete.
+  - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, but the projected thumb content/transfer feel is still not exact.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders, but interactive mouse/fluid feel is still not verified 1:1.
 
 Latest Phase 1 batch:
 
-- Source `Lu/I1/kA` render-target clone graph ownership was completed without visual tuning.
-- Source `Lu.initRenderer()` creates depthless/stencilless `renderTargetA`, derives `renderTargetB`, bright/composite, all bloom mip, blur, and FXAA targets from `renderTargetA.clone()`, then toggles only `renderTargetA.depthBuffer=true` after the clones exist.
-- Source `kA` extends `Lu` and keeps that target graph while replacing the composite material with `OA`.
-- Source `I1.initRenderer()` uses the same depthless clone graph plus `renderTargetLensflare`, and does not toggle `renderTargetA.depthBuffer`.
-- Source `I1.update()` writes the first optional blur pass into `renderTargetComposite`, then writes the vertical blur into `renderTargetBlurB`.
-- The rebuild now derives all work targets from `workRawTarget.clone()`, toggles `workRawTarget.depthBuffer=true` after clone construction, derives all main targets from `mainRawTarget.clone()` while leaving it depthless, and removes the old independent shared work/main bloom, blur, and FXAA targets.
-- Runtime probes expose/assert `source-Lu-target-state-renderTargetA-depthBuffer-true-derived-clones`, `source-Lu-renderTargetA-clone-graph-depth-toggle-after-clones`, `source-I1-target-state-renderTargetA-depthBuffer-false-derived-clones`, and `source-I1-renderTargetA-clone-graph-depthless-raw`; they also preserve the source unused 1x1 `renderTargetB` clone state.
-- Static audit checks source/rebuild `Lu` and `I1` clone graph anchors, absence of old independent targets, and source `I1` blur composite reuse.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0060` and mobile center `+0.0311`, recorded only as regression evidence.
+- Source `Lu/I1` pass-material object ownership was completed without visual tuning.
+- Source `Lu.initRenderer()` creates its own `hBlurMaterial=new Na(bf)`, `vBlurMaterial=new Na(Mf)`, `FxaaMaterial=new ig`, `luminosityMaterial=new sg`, five `rg` bloom blur materials, and `BloomMaterial=new cg`; source `kA` only replaces the composite material with `OA`.
+- Source `I1.initRenderer()` separately creates its own `hBlurMaterial=new Na(wf)`, `vBlurMaterial=new Na(Tf)`, `FxaaMaterial=new ig`, `luminosityMaterial=new sg`, five `rg` bloom blur materials, and `BloomMaterial=new cg`, with `L1` lensflare still behind `settings.lensflare.enabled`.
+- The rebuild now splits shared/generic pass-material fields into work-owned `workLuminosityMaterial`, `workBlurHorizontalMaterial`, `workBlurVerticalMaterial`, `workFxaaMaterial` and main-owned `mainLuminosityMaterial`, `mainBlurHorizontalMaterial`, `mainBlurVerticalMaterial`, `mainFxaaMaterial`; work/main bloom materials remain separate and are now guarded.
+- The main lensflare branch is renamed `mainLensflareMaterial` and remains default-disabled; exact source optional instantiation for disabled `I1` lensflare is still a separate bridge.
+- Runtime probes expose/assert `source-Lu-pass-materials-owned-by-work-render-manager`, `source-I1-pass-materials-owned-by-main-render-manager`, and all work/main material sharing flags as false.
+- Static audit checks source/rebuild owned material construction anchors and absence of old shared pass-material fields.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0051` and mobile center `+0.0316`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a `Lu/I1/kA` target clone ownership mismatch, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu` material/transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a `Lu/I1` pass-material ownership mismatch, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, interactive mouse/fluid verification, or disabled-lensflare optional-instantiation bridge.
 
 ## Validation Status
 
@@ -167,7 +166,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `Lu/I1/kA` render target clone graph ownership batch.
+All passed in the `Lu/I1` pass material ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

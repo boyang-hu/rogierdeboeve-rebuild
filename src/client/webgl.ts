@@ -3754,25 +3754,29 @@ export class WebGLBackdrop {
   private compositeTarget = this.mainRawTarget.clone();
   private mainCompositeMaterial: ShaderMaterial;
   private mainLensflareTarget = this.mainRawTarget.clone();
-  private lensflareMaterial: ShaderMaterial;
+  private mainLensflareMaterial: ShaderMaterial;
   private mainBloomBrightTarget = this.mainRawTarget.clone();
   private mainBloomHorizontalTargets: WebGLRenderTarget[] = [];
   private mainBloomVerticalTargets: WebGLRenderTarget[] = [];
   private mainBlurTargetA = this.mainRawTarget.clone();
   private mainBlurTargetB = this.mainRawTarget.clone();
   private mainFxaaTarget = this.mainRawTarget.clone();
+  private mainLuminosityMaterial: ShaderMaterial;
+  private mainBlurHorizontalMaterial: ShaderMaterial;
+  private mainBlurVerticalMaterial: ShaderMaterial;
+  private mainFxaaMaterial: ShaderMaterial;
   private mainBloomCompositeMaterial: ShaderMaterial;
   private mainBloomBlurMaterials: ShaderMaterial[] = [];
   private mediaRawTarget = makeSourceRenderTarget(false);
   private mediaTarget = makeSourceRenderTarget(false);
   private mediaCompositeMaterial: ShaderMaterial;
   private mediaCompositeScene = new Scene();
-  private luminosityMaterial: ShaderMaterial;
+  private workLuminosityMaterial: ShaderMaterial;
+  private workBlurHorizontalMaterial: ShaderMaterial;
+  private workBlurVerticalMaterial: ShaderMaterial;
+  private workFxaaMaterial: ShaderMaterial;
   private bloomBlurMaterials: ShaderMaterial[] = [];
   private bloomCompositeMaterial: ShaderMaterial;
-  private blurHorizontalMaterial: ShaderMaterial;
-  private blurVerticalMaterial: ShaderMaterial;
-  private fxaaMaterial: ShaderMaterial;
   private displacementMaterial: ShaderMaterial;
   private displacementRawTarget = makeSourceRenderTarget(false);
   private displacementTarget = this.displacementRawTarget.clone();
@@ -4010,25 +4014,31 @@ export class WebGLBackdrop {
     this.backgroundScene.add(makeFullscreenTriangle(this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
     this.mainCompositeMaterial = this.createMainCompositeMaterial();
-    this.lensflareMaterial = this.createLensflareMaterial();
+    this.mainLensflareMaterial = this.createLensflareMaterial();
     this.compositeMaterial = this.createCompositeMaterial();
     this.workBloomHorizontalTargets = Array.from({ length: 5 }, () => this.workRawTarget.clone());
     this.workBloomVerticalTargets = Array.from({ length: 5 }, () => this.workRawTarget.clone());
     this.mainBloomHorizontalTargets = Array.from({ length: 5 }, () => this.mainRawTarget.clone());
     this.mainBloomVerticalTargets = Array.from({ length: 5 }, () => this.mainRawTarget.clone());
     this.workRawTarget.depthBuffer = true;
-    this.luminosityMaterial = this.createLuminosityMaterial();
+    this.workBlurHorizontalMaterial = this.createBlurMaterial(1, 0);
+    this.workBlurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
+    this.workBlurVerticalMaterial = this.createBlurMaterial(0, 1);
+    this.workBlurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
+    this.workFxaaMaterial = this.createFxaaMaterial();
+    this.workLuminosityMaterial = this.createLuminosityMaterial(this.renderSettings);
     this.bloomBlurMaterials = this.createBloomBlurMaterials();
     this.bloomCompositeMaterial = this.createBloomCompositeMaterial(this.workBloomVerticalTargets);
+    this.mainBlurHorizontalMaterial = this.createBlurMaterial(1, 0);
+    this.mainBlurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
+    this.mainBlurVerticalMaterial = this.createBlurMaterial(0, 1);
+    this.mainBlurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
+    this.mainFxaaMaterial = this.createFxaaMaterial();
+    this.mainLuminosityMaterial = this.createLuminosityMaterial(this.sourceMainRenderSettings);
     this.mainBloomBlurMaterials = this.createBloomBlurMaterials();
     this.mainBloomCompositeMaterial = this.createBloomCompositeMaterial(this.mainBloomVerticalTargets, this.sourceMainRenderSettings);
     this.mediaCompositeMaterial = this.createMediaCompositeMaterial();
     this.mediaCompositeScene.add(makeFullscreenTriangle(this.mediaCompositeMaterial));
-    this.blurHorizontalMaterial = this.createBlurMaterial(1, 0);
-    this.blurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
-    this.blurVerticalMaterial = this.createBlurMaterial(0, 1);
-    this.blurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
-    this.fxaaMaterial = this.createFxaaMaterial();
     this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
     this.floorReflectionTarget.depthBuffer = true;
@@ -4507,7 +4517,7 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
     this.mainCompositeMaterial.dispose();
-    this.lensflareMaterial.dispose();
+    this.mainLensflareMaterial.dispose();
     this.mainLensflareTarget.dispose();
     this.mediaRawTarget.dispose();
     this.mediaTarget.dispose();
@@ -4519,14 +4529,18 @@ export class WebGLBackdrop {
     this.mainBlurTargetA.dispose();
     this.mainBlurTargetB.dispose();
     this.mainFxaaTarget.dispose();
-    this.luminosityMaterial.dispose();
+    this.workLuminosityMaterial.dispose();
+    this.workBlurHorizontalMaterial.dispose();
+    this.workBlurVerticalMaterial.dispose();
+    this.workFxaaMaterial.dispose();
     this.bloomBlurMaterials.forEach((material) => material.dispose());
     this.bloomCompositeMaterial.dispose();
+    this.mainLuminosityMaterial.dispose();
+    this.mainBlurHorizontalMaterial.dispose();
+    this.mainBlurVerticalMaterial.dispose();
+    this.mainFxaaMaterial.dispose();
     this.mainBloomBlurMaterials.forEach((material) => material.dispose());
     this.mainBloomCompositeMaterial.dispose();
-    this.blurHorizontalMaterial.dispose();
-    this.blurVerticalMaterial.dispose();
-    this.fxaaMaterial.dispose();
     this.displacementRawTarget.dispose();
     this.displacementTarget.dispose();
     this.floorReflectionTarget.dispose();
@@ -5110,8 +5124,8 @@ export class WebGLBackdrop {
     });
   }
 
-  private createLuminosityMaterial() {
-    const { luminosity } = this.renderSettings;
+  private createLuminosityMaterial(settings: SourceRenderSettings) {
+    const { luminosity } = settings;
     dumpShader("sg-luminosity", sourceFullscreenVertex, homeLuminosityFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
@@ -6328,7 +6342,7 @@ void main() {
     }
     if (this.sourceMainRenderSettings.fxaa.enabled) {
       this.mainFxaaTarget.setSize(renderWidth, renderHeight);
-      this.fxaaMaterial.uniforms.uResolution.value.set(renderWidth, renderHeight);
+      this.mainFxaaMaterial.uniforms.uResolution.value.set(renderWidth, renderHeight);
     }
     if (this.renderSettings.blur.enabled) {
       const workBlurWidth = Math.max(1, Math.round(width * this.renderSettings.blur.scale));
@@ -6341,8 +6355,8 @@ void main() {
       const blurHeight = Math.max(1, Math.round(height * this.sourceMainRenderSettings.blur.scale));
       this.mainBlurTargetA.setSize(blurWidth, blurHeight);
       this.mainBlurTargetB.setSize(blurWidth, blurHeight);
-      this.blurHorizontalMaterial.uniforms.uResolution.value.set(width, height);
-      this.blurVerticalMaterial.uniforms.uResolution.value.set(width, height);
+      this.mainBlurHorizontalMaterial.uniforms.uResolution.value.set(width, height);
+      this.mainBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);
     }
     this.workRawTarget.setSize(workRenderWidth, workRenderHeight);
     this.workCompositeTarget.setSize(workRenderWidth, workRenderHeight);
@@ -6350,7 +6364,7 @@ void main() {
     this.compositeTarget.setSize(renderWidth, renderHeight);
     this.mainLensflareTarget.setSize(renderWidth, renderHeight);
     if (SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) {
-      this.lensflareMaterial.uniforms.uResolution.value.set(width / 8, height / 8);
+      this.mainLensflareMaterial.uniforms.uResolution.value.set(width / 8, height / 8);
     }
     this.mediaRawTarget.setSize(renderWidth, renderHeight);
     this.mediaTarget.setSize(renderWidth, renderHeight);
@@ -7100,6 +7114,45 @@ void main() {
     const mouseSimulation = this.mouseSimulationProbe(mouseSimProbe);
     const mainFluid = this.mainFluidProbe();
     const activeWorkItem = this.workItems.find((item) => item.slug === this.activeSlug) ?? this.workItems[0];
+    const luminosityProbe = (material: ShaderMaterial) => ({
+      blending: material.blending,
+      materialMode: "source-sg-raw-glsl3",
+      glslVersion: (material as RawShaderMaterial).glslVersion ?? null,
+      threshold: material.uniforms.uThreshold.value,
+      smoothing: material.uniforms.uSmoothing.value,
+    });
+    const standardBlurProbe = (
+      horizontalMaterial: ShaderMaterial,
+      verticalMaterial: ShaderMaterial,
+      screenMode: string,
+    ) => ({
+      horizontal: {
+        blending: horizontalMaterial.blending,
+        materialMode: "source-Na-raw-glsl3",
+        glslVersion: (horizontalMaterial as RawShaderMaterial).glslVersion ?? null,
+        screenMode,
+        hasBlurinessUniform: "uBluriness" in horizontalMaterial.uniforms,
+        hasKernelDefines: Boolean(horizontalMaterial.defines?.KERNEL_RADIUS || horizontalMaterial.defines?.SIGMA),
+        direction: (horizontalMaterial.uniforms.uDirection.value as Vector2).toArray(),
+        bluriness: horizontalMaterial.uniforms.uBluriness.value,
+      },
+      vertical: {
+        blending: verticalMaterial.blending,
+        materialMode: "source-Na-raw-glsl3",
+        glslVersion: (verticalMaterial as RawShaderMaterial).glslVersion ?? null,
+        screenMode,
+        hasBlurinessUniform: "uBluriness" in verticalMaterial.uniforms,
+        hasKernelDefines: Boolean(verticalMaterial.defines?.KERNEL_RADIUS || verticalMaterial.defines?.SIGMA),
+        direction: (verticalMaterial.uniforms.uDirection.value as Vector2).toArray(),
+        bluriness: verticalMaterial.uniforms.uBluriness.value,
+      },
+    });
+    const fxaaProbe = (material: ShaderMaterial) => ({
+      blending: material.blending,
+      materialMode: "source-ig-raw-glsl3",
+      glslVersion: (material as RawShaderMaterial).glslVersion ?? null,
+      vertexMode: "source-FT-neighbor-uv",
+    });
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -7434,21 +7487,22 @@ void main() {
             glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           },
           lensflare: {
-            blending: this.lensflareMaterial.blending,
+            blending: this.mainLensflareMaterial.blending,
             materialMode: "source-L1-raw-glsl3",
-            glslVersion: (this.lensflareMaterial as RawShaderMaterial).glslVersion ?? null,
+            glslVersion: (this.mainLensflareMaterial as RawShaderMaterial).glslVersion ?? null,
             screenMode: "source-I1-mainPostScreen-material-swap",
+            ownership: "source-I1-lensflareMaterial-main-render-manager",
             enabled: SOURCE_MAIN_LENSFLARE_SETTINGS.enabled,
             clearMode: "source-I1-lensflare-explicit-clear",
             targetSize: {
               width: this.mainLensflareTarget.width,
               height: this.mainLensflareTarget.height,
             },
-            lightPosition: (this.lensflareMaterial.uniforms.uLightPosition.value as Vector2).toArray(),
-            scale: (this.lensflareMaterial.uniforms.uScale.value as Vector2).toArray(),
-            exposure: this.lensflareMaterial.uniforms.uExposure.value,
-            clamp: this.lensflareMaterial.uniforms.uClamp.value,
-            resolution: (this.lensflareMaterial.uniforms.uResolution.value as Vector2).toArray(),
+            lightPosition: (this.mainLensflareMaterial.uniforms.uLightPosition.value as Vector2).toArray(),
+            scale: (this.mainLensflareMaterial.uniforms.uScale.value as Vector2).toArray(),
+            exposure: this.mainLensflareMaterial.uniforms.uExposure.value,
+            clamp: this.mainLensflareMaterial.uniforms.uClamp.value,
+            resolution: (this.mainLensflareMaterial.uniforms.uResolution.value as Vector2).toArray(),
           },
         passMaterials: {
           mediaComposite: {
@@ -7457,11 +7511,30 @@ void main() {
             vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mediaCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           },
-          luminosity: {
-            blending: this.luminosityMaterial.blending,
-            materialMode: "source-sg-raw-glsl3",
-            glslVersion: (this.luminosityMaterial as RawShaderMaterial).glslVersion ?? null,
+          ownership: {
+            source: "Lu-and-I1-each-create-owned-pass-materials-in-initRenderer",
+            sourceWorkManager: "Lu/kA owns hBlurMaterial/vBlurMaterial/FxaaMaterial/luminosityMaterial/blurMaterials/BloomMaterial",
+            sourceMainManager: "I1 owns hBlurMaterial/vBlurMaterial/FxaaMaterial/luminosityMaterial/lensflareMaterial?/blurMaterials/BloomMaterial",
+            workMainLuminosityShared: this.workLuminosityMaterial === this.mainLuminosityMaterial,
+            workMainStandardBlurShared:
+              this.workBlurHorizontalMaterial === this.mainBlurHorizontalMaterial
+              || this.workBlurVerticalMaterial === this.mainBlurVerticalMaterial,
+            workMainFxaaShared: this.workFxaaMaterial === this.mainFxaaMaterial,
+            workMainBloomBlurShared: this.bloomBlurMaterials.some((material) => this.mainBloomBlurMaterials.includes(material)),
+            workMainBloomCompositeShared: this.bloomCompositeMaterial === this.mainBloomCompositeMaterial,
+            allOwnedMaterialsSeparate:
+              this.workLuminosityMaterial !== this.mainLuminosityMaterial
+              && this.workBlurHorizontalMaterial !== this.mainBlurHorizontalMaterial
+              && this.workBlurVerticalMaterial !== this.mainBlurVerticalMaterial
+              && this.workFxaaMaterial !== this.mainFxaaMaterial
+              && !this.bloomBlurMaterials.some((material) => this.mainBloomBlurMaterials.includes(material))
+              && this.bloomCompositeMaterial !== this.mainBloomCompositeMaterial,
+            workMaterialOwnership: "source-Lu-pass-materials-owned-by-work-render-manager",
+            mainMaterialOwnership: "source-I1-pass-materials-owned-by-main-render-manager",
           },
+          luminosity: luminosityProbe(this.mainLuminosityMaterial),
+          workLuminosity: luminosityProbe(this.workLuminosityMaterial),
+          mainLuminosity: luminosityProbe(this.mainLuminosityMaterial),
           bloomBlur: {
             blending: this.bloomBlurMaterials[0]?.blending ?? null,
             materialMode: "source-rg-raw-glsl3",
@@ -7514,34 +7587,24 @@ void main() {
             hasRebuildBloomUniforms: [1, 2, 3, 4, 5].some((index) => `tBloom${index}` in this.mainBloomCompositeMaterial.uniforms),
             hasRebuildFactorUniforms: [1, 2, 3, 4, 5].some((index) => `uFactor${index}` in this.mainBloomCompositeMaterial.uniforms),
           },
-          standardBlur: {
-            horizontal: {
-              blending: this.blurHorizontalMaterial.blending,
-              materialMode: "source-Na-raw-glsl3",
-              glslVersion: (this.blurHorizontalMaterial as RawShaderMaterial).glslVersion ?? null,
-              screenMode: "source-I1-mainPostScreen-material-swap",
-              hasBlurinessUniform: "uBluriness" in this.blurHorizontalMaterial.uniforms,
-              hasKernelDefines: Boolean(this.blurHorizontalMaterial.defines?.KERNEL_RADIUS || this.blurHorizontalMaterial.defines?.SIGMA),
-              direction: (this.blurHorizontalMaterial.uniforms.uDirection.value as Vector2).toArray(),
-              bluriness: this.blurHorizontalMaterial.uniforms.uBluriness.value,
-            },
-            vertical: {
-              blending: this.blurVerticalMaterial.blending,
-              materialMode: "source-Na-raw-glsl3",
-              glslVersion: (this.blurVerticalMaterial as RawShaderMaterial).glslVersion ?? null,
-              screenMode: "source-I1-mainPostScreen-material-swap",
-              hasBlurinessUniform: "uBluriness" in this.blurVerticalMaterial.uniforms,
-              hasKernelDefines: Boolean(this.blurVerticalMaterial.defines?.KERNEL_RADIUS || this.blurVerticalMaterial.defines?.SIGMA),
-              direction: (this.blurVerticalMaterial.uniforms.uDirection.value as Vector2).toArray(),
-              bluriness: this.blurVerticalMaterial.uniforms.uBluriness.value,
-            },
-          },
-          fxaa: {
-            blending: this.fxaaMaterial.blending,
-            materialMode: "source-ig-raw-glsl3",
-            glslVersion: (this.fxaaMaterial as RawShaderMaterial).glslVersion ?? null,
-            vertexMode: "source-FT-neighbor-uv",
-          },
+          standardBlur: standardBlurProbe(
+            this.mainBlurHorizontalMaterial,
+            this.mainBlurVerticalMaterial,
+            "source-I1-mainPostScreen-material-swap",
+          ),
+          workStandardBlur: standardBlurProbe(
+            this.workBlurHorizontalMaterial,
+            this.workBlurVerticalMaterial,
+            "source-Lu-workPostScreen-material-swap",
+          ),
+          mainStandardBlur: standardBlurProbe(
+            this.mainBlurHorizontalMaterial,
+            this.mainBlurVerticalMaterial,
+            "source-I1-mainPostScreen-material-swap",
+          ),
+          fxaa: fxaaProbe(this.mainFxaaMaterial),
+          workFxaa: fxaaProbe(this.workFxaaMaterial),
+          mainFxaa: fxaaProbe(this.mainFxaaMaterial),
           skyComposite: {
             blending: this.skyCompositeMaterial.blending,
             materialMode: "source-z1-raw-glsl3",
@@ -8300,22 +8363,22 @@ void main() {
   }
 
   private renderHomeBlurPass() {
-    this.blurHorizontalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
-    this.blurVerticalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
-    this.blurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture;
-    this.mainPostScreen.material = this.blurHorizontalMaterial;
+    this.mainBlurHorizontalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
+    this.mainBlurVerticalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
+    this.mainBlurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture;
+    this.mainPostScreen.material = this.mainBlurHorizontalMaterial;
     this.renderer.setRenderTarget(this.compositeTarget);
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
-    this.blurVerticalMaterial.uniforms.tMap.value = this.compositeTarget.texture;
-    this.mainPostScreen.material = this.blurVerticalMaterial;
+    this.mainBlurVerticalMaterial.uniforms.tMap.value = this.compositeTarget.texture;
+    this.mainPostScreen.material = this.mainBlurVerticalMaterial;
     this.renderer.setRenderTarget(this.mainBlurTargetB);
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
   }
 
   private renderMainLensflarePass(sourceTarget: WebGLRenderTarget) {
     if (!SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) return;
-    this.lensflareMaterial.uniforms.tMap.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : sourceTarget.texture;
-    this.mainPostScreen.material = this.lensflareMaterial;
+    this.mainLensflareMaterial.uniforms.tMap.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : sourceTarget.texture;
+    this.mainPostScreen.material = this.mainLensflareMaterial;
     this.renderer.setRenderTarget(this.mainLensflareTarget);
     this.renderer.clear();
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
@@ -8323,8 +8386,8 @@ void main() {
 
   private renderMainLuminosityPass(sourceTarget: WebGLRenderTarget) {
     if (!this.sourceMainRenderSettings.luminosity.enabled) return;
-    this.luminosityMaterial.uniforms.tMap.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : sourceTarget.texture;
-    this.mainPostScreen.material = this.luminosityMaterial;
+    this.mainLuminosityMaterial.uniforms.tMap.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : sourceTarget.texture;
+    this.mainPostScreen.material = this.mainLuminosityMaterial;
     this.renderer.setRenderTarget(this.mainBloomBrightTarget);
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
   }
@@ -8363,8 +8426,8 @@ void main() {
   private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
     let brightTarget: WebGLRenderTarget | undefined;
     if (this.renderSettings.luminosity.enabled) {
-      this.luminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
-      this.workPostScreen.material = this.luminosityMaterial;
+      this.workLuminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
+      this.workPostScreen.material = this.workLuminosityMaterial;
       this.renderer.setRenderTarget(this.workBloomBrightTarget);
       this.renderer.render(this.workPostScreen, this.backgroundCamera);
       brightTarget = this.workBloomBrightTarget;
@@ -8398,8 +8461,8 @@ void main() {
     if (settings.fxaa.enabled) {
       this.renderer.setRenderTarget(this.mainFxaaTarget);
       this.renderer.render(this.mainPostScreen, this.backgroundCamera);
-      this.fxaaMaterial.uniforms.tMap.value = this.mainFxaaTarget.texture;
-      this.mainPostScreen.material = this.fxaaMaterial;
+      this.mainFxaaMaterial.uniforms.tMap.value = this.mainFxaaTarget.texture;
+      this.mainPostScreen.material = this.mainFxaaMaterial;
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.mainPostScreen, this.backgroundCamera);
       return;
