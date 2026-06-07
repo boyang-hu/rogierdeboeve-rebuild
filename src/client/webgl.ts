@@ -2628,6 +2628,35 @@ function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, s
   };
 }
 
+function renderTargetStateProbe(target: WebGLRenderTarget, role: string) {
+  return {
+    role,
+    width: target.width,
+    height: target.height,
+    depthBuffer: target.depthBuffer,
+    stencilBuffer: target.stencilBuffer,
+    texture: {
+      colorSpace: target.texture.colorSpace,
+      type: target.texture.type,
+      format: target.texture.format,
+      minFilter: target.texture.minFilter,
+      magFilter: target.texture.magFilter,
+      generateMipmaps: target.texture.generateMipmaps,
+      wrapS: target.texture.wrapS,
+      wrapT: target.texture.wrapT,
+    },
+  };
+}
+
+function sourceRenderTargetStateBoard(targets: Record<string, WebGLRenderTarget>, sourceMode: string) {
+  return {
+    sourceMode,
+    targets: Object.fromEntries(
+      Object.entries(targets).map(([key, target]) => [key, renderTargetStateProbe(target, key)]),
+    ),
+  };
+}
+
 function setTextureQuality(texture: Texture, renderer: WebGLRenderer, colorSpace: typeof SRGBColorSpace | typeof NoColorSpace | "" = "") {
   texture.colorSpace = colorSpace;
   texture.minFilter = LinearFilter;
@@ -5989,6 +6018,16 @@ export class WebGLBackdrop {
             dprMode: "source-p1-resize-min-Pe-dpr-1.5",
             mouseSimScale: SCREEN_MOUSE_SIM_SCALE,
           },
+          renderTargetState: sourceRenderTargetStateBoard({
+            renderTargetA: this.workRawTarget,
+            renderTargetBright: this.bloomBrightTarget,
+            renderTargetsHorizontal0: this.bloomHorizontalTargets[0],
+            renderTargetsVertical0: this.bloomVerticalTargets[0],
+            renderTargetComposite: this.workCompositeTarget,
+            renderTargetBlurA: this.blurTargetA,
+            renderTargetBlurB: this.blurTargetB,
+            renderTargetFXAA: this.fxaaTarget,
+          }, "source-Lu-target-state-renderTargetA-depthBuffer-true-clones-false"),
           renderManagerClearing: {
             rawPass: "source-Lu-no-explicit-clear",
             blurPass: "source-Lu-no-explicit-clear",
@@ -6045,6 +6084,18 @@ export class WebGLBackdrop {
             fluidSizeMode: "source-I1-Fa-render-size-div-2-then-div-3",
             dprMode: "source-Pe-dpr-global",
           },
+          renderTargetState: sourceRenderTargetStateBoard({
+            renderTargetA: this.compositeTarget,
+            renderTargetB: this.backgroundTarget,
+            renderTargetLensflare: this.mainLensflareTarget,
+            renderTargetBright: this.mainBloomBrightTarget,
+            renderTargetsHorizontal0: this.mainBloomHorizontalTargets[0],
+            renderTargetsVertical0: this.mainBloomVerticalTargets[0],
+            renderTargetComposite: this.compositeTarget,
+            renderTargetBlurA: this.blurTargetA,
+            renderTargetBlurB: this.blurTargetB,
+            renderTargetFXAA: this.fxaaTarget,
+          }, "source-I1-target-default-state-depthBuffer-false-clones-false"),
           renderManagerClearing: {
             frameStart: "source-nD-no-explicit-clear",
             preCompositePass: "source-I1-no-explicit-clear",

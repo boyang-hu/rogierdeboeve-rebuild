@@ -264,6 +264,63 @@ async function runProbe() {
   if (sizingErrors.length) {
     throw new Error(`Render-manager sizing source-shape mismatch: ${sizingErrors.join(", ")}`);
   }
+  const targetStateErrors = [];
+  const LinearFilter = 1006;
+  const RGBAFormat = 1023;
+  const UnsignedByteType = 1009;
+  const NoColorSpace = "";
+  const workTargetState = parsed.probe.settings?.work?.renderTargetState || {};
+  const mainTargetState = parsed.probe.settings?.main?.renderTargetState || {};
+  function assertDefaultTargetState(board, key, expectedDepth, label) {
+    const target = board?.targets?.[key];
+    if (!target) {
+      targetStateErrors.push(`${label}Missing`);
+      return;
+    }
+    if (target.depthBuffer !== expectedDepth) targetStateErrors.push(`${label}DepthBuffer`);
+    if (target.stencilBuffer !== false) targetStateErrors.push(`${label}StencilBuffer`);
+    if (target.texture?.colorSpace !== NoColorSpace) targetStateErrors.push(`${label}ColorSpace`);
+    if (target.texture?.type !== UnsignedByteType) targetStateErrors.push(`${label}Type`);
+    if (target.texture?.format !== RGBAFormat) targetStateErrors.push(`${label}Format`);
+    if (target.texture?.minFilter !== LinearFilter) targetStateErrors.push(`${label}MinFilter`);
+    if (target.texture?.magFilter !== LinearFilter) targetStateErrors.push(`${label}MagFilter`);
+    if (target.texture?.generateMipmaps !== false) targetStateErrors.push(`${label}Mipmaps`);
+  }
+  if (workTargetState.sourceMode !== "source-Lu-target-state-renderTargetA-depthBuffer-true-clones-false") {
+    targetStateErrors.push("workTargetStateMode");
+  }
+  if (mainTargetState.sourceMode !== "source-I1-target-default-state-depthBuffer-false-clones-false") {
+    targetStateErrors.push("mainTargetStateMode");
+  }
+  assertDefaultTargetState(workTargetState, "renderTargetA", true, "workRenderTargetA");
+  for (const key of [
+    "renderTargetBright",
+    "renderTargetsHorizontal0",
+    "renderTargetsVertical0",
+    "renderTargetComposite",
+    "renderTargetBlurA",
+    "renderTargetBlurB",
+    "renderTargetFXAA",
+  ]) {
+    assertDefaultTargetState(workTargetState, key, false, `work${key[0].toUpperCase()}${key.slice(1)}`);
+  }
+  for (const key of [
+    "renderTargetA",
+    "renderTargetB",
+    "renderTargetLensflare",
+    "renderTargetBright",
+    "renderTargetsHorizontal0",
+    "renderTargetsVertical0",
+    "renderTargetComposite",
+    "renderTargetBlurA",
+    "renderTargetBlurB",
+    "renderTargetFXAA",
+  ]) {
+    assertDefaultTargetState(mainTargetState, key, false, `main${key[0].toUpperCase()}${key.slice(1)}`);
+  }
+  if (targetStateErrors.length) {
+    throw new Error(`Render-target source-state mismatch: ${targetStateErrors.join(", ")}`);
+  }
   const materialSurfaceErrors = [];
   const preCompositeUniforms = parsed.probe.uniforms?.preComposite;
   const workCompositeUniforms = parsed.probe.uniforms?.composite;
