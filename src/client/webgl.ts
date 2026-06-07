@@ -81,6 +81,7 @@ type WorkItem = {
   slug: string;
   payload: ProjectPayload;
   group: Group;
+  rotationWrap: Group;
   material: WorkBlockMaterial;
   mesh: InstancedMesh;
   thumb: Mesh<PlaneGeometry, ShaderMaterial>;
@@ -3150,8 +3151,11 @@ export class WebGLBackdrop {
       const rayPlane = this.createWorkRayPlane();
       const mouseSimulation = this.createWorkMouseSimulation();
       const group = new Group();
-      group.add(mesh);
-      group.add(rayPlane);
+      const rotationWrap = new Group();
+      rotationWrap.scale.setScalar(GRID_SCALE);
+      rotationWrap.add(mesh);
+      rotationWrap.add(rayPlane);
+      group.add(rotationWrap);
       if (payload.slug === "demorgen") rotationAdjustment = -theta * index;
       group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius;
       group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
@@ -3162,6 +3166,7 @@ export class WebGLBackdrop {
         slug: card.dataset.slug ?? String(index),
         payload,
         group,
+        rotationWrap,
         material,
         mesh,
         thumb,
@@ -3276,7 +3281,6 @@ export class WebGLBackdrop {
     geometry.setAttribute("instanceAlpha", new InstancedBufferAttribute(alphas, 1));
     geometry.setAttribute("instanceColor", new InstancedBufferAttribute(colors, 3));
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.scale.setScalar(GRID_SCALE);
     return mesh;
   }
 
@@ -4133,12 +4137,12 @@ export class WebGLBackdrop {
     const material = new MeshBasicMaterial({ visible: false });
     const mesh = new Mesh(
       new PlaneGeometry(
-        GRID_COLS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
-        GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
+        GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
+        GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
       ),
       material,
     );
-    mesh.position.set(0, 0, (GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01) * GRID_SCALE);
+    mesh.position.set(0, 0, GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01);
     return mesh;
   }
 
@@ -5778,10 +5782,12 @@ export class WebGLBackdrop {
         thickness: active.mouseMaterial.uniforms.uThickness.value,
         uvOffset: uvOffset?.toArray() ?? null,
         uvOffsetScale: uvOffsetScale ?? null,
+        rotationWrapScale: active.rotationWrap.scale.toArray(),
+        meshScale: active.mesh.scale.toArray(),
         rayPlaneScale: active.rayPlane.scale.toArray(),
         rayPlaneGeometrySize: [
-          GRID_COLS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
-          GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
+          GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
+          GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
         ],
         sourcePlaneSize,
         sourceRayPlaneSize,
@@ -5790,6 +5796,14 @@ export class WebGLBackdrop {
           planeScale: MOUSE_PLANE_SCALE,
           rayScale: MOUSE_RAY_SCALE,
           gridScale: GRID_SCALE,
+          rotationWrapScaleMatchesSource:
+            Math.abs(active.rotationWrap.scale.x - GRID_SCALE) < 1e-6
+            && Math.abs(active.rotationWrap.scale.y - GRID_SCALE) < 1e-6
+            && Math.abs(active.rotationWrap.scale.z - GRID_SCALE) < 1e-6,
+          meshScaleIsSourceIdentity:
+            Math.abs(active.mesh.scale.x - 1) < 1e-6
+            && Math.abs(active.mesh.scale.y - 1) < 1e-6
+            && Math.abs(active.mesh.scale.z - 1) < 1e-6,
           targetSizeMatchesPlane: activeTarget.width === expectedTargetSize.width && activeTarget.height === expectedTargetSize.height,
           uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
           uvOffsetMatchesSource: Boolean(
@@ -5799,10 +5813,10 @@ export class WebGLBackdrop {
           ),
           uvOffsetScaleMatchesSource: uvOffsetScale === MOUSE_RAY_SCALE,
           rayPlaneGeometryMatchesSource:
-            Math.abs(active.rayPlane.geometry.parameters.width - sourceRayPlaneSize[0] * GRID_SCALE) < 1e-6
-            && Math.abs(active.rayPlane.geometry.parameters.height - sourceRayPlaneSize[1] * GRID_SCALE) < 1e-6,
+            Math.abs(active.rayPlane.geometry.parameters.width - sourceRayPlaneSize[0]) < 1e-6
+            && Math.abs(active.rayPlane.geometry.parameters.height - sourceRayPlaneSize[1]) < 1e-6,
           rayPlaneZMatchesSource:
-            Math.abs(active.rayPlane.position.z - (GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01) * GRID_SCALE) < 1e-6,
+            Math.abs(active.rayPlane.position.z - (GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01)) < 1e-6,
           persistenceMatchesSource: Math.abs((active.mouseMaterial.uniforms.uPersistance.value as number) - Math.pow(0.85, 1 / 60 * 10)) < 0.2,
           thicknessMatchesSource: Math.abs((active.mouseMaterial.uniforms.uThickness.value as number) - 0.1) < 1e-6,
         },

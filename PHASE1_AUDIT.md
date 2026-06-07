@@ -105,6 +105,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 28 | S1-101 | Source `I1` main render-manager sizing | Source `I1.resize()` uses `Fa(renderSize)/2` for main luminosity/bloom and then resizes main fluid with that half-POT size divided by `3`; this differs from work `Lu/kA`, which uses `/4`. | Production now restores main `I1` half-POT bloom/luminosity/fluid sizing while leaving work `Lu/kA` on quarter-POT. Output probe and renderer audit now assert the split so `I1` cannot be accidentally collapsed back into `Lu`. | Low-medium | Keep as source-correct sizing ownership. This is a structural correction, not a Phase 1 visual closeout. |
 | 29 | S1-102 | Source `Iu/p1/h1` update ordering | Source `Iu.update()` renders the render-manager first, then updates the camera controller and components; source `p1.update()` calls `super.update()` before work items/about blocks, so environment `h1.update()` is a component update after the current frame render. | Production now writes environment `uTime` in the post-render next-frame update path instead of the pre-render tick path. Renderer audit checks source `Iu.update()` and `p1.update()` anchors, and output probe asserts `environmentUpdateOrder=source-p1-component-post-render`. | Low-medium | Keep as source-correct frame-order ownership. This is a one-frame environment timing alignment, not a Phase 1 visual closeout; mobile/fog-bed and projection/material residuals remain open. |
 | 30 | S1-103 | Source `V1/H1/z1` sky composite uniform surface | Source `z1` declares shader text for `uShader1Mix3` and `uShader3Scale` in `B1`, but its runtime uniform object binds only `tScene`, `uTime`, `uShader1Alpha`, `uShader1Speed`, `uShader2Speed`, `uShader1Scale`, `uShader2Scale`, and `uShaderMix`. | Production now removes the rebuild-only runtime bindings for `uShader1Mix3` and `uShader3Scale`, while keeping them shader-declared. Output probe reports both as `source-declared-only`, and renderer audit checks source `V1/H1/z1` sizing/update/material anchors. | Low | Keep as source-correct sky composite surface cleanup. This narrows environment/sky ownership but does not close Phase 1; mobile/fog-bed distribution and projection/material residuals remain open. |
+| 31 | S1-104 | Source `GA` rotation-wrap scale ownership | Source `GA.createInstancedMesh()` attaches the instanced mesh to `rotationWrap` and applies `settings.scale=.09` to `rotationWrap`; source `GA.createPlane()` attaches `rayPlane` to the same `rotationWrap` with unscaled geometry/position, then local mouse simulation resizes from the unscaled plane size. | Production now restores that object hierarchy: each work item has `group -> rotationWrap(scale=.09) -> mesh + rayPlane`, mesh scale stays identity, and ray-plane geometry/z are no longer pre-multiplied by grid scale. Output probe asserts the hierarchy/scale shape and renderer audit records source anchors. | Low-medium | Keep as source-correct `GA` matrix/projection ownership. World dimensions remain stable, but Phase 1 is still open for mobile/fog-bed distribution and strict projection/material residuals. |
 
 ### Phase 1 Open Blocker Board
 
@@ -459,6 +460,43 @@ Verification:
 | Mobile center-band delta | `-0.0116` against source |
 
 Decision: keep the source-declared-only sky uniform cleanup. It is a low-risk ownership alignment and slightly improves the mobile center-band residual, but Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and deeper source-isomorphic renderer structure.
+
+### S1-104 Source `GA` Rotation-Wrap Scale Ownership
+
+This batch corrected `GA` object hierarchy and matrix ownership for the work-block mesh and local ray plane.
+
+Source/runtime evidence:
+
+- Source `GA.createInstancedMesh()` creates `rotationWrap`, adds the instanced mesh to it, and applies `rotationWrap.scale.set(settings.scale, settings.scale, settings.scale)` where `settings.scale=.09`.
+- Source `GA.createPlane()` creates an unscaled local plane and ray plane, scales the ray plane by `1.5`, then adds `rayPlane` to the same `rotationWrap`.
+- Source `GA.resize()` calls `mouseSim.onResize(this.plane.scale.x, this.plane.scale.y)`, so local mouse simulation target sizing is based on the unscaled source plane dimensions.
+
+Production change:
+
+- Added a per-work-item `rotationWrap` group.
+- Moved the work instanced mesh and ray plane under `rotationWrap`.
+- Moved `GRID_SCALE` from `mesh.scale` to `rotationWrap.scale`.
+- Restored ray-plane geometry width/height to the unscaled source ray-plane dimensions.
+- Restored ray-plane local z position to the unscaled source position before parent scaling.
+- Output probe now reports `rotationWrapScale`, `meshScale`, and unscaled ray-plane geometry/position checks.
+- Renderer audit now checks source `GA` anchors for `rotationWrap.add(mesh)`, `rotationWrap.scale.set(i,i,i)`, and `rotationWrap.add(rayPlane)`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `GA` rotation-wrap, mesh, ray-plane, and local mouse anchors present |
+| Output probe | Passed; rotation wrap scale, mesh identity scale, ray-plane geometry/z, UV offset, and local mouse target assertions passed |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors; `VA` core checks unchanged |
+| Home source-vs-rebuild capture | Desktop/mobile home captures passed without failures or runtime exceptions |
+| Desktop center-band delta | `+0.0002` against source |
+| Mobile center-band delta | `-0.0129` against source |
+
+Decision: keep the source `GA` hierarchy correction. It improves matrix/projection ownership without tuning visual constants, but Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and deeper source-isomorphic renderer structure.
 
 ### S1-70 Source Floor Circle Geometry
 
