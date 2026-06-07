@@ -365,10 +365,13 @@ async function runProbe() {
   if (mainOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("mainBridgeOwnership");
   if (mainOwnership?.finalScreenMode !== "source-main-post-screen") ownershipErrors.push("mainFinalScreenMode");
   if (mainOwnership?.defaultScreenMaterialMode !== "source-I1-default-direct-C1-screen-render-fxaa-tail-only") ownershipErrors.push("mainDefaultScreenMaterialMode");
-  if (mainOwnership?.preCompositeTargetRole !== "qa-mirror-of-source-renderTargetComposite-not-default-screen-output") {
+  if (mainOwnership?.preCompositeTargetRole !== "source-I1-renderTargetComposite-unused-in-default-renderToScreen") {
     ownershipErrors.push("mainPreCompositeTargetRole");
   }
-  if (mainOwnership?.productionOutputChanged !== true) ownershipErrors.push("mainProductionOutputChanged");
+  if (mainOwnership?.defaultRenderToScreenWritesCompositeTarget !== false) {
+    ownershipErrors.push("mainDefaultRenderToScreenWritesCompositeTarget");
+  }
+  if (mainOwnership?.productionOutputChanged !== false) ownershipErrors.push("mainProductionOutputChanged");
   if (mainSettings?.mainRawSceneMode !== "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb") {
     ownershipErrors.push("mainRawSceneMode");
   }

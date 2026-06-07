@@ -676,6 +676,9 @@ const summary = {
           "this.renderMainBloomPass(this.mainRawTarget)",
           "this.renderer.render(this.mainPostScreen, this.backgroundCamera)",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        rebuildNoDefaultCompositeTargetMirror:
+          !rebuildWebgl.includes("this.renderer.setRenderTarget(this.compositeTarget);\n    this.renderer.render(this.mainPostScreen, this.backgroundCamera);\n    this.renderHomeCompositePass();")
+          && rebuildWebgl.includes("preCompositeTargetRole: \"source-I1-renderTargetComposite-unused-in-default-renderToScreen\""),
         rebuildSourcePassInputs: [
           "this.blurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture",
           "this.renderMainLensflarePass(this.mainRawTarget)",

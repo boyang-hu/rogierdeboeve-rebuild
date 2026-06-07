@@ -136,15 +136,15 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `zA` ordinary work fragment macro parity was tightened without visual tuning:
-  - the `VA-work` direct `zA` fragment template now keeps the source old `SPECULAR` macro instead of the temporary Three r164 `USE_SPECULAR` bridge;
-  - runtime output probes now hard-check that the active ordinary work material is `MeshStandardMaterial`, `isMeshPhysicalMaterial=false`, and has no `PHYSICAL` define, so that source `PHYSICAL` branch is inactive for ordinary work;
-  - shader dump now classifies ordinary `VA-work` as `source-old-specular-macro-standard-material-physical-branch-inactive`;
-  - the shader residual summarizer now reports the restored source macro classification instead of reintroducing stale `SPECULAR/USE_SPECULAR` bridge wording.
-- `VA-work` direct `HA/zA` residuals are now reduced to the source-proven `uUvOffset vec2` runtime bridge plus whitespace/generation normalization for ordinary work. Auxiliary block shaders still use the safer r164 bridge because they are not ordinary source `VA-work`.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0041` and mobile center `+0.0288`, recorded only as regression evidence.
+- Source `I1/C1` default screen output ownership was tightened without visual tuning:
+  - the source `I1.initSettings()` default is `renderToScreen:true`;
+  - the source `I1.update()` default branch renders `this.screen` directly to the canvas with `setRenderTarget(null)`;
+  - the rebuild no longer performs the extra default-path write of `mainPostScreen` into `renderTargetComposite` before `renderHomeCompositePass()`;
+  - runtime metadata now records `preCompositeTargetRole=source-I1-renderTargetComposite-unused-in-default-renderToScreen` and `defaultRenderToScreenWritesCompositeTarget=false`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` now guard that source default path so the old target write is not accidentally restored.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0058` and mobile center `+0.0311`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this was source surface parity, not a visual closeout or accepted deviation.
+- Phase 1 remains open; this was source render-manager path parity, not a visual closeout or accepted deviation.
 
 ## Validation Status
 

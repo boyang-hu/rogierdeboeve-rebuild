@@ -7194,8 +7194,9 @@ void main() {
             finalScreenMode: "source-main-post-screen",
             sourceFinalRender: "settings.renderToScreen -> setRenderTarget(null), render(this.screen,this.screenCamera)",
             defaultScreenMaterialMode: "source-I1-default-direct-C1-screen-render-fxaa-tail-only",
-            preCompositeTargetRole: "qa-mirror-of-source-renderTargetComposite-not-default-screen-output",
-            productionOutputChanged: true,
+            preCompositeTargetRole: "source-I1-renderTargetComposite-unused-in-default-renderToScreen",
+            defaultRenderToScreenWritesCompositeTarget: false,
+            productionOutputChanged: false,
           },
           renderManagerPassInputs: {
             blurSource: "source-I1-renderTargetA",
@@ -8321,9 +8322,6 @@ void main() {
         : this.fluidPlaceholder;
     this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
     this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
-    this.mainPostScreen.material = this.preCompositeMaterial;
-    this.renderer.setRenderTarget(this.compositeTarget);
-    this.renderer.render(this.mainPostScreen, this.backgroundCamera);
     this.renderHomeCompositePass();
     this.renderThumbTargets();
     this.renderDisplacementTarget(time);
