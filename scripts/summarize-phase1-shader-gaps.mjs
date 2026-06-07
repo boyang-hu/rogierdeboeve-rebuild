@@ -16,6 +16,7 @@ const focusOrder = [
   "VA-work",
   "OA-work-composite",
   "A1-pre-composite",
+  "N1-displacement-composite",
   "x1-thumb-composite",
   "M1-thumb-plane",
   "u1-environment",

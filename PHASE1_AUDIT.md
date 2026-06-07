@@ -126,6 +126,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 49 | S1-122 | `VA/zA` r164 bridge attribution | Source `zA` uses the old `SPECULAR` define surface under `PHYSICAL`, but the local Three r164 `lights_physical_fragment` chunk requires `USE_SPECULAR` and does not accept `SPECULAR`. The remaining `VA-work` text diff therefore needed to be classified so it is not mistaken for a safe source-constant or visual tweak. | Production rendering is unchanged. Shader dump now records `vaBridgeCompatibility`, reports the Three r164 `lights_physical_fragment` chunk surface, and `phase1-shader-residuals.md` adds a Bridge Notes column that classifies `VA-work` as an `r164 compile bridge` while still showing include/uniform/core anchors matched. | Low | Keep as QA attribution. Do not replace `USE_SPECULAR` with `SPECULAR` unless the entire `lights_physical_fragment` dependency is source-ported and WebGL-verified. Phase 1 remains open for visual parity, but this removes one false implementation target. |
 | 50 | S1-123 | Source `xt/Se` visual defaults | Source `xt` defines `darken=.2`, `saturation=.35`, `contrast=1.1`, `thumbDarknessIntensity=.5`, `thumbDarknessColor="#000000"`, while `Se.init()` seeds those settings before route payloads take over. The rebuild still had pre-route/fallback state at `darken=.1`, `saturation=1.15`, and thumb darkness fallback `0`. | Production now names and uses source visual defaults for WebGL initial state, home fallback darken/saturation, about defaults, thumb fallback darkness/color/saturation/mouse-lightness, and separate project-detail fallback constants. Output and thumb probes expose and assert the source defaults. | Low | Keep as source-correct visual-state ownership. This removes a route-boundary/fallback mismatch without tuning projection or shader formulas. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 51 | S1-124 | Source `k1/O1/N1/F1` displacement pass | Source `k1` owns a wavves/displacement scene through `O1 extends Lo`; source `N1` is a raw GLSL3 material using fragment `F1`, source fullscreen vertex `tl`, tonemapping includes, direct `Lo.update()` render calls, and a square target sized at `height/10`. The rebuild still used a bridge `ShaderMaterial`, bridge vertex, `gl_FragColor` surface, and an explicit clear before rendering the displacement target. | Production now uses `RawShaderMaterial`/`GLSL3` for the displacement composite, source fullscreen vertex surface, source-style `in/out` and `FragColor` fragment output, tonemapping include surface, transparent/no-blending material state, target resize metadata, and source `Lo` no-explicit-clear ownership. Output probe and shader dump expose and assert the new pass surface. | Low-medium | Keep as source-correct displacement render-manager alignment. The source-only `tScene` uniform remains an unused source surface residual to revisit only if a narrower `N1/F1` evidence pass requires it. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 52 | S1-125 | Source `N1/F1/tl` displacement residual cleanup | After S1-124, source `N1/F1` still had three avoidable same-chain residuals: `uniform sampler2D tScene`, source global vignette constants `vignout/vignin/vignfade`, and source `tl` matrix fullscreen vertex path. The residual summary also omitted `N1-displacement-composite` from its focused table. | Production now binds source `tScene`, uses source `F1` global vignette constants, renders the displacement pass with an isolated source `tl` matrix fullscreen vertex/mesh path, and includes `N1-displacement-composite` in `phase1-shader-residuals.md`. Output probe hard-asserts `vertexMode`, `tSceneBound`, and source vignette constant mode. | Low-medium | Keep as source-correct `N1/F1/tl` cleanup. Do not generalize the matrix fullscreen vertex to other stable pass materials without a dedicated source/QA batch. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -1194,6 +1195,37 @@ Verification notes:
 - Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks.
 - Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
 - Band analysis: desktop center-band delta `-0.0005`; mobile center-band delta `-0.0161`.
+- Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-125 Source `N1/F1/tl` Displacement Residual Cleanup
+
+This batch finished the next same-chain displacement cleanup after S1-124. It did not change brightness constants, spotlight constants, project transition code, or project media wiring.
+
+Source evidence:
+
+- Source `N1` binds uniforms `{ tScene, uRatio, uTime }`, vertex shader `tl`, fragment shader `F1`, `glslVersion:lt`, `blending:ot`, `transparent:true`, `depthWrite:false`, and `depthTest:false`.
+- Source `F1` declares global vignette constants `vignout=.5`, `vignin=.01`, and `vignfade=2.0`, then calls `vignette(uvVignette.xy, vignin, vignout, vignfade, .4)`.
+- Source `tl` computes `gl_Position` through `modelMatrix`, `viewMatrix`, and `projectionMatrix`; source `Lo` still uses fullscreen-triangle geometry, so this is a vertex-path alignment rather than a geometry replacement.
+- The generated residual summary had dumped `N1-displacement-composite` files but did not list that shader in the focused Phase 1 residual table.
+
+Runtime and tooling changes:
+
+- The displacement material now declares and binds source `tScene` to the displacement target texture.
+- The displacement fragment now uses source global vignette constants instead of inline literal arguments.
+- The displacement pass now uses an isolated `sourceTlFullscreenVertex` and `makeSourceFullscreenTriangle()` path, leaving other stable post passes on their existing fullscreen vertex bridge.
+- Output probe now hard-asserts `vertexMode=source-tl-matrix-fullscreen`, `tSceneBound=true`, and `vignetteConstantsMode=source-F1-globals`.
+- `scripts/summarize-phase1-shader-gaps.mjs` now includes `N1-displacement-composite` in the focused residual table.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed and wrote `/tmp/rd-s125-shader/phase1-shader-residuals.md`; `N1-displacement-composite` is now listed with no source-only/rebuild-only fragment includes or uniforms.
+- Output probe passed and reported `source-N1-raw-glsl3`, `vertexMode=source-tl-matrix-fullscreen`, `tSceneBound=true`, `vignetteConstantsMode=source-F1-globals`, target size `90x90`, and ratio `1.6`.
+- Thumb spotlight probe passed and retained source thumb strip shape, spotlight map, target `(0,0,-8)`, and intensity `220`.
+- Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`.
+- Band analysis: desktop center-band delta `-0.0014`; mobile center-band delta `-0.0158`.
 - Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-122 `VA/zA` r164 Bridge Attribution

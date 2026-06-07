@@ -1658,6 +1658,22 @@ void main() {
 }
 `;
 
+const sourceTlFullscreenVertex = `
+in vec3 position;
+in vec2 uv;
+uniform mat4 modelMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+out vec2 vUv;
+
+void main() {
+  vUv = uv;
+  vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+  vec4 mvPosition = viewMatrix * worldPosition;
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
 const thumbCompositeFragment = `
 precision highp float;
 
@@ -2173,6 +2189,11 @@ precision highp float;
 
 uniform float uTime;
 uniform float uRatio;
+uniform sampler2D tScene;
+
+float vignout = 0.5;
+float vignin = 0.01;
+float vignfade = 2.0;
 
 in vec2 vUv;
 out vec4 FragColor;
@@ -2195,7 +2216,7 @@ void main() {
   uvOff += 0.5;
 
   float strength = 1.0 - abs(sin(distance(uvOff, vec2(0.5)) - 0.5 - uTime));
-  float vignetteF = vignette(uvVignette, 0.01, 0.5, 2.0, 0.4);
+  float vignetteF = vignette(uvVignette, vignin, vignout, vignfade, 0.4);
   FragColor = vec4(vec3(strength), 1.0);
   FragColor.rgb *= 1.0 - vignetteF;
 
@@ -2361,6 +2382,13 @@ function makeFullscreenTriangle(material: ShaderMaterial) {
   geometry.setAttribute("uv", new Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
   const mesh = new Mesh(geometry, material);
   mesh.frustumCulled = false;
+  return mesh;
+}
+
+function makeSourceFullscreenTriangle(material: ShaderMaterial) {
+  const mesh = makeFullscreenTriangle(material);
+  mesh.matrixAutoUpdate = false;
+  mesh.updateMatrix();
   return mesh;
 }
 
@@ -2905,7 +2933,7 @@ export class WebGLBackdrop {
     this.fxaaScene.add(makeFullscreenTriangle(this.fxaaMaterial));
     this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
-    this.displacementScene.add(makeFullscreenTriangle(this.displacementMaterial));
+    this.displacementScene.add(makeSourceFullscreenTriangle(this.displacementMaterial));
     this.floorReflectionTarget.depthBuffer = true;
     this.floorReflectionTarget.texture.generateMipmaps = false;
     this.floorReflectionTarget.texture.minFilter = LinearFilter;
@@ -4175,7 +4203,7 @@ export class WebGLBackdrop {
   }
 
   private createDisplacementMaterial() {
-    dumpShader("N1-displacement-composite", thumbCompositeVertex, displacementFragment);
+    dumpShader("N1-displacement-composite", sourceTlFullscreenVertex, displacementFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
@@ -4184,10 +4212,11 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
+        tScene: { value: this.displacementTarget.texture },
         uTime: { value: 0 },
         uRatio: { value: 1 },
       },
-      vertexShader: thumbCompositeVertex,
+      vertexShader: sourceTlFullscreenVertex,
       fragmentShader: displacementFragment,
     });
   }
@@ -6024,12 +6053,15 @@ export class WebGLBackdrop {
             blending: this.displacementMaterial.blending,
             materialMode: "source-N1-raw-glsl3",
             glslVersion: (this.displacementMaterial as RawShaderMaterial).glslVersion ?? null,
+            vertexMode: "source-tl-matrix-fullscreen",
             clearMode: "source-Lo-no-explicit-clear",
             targetSize: {
               width: this.displacementTarget.width,
               height: this.displacementTarget.height,
             },
             ratio: this.displacementMaterial.uniforms.uRatio.value,
+            tSceneBound: this.displacementMaterial.uniforms.tScene.value === this.displacementTarget.texture,
+            vignetteConstantsMode: "source-F1-globals",
             toneMapped: this.displacementMaterial.toneMapped,
             transparent: this.displacementMaterial.transparent,
           },

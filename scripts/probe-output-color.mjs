@@ -244,7 +244,10 @@ async function runProbe() {
   if (displacement.materialMode !== "source-N1-raw-glsl3") materialSurfaceErrors.push("displacementMaterialMode");
   if (displacement.glslVersion !== "300 es") materialSurfaceErrors.push("displacementGlslVersion");
   if (displacement.blending !== 0) materialSurfaceErrors.push("displacementBlending");
+  if (displacement.vertexMode !== "source-tl-matrix-fullscreen") materialSurfaceErrors.push("displacementVertexMode");
   if (displacement.clearMode !== "source-Lo-no-explicit-clear") materialSurfaceErrors.push("displacementClearMode");
+  if (displacement.tSceneBound !== true) materialSurfaceErrors.push("displacementTSceneBound");
+  if (displacement.vignetteConstantsMode !== "source-F1-globals") materialSurfaceErrors.push("displacementVignetteConstants");
   if (displacement.toneMapped !== false) materialSurfaceErrors.push("displacementToneMapped");
   if (displacement.transparent !== true) materialSurfaceErrors.push("displacementTransparent");
   if (displacement.targetSize && (
