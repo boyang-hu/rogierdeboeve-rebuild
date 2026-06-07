@@ -243,7 +243,9 @@ type MainFluidPass = {
 
 const BREAKPOINT_LG = 1000;
 const BREAKPOINT_MD = 800;
-const SOURCE_MAX_DPR = 1.5;
+const SOURCE_MAX_DPR = 2;
+const SOURCE_LOW_RES_MAX_DPR = 1.5;
+const SOURCE_WORK_MAX_DPR = 1.5;
 const SOURCE_WORK_BG = "#1a1a1a";
 const SOURCE_COMPOSITE_BG = "#1f1f1f";
 const DEFAULT_BG = SOURCE_WORK_BG;
@@ -2234,7 +2236,14 @@ function floorPowerOfTwo(value: number) {
 }
 
 function sourceDpr() {
-  return Math.min(window.devicePixelRatio || 1, SOURCE_MAX_DPR);
+  return Math.min(
+    window.devicePixelRatio || 1,
+    sourceLowRes() ? SOURCE_LOW_RES_MAX_DPR : SOURCE_MAX_DPR,
+  );
+}
+
+function sourceWorkDpr() {
+  return Math.min(sourceDpr(), SOURCE_WORK_MAX_DPR);
 }
 
 function sourceGpuTier() {
@@ -4666,10 +4675,13 @@ export class WebGLBackdrop {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const dpr = sourceDpr();
+    const workDpr = sourceWorkDpr();
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
     const renderWidth = Math.max(1, Math.round(width * dpr));
     const renderHeight = Math.max(1, Math.round(height * dpr));
+    const workRenderWidth = Math.max(1, Math.round(width * workDpr));
+    const workRenderHeight = Math.max(1, Math.round(height * workDpr));
     if (this.sourceMainRenderSettings.fxaa.enabled) {
       this.fxaaTarget.setSize(renderWidth, renderHeight);
       this.fxaaMaterial.uniforms.uResolution.value.set(renderWidth, renderHeight);
@@ -4682,18 +4694,20 @@ export class WebGLBackdrop {
       this.blurHorizontalMaterial.uniforms.uResolution.value.set(width, height);
       this.blurVerticalMaterial.uniforms.uResolution.value.set(width, height);
     }
-    this.workRawTarget.setSize(renderWidth, renderHeight);
-    this.workCompositeTarget.setSize(renderWidth, renderHeight);
+    this.workRawTarget.setSize(workRenderWidth, workRenderHeight);
+    this.workCompositeTarget.setSize(workRenderWidth, workRenderHeight);
     this.backgroundTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
     this.mainLensflareTarget.setSize(renderWidth, renderHeight);
     this.mediaRawTarget.setSize(renderWidth, renderHeight);
     this.mediaTarget.setSize(renderWidth, renderHeight);
+    const workQuarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(workRenderWidth) / 4));
+    const workQuarterMipHeight = Math.max(1, Math.round(floorPowerOfTwo(workRenderHeight) / 4));
     const quarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 4));
     const quarterMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 4));
-    if (this.renderSettings.luminosity.enabled) this.bloomBrightTarget.setSize(quarterMipWidth, quarterMipHeight);
+    if (this.renderSettings.luminosity.enabled) this.bloomBrightTarget.setSize(workQuarterMipWidth, workQuarterMipHeight);
     if (this.renderSettings.bloom.enabled) {
-      this.resizeBloomMipChain(this.bloomHorizontalTargets, this.bloomVerticalTargets, quarterMipWidth, quarterMipHeight);
+      this.resizeBloomMipChain(this.bloomHorizontalTargets, this.bloomVerticalTargets, workQuarterMipWidth, workQuarterMipHeight);
     }
     if (this.sourceMainRenderSettings.luminosity.enabled) this.mainBloomBrightTarget.setSize(quarterMipWidth, quarterMipHeight);
     if (this.sourceMainRenderSettings.bloom.enabled) {
@@ -4720,8 +4734,8 @@ export class WebGLBackdrop {
     this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(width, height);
-    const screenSimWidth = Math.max(1, Math.round(renderWidth / SCREEN_MOUSE_SIM_SCALE));
-    const screenSimHeight = Math.max(1, Math.round(renderHeight / SCREEN_MOUSE_SIM_SCALE));
+    const screenSimWidth = Math.max(1, Math.round(workRenderWidth / SCREEN_MOUSE_SIM_SCALE));
+    const screenSimHeight = Math.max(1, Math.round(workRenderHeight / SCREEN_MOUSE_SIM_SCALE));
     if (this.renderSettings.mousesim.enabled) {
       this.screenMouseSimulationTargets.forEach((target) => target.setSize(screenSimWidth, screenSimHeight));
       this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(screenSimWidth, screenSimHeight);
@@ -4761,7 +4775,7 @@ export class WebGLBackdrop {
       plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
     });
     this.workItems.forEach((item) => {
-      item.material.uniforms.uCoords.value.set(renderWidth, renderHeight);
+      item.material.uniforms.uCoords.value.set(workRenderWidth, workRenderHeight);
     });
     this.resizeAuxiliaryBlocks(width, height, dpr);
     this.updateMediaPlanePositions();
@@ -5342,6 +5356,15 @@ export class WebGLBackdrop {
         toneMapping: this.renderer.toneMapping,
         autoClear: this.renderer.autoClear,
         pixelRatio: this.renderer.getPixelRatio(),
+        dprPolicy: {
+          devicePixelRatio: window.devicePixelRatio || 1,
+          sourceMaxDpr: SOURCE_MAX_DPR,
+          sourceLowResMaxDpr: SOURCE_LOW_RES_MAX_DPR,
+          sourceWorkMaxDpr: SOURCE_WORK_MAX_DPR,
+          globalDpr: sourceDpr(),
+          workDpr: sourceWorkDpr(),
+          lowRes: sourceLowRes(),
+        },
         size: { width: rendererSize.x, height: rendererSize.y },
         drawingBufferSize: { width: drawingBufferSize.x, height: drawingBufferSize.y },
       },
@@ -5380,10 +5403,12 @@ export class WebGLBackdrop {
           fluid: this.renderSettings.fluid,
           renderManagerSizing: {
             primaryDepthBuffer: this.workRawTarget.depthBuffer,
+            renderTargetSize: { width: this.workRawTarget.width, height: this.workRawTarget.height },
             bloomStart: this.bloomHorizontalTargets[0]
               ? { width: this.bloomHorizontalTargets[0].width, height: this.bloomHorizontalTargets[0].height }
               : null,
             bloomStartMode: "source-Lu-Fa-render-size-div-4",
+            dprMode: "source-p1-resize-min-Pe-dpr-1.5",
             mouseSimScale: SCREEN_MOUSE_SIM_SCALE,
           },
           activeMaterial: activeWorkItem ? {
@@ -5404,11 +5429,13 @@ export class WebGLBackdrop {
           fluid: this.sourceMainRenderSettings.fluid,
           renderManagerSizing: {
             primaryDepthBuffer: this.compositeTarget.depthBuffer,
+            renderTargetSize: { width: this.compositeTarget.width, height: this.compositeTarget.height },
             bloomStart: this.mainBloomHorizontalTargets[0]
               ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
               : null,
             bloomStartMode: "source-Lu-Fa-render-size-div-4",
             fluidSizeMode: "source-Lu-Fa-render-size-div-4-then-div-3",
+            dprMode: "source-Pe-dpr-global",
           },
         },
         updateOrder: {

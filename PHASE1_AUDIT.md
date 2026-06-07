@@ -94,6 +94,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 18 | S1-82 | Source `V1/H1/Lo` sky render pass clearing | Source sky scene uses `H1 extends Lo`; source `Lo.update()` renders `renderTargetA` and `renderTargetComposite` directly without explicit `renderer.clear()` calls. The rebuild still cleared both sky raw and sky composite targets every frame. | Production now removes those rebuild-only sky target clears and reports `skyPassClearing=source-Lo-no-explicit-clear` in the output probe. | Low-medium | Keep as source-correct. The sky target remains non-empty and project pages remain stable, but Phase 1 remains open for mobile/fog-bed and projection residuals. |
 | 19 | S1-83 | Source `A1/C1` pre-composite shader flow | Source `A1` keeps the inert `displacementUv` and `vignetteF` computations and samples `tNoise` before contrast/saturation/media, then applies the two noise mixes after media. The rebuild had removed those two computations and relocated the noise sample to the tail. | Production now restores those source flow details without changing constants or final formula, and `scripts/audit-renderer-output.mjs` now reports `A1` order and inert-computation residuals accurately. | Low-medium | Keep as source-correct. This closes an audit residual in `A1/C1`; Phase 1 remains open because mobile/fog-bed and projection residuals still require source-backed attribution. |
 | 20 | S1-93 | Source `Lu` mip/fluid resize ownership | Source `Lu.resize()` sizes render targets at CSS DPR size, then switches to `Fa(renderSize)/4` for luminosity/bloom and `Fa(renderSize)/4/3` for fluid. The rebuild still used a main-only half-resolution start for the disabled-default main bloom/fluid branch. | Production now uses the same quarter-power-of-two start size for main render-manager bloom and fluid as source `Lu`; output probes report work/main sizing mode and primary depth ownership, and renderer audit checks the source resize anchors. | Low-medium | Keep as source-correct. This mainly removes a main render-manager ownership divergence; Phase 1 remains open because the visible mobile/fog-bed residual is still present. |
+| 21 | S1-94 | Source `Pe/p1` DPR ownership split | Source `Pe` caps global DPR at `2` normally and `1.5` in low-res, while source `p1.resize()` passes `Math.min(n,1.5)` to the work scene, each `GA`, and about blocks. The rebuild had globally capped every render path at `1.5`. | Production now keeps global/main/media/canvas DPR on source `Pe.dpr`, while work raw/composite, work bloom, screen mouse simulation, and work item `uCoords` use source `p1` work DPR capped at `1.5`. Output probes expose `dprPolicy` and work/main target sizes. | Low-medium | Keep as source-correct. High-DPR QA confirms global/canvas/main at DPR `2` while work stays DPR `1.5`; Phase 1 remains open for mobile/fog-bed and strict projection/material residuals. |
 
 ### Phase 1 Open Blocker Board
 
@@ -113,6 +114,38 @@ This board reflects the current active state after S1-46B through S1-50. Older r
 ### Current Recommendation
 
 Finish Phase 1 before opening Phase 2 work. The next implementation batch should not be a broad rendering rewrite. It should either find source evidence for `OA/CA` transfer that can be safely applied, or produce a focused visual QA package for the user to decide whether any remaining differences are acceptable. The agent should not independently mark the remaining brightness/projection gaps as accepted.
+
+### S1-94 Source Pe/p1 DPR Ownership
+
+This batch corrected a source-confirmed DPR ownership mismatch between the global renderer and the home work scene.
+
+Source/runtime evidence:
+
+- Source `Pe.init()` sets `maxDpr` to `Le.LOW_RES ? 1.5 : 2`, then computes `dpr = Math.min(maxDpr, window.devicePixelRatio)`.
+- Source `p1.resize(e,t,n)` calls `super.resize(e,t,Math.min(n,1.5))`; each work `GA` resize and `aboutBlocks.resize()` use the same `Math.min(n,1.5)` cap.
+- The rebuild previously applied a global `1.5` cap, which made main/media/canvas DPR ownership differ from source on high-DPR devices.
+
+Production now splits DPR ownership:
+
+- Global renderer, main composite, media targets, and canvas drawing buffer use source `Pe.dpr`.
+- Home work raw/composite targets, work bloom start size, work mouse simulation sizing, and work item `uCoords` use source `p1` work DPR capped at `1.5`.
+- `scripts/probe-output-color.mjs` can now run high-DPR runtime probes with `DEVICE_SCALE_FACTOR=2`; `SKIP_SCREENSHOT=1` avoids large SwiftShader screenshot timeouts without changing default probe behavior.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `Pe` and `p1.resize` anchors all present |
+| DPR 1 output probe | No failures/exceptions; global and work DPR both `1`, work/main targets `1440x900` |
+| DPR 2 output probe | No failures/exceptions; canvas/main `2880x1800`, work target `2160x1350`, work bloom start `512x256`, main fluid `171x85` |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Full source-vs-rebuild capture | Home/about/project pages captured without failures/exceptions |
+| Desktop center-band delta | `+0.0014` against source |
+| Mobile center-band delta | `-0.0140` against source |
+
+Decision: keep the `Pe/p1` DPR ownership split. This closes a high-DPR source-structure mismatch, but Phase 1 remains open because the mobile/fog-bed residual and strict `VA/GA`/projection feel are still unresolved.
 
 ### S1-70 Source Floor Circle Geometry
 

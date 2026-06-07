@@ -19,6 +19,8 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-output-color-p
 const port = Number(process.env.CDP_PORT || 9278);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.PROBE_WAIT || 5200);
+const deviceScaleFactor = Number(process.env.DEVICE_SCALE_FACTOR || 1);
+const skipScreenshot = process.env.SKIP_SCREENSHOT === "1";
 
 function withProbeParams(url) {
   const parsed = new URL(url);
@@ -103,7 +105,7 @@ async function runProbe() {
   await send(ws, "Emulation.setDeviceMetricsOverride", {
     width: 1440,
     height: 900,
-    deviceScaleFactor: 1,
+    deviceScaleFactor,
     mobile: false,
     screenWidth: 1440,
     screenHeight: 900,
@@ -123,11 +125,14 @@ async function runProbe() {
     })`,
     returnByValue: true,
   });
-  const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
   const parsed = JSON.parse(result.result.value);
   if (!parsed.probe) throw new Error("No __rogierOutputProbe data found");
-  const screenshotFile = path.join(outDir, "rebuild-home-output-probe.png");
-  writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
+  let screenshotFile = null;
+  if (!skipScreenshot) {
+    const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+    screenshotFile = path.join(outDir, "rebuild-home-output-probe.png");
+    writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
+  }
   ws.close();
   return {
     screenshot: screenshotFile,

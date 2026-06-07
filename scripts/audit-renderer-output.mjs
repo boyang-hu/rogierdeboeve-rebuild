@@ -120,6 +120,8 @@ const sourceBlendMultiply = extractTemplate(bundle, "hg", "`,dg=");
 const sourceLu = extractAround(bundle, "class Lu", 200, 5200);
 const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
+const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
+const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
   extractAround(bundle, "setOutputColorSpace", 180, 700),
@@ -306,6 +308,27 @@ const summary = {
         "depthTest:!1",
       ]),
       excerpt: compact(sourceOA.text),
+    },
+    Pe: sourcePe && {
+      index: sourcePe.index,
+      checks: checks(sourcePe.text, [
+        "this.maxDpr=Le.LOW_RES?1.5:2",
+        "this.dpr=Math.min(this.maxDpr,window.devicePixelRatio)",
+        "static updateDpr(e){this.maxDpr=e,this.dpr=um&&!this.isMobile?1:this.maxDpr,this.onResize()}",
+      ]),
+      excerpt: compact(sourcePe.text),
+    },
+    p1Resize: sourceP1Resize && {
+      index: sourceP1Resize.index,
+      checks: checks(sourceP1Resize.text, [
+        "super.resize(e,t,Math.min(n,1.5))",
+        "instance.resize&&",
+        "instance.resize(e,t,Math.min(n,1.5))",
+        "this.aboutBlocks.resize(e,t,Math.min(n,1.5))",
+        "this.cameraController.origin.z=5",
+        "this.sceneWrap.position.y=.3",
+      ]),
+      excerpt: compact(sourceP1Resize.text),
     },
   },
   rendererOutputRefs: rendererOutputRefs.map((entry) => ({
