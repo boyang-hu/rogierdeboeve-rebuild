@@ -217,6 +217,12 @@ async function runProbe() {
   if (p1UpdateCulling.visibleUpdateShapeAllMatch !== true) cullingErrors.push("visibleUpdateShapeAllMatch");
   if (!Array.isArray(p1UpdateCulling.items) || p1UpdateCulling.items.length !== p1UpdateCulling.total) cullingErrors.push("items");
   if ((p1UpdateCulling.visibleCount ?? 0) < 1) cullingErrors.push("visibleCount");
+  const visibleP1Items = Array.isArray(p1UpdateCulling.items) ? p1UpdateCulling.items.filter((item) => item.visible) : [];
+  if (!visibleP1Items.every((item) => item.tMouseSim2IsScreen === true)) cullingErrors.push("visibleTMouseSim2Screen");
+  if (!visibleP1Items.every((item) => item.tMouseSimIsLocal === true)) cullingErrors.push("visibleTMouseSimLocal");
+  if (parsed.probe.settings?.updateOrder?.frameTail !== "source-main/work-render-then-p1-update-before-wavves-displacement") {
+    cullingErrors.push("frameTailOrder");
+  }
   if (cullingErrors.length) {
     throw new Error(`p1.update source culling mismatch: ${cullingErrors.join(", ")}`);
   }

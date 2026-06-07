@@ -6294,6 +6294,7 @@ void main() {
         },
         updateOrder: {
           source: this.sourceUpdateOrder,
+          frameTail: "source-main/work-render-then-p1-update-before-wavves-displacement",
           postRenderFrame: this.sourcePostRenderFrame,
           environmentUpdateOrder: "source-p1-component-post-render",
           skyPassClearing: "source-Lo-no-explicit-clear",
@@ -7225,10 +7226,10 @@ void main() {
     this.renderHomeCompositePass();
     this.renderThumbTargets();
     this.updateThumbProbe(time);
-    this.updateOutputProbe(time);
     if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
-    this.renderDisplacementTarget(time);
     this.updateWorkSceneForNextFrame(time, delta);
+    this.updateOutputProbe(time);
+    this.renderDisplacementTarget(time);
     this.raf = requestAnimationFrame(this.tick);
   };
 }
