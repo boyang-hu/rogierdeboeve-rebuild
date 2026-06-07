@@ -3902,3 +3902,38 @@ Band snapshot from `/tmp/rd-s1-89-capture`:
 | Mobile source -> rebuild | `-0.0116` | `+0.0150` |
 
 Decision: keep the source thumb strip position ownership. This removes a rebuild-only y-position path from the spotlight-map source and gives future projection work a stricter probe. Phase 1 remains open because this does not solve the remaining mobile/fog-bed, exact `VA/GA` material-body, or projection-feel residuals.
+
+### S1-90 Source `u1/l1` Environment Shader Core Attribution
+
+This batch tightened the environment shader body and its audit coverage without changing visual constants.
+
+Source evidence:
+
+- Source `l1` keeps two inert local declarations in the active environment fragment body: `vec3 maskColor = vec3(1.0, 1.0, 1.0);` after the `tSky` samples and `vec3 black = vec3(0.095, 0.095, 0.095);` before `opaque_fragment`.
+- Source `l1` uses the same active environment formula already in the rebuild: sky UV offsets, `smoothMask` bands, `blend(4)` color dodge, `blend(16)` negation, vertical white band, white mix, clamp/square, `reflectedLight.indirectDiffuse`, and darken-color dodge tail.
+- Source `l1` is GLSL3 text, but the rebuild environment is still patched through `MeshStandardMaterial`; `texture(...)` was not promoted into production because the current shader bridge compiles under Three's standard material path where `texture2D(...)` is the safer equivalent.
+
+Runtime and tooling changes:
+
+- Added the inert source `maskColor` and `black` declarations to the rebuild environment fragment.
+- Added `environmentCoreChecks` to `scripts/dump-va-shader.mjs` for `u1-environment`, covering the active sky UV, mask, blend, white-band, light, and darken-tail anchors.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s1-90-shader`.
+- Shader dump shows `u1-environment` fragment delta narrowed from `-436` to `-352`, live include/uniform deltas remain empty, and all `environmentCoreChecks` are `source=true` / `rebuild=true`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-s1-90-output`.
+- Thumb spotlight probe passed and retained the source thumb strip shape plus spotlight map: `/tmp/rd-s1-90-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-s1-90-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-s1-90-capture`.
+
+Band snapshot from `/tmp/rd-s1-90-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0001` | `-0.0038` |
+| Mobile source -> rebuild | `-0.0131` | `+0.0246` |
+
+Decision: keep the source environment body attribution. The active `u1/l1` formula is now covered by dedicated checks, so the remaining mobile/fog-bed residual is less likely to be an untracked environment formula typo. Phase 1 remains open for mobile/fog-bed structure, exact `VA/GA` material-body residuals, and spotlight/projection feel.

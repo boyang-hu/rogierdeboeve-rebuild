@@ -860,6 +860,8 @@ void main() {
   vec4 noise = texture2D(tSky, skyUv * 2.0);
   vec4 noise2 = texture2D(tSky, skyUv2);
 
+  vec3 maskColor = vec3(1.0, 1.0, 1.0);
+
   float m = 0.0;
   m = max(m, 1.0 - smoothstep(vUv.x, 0.00, 0.015));
   m = max(m, 1.0 - smoothstep(vUv.x, 1.015, 0.985));
@@ -898,6 +900,8 @@ void main() {
   vec3 totalDiffuse = reflectedLight.indirectDiffuse;
   vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
   vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
+
+  vec3 black = vec3(0.095, 0.095, 0.095);
 
   #include <opaque_fragment>
 

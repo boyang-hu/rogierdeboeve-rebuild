@@ -519,6 +519,42 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
   ]));
 }
 
+function analyzeEnvironmentCore(sourceShader, rebuildShader) {
+  if (!sourceShader) return null;
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const checks = {
+    skyUvOffset: ["skyUv.x+=.5;skyUv2.x-=.75", "skyUv.x+=0.5;skyUv2.x-=0.75"],
+    tSkySamples: ["texture(tSky,(skyUv*2.))", "texture(tSky,skyUv*2.0)", "texture(tSky,skyUv*2.)"],
+    inertMaskColor: ["vec3maskColor=vec3(1.0,1.0,1.0)"],
+    smoothMaskBands: [
+      "m=max(m,smoothMask(vUv.x,.5,0.01));m=m*1.-smoothMask(vUv.x,.75,0.02)",
+      "m=max(m,smoothMask(vUv.x,0.5,0.01));m=m*1.0-smoothMask(vUv.x,0.75,0.02)",
+    ],
+    colorDodgeBlend: ["diffuseColor.rgb=blend(4,diffuseColor.rgb,noiseMixed.rgb,0.5)"],
+    negationBlend: ["diffuseColor.rgb=blend(16,diffuseColor.rgb,noiseMixed.rgb,skyMask)"],
+    verticalWhiteBand: [
+      "diffuseColor.rgb+=vec3(smoothstep(vUv.y,.45,.595))",
+      "diffuseColor.rgb+=vec3(smoothstep(vUv.y,0.45,0.595))",
+    ],
+    whiteMix: [
+      "diffuseColor.rgb=mix(vec3(1.0,1.0,1.0),diffuseColor.rgb,skyMask2*1.5)",
+      "diffuseColor.rgb=mix(vec3(1.0),diffuseColor.rgb,skyMask2*1.5)",
+    ],
+    clampSquare: ["diffuseColor.rgb*=clamp(diffuseColor.rgb,vec3(0.0),vec3(1.0))"],
+    indirectDiffuseOnly: ["vec3totalDiffuse=reflectedLight.indirectDiffuse"],
+    inertBlack: ["vec3black=vec3(0.095,0.095,0.095)"],
+    darkenColorDodgeTail: ["gl_FragColor.rgb=blend(4,gl_FragColor.rgb,uDarkenColor,uDarken)"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
+    name,
+    {
+      source: candidates.some((candidate) => source.includes(candidate)),
+      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+    },
+  ]));
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
@@ -608,6 +644,7 @@ try {
       fragment: summarizeGenericShader(sourceFragment, entry.fragmentShader),
       compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
+      environmentCoreChecks: entry.name === "u1-environment" ? analyzeEnvironmentCore(sourceFragment, entry.fragmentShader) : null,
       commentedIncludes: {
         fragmentSource: sourceFragment ? collectCommentedIncludes(sourceFragment) : [],
         fragmentRebuild: collectCommentedIncludes(entry.fragmentShader),
@@ -681,6 +718,7 @@ try {
         fragmentCommentedIncludesRebuild: analysis.commentedIncludes.fragmentRebuild,
         compositeCoreChecks: analysis.compositeCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
+        environmentCoreChecks: analysis.environmentCoreChecks,
         files: analysis.files,
       },
     ])),
