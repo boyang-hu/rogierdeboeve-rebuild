@@ -193,6 +193,15 @@ async function runProbe() {
     if (passMaterials[key]?.materialMode !== expectedMode) materialSurfaceErrors.push(`${key}MaterialMode`);
     if (passMaterials[key]?.glslVersion !== "300 es") materialSurfaceErrors.push(`${key}GlslVersion`);
   }
+  const expectedBloomKernels = [3, 5, 7, 9, 11];
+  for (const key of ["bloomBlur", "mainBloomBlur"]) {
+    const material = passMaterials[key];
+    if (material?.materialCount !== expectedBloomKernels.length) materialSurfaceErrors.push(`${key}MaterialCount`);
+    if (JSON.stringify(material?.kernelDefines) !== JSON.stringify(expectedBloomKernels)) materialSurfaceErrors.push(`${key}KernelDefines`);
+    if (JSON.stringify(material?.sigmaDefines) !== JSON.stringify(expectedBloomKernels)) materialSurfaceErrors.push(`${key}SigmaDefines`);
+    if (material?.runtimeKernelUniforms !== false) materialSurfaceErrors.push(`${key}RuntimeKernelUniforms`);
+  }
+  if (passMaterials.fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("fxaaVertexMode");
   if (materialSurfaceErrors.length) {
     throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);
   }

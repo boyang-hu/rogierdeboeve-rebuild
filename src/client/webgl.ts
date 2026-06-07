@@ -1282,13 +1282,11 @@ void main() {
 `;
 
 const homeBloomBlurFragment = `
-precision highp float;
+precision mediump float;
 
 uniform sampler2D tMap;
-uniform vec2 uResolution;
 uniform vec2 uDirection;
-uniform int uKernelRadius;
-uniform float uSigma;
+uniform vec2 uResolution;
 
 in vec2 vUv;
 out vec4 FragColor;
@@ -1299,12 +1297,12 @@ float gaussianPdf(float x, float sigma) {
 
 vec4 gaussianBlur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
   vec2 invSize = 1.0 / resolution;
-  float weightSum = gaussianPdf(0.0, uSigma);
+  float fSigma = float(SIGMA);
+  float weightSum = gaussianPdf(0.0, fSigma);
   vec3 diffuseSum = texture(image, uv).rgb * weightSum;
-  for (int i = 1; i < 12; i++) {
-    if (i >= uKernelRadius) break;
+  for (int i = 1; i < KERNEL_RADIUS; i++) {
     float x = float(i);
-    float weight = gaussianPdf(x, uSigma);
+    float weight = gaussianPdf(x, fSigma);
     vec2 uvOffset = direction * invSize * x;
     vec3 sample1 = texture(image, uv + uvOffset).rgb;
     vec3 sample2 = texture(image, uv - uvOffset).rgb;
@@ -1398,21 +1396,47 @@ void main() {
 `;
 
 const homeFxaaFragment = `
-precision highp float;
+precision mediump float;
 
 uniform sampler2D tMap;
 uniform vec2 uResolution;
 
+in vec2 v_rgbNW;
+in vec2 v_rgbNE;
+in vec2 v_rgbSW;
+in vec2 v_rgbSE;
+in vec2 v_rgbM;
 in vec2 vUv;
 out vec4 FragColor;
 
-void main() {
-  vec2 inverseVP = 1.0 / max(uResolution, vec2(1.0));
-  vec3 rgbNW = texture(tMap, vUv + vec2(-1.0, -1.0) * inverseVP).rgb;
-  vec3 rgbNE = texture(tMap, vUv + vec2(1.0, -1.0) * inverseVP).rgb;
-  vec3 rgbSW = texture(tMap, vUv + vec2(-1.0, 1.0) * inverseVP).rgb;
-  vec3 rgbSE = texture(tMap, vUv + vec2(1.0, 1.0) * inverseVP).rgb;
-  vec3 rgbM = texture(tMap, vUv).rgb;
+#ifndef FXAA_REDUCE_MIN
+  #define FXAA_REDUCE_MIN (1.0 / 128.0)
+#endif
+#ifndef FXAA_REDUCE_MUL
+  #define FXAA_REDUCE_MUL (1.0 / 8.0)
+#endif
+#ifndef FXAA_SPAN_MAX
+  #define FXAA_SPAN_MAX 8.0
+#endif
+
+vec4 fxaa(
+  sampler2D tex,
+  vec2 fragCoord,
+  vec2 resolution,
+  vec2 rgbNWUv,
+  vec2 rgbNEUv,
+  vec2 rgbSWUv,
+  vec2 rgbSEUv,
+  vec2 rgbMUv
+) {
+  vec4 color;
+  mediump vec2 inverseVP = vec2(1.0 / resolution.x, 1.0 / resolution.y);
+  vec3 rgbNW = texture(tex, rgbNWUv).xyz;
+  vec3 rgbNE = texture(tex, rgbNEUv).xyz;
+  vec3 rgbSW = texture(tex, rgbSWUv).xyz;
+  vec3 rgbSE = texture(tex, rgbSEUv).xyz;
+  vec4 texColor = texture(tex, rgbMUv);
+  vec3 rgbM = texColor.xyz;
   vec3 luma = vec3(0.299, 0.587, 0.114);
   float lumaNW = dot(rgbNW, luma);
   float lumaNE = dot(rgbNE, luma);
@@ -1421,23 +1445,31 @@ void main() {
   float lumaM = dot(rgbM, luma);
   float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
   float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
-  vec2 dir;
+  mediump vec2 dir;
   dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
   dir.y = ((lumaNW + lumaSW) - (lumaNE + lumaSE));
-  float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * 0.03125, 0.0078125);
+  float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
   float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
-  dir = clamp(dir * rcpDirMin, vec2(-8.0), vec2(8.0)) * inverseVP;
+  dir = min(vec2(FXAA_SPAN_MAX), max(vec2(-FXAA_SPAN_MAX), dir * rcpDirMin)) * inverseVP;
   vec3 rgbA = 0.5 * (
-    texture(tMap, vUv + dir * (1.0 / 3.0 - 0.5)).rgb +
-    texture(tMap, vUv + dir * (2.0 / 3.0 - 0.5)).rgb
+    texture(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +
+    texture(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz
   );
   vec3 rgbB = rgbA * 0.5 + 0.25 * (
-    texture(tMap, vUv + dir * -0.5).rgb +
-    texture(tMap, vUv + dir * 0.5).rgb
+    texture(tex, fragCoord * inverseVP + dir * -0.5).xyz +
+    texture(tex, fragCoord * inverseVP + dir * 0.5).xyz
   );
   float lumaB = dot(rgbB, luma);
-  vec3 color = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
-  FragColor = vec4(color, 1.0);
+  if ((lumaB < lumaMin) || (lumaB > lumaMax)) {
+    color = vec4(rgbA, texColor.a);
+  } else {
+    color = vec4(rgbB, texColor.a);
+  }
+  return color;
+}
+
+void main() {
+  FragColor = fxaa(tMap, vUv * uResolution, uResolution, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
 }
 `;
 
@@ -1679,6 +1711,33 @@ out vec2 vUv;
 
 void main() {
   vUv = uv;
+  gl_Position = vec4(position, 1.0);
+}
+`;
+
+const sourceFxaaVertex = `
+precision mediump float;
+
+in vec3 position;
+in vec2 uv;
+uniform vec2 uResolution;
+
+out vec2 v_rgbNW;
+out vec2 v_rgbNE;
+out vec2 v_rgbSW;
+out vec2 v_rgbSE;
+out vec2 v_rgbM;
+out vec2 vUv;
+
+void main() {
+  vUv = uv;
+  vec2 fragCoord = uv * uResolution;
+  vec2 inverseVP = 1.0 / uResolution.xy;
+  v_rgbNW = (fragCoord + vec2(-1.0, -1.0)) * inverseVP;
+  v_rgbNE = (fragCoord + vec2(1.0, -1.0)) * inverseVP;
+  v_rgbSW = (fragCoord + vec2(-1.0, 1.0)) * inverseVP;
+  v_rgbSE = (fragCoord + vec2(1.0, 1.0)) * inverseVP;
+  v_rgbM = vec2(fragCoord * inverseVP);
   gl_Position = vec4(position, 1.0);
 }
 `;
@@ -2427,16 +2486,16 @@ export class WebGLBackdrop {
   private mainBloomVerticalTargets: WebGLRenderTarget[] = [];
   private mainBloomCompositeMaterial: ShaderMaterial;
   private mainBloomCompositeScene = new Scene();
-  private mainBloomBlurMaterial: ShaderMaterial;
-  private mainBloomBlurScene = new Scene();
+  private mainBloomBlurMaterials: ShaderMaterial[] = [];
+  private mainBloomBlurScenes: Scene[] = [];
   private mediaRawTarget = makeSourceRenderTarget(false);
   private mediaTarget = makeSourceRenderTarget(false);
   private mediaCompositeMaterial: ShaderMaterial;
   private mediaCompositeScene = new Scene();
   private luminosityMaterial: ShaderMaterial;
   private luminosityScene = new Scene();
-  private bloomBlurMaterial: ShaderMaterial;
-  private bloomBlurScene = new Scene();
+  private bloomBlurMaterials: ShaderMaterial[] = [];
+  private bloomBlurScenes: Scene[] = [];
   private bloomBrightTarget = makeSourceRenderTarget(false);
   private bloomHorizontalTargets: WebGLRenderTarget[] = [];
   private bloomVerticalTargets: WebGLRenderTarget[] = [];
@@ -2669,24 +2728,28 @@ export class WebGLBackdrop {
     this.mainBloomVerticalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));
     this.luminosityMaterial = this.createLuminosityMaterial();
     this.luminosityScene.add(makeFullscreenTriangle(this.luminosityMaterial));
-    this.bloomBlurMaterial = this.createBloomBlurMaterial();
-    this.bloomBlurScene.add(makeFullscreenTriangle(this.bloomBlurMaterial));
+    this.bloomBlurMaterials = this.createBloomBlurMaterials();
+    this.bloomBlurScenes = this.bloomBlurMaterials.map((material) => {
+      const scene = new Scene();
+      scene.add(makeFullscreenTriangle(material));
+      return scene;
+    });
     this.bloomCompositeMaterial = this.createBloomCompositeMaterial(this.bloomVerticalTargets);
     this.bloomCompositeScene.add(makeFullscreenTriangle(this.bloomCompositeMaterial));
-    this.mainBloomBlurMaterial = this.createBloomBlurMaterial();
-    this.mainBloomBlurScene.add(makeFullscreenTriangle(this.mainBloomBlurMaterial));
+    this.mainBloomBlurMaterials = this.createBloomBlurMaterials();
+    this.mainBloomBlurScenes = this.mainBloomBlurMaterials.map((material) => {
+      const scene = new Scene();
+      scene.add(makeFullscreenTriangle(material));
+      return scene;
+    });
     this.mainBloomCompositeMaterial = this.createBloomCompositeMaterial(this.mainBloomVerticalTargets, this.sourceMainRenderSettings);
     this.mainBloomCompositeScene.add(makeFullscreenTriangle(this.mainBloomCompositeMaterial));
     this.mediaCompositeMaterial = this.createMediaCompositeMaterial();
     this.mediaCompositeScene.add(makeFullscreenTriangle(this.mediaCompositeMaterial));
-    this.blurHorizontalMaterial = this.createBloomBlurMaterial();
-    this.blurHorizontalMaterial.uniforms.uKernelRadius.value = this.renderSettings.blur.strength;
-    this.blurHorizontalMaterial.uniforms.uSigma.value = this.renderSettings.blur.strength;
+    this.blurHorizontalMaterial = this.createBloomBlurMaterial(this.renderSettings.blur.strength);
     this.blurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
     this.blurHorizontalScene.add(makeFullscreenTriangle(this.blurHorizontalMaterial));
-    this.blurVerticalMaterial = this.createBloomBlurMaterial();
-    this.blurVerticalMaterial.uniforms.uKernelRadius.value = this.renderSettings.blur.strength;
-    this.blurVerticalMaterial.uniforms.uSigma.value = this.renderSettings.blur.strength;
+    this.blurVerticalMaterial = this.createBloomBlurMaterial(this.renderSettings.blur.strength);
     this.blurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
     this.blurVerticalScene.add(makeFullscreenTriangle(this.blurVerticalMaterial));
     this.fxaaMaterial = this.createFxaaMaterial();
@@ -3169,9 +3232,9 @@ export class WebGLBackdrop {
     this.mainBloomHorizontalTargets.forEach((target) => target.dispose());
     this.mainBloomVerticalTargets.forEach((target) => target.dispose());
     this.luminosityMaterial.dispose();
-    this.bloomBlurMaterial.dispose();
+    this.bloomBlurMaterials.forEach((material) => material.dispose());
     this.bloomCompositeMaterial.dispose();
-    this.mainBloomBlurMaterial.dispose();
+    this.mainBloomBlurMaterials.forEach((material) => material.dispose());
     this.mainBloomCompositeMaterial.dispose();
     this.blurHorizontalMaterial.dispose();
     this.blurVerticalMaterial.dispose();
@@ -3758,23 +3821,29 @@ export class WebGLBackdrop {
     });
   }
 
-  private createBloomBlurMaterial() {
+  private createBloomBlurMaterial(kernelRadius = SOURCE_BLOOM_KERNELS[0]) {
     dumpShader("rg-bloom-blur", sourceFullscreenVertex, homeBloomBlurFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
+      defines: {
+        KERNEL_RADIUS: kernelRadius,
+        SIGMA: kernelRadius,
+      },
       uniforms: {
         tMap: { value: this.bloomBrightTarget.texture },
         uResolution: { value: new Vector2(1, 1) },
         uDirection: { value: new Vector2(1, 0) },
-        uKernelRadius: { value: 3 },
-        uSigma: { value: 3 },
       },
       vertexShader: sourceFullscreenVertex,
       fragmentShader: homeBloomBlurFragment,
     });
+  }
+
+  private createBloomBlurMaterials() {
+    return SOURCE_BLOOM_KERNELS.map((kernelRadius) => this.createBloomBlurMaterial(kernelRadius));
   }
 
   private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[], settings = this.renderSettings) {
@@ -3820,7 +3889,7 @@ export class WebGLBackdrop {
   }
 
   private createFxaaMaterial() {
-    dumpShader("ig-fxaa", sourceFullscreenVertex, homeFxaaFragment);
+    dumpShader("ig-fxaa", sourceFxaaVertex, homeFxaaFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
@@ -3830,7 +3899,7 @@ export class WebGLBackdrop {
         tMap: { value: this.compositeTarget.texture },
         uResolution: { value: new Vector2(1, 1) },
       },
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceFxaaVertex,
       fragmentShader: homeFxaaFragment,
     });
   }
@@ -5625,9 +5694,13 @@ export class WebGLBackdrop {
             glslVersion: (this.luminosityMaterial as RawShaderMaterial).glslVersion ?? null,
           },
           bloomBlur: {
-            blending: this.bloomBlurMaterial.blending,
+            blending: this.bloomBlurMaterials[0]?.blending ?? null,
             materialMode: "source-rg-raw-glsl3",
-            glslVersion: (this.bloomBlurMaterial as RawShaderMaterial).glslVersion ?? null,
+            glslVersion: (this.bloomBlurMaterials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
+            materialCount: this.bloomBlurMaterials.length,
+            kernelDefines: this.bloomBlurMaterials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
+            sigmaDefines: this.bloomBlurMaterials.map((material) => material.defines?.SIGMA ?? null),
+            runtimeKernelUniforms: this.bloomBlurMaterials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
           },
           bloomComposite: {
             blending: this.bloomCompositeMaterial.blending,
@@ -5635,9 +5708,13 @@ export class WebGLBackdrop {
             glslVersion: (this.bloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           },
           mainBloomBlur: {
-            blending: this.mainBloomBlurMaterial.blending,
+            blending: this.mainBloomBlurMaterials[0]?.blending ?? null,
             materialMode: "source-rg-raw-glsl3",
-            glslVersion: (this.mainBloomBlurMaterial as RawShaderMaterial).glslVersion ?? null,
+            glslVersion: (this.mainBloomBlurMaterials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
+            materialCount: this.mainBloomBlurMaterials.length,
+            kernelDefines: this.mainBloomBlurMaterials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
+            sigmaDefines: this.mainBloomBlurMaterials.map((material) => material.defines?.SIGMA ?? null),
+            runtimeKernelUniforms: this.mainBloomBlurMaterials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
           },
           mainBloomComposite: {
             blending: this.mainBloomCompositeMaterial.blending,
@@ -5648,6 +5725,7 @@ export class WebGLBackdrop {
             blending: this.fxaaMaterial.blending,
             materialMode: "source-ig-raw-glsl3",
             glslVersion: (this.fxaaMaterial as RawShaderMaterial).glslVersion ?? null,
+            vertexMode: "source-FT-neighbor-uv",
           },
           skyComposite: {
             blending: this.skyCompositeMaterial.blending,
@@ -6146,27 +6224,24 @@ export class WebGLBackdrop {
     sourceTarget: WebGLRenderTarget,
     horizontalTargets: WebGLRenderTarget[],
     verticalTargets: WebGLRenderTarget[],
-    blurMaterial: ShaderMaterial,
-    blurScene: Scene,
+    blurMaterials: ShaderMaterial[],
+    blurScenes: Scene[],
     compositeScene: Scene,
     brightTarget?: WebGLRenderTarget,
   ) {
     let bloomSource = brightTarget ?? sourceTarget;
     horizontalTargets.forEach((horizontalTarget, index) => {
       const verticalTarget = verticalTargets[index];
-      const kernelRadius = SOURCE_BLOOM_KERNELS[index] ?? SOURCE_BLOOM_KERNELS[SOURCE_BLOOM_KERNELS.length - 1];
+      const blurMaterial = blurMaterials[index] ?? blurMaterials[blurMaterials.length - 1];
+      const blurScene = blurScenes[index] ?? blurScenes[blurScenes.length - 1];
       blurMaterial.uniforms.tMap.value = bloomSource.texture;
       blurMaterial.uniforms.uResolution.value.set(horizontalTarget.width, horizontalTarget.height);
       blurMaterial.uniforms.uDirection.value.set(1, 0);
-      blurMaterial.uniforms.uKernelRadius.value = kernelRadius;
-      blurMaterial.uniforms.uSigma.value = kernelRadius;
       this.renderer.setRenderTarget(horizontalTarget);
       this.renderer.render(blurScene, this.backgroundCamera);
       blurMaterial.uniforms.tMap.value = horizontalTarget.texture;
       blurMaterial.uniforms.uResolution.value.set(verticalTarget.width, verticalTarget.height);
       blurMaterial.uniforms.uDirection.value.set(0, 1);
-      blurMaterial.uniforms.uKernelRadius.value = kernelRadius;
-      blurMaterial.uniforms.uSigma.value = kernelRadius;
       this.renderer.setRenderTarget(verticalTarget);
       this.renderer.render(blurScene, this.backgroundCamera);
       bloomSource = verticalTarget;
@@ -6187,8 +6262,8 @@ export class WebGLBackdrop {
       sourceTarget,
       this.bloomHorizontalTargets,
       this.bloomVerticalTargets,
-      this.bloomBlurMaterial,
-      this.bloomBlurScene,
+      this.bloomBlurMaterials,
+      this.bloomBlurScenes,
       this.bloomCompositeScene,
       brightTarget,
     );
@@ -6206,8 +6281,8 @@ export class WebGLBackdrop {
       sourceTarget,
       this.mainBloomHorizontalTargets,
       this.mainBloomVerticalTargets,
-      this.mainBloomBlurMaterial,
-      this.mainBloomBlurScene,
+      this.mainBloomBlurMaterials,
+      this.mainBloomBlurScenes,
       this.mainBloomCompositeScene,
       brightTarget,
     );

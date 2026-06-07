@@ -116,6 +116,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 39 | S1-112 | Source `z1` sky composite raw GLSL3 surface | Source `z1` extends the raw material surface with `glslVersion:lt`, `fragmentShader:B1`, `blending:ot`, `transparent:true`, `depthWrite:false`, and `depthTest:false`. The rebuild still used a regular `ShaderMaterial` bridge for the sky composite. | Production now uses `RawShaderMaterial`/`GLSL3` for the sky composite, converts the shader to the source-style `in/out` and `texture(...)` surface, dumps `z1-sky-composite` against source `B1/tl`, and hard-fails output probes on material-mode or GLSL version drift. | Low-medium | Keep as source-correct sky render-manager surface alignment. This narrows the `V1/H1/z1` bridge, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 40 | S1-113 | Source `OA/C1` composite raw GLSL3 surface | Source `OA` and `C1` both extend the raw material surface with `glslVersion:lt`; `OA` uses `fragmentShader:CA`, and `C1` uses `fragmentShader:A1`. The rebuild formulas were source-shaped but still ran through regular `ShaderMaterial` bridge surfaces. | Production now uses `RawShaderMaterial`/`GLSL3` for default work `OA` and pre-composite `C1/A1`, converts both shader surfaces to `in/out`, `texture(...)`, and `FragColor`, dumps them with the raw fullscreen vertex, and hard-fails output probes on material-mode or GLSL-version drift. Debug composite keeps the old bridge path for query-only diagnostics. | Low-medium | Keep as source-correct core composite surface alignment. This narrows the most central `OA/C1` bridge without tuning color constants, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 41 | S1-114 | Source `lA/W1/sg/rg/cg/ig` helper pass raw GLSL3 surface | Source main/media/helper pass materials extend the raw material surface with `glslVersion:lt`: `lA` uses `aA`, `W1` uses `G1`, `sg` uses `NT`, `rg` uses `kT`, `cg` uses `nA`, and `ig` uses `UT`; source `sg/NT` binds its input as `tMap`. | Production now uses `RawShaderMaterial`/`GLSL3` and source fullscreen vertex surface for main composite, media composite, luminosity, bloom blur, bloom composite, and FXAA helper passes. Shader surfaces use `in/out`, `texture(...)`, and `FragColor`; `sg` now uses source `tMap`; output probes hard-fail on material mode or GLSL drift; shader dump compares all helper fragments/vertices against source. | Low-medium | Keep as source-correct helper render-manager surface alignment. This removes another bridge layer without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 42 | S1-115 | Source `rg/ig` blur and FXAA shader body surface | Source `Lu.initRenderer()` creates five blur materials with `new rg(e[t])` for `[3,5,7,9,11]`; source `rg/kT` uses compile-time `defines:{KERNEL_RADIUS:e,SIGMA:e}` rather than runtime kernel uniforms. Source `ig` binds vertex shader `FT`, which computes `v_rgbNW/NE/SW/SE/M` neighbor UVs for fragment `UT`. | Production now creates one `rg` material/scene per mip for work and main bloom chains, moves kernel radius/sigma into material defines, removes runtime `uKernelRadius/uSigma`, and switches FXAA to the source `FT/UT` neighbor-UV surface. Output probe and shader dump now hard-check blur material count/defines/no runtime kernel uniforms and FXAA neighbor-UV macros/call shape. | Low-medium | Keep as source-correct helper shader-body alignment. This narrows the helper pass bridge without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -874,6 +875,43 @@ Verification:
 | Mobile center-band delta | `-0.0123` against source |
 
 Decision: keep this source-correct helper/main/media pass surface alignment. It removes another concrete bridge mismatch in the render-manager graph, but it does not close Phase 1; the remaining blockers are still mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-115 Source `rg/ig` Blur and FXAA Shader Body Surface
+
+This batch stayed within the source helper-pass chain and aligned the `rg` bloom blur and `ig` FXAA shader bodies. It did not tune visual constants or route/project media behavior.
+
+Source/runtime evidence:
+
+- Source `Lu.initRenderer()` creates `this.blurMaterials=[]`, defines `const e=[3,5,7,9,11]`, then pushes `new rg(e[t])` once per mip.
+- Source `rg` constructs its material with `defines:{KERNEL_RADIUS:e,SIGMA:e}` and shader `kT`; the kernel radius and sigma are compile-time defines, not uniforms updated while rendering.
+- Source `ig` constructs its material with vertex shader `FT` and fragment shader `UT`; `FT` computes `v_rgbNW`, `v_rgbNE`, `v_rgbSW`, `v_rgbSE`, and `v_rgbM` from `uResolution`.
+- Source `UT` consumes those neighbor UV varyings and uses the `FXAA_REDUCE_MIN`, `FXAA_REDUCE_MUL`, and `FXAA_SPAN_MAX` macro surface.
+
+Production now exposes and asserts:
+
+- work and main bloom chains each own five `rg` material instances and five fullscreen scenes,
+- each blur material carries `KERNEL_RADIUS/SIGMA` defines `[3,5,7,9,11]`,
+- bloom rendering no longer writes runtime `uKernelRadius` or `uSigma`,
+- FXAA now uses a source-shaped `FT` vertex shader and `UT` fragment body with neighbor UV varyings,
+- output probe reports blur material counts/defines/no-runtime-uniform state and `fxaa.vertexMode="source-FT-neighbor-uv"`,
+- shader dump reports `rgBlurCoreChecks` and `igFxaaCoreChecks` so these body surfaces are guarded by source/rebuild true checks.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `rg` define and `ig` `vertexShader:FT` anchors recorded |
+| Output probe | Passed; work/main blur material count is `5`, defines are `[3,5,7,9,11]`, runtime kernel uniforms are absent, and FXAA vertex mode is source-shaped |
+| Shader dump | Passed with no shader/WebGL console errors; `rgBlurCoreChecks` and `igFxaaCoreChecks` are source/rebuild true |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | Project detail pages retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `+0.0016` against source |
+| Mobile center-band delta | `-0.0120` against source |
+
+Decision: keep this source-correct `rg/ig` helper shader-body alignment. It removes a real source implementation mismatch in bloom/FXAA without changing constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

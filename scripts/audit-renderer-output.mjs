@@ -399,10 +399,12 @@ const summary = {
           "class rg extends mt",
           "glslVersion:lt",
           "fragmentShader:kT",
+          "defines:{KERNEL_RADIUS:e,SIGMA:e}",
           "blending:ot",
           "depthWrite:!1",
           "depthTest:!1",
         ]),
+        kernelConstruction: [...bundle.matchAll(/new rg\(e\[t\]\)/g)].length,
         excerpt: compact(sourceRg.text),
       },
       cg: sourceCg && {
@@ -422,6 +424,7 @@ const summary = {
         checks: checks(sourceIg.text, [
           "class ig extends mt",
           "glslVersion:lt",
+          "vertexShader:FT",
           "fragmentShader:UT",
           "blending:ot",
           "depthWrite:!1",

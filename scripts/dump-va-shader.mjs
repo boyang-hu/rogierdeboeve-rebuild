@@ -464,6 +464,61 @@ function analyzeCompositeCore(sourceShader, rebuildShader) {
   ]));
 }
 
+function analyzeRgBlurCore(sourceFragment, rebuildFragment) {
+  if (!sourceFragment) return null;
+  const source = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuild = normalizeShaderForCoreChecks(rebuildFragment);
+  const checks = {
+    compileTimeKernelRadius: ["KERNEL_RADIUS"],
+    compileTimeSigma: ["float(SIGMA)"],
+    kernelLoop: ["for(inti=1;i<KERNEL_RADIUS;i++)"],
+    noRuntimeKernelRadius: ["uKernelRadius"],
+    noRuntimeSigma: ["uSigma"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => {
+    const isNegative = name.startsWith("noRuntime");
+    const sourcePresent = candidates.some((candidate) => source.includes(candidate));
+    const rebuildPresent = candidates.some((candidate) => rebuild.includes(candidate));
+    return [
+      name,
+      {
+        source: isNegative ? !sourcePresent : sourcePresent,
+        rebuild: isNegative ? !rebuildPresent : rebuildPresent,
+      },
+    ];
+  }));
+}
+
+function analyzeIgFxaaCore(sourceVertex, sourceFragment, rebuildVertex, rebuildFragment) {
+  if (!sourceFragment || !sourceVertex) return null;
+  const sourceV = normalizeShaderForCoreChecks(sourceVertex);
+  const sourceF = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuildV = normalizeShaderForCoreChecks(rebuildVertex);
+  const rebuildF = normalizeShaderForCoreChecks(rebuildFragment);
+  const checks = {
+    vertexNeighborUvNW: { source: sourceV, rebuild: rebuildV, candidates: ["v_rgbNW"] },
+    vertexNeighborUvNE: { source: sourceV, rebuild: rebuildV, candidates: ["v_rgbNE"] },
+    vertexNeighborUvSW: { source: sourceV, rebuild: rebuildV, candidates: ["v_rgbSW"] },
+    vertexNeighborUvSE: { source: sourceV, rebuild: rebuildV, candidates: ["v_rgbSE"] },
+    vertexNeighborUvM: { source: sourceV, rebuild: rebuildV, candidates: ["v_rgbM"] },
+    reduceMinMacro: { source: sourceF, rebuild: rebuildF, candidates: ["FXAA_REDUCE_MIN"] },
+    reduceMulMacro: { source: sourceF, rebuild: rebuildF, candidates: ["FXAA_REDUCE_MUL"] },
+    spanMaxMacro: { source: sourceF, rebuild: rebuildF, candidates: ["FXAA_SPAN_MAX"] },
+    sourceCallShape: {
+      source: sourceF,
+      rebuild: rebuildF,
+      candidates: ["fxaa(tMap,vUv*uResolution,uResolution,v_rgbNW,v_rgbNE,v_rgbSW,v_rgbSE,v_rgbM)"],
+    },
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, config]) => [
+    name,
+    {
+      source: config.candidates.some((candidate) => config.source.includes(candidate)),
+      rebuild: config.candidates.some((candidate) => config.rebuild.includes(candidate)),
+    },
+  ]));
+}
+
 function analyzeVertexCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
@@ -706,6 +761,8 @@ try {
       vertex: summarizeGenericShader(sourceVertex, entry.vertexShader),
       fragment: summarizeGenericShader(sourceFragment, entry.fragmentShader),
       compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
+      rgBlurCoreChecks: entry.name === "rg-bloom-blur" ? analyzeRgBlurCore(sourceFragment, entry.fragmentShader) : null,
+      igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       environmentCoreChecks: entry.name === "u1-environment" ? analyzeEnvironmentCore(sourceFragment, entry.fragmentShader) : null,
       floorCoreChecks: entry.name === "o1-floor-material" ? analyzeFloorCore(sourceFragment, entry.fragmentShader) : null,
@@ -782,6 +839,8 @@ try {
         fragmentCommentedIncludesSource: analysis.commentedIncludes.fragmentSource,
         fragmentCommentedIncludesRebuild: analysis.commentedIncludes.fragmentRebuild,
         compositeCoreChecks: analysis.compositeCoreChecks,
+        rgBlurCoreChecks: analysis.rgBlurCoreChecks,
+        igFxaaCoreChecks: analysis.igFxaaCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
         environmentCoreChecks: analysis.environmentCoreChecks,
         files: analysis.files,
