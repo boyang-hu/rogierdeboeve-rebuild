@@ -250,6 +250,15 @@ const ABOUT_TRACK_SCALE = 0.005;
 const AUX_BLOCK_SCALE = 0.09;
 const SOURCE_BLOOM_KERNELS = [3, 5, 7, 9, 11];
 
+function sourceRound(value: number, precision = 4) {
+  const multiplier = Math.pow(10, precision);
+  return Math.round(value * multiplier) / multiplier;
+}
+
+function sourceDamp(value: number, target: number, lambda: number, delta: number) {
+  return sourceRound(MathUtils.lerp(value, target, 1 - Math.exp(-lambda * delta)));
+}
+
 type SourceRenderSettings = {
   renderToScreen: boolean;
   fxaa: { enabled: boolean };
@@ -4864,7 +4873,7 @@ export class WebGLBackdrop {
   ) {
     const lerpFactor = MathUtils.clamp(delta * 7.5, 0, 1);
     newPos.lerp(targetPos, lerpFactor);
-    const speed = newPos.distanceTo(oldPos);
+    const speed = sourceRound(newPos.distanceTo(oldPos));
     const outputIndex = 1 - currentIndex;
     material.uniforms.uTexture.value = targets[currentIndex].texture;
     material.uniforms.uPosNew.value.copy(newPos);
@@ -4899,7 +4908,7 @@ export class WebGLBackdrop {
         0.85,
         0.1,
       );
-      item.mouseSpeed = MathUtils.damp(item.mouseSpeed, meshResult.speed, 10, delta);
+      item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta);
       item.mouseIndex = meshResult.index;
     });
   }

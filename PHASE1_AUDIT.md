@@ -3356,3 +3356,37 @@ Band snapshot from `/tmp/rd-thumb-rawglsl3-capture`:
 | Mobile source -> rebuild | `-0.0131` | `+0.0069` |
 
 Decision: keep the source thumb shader-surface bridge. It removes a real `T1/w1/E1/x1` WebGL1/WebGL2 surface drift without changing visual constants. Phase 1 remains open because this does not fully solve spotlight projection feel or mobile fog-bed residuals.
+
+### S1-78 Source `Ka/Fn/Yi` Mouse Simulation Rounding
+
+This batch aligned a small but real source difference in the `GA` mouse simulation path.
+
+Source evidence:
+
+- Source `Ka.update()` sets `uSpeed` to `Math.max(Fn(speed.length()), 1e-4)`, where `Fn(value, 4)` rounds to four decimal places.
+- Source `GA.update()` smooths `mouseSpeed` through `Yi(current, target, 10, delta)`, which is `Fn(lerp(current, target, 1 - exp(-10 * delta)))`.
+- During the audit, `u1` environment `uShader1Mix2` was initially suspected as rebuild-only, but shader dump confirmed it is part of the source environment shader surface. That candidate was reverted before acceptance.
+
+Runtime changes:
+
+- Added source-style `sourceRound()` and `sourceDamp()` helpers for this path.
+- Rounded work mouse-simulation `uSpeed` to the source four-decimal precision before clamping.
+- Replaced `MathUtils.damp()` for work-block `mouseSpeed` with the source `Yi`-equivalent rounded damping.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Fresh shader dump passed with no console/WebGL shader errors and confirmed `u1-environment.fragmentUniformsOnlySource=[]` / `fragmentUniformsOnlyRebuild=[]`: `/tmp/rd-source-mouse-round-shader`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-source-mouse-round-output`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-source-mouse-round-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-source-mouse-round-full`.
+
+Band snapshot from `/tmp/rd-source-mouse-round-full`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `-0.0023` | `+0.0012` |
+| Mobile source -> rebuild | `-0.0133` | `+0.0140` |
+
+Decision: keep the source mouse-simulation rounding semantics. This is a source parity correction with low blast radius and no project-media regression. Phase 1 remains open because it does not materially close the remaining mobile/fog-bed or spotlight/projection residuals.
