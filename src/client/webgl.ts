@@ -5112,17 +5112,27 @@ export class WebGLBackdrop {
         this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
         this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
       } else {
-        this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
-        this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(15, 0);
-        this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
-        this.renderer.clear();
-        this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
-
-        this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionWriteTarget.texture;
-        this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 15);
-        this.renderer.setRenderTarget(this.floorReflectionReadTarget);
-        this.renderer.clear();
-        this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+        let readTarget = this.floorReflectionReadTarget;
+        let writeTarget = this.floorReflectionWriteTarget;
+        for (let iteration = 0; iteration < 2; iteration += 1) {
+          this.floorReflectionBlurMaterial.uniforms.tMap.value = iteration === 0
+            ? this.floorReflectionTarget.texture
+            : readTarget.texture;
+          const direction = (2 - iteration - 1) * 15;
+          this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(
+            iteration % 2 === 0 ? direction : 0,
+            iteration % 2 === 0 ? 0 : direction,
+          );
+          this.renderer.setRenderTarget(writeTarget);
+          this.renderer.clear();
+          this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+          const swap = readTarget;
+          readTarget = writeTarget;
+          writeTarget = swap;
+        }
+        this.floorReflectionReadTarget = readTarget;
+        this.floorReflectionWriteTarget = writeTarget;
+        this.floorMaterial.uniforms.tReflect.value = this.floorReflectionReadTarget.texture;
       }
     } finally {
       this.renderer.xr.enabled = previousXrEnabled;

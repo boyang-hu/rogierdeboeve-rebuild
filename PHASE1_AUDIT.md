@@ -3093,13 +3093,13 @@ This batch continued the same source-backed floor/reflector chain and intentiona
 Source evidence:
 
 - Source `i1.update()` runs two blur iterations by default.
-- The source blur direction is computed as `d = (blurIterations - u - 1) * 15`, then `uDirection = (d, 0)` for the first iteration and `(0, d)` for the second iteration. With the default `blurIterations=2`, the second pass is therefore vertical `(0, 15)`.
+- The source blur direction is computed as `d = (blurIterations - u - 1) * 15`, then `uDirection = (d, 0)` for the first iteration and `(0, d)` for the second iteration. With the default `blurIterations=2`, that means first pass `(15, 0)` and second pass `(0, 0)`.
 - Source `i1.update()` sets `virtualCamera.far = camera.far` and copies `camera.projectionMatrix`, but does not assign a separate `near` value before the copy.
 - Source `t1/QA` blur shader body matches the rebuild's blur formula, so no blur-kernel rewrite was promoted.
 
 Runtime changes:
 
-- Changed the second floor-reflection blur pass from rebuild-only `(0, 0)` to source `(0, 15)`.
+- Earlier this entry incorrectly described the source default second pass as `(0, 15)` and the rebuild `(0, 0)`. The accepted S1-76 correction below supersedes that note: source default is `(0, 0)` for the second pass.
 - Removed the non-source `floorReflectionCamera.near = homeCamera.near` assignment from the reflector update path.
 
 Verification:
@@ -3232,7 +3232,7 @@ Runtime changes:
 
 Non-fix source audit:
 
-- Rechecked source `i1/a1/o1` reflector/floor ownership. Current rebuild still matches the important source structure: `floorGroup -> floorPlane -> floorReflector`, group y `-1.65`, source `CircleGeometry(60,32)`, reflector hidden via the floor group during reflection render, raw reflection target depth enabled, read/write targets depthless, blur directions `(15,0)` then `(0,15)`, and floor shader sampling/formula.
+- Rechecked source `i1/a1/o1` reflector/floor ownership. Current rebuild still matches the important source structure: `floorGroup -> floorPlane -> floorReflector`, group y `-1.65`, source `CircleGeometry(60,32)`, reflector hidden via the floor group during reflection render, raw reflection target depth enabled, read/write targets depthless, and floor shader sampling/formula. S1-76 corrects the reflector blur loop detail to source `(15,0)` then `(0,0)` for the default two iterations.
 - Rechecked source `h1/u1` environment defaults. Current rebuild matches the source defaults that materially affect the environment: `uMultiplier=2`, `uShader1Alpha=.5`, `uShader1Speed=.5`, `uShader1Scale=5.5`, `uShader2Alpha=0`, `uShader2Scale=13`, `uShader3Alpha=0`, `uShader3Speed=0`, `uShader3Scale=0`, `uShader1Mix3=1.5`, `envMapIntensity=1`, `BackSide`, and `fog:false`. The declared but unused `uShader1Mix2` is not promoted as a production change.
 
 Verification:
@@ -3289,3 +3289,35 @@ Band snapshot from `/tmp/rd-phase1-za-tail-capture`:
 | Mobile source -> rebuild | `-0.0131` | `+0.0111` |
 
 Decision: keep this `zA/VA` fragment-tail correction. It removes real source-surface drift without relying on visual tuning. Phase 1 remains open because the remaining visible residual is now less about broad center brightness and more about localized horizon/fog-bed structure, thumb/spotlight projection fidelity, and any remaining generated material-body differences.
+
+### S1-76 Source `i1` Reflector Blur Loop
+
+This batch corrected the reflector blur pass implementation to match the source loop instead of the previous fixed two-axis approximation.
+
+Source evidence:
+
+- Source `i1` defaults to `blurIterations=2`.
+- In `i1.update()`, each pass computes `d = (blurIterations - u - 1) * 15`.
+- For the default two passes, the source directions are therefore `(15, 0)` on pass 0 and `(0, 0)` on pass 1, with `renderTargetRead` and `renderTargetWrite` swapped after each pass.
+
+Runtime changes:
+
+- Replaced the fixed `(15, 0)` then `(0, 15)` floor-reflection blur sequence with the source loop and read/write target swap.
+- Rebound the floor material's `tReflect` uniform to the final swapped read target after the loop.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-reflector-source-blur-loop-probe`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining visible media tracks: `/tmp/rd-reflector-source-blur-loop-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-reflector-source-blur-loop-capture`.
+
+Band snapshot from `/tmp/rd-reflector-source-blur-loop-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0001` | `-0.0017` |
+| Mobile source -> rebuild | `-0.0132` | `+0.0048` |
+
+Decision: keep the source reflector blur loop. It corrects a real `i1` implementation drift and slightly improves the measured desktop/mobile band residuals without touching unsupported brightness constants. Phase 1 remains open because mobile/fog-bed structure and thumb/spotlight projection still require source-backed work.
