@@ -137,6 +137,9 @@ async function runProbe() {
   if (probe.thumbPositionMode !== "source-w1-centered-x-wrap") {
     sourceShapeErrors.push(`thumbPositionMode=${probe.thumbPositionMode}`);
   }
+  if (probe.thumbSceneMode !== "source-T1-square-height-target-orthographic") {
+    sourceShapeErrors.push(`thumbSceneMode=${probe.thumbSceneMode}`);
+  }
   if (probe.itemWidth !== 2) {
     sourceShapeErrors.push(`itemWidth=${probe.itemWidth}`);
   }
@@ -162,6 +165,35 @@ async function runProbe() {
     if (Math.abs(y) > 1e-6 || Math.abs(z) > 1e-6) {
       sourceShapeErrors.push(`${thumb.slug}:position=${JSON.stringify(thumb.position)}`);
     }
+    if (JSON.stringify(thumb.scale) !== JSON.stringify([2, 2, 2])) {
+      sourceShapeErrors.push(`${thumb.slug}:scale=${JSON.stringify(thumb.scale)}`);
+    }
+  }
+  const material = probe.thumbMaterial;
+  if (!material) {
+    sourceShapeErrors.push("thumbMaterial=missing");
+  } else {
+    if (material.mode !== "source-M1-raw-glsl3") sourceShapeErrors.push(`thumbMaterialMode=${material.mode}`);
+    if (material.glslVersion !== "300 es") sourceShapeErrors.push(`thumbGlsl=${material.glslVersion}`);
+    if (material.toneMapped !== false) sourceShapeErrors.push(`thumbToneMapped=${material.toneMapped}`);
+    if (material.transparent !== false) sourceShapeErrors.push(`thumbTransparent=${material.transparent}`);
+    if (material.depthWrite !== false) sourceShapeErrors.push(`thumbDepthWrite=${material.depthWrite}`);
+    if (material.depthTest !== false) sourceShapeErrors.push(`thumbDepthTest=${material.depthTest}`);
+    if (material.uProgress !== 1) sourceShapeErrors.push(`thumbProgressUniform=${material.uProgress}`);
+    if (material.uTransitionCount !== 150) sourceShapeErrors.push(`thumbTransitionCount=${material.uTransitionCount}`);
+    if (material.uTransitionSmoothness !== 0.2) sourceShapeErrors.push(`thumbTransitionSmoothness=${material.uTransitionSmoothness}`);
+    if (!material.mapBound) sourceShapeErrors.push("thumbMapBound=false");
+    if (JSON.stringify(material.mapSize) !== JSON.stringify([1, 1])) sourceShapeErrors.push(`thumbMapSize=${JSON.stringify(material.mapSize)}`);
+    if (JSON.stringify(material.resolution) !== JSON.stringify([1, 1])) sourceShapeErrors.push(`thumbResolution=${JSON.stringify(material.resolution)}`);
+  }
+  if (probe.targets?.sizingMode !== "source-T1-renderManager-resize-height-height-dpr-1") {
+    sourceShapeErrors.push(`thumbTargetSizing=${probe.targets?.sizingMode}`);
+  }
+  if (probe.targets?.thumb?.width !== 900 || probe.targets?.thumb?.height !== 900) {
+    sourceShapeErrors.push(`thumbTarget=${probe.targets?.thumb?.width}x${probe.targets?.thumb?.height}`);
+  }
+  if (probe.targets?.composite?.width !== 900 || probe.targets?.composite?.height !== 900) {
+    sourceShapeErrors.push(`thumbCompositeTarget=${probe.targets?.composite?.width}x${probe.targets?.composite?.height}`);
   }
   if (sourceShapeErrors.length) {
     throw new Error(`Thumb gallery source-shape mismatch: ${sourceShapeErrors.join(", ")}`);

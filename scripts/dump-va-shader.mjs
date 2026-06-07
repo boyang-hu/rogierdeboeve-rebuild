@@ -593,6 +593,45 @@ function analyzeLensflareCore(sourceFragment, rebuildFragment) {
   }));
 }
 
+function analyzeThumbPlaneCore(sourceVertex, sourceFragment, rebuildVertex, rebuildFragment) {
+  if (!sourceFragment) return null;
+  const sourceV = normalizeShaderForCoreChecks(sourceVertex || "");
+  const rebuildV = normalizeShaderForCoreChecks(rebuildVertex || "");
+  const source = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuild = normalizeShaderForCoreChecks(rebuildFragment);
+  const checks = {
+    vertexMatrixFullscreen: {
+      source: sourceV.includes("worldPosition=modelMatrix*vec4(position,1.0)") && sourceV.includes("gl_Position=projectionMatrix*mvPosition"),
+      rebuild: rebuildV.includes("worldPosition=modelMatrix*vec4(position,1.0)") && rebuildV.includes("gl_Position=projectionMatrix*mvPosition"),
+    },
+    coverTextureHelper: {
+      source: source.includes("vec4coverTexture(sampler2Dtex,vec2imgSize,vec2ouv,vec2containerSize)"),
+      rebuild: rebuild.includes("vec4coverTexture(sampler2Dtex,vec2imgSize,vec2ouv,vec2containerSize)"),
+    },
+    coverTextureColorTemporary: {
+      source: source.includes("vec4color=texture(tex,uv)") && source.includes("returncolor"),
+      rebuild: rebuild.includes("vec4color=texture(tex,uv)") && rebuild.includes("returncolor"),
+    },
+    transitionFunction: {
+      source: source.includes("vec4transition(vec4color1,vec4color2,floatprogress,vec2uv)"),
+      rebuild: rebuild.includes("vec4transition(vec4color1,vec4color2,floatprogress,vec2uv)"),
+    },
+    transitionStepShape: {
+      source: source.includes("smoothstep(-uTransitionSmoothness,0.0,uv.y-progress*(1.0+uTransitionSmoothness))") && source.includes("step(pr,fract(uTransitionCount*uv.y))"),
+      rebuild: rebuild.includes("smoothstep(-uTransitionSmoothness,0.0,uv.y-progress*(1.0+uTransitionSmoothness))") && rebuild.includes("step(pr,fract(uTransitionCount*uv.y))"),
+    },
+    transitionProgressInvert: {
+      source: source.includes("transition(map,color,1.-uProgress,uv)") || source.includes("transition(map,color,1.0-uProgress,uv)"),
+      rebuild: rebuild.includes("transition(map,color,1.-uProgress,uv)") || rebuild.includes("transition(map,color,1.0-uProgress,uv)"),
+    },
+    sourceOutput: {
+      source: source.includes("FragColor=mixed"),
+      rebuild: rebuild.includes("FragColor=mixed"),
+    },
+  };
+  return checks;
+}
+
 function analyzeVertexCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
@@ -945,6 +984,7 @@ try {
       rgBlurCoreChecks: entry.name === "rg-bloom-blur" ? analyzeRgBlurCore(sourceFragment, entry.fragmentShader) : null,
       standardBlurCoreChecks: entry.name === "Na-standard-blur" ? analyzeStandardBlurCore(sourceFragment, entry.fragmentShader) : null,
       lensflareCoreChecks: entry.name === "L1-lensflare" ? analyzeLensflareCore(sourceFragment, entry.fragmentShader) : null,
+      thumbPlaneCoreChecks: entry.name === "M1-thumb-plane" ? analyzeThumbPlaneCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       vaBridgeCompatibility: entry.name === "VA-work" ? analyzeVaBridgeCompatibility(sourceFragment, entry.fragmentShader) : null,

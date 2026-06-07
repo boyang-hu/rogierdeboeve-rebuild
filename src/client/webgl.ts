@@ -160,8 +160,23 @@ type ThumbProbeWindow = Window & {
       xHook: number;
       yHook: number;
       position: [number, number, number];
+      scale: [number, number, number];
       visible: boolean;
     }>;
+    thumbMaterial: {
+      mode: string;
+      glslVersion: string | null;
+      toneMapped: boolean;
+      transparent: boolean;
+      depthWrite: boolean;
+      depthTest: boolean;
+      uProgress: number;
+      uTransitionCount: number;
+      uTransitionSmoothness: number;
+      mapBound: boolean;
+      mapSize: [number, number];
+      resolution: [number, number];
+    } | null;
     thumbComposite: {
       darkness: number;
       darkenIntensity: number;
@@ -1730,7 +1745,9 @@ vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   vec2 new = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
   vec2 newOffset = (rs < ri ? vec2((new.x - s.x) / 2.0, 0.0) : vec2(0.0, (new.y - s.y) / 2.0)) / new;
   vec2 uv = ouv * s / new + newOffset;
-  return texture(tex, uv);
+  vec4 color = texture(tex, uv);
+
+  return color;
 }
 
 vec4 transition(vec4 color1, vec4 color2, float progress, vec2 uv) {
@@ -5909,6 +5926,7 @@ export class WebGLBackdrop {
         thumbMouseLightness: SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS,
       },
       thumbPositionMode: "source-w1-centered-x-wrap",
+      thumbSceneMode: "source-T1-square-height-target-orthographic",
       itemWidth: this.thumbItemWidth,
       totalItems: this.thumbTotalItems,
       totalWidth: this.thumbTotalItems * this.thumbItemWidth,
@@ -5920,8 +5938,27 @@ export class WebGLBackdrop {
         xHook: item.thumbXHook,
         yHook: item.thumbYHook,
         position: item.thumb.position.toArray() as [number, number, number],
+        scale: item.thumb.scale.toArray() as [number, number, number],
         visible: item.thumb.visible,
       })),
+      thumbMaterial: (() => {
+        const first = this.workItems[0]?.thumb.material as RawShaderMaterial | undefined;
+        if (!first) return null;
+        return {
+          mode: "source-M1-raw-glsl3",
+          glslVersion: first.glslVersion ?? null,
+          toneMapped: first.toneMapped,
+          transparent: first.transparent,
+          depthWrite: first.depthWrite,
+          depthTest: first.depthTest,
+          uProgress: first.uniforms.uProgress.value as number,
+          uTransitionCount: first.uniforms.uTransitionCount.value as number,
+          uTransitionSmoothness: first.uniforms.uTransitionSmoothness.value as number,
+          mapBound: first.uniforms.tMap.value !== this.placeholder,
+          mapSize: (first.uniforms.uMapSize.value as Vector2).toArray() as [number, number],
+          resolution: (first.uniforms.uResolution.value as Vector2).toArray() as [number, number],
+        };
+      })(),
       thumbComposite: {
         darkness: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
         darkenIntensity: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
@@ -5939,6 +5976,7 @@ export class WebGLBackdrop {
         rendererOutputColorSpace: this.renderer.outputColorSpace,
       },
       targets: {
+        sizingMode: "source-T1-renderManager-resize-height-height-dpr-1",
         thumb: renderTargetStats(this.renderer, this.thumbTarget),
         composite: renderTargetStats(this.renderer, this.thumbCompositeTarget),
       },
