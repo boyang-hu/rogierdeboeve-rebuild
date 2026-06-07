@@ -667,6 +667,17 @@ const summary = {
         "const e=this.skyScene.renderManager.renderTargetComposite.texture;e.wrapS=e.wrapT=ci",
         "this.workScene.env.material.customUniforms.tSky.value=e",
       ]),
+      sceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"].map((id) => ({
+        id,
+        index: sourceCanvasManager.text.indexOf(`this.addScene(this.${id === "workthumb" ? "workThumb" : id}Scene,"${id}")`),
+      })),
+      rebuildOrderChecks: checks(rebuildWebgl, [
+        "rebuildSceneOrder: [\"sky\", \"media\", \"work\", \"main\", \"workthumb\", \"wavves\", \"character\"]",
+        "rebuildFrameOrder: [\"media-position\", \"sky\", \"media\", \"work-raw\", \"work-bloom\", \"work-mousesim\", \"work-composite\", \"p1-post-render\", \"main-raw\", \"main-bloom\", \"main-fluid\", \"main-pre-composite\", \"main-final-screen\", \"workthumb\", \"wavves\", \"character-when-about\"]",
+        "workUpdateOrder: [\"Lu.renderManager.raw\", \"Lu.renderManager.bloom\", \"Ka.mouseSimulation\", \"Lu.renderManager.composite\", \"IT.cameraController\", \"p1.components\"]",
+        "mainUpdateOrder: [\"I1.raw\", \"I1.optional-bloom\", \"I1.fluid\", \"I1.C1-screen\"]",
+        "mouseSimulationOrder: \"source-Lu-mousesim-after-raw-bloom-before-composite\"",
+      ]),
       excerpt: compact(sourceCanvasManager.text),
     },
     textures: sourceTextureManager && {

@@ -3449,7 +3449,7 @@ export class WebGLBackdrop {
   private debugEnvironment = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-environment") : null;
   private thumbProbeLastUpdate = 0;
   private outputProbeLastUpdate = 0;
-  private sourceUpdateOrder = "Iu.renderManager -> IT.cameraController -> p1.components";
+  private sourceUpdateOrder = "nD.scenes sky -> media -> work -> main -> workthumb -> wavves -> character; Iu.renderManager -> IT.cameraController -> components";
   private sourcePostRenderFrame = 0;
   private fluidStrength = 0.5;
   private darken = SOURCE_INITIAL_DARKEN;
@@ -6495,19 +6495,19 @@ void main() {
   }
 
   private renderSkyTarget(time: number) {
-    this.skyCompositeMaterial.uniforms.uTime.value = sourceLowRes() ? 0 : time;
     this.renderer.setRenderTarget(this.skyRawTarget);
     this.renderer.render(this.skyScene, this.backgroundCamera);
     this.renderer.setRenderTarget(this.skyCompositeTarget);
     this.renderer.render(this.skyCompositeScene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
+    this.skyCompositeMaterial.uniforms.uTime.value = sourceLowRes() ? 0 : time;
   }
 
   private renderDisplacementTarget(time: number) {
-    this.displacementMaterial.uniforms.uTime.value = time;
     this.renderer.setRenderTarget(this.displacementTarget);
     this.renderer.render(this.displacementScene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
+    this.displacementMaterial.uniforms.uTime.value = time;
   }
 
   private renderThumbTargets() {
@@ -6818,8 +6818,12 @@ void main() {
         updateOrder: {
           source: this.sourceUpdateOrder,
           sourceSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
-          rebuildFrameOrder: ["main-fluid", "media-position", "screen-mouse", "sky", "work", "media", "main", "workthumb", "p1-post-render", "wavves", "character-when-about"],
-          frameTail: "source-main/work-render-then-p1-update-before-wavves-displacement",
+          rebuildSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
+          rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-bloom", "main-fluid", "main-pre-composite", "main-final-screen", "workthumb", "wavves", "character-when-about"],
+          workUpdateOrder: ["Lu.renderManager.raw", "Lu.renderManager.bloom", "Ka.mouseSimulation", "Lu.renderManager.composite", "IT.cameraController", "p1.components"],
+          mainUpdateOrder: ["I1.raw", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"],
+          frameTail: "source-work-renderManager-then-p1-update-before-main",
+          mouseSimulationOrder: "source-Lu-mousesim-after-raw-bloom-before-composite",
           postRenderFrame: this.sourcePostRenderFrame,
           environmentUpdateOrder: "source-p1-component-post-render",
           skyPassClearing: "source-Lo-no-explicit-clear",
@@ -7783,12 +7787,6 @@ void main() {
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
-    const mainFluidTexture = this.sourceMainRenderSettings.fluid.enabled && this.fluidStrength > 0
-      ? this.updateMainFluidPass()
-      : this.mainFluidPass.enabled
-        ? this.mainFluidPass.targets.main.texture
-        : this.fluidPlaceholder;
-    this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
     this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;
     this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;
@@ -7800,9 +7798,10 @@ void main() {
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     let preCompositeWorkTarget = this.debugPassOrder === "raw-work-composite" ? this.workRawTarget : this.workCompositeTarget;
+
+    this.renderSkyTarget(time);
+    this.renderMediaCompositeTarget(isProjectView && hasMedia);
     if (hasHome) {
-      this.updateScreenMouseSimulation(time, delta);
-      this.renderSkyTarget(time);
       this.renderer.setRenderTarget(this.workRawTarget);
       const previousFloorVisible = this.floorPlane.visible;
       const previousFloorGroupVisible = this.floorGroup.visible;
@@ -7815,6 +7814,7 @@ void main() {
           if (this.renderSettings.bloom.enabled) {
             this.renderHomeBloomPass(this.workRawTarget);
           }
+          this.updateScreenMouseSimulation(time, delta);
           this.compositeMaterial.uniforms.tScene.value = this.workRawTarget.texture;
           this.compositeMaterial.uniforms.tBloom.value = this.bloomHorizontalTargets[0].texture;
           this.compositeMaterial.uniforms.tBlur.value = this.fluidPlaceholder;
@@ -7838,19 +7838,24 @@ void main() {
       this.renderer.setRenderTarget(this.workCompositeTarget);
       preCompositeWorkTarget = this.workCompositeTarget;
     }
+    this.updateWorkSceneForNextFrame(time, delta);
     this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
     this.renderer.setRenderTarget(this.mainRawTarget);
     this.renderer.render(this.mainScene, this.homeCamera);
     this.preCompositeMaterial.uniforms.tScene.value = this.mainRawTarget.texture;
     this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
-    this.renderMediaCompositeTarget(isProjectView && hasMedia);
     this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
-    this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
-    this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     if (this.sourceMainRenderSettings.bloom.enabled) {
       this.renderMainBloomPass(preCompositeWorkTarget);
     }
     this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
+    const mainFluidTexture = this.sourceMainRenderSettings.fluid.enabled && this.fluidStrength > 0
+      ? this.updateMainFluidPass()
+      : this.mainFluidPass.enabled
+        ? this.mainFluidPass.targets.main.texture
+        : this.fluidPlaceholder;
+    this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
+    this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     this.mainPostScreen.material = this.preCompositeMaterial;
     this.renderer.setRenderTarget(this.compositeTarget);
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
@@ -7864,11 +7869,10 @@ void main() {
     }
     this.renderHomeCompositePass();
     this.renderThumbTargets();
-    this.updateThumbProbe(time);
-    if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
-    this.updateWorkSceneForNextFrame(time, delta);
-    this.updateOutputProbe(time);
     this.renderDisplacementTarget(time);
+    if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
+    this.updateThumbProbe(time);
+    this.updateOutputProbe(time);
     this.raf = requestAnimationFrame(this.tick);
   };
 }

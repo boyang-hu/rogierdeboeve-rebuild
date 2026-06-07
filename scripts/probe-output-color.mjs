@@ -247,7 +247,7 @@ async function runProbe() {
   const visibleP1Items = Array.isArray(p1UpdateCulling.items) ? p1UpdateCulling.items.filter((item) => item.visible) : [];
   if (!visibleP1Items.every((item) => item.tMouseSim2IsScreen === true)) cullingErrors.push("visibleTMouseSim2Screen");
   if (!visibleP1Items.every((item) => item.tMouseSimIsLocal === true)) cullingErrors.push("visibleTMouseSimLocal");
-  if (parsed.probe.settings?.updateOrder?.frameTail !== "source-main/work-render-then-p1-update-before-wavves-displacement") {
+  if (parsed.probe.settings?.updateOrder?.frameTail !== "source-work-renderManager-then-p1-update-before-main") {
     cullingErrors.push("frameTailOrder");
   }
   if (cullingErrors.length) {
@@ -576,8 +576,23 @@ async function runProbe() {
   if (JSON.stringify(updateOrder?.sourceSceneOrder) !== JSON.stringify(expectedSourceSceneOrder)) {
     throw new Error(`Source scene order probe mismatch: ${JSON.stringify(updateOrder?.sourceSceneOrder || null)}`);
   }
-  if (!Array.isArray(updateOrder?.rebuildFrameOrder) || !updateOrder.rebuildFrameOrder.includes("sky") || !updateOrder.rebuildFrameOrder.includes("work") || !updateOrder.rebuildFrameOrder.includes("main")) {
-    throw new Error(`Rebuild frame order probe missing core passes: ${JSON.stringify(updateOrder?.rebuildFrameOrder || null)}`);
+  if (JSON.stringify(updateOrder?.rebuildSceneOrder) !== JSON.stringify(expectedSourceSceneOrder)) {
+    throw new Error(`Rebuild scene order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildSceneOrder || null)}`);
+  }
+  const expectedRebuildFrameOrder = ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-bloom", "main-fluid", "main-pre-composite", "main-final-screen", "workthumb", "wavves", "character-when-about"];
+  if (JSON.stringify(updateOrder?.rebuildFrameOrder) !== JSON.stringify(expectedRebuildFrameOrder)) {
+    throw new Error(`Rebuild frame order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildFrameOrder || null)}`);
+  }
+  const expectedWorkUpdateOrder = ["Lu.renderManager.raw", "Lu.renderManager.bloom", "Ka.mouseSimulation", "Lu.renderManager.composite", "IT.cameraController", "p1.components"];
+  if (JSON.stringify(updateOrder?.workUpdateOrder) !== JSON.stringify(expectedWorkUpdateOrder)) {
+    throw new Error(`Work update order source-shape mismatch: ${JSON.stringify(updateOrder?.workUpdateOrder || null)}`);
+  }
+  const expectedMainUpdateOrder = ["I1.raw", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"];
+  if (JSON.stringify(updateOrder?.mainUpdateOrder) !== JSON.stringify(expectedMainUpdateOrder)) {
+    throw new Error(`Main update order source-shape mismatch: ${JSON.stringify(updateOrder?.mainUpdateOrder || null)}`);
+  }
+  if (updateOrder?.mouseSimulationOrder !== "source-Lu-mousesim-after-raw-bloom-before-composite") {
+    throw new Error(`Mouse simulation order source-shape mismatch: ${updateOrder?.mouseSimulationOrder || "missing"}`);
   }
   if (updateOrder?.preloadGate !== "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in") {
     throw new Error(`Texture preload gate source-shape mismatch: ${updateOrder?.preloadGate || "missing"}`);
