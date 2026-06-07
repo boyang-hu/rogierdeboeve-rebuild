@@ -6752,6 +6752,8 @@ void main() {
             bridge: "source-single-screen-material-swap",
             finalScreenMode: "source-main-post-screen",
             sourceFinalRender: "settings.renderToScreen -> setRenderTarget(null), render(this.screen,this.screenCamera)",
+            defaultScreenMaterialMode: "source-I1-default-direct-C1-screen-render",
+            preCompositeTargetRole: "qa-mirror-of-source-renderTargetComposite-not-default-screen-output",
             productionOutputChanged: true,
           },
           mainRawSceneMode: "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb",
