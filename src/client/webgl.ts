@@ -2322,10 +2322,10 @@ export class WebGLBackdrop {
   private displacementMaterial: ShaderMaterial;
   private displacementScene = new Scene();
   private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
-  private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: true, stencilBuffer: false });
+  private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
   private floorReflectionReadTarget = makeSourceRenderTarget(false);
   private floorReflectionWriteTarget = makeSourceRenderTarget(false);
-  private floorReflectionCamera = new PerspectiveCamera(55, 1, 1, 2000);
+  private floorReflectionCamera = new PerspectiveCamera();
   private floorReflectionMatrix = new Matrix4();
   private floorReflectorPlane = new Plane();
   private floorReflectorNormal = new Vector3(0, 1, 0);
@@ -2561,6 +2561,7 @@ export class WebGLBackdrop {
     this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
     this.displacementScene.add(makeFullscreenTriangle(this.displacementMaterial));
+    this.floorReflectionTarget.depthBuffer = true;
     this.floorReflectionTarget.texture.generateMipmaps = false;
     this.floorReflectionTarget.texture.minFilter = LinearFilter;
     this.floorReflectionTarget.texture.magFilter = LinearFilter;
@@ -5480,6 +5481,22 @@ export class WebGLBackdrop {
       position: object.position.toArray(),
       rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
     });
+    const renderTargetSummary = (target: WebGLRenderTarget) => ({
+      width: target.width,
+      height: target.height,
+      depthBuffer: target.depthBuffer,
+      stencilBuffer: target.stencilBuffer,
+      texture: {
+        colorSpace: target.texture.colorSpace,
+        generateMipmaps: target.texture.generateMipmaps,
+        minFilter: target.texture.minFilter,
+        magFilter: target.texture.magFilter,
+        wrapS: target.texture.wrapS,
+        wrapT: target.texture.wrapT,
+        type: target.texture.type,
+        format: target.texture.format,
+      },
+    });
     return {
       scene: {
         children: this.homeScene.children.map(objectSummary),
@@ -5524,6 +5541,8 @@ export class WebGLBackdrop {
         },
       },
       camera: {
+        fov: this.floorReflectionCamera.fov,
+        aspect: this.floorReflectionCamera.aspect,
         position: this.floorReflectionCamera.position.toArray(),
         target: this.floorReflectionTargetPosition.toArray(),
         up: this.floorReflectionCamera.up.toArray(),
@@ -5539,6 +5558,15 @@ export class WebGLBackdrop {
           this.floorReflectionCamera.projectionMatrix.elements[10],
           this.floorReflectionCamera.projectionMatrix.elements[14],
         ],
+      },
+      targets: {
+        raw: renderTargetSummary(this.floorReflectionTarget),
+        read: renderTargetSummary(this.floorReflectionReadTarget),
+        write: renderTargetSummary(this.floorReflectionWriteTarget),
+        floorReflectUsesRead: this.floorMaterial.uniforms.tReflect.value === this.floorReflectionReadTarget.texture,
+        floorReflectUsesRaw: this.floorMaterial.uniforms.tReflect.value === this.floorReflectionTarget.texture,
+        blurInputUsesRaw: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionTarget.texture,
+        blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
       },
     };
   }

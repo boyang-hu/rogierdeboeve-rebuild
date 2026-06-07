@@ -90,6 +90,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 14 | S1-75 | `OA/CA` core formula audit tooling | Source `OA` uses `CA` for the work render-manager composite. Manual diff showed the remaining `OA` shader delta is helper expansion / unused variable surface, while the live formula anchors are the same: scene rgbshift, bloom rgbshift/addition, fluid luminance add, darken opacity, multiply-darken, lighten-black, saturation, and tonemapping. | `scripts/dump-va-shader.mjs` now reports `compositeCoreChecks` for dumped shaders. Current `OA-work-composite` reports all core anchors present in both source and rebuild. | Low | Treat `OA/CA` formula edits and gamma-like transfer promotion as unsupported. Continue Phase 1 from upstream `VA`/spotlight-map content/transfer or source renderer/target interpretation evidence. |
 | 15 | S1-76 | `VA/HA` vertex core audit tooling | Source `HA` and the rebuild work vertex shader both include the core screen-UV, local mouse, perlin-height, pre-perlin mouse scale, reveal mix, mouse-z, spread, and source-world divide anchors after normalization. The older text-level key check could misread formatting/spelling differences such as `fadeDiplacement`/`fadeDisplacement` and `.05`/`0.05` as a production mismatch. | `scripts/dump-va-shader.mjs` now reports `vertexAnalysis.coreChecks` separately from broader residual diffs. Current checks show every core anchor present in both source and rebuild. | Low | Treat the old `transformed *= 1.0 - mouse` key-check mismatch as a diagnostic false positive. Do not tune the vertex path without a narrower source-backed residual tied to visible output. |
 | 16 | S1-77 | `T1/x1/Lo` thumb render pass clearing | Source `Lo.update()` renders the thumb raw target and composite target with `setRenderTarget(...); render(...)` and does not explicitly call `renderer.clear()` between those passes. The rebuild still cleared both thumb targets every frame before rendering. | Production now removes the rebuild-only explicit clears from `renderThumbTargets()`, keeping source `Lo/x1` pass ownership for the spotlight map target. | Low-medium | Keep as source-correct after QA. Do not generalize this to `Lu/kA` work render-manager clears without porting the full source render-manager structure. |
+| 17 | S1-81 | Source `i1` reflection target/camera initialization | Source `i1` creates the raw reflection target with `depthBuffer:false`, clones read/write targets, then toggles only the raw target to `depthBuffer=true`; it also uses a default `PerspectiveCamera` for the virtual reflector camera before copying the real projection each update. | Production now follows that create-clone-toggle sequence, keeps read/write targets depthless, uses the default reflector camera surface, and exposes reflector target/camera state in `reflectionStateProbe()`. | Low-medium | Keep as source-correct. Phase 1 remains open because this is reflector ownership parity, not a visual closeout for the remaining mobile/fog-bed and projection residuals. |
 
 ### Phase 1 Open Blocker Board
 
@@ -3579,3 +3580,36 @@ Band snapshot from `/tmp/rd-reflector-no-blur-clear-capture`:
 | Mobile source -> rebuild | `-0.0125` | `+0.0235` |
 
 Decision: keep the source `i1` no-clear blur pass. It corrects a real render-pass divergence in the reflector lifecycle. Phase 1 remains open because mobile still has a larger horizontal residual, so the next floor/environment work should compare reflected target content and draw-state against source rather than adding clears back.
+
+### S1-81 Source `i1` Reflection Target and Camera Initialization
+
+This batch aligned two source-confirmed reflector initialization details and expanded reflector diagnostics.
+
+Source evidence:
+
+- Source `i1` constructs `renderTarget` with `{ depthBuffer:false }`, clones `renderTargetRead` and `renderTargetWrite`, then sets only `renderTarget.depthBuffer = true`.
+- Source `i1.virtualCamera` is created with `new PerspectiveCamera()` defaults, then each update copies the real camera projection and far plane. That means the default reflection-camera surface starts from `fov=50`, `aspect=1`, and `near=.1`, not the rebuild's previous `near=1` constructor.
+
+Runtime changes:
+
+- The raw floor-reflection target now follows the source create-clone-toggle sequence, so the raw target has depth while read/write blur targets remain depthless.
+- The floor-reflection camera now uses the default `PerspectiveCamera` constructor before the source update path copies the home projection.
+- `reflectionStateProbe()` now reports reflection target depth/stencil/texture parameters, camera `fov/aspect/near/far`, and which reflection texture is bound to the floor material.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-reflector-target-camera-output`.
+- Thumb spotlight probe passed and retained the home spotlight map and non-empty thumb targets: `/tmp/rd-reflector-target-camera-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-reflector-target-camera-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-reflector-target-camera-full`.
+
+Band snapshot from `/tmp/rd-reflector-target-camera-full`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0013` | `-0.0031` |
+| Mobile source -> rebuild | `-0.0133` | `+0.0133` |
+
+Decision: keep the source reflector target/camera initialization. The new probe confirms raw target `depthBuffer=true`, read/write targets `depthBuffer=false`, floor reflection uses the final read texture, and the reflection camera reports `near=.1`. Phase 1 remains open because this is source-structure parity, not a visual closeout for the remaining mobile/fog-bed and spotlight/projection residuals.
