@@ -3321,3 +3321,38 @@ Band snapshot from `/tmp/rd-reflector-source-blur-loop-capture`:
 | Mobile source -> rebuild | `-0.0132` | `+0.0048` |
 
 Decision: keep the source reflector blur loop. It corrects a real `i1` implementation drift and slightly improves the measured desktop/mobile band residuals without touching unsupported brightness constants. Phase 1 remains open because mobile/fog-bed structure and thumb/spotlight projection still require source-backed work.
+
+### S1-77 Source `T1/w1/E1/x1` Thumb Shader Surface
+
+This batch aligned the thumb render-target shader surface with the source `T1/w1/E1/x1` chain.
+
+Source evidence:
+
+- Source `M1` thumb-plane material is created with `glslVersion: GLSL3`, explicit `in` attributes, explicit matrix uniforms, `out vec4 FragColor`, and `texture(...)`.
+- Source `_1` thumb-composite material is also `glslVersion: GLSL3`, `toneMapped:false`, transparent, depthless, and uses the source fullscreen vertex surface plus `FragColor`.
+- The previous rebuild thumb shaders were WebGL1-style `varying`, `texture2D`, and `gl_FragColor`. A first `ShaderMaterial + GLSL3` trial reproduced Three's injected-attribute collision, so the accepted bridge uses `RawShaderMaterial + GLSL3` for these explicit source shaders.
+
+Runtime changes:
+
+- Converted the thumb plane vertex/fragment shader to the source GLSL3 interface.
+- Converted the thumb composite vertex/fragment shader to the source GLSL3 interface.
+- Switched thumb plane and thumb composite materials to `RawShaderMaterial` with `GLSL3` to prevent non-source Three shader injection.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Fresh shader dump passed after restarting the static rebuild server, with no console/WebGL shader errors: `/tmp/rd-thumb-rawglsl3-fresh-shader`.
+- Thumb spotlight probe passed and retained non-empty thumb/composite targets plus the home spotlight map: `/tmp/rd-thumb-rawglsl3-fresh-thumb`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-thumb-rawglsl3-output`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining visible media tracks: `/tmp/rd-thumb-rawglsl3-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-thumb-rawglsl3-capture`.
+
+Band snapshot from `/tmp/rd-thumb-rawglsl3-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `-0.0029` | `-0.0019` |
+| Mobile source -> rebuild | `-0.0131` | `+0.0069` |
+
+Decision: keep the source thumb shader-surface bridge. It removes a real `T1/w1/E1/x1` WebGL1/WebGL2 surface drift without changing visual constants. Phase 1 remains open because this does not fully solve spotlight projection feel or mobile fog-bed residuals.
