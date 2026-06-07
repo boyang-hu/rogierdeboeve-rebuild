@@ -252,7 +252,7 @@ async function runProbe() {
   const reflectionTargets = parsed.probe.reflectionState?.targets;
   const reflectionErrors = [];
   if (reflectionTargets) {
-    if (reflectionTargets.rawClearMode !== "source-autoClear-false-only") reflectionErrors.push("rawClearMode");
+    if (reflectionTargets.rawClearMode !== "source-i1-conditional-clear-when-autoClear-false") reflectionErrors.push("rawClearMode");
     if (reflectionTargets.cameraProjectionCopyOrder !== "source-updateMatrixWorld-before-projection-copy") reflectionErrors.push("cameraProjectionCopyOrder");
     if (reflectionTargets.blurPassScreenMode !== "source-i1-private-screen-camera") reflectionErrors.push("blurPassScreenMode");
     if (reflectionTargets.sourceCssSized !== true) reflectionErrors.push("sourceCssSized");

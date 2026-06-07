@@ -7198,7 +7198,7 @@ void main() {
         blurMaterialMode: "source-t1-raw-glsl3",
         blurPassScreenMode: "source-i1-private-screen-camera",
         floorVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
-        rawClearMode: "source-autoClear-false-only",
+        rawClearMode: "source-i1-conditional-clear-when-autoClear-false",
         cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",
         clipBias: this.floorReflectionClipBias,
         blurSwapMode: "source-i1-write-target-loop-swap",
