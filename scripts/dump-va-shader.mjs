@@ -675,6 +675,19 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
   }));
 }
 
+function analyzeWorkUvOffsetSourceEvidence(bundle, rebuildShader) {
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  return {
+    sourceVaUniformUsesVector2: bundle.includes("uUvOffset:new I(new Q),uUvOffsetScale:new I(1)"),
+    sourceGaWritesXYComponents:
+      bundle.includes("this.material.customUniforms.uUvOffset.value.x=(this.rayPlane.scale.x-this.plane.scale.x)/2/this.plane.scale.x")
+      && bundle.includes("this.material.customUniforms.uUvOffset.value.y=(this.rayPlane.scale.y-this.plane.scale.y)/2/this.plane.scale.y")
+      && bundle.includes("this.material.customUniforms.uUvOffsetScale.value=t"),
+    rebuildRuntimeShaderUsesVec2: rebuild.includes("uniformvec2uUvOffset"),
+    rebuildRuntimeShaderAvoidsVec3: !rebuild.includes("uniformvec3uUvOffset"),
+  };
+}
+
 function analyzeVaFragmentCore(sourceShader, rebuildShader) {
   if (!sourceShader) return null;
   const source = normalizeShaderForCoreChecks(sourceShader);
@@ -1045,6 +1058,7 @@ try {
   const vertexAnalysis = analyzeVertex(sourceH, workDump.vertexShader);
   const fragmentAnalysis = analyzeFragment(sourceZ, workDump.fragmentShader);
   const vertexCoreChecks = analyzeVertexCore(sourceH, workDump.vertexShader);
+  const uvOffsetSourceEvidence = analyzeWorkUvOffsetSourceEvidence(bundle, workDump.vertexShader);
   writeFileSync(path.join(outDir, "vertex-analysis.json"), JSON.stringify(vertexAnalysis, null, 2));
   writeFileSync(path.join(outDir, "fragment-analysis.json"), JSON.stringify(fragmentAnalysis, null, 2));
   const chunkAnalysis = {
@@ -1068,6 +1082,7 @@ try {
       uniformsOnlyRebuild: vertexAnalysis.uniforms.onlyRebuild,
       keyChecks: vertexAnalysis.checks,
       coreChecks: vertexCoreChecks,
+      uvOffsetSourceEvidence,
       anchors: vertexAnalysis.anchors,
     },
     fragmentAnalysis: {

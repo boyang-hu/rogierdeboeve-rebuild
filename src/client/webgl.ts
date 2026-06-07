@@ -444,7 +444,7 @@ uniform float uRevealSpread;
 uniform float uRevealSpreadSides;
 uniform float uMouseFactor;
 uniform vec2 uCoords;
-uniform vec3 uUvOffset;
+uniform vec2 uUvOffset;
 uniform float uUvOffsetScale;
 uniform sampler2D tMouseSim;
 uniform sampler2D tDisplacement;
@@ -2741,10 +2741,9 @@ function sourceLowRes() {
 function sourceMouseUvOffset() {
   const planeSize = sourceWorkMousePlaneSize();
   const raySize = sourceWorkRayPlaneSize();
-  return new Vector3(
+  return new Vector2(
     (raySize.x - planeSize.x) / 2 / planeSize.x,
     (raySize.y - planeSize.y) / 2 / planeSize.y,
-    0,
   );
 }
 
@@ -3794,7 +3793,7 @@ export class WebGLBackdrop {
       uMouseLightness: { value: 1 },
       uMouseFactor: { value: 1 },
       uAuxiliaryMaterial: { value: 1 },
-      uUvOffset: { value: new Vector3(0, 0, 0) },
+      uUvOffset: { value: new Vector2(0, 0) },
       uUvOffsetScale: { value: 1.5 },
       uScrollOpacity: { value: 1 },
       tMouseSim: { value: this.placeholder },
@@ -6703,7 +6702,7 @@ export class WebGLBackdrop {
     const screenTarget = this.screenMouseSimulationTargets[this.screenMouseSimulationIndex];
     const activeCoords = active?.mouseMaterial.uniforms.uCoords.value as Vector2 | undefined;
     const activeTarget = active?.mouseTargets[active.mouseIndex];
-    const uvOffset = active?.material.uniforms.uUvOffset.value as Vector3 | undefined;
+    const uvOffset = active?.material.uniforms.uUvOffset.value as Vector2 | undefined;
     const uvOffsetScale = active?.material.uniforms.uUvOffsetScale.value as number | undefined;
     const sourcePlaneSize = sourceWorkMousePlaneSize();
     const sourceRayPlaneSize = sourceWorkRayPlaneSize();
@@ -6739,6 +6738,7 @@ export class WebGLBackdrop {
         persistence: active.mouseMaterial.uniforms.uPersistance.value,
         thickness: active.mouseMaterial.uniforms.uThickness.value,
         uvOffset: uvOffset?.toArray() ?? null,
+        uvOffsetType: uvOffset?.isVector2 ? "Vector2" : uvOffset ? "non-source" : null,
         uvOffsetScale: uvOffsetScale ?? null,
         mousePlaneScale: active.mousePlane.scale.toArray(),
         mousePlanePosition: active.mousePlane.position.toArray(),
@@ -6773,9 +6773,11 @@ export class WebGLBackdrop {
           mousePlaneNotInScene: active.mousePlane.parent === null,
           uvOffsetMatchesSource: Boolean(
             uvOffset
+              && uvOffset.isVector2
               && Math.abs(uvOffset.x - expectedUvOffset.x) < 1e-6
               && Math.abs(uvOffset.y - expectedUvOffset.y) < 1e-6,
           ),
+          uvOffsetTypeMatchesSource: Boolean(uvOffset?.isVector2),
           uvOffsetScaleMatchesSource: uvOffsetScale === MOUSE_RAY_SCALE,
           rayPlaneScaleMatchesSource:
             Math.abs(active.rayPlane.scale.x - sourceRayPlaneSize.x) < 1e-6
