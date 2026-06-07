@@ -135,12 +135,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `A1/C1` pre-composite shader surface parity was tightened without visual tuning:
-  - `homePreCompositeFragment` now places shared color helpers/full blend dispatcher before `luminance(...)` and `coverTexture(...)`, matching source `A1`;
-  - pre-composite uniforms now follow the source declaration order;
-  - `random(vec2 st)` now sits after `in/out`, like source `A1`;
-  - `coverTexture(...)` now keeps the source temporary `vec4 color = texture(tex, uv); return color;`;
-  - output probes and shader dump now assert this source declaration order and cover-texture temporary.
+- Source `VA/HA/zA` declaration/helper shader surface parity was tightened without visual tuning:
+  - custom `HA` work-block vertex declarations now sit before the Three material header like source `HA`;
+  - source-proven `uUvOffset` stays a `vec2` bridge, but its declaration is ordered before reveal uniforms like the source surface;
+  - `vNoise` now sits with `vViewPosition`, matching source `HA`;
+  - custom `zA` fragment declarations now precede `#define STANDARD`;
+  - `random(...)` and `vignette(...)` now sit after the fragment pars/include surface and before `main()`;
+  - shader dump now records/asserts `vaVertexCoreChecks` and `vaFragmentCoreChecks` for those declaration/helper order rules.
 - QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open; this was source surface parity, not a visual closeout or accepted deviation.

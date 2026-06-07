@@ -169,6 +169,12 @@ function lineNumber(shader, index) {
   return shader.slice(0, index).split("\n").length;
 }
 
+function orderedBefore(shader, first, second) {
+  const firstIndex = shader.indexOf(first);
+  const secondIndex = shader.indexOf(second);
+  return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
+}
+
 function findLines(shader, pattern) {
   return shader
     .split("\n")
@@ -841,7 +847,20 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
         rebuild: isNegative ? !rebuildPresent : rebuildPresent,
       },
     ];
-  }));
+  }).concat([
+    ["sourceDeclarationBeforeStandard", {
+      source: orderedBefore(sourceShader, "attribute float instanceIndex", "#define STANDARD"),
+      rebuild: orderedBefore(rebuildShader, "attribute float instanceIndex", "#define STANDARD"),
+    }],
+    ["sourceUvOffsetBeforeRevealUniforms", {
+      source: orderedBefore(sourceShader, "uniform vec3 uUvOffset", "uniform float uReveal"),
+      rebuild: orderedBefore(rebuildShader, "uniform vec2 uUvOffset", "uniform float uReveal"),
+    }],
+    ["sourceVNoiseAfterViewPosition", {
+      source: orderedBefore(sourceShader, "varying vec3 vViewPosition", "varying float vNoise"),
+      rebuild: orderedBefore(rebuildShader, "varying vec3 vViewPosition", "varying float vNoise"),
+    }],
+  ]));
 }
 
 function analyzeWorkUvOffsetSourceEvidence(bundle, rebuildShader) {
@@ -918,7 +937,20 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
         rebuild: isNegative ? !rebuildPresent : rebuildPresent,
       },
     ];
-  }));
+  }).concat([
+    ["sourceDeclarationsBeforeStandard", {
+      source: orderedBefore(sourceShader, "varying float vInstanceIndex", "#define STANDARD"),
+      rebuild: orderedBefore(rebuildShader, "varying float vInstanceIndex", "#define STANDARD"),
+    }],
+    ["sourceHelpersAfterPars", {
+      source: orderedBefore(sourceShader, "#include <clipping_planes_pars_fragment>", "float random(vec2 st)"),
+      rebuild: orderedBefore(rebuildShader, "#include <clipping_planes_pars_fragment>", "float random(vec2 st)"),
+    }],
+    ["sourceHelpersBeforeMain", {
+      source: orderedBefore(sourceShader, "float vignette(vec2 coords", "void main()"),
+      rebuild: orderedBefore(rebuildShader, "float vignette(vec2 coords", "void main()"),
+    }],
+  ]));
 }
 
 function analyzeVaBridgeCompatibility(sourceShader, rebuildShader) {
@@ -1220,6 +1252,7 @@ try {
       displacementCoreChecks: entry.name === "N1-displacement-composite" ? analyzeDisplacementCore(sourceFragment, entry.fragmentShader) : null,
       mainFluidCoreChecks: analyzeMainFluidCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader, entry.name),
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
+      vaVertexCoreChecks: entry.name === "VA-work" ? analyzeVertexCore(sourceVertex, entry.vertexShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       vaBridgeCompatibility: entry.name === "VA-work" ? analyzeVaBridgeCompatibility(sourceFragment, entry.fragmentShader) : null,
       skyCompositeCoreChecks: entry.name === "z1-sky-composite" ? analyzeSkyCompositeCore(sourceFragment, entry.fragmentShader) : null,
@@ -1308,6 +1341,7 @@ try {
         standardBlurCoreChecks: analysis.standardBlurCoreChecks,
         lensflareCoreChecks: analysis.lensflareCoreChecks,
         igFxaaCoreChecks: analysis.igFxaaCoreChecks,
+        vaVertexCoreChecks: analysis.vaVertexCoreChecks,
         vaFragmentCoreChecks: analysis.vaFragmentCoreChecks,
         vaBridgeCompatibility: analysis.vaBridgeCompatibility,
         skyCompositeCoreChecks: analysis.skyCompositeCoreChecks,

@@ -439,7 +439,6 @@ varying vec3 vInstanceColor;
 varying vec3 vPosition;
 varying vec3 vOffset;
 varying vec2 vUv;
-varying float vNoise;
 
 uniform vec2 uCoords;
 uniform float uTime;
@@ -449,14 +448,18 @@ uniform sampler2D tMouseSim;
 uniform sampler2D tPerlin;
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
+uniform vec2 uUvOffset;
+uniform float uUvOffsetScale;
 uniform float uReveal;
 uniform float uRevealProject;
 uniform float uRevealSides;
 uniform float uRevealSpread;
 uniform float uRevealSpreadSides;
-uniform vec2 uUvOffset;
-uniform float uUvOffsetScale;
 `;
+
+const workBlockVertexSourceViewVaryings = `
+varying vec3 vViewPosition;
+varying float vNoise;`;
 
 const workBlockBeginVertexChunk = `
 #include <begin_vertex>
@@ -566,26 +569,27 @@ mvPosition = modelViewMatrix * mvPosition;
 gl_Position = projectionMatrix * mvPosition;
 `;
 
-const workBlockFragmentPars = `
-uniform vec3 uGridSize;
-uniform vec3 uGridOffset;
-uniform float uReveal;
-uniform float uRevealProject;
-uniform float uRevealSides;
-uniform float uTime;
-uniform float uMouseLightness;
-uniform float uMouseFactor;
-uniform sampler2D tMouseSim2;
-uniform sampler2D tDisplacement;
-uniform vec2 uCoords;
-
-varying float vInstanceAlpha;
+const workBlockFragmentDeclarationPars = `
 varying float vInstanceIndex;
+varying float vInstanceAlpha;
 varying vec3 vInstanceColor;
 varying vec3 vPosition;
 varying vec3 vOffset;
+uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
+uniform float uTime;
+uniform float uMouseFactor;
+uniform float uMouseLightness;
+uniform vec2 uCoords;
+uniform float uReveal;
+uniform float uRevealProject;
+uniform float uRevealSides;
 varying vec2 vUv;
+uniform sampler2D tMouseSim2;
+uniform sampler2D tDisplacement;
+`;
 
+const workBlockFragmentHelperPars = `
 float random(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
@@ -729,15 +733,15 @@ function patchWorkBlockShader(
   variant: "work" | "auxiliary" = "work",
 ) {
   Object.assign(shader.uniforms, uniforms);
-  shader.vertexShader = shader.vertexShader
-    .replace("#include <common>", `${workBlockVertexPars}\n#include <common>`)
+  shader.vertexShader = `${workBlockVertexPars}\n${shader.vertexShader}`
+    .replace("varying vec3 vViewPosition;", workBlockVertexSourceViewVaryings)
     .replace("#include <begin_vertex>", workBlockSourceScreenUvBeginVertexChunk)
     .replace("#include <worldpos_vertex>", workBlockSourceWorldPositionChunk);
   if (variant === "work") {
     shader.vertexShader = stripSourceHaR164VertexSurface(shader.vertexShader);
   }
-  shader.fragmentShader = shader.fragmentShader
-    .replace("#include <common>", `${workBlockFragmentPars}\n${variant === "auxiliary" ? auxiliaryBlockFragmentPars : ""}\n#include <common>`)
+  shader.fragmentShader = `${workBlockFragmentDeclarationPars}\n${variant === "auxiliary" ? `${auxiliaryBlockFragmentPars}\n` : ""}${shader.fragmentShader}`
+    .replace("#include <clipping_planes_pars_fragment>", `#include <clipping_planes_pars_fragment>\n\n${workBlockFragmentHelperPars}`)
     .replace("#include <tonemapping_fragment>", variant === "work" ? "// #include <tonemapping_fragment>" : "// source VA omits tonemapping_fragment")
     .replace("#include <colorspace_fragment>", "// source VA omits colorspace_fragment")
     .replace("#include <fog_fragment>", "// source VA omits fog_fragment")

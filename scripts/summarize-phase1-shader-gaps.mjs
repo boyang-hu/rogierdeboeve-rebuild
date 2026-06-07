@@ -62,6 +62,26 @@ function bridgeStatus(entry) {
   return `bridge compatibility: ${compatibility.classification || "needs-review"}`;
 }
 
+function relevantCoreChecks(entry) {
+  if (entry.vaVertexCoreChecks || entry.vaFragmentCoreChecks) {
+    return {
+      ...(entry.vaVertexCoreChecks || {}),
+      ...(entry.vaFragmentCoreChecks || {}),
+    };
+  }
+  return entry.compositeCoreChecks
+    || entry.environmentCoreChecks
+    || entry.floorCoreChecks
+    || entry.floorBlurCoreChecks
+    || entry.rgBlurCoreChecks
+    || entry.standardBlurCoreChecks
+    || entry.lensflareCoreChecks
+    || entry.igFxaaCoreChecks
+    || entry.thumbPlaneCoreChecks
+    || entry.displacementCoreChecks
+    || entry.mainFluidCoreChecks;
+}
+
 function classify(name, entry) {
   const fragment = entry.fragment || {};
   const vertex = entry.vertex || {};
@@ -77,18 +97,7 @@ function classify(name, entry) {
   const rebuildCommentedIncludeCount = rebuildCommentedIncludes.length;
   const sourceUniformCount = sourceUniforms.length;
   const rebuildUniformCount = rebuildUniforms.length;
-  const relevantChecks = entry.vaFragmentCoreChecks
-    || entry.compositeCoreChecks
-    || entry.environmentCoreChecks
-    || entry.floorCoreChecks
-    || entry.floorBlurCoreChecks
-    || entry.rgBlurCoreChecks
-    || entry.standardBlurCoreChecks
-    || entry.lensflareCoreChecks
-    || entry.igFxaaCoreChecks
-    || entry.thumbPlaneCoreChecks
-    || entry.displacementCoreChecks
-    || entry.mainFluidCoreChecks;
+  const relevantChecks = relevantCoreChecks(entry);
   const checkText = checksStatus(relevantChecks);
   const hasCheckMismatch = checkText !== "-" && checkText !== "source/rebuild anchors match";
   if (sourceIncludeCount || rebuildIncludeCount || sourceUniformCount || rebuildUniformCount || hasCheckMismatch) {
@@ -118,20 +127,7 @@ const rows = focusOrder
       fragmentOnlySourceUniforms: entry.fragment?.uniforms?.onlySource || entry.fragmentUniformsOnlySource || [],
       fragmentOnlyRebuildUniforms: entry.fragment?.uniforms?.onlyRebuild || entry.fragmentUniformsOnlyRebuild || [],
       bridge: bridgeStatus(entry),
-      coreChecks: checksStatus(
-        entry.vaFragmentCoreChecks
-          || entry.compositeCoreChecks
-          || entry.environmentCoreChecks
-          || entry.floorCoreChecks
-          || entry.floorBlurCoreChecks
-          || entry.rgBlurCoreChecks
-          || entry.standardBlurCoreChecks
-          || entry.lensflareCoreChecks
-          || entry.igFxaaCoreChecks
-          || entry.thumbPlaneCoreChecks
-          || entry.displacementCoreChecks
-          || entry.mainFluidCoreChecks,
-      ),
+      coreChecks: checksStatus(relevantCoreChecks(entry)),
     };
   });
 
