@@ -91,6 +91,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 15 | S1-76 | `VA/HA` vertex core audit tooling | Source `HA` and the rebuild work vertex shader both include the core screen-UV, local mouse, perlin-height, pre-perlin mouse scale, reveal mix, mouse-z, spread, and source-world divide anchors after normalization. The older text-level key check could misread formatting/spelling differences such as `fadeDiplacement`/`fadeDisplacement` and `.05`/`0.05` as a production mismatch. | `scripts/dump-va-shader.mjs` now reports `vertexAnalysis.coreChecks` separately from broader residual diffs. Current checks show every core anchor present in both source and rebuild. | Low | Treat the old `transformed *= 1.0 - mouse` key-check mismatch as a diagnostic false positive. Do not tune the vertex path without a narrower source-backed residual tied to visible output. |
 | 16 | S1-77 | `T1/x1/Lo` thumb render pass clearing | Source `Lo.update()` renders the thumb raw target and composite target with `setRenderTarget(...); render(...)` and does not explicitly call `renderer.clear()` between those passes. The rebuild still cleared both thumb targets every frame before rendering. | Production now removes the rebuild-only explicit clears from `renderThumbTargets()`, keeping source `Lo/x1` pass ownership for the spotlight map target. | Low-medium | Keep as source-correct after QA. Do not generalize this to `Lu/kA` work render-manager clears without porting the full source render-manager structure. |
 | 17 | S1-81 | Source `i1` reflection target/camera initialization | Source `i1` creates the raw reflection target with `depthBuffer:false`, clones read/write targets, then toggles only the raw target to `depthBuffer=true`; it also uses a default `PerspectiveCamera` for the virtual reflector camera before copying the real projection each update. | Production now follows that create-clone-toggle sequence, keeps read/write targets depthless, uses the default reflector camera surface, and exposes reflector target/camera state in `reflectionStateProbe()`. | Low-medium | Keep as source-correct. Phase 1 remains open because this is reflector ownership parity, not a visual closeout for the remaining mobile/fog-bed and projection residuals. |
+| 18 | S1-82 | Source `V1/H1/Lo` sky render pass clearing | Source sky scene uses `H1 extends Lo`; source `Lo.update()` renders `renderTargetA` and `renderTargetComposite` directly without explicit `renderer.clear()` calls. The rebuild still cleared both sky raw and sky composite targets every frame. | Production now removes those rebuild-only sky target clears and reports `skyPassClearing=source-Lo-no-explicit-clear` in the output probe. | Low-medium | Keep as source-correct. The sky target remains non-empty and project pages remain stable, but Phase 1 remains open for mobile/fog-bed and projection residuals. |
 
 ### Phase 1 Open Blocker Board
 
@@ -3613,3 +3614,36 @@ Band snapshot from `/tmp/rd-reflector-target-camera-full`:
 | Mobile source -> rebuild | `-0.0133` | `+0.0133` |
 
 Decision: keep the source reflector target/camera initialization. The new probe confirms raw target `depthBuffer=true`, read/write targets `depthBuffer=false`, floor reflection uses the final read texture, and the reflection camera reports `near=.1`. Phase 1 remains open because this is source-structure parity, not a visual closeout for the remaining mobile/fog-bed and spotlight/projection residuals.
+
+### S1-82 Source `V1/H1/Lo` Sky Render Pass No-Clear
+
+This batch aligned the sky render target pass with the source `V1/H1/Lo` render-manager lifecycle.
+
+Source evidence:
+
+- Source `V1.setRenderManager()` uses `new H1(...)`.
+- Source `H1` extends `Lo`, and source `Lo.update()` renders the sky scene into `renderTargetA`, then renders the composite screen into `renderTargetComposite`, without explicit `renderer.clear()` calls in either pass.
+- Source `nD.init()` then sets `skyScene.renderManager.renderTargetComposite.texture.wrapS = wrapT = RepeatWrapping` and assigns that texture to `workScene.env.material.customUniforms.tSky`.
+
+Runtime changes:
+
+- Removed the rebuild-only explicit clears before `skyRawTarget` and `skyCompositeTarget` renders.
+- Added `settings.updateOrder.skyPassClearing = "source-Lo-no-explicit-clear"` to the output probe so this render-pass ownership stays visible in future QA.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors; the probe reports the source no-clear marker and non-empty sky/environment targets: `/tmp/rd-sky-no-clear-output`.
+- Thumb spotlight probe passed and retained the home spotlight map and non-empty thumb targets: `/tmp/rd-sky-no-clear-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-sky-no-clear-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-sky-no-clear-full`.
+
+Band snapshot from `/tmp/rd-sky-no-clear-full`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0022` | `-0.0023` |
+| Mobile source -> rebuild | `-0.0126` | `+0.0163` |
+
+Decision: keep the source sky no-clear render pass. It removes a real `V1/H1/Lo` render-pass divergence without changing visual constants. Phase 1 remains open because the remaining mobile/fog-bed distribution and spotlight/thumb projection feel are not fully source-matched yet.

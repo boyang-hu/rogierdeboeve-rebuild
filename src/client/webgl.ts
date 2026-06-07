@@ -5206,10 +5206,8 @@ export class WebGLBackdrop {
   private renderSkyTarget(time: number) {
     this.skyCompositeMaterial.uniforms.uTime.value = sourceLowRes() ? 0 : time;
     this.renderer.setRenderTarget(this.skyRawTarget);
-    this.renderer.clear();
     this.renderer.render(this.skyScene, this.backgroundCamera);
     this.renderer.setRenderTarget(this.skyCompositeTarget);
-    this.renderer.clear();
     this.renderer.render(this.skyCompositeScene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
   }
@@ -5344,6 +5342,7 @@ export class WebGLBackdrop {
         updateOrder: {
           source: this.sourceUpdateOrder,
           postRenderFrame: this.sourcePostRenderFrame,
+          skyPassClearing: "source-Lo-no-explicit-clear",
         },
       },
       uniforms: {
