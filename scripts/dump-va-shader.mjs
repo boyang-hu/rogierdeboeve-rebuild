@@ -674,6 +674,7 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
     sourceVaryingPosition: ["varyingvec3vPosition"],
     sourceVaryingNoise: ["varyingfloatvNoise"],
     sourceVaryingOffset: ["varyingvec3vOffset"],
+    sourceBeginVertexInclude: ["#include<begin_vertex>"],
     assignsSourceUv: ["vUv=uv"],
     assignsSourceInstanceIndex: ["vInstanceIndex=instanceIndex"],
     assignsSourceInstanceColor: ["vInstanceColor=instanceColor"],

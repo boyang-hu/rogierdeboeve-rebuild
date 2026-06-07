@@ -424,19 +424,25 @@ void main() {
 `;
 
 const workBlockVertexPars = `
-attribute vec3 instanceOffset;
 attribute float instanceIndex;
 attribute float instanceAlpha;
+attribute vec3 instanceOffset;
 attribute vec3 instanceColor;
 
-varying float vInstanceAlpha;
 varying float vInstanceIndex;
+varying float vInstanceAlpha;
 varying vec3 vInstanceColor;
 varying vec3 vPosition;
 varying vec3 vOffset;
 varying vec2 vUv;
 varying float vNoise;
 
+uniform vec2 uCoords;
+uniform float uTime;
+uniform float uMouseFactor;
+uniform sampler2D tDisplacement;
+uniform sampler2D tMouseSim;
+uniform sampler2D tPerlin;
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
 uniform float uReveal;
@@ -444,18 +450,12 @@ uniform float uRevealProject;
 uniform float uRevealSides;
 uniform float uRevealSpread;
 uniform float uRevealSpreadSides;
-uniform float uMouseFactor;
-uniform vec2 uCoords;
 uniform vec2 uUvOffset;
 uniform float uUvOffsetScale;
-uniform sampler2D tMouseSim;
-uniform sampler2D tDisplacement;
-uniform sampler2D tPerlin;
-uniform float uTime;
 `;
 
 const workBlockBeginVertexChunk = `
-vec3 transformed = vec3(position);
+#include <begin_vertex>
 vUv = uv;
 vec2 newUv = uv;
 vec2 newOffset = instanceOffset.xy;
