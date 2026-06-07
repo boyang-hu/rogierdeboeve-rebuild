@@ -145,6 +145,8 @@ const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
 const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
+const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
+const sourceThumbT1 = extractAround(bundle, "class T1 extends Uu", 500, 1000);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 400, 1700);
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
@@ -816,6 +818,39 @@ const summary = {
         "c<-1.5||c>1.5?r.mesh.visible=!1:r.mesh.visible=!0",
       ]),
       excerpt: compact(sourceThumbW1.text),
+    },
+    thumbX1: sourceThumbX1 && {
+      index: sourceThumbX1.index,
+      checks: checks(sourceThumbX1.text, [
+        "class _1 extends mt",
+        "glslVersion:lt",
+        "toneMapped:!1",
+        "uniforms:{tScene:new I(null),uDarkenIntensity:new I(0),uDarkenColor:new I(new ye(0)),uSaturation:new I(1)}",
+        "vertexShader:tl",
+        "fragmentShader:v1",
+        "blending:ot",
+        "transparent:!0",
+        "depthWrite:!1",
+        "depthTest:!1",
+        "class x1 extends Lo",
+        "this.compositeMaterial=new _1",
+        "initSettings(){this.settings={renderToScreen:!1}}",
+      ]),
+      excerpt: compact(sourceThumbX1.text),
+    },
+    thumbT1: sourceThumbT1 && {
+      index: sourceThumbT1.index,
+      checks: checks(sourceThumbT1.text, [
+        "class T1 extends Uu",
+        "this.backgroundColor=new ye(\"#222222\").convertLinearToSRGB()",
+        "this.scene.background=this.backgroundColor",
+        "this.thumbs=this.add(w1)",
+        "this.scene.add(this.thumbs)",
+        "this.camera=new Kn(-1,1,1,-1,0,1)",
+        "this.renderManager=new x1(this.renderer,this.scene,this.camera)",
+        "this.renderManager.resize(t,t,1)",
+      ]),
+      excerpt: compact(sourceThumbT1.text),
     },
     skyV1: sourceSkyV1 && {
       index: sourceSkyV1.index,

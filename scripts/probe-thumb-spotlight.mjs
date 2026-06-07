@@ -192,11 +192,40 @@ async function runProbe() {
   if (probe.targets?.sizingMode !== "source-T1-renderManager-resize-height-height-dpr-1") {
     sourceShapeErrors.push(`thumbTargetSizing=${probe.targets?.sizingMode}`);
   }
+  if (probe.targets?.sourceTargetMode !== "source-Lo-depthless-clone-targets") {
+    sourceShapeErrors.push(`thumbTargetMode=${probe.targets?.sourceTargetMode}`);
+  }
   if (probe.targets?.thumb?.width !== 900 || probe.targets?.thumb?.height !== 900) {
     sourceShapeErrors.push(`thumbTarget=${probe.targets?.thumb?.width}x${probe.targets?.thumb?.height}`);
   }
   if (probe.targets?.composite?.width !== 900 || probe.targets?.composite?.height !== 900) {
     sourceShapeErrors.push(`thumbCompositeTarget=${probe.targets?.composite?.width}x${probe.targets?.composite?.height}`);
+  }
+  const composite = probe.thumbComposite || {};
+  if (composite.mode !== "source-x1-_1-raw-glsl3") sourceShapeErrors.push(`thumbCompositeMode=${composite.mode}`);
+  if (composite.glslVersion !== "300 es") sourceShapeErrors.push(`thumbCompositeGlsl=${composite.glslVersion}`);
+  if (composite.toneMapped !== false) sourceShapeErrors.push(`thumbCompositeToneMapped=${composite.toneMapped}`);
+  if (composite.transparent !== true) sourceShapeErrors.push(`thumbCompositeTransparent=${composite.transparent}`);
+  if (composite.blending !== 0) sourceShapeErrors.push(`thumbCompositeBlending=${composite.blending}`);
+  if (composite.depthWrite !== false) sourceShapeErrors.push(`thumbCompositeDepthWrite=${composite.depthWrite}`);
+  if (composite.depthTest !== false) sourceShapeErrors.push(`thumbCompositeDepthTest=${composite.depthTest}`);
+  if (composite.tSceneIsThumbTarget !== true) sourceShapeErrors.push(`thumbCompositeSceneTarget=${composite.tSceneIsThumbTarget}`);
+  for (const [label, target] of Object.entries({
+    thumb: probe.targets?.thumbState,
+    thumbComposite: probe.targets?.compositeState,
+  })) {
+    if (!target) {
+      sourceShapeErrors.push(`${label}TargetState=missing`);
+      continue;
+    }
+    if (target.depthBuffer !== false) sourceShapeErrors.push(`${label}Depth=${target.depthBuffer}`);
+    if (target.stencilBuffer !== false) sourceShapeErrors.push(`${label}Stencil=${target.stencilBuffer}`);
+    if (target.texture?.colorSpace !== "") sourceShapeErrors.push(`${label}ColorSpace=${target.texture?.colorSpace}`);
+    if (target.texture?.type !== 1009) sourceShapeErrors.push(`${label}Type=${target.texture?.type}`);
+    if (target.texture?.format !== 1023) sourceShapeErrors.push(`${label}Format=${target.texture?.format}`);
+    if (target.texture?.minFilter !== 1006) sourceShapeErrors.push(`${label}MinFilter=${target.texture?.minFilter}`);
+    if (target.texture?.magFilter !== 1006) sourceShapeErrors.push(`${label}MagFilter=${target.texture?.magFilter}`);
+    if (target.texture?.generateMipmaps !== false) sourceShapeErrors.push(`${label}Mipmaps=${target.texture?.generateMipmaps}`);
   }
   if (sourceShapeErrors.length) {
     throw new Error(`Thumb gallery source-shape mismatch: ${sourceShapeErrors.join(", ")}`);

@@ -5970,6 +5970,14 @@ export class WebGLBackdrop {
         };
       })(),
       thumbComposite: {
+        mode: "source-x1-_1-raw-glsl3",
+        glslVersion: this.thumbCompositeMaterial.glslVersion ?? null,
+        toneMapped: this.thumbCompositeMaterial.toneMapped,
+        transparent: this.thumbCompositeMaterial.transparent,
+        blending: this.thumbCompositeMaterial.blending,
+        depthWrite: this.thumbCompositeMaterial.depthWrite,
+        depthTest: this.thumbCompositeMaterial.depthTest,
+        tSceneIsThumbTarget: this.thumbCompositeMaterial.uniforms.tScene.value === this.thumbTarget.texture,
         darkness: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
         darkenIntensity: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
         darknessColor: [color.r, color.g, color.b],
@@ -5987,8 +5995,11 @@ export class WebGLBackdrop {
       },
       targets: {
         sizingMode: "source-T1-renderManager-resize-height-height-dpr-1",
+        sourceTargetMode: "source-Lo-depthless-clone-targets",
         thumb: renderTargetStats(this.renderer, this.thumbTarget),
         composite: renderTargetStats(this.renderer, this.thumbCompositeTarget),
+        thumbState: renderTargetProbe(this.renderer, this.thumbTarget),
+        compositeState: renderTargetProbe(this.renderer, this.thumbCompositeTarget),
       },
     };
   }
