@@ -589,25 +589,41 @@ const workBlockSourceTailFragmentChunk = `
 #include <opaque_fragment>
 
 float mixedAlpha = vInstanceAlpha;
-vec2 newUv = vUv / uGridSize.xy + vOffset.xy;
-vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
-float simLight = texture2D(tMouseSim2, screenUv).r;
-float mouseF = 1.0 - simLight;
-gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), 1.0 - uMouseLightness);
+vec2 newUv = vUv;
+vec2 newOffset = vOffset.xy;
+
+newUv.x /= uGridSize.x;
+newUv.y /= uGridSize.y;
+
+newUv.x += newOffset.x;
+newUv.y += newOffset.y;
 
 vec2 gridUv = vec2(floor(newUv.x * uGridSize.x), floor(newUv.y * uGridSize.y));
 vec2 gridUv2 = vec2(floor(newUv.y * uGridSize.y), floor(newUv.x * uGridSize.y));
 float alpha = mix(random(gridUv * vInstanceAlpha), random(gridUv), 1.0);
 float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.0);
-mixedAlpha = alpha * alpha2 * vInstanceAlpha;
+vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
+vec4 mouseSim = texture2D(tMouseSim2, screenUv);
 vec4 displacement = texture2D(tDisplacement, newUv);
 float revealCombined = uReveal * uRevealProject;
-float revealRadius = 2.0 * pow(revealCombined, 0.25);
-float centerAlpha = vignette(newUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-float revealAlpha = vignette(newUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-if (screenUv.y > 0.1) mixedAlpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
-mixedAlpha += centerAlpha * 0.1;
-mixedAlpha -= 1.0 - revealAlpha;
+float mouseF = 1.0 - mouseSim.r;
+
+mixedAlpha = ((alpha * alpha2) * vInstanceAlpha);
+if (screenUv.y > 0.1) mixedAlpha += clamp(mouseSim.r * (uMouseFactor * 0.5), 0.0, 1.0);
+gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), (1.0 - uMouseLightness));
+
+float vignin = 0.01;
+float vignout = 0.2;
+float vignfade = 6.0;
+float fstop = 1.0;
+
+vec2 center = vec2(0.5, 0.5);
+
+float v = vignette(newUv.xy, center.xy, 0.01, 0.2, 6.0, 1.0);
+float v2 = vignette(newUv.xy, center.xy, 0.01, 2.0 * pow(revealCombined, 0.25), 6.0, 1.0);
+
+mixedAlpha += v * 0.1;
+mixedAlpha -= 1.0 - v2;
 mixedAlpha *= uRevealSides;
 
 gl_FragColor.a = mixedAlpha;
