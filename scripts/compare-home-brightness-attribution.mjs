@@ -19,6 +19,15 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-home-brightnes
 const port = Number(process.env.CDP_PORT || 9288);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.CAPTURE_WAIT || 5200);
+const viewportName = process.env.VIEWPORT || "desktop";
+const viewports = {
+  desktop: { width: 1440, height: 900, mobile: false },
+  mobile: { width: 390, height: 844, mobile: true },
+};
+const viewport = viewports[viewportName];
+if (!viewport) {
+  throw new Error(`Unknown VIEWPORT="${viewportName}". Use desktop or mobile.`);
+}
 const defaultVariants = [
   { label: "default", query: "" },
   { label: "spotlight-map-off", query: "&debug-spotlight-map=off" },
@@ -126,12 +135,12 @@ async function captureVariant({ label, query }) {
   await send(ws, "Runtime.enable");
   await send(ws, "Network.enable");
   await send(ws, "Emulation.setDeviceMetricsOverride", {
-    width: 1440,
-    height: 900,
+    width: viewport.width,
+    height: viewport.height,
     deviceScaleFactor: 1,
-    mobile: false,
-    screenWidth: 1440,
-    screenHeight: 900,
+    mobile: viewport.mobile,
+    screenWidth: viewport.width,
+    screenHeight: viewport.height,
   });
   await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&debug-output-probe=1${query}` });
   await wait(waitAfter);
@@ -156,6 +165,7 @@ async function captureVariant({ label, query }) {
   ws.close();
   return {
     label,
+    viewport: viewportName,
     query,
     screenshot: screenshotFile,
     ...parsed,

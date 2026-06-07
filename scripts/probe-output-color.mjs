@@ -172,7 +172,10 @@ async function runProbe() {
   if (Math.abs((light.intensity ?? 0) - 220) > 0.001) spotlightErrors.push("intensity");
   if (Math.abs((light.angle ?? 0) - Math.PI / 4) > 0.0001) spotlightErrors.push("angle");
   if (Math.abs((light.penumbra ?? 0) - 0.95) > 0.0001) spotlightErrors.push("penumbra");
-  if (JSON.stringify(light.position) !== JSON.stringify([0, 0, 3.7])) spotlightErrors.push(`position=${JSON.stringify(light.position)}`);
+  const expectedMobile = viewport.width < 800;
+  const expectedSpotlightY = expectedMobile ? 0.3 : 0;
+  const expectedSpotlightPosition = [0, expectedSpotlightY, 3.7];
+  if (JSON.stringify(light.position) !== JSON.stringify(expectedSpotlightPosition)) spotlightErrors.push(`position=${JSON.stringify(light.position)}`);
   if (JSON.stringify(light.target) !== JSON.stringify([0, 0, -8])) spotlightErrors.push(`target=${JSON.stringify(light.target)}`);
   if (!Array.isArray(light.shadowMatrix) || light.shadowMatrix.length !== 16) spotlightErrors.push("shadowMatrix");
   if (spotlightErrors.length) {
@@ -180,7 +183,6 @@ async function runProbe() {
   }
   const camera = parsed.probe.camera || {};
   const resizeErrors = [];
-  const expectedMobile = viewport.width < 800;
   const expectedOriginZ = expectedMobile ? 5 : 5.5;
   const expectedSceneWrapY = expectedMobile ? 0.3 : 0;
   if (camera.resizeMode !== "source-p1-mobile-origin-sceneWrap") resizeErrors.push("resizeMode");
