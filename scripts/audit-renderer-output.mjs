@@ -135,7 +135,7 @@ const sourceQT = extractAround(bundle, "class qT extends", 320, 1500);
 const sourceJT = extractAround(bundle, "class jT extends", 320, 1100);
 const sourceKT = extractAround(bundle, "class KT extends", 320, 1200);
 const sourcePressureJT = extractAround(bundle, "class JT extends", 320, 1100);
-const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
+const sourceMainI1 = extractAround(bundle, "class I1", 200, 9600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 500, 900);
@@ -318,9 +318,14 @@ const summary = {
         "this.renderTargetBright=this.renderTargetA.clone()",
         "this.renderTargetComposite=this.renderTargetA.clone()",
         "this.renderTargetA.depthBuffer=!0",
+        "this.screen=new at(this.screenGeometry)",
+        "this.screen.frustumCulled=!1",
         "this.settings.renderToScreen&&(this.renderer.setPixelRatio(n),this.renderer.setSize(e,t))",
         "e=Fa(e)/4,t=Fa(t)/4",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
+        "this.screen.material=this.luminosityMaterial",
+        "this.screen.material=this.BloomMaterial",
+        "this.screen.material=this.compositeMaterial",
         "o.setRenderTarget(u),o.render(this.screen,this.screenCamera)",
         "o.setRenderTarget(c),o.render(a,r)",
         "o.setRenderTarget(f),o.render(this.screen,this.screenCamera)",
@@ -330,6 +335,22 @@ const summary = {
         "o.setRenderTarget(d[0]),o.render(this.screen,this.screenCamera)",
         "o.setRenderTarget(h),o.render(this.screen,this.screenCamera)",
       ]),
+      screenOwnership: {
+        sourceSingleScreenMesh: sourceLu.text.includes("this.screen=new at(this.screenGeometry)") && sourceLu.text.includes("this.screen.frustumCulled=!1"),
+        sourceMaterialSwap: [
+          "this.screen.material=this.hBlurMaterial",
+          "this.screen.material=this.vBlurMaterial",
+          "this.screen.material=this.luminosityMaterial",
+          "this.screen.material=this.BloomMaterial",
+          "this.screen.material=this.compositeMaterial",
+        ].every((needle) => sourceLu.text.includes(needle)),
+        sourceCompositeRender: sourceLu.text.includes("o.setRenderTarget(h),o.render(this.screen,this.screenCamera)"),
+        rebuildDedicatedPassScenes: [
+          "this.compositeScene.add(makeFullscreenTriangle(this.compositeMaterial))",
+          "this.bloomCompositeScene.add(makeFullscreenTriangle(this.bloomCompositeMaterial))",
+          "this.renderer.render(this.compositeScene, this.backgroundCamera)",
+        ].every((needle) => rebuildWebgl.includes(needle)),
+      },
       excerpt: compact(sourceLu.text),
     },
     Lo: sourceLo && {
@@ -577,17 +598,36 @@ const summary = {
       index: sourceMainI1.index,
       checks: checks(sourceMainI1.text, [
         "this.settings={renderToScreen:!0",
+        "this.screen=new at(this.screenGeometry)",
+        "this.screen.frustumCulled=!1",
         "this.renderTargetLensflare=this.renderTargetA.clone()",
         "this.settings.lensflare.enabled&&this.lensflareMaterial.uniforms.uResolution.value.set(e/8,t/8)",
         "e=Fa(e)/2,t=Fa(t)/2",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
         "this.compositeMaterial.uniforms.tLensflare.value=v.texture",
+        "this.screen.material=this.lensflareMaterial",
+        "this.screen.material=this.compositeMaterial",
         "r.setRenderTarget(a),r.render(o,i)",
         "r.setRenderTarget(h),r.render(this.screen,this.screenCamera)",
         "r.setRenderTarget(f),r.render(this.screen,this.screenCamera)",
         "r.setRenderTarget(g),r.render(this.screen,this.screenCamera)",
         "r.setRenderTarget(l),r.render(this.screen,this.screenCamera)",
       ]),
+      screenOwnership: {
+        sourceSingleScreenMesh: sourceMainI1.text.includes("this.screen=new at(this.screenGeometry)") && sourceMainI1.text.includes("this.screen.frustumCulled=!1"),
+        sourceMaterialSwap: [
+          "this.screen.material=this.lensflareMaterial",
+          "this.screen.material=this.hBlurMaterial",
+          "this.screen.material=this.vBlurMaterial",
+          "this.screen.material=this.compositeMaterial",
+        ].every((needle) => sourceMainI1.text.includes(needle)),
+        sourceRenderToScreen: sourceMainI1.text.includes("r.setRenderTarget(null),r.render(this.screen,this.screenCamera)"),
+        rebuildDedicatedPassScenes: [
+          "this.preCompositeScene.add(makeFullscreenTriangle(this.preCompositeMaterial))",
+          "this.mainCompositeScene.add(makeFullscreenTriangle(this.mainCompositeMaterial))",
+          "this.renderer.render(this.mainCompositeScene, this.backgroundCamera)",
+        ].every((needle) => rebuildWebgl.includes(needle)),
+      },
       excerpt: compact(sourceMainI1.text),
     },
     renderer: sourceRenderer && {

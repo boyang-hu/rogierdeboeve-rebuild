@@ -185,6 +185,20 @@ async function runProbe() {
   if (bloomClearingErrors.length) {
     throw new Error(`Render-manager clearing source-shape mismatch: ${bloomClearingErrors.join(", ")}`);
   }
+  const workOwnership = parsed.probe.settings?.work?.renderManagerOwnership;
+  const mainOwnership = parsed.probe.settings?.main?.renderManagerOwnership;
+  const ownershipErrors = [];
+  if (workOwnership?.source !== "Lu-single-screen-mesh-material-swap") ownershipErrors.push("workSourceOwnership");
+  if (workOwnership?.bridge !== "rebuild-dedicated-pass-scenes") ownershipErrors.push("workBridgeOwnership");
+  if (workOwnership?.compositeScreenMode !== "rebuild-dedicated-composite-scene") ownershipErrors.push("workCompositeScreenMode");
+  if (workOwnership?.productionOutputChanged !== false) ownershipErrors.push("workProductionOutputChanged");
+  if (mainOwnership?.source !== "I1-single-screen-mesh-material-swap") ownershipErrors.push("mainSourceOwnership");
+  if (mainOwnership?.bridge !== "rebuild-dedicated-pass-scenes") ownershipErrors.push("mainBridgeOwnership");
+  if (mainOwnership?.finalScreenMode !== "rebuild-dedicated-main-composite-scene") ownershipErrors.push("mainFinalScreenMode");
+  if (mainOwnership?.productionOutputChanged !== false) ownershipErrors.push("mainProductionOutputChanged");
+  if (ownershipErrors.length) {
+    throw new Error(`Render-manager ownership attribution mismatch: ${ownershipErrors.join(", ")}`);
+  }
   const sizingErrors = [];
   if (workRenderSizing?.bloomStartMode !== "source-Lu-Fa-render-size-div-4") sizingErrors.push("workBloomStartMode");
   if (mainRenderSizing?.bloomStartMode !== "source-I1-Fa-render-size-div-2") sizingErrors.push("mainBloomStartMode");

@@ -5990,6 +5990,13 @@ export class WebGLBackdrop {
             blurPass: "source-Lu-no-explicit-clear",
             compositePass: "source-Lu-no-explicit-clear",
           },
+          renderManagerOwnership: {
+            source: "Lu-single-screen-mesh-material-swap",
+            bridge: "rebuild-dedicated-pass-scenes",
+            compositeScreenMode: "rebuild-dedicated-composite-scene",
+            sourceCompositeRender: "o.setRenderTarget(h),o.render(this.screen,this.screenCamera)",
+            productionOutputChanged: false,
+          },
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),
             emissive: activeWorkItem.material.emissive.toArray(),
@@ -6023,6 +6030,13 @@ export class WebGLBackdrop {
             lensflarePass: "source-I1-lensflare-explicit-clear",
             blurPass: "source-I1-no-explicit-clear",
             fxaaPass: "source-I1-no-explicit-clear",
+          },
+          renderManagerOwnership: {
+            source: "I1-single-screen-mesh-material-swap",
+            bridge: "rebuild-dedicated-pass-scenes",
+            finalScreenMode: "rebuild-dedicated-main-composite-scene",
+            sourceFinalRender: "settings.renderToScreen -> setRenderTarget(null), render(this.screen,this.screenCamera)",
+            productionOutputChanged: false,
           },
         },
         updateOrder: {
