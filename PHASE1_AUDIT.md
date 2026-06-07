@@ -115,6 +115,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 38 | S1-111 | Source `h1/V1/Du` environment geometry and sky target QA surface | Source `h1` creates `new Du(300,10)` with `speed=5e-5`; `Du` is an `IcosahedronGeometry` with radius/detail parameters. Source `V1` sizes its sky render targets as a square `height*.75`, and low-res mode freezes sky `uTime` at `0`. | Production rendering is unchanged, but output probes now report and assert the source `Du` geometry metadata, sky target sizing mode, expected target size, and source low-res/live sky time mode. Renderer audit now extracts and checks `h1`, `V1`, and `Du` anchors. | Low | Keep as source-correct environment/sky QA hardening. This prevents future fog-bed work from drifting geometry or sky target ownership, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 39 | S1-112 | Source `z1` sky composite raw GLSL3 surface | Source `z1` extends the raw material surface with `glslVersion:lt`, `fragmentShader:B1`, `blending:ot`, `transparent:true`, `depthWrite:false`, and `depthTest:false`. The rebuild still used a regular `ShaderMaterial` bridge for the sky composite. | Production now uses `RawShaderMaterial`/`GLSL3` for the sky composite, converts the shader to the source-style `in/out` and `texture(...)` surface, dumps `z1-sky-composite` against source `B1/tl`, and hard-fails output probes on material-mode or GLSL version drift. | Low-medium | Keep as source-correct sky render-manager surface alignment. This narrows the `V1/H1/z1` bridge, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 40 | S1-113 | Source `OA/C1` composite raw GLSL3 surface | Source `OA` and `C1` both extend the raw material surface with `glslVersion:lt`; `OA` uses `fragmentShader:CA`, and `C1` uses `fragmentShader:A1`. The rebuild formulas were source-shaped but still ran through regular `ShaderMaterial` bridge surfaces. | Production now uses `RawShaderMaterial`/`GLSL3` for default work `OA` and pre-composite `C1/A1`, converts both shader surfaces to `in/out`, `texture(...)`, and `FragColor`, dumps them with the raw fullscreen vertex, and hard-fails output probes on material-mode or GLSL-version drift. Debug composite keeps the old bridge path for query-only diagnostics. | Low-medium | Keep as source-correct core composite surface alignment. This narrows the most central `OA/C1` bridge without tuning color constants, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
+| 41 | S1-114 | Source `lA/W1/sg/rg/cg/ig` helper pass raw GLSL3 surface | Source main/media/helper pass materials extend the raw material surface with `glslVersion:lt`: `lA` uses `aA`, `W1` uses `G1`, `sg` uses `NT`, `rg` uses `kT`, `cg` uses `nA`, and `ig` uses `UT`; source `sg/NT` binds its input as `tMap`. | Production now uses `RawShaderMaterial`/`GLSL3` and source fullscreen vertex surface for main composite, media composite, luminosity, bloom blur, bloom composite, and FXAA helper passes. Shader surfaces use `in/out`, `texture(...)`, and `FragColor`; `sg` now uses source `tMap`; output probes hard-fail on material mode or GLSL drift; shader dump compares all helper fragments/vertices against source. | Low-medium | Keep as source-correct helper render-manager surface alignment. This removes another bridge layer without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -836,6 +837,43 @@ Verification:
 | Mobile center-band delta | `-0.0132` against source |
 
 Decision: keep this source-correct `OA/C1` composite surface alignment. It removes a concrete bridge mismatch in the most central composite materials, but it does not close Phase 1; the remaining blockers are still mobile fog-bed distribution, strict projection/material feel, and transfer interpretation.
+
+### S1-114 Source Helper/Main/Media Pass Raw GLSL3 Surface
+
+This batch stayed on the render-manager helper pass chain and aligned `lA/W1/sg/rg/cg/ig` material surfaces with the source raw GLSL3 path. It did not change visual constants.
+
+Source/runtime evidence:
+
+- Source `lA` extends `mt` with `glslVersion:lt`, `fragmentShader:aA`, `blending:ot`, `depthWrite:false`, and `depthTest:false`.
+- Source `W1` extends `mt` with `glslVersion:lt`, `fragmentShader:G1`, `transparent:true`, `depthWrite:false`, and `depthTest:false`.
+- Source `sg`, `rg`, `cg`, and `ig` extend `mt` with `glslVersion:lt` and fragments `NT`, `kT`, `nA`, and `UT`.
+- Source `sg/NT` binds the luminosity input as `tMap`, not `tScene`.
+
+Production now exposes and asserts:
+
+- main composite, media composite, luminosity, bloom blur, bloom composite, and FXAA helper passes use `RawShaderMaterial` with `GLSL3`,
+- the affected helper fragments use GLSL3-style `in/out`, `texture(...)`, and `FragColor`,
+- luminosity now uses source `tMap` naming for both construction and runtime updates,
+- shader dump includes `sg-luminosity`, `rg-bloom-blur`, `cg-bloom-composite`, and `ig-fxaa` against source fragment/vertex shaders,
+- output probe reports and hard-fails on helper material mode or GLSL version drift,
+- renderer audit now records source `lA/W1/sg/rg/cg/ig` raw-surface anchors.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `lA/W1/sg/rg/cg/ig` raw GLSL3 anchors present |
+| Output probe | Passed after rebuild server restart; helper material mode / GLSL3 assertions passed |
+| Shader dump | Passed with no shader/WebGL console errors; `sg` uniform residual cleared |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `+0.0005` against source |
+| Mobile center-band delta | `-0.0123` against source |
+
+Decision: keep this source-correct helper/main/media pass surface alignment. It removes another concrete bridge mismatch in the render-manager graph, but it does not close Phase 1; the remaining blockers are still mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

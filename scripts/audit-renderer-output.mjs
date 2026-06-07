@@ -121,6 +121,12 @@ const sourceBlendMultiply = extractTemplate(bundle, "hg", "`,dg=");
 const sourceLu = extractAround(bundle, "class Lu", 200, 7200);
 const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
+const sourceLA = extractAround(bundle, "class lA extends", 320, 1100);
+const sourceW1 = extractAround(bundle, "class W1 extends", 320, 1100);
+const sourceSg = extractAround(bundle, "class sg extends", 320, 900);
+const sourceRg = extractAround(bundle, "class rg extends", 320, 1100);
+const sourceCg = extractAround(bundle, "class cg extends", 320, 1000);
+const sourceIg = extractAround(bundle, "class ig extends", 320, 900);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
@@ -349,6 +355,80 @@ const summary = {
         "depthTest:!1",
       ]),
       excerpt: compact(sourceC1.text),
+    },
+    helperMaterialSurfaces: {
+      lA: sourceLA && {
+        index: sourceLA.index,
+        checks: checks(sourceLA.text, [
+          "class lA extends mt",
+          "glslVersion:lt",
+          "fragmentShader:aA",
+          "blending:ot",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        excerpt: compact(sourceLA.text),
+      },
+      W1: sourceW1 && {
+        index: sourceW1.index,
+        checks: checks(sourceW1.text, [
+          "class W1 extends mt",
+          "glslVersion:lt",
+          "fragmentShader:G1",
+          "transparent:!0",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        excerpt: compact(sourceW1.text),
+      },
+      sg: sourceSg && {
+        index: sourceSg.index,
+        checks: checks(sourceSg.text, [
+          "class sg extends mt",
+          "glslVersion:lt",
+          "fragmentShader:NT",
+          "blending:ot",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        excerpt: compact(sourceSg.text),
+      },
+      rg: sourceRg && {
+        index: sourceRg.index,
+        checks: checks(sourceRg.text, [
+          "class rg extends mt",
+          "glslVersion:lt",
+          "fragmentShader:kT",
+          "blending:ot",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        excerpt: compact(sourceRg.text),
+      },
+      cg: sourceCg && {
+        index: sourceCg.index,
+        checks: checks(sourceCg.text, [
+          "class cg extends mt",
+          "glslVersion:lt",
+          "fragmentShader:nA",
+          "blending:ot",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        excerpt: compact(sourceCg.text),
+      },
+      ig: sourceIg && {
+        index: sourceIg.index,
+        checks: checks(sourceIg.text, [
+          "class ig extends mt",
+          "glslVersion:lt",
+          "fragmentShader:UT",
+          "blending:ot",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        excerpt: compact(sourceIg.text),
+      },
     },
     mainI1: sourceMainI1 && {
       index: sourceMainI1.index,

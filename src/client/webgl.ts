@@ -1232,20 +1232,21 @@ uniform bool boolFluid;
 uniform bool boolLuminosity;
 uniform bool boolFxaa;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   vec2 offset = vec2(cos(angle), sin(angle)) * amount;
-  float r = texture2D(tex, uv + offset).r;
-  float g = texture2D(tex, uv).g;
-  float b = texture2D(tex, uv - offset).b;
-  float a = texture2D(tex, uv).a;
+  float r = texture(tex, uv + offset).r;
+  float g = texture(tex, uv).g;
+  float b = texture(tex, uv - offset).b;
+  float a = texture(tex, uv).a;
   return vec4(r, g, b, a);
 }
 
 void main() {
   vec2 uv = vUv;
-  vec4 fluid = texture2D(tFluid, uv);
+  vec4 fluid = texture(tFluid, uv);
   uv = uv + fluid.rg * -0.15;
   vec4 mixed = rgbshift(tScene, uv, -1.0, 0.001);
   if (boolBloom) {
@@ -1257,25 +1258,26 @@ void main() {
     mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;
   }
   mixed.rgb += length(fluid.xy) * 0.015;
-  gl_FragColor = vec4(mixed.rgb, 1.0);
+  FragColor = vec4(mixed.rgb, 1.0);
 }
 `;
 
 const homeLuminosityFragment = `
 precision highp float;
 
-uniform sampler2D tScene;
+uniform sampler2D tMap;
 uniform float uThreshold;
 uniform float uSmoothing;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
-  vec4 texel = texture2D(tScene, vUv);
+  vec4 texel = texture(tMap, vUv);
   vec3 luma = vec3(0.299, 0.587, 0.114);
   float value = dot(texel.xyz, luma);
   float alpha = smoothstep(uThreshold, uThreshold + uSmoothing, value);
-  gl_FragColor = mix(vec4(0.0), texel, alpha);
+  FragColor = mix(vec4(0.0), texel, alpha);
 }
 `;
 
@@ -1288,7 +1290,8 @@ uniform vec2 uDirection;
 uniform int uKernelRadius;
 uniform float uSigma;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 float gaussianPdf(float x, float sigma) {
   return 0.39894 * exp(-0.5 * x * x / (sigma * sigma)) / sigma;
@@ -1297,14 +1300,14 @@ float gaussianPdf(float x, float sigma) {
 vec4 gaussianBlur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
   vec2 invSize = 1.0 / resolution;
   float weightSum = gaussianPdf(0.0, uSigma);
-  vec3 diffuseSum = texture2D(image, uv).rgb * weightSum;
+  vec3 diffuseSum = texture(image, uv).rgb * weightSum;
   for (int i = 1; i < 12; i++) {
     if (i >= uKernelRadius) break;
     float x = float(i);
     float weight = gaussianPdf(x, uSigma);
     vec2 uvOffset = direction * invSize * x;
-    vec3 sample1 = texture2D(image, uv + uvOffset).rgb;
-    vec3 sample2 = texture2D(image, uv - uvOffset).rgb;
+    vec3 sample1 = texture(image, uv + uvOffset).rgb;
+    vec3 sample2 = texture(image, uv - uvOffset).rgb;
     diffuseSum += (sample1 + sample2) * weight;
     weightSum += 2.0 * weight;
   }
@@ -1312,7 +1315,7 @@ vec4 gaussianBlur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
 }
 
 void main() {
-  gl_FragColor = gaussianBlur(tMap, vUv, uResolution, uDirection);
+  FragColor = gaussianBlur(tMap, vUv, uResolution, uDirection);
 }
 `;
 
@@ -1381,15 +1384,16 @@ uniform float uFactor3;
 uniform float uFactor4;
 uniform float uFactor5;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
-  vec3 color = texture2D(tBloom1, vUv).rgb * uFactor1;
-  color += texture2D(tBloom2, vUv).rgb * uFactor2;
-  color += texture2D(tBloom3, vUv).rgb * uFactor3;
-  color += texture2D(tBloom4, vUv).rgb * uFactor4;
-  color += texture2D(tBloom5, vUv).rgb * uFactor5;
-  gl_FragColor = vec4(color, 1.0);
+  vec3 color = texture(tBloom1, vUv).rgb * uFactor1;
+  color += texture(tBloom2, vUv).rgb * uFactor2;
+  color += texture(tBloom3, vUv).rgb * uFactor3;
+  color += texture(tBloom4, vUv).rgb * uFactor4;
+  color += texture(tBloom5, vUv).rgb * uFactor5;
+  FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -1399,15 +1403,16 @@ precision highp float;
 uniform sampler2D tMap;
 uniform vec2 uResolution;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
   vec2 inverseVP = 1.0 / max(uResolution, vec2(1.0));
-  vec3 rgbNW = texture2D(tMap, vUv + vec2(-1.0, -1.0) * inverseVP).rgb;
-  vec3 rgbNE = texture2D(tMap, vUv + vec2(1.0, -1.0) * inverseVP).rgb;
-  vec3 rgbSW = texture2D(tMap, vUv + vec2(-1.0, 1.0) * inverseVP).rgb;
-  vec3 rgbSE = texture2D(tMap, vUv + vec2(1.0, 1.0) * inverseVP).rgb;
-  vec3 rgbM = texture2D(tMap, vUv).rgb;
+  vec3 rgbNW = texture(tMap, vUv + vec2(-1.0, -1.0) * inverseVP).rgb;
+  vec3 rgbNE = texture(tMap, vUv + vec2(1.0, -1.0) * inverseVP).rgb;
+  vec3 rgbSW = texture(tMap, vUv + vec2(-1.0, 1.0) * inverseVP).rgb;
+  vec3 rgbSE = texture(tMap, vUv + vec2(1.0, 1.0) * inverseVP).rgb;
+  vec3 rgbM = texture(tMap, vUv).rgb;
   vec3 luma = vec3(0.299, 0.587, 0.114);
   float lumaNW = dot(rgbNW, luma);
   float lumaNE = dot(rgbNE, luma);
@@ -1423,16 +1428,16 @@ void main() {
   float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
   dir = clamp(dir * rcpDirMin, vec2(-8.0), vec2(8.0)) * inverseVP;
   vec3 rgbA = 0.5 * (
-    texture2D(tMap, vUv + dir * (1.0 / 3.0 - 0.5)).rgb +
-    texture2D(tMap, vUv + dir * (2.0 / 3.0 - 0.5)).rgb
+    texture(tMap, vUv + dir * (1.0 / 3.0 - 0.5)).rgb +
+    texture(tMap, vUv + dir * (2.0 / 3.0 - 0.5)).rgb
   );
   vec3 rgbB = rgbA * 0.5 + 0.25 * (
-    texture2D(tMap, vUv + dir * -0.5).rgb +
-    texture2D(tMap, vUv + dir * 0.5).rgb
+    texture(tMap, vUv + dir * -0.5).rgb +
+    texture(tMap, vUv + dir * 0.5).rgb
   );
   float lumaB = dot(rgbB, luma);
   vec3 color = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
-  gl_FragColor = vec4(color, 1.0);
+  FragColor = vec4(color, 1.0);
 }
 `;
 
@@ -1629,11 +1634,12 @@ uniform bool boolFluid;
 uniform bool boolLuminosity;
 uniform bool boolFxaa;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
-  vec4 color = texture2D(tScene, vUv);
-  gl_FragColor = color;
+  vec4 color = texture(tScene, vUv);
+  FragColor = color;
 
   #include <tonemapping_fragment>
 }
@@ -3687,8 +3693,9 @@ export class WebGLBackdrop {
 
   private createMainCompositeMaterial() {
     const settings = this.sourceMainRenderSettings;
-    dumpShader("Lu-main-composite", backgroundVertex, mainCompositeFragment);
-    return new ShaderMaterial({
+    dumpShader("Lu-main-composite", sourceFullscreenVertex, mainCompositeFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       toneMapped: false,
       blending: NoBlending,
       depthWrite: false,
@@ -3703,14 +3710,15 @@ export class WebGLBackdrop {
         boolLuminosity: { value: settings.luminosity.enabled },
         boolFxaa: { value: settings.fxaa.enabled },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader: mainCompositeFragment,
     });
   }
 
   private createMediaCompositeMaterial() {
-    dumpShader("j1-media-composite", backgroundVertex, mediaCompositeFragment);
-    return new ShaderMaterial({
+    dumpShader("j1-media-composite", sourceFullscreenVertex, mediaCompositeFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       toneMapped: false,
       transparent: true,
       blending: NormalBlending,
@@ -3727,29 +3735,33 @@ export class WebGLBackdrop {
         boolLuminosity: { value: false },
         boolFxaa: { value: false },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader: mediaCompositeFragment,
     });
   }
 
   private createLuminosityMaterial() {
     const { luminosity } = this.renderSettings;
-    return new ShaderMaterial({
+    dumpShader("sg-luminosity", sourceFullscreenVertex, homeLuminosityFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tScene: { value: this.compositeTarget.texture },
+        tMap: { value: this.compositeTarget.texture },
         uThreshold: { value: luminosity.threshold },
         uSmoothing: { value: luminosity.smoothing },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader: homeLuminosityFragment,
     });
   }
 
   private createBloomBlurMaterial() {
-    return new ShaderMaterial({
+    dumpShader("rg-bloom-blur", sourceFullscreenVertex, homeBloomBlurFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
@@ -3760,14 +3772,16 @@ export class WebGLBackdrop {
         uKernelRadius: { value: 3 },
         uSigma: { value: 3 },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader: homeBloomBlurFragment,
     });
   }
 
   private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[], settings = this.renderSettings) {
     const factors = sourceBloomFactors(settings.bloom.strength, settings.bloom.radius);
-    return new ShaderMaterial({
+    dumpShader("cg-bloom-composite", sourceFullscreenVertex, homeBloomCompositeFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
@@ -3783,7 +3797,7 @@ export class WebGLBackdrop {
         uFactor4: { value: factors[3] },
         uFactor5: { value: factors[4] },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader: homeBloomCompositeFragment,
     });
   }
@@ -3806,7 +3820,9 @@ export class WebGLBackdrop {
   }
 
   private createFxaaMaterial() {
-    return new ShaderMaterial({
+    dumpShader("ig-fxaa", sourceFullscreenVertex, homeFxaaFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
@@ -3814,7 +3830,7 @@ export class WebGLBackdrop {
         tMap: { value: this.compositeTarget.texture },
         uResolution: { value: new Vector2(1, 1) },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: sourceFullscreenVertex,
       fragmentShader: homeFxaaFragment,
     });
   }
@@ -5594,16 +5610,55 @@ export class WebGLBackdrop {
         },
         mainComposite: {
           blending: this.mainCompositeMaterial.blending,
+          materialMode: "source-lA-raw-glsl3",
+          glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
         },
         passMaterials: {
-          luminosity: this.luminosityMaterial.blending,
-          bloomBlur: this.bloomBlurMaterial.blending,
-          bloomComposite: this.bloomCompositeMaterial.blending,
-          mainBloomBlur: this.mainBloomBlurMaterial.blending,
-          mainBloomComposite: this.mainBloomCompositeMaterial.blending,
-          fxaa: this.fxaaMaterial.blending,
-          skyComposite: this.skyCompositeMaterial.blending,
-          displacement: this.displacementMaterial.blending,
+          mediaComposite: {
+            blending: this.mediaCompositeMaterial.blending,
+            materialMode: "source-W1-raw-glsl3",
+            glslVersion: (this.mediaCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          luminosity: {
+            blending: this.luminosityMaterial.blending,
+            materialMode: "source-sg-raw-glsl3",
+            glslVersion: (this.luminosityMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          bloomBlur: {
+            blending: this.bloomBlurMaterial.blending,
+            materialMode: "source-rg-raw-glsl3",
+            glslVersion: (this.bloomBlurMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          bloomComposite: {
+            blending: this.bloomCompositeMaterial.blending,
+            materialMode: "source-cg-raw-glsl3",
+            glslVersion: (this.bloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          mainBloomBlur: {
+            blending: this.mainBloomBlurMaterial.blending,
+            materialMode: "source-rg-raw-glsl3",
+            glslVersion: (this.mainBloomBlurMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          mainBloomComposite: {
+            blending: this.mainBloomCompositeMaterial.blending,
+            materialMode: "source-cg-raw-glsl3",
+            glslVersion: (this.mainBloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          fxaa: {
+            blending: this.fxaaMaterial.blending,
+            materialMode: "source-ig-raw-glsl3",
+            glslVersion: (this.fxaaMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          skyComposite: {
+            blending: this.skyCompositeMaterial.blending,
+            materialMode: "source-z1-raw-glsl3",
+            glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+          },
+          displacement: {
+            blending: this.displacementMaterial.blending,
+            materialMode: "bridge-displacement-shadermaterial",
+            glslVersion: null,
+          },
         },
         thumbComposite: {
           blending: this.thumbCompositeMaterial.blending,
@@ -6123,7 +6178,7 @@ export class WebGLBackdrop {
   private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
     let brightTarget: WebGLRenderTarget | undefined;
     if (this.renderSettings.luminosity.enabled) {
-      this.luminosityMaterial.uniforms.tScene.value = sourceTarget.texture;
+      this.luminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
       this.renderer.setRenderTarget(this.bloomBrightTarget);
       this.renderer.render(this.luminosityScene, this.backgroundCamera);
       brightTarget = this.bloomBrightTarget;
@@ -6142,7 +6197,7 @@ export class WebGLBackdrop {
   private renderMainBloomPass(sourceTarget: WebGLRenderTarget) {
     let brightTarget: WebGLRenderTarget | undefined;
     if (this.sourceMainRenderSettings.luminosity.enabled) {
-      this.luminosityMaterial.uniforms.tScene.value = sourceTarget.texture;
+      this.luminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
       this.renderer.setRenderTarget(this.mainBloomBrightTarget);
       this.renderer.render(this.luminosityScene, this.backgroundCamera);
       brightTarget = this.mainBloomBrightTarget;

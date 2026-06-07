@@ -173,10 +173,26 @@ async function runProbe() {
   const materialSurfaceErrors = [];
   const preCompositeUniforms = parsed.probe.uniforms?.preComposite;
   const workCompositeUniforms = parsed.probe.uniforms?.composite;
+  const mainCompositeUniforms = parsed.probe.uniforms?.mainComposite;
+  const passMaterials = parsed.probe.uniforms?.passMaterials || {};
   if (preCompositeUniforms?.materialMode !== "source-C1-raw-glsl3") materialSurfaceErrors.push("preCompositeMaterialMode");
   if (preCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("preCompositeGlslVersion");
   if (workCompositeUniforms?.materialMode !== "source-OA-raw-glsl3") materialSurfaceErrors.push("workCompositeMaterialMode");
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
+  if (mainCompositeUniforms?.materialMode !== "source-lA-raw-glsl3") materialSurfaceErrors.push("mainCompositeMaterialMode");
+  if (mainCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("mainCompositeGlslVersion");
+  for (const [key, expectedMode] of Object.entries({
+    mediaComposite: "source-W1-raw-glsl3",
+    luminosity: "source-sg-raw-glsl3",
+    bloomBlur: "source-rg-raw-glsl3",
+    bloomComposite: "source-cg-raw-glsl3",
+    mainBloomBlur: "source-rg-raw-glsl3",
+    mainBloomComposite: "source-cg-raw-glsl3",
+    fxaa: "source-ig-raw-glsl3",
+  })) {
+    if (passMaterials[key]?.materialMode !== expectedMode) materialSurfaceErrors.push(`${key}MaterialMode`);
+    if (passMaterials[key]?.glslVersion !== "300 es") materialSurfaceErrors.push(`${key}GlslVersion`);
+  }
   if (materialSurfaceErrors.length) {
     throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);
   }
