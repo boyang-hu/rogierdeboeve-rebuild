@@ -6806,9 +6806,18 @@ void main() {
             bridge: "source-single-screen-material-swap",
             finalScreenMode: "source-main-post-screen",
             sourceFinalRender: "settings.renderToScreen -> setRenderTarget(null), render(this.screen,this.screenCamera)",
-            defaultScreenMaterialMode: "source-I1-default-direct-C1-screen-render",
+            defaultScreenMaterialMode: "source-I1-default-direct-C1-screen-render-fxaa-tail-only",
             preCompositeTargetRole: "qa-mirror-of-source-renderTargetComposite-not-default-screen-output",
             productionOutputChanged: true,
+          },
+          renderManagerPassInputs: {
+            blurSource: "source-I1-renderTargetA",
+            lensflareSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
+            luminositySource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
+            bloomSource: "source-I1-renderTargetBright-if-luminosity-else-renderTargetA",
+            c1SceneSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
+            c1BloomSource: "source-I1-renderTargetsHorizontal0",
+            noPostC1Bloom: true,
           },
           mainRawSceneMode: "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb",
           mainRawSceneBackground: this.mainScene.background instanceof Color ? this.mainScene.background.toArray() : null,
@@ -6817,9 +6826,9 @@ void main() {
           source: this.sourceUpdateOrder,
           sourceSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
           rebuildSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
-          rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-bloom", "main-fluid", "main-pre-composite", "main-final-screen", "workthumb", "wavves", "character-when-about"],
+          rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"],
           workUpdateOrder: ["Lu.renderManager.raw", "Lu.renderManager.bloom", "Ka.mouseSimulation", "Lu.renderManager.composite", "IT.cameraController", "p1.components"],
-          mainUpdateOrder: ["I1.raw", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"],
+          mainUpdateOrder: ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"],
           frameTail: "source-work-renderManager-then-p1-update-before-main",
           mouseSimulationOrder: "source-Lu-mousesim-after-raw-bloom-before-composite",
           postRenderFrame: this.sourcePostRenderFrame,
@@ -7681,7 +7690,7 @@ void main() {
   private renderHomeBlurPass() {
     this.blurHorizontalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
     this.blurVerticalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
-    this.blurHorizontalMaterial.uniforms.tMap.value = this.compositeTarget.texture;
+    this.blurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture;
     this.renderer.setRenderTarget(this.blurTargetA);
     this.renderer.render(this.blurHorizontalScene, this.backgroundCamera);
     this.blurVerticalMaterial.uniforms.tMap.value = this.blurTargetA.texture;
@@ -7695,6 +7704,14 @@ void main() {
     this.renderer.setRenderTarget(this.mainLensflareTarget);
     this.renderer.clear();
     this.renderer.render(this.lensflareScene, this.backgroundCamera);
+  }
+
+  private renderMainLuminosityPass(sourceTarget: WebGLRenderTarget) {
+    if (!this.sourceMainRenderSettings.luminosity.enabled) return;
+    this.luminosityMaterial.uniforms.tMap.value = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB.texture : sourceTarget.texture;
+    this.mainPostScreen.material = this.luminosityMaterial;
+    this.renderer.setRenderTarget(this.mainBloomBrightTarget);
+    this.renderer.render(this.mainPostScreen, this.backgroundCamera);
   }
 
   private renderBloomChain(
@@ -7749,14 +7766,6 @@ void main() {
   }
 
   private renderMainBloomPass(sourceTarget: WebGLRenderTarget) {
-    let brightTarget: WebGLRenderTarget | undefined;
-    if (this.sourceMainRenderSettings.luminosity.enabled) {
-      this.luminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
-      this.mainPostScreen.material = this.luminosityMaterial;
-      this.renderer.setRenderTarget(this.mainBloomBrightTarget);
-      this.renderer.render(this.mainPostScreen, this.backgroundCamera);
-      brightTarget = this.mainBloomBrightTarget;
-    }
     this.renderBloomChain(
       sourceTarget,
       this.mainBloomHorizontalTargets,
@@ -7764,27 +7773,13 @@ void main() {
       this.mainBloomBlurMaterials,
       this.mainPostScreen,
       this.mainBloomCompositeMaterial,
-      brightTarget,
+      this.sourceMainRenderSettings.luminosity.enabled ? this.mainBloomBrightTarget : undefined,
     );
   }
 
   private renderHomeCompositePass() {
     const settings = this.sourceMainRenderSettings;
-    if (!settings.blur.enabled && !settings.bloom.enabled && !settings.fxaa.enabled) {
-      this.mainPostScreen.material = this.preCompositeMaterial;
-      this.renderer.setRenderTarget(null);
-      this.renderer.render(this.mainPostScreen, this.backgroundCamera);
-      return;
-    }
-    this.mainCompositeMaterial.uniforms.tScene.value = settings.blur.enabled ? this.blurTargetB.texture : this.compositeTarget.texture;
-    this.mainCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
-    this.mainCompositeMaterial.uniforms.tBlur.value = settings.blur.enabled ? this.blurTargetB.texture : this.fluidPlaceholder;
-    this.mainCompositeMaterial.uniforms.tFluid.value = this.preCompositeMaterial.uniforms.tFluid.value;
-    this.mainCompositeMaterial.uniforms.boolBloom.value = settings.bloom.enabled;
-    this.mainCompositeMaterial.uniforms.boolFluid.value = settings.fluid.enabled;
-    this.mainCompositeMaterial.uniforms.boolLuminosity.value = settings.luminosity.enabled;
-    this.mainCompositeMaterial.uniforms.boolFxaa.value = settings.fxaa.enabled;
-    this.mainPostScreen.material = this.mainCompositeMaterial;
+    this.mainPostScreen.material = this.preCompositeMaterial;
     if (settings.fxaa.enabled) {
       this.renderer.setRenderTarget(this.fxaaTarget);
       this.renderer.render(this.mainPostScreen, this.backgroundCamera);
@@ -7862,12 +7857,17 @@ void main() {
     this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
     this.renderer.setRenderTarget(this.mainRawTarget);
     this.renderer.render(this.mainScene, this.homeCamera);
-    this.preCompositeMaterial.uniforms.tScene.value = this.mainRawTarget.texture;
     this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
     this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
-    if (this.sourceMainRenderSettings.bloom.enabled) {
-      this.renderMainBloomPass(preCompositeWorkTarget);
+    if (this.sourceMainRenderSettings.blur.enabled) {
+      this.renderHomeBlurPass();
     }
+    this.renderMainLensflarePass(this.mainRawTarget);
+    this.renderMainLuminosityPass(this.mainRawTarget);
+    if (this.sourceMainRenderSettings.bloom.enabled) {
+      this.renderMainBloomPass(this.mainRawTarget);
+    }
+    this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB.texture : this.mainRawTarget.texture;
     this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     const mainFluidTexture = this.sourceMainRenderSettings.fluid.enabled && this.fluidStrength > 0
       ? this.updateMainFluidPass()
@@ -7879,14 +7879,6 @@ void main() {
     this.mainPostScreen.material = this.preCompositeMaterial;
     this.renderer.setRenderTarget(this.compositeTarget);
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
-    const sceneSourceTarget = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB : this.compositeTarget;
-    if (this.sourceMainRenderSettings.blur.enabled) {
-      this.renderHomeBlurPass();
-    }
-    this.renderMainLensflarePass(sceneSourceTarget);
-    if (this.sourceMainRenderSettings.bloom.enabled) {
-      this.renderMainBloomPass(sceneSourceTarget);
-    }
     this.renderHomeCompositePass();
     this.renderThumbTargets();
     this.renderDisplacementTarget(time);

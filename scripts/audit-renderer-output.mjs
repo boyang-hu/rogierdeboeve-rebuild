@@ -636,8 +636,15 @@ const summary = {
         rebuildSourceScreenSwap: [
           "private mainPostScreen = makeSourcePassScreen()",
           "this.mainPostScreen.material = this.preCompositeMaterial",
-          "this.mainPostScreen.material = this.mainCompositeMaterial",
+          "this.renderMainLuminosityPass(this.mainRawTarget)",
+          "this.renderMainBloomPass(this.mainRawTarget)",
           "this.renderer.render(this.mainPostScreen, this.backgroundCamera)",
+        ].every((needle) => rebuildWebgl.includes(needle)),
+        rebuildSourcePassInputs: [
+          "this.blurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture",
+          "this.renderMainLensflarePass(this.mainRawTarget)",
+          "this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB.texture : this.mainRawTarget.texture",
+          "this.sourceMainRenderSettings.luminosity.enabled ? this.mainBloomBrightTarget : undefined",
         ].every((needle) => rebuildWebgl.includes(needle)),
       },
       excerpt: compact(sourceMainI1.text),
@@ -673,9 +680,9 @@ const summary = {
       })),
       rebuildOrderChecks: checks(rebuildWebgl, [
         "rebuildSceneOrder: [\"sky\", \"media\", \"work\", \"main\", \"workthumb\", \"wavves\", \"character\"]",
-        "rebuildFrameOrder: [\"media-position\", \"sky\", \"media\", \"work-raw\", \"work-bloom\", \"work-mousesim\", \"work-composite\", \"p1-post-render\", \"main-raw\", \"main-bloom\", \"main-fluid\", \"main-pre-composite\", \"main-final-screen\", \"workthumb\", \"wavves\", \"character-when-about\"]",
+        "rebuildFrameOrder: [\"media-position\", \"sky\", \"media\", \"work-raw\", \"work-bloom\", \"work-mousesim\", \"work-composite\", \"p1-post-render\", \"main-raw\", \"main-blur\", \"main-lensflare\", \"main-luminosity\", \"main-bloom\", \"main-fluid\", \"main-C1\", \"main-final-screen\", \"workthumb\", \"wavves\", \"character-when-about\"]",
         "workUpdateOrder: [\"Lu.renderManager.raw\", \"Lu.renderManager.bloom\", \"Ka.mouseSimulation\", \"Lu.renderManager.composite\", \"IT.cameraController\", \"p1.components\"]",
-        "mainUpdateOrder: [\"I1.raw\", \"I1.optional-bloom\", \"I1.fluid\", \"I1.C1-screen\"]",
+        "mainUpdateOrder: [\"I1.raw\", \"I1.optional-blur\", \"I1.optional-lensflare\", \"I1.optional-luminosity\", \"I1.optional-bloom\", \"I1.fluid\", \"I1.C1-screen\"]",
         "mouseSimulationOrder: \"source-Lu-mousesim-after-raw-bloom-before-composite\"",
       ]),
       excerpt: compact(sourceCanvasManager.text),

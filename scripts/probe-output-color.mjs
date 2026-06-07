@@ -359,7 +359,7 @@ async function runProbe() {
   if (mainOwnership?.source !== "I1-single-screen-mesh-material-swap") ownershipErrors.push("mainSourceOwnership");
   if (mainOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("mainBridgeOwnership");
   if (mainOwnership?.finalScreenMode !== "source-main-post-screen") ownershipErrors.push("mainFinalScreenMode");
-  if (mainOwnership?.defaultScreenMaterialMode !== "source-I1-default-direct-C1-screen-render") ownershipErrors.push("mainDefaultScreenMaterialMode");
+  if (mainOwnership?.defaultScreenMaterialMode !== "source-I1-default-direct-C1-screen-render-fxaa-tail-only") ownershipErrors.push("mainDefaultScreenMaterialMode");
   if (mainOwnership?.preCompositeTargetRole !== "qa-mirror-of-source-renderTargetComposite-not-default-screen-output") {
     ownershipErrors.push("mainPreCompositeTargetRole");
   }
@@ -367,6 +367,18 @@ async function runProbe() {
   if (mainSettings?.mainRawSceneMode !== "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb") {
     ownershipErrors.push("mainRawSceneMode");
   }
+  const mainPassInputs = mainSettings?.renderManagerPassInputs || {};
+  for (const [key, expected] of Object.entries({
+    blurSource: "source-I1-renderTargetA",
+    lensflareSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
+    luminositySource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
+    bloomSource: "source-I1-renderTargetBright-if-luminosity-else-renderTargetA",
+    c1SceneSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
+    c1BloomSource: "source-I1-renderTargetsHorizontal0",
+  })) {
+    if (mainPassInputs[key] !== expected) ownershipErrors.push(`mainPassInput-${key}`);
+  }
+  if (mainPassInputs.noPostC1Bloom !== true) ownershipErrors.push("mainPassInput-noPostC1Bloom");
   const sourceMainBackground = mainSettings?.mainRawSceneBackground || [];
   if (!Array.isArray(sourceMainBackground) || sourceMainBackground.some((value) => Math.abs(value - 0.8509825995357807) > 0.0001)) {
     ownershipErrors.push("mainRawSceneBackground");
@@ -602,7 +614,7 @@ async function runProbe() {
   if (JSON.stringify(updateOrder?.rebuildSceneOrder) !== JSON.stringify(expectedSourceSceneOrder)) {
     throw new Error(`Rebuild scene order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildSceneOrder || null)}`);
   }
-  const expectedRebuildFrameOrder = ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-bloom", "main-fluid", "main-pre-composite", "main-final-screen", "workthumb", "wavves", "character-when-about"];
+  const expectedRebuildFrameOrder = ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"];
   if (JSON.stringify(updateOrder?.rebuildFrameOrder) !== JSON.stringify(expectedRebuildFrameOrder)) {
     throw new Error(`Rebuild frame order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildFrameOrder || null)}`);
   }
@@ -610,7 +622,7 @@ async function runProbe() {
   if (JSON.stringify(updateOrder?.workUpdateOrder) !== JSON.stringify(expectedWorkUpdateOrder)) {
     throw new Error(`Work update order source-shape mismatch: ${JSON.stringify(updateOrder?.workUpdateOrder || null)}`);
   }
-  const expectedMainUpdateOrder = ["I1.raw", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"];
+  const expectedMainUpdateOrder = ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"];
   if (JSON.stringify(updateOrder?.mainUpdateOrder) !== JSON.stringify(expectedMainUpdateOrder)) {
     throw new Error(`Main update order source-shape mismatch: ${JSON.stringify(updateOrder?.mainUpdateOrder || null)}`);
   }
