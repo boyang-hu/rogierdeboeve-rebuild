@@ -198,6 +198,11 @@ async function runProbe() {
     if (material.uTransitionCount !== 150) sourceShapeErrors.push(`thumbTransitionCount=${material.uTransitionCount}`);
     if (material.uTransitionSmoothness !== 0.2) sourceShapeErrors.push(`thumbTransitionSmoothness=${material.uTransitionSmoothness}`);
     if (!material.mapBound) sourceShapeErrors.push("thumbMapBound=false");
+    const mapTexture = material.mapTexture || {};
+    if (mapTexture.minFilter !== 1008) sourceShapeErrors.push(`thumbMapMinFilter=${mapTexture.minFilter}`);
+    if (mapTexture.magFilter !== 1006) sourceShapeErrors.push(`thumbMapMagFilter=${mapTexture.magFilter}`);
+    if (mapTexture.generateMipmaps !== true) sourceShapeErrors.push(`thumbMapMipmaps=${mapTexture.generateMipmaps}`);
+    if (mapTexture.anisotropy !== 1) sourceShapeErrors.push(`thumbMapAnisotropy=${mapTexture.anisotropy}`);
     if (JSON.stringify(material.mapSize) !== JSON.stringify([1, 1])) sourceShapeErrors.push(`thumbMapSize=${JSON.stringify(material.mapSize)}`);
     if (JSON.stringify(material.resolution) !== JSON.stringify([1, 1])) sourceShapeErrors.push(`thumbResolution=${JSON.stringify(material.resolution)}`);
   }

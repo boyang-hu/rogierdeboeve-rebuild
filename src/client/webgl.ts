@@ -3534,11 +3534,22 @@ function sourceRenderTargetStateBoard(targets: Record<string, WebGLRenderTarget>
   };
 }
 
-function setTextureQuality(texture: Texture, renderer: WebGLRenderer, colorSpace: typeof SRGBColorSpace | typeof NoColorSpace | "" = "") {
+function applySourceLoadedTextureState(texture: Texture, colorSpace: typeof SRGBColorSpace | typeof NoColorSpace | "" = "") {
   texture.colorSpace = colorSpace;
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+}
+
+function sourceTextureProbe(texture: Texture) {
+  return {
+    colorSpace: texture.colorSpace,
+    type: texture.type,
+    format: texture.format,
+    wrapS: texture.wrapS,
+    wrapT: texture.wrapT,
+    minFilter: texture.minFilter,
+    magFilter: texture.magFilter,
+    generateMipmaps: texture.generateMipmaps,
+    anisotropy: texture.anisotropy,
+  };
 }
 
 function floorPowerOfTwo(value: number) {
@@ -5783,7 +5794,7 @@ void main() {
         if (!this.mediaPlanes.includes(plane) || !plane.track.isConnected) return;
         plane.material.uniforms.uMapSize.value.set(video.videoWidth || 1600, video.videoHeight || 1200);
         const texture = new VideoTexture(video);
-        setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
+        applySourceLoadedTextureState(texture, this.loadedTextureColorSpace());
         plane.texture = texture;
         plane.material.uniforms.tMap.value = texture;
         this.showMediaPlane(plane);
@@ -5798,7 +5809,7 @@ void main() {
         texture.dispose();
         return;
       }
-      setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
+      applySourceLoadedTextureState(texture, this.loadedTextureColorSpace());
       const image = texture.image as HTMLImageElement | undefined;
       if (image?.naturalWidth && image?.naturalHeight) {
         plane.material.uniforms.uMapSize.value.set(image.naturalWidth, image.naturalHeight);
@@ -6182,7 +6193,7 @@ void main() {
       this.loader.load(
         src,
         (texture) => {
-          setTextureQuality(texture, this.renderer, this.loadedTextureColorSpace());
+          applySourceLoadedTextureState(texture, this.loadedTextureColorSpace());
           this.textureCache.set(src, texture);
           resolve(texture);
         },
@@ -6943,6 +6954,7 @@ void main() {
           uTransitionCount: first.uniforms.uTransitionCount.value as number,
           uTransitionSmoothness: first.uniforms.uTransitionSmoothness.value as number,
           mapBound: first.uniforms.tMap.value !== this.placeholder,
+          mapTexture: sourceTextureProbe(first.uniforms.tMap.value as Texture),
           mapSize: (first.uniforms.uMapSize.value as Vector2).toArray() as [number, number],
           resolution: (first.uniforms.uResolution.value as Vector2).toArray() as [number, number],
         };
@@ -7595,13 +7607,8 @@ void main() {
         screenMouseSim: mouseSimProbe,
       },
       textures: {
-        noise: {
-          colorSpace: this.noiseTexture.colorSpace,
-          type: this.noiseTexture.type,
-          format: this.noiseTexture.format,
-          wrapS: this.noiseTexture.wrapS,
-          wrapT: this.noiseTexture.wrapT,
-        },
+        sourceLoadedTextureMode: "source-Xt-TextureLoader-default-sampling-wrap-only-overrides",
+        noise: sourceTextureProbe(this.noiseTexture),
         skyComposite: {
           materialMode: "source-z1-raw-glsl3",
           vertexMode: "source-tl-matrix-fullscreen",
@@ -7638,27 +7645,9 @@ void main() {
               : "runtime",
           },
         },
-        perlin: {
-          colorSpace: this.perlinTexture.colorSpace,
-          type: this.perlinTexture.type,
-          format: this.perlinTexture.format,
-          wrapS: this.perlinTexture.wrapS,
-          wrapT: this.perlinTexture.wrapT,
-        },
-        workPerlin: {
-          colorSpace: this.workPerlinTexture.colorSpace,
-          type: this.workPerlinTexture.type,
-          format: this.workPerlinTexture.format,
-          wrapS: this.workPerlinTexture.wrapS,
-          wrapT: this.workPerlinTexture.wrapT,
-        },
-        floorNormal: {
-          colorSpace: (this.floorMaterial.uniforms.tNormalMap.value as Texture).colorSpace,
-          type: (this.floorMaterial.uniforms.tNormalMap.value as Texture).type,
-          format: (this.floorMaterial.uniforms.tNormalMap.value as Texture).format,
-          wrapS: (this.floorMaterial.uniforms.tNormalMap.value as Texture).wrapS,
-          wrapT: (this.floorMaterial.uniforms.tNormalMap.value as Texture).wrapT,
-        },
+        perlin: sourceTextureProbe(this.perlinTexture),
+        workPerlin: sourceTextureProbe(this.workPerlinTexture),
+        floorNormal: sourceTextureProbe(this.floorMaterial.uniforms.tNormalMap.value as Texture),
         placeholder: { colorSpace: this.placeholder.colorSpace, type: this.placeholder.type, format: this.placeholder.format },
         fluidPlaceholder: { colorSpace: this.fluidPlaceholder.colorSpace, type: this.fluidPlaceholder.type, format: this.fluidPlaceholder.format },
       },

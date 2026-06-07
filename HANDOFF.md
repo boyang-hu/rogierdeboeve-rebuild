@@ -8,7 +8,7 @@ This document records the current rebuild state for continuing work on another m
 
 Rebuild `https://rogierdeboeve.com/` locally with a modern, lighter stack while staying as close as possible to the original site.
 
-The user explicitly corrected the approach: do not rely mainly on visual screenshots. The rebuild should be source-code-driven from the mirrored original bundle, with visual QA only used as verification. Visual improvement is not the goal by itself; production changes need mirrored-bundle evidence even when they appear to improve the result. Known source mismatches must not be closed as "accepted deviations" based on visual review; they should either be fixed from source evidence, documented as unavoidable technical bridges, or left open.
+The user explicitly corrected the approach: do not rely mainly on visual screenshots. The rebuild should be source-code-driven from the mirrored original bundle, with visual QA only used as verification. Visual improvement is not the goal by itself; production changes need mirrored-bundle evidence even when they appear to improve the result. Known source mismatches must not be closed as "accepted deviations" based on visual review or low perceived visual payoff; they should either be fixed from source evidence, documented as unavoidable technical bridges, or left open.
 
 ## Chosen Stack
 
@@ -136,16 +136,17 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `T1/w1/SD` spotlight-map projection guardrails were tightened without visual tuning:
-  - source `w1` sets `frustumCulled=false` on the thumb-scene group;
-  - source `SD.init()` assigns the thumb composite texture to `J.workScene.spotLight.map`;
-  - source spotlight setup does not explicitly enable `castShadow`, so the map path is treated as `SpotLight.map` projection, not a shadow-cast path;
-  - local Three r164 `WebGLLights.js` evidence now guards that `light.map` feeds `state.spotLightMap`, `shadow.updateMatrices(light)` still updates the projection matrix, and `light.castShadow` only gates the shadow-count branch.
-- Runtime probes now expose/assert `thumbWrapFrustumCulled=false`, `projectionPath=source-SpotLight.map-without-castShadow`, `shadowPathMode=source-map-projection-not-shadow-cast`, and `castShadow=false`.
-- Shader dump now guards source spotlight-map shader anchors: `#include <shadowmap_pars_vertex>`, `#include <shadowmap_vertex>`, and `#include <lights_fragment_begin>` in ordinary `VA-work`.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe with `PROBE_WAIT=9000` after an async preload-window retry, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0042` and mobile center `+0.0313`, recorded only as regression evidence.
+- Source `Xt/TextureLoader` loaded texture sampling defaults were restored without visual tuning:
+  - source `Xt.preloadTextures()` only applies wrap overrides after `TextureLoader` returns textures;
+  - `blueNoise`, `floorNormal`, and `perlin2` use `RepeatWrapping`;
+  - `perlin1` uses `MirroredRepeatWrapping`;
+  - source `Xt.loadImage/loadTexture` does not set `minFilter`, `magFilter`, `generateMipmaps`, or `anisotropy`.
+- The rebuild now applies only loaded texture `colorSpace` and keeps Three defaults for loaded image textures: `minFilter=LinearMipmapLinearFilter`, `magFilter=LinearFilter`, `generateMipmaps=true`, and `anisotropy=1`. `VideoTexture` keeps the Three/source-compatible video defaults separately.
+- Runtime probes now expose loaded texture state through `sourceTextureProbe(...)` and assert the source wrapping/default-sampling mode for noise/perlin/floor-normal textures and thumb plane maps. Render-target texture state is intentionally separate and unchanged.
+- Static audit now records source `Xt` wrapping evidence, local Three r164 `Texture`/`VideoTexture` defaults, and verifies that `applySourceLoadedTextureState()` does not override filters or anisotropy.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final band deltas were desktop center `+0.0049` and mobile center `+0.0294`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a projection-path attribution gap, not the remaining thumb projection/content feel or final visual parity.
+- Phase 1 remains open; this closes a loaded-texture sampling source mismatch, not the remaining thumb projection/content feel, `A1/OA/kA/Lu` transfer graph, floor/environment residual, or interactive mouse/fluid verification.
 
 ## Validation Status
 

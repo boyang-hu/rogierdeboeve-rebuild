@@ -17,6 +17,8 @@ const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
 const threeWebglLights = readFileSync("node_modules/three/src/renderers/webgl/WebGLLights.js", "utf8");
+const threeTextureSource = readFileSync("node_modules/three/src/textures/Texture.js", "utf8");
+const threeVideoTextureSource = readFileSync("node_modules/three/src/textures/VideoTexture.js", "utf8");
 
 function extractTemplate(bundle, name, terminator) {
   const start = bundle.indexOf(`${name}=\``);
@@ -116,6 +118,8 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
+const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
+const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
 const sourceFloorS1 = extractTemplate(bundle, "s1", "`,r1=");
@@ -739,6 +743,25 @@ const summary = {
       constants: {
         ci: bundle.includes("ci=1e3") ? "RepeatWrapping=1000" : null,
         vo: bundle.includes("vo=1002") ? "MirroredRepeatWrapping=1002" : null,
+      },
+      threeTextureDefaults: checks(threeTextureSource, [
+        "magFilter = LinearFilter",
+        "minFilter = LinearMipmapLinearFilter",
+        "anisotropy = Texture.DEFAULT_ANISOTROPY",
+        "this.generateMipmaps = true",
+      ]),
+      threeVideoTextureDefaults: checks(threeVideoTextureSource, [
+        "this.minFilter = minFilter !== undefined ? minFilter : LinearFilter",
+        "this.magFilter = magFilter !== undefined ? magFilter : LinearFilter",
+        "this.generateMipmaps = false",
+      ]),
+      rebuildLoadedTextureDefaults: {
+        sourceLoadedTextureHelper: rebuildWebgl.includes("function applySourceLoadedTextureState(texture: Texture"),
+        noLoadedTextureFilterOverride: !rebuildWebgl.includes("function setTextureQuality")
+          && !sourceLoadedTextureHelperBody.includes("texture.minFilter")
+          && !sourceLoadedTextureHelperBody.includes("texture.magFilter")
+          && !sourceLoadedTextureHelperBody.includes("texture.anisotropy"),
+        runtimeGuard: rebuildWebgl.includes("sourceLoadedTextureMode: \"source-Xt-TextureLoader-default-sampling-wrap-only-overrides\""),
       },
       excerpt: compact(sourceTextureManager.text),
     },

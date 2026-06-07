@@ -809,12 +809,25 @@ async function runProbe() {
     throw new Error(`Sky composite uniform binding source-shape mismatch: ${skyUniformErrors.join(", ")}`);
   }
   const MirroredRepeatWrapping = 1002;
+  const LinearMipmapLinearFilter = 1008;
   const textures = parsed.probe.textures || {};
   const textureWrappingErrors = [];
+  if (textures.sourceLoadedTextureMode !== "source-Xt-TextureLoader-default-sampling-wrap-only-overrides") textureWrappingErrors.push("sourceLoadedTextureMode");
   if (textures.noise?.wrapS !== RepeatWrapping || textures.noise?.wrapT !== RepeatWrapping) textureWrappingErrors.push("blueNoise");
   if (textures.floorNormal?.wrapS !== RepeatWrapping || textures.floorNormal?.wrapT !== RepeatWrapping) textureWrappingErrors.push("floorNormal");
   if (textures.perlin?.wrapS !== RepeatWrapping || textures.perlin?.wrapT !== RepeatWrapping) textureWrappingErrors.push("perlin2");
   if (textures.workPerlin?.wrapS !== MirroredRepeatWrapping || textures.workPerlin?.wrapT !== MirroredRepeatWrapping) textureWrappingErrors.push("perlin1");
+  for (const key of ["noise", "floorNormal", "perlin", "workPerlin"]) {
+    const texture = textures[key];
+    if (!texture) {
+      textureWrappingErrors.push(`${key}:missing`);
+      continue;
+    }
+    if (texture.minFilter !== LinearMipmapLinearFilter) textureWrappingErrors.push(`${key}:minFilter=${texture.minFilter}`);
+    if (texture.magFilter !== LinearFilter) textureWrappingErrors.push(`${key}:magFilter=${texture.magFilter}`);
+    if (texture.generateMipmaps !== true) textureWrappingErrors.push(`${key}:mipmaps=${texture.generateMipmaps}`);
+    if (texture.anisotropy !== 1) textureWrappingErrors.push(`${key}:anisotropy=${texture.anisotropy}`);
+  }
   if (textureWrappingErrors.length) {
     throw new Error(`Texture wrapping source-shape mismatch: ${textureWrappingErrors.join(", ")}`);
   }
