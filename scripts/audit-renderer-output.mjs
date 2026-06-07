@@ -131,6 +131,7 @@ const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
+const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 120, 900);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
   extractAround(bundle, "setOutputColorSpace", 180, 700),
@@ -360,6 +361,21 @@ const summary = {
         "this.addScene(this.mainScene,\"main\")",
       ]),
       excerpt: compact(sourceCanvasManager.text),
+    },
+    textures: sourceTextureManager && {
+      index: sourceTextureManager.index,
+      checks: checks(sourceTextureManager.text, [
+        "static preloadTextures(){const e=Le.WEBP?\"webp\":\"jpg\"",
+        "this.blueNoise=this.loadTexture(\"/images/textures/blue-noise.png\"),this.blueNoise.wrapS=this.blueNoise.wrapT=ci",
+        "this.floorNormal=this.loadTexture(`/images/textures/floor-normal.${e}`),this.floorNormal.wrapS=this.floorNormal.wrapT=ci",
+        "this.perlin1=this.loadTexture(`/images/textures/perlin-1.${e}`),this.perlin1.wrapS=this.perlin1.wrapT=vo",
+        "this.perlin2=this.loadTexture(`/images/textures/perlin-2.${e}`),this.perlin2.wrapS=this.perlin2.wrapT=ci",
+      ]),
+      constants: {
+        ci: bundle.includes("ci=1e3") ? "RepeatWrapping=1000" : null,
+        vo: bundle.includes("vo=1002") ? "MirroredRepeatWrapping=1002" : null,
+      },
+      excerpt: compact(sourceTextureManager.text),
     },
     Pe: sourcePe && {
       index: sourcePe.index,

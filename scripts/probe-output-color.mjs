@@ -181,6 +181,17 @@ async function runProbe() {
   if (skyUniformErrors.length) {
     throw new Error(`Sky composite uniform binding source-shape mismatch: ${skyUniformErrors.join(", ")}`);
   }
+  const RepeatWrapping = 1000;
+  const MirroredRepeatWrapping = 1002;
+  const textures = parsed.probe.textures || {};
+  const textureWrappingErrors = [];
+  if (textures.noise?.wrapS !== RepeatWrapping || textures.noise?.wrapT !== RepeatWrapping) textureWrappingErrors.push("blueNoise");
+  if (textures.floorNormal?.wrapS !== RepeatWrapping || textures.floorNormal?.wrapT !== RepeatWrapping) textureWrappingErrors.push("floorNormal");
+  if (textures.perlin?.wrapS !== RepeatWrapping || textures.perlin?.wrapT !== RepeatWrapping) textureWrappingErrors.push("perlin2");
+  if (textures.workPerlin?.wrapS !== MirroredRepeatWrapping || textures.workPerlin?.wrapT !== MirroredRepeatWrapping) textureWrappingErrors.push("perlin1");
+  if (textureWrappingErrors.length) {
+    throw new Error(`Texture wrapping source-shape mismatch: ${textureWrappingErrors.join(", ")}`);
+  }
   const shaderConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
   if (shaderConsoleMessages.length) {
     throw new Error(`Shader/WebGL console errors: ${shaderConsoleMessages.join("\n")}`);

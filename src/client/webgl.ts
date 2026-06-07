@@ -27,6 +27,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  MirroredRepeatWrapping,
   NoBlending,
   NoColorSpace,
   NormalBlending,
@@ -3741,6 +3742,7 @@ export class WebGLBackdrop {
     this.loadTexture("/images/textures/blue-noise.png", (texture) => {
       texture.wrapS = RepeatWrapping;
       texture.wrapT = RepeatWrapping;
+      this.noiseTexture = texture;
       this.preCompositeMaterial.uniforms.tNoise.value = texture;
       this.workItems.forEach((item) => {
         item.mouseMaterial.uniforms.uNoiseTexture.value = texture;
@@ -3754,8 +3756,8 @@ export class WebGLBackdrop {
       this.preCompositeMaterial.uniforms.tPerlin.value = texture;
     });
     this.loadTexture("/images/textures/perlin-1.webp", (texture) => {
-      texture.wrapS = ClampToEdgeWrapping;
-      texture.wrapT = ClampToEdgeWrapping;
+      texture.wrapS = MirroredRepeatWrapping;
+      texture.wrapT = MirroredRepeatWrapping;
       this.workPerlinTexture = texture;
       this.workItems.forEach((item) => {
         item.material.uniforms.tPerlin.value = texture;
@@ -5589,7 +5591,13 @@ export class WebGLBackdrop {
         screenMouseSim: mouseSimProbe,
       },
       textures: {
-        noise: { colorSpace: this.noiseTexture.colorSpace, type: this.noiseTexture.type, format: this.noiseTexture.format },
+        noise: {
+          colorSpace: this.noiseTexture.colorSpace,
+          type: this.noiseTexture.type,
+          format: this.noiseTexture.format,
+          wrapS: this.noiseTexture.wrapS,
+          wrapT: this.noiseTexture.wrapT,
+        },
         skyComposite: {
           wrapS: this.skyCompositeTarget.texture.wrapS,
           wrapT: this.skyCompositeTarget.texture.wrapT,
@@ -5610,8 +5618,27 @@ export class WebGLBackdrop {
             uShaderMix: this.skyCompositeMaterial.uniforms.uShaderMix.value,
           },
         },
-        perlin: { colorSpace: this.perlinTexture.colorSpace, type: this.perlinTexture.type, format: this.perlinTexture.format },
-        workPerlin: { colorSpace: this.workPerlinTexture.colorSpace, type: this.workPerlinTexture.type, format: this.workPerlinTexture.format },
+        perlin: {
+          colorSpace: this.perlinTexture.colorSpace,
+          type: this.perlinTexture.type,
+          format: this.perlinTexture.format,
+          wrapS: this.perlinTexture.wrapS,
+          wrapT: this.perlinTexture.wrapT,
+        },
+        workPerlin: {
+          colorSpace: this.workPerlinTexture.colorSpace,
+          type: this.workPerlinTexture.type,
+          format: this.workPerlinTexture.format,
+          wrapS: this.workPerlinTexture.wrapS,
+          wrapT: this.workPerlinTexture.wrapT,
+        },
+        floorNormal: {
+          colorSpace: (this.floorMaterial.uniforms.tNormalMap.value as Texture).colorSpace,
+          type: (this.floorMaterial.uniforms.tNormalMap.value as Texture).type,
+          format: (this.floorMaterial.uniforms.tNormalMap.value as Texture).format,
+          wrapS: (this.floorMaterial.uniforms.tNormalMap.value as Texture).wrapS,
+          wrapT: (this.floorMaterial.uniforms.tNormalMap.value as Texture).wrapT,
+        },
         placeholder: { colorSpace: this.placeholder.colorSpace, type: this.placeholder.type, format: this.placeholder.format },
         fluidPlaceholder: { colorSpace: this.fluidPlaceholder.colorSpace, type: this.fluidPlaceholder.type, format: this.fluidPlaceholder.format },
       },

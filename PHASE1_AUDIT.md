@@ -107,6 +107,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 30 | S1-103 | Source `V1/H1/z1` sky composite uniform surface | Source `z1` declares shader text for `uShader1Mix3` and `uShader3Scale` in `B1`, but its runtime uniform object binds only `tScene`, `uTime`, `uShader1Alpha`, `uShader1Speed`, `uShader2Speed`, `uShader1Scale`, `uShader2Scale`, and `uShaderMix`. | Production now removes the rebuild-only runtime bindings for `uShader1Mix3` and `uShader3Scale`, while keeping them shader-declared. Output probe reports both as `source-declared-only`, and renderer audit checks source `V1/H1/z1` sizing/update/material anchors. | Low | Keep as source-correct sky composite surface cleanup. This narrows environment/sky ownership but does not close Phase 1; mobile/fog-bed distribution and projection/material residuals remain open. |
 | 31 | S1-104 | Source `GA` rotation-wrap scale ownership | Source `GA.createInstancedMesh()` attaches the instanced mesh to `rotationWrap` and applies `settings.scale=.09` to `rotationWrap`; source `GA.createPlane()` attaches `rayPlane` to the same `rotationWrap` with unscaled geometry/position, then local mouse simulation resizes from the unscaled plane size. | Production now restores that object hierarchy: each work item has `group -> rotationWrap(scale=.09) -> mesh + rayPlane`, mesh scale stays identity, and ray-plane geometry/z are no longer pre-multiplied by grid scale. Output probe asserts the hierarchy/scale shape and renderer audit records source anchors. | Low-medium | Keep as source-correct `GA` matrix/projection ownership. World dimensions remain stable, but Phase 1 is still open for mobile/fog-bed distribution and strict projection/material residuals. |
 | 32 | S1-105 | Source `Lu/I1` render-manager clearing ownership | Source renderer `qw` sets `autoClear=false`; source `Lu.update()` and `I1.update()` render raw, blur, FXAA, and composite targets directly with `setRenderTarget(...); render(...)` except for explicitly source-owned special cases such as reflector raw clear and media scene `autoClear=true`. | Production now removes rebuild-only explicit clears from the work raw/composite pass, main pre-composite pass, main blur pass, main FXAA pass, frame start, and hidden-home work fallback. Output probe reports work/main render-manager clear modes and hard-fails on drift; renderer audit records source `qw`, `nD`, `Lu`, and `I1` anchors. | Medium | Keep as source-correct render-manager ownership after QA. Project media remains stable, but Phase 1 stays open for mobile/fog-bed distribution and strict projection/material residuals. |
+| 33 | S1-106 | Source `Xt.preloadTextures()` wrapping ownership | Source preloads blue-noise, floor-normal, and `perlin2` with `ci=RepeatWrapping=1000`; `perlin1` uses `vo=MirroredRepeatWrapping=1002`. | Production now loads work-block `perlin1` with `MirroredRepeatWrapping` while keeping A1/C1 `perlin2`, blue-noise, and floor-normal on `RepeatWrapping`. Output probe exposes and hard-fails on wrapping drift; renderer audit records the source `Xt.preloadTextures()` anchors. | Low-medium | Keep as source-correct texture ownership. This fixes a concrete earlier misread where `vo` had been documented as clamp; Phase 1 remains open for fog-bed and projection/material parity. |
 
 ### Phase 1 Open Blocker Board
 
@@ -540,6 +541,43 @@ Verification:
 | Mobile center-band delta | `-0.0125` against source |
 
 Decision: keep the source render-manager clearing alignment. It removes a real source-structure divergence and keeps project media stable, but Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and deeper source-isomorphic renderer structure.
+
+### S1-106 Source `Xt.preloadTextures()` Wrapping Ownership
+
+This batch corrected texture wrapping ownership against source `Xt.preloadTextures()`.
+
+Source/runtime evidence:
+
+- Source constants resolve to `ci=RepeatWrapping=1000` and `vo=MirroredRepeatWrapping=1002`.
+- Source `Xt.preloadTextures()` sets blue-noise, floor-normal, and `perlin2` to `ci`.
+- Source `Xt.preloadTextures()` sets `perlin1` to `vo`.
+- The rebuild previously kept work-block `perlin1` on clamp wrapping and did not update the runtime `noiseTexture` pointer after loading blue-noise, so probes still saw the placeholder object.
+
+Production now:
+
+- Loads work-block `perlin1` with `MirroredRepeatWrapping`.
+- Keeps A1/C1 `perlin2`, blue-noise, and floor-normal with `RepeatWrapping`.
+- Updates the runtime `noiseTexture` pointer to the loaded blue-noise texture.
+- Exposes all four wrapping modes in `__rogierOutputProbe.textures`.
+- Hard-fails `scripts/probe-output-color.mjs` if those wrapping modes drift.
+- Adds source `Xt.preloadTextures()` anchors to `scripts/audit-renderer-output.mjs`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Source `Xt.preloadTextures()` anchors all true; `ci=RepeatWrapping=1000`, `vo=MirroredRepeatWrapping=1002` |
+| Output probe | Passed; blue-noise/floor-normal/perlin2 `wrapS/wrapT=1000`, work `perlin1` `wrapS/wrapT=1002` |
+| Thumb spotlight probe | Passed; map present, target `(0,0,-8)`, intensity `220` |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | Passed with no shader/WebGL console errors |
+| Full home source-vs-rebuild capture | Passed without failures/exceptions |
+| Desktop center-band delta | `-0.0003` against source |
+| Mobile center-band delta | `-0.0128` against source |
+
+Decision: keep as source-correct texture preload/wrapping ownership. This corrects a concrete earlier documentation/implementation misread; Phase 1 remains open for mobile fog-bed distribution and strict projection/material parity.
 
 ### S1-70 Source Floor Circle Geometry
 
@@ -2961,11 +2999,11 @@ Source evidence from `bundle.250f01b7.js`:
 
 - `HA` uses `float spread = 3.;` in the work-block vertex displacement tail.
 - `VA.customUniforms.tPerlin` initializes from `Xt.perlin1`.
-- `Xt.preloadTextures()` loads `perlin1` from `/images/textures/perlin-1.${webpOrJpg}` with `wrapS/wrapT = vo` (`ClampToEdgeWrapping` in the bundled Three constants), while `perlin2` uses `ci` (`RepeatWrapping`).
+- `Xt.preloadTextures()` loads `perlin1` from `/images/textures/perlin-1.${webpOrJpg}` with `wrapS/wrapT = vo` (`MirroredRepeatWrapping=1002` in the bundled Three constants), while `perlin2` uses `ci` (`RepeatWrapping=1000`).
 
 Rebuild status:
 
-- Ordinary and auxiliary work-block materials now use a separate `workPerlinTexture` loaded from `/images/textures/perlin-1.webp` with `ClampToEdgeWrapping`.
+- Ordinary and auxiliary work-block materials now use a separate `workPerlinTexture` loaded from `/images/textures/perlin-1.webp` with `MirroredRepeatWrapping`.
 - The A1/C1 pre-composite material keeps `perlinTexture` loaded from `/images/textures/perlin-2.webp` with `RepeatWrapping`.
 - Work-block spread is restored from the rebuild-only `5.0` to source `3.0`.
 
