@@ -136,6 +136,16 @@ async function runProbe() {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
   }
+  const reflectionTargets = parsed.probe.reflectionState?.targets;
+  const reflectionErrors = [];
+  if (reflectionTargets) {
+    if (reflectionTargets.rawClearMode !== "source-autoClear-false-only") reflectionErrors.push("rawClearMode");
+    if (reflectionTargets.cameraProjectionCopyOrder !== "source-updateMatrixWorld-before-projection-copy") reflectionErrors.push("cameraProjectionCopyOrder");
+    if (reflectionTargets.sourceCssSized !== true) reflectionErrors.push("sourceCssSized");
+  }
+  if (reflectionErrors.length) {
+    throw new Error(`Floor reflection source-shape mismatch: ${reflectionErrors.join(", ")}`);
+  }
   const shaderConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
   if (shaderConsoleMessages.length) {
     throw new Error(`Shader/WebGL console errors: ${shaderConsoleMessages.join("\n")}`);

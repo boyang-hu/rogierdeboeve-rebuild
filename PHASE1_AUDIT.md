@@ -98,6 +98,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 22 | S1-95 | Source `GA/Ka` mouse plane attribution | Source `GA.createPlane()` uses plane scale `35*1.3` by `23*1.3`, ray plane scaled again by `1.5`, `uUvOffset=(.25,.25)`, `uUvOffsetScale=1.5`, and `resize()` calls `mouseSim.onResize(plane.scale.x, plane.scale.y)`. | Production behavior was already source-shaped; this batch adds renderer-audit anchors and hard output-probe assertions for local target size, `uCoords`, UV offset/scale, ray-plane geometry/z, persistence, and thickness. | Low | Treat `GA/Ka` plane sizing as verified. Do not tune brightness through local mouse sim; remaining Phase 1 work should move to exact `VA` material/projection or mobile fog-bed evidence. |
 | 23 | S1-96 | Shader/WebGL QA gate and `VA` sheen attribution | A rejected test edit showed that changing r164 physical-material sheen chunks can compile-fail even when text-level shader residuals look plausible. Source `zA` declares `USE_SHEEN` through the material surface, but does not have the modern r164 outgoing-light sheen tail in the captured source body. | Production rendering is unchanged. Shader dump now splits `USE_SHEEN` declaration evidence from the r164 `sheenEnergyComp` outgoing-light tail, and the output probe now fails hard on shader/WebGL console errors instead of only reporting them. | Low | Keep as QA guardrail. Do not edit physical-material sheen chunks unless the dump/probe pair proves the exact source-safe replacement and project media probes remain green. |
 | 24 | S1-97 | Source `VA/zA` r164 sheen outgoing tail | Source `zA` has the ordinary `USE_SHEEN` declaration/uniform surface but its captured outgoing-light body does not include the modern r164 `sheenEnergyComp` compensation tail. After S1-96, the shader dump can distinguish declaration parity from body residuals. | Production now strips only the r164 `sheenEnergyComp` outgoing-light tail from ordinary work-block `VA`, preserving the `USE_SHEEN` declaration surface and all existing material uniforms. Shader dump reports `r164SheenOutgoingTail` source false / rebuild false with no WebGL console errors. | Low-medium | Keep as a narrow source-correct material-body alignment. It does not close Phase 1; mobile/fog-bed and broader projection/material feel remain open. |
+| 25 | S1-98 | Source `i1` reflector update ordering | Source `i1.update()` calls `virtualCamera.updateMatrixWorld()` before copying the source camera projection matrix, and clears the raw reflection target only through `renderer.autoClear===false && renderer.clear()`. | Production now follows that reflector camera/projection order and conditional raw-target clear. Renderer audit records the source anchors, and output probe fails if the reflection probe no longer reports the source clear/order modes. | Low-medium | Keep as source-correct reflector ownership. It is not expected to close Phase 1 alone; continue floor/environment target-content attribution and projection/material residual work. |
 
 ### Phase 1 Open Blocker Board
 
@@ -241,6 +242,38 @@ Verification:
 | Mobile center-band delta | `-0.0129` against source |
 
 Decision: keep this narrow source-correct shader-body fix. Phase 1 remains open because it does not resolve the mobile/fog-bed residual or strict projection/material feel.
+
+### S1-98 Source `i1` Reflector Camera/Clear Ordering
+
+This batch stayed on the `a1/i1` floor-reflection chain and corrected two remaining source-confirmed reflector update details.
+
+Source/runtime evidence:
+
+- Source `i1.update()` calls `virtualCamera.lookAt(target)`, assigns `virtualCamera.far = camera.far`, calls `virtualCamera.updateMatrixWorld()`, then copies `camera.projectionMatrix`.
+- Source clears the raw reflection target only when `renderer.autoClear === false`; the blur read/write passes still render without extra clears.
+
+Production change:
+
+- `renderFloorReflection()` now updates the virtual reflection camera matrix before copying the home camera projection matrix.
+- The raw reflection target clear now follows the source conditional `!renderer.autoClear` branch instead of unconditionally clearing.
+- `scripts/audit-renderer-output.mjs` now records source `i1` order and raw-target clear anchors.
+- `scripts/probe-output-color.mjs` now fails if the reflector probe stops reporting the source projection-copy order, raw clear mode, or CSS-sized reflection target shape.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `i1` camera/projection order and conditional raw clear anchors present |
+| Output probe | Passed; reflection probe reports `rawClearMode=source-autoClear-false-only`, `cameraProjectionCopyOrder=source-updateMatrixWorld-before-projection-copy`, and `sourceCssSized=true` |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight map state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Passed without failed requests or runtime exceptions |
+| Desktop center-band delta | `0.0000` against source |
+| Mobile center-band delta | `-0.0130` against source |
+
+Decision: keep this as source-correct reflector lifecycle parity. Phase 1 remains open because this is a narrow reflector ownership fix, not a visual closeout for the remaining mobile/fog-bed and spotlight/projection residuals.
 
 ### S1-70 Source Floor Circle Geometry
 

@@ -5186,8 +5186,8 @@ export class WebGLBackdrop {
     this.floorReflectionCamera.up.reflect(this.floorReflectorNormal);
     this.floorReflectionCamera.lookAt(this.floorReflectionTargetPosition);
     this.floorReflectionCamera.far = this.homeCamera.far;
-    this.floorReflectionCamera.projectionMatrix.copy(this.homeCamera.projectionMatrix);
     this.floorReflectionCamera.updateMatrixWorld();
+    this.floorReflectionCamera.projectionMatrix.copy(this.homeCamera.projectionMatrix);
     this.floorReflectionMatrix.set(
       0.5, 0, 0, 0.5,
       0, 0.5, 0, 0.5,
@@ -5224,7 +5224,7 @@ export class WebGLBackdrop {
       this.renderer.shadowMap.autoUpdate = false;
       this.renderer.setRenderTarget(this.floorReflectionTarget);
       this.renderer.state.buffers.depth.setMask(true);
-      this.renderer.clear();
+      if (!this.renderer.autoClear) this.renderer.clear();
       this.renderer.render(this.homeScene, this.floorReflectionCamera);
 
       this.renderer.setRenderTarget(this.floorReflectionReadTarget);
@@ -5691,6 +5691,8 @@ export class WebGLBackdrop {
         blurInputUsesRaw: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionTarget.texture,
         blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
+        rawClearMode: "source-autoClear-false-only",
+        cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",
         sourceCssSized: this.floorReflectionTarget.width === Math.max(1, Math.round(window.innerWidth * 0.75))
           && this.floorReflectionTarget.height === Math.max(1, Math.round(window.innerHeight * 0.75)),
       },

@@ -123,6 +123,7 @@ const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
+const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
   extractAround(bundle, "setOutputColorSpace", 180, 700),
@@ -347,6 +348,28 @@ const summary = {
         "this.mouseSpeed=Yi(this.mouseSpeed,this.mouseSim.simulationMaterial.uniforms.uSpeed.value,10,t)",
       ]),
       excerpt: compact(sourceGA.text),
+    },
+    i1: sourceI1 && {
+      index: sourceI1.index,
+      checks: checks(sourceI1.text, [
+        "this.virtualCamera.lookAt(this.target)",
+        "this.virtualCamera.far=n.far",
+        "this.virtualCamera.updateMatrixWorld()",
+        "this.virtualCamera.projectionMatrix.copy(n.projectionMatrix)",
+        "e.autoClear===!1&&e.clear()",
+        "e.setRenderTarget(this.renderTarget)",
+        "e.state.buffers.depth.setMask(!0)",
+      ]),
+      order: regexAnchorOrder(sourceI1.text, [
+        { label: "lookAt", pattern: /this\.virtualCamera\.lookAt\(this\.target\)/ },
+        { label: "far", pattern: /this\.virtualCamera\.far=n\.far/ },
+        { label: "updateMatrixWorld", pattern: /this\.virtualCamera\.updateMatrixWorld\(\)/ },
+        { label: "projectionCopy", pattern: /this\.virtualCamera\.projectionMatrix\.copy\(n\.projectionMatrix\)/ },
+        { label: "setRenderTargetRaw", pattern: /e\.setRenderTarget\(this\.renderTarget\)/ },
+        { label: "depthMask", pattern: /e\.state\.buffers\.depth\.setMask\(!0\)/ },
+        { label: "conditionalClear", pattern: /e\.autoClear===!1&&e\.clear\(\)/ },
+      ]),
+      excerpt: compact(sourceI1.text),
     },
   },
   rendererOutputRefs: rendererOutputRefs.map((entry) => ({
