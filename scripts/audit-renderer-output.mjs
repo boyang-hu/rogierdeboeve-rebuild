@@ -129,6 +129,8 @@ const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
+const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
+const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
   extractAround(bundle, "setOutputColorSpace", 180, 700),
@@ -293,9 +295,13 @@ const summary = {
         "e=Fa(e)/4,t=Fa(t)/4",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
         "o.setRenderTarget(u),o.render(this.screen,this.screenCamera)",
+        "o.setRenderTarget(c),o.render(a,r)",
+        "o.setRenderTarget(f),o.render(this.screen,this.screenCamera)",
+        "o.setRenderTarget(g),o.render(this.screen,this.screenCamera)",
         "o.setRenderTarget(d[p]),o.render(this.screen,this.screenCamera)",
         "o.setRenderTarget(l[p]),o.render(this.screen,this.screenCamera)",
         "o.setRenderTarget(d[0]),o.render(this.screen,this.screenCamera)",
+        "o.setRenderTarget(h),o.render(this.screen,this.screenCamera)",
       ]),
       excerpt: compact(sourceLu.text),
     },
@@ -329,8 +335,31 @@ const summary = {
         "e=Fa(e)/2,t=Fa(t)/2",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
         "this.compositeMaterial.uniforms.tLensflare.value=v.texture",
+        "r.setRenderTarget(a),r.render(o,i)",
+        "r.setRenderTarget(h),r.render(this.screen,this.screenCamera)",
+        "r.setRenderTarget(f),r.render(this.screen,this.screenCamera)",
+        "r.setRenderTarget(g),r.render(this.screen,this.screenCamera)",
+        "r.setRenderTarget(l),r.render(this.screen,this.screenCamera)",
       ]),
       excerpt: compact(sourceMainI1.text),
+    },
+    renderer: sourceRenderer && {
+      index: sourceRenderer.index,
+      checks: checks(sourceRenderer.text, [
+        "super({alpha:!0,antialias:!1,preserveDrawingBuffer:!1,powerPreference:\"high-performance\",stencil:!1,depth:!1})",
+        "this.autoClear=!1",
+        "this.outputColorSpace=Gt",
+      ]),
+      excerpt: compact(sourceRenderer.text),
+    },
+    canvasManager: sourceCanvasManager && {
+      index: sourceCanvasManager.index,
+      checks: checks(sourceCanvasManager.text, [
+        "for(let r=0;r<this.scenes.length;r++)this.scenes[r].instance.update(e,t,n,i)",
+        "this.addScene(this.workScene,\"work\")",
+        "this.addScene(this.mainScene,\"main\")",
+      ]),
+      excerpt: compact(sourceCanvasManager.text),
     },
     Pe: sourcePe && {
       index: sourcePe.index,

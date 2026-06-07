@@ -106,6 +106,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 29 | S1-102 | Source `Iu/p1/h1` update ordering | Source `Iu.update()` renders the render-manager first, then updates the camera controller and components; source `p1.update()` calls `super.update()` before work items/about blocks, so environment `h1.update()` is a component update after the current frame render. | Production now writes environment `uTime` in the post-render next-frame update path instead of the pre-render tick path. Renderer audit checks source `Iu.update()` and `p1.update()` anchors, and output probe asserts `environmentUpdateOrder=source-p1-component-post-render`. | Low-medium | Keep as source-correct frame-order ownership. This is a one-frame environment timing alignment, not a Phase 1 visual closeout; mobile/fog-bed and projection/material residuals remain open. |
 | 30 | S1-103 | Source `V1/H1/z1` sky composite uniform surface | Source `z1` declares shader text for `uShader1Mix3` and `uShader3Scale` in `B1`, but its runtime uniform object binds only `tScene`, `uTime`, `uShader1Alpha`, `uShader1Speed`, `uShader2Speed`, `uShader1Scale`, `uShader2Scale`, and `uShaderMix`. | Production now removes the rebuild-only runtime bindings for `uShader1Mix3` and `uShader3Scale`, while keeping them shader-declared. Output probe reports both as `source-declared-only`, and renderer audit checks source `V1/H1/z1` sizing/update/material anchors. | Low | Keep as source-correct sky composite surface cleanup. This narrows environment/sky ownership but does not close Phase 1; mobile/fog-bed distribution and projection/material residuals remain open. |
 | 31 | S1-104 | Source `GA` rotation-wrap scale ownership | Source `GA.createInstancedMesh()` attaches the instanced mesh to `rotationWrap` and applies `settings.scale=.09` to `rotationWrap`; source `GA.createPlane()` attaches `rayPlane` to the same `rotationWrap` with unscaled geometry/position, then local mouse simulation resizes from the unscaled plane size. | Production now restores that object hierarchy: each work item has `group -> rotationWrap(scale=.09) -> mesh + rayPlane`, mesh scale stays identity, and ray-plane geometry/z are no longer pre-multiplied by grid scale. Output probe asserts the hierarchy/scale shape and renderer audit records source anchors. | Low-medium | Keep as source-correct `GA` matrix/projection ownership. World dimensions remain stable, but Phase 1 is still open for mobile/fog-bed distribution and strict projection/material residuals. |
+| 32 | S1-105 | Source `Lu/I1` render-manager clearing ownership | Source renderer `qw` sets `autoClear=false`; source `Lu.update()` and `I1.update()` render raw, blur, FXAA, and composite targets directly with `setRenderTarget(...); render(...)` except for explicitly source-owned special cases such as reflector raw clear and media scene `autoClear=true`. | Production now removes rebuild-only explicit clears from the work raw/composite pass, main pre-composite pass, main blur pass, main FXAA pass, frame start, and hidden-home work fallback. Output probe reports work/main render-manager clear modes and hard-fails on drift; renderer audit records source `qw`, `nD`, `Lu`, and `I1` anchors. | Medium | Keep as source-correct render-manager ownership after QA. Project media remains stable, but Phase 1 stays open for mobile/fog-bed distribution and strict projection/material residuals. |
 
 ### Phase 1 Open Blocker Board
 
@@ -497,6 +498,48 @@ Verification:
 | Mobile center-band delta | `-0.0129` against source |
 
 Decision: keep the source `GA` hierarchy correction. It improves matrix/projection ownership without tuning visual constants, but Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and deeper source-isomorphic renderer structure.
+
+### S1-105 Source `Lu/I1` Render-Manager Clearing Ownership
+
+This batch aligned another render-manager ownership layer without changing visual constants.
+
+Source/runtime evidence:
+
+- Source `qw` creates the renderer with `autoClear=false`.
+- Source `Lu.update()` renders the work raw target, optional blur targets, optional FXAA target, and final composite target through direct `setRenderTarget(...); render(...)` calls.
+- Source `I1.update()` follows the same no-explicit-clear pattern for main raw, blur, FXAA, and composite targets, while keeping its own lensflare clear when that source feature is enabled.
+- Source `$1.update()` is a special media-scene exception that temporarily sets `renderer.autoClear=true`; that path was left unchanged.
+- Source `i1.update()` is a reflector exception that conditionally clears only when `autoClear===false`; that path was left unchanged.
+
+Production change:
+
+- Removed rebuild-only frame-start canvas clear.
+- Removed rebuild-only clear before the home work raw pass.
+- Removed rebuild-only clear before the home work composite pass.
+- Removed rebuild-only clears from the hidden-home work raw/composite fallback.
+- Removed rebuild-only clear before the main pre-composite pass.
+- Removed rebuild-only clears from the main blur pass.
+- Removed rebuild-only clear before the main FXAA pass.
+- Added output-probe clear-mode markers for work `Lu/kA` and main `I1`.
+- Added hard probe assertions for those clear-mode markers.
+- Expanded renderer audit anchors for source `qw`, `nD`, `Lu`, and `I1` render-manager clear/pass ownership.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source renderer, canvas-manager, `Lu`, and `I1` clear/pass anchors present |
+| Output probe | Passed; work/main clear-mode assertions passed |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors; `VA`, `OA`, `A1`, and environment core checks unchanged |
+| Home source-vs-rebuild capture | Desktop/mobile home captures passed without failures or runtime exceptions |
+| Desktop center-band delta | `+0.0006` against source |
+| Mobile center-band delta | `-0.0125` against source |
+
+Decision: keep the source render-manager clearing alignment. It removes a real source-structure divergence and keeps project media stable, but Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and deeper source-isomorphic renderer structure.
 
 ### S1-70 Source Floor Circle Geometry
 

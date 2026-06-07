@@ -5425,6 +5425,11 @@ export class WebGLBackdrop {
             dprMode: "source-p1-resize-min-Pe-dpr-1.5",
             mouseSimScale: SCREEN_MOUSE_SIM_SCALE,
           },
+          renderManagerClearing: {
+            rawPass: "source-Lu-no-explicit-clear",
+            blurPass: "source-Lu-no-explicit-clear",
+            compositePass: "source-Lu-no-explicit-clear",
+          },
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),
             emissive: activeWorkItem.material.emissive.toArray(),
@@ -5451,6 +5456,12 @@ export class WebGLBackdrop {
             bloomPassClearing: "source-Lu-no-explicit-clear",
             fluidSizeMode: "source-I1-Fa-render-size-div-2-then-div-3",
             dprMode: "source-Pe-dpr-global",
+          },
+          renderManagerClearing: {
+            frameStart: "source-nD-no-explicit-clear",
+            preCompositePass: "source-I1-no-explicit-clear",
+            blurPass: "source-I1-no-explicit-clear",
+            fxaaPass: "source-I1-no-explicit-clear",
           },
         },
         updateOrder: {
@@ -5903,11 +5914,9 @@ export class WebGLBackdrop {
   private renderHomeBlurPass() {
     this.blurHorizontalMaterial.uniforms.tMap.value = this.compositeTarget.texture;
     this.renderer.setRenderTarget(this.blurTargetA);
-    this.renderer.clear();
     this.renderer.render(this.blurHorizontalScene, this.backgroundCamera);
     this.blurVerticalMaterial.uniforms.tMap.value = this.blurTargetA.texture;
     this.renderer.setRenderTarget(this.blurTargetB);
-    this.renderer.clear();
     this.renderer.render(this.blurVerticalScene, this.backgroundCamera);
   }
 
@@ -5999,7 +6008,6 @@ export class WebGLBackdrop {
     this.mainCompositeMaterial.uniforms.boolFxaa.value = settings.fxaa.enabled;
     if (settings.fxaa.enabled) {
       this.renderer.setRenderTarget(this.fxaaTarget);
-      this.renderer.clear();
       this.renderer.render(this.mainCompositeScene, this.backgroundCamera);
       this.fxaaMaterial.uniforms.tMap.value = this.fxaaTarget.texture;
       this.renderer.setRenderTarget(null);
@@ -6032,7 +6040,6 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.uniforms.boolFxaa.value = this.sourceMainRenderSettings.fxaa.enabled;
     this.updateMediaPlanePositions();
 
-    this.renderer.clear();
     const isProjectView = document.body.classList.contains("is-project");
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
@@ -6041,7 +6048,6 @@ export class WebGLBackdrop {
       this.updateScreenMouseSimulation(time, delta);
       this.renderSkyTarget(time);
       this.renderer.setRenderTarget(this.workRawTarget);
-      this.renderer.clear();
       const previousFloorVisible = this.floorPlane.visible;
       const previousFloorGroupVisible = this.floorGroup.visible;
       const previousEnvironmentVisible = this.environmentPlane.visible;
@@ -6063,7 +6069,6 @@ export class WebGLBackdrop {
           this.compositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
           this.compositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
           this.renderer.setRenderTarget(this.workCompositeTarget);
-          this.renderer.clear();
           this.renderer.render(this.compositeScene, this.backgroundCamera);
         }
       } finally {
@@ -6073,9 +6078,7 @@ export class WebGLBackdrop {
       }
     } else {
       this.renderer.setRenderTarget(this.workRawTarget);
-      this.renderer.clear();
       this.renderer.setRenderTarget(this.workCompositeTarget);
-      this.renderer.clear();
       preCompositeWorkTarget = this.workCompositeTarget;
     }
     this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
@@ -6090,7 +6093,6 @@ export class WebGLBackdrop {
     }
     this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     this.renderer.setRenderTarget(this.compositeTarget);
-    this.renderer.clear();
     this.renderer.render(this.preCompositeScene, this.backgroundCamera);
     const sceneSourceTarget = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB : this.compositeTarget;
     if (this.sourceMainRenderSettings.blur.enabled) {

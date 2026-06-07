@@ -148,11 +148,20 @@ async function runProbe() {
   }
   const workRenderSizing = parsed.probe.settings?.work?.renderManagerSizing;
   const mainRenderSizing = parsed.probe.settings?.main?.renderManagerSizing;
+  const workClearing = parsed.probe.settings?.work?.renderManagerClearing;
+  const mainClearing = parsed.probe.settings?.main?.renderManagerClearing;
   const bloomClearingErrors = [];
   if (workRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workBloomPassClearing");
   if (mainRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("mainBloomPassClearing");
+  if (workClearing?.rawPass !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workRawPassClearing");
+  if (workClearing?.blurPass !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workBlurPassClearing");
+  if (workClearing?.compositePass !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workCompositePassClearing");
+  if (mainClearing?.frameStart !== "source-nD-no-explicit-clear") bloomClearingErrors.push("mainFrameStartClearing");
+  if (mainClearing?.preCompositePass !== "source-I1-no-explicit-clear") bloomClearingErrors.push("mainPreCompositePassClearing");
+  if (mainClearing?.blurPass !== "source-I1-no-explicit-clear") bloomClearingErrors.push("mainBlurPassClearing");
+  if (mainClearing?.fxaaPass !== "source-I1-no-explicit-clear") bloomClearingErrors.push("mainFxaaPassClearing");
   if (bloomClearingErrors.length) {
-    throw new Error(`Lu bloom pass clearing source-shape mismatch: ${bloomClearingErrors.join(", ")}`);
+    throw new Error(`Render-manager clearing source-shape mismatch: ${bloomClearingErrors.join(", ")}`);
   }
   const sizingErrors = [];
   if (workRenderSizing?.bloomStartMode !== "source-Lu-Fa-render-size-div-4") sizingErrors.push("workBloomStartMode");
