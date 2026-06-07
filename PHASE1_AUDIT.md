@@ -104,6 +104,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 27 | S1-100 | Source `Lu/kA` bloom pass clearing | Source `Lu.update()` renders luminosity, horizontal blur, vertical blur, and bloom-composite fullscreen passes directly after `setRenderTarget(...)` without explicit `renderer.clear()` calls. The rebuild still cleared those fullscreen pass targets before rendering. | Production now removes explicit clears from the shared `renderBloomChain()` passes and both work/main luminosity bright passes. Output probe reports `bloomPassClearing=source-Lu-no-explicit-clear` for work and main render managers, and fails if either drifts. | Low-medium | Keep as source-correct render-manager pass ownership. This does not close Phase 1; remaining gaps are still mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic render-manager structure. |
 | 28 | S1-101 | Source `I1` main render-manager sizing | Source `I1.resize()` uses `Fa(renderSize)/2` for main luminosity/bloom and then resizes main fluid with that half-POT size divided by `3`; this differs from work `Lu/kA`, which uses `/4`. | Production now restores main `I1` half-POT bloom/luminosity/fluid sizing while leaving work `Lu/kA` on quarter-POT. Output probe and renderer audit now assert the split so `I1` cannot be accidentally collapsed back into `Lu`. | Low-medium | Keep as source-correct sizing ownership. This is a structural correction, not a Phase 1 visual closeout. |
 | 29 | S1-102 | Source `Iu/p1/h1` update ordering | Source `Iu.update()` renders the render-manager first, then updates the camera controller and components; source `p1.update()` calls `super.update()` before work items/about blocks, so environment `h1.update()` is a component update after the current frame render. | Production now writes environment `uTime` in the post-render next-frame update path instead of the pre-render tick path. Renderer audit checks source `Iu.update()` and `p1.update()` anchors, and output probe asserts `environmentUpdateOrder=source-p1-component-post-render`. | Low-medium | Keep as source-correct frame-order ownership. This is a one-frame environment timing alignment, not a Phase 1 visual closeout; mobile/fog-bed and projection/material residuals remain open. |
+| 30 | S1-103 | Source `V1/H1/z1` sky composite uniform surface | Source `z1` declares shader text for `uShader1Mix3` and `uShader3Scale` in `B1`, but its runtime uniform object binds only `tScene`, `uTime`, `uShader1Alpha`, `uShader1Speed`, `uShader2Speed`, `uShader1Scale`, `uShader2Scale`, and `uShaderMix`. | Production now removes the rebuild-only runtime bindings for `uShader1Mix3` and `uShader3Scale`, while keeping them shader-declared. Output probe reports both as `source-declared-only`, and renderer audit checks source `V1/H1/z1` sizing/update/material anchors. | Low | Keep as source-correct sky composite surface cleanup. This narrows environment/sky ownership but does not close Phase 1; mobile/fog-bed distribution and projection/material residuals remain open. |
 
 ### Phase 1 Open Blocker Board
 
@@ -422,6 +423,42 @@ Verification:
 | Mobile center-band delta | `-0.0124` against source |
 
 Decision: keep the source post-render environment timing. It aligns frame ownership with `Iu/p1` but does not close Phase 1; mobile/fog-bed distribution, projection/material feel, and deeper source-isomorphic renderer structure remain open.
+
+### S1-103 Source `V1/H1/z1` Sky Composite Uniform Surface
+
+This batch stayed on the sky/environment chain and removed rebuild-only runtime uniform bindings that the source `z1` material does not create.
+
+Source/runtime evidence:
+
+- Source `B1` shader text declares `uShader1Mix3` and `uShader3Scale`.
+- Source `z1` runtime uniforms bind `tScene`, `uTime`, `uShader1Alpha`, `uShader1Speed`, `uShader2Speed`, `uShader1Scale`, `uShader2Scale`, and `uShaderMix`; it does not bind `uShader1Mix3` or `uShader3Scale`.
+- Source `V1.resize()` keeps the sky render target at `height * .75` with DPR `1`, and `V1.update()` writes `uTime` after render-manager update with low-res time pinned to `0`.
+
+Production change:
+
+- Removed rebuild-only runtime `uShader1Mix3` binding from the sky composite material.
+- Removed rebuild-only runtime `uShader3Scale` binding from the sky composite material.
+- Kept both names shader-declared, matching source shader surface.
+- `__rogierOutputProbe` now reports sky `uShader1Mix3Binding` and `uShader3ScaleBinding`.
+- `scripts/probe-output-color.mjs` fails if those bindings are not `source-declared-only`.
+- `scripts/audit-renderer-output.mjs` now checks source `V1` and `z1` anchors for target sizing, update timing, material uniforms, shader ownership, and draw state.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `V1/H1/z1` anchors present |
+| Output probe | Passed; sky `uShader1Mix3Binding` and `uShader3ScaleBinding` are `source-declared-only` |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight state retained |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors; environment core checks remain source/rebuild true |
+| Home source-vs-rebuild capture | Desktop/mobile home captures passed without failures or runtime exceptions |
+| Desktop center-band delta | `+0.0004` against source |
+| Mobile center-band delta | `-0.0116` against source |
+
+Decision: keep the source-declared-only sky uniform cleanup. It is a low-risk ownership alignment and slightly improves the mobile center-band residual, but Phase 1 remains open for mobile/fog-bed distribution, strict projection/material feel, and deeper source-isomorphic renderer structure.
 
 ### S1-70 Source Floor Circle Geometry
 

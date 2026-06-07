@@ -125,6 +125,8 @@ const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
+const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
+const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const rendererOutputRefs = [
@@ -367,6 +369,27 @@ const summary = {
         "this.aboutBlocks.visible&&(this.aboutBlocks.update(e,t,n,Math.min(Pe.dpr,1.5))",
       ]),
       excerpt: compact(sourceP1Update.text),
+    },
+    skyV1: sourceSkyV1 && {
+      index: sourceSkyV1.index,
+      checks: checks(sourceSkyV1.text, [
+        "class V1 extends Uu",
+        "this.renderManager.resize(t*.75,t*.75,1)",
+        "this.renderManager.compositeMaterial.uniforms.uTime.value=Le.LOW_RES?0:e",
+      ]),
+      excerpt: compact(sourceSkyV1.text),
+    },
+    skyZ1: sourceSkyZ1 && {
+      index: sourceSkyZ1.index,
+      checks: checks(sourceSkyZ1.text, [
+        "uniforms:{tScene:new I(null),uTime:new I(0),uShader1Alpha:new I(Zs.SHADER_1_ALPHA),uShader1Speed:new I(Zs.SHADER_1_SPEED),uShader2Speed:new I(Zs.SHADER_2_SPEED),uShader1Scale:new I(Zs.SHADER_1_SCALE),uShader2Scale:new I(Zs.SHADER_2_SCALE),uShaderMix:new I(Zs.SHADER_1_MIX_3)}",
+        "fragmentShader:B1",
+        "blending:ot",
+        "transparent:!0",
+        "depthWrite:!1",
+        "depthTest:!1",
+      ]),
+      excerpt: compact(sourceSkyZ1.text),
     },
     GA: sourceGA && {
       index: sourceGA.index,
