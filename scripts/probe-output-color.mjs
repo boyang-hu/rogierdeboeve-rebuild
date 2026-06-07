@@ -178,6 +178,32 @@ async function runProbe() {
   if (resizeErrors.length) {
     throw new Error(`p1.resize source-shape mismatch: ${resizeErrors.join(", ")}`);
   }
+  const workSettings = parsed.probe.settings?.work || {};
+  const activeMaterial = workSettings.activeMaterial;
+  const auxiliaryMaterial = workSettings.auxiliaryMaterial;
+  const materialErrors = [];
+  if (workSettings.materialStateMode !== "source-VA-meshstandard-default-toneMapped") materialErrors.push("materialStateMode");
+  if (!activeMaterial) materialErrors.push("activeMaterialMissing");
+  if (activeMaterial?.toneMapped !== true) materialErrors.push("activeToneMapped");
+  if (activeMaterial?.transparent !== true) materialErrors.push("activeTransparent");
+  if (activeMaterial?.depthWrite !== false) materialErrors.push("activeDepthWrite");
+  if (activeMaterial?.depthTest !== false) materialErrors.push("activeDepthTest");
+  if (activeMaterial?.dithering !== true) materialErrors.push("activeDithering");
+  if (Math.abs((activeMaterial?.envMapIntensity ?? 0) - 0.75) > 0.001) materialErrors.push("activeEnvMapIntensity");
+  if (Math.abs((activeMaterial?.roughness ?? 0) - 1) > 0.001) materialErrors.push("activeRoughness");
+  if (Math.abs((activeMaterial?.metalness ?? 0) - 0) > 0.001) materialErrors.push("activeMetalness");
+  if (!auxiliaryMaterial) materialErrors.push("auxiliaryMaterialMissing");
+  if (auxiliaryMaterial?.toneMapped !== true) materialErrors.push("auxToneMapped");
+  if (auxiliaryMaterial?.transparent !== true) materialErrors.push("auxTransparent");
+  if (auxiliaryMaterial?.depthWrite !== false) materialErrors.push("auxDepthWrite");
+  if (auxiliaryMaterial?.depthTest !== false) materialErrors.push("auxDepthTest");
+  if (auxiliaryMaterial?.dithering !== true) materialErrors.push("auxDithering");
+  if (Math.abs((auxiliaryMaterial?.envMapIntensity ?? 0) - 0.75) > 0.001) materialErrors.push("auxEnvMapIntensity");
+  if (Math.abs((auxiliaryMaterial?.roughness ?? 0) - 1) > 0.001) materialErrors.push("auxRoughness");
+  if (Math.abs((auxiliaryMaterial?.metalness ?? 0) - 0) > 0.001) materialErrors.push("auxMetalness");
+  if (materialErrors.length) {
+    throw new Error(`VA material source-state mismatch: ${materialErrors.join(", ")}`);
+  }
   const gaShape = parsed.probe.mouseSimulation?.active?.sourceShape;
   if (gaShape) {
     const shapeErrors = Object.entries(gaShape)
