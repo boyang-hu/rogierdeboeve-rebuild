@@ -967,8 +967,17 @@ uniform bool boolFxaa;
 uniform float uDarken;
 uniform float uSaturation;
 
+float vignout = 0.55;
+float vignin = 0.1;
+float vignfade = 2.0;
+
 in vec2 vUv;
 out vec4 FragColor;
+
+float luminance(vec3 rgb) {
+  const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+  return dot(rgb, W);
+}
 
 vec3 saturation(vec3 color, float amount) {
   float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
@@ -983,7 +992,7 @@ vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
   return base * blend * opacity + base * (1.0 - opacity);
 }
 
-vec3 sourceBlend(int mode, vec3 base, vec3 blend, float opacity) {
+vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
   if (mode == 11) return blendLighten(base, blend, opacity);
   if (mode == 15) return blendMultiply(base, blend, opacity);
   return base;
@@ -998,26 +1007,39 @@ vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
   return vec4(r, g, b, a);
 }
 
+float vignette(vec2 uv, float vignin, float vignout, float vignfade, float fstop) {
+  float dist = distance(uv.xy, vec2(0.5, 0.5));
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
+}
+
 void main() {
+  vec4 fluid = texture(tFluid, vUv);
+  vec4 mouseSim = texture(tMouseSim, vUv);
   vec2 uv = vUv;
-  vec4 fluid = texture(tFluid, uv);
-  vec4 mouseSim = texture(tMouseSim, uv);
-  vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
+  vec4 mixed = rgbshift(tScene, uv, -1.0, 0.0015);
   if (boolBloom) {
-    vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
+    vec4 bloom = rgbshift(tBloom, uv, -1.5, 0.02);
+    float angle = length(uv + 0.5);
     float uBloomDistortion = 2.5;
     float amount = 0.001 * uBloomDistortion;
-    vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), amount / 0.5).rgb;
-    color += bloom;
-    color += bloomShift;
+    mixed.rgb += bloom.rgb;
+    mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;
   }
-  color += length(fluid.xy) * 0.015;
-  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;
-  color = sourceBlend(15, color, vec3(0.095), darkenOpacity);
-  color = sourceBlend(11, color, vec3(0.095), 1.0);
-  color = saturation(color, uSaturation);
 
-  FragColor = vec4(color, 1.0);
+  mixed.rgb += length(fluid.xy) * 0.015;
+
+  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);
+
+  vec3 green = vec3(0.063, 0.141, 0.086);
+  vec3 greenLight = vec3(0.337, 1.0, 0.561);
+  vec3 black = vec3(0.095, 0.095, 0.095);
+
+  mixed.rgb = blend(15, mixed.rgb, black, uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
+  mixed.rgb = blend(11, mixed.rgb, black, 1.0);
+  mixed.rgb = saturation(mixed.rgb, uSaturation);
+
+  FragColor = vec4(mixed.rgb, 1.0);
   #include <tonemapping_fragment>
 }
 `;
@@ -1032,56 +1054,56 @@ uniform int uDebugTransferMode;
 uniform int uDebugLightenMode;`,
   )
   .replace(
-    "vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;",
-    `vec3 color = rgbshift(tScene, uv, -1.0, 0.0015).rgb;
-  if (uDebugTransferMode == 1) color = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
-  if (uDebugTransferMode == 2) color = pow(max(color, vec3(0.0)), vec3(2.2));
+    "vec4 mixed = rgbshift(tScene, uv, -1.0, 0.0015);",
+    `vec4 mixed = rgbshift(tScene, uv, -1.0, 0.0015);
+  if (uDebugTransferMode == 1) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(1.0 / 2.2));
+  if (uDebugTransferMode == 2) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(2.2));
   if (uDebugStage == 1) {
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(mixed.rgb, 1.0);
     return;
   }`,
   )
   .replace(
-    "color += bloomShift;\n  }\n  color += length(fluid.xy) * 0.015;",
-    `color += bloomShift;
+    "mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;\n  }\n\n  mixed.rgb += length(fluid.xy) * 0.015;",
+    `mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;
   }
   if (uDebugStage == 2) {
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
-  color += length(fluid.xy) * 0.015;`,
+  mixed.rgb += length(fluid.xy) * 0.015;`,
   )
   .replace(
-    "color += length(fluid.xy) * 0.015;\n  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;",
-    `color += length(fluid.xy) * 0.015;
+    "mixed.rgb += length(fluid.xy) * 0.015;\n\n  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);",
+    `mixed.rgb += length(fluid.xy) * 0.015;
   if (uDebugStage == 3) {
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
-  float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;`,
+  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);`,
   )
   .replace(
-    "float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;\n  color = sourceBlend(15, color, vec3(0.095), darkenOpacity);",
+    "mixed.rgb = blend(15, mixed.rgb, black, uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);",
     `float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;
   if (uDebugDarkenMode == 1) darkenOpacity = uDarken * 2.0;
   if (uDebugDarkenMode == 2) darkenOpacity = mouseSim.r * 0.25 * uDarken;
   if (uDebugDarkenMode == 3) darkenOpacity = 0.0;
-  color = sourceBlend(15, color, vec3(0.095), darkenOpacity);
+  mixed.rgb = blend(15, mixed.rgb, black, darkenOpacity);
   if (uDebugStage == 4) {
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(mixed.rgb, 1.0);
     return;
   }`,
   )
   .replace(
-    "color = sourceBlend(11, color, vec3(0.095), 1.0);\n  color = saturation(color, uSaturation);",
+    "mixed.rgb = blend(11, mixed.rgb, black, 1.0);\n  mixed.rgb = saturation(mixed.rgb, uSaturation);",
     `if (uDebugLightenMode != 1) {
-    color = sourceBlend(11, color, vec3(0.095), 1.0);
+    mixed.rgb = blend(11, mixed.rgb, black, 1.0);
   }
   if (uDebugStage == 5) {
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
-  color = saturation(color, uSaturation);`,
+  mixed.rgb = saturation(mixed.rgb, uSaturation);`,
   );
 
 const homePreCompositeFragment = `
@@ -5962,6 +5984,17 @@ export class WebGLBackdrop {
           uDebugDarkenMode: this.compositeMaterial.uniforms.uDebugDarkenMode?.value ?? 0,
           uDebugTransferMode: this.compositeMaterial.uniforms.uDebugTransferMode?.value ?? 0,
           uDebugLightenMode: this.compositeMaterial.uniforms.uDebugLightenMode?.value ?? 0,
+          shaderSurface: {
+            formulaMode: "source-CA-mixed-blend-surface",
+            blendEntry: "source-Po-blend",
+            hasLuminanceHelper: homeCompositeFragment.includes("float luminance(vec3 rgb)"),
+            hasVignetteHelper: homeCompositeFragment.includes("float vignette(vec2 uv"),
+            hasSourceVignetteLocals: homeCompositeFragment.includes("float vignout") && homeCompositeFragment.includes("float vignin") && homeCompositeFragment.includes("float vignfade"),
+            hasInertColorLocals: homeCompositeFragment.includes("vec3 green =") && homeCompositeFragment.includes("vec3 greenLight ="),
+            usesMixedVariable: homeCompositeFragment.includes("vec4 mixed = rgbshift(tScene"),
+            usesSourceBlendEntry: homeCompositeFragment.includes("mixed.rgb = blend(15") && homeCompositeFragment.includes("mixed.rgb = blend(11"),
+            usesRebuildSourceBlendEntry: homeCompositeFragment.includes("sourceBlend(15") || homeCompositeFragment.includes("sourceBlend(11"),
+          },
           estimatedDarkenOpacityFromMouseGrid: darkenValue * 2 + mouseSimRed * 0.25 * darkenValue,
           estimatedDarkenOpacityWithoutMouse: darkenValue * 2,
           estimatedDarkenOpacityMouseOnly: mouseSimRed * 0.25 * darkenValue,

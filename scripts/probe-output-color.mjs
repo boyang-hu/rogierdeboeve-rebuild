@@ -195,6 +195,16 @@ async function runProbe() {
   if (preCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("preCompositeGlslVersion");
   if (workCompositeUniforms?.materialMode !== "source-OA-raw-glsl3") materialSurfaceErrors.push("workCompositeMaterialMode");
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
+  const workCompositeSurface = workCompositeUniforms?.shaderSurface || {};
+  if (workCompositeSurface.formulaMode !== "source-CA-mixed-blend-surface") materialSurfaceErrors.push("workCompositeFormulaMode");
+  if (workCompositeSurface.blendEntry !== "source-Po-blend") materialSurfaceErrors.push("workCompositeBlendEntry");
+  if (workCompositeSurface.hasLuminanceHelper !== true) materialSurfaceErrors.push("workCompositeLuminanceHelper");
+  if (workCompositeSurface.hasVignetteHelper !== true) materialSurfaceErrors.push("workCompositeVignetteHelper");
+  if (workCompositeSurface.hasSourceVignetteLocals !== true) materialSurfaceErrors.push("workCompositeVignetteLocals");
+  if (workCompositeSurface.hasInertColorLocals !== true) materialSurfaceErrors.push("workCompositeInertColorLocals");
+  if (workCompositeSurface.usesMixedVariable !== true) materialSurfaceErrors.push("workCompositeMixedVariable");
+  if (workCompositeSurface.usesSourceBlendEntry !== true) materialSurfaceErrors.push("workCompositeSourceBlendEntry");
+  if (workCompositeSurface.usesRebuildSourceBlendEntry !== false) materialSurfaceErrors.push("workCompositeRebuildBlendEntry");
   if (mainCompositeUniforms?.materialMode !== "source-lA-raw-glsl3") materialSurfaceErrors.push("mainCompositeMaterialMode");
   if (mainCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("mainCompositeGlslVersion");
   const lensflareUniforms = parsed.probe.uniforms?.lensflare;

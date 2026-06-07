@@ -129,6 +129,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 52 | S1-125 | Source `N1/F1/tl` displacement residual cleanup | After S1-124, source `N1/F1` still had three avoidable same-chain residuals: `uniform sampler2D tScene`, source global vignette constants `vignout/vignin/vignfade`, and source `tl` matrix fullscreen vertex path. The residual summary also omitted `N1-displacement-composite` from its focused table. | Production now binds source `tScene`, uses source `F1` global vignette constants, renders the displacement pass with an isolated source `tl` matrix fullscreen vertex/mesh path, and includes `N1-displacement-composite` in `phase1-shader-residuals.md`. Output probe hard-asserts `vertexMode`, `tSceneBound`, and source vignette constant mode. | Low-medium | Keep as source-correct `N1/F1/tl` cleanup. Do not generalize the matrix fullscreen vertex to other stable pass materials without a dedicated source/QA batch. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 53 | S1-126 | Source `Lo/tl` sky/thumb composite vertex surface | Source `Lo` composite screen meshes use fullscreen-triangle geometry plus matrix fullscreen vertex `tl`; source `z1` and `_1/x1` both bind `vertexShader:tl`. The rebuild still used the direct clip-space bridge vertex for sky and thumb composites, and `z1/B1` was missing the source `tonemapping_pars_fragment` include surface. | Production now renders `z1-sky-composite` and `x1-thumb-composite` through the isolated source `tl` fullscreen vertex/mesh path, adds the missing `z1` tonemapping pars include, maps `x1-thumb-composite` to source `tl` in shader dump, and hard-asserts sky composite vertex mode in output probe. | Low-medium | Keep as source-correct `Lo/tl` composite alignment. Do not apply `tl` to `OA/lA/W1/sg/rg/cg/Na`, which source maps to other vertex shaders. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 54 | S1-127 | Source `cg/nA` bloom composite uniform surface | Source `cg` binds `defines:{NUM_MIPS:5,DITHERING:e}`, fragment `nA`, vertex `iA`, uniforms `tBlur1..tBlur5` and `uBloomFactors[NUM_MIPS]`, and applies the shared dither helper behind `#ifdef DITHERING`. The rebuild still used rebuild-only `tBloom1..5` and `uFactor1..5` uniforms with `highp` precision and no source dither branch. | Production now uses source `tBlur*`, `uBloomFactors`, `NUM_MIPS=5`, `mediump` precision, and the source dither helper/branch surface for both work and main bloom composite materials. Output probe hard-asserts source uniform mode, array factors, define ownership, and absence of rebuild-only uniforms. | Low-medium | Keep as source-correct `cg/nA` surface alignment. This changes interface and shader surface only, not bloom strength/radius constants. Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 55 | S1-128 | Source `OA/CA` mixed/blend shader surface | Source `CA` keeps the final work composite in a `mixed` variable, calls the shared `blend(...)` dispatcher for modes `15` and `11`, declares `luminance`, `vignette`, vignette globals, and inert `green`/`greenLight` locals. The rebuild had an equivalent but simplified `color/sourceBlend` surface that made this central shader less source-shaped. | Production now uses the source-style `mixed` variable, source `blend(...)` entry, `luminance` and `vignette` helper surfaces, source vignette globals, and inert color locals while preserving the same output formula and constants. Output probe hard-asserts `source-CA-mixed-blend-surface` and absence of rebuild-only `sourceBlend` calls. | Low-medium | Keep as source-correct `OA/CA` shader-surface alignment. This does not solve the open transfer/color interpretation gap; it removes a central source-surface residual without promoting debug transfer or tuning constants. Phase 1 remains open. |
 
 ### Phase 1 Open Blocker Board
 
@@ -1289,6 +1290,35 @@ Verification notes:
 - Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks: `/tmp/rd-s127-media`.
 - Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`: `/tmp/rd-s127-capture`.
 - Band analysis: desktop center-band delta `-0.0017`; mobile center-band delta `-0.0159`.
+- Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-128 Source `OA/CA` Mixed/Blend Shader Surface
+
+This batch narrowed the central work composite shader surface toward source `CA`. It did not change `uDarken`, `uSaturation`, bloom strength/radius, render-target ownership, renderer output color space, or route transitions.
+
+Source evidence:
+
+- Source `CA` stores the composite color in `vec4 mixed`, not the rebuild-only `vec3 color` path.
+- Source `CA` calls the shared `blend(...)` dispatcher for `blend(15, ...)` multiply-darken and `blend(11, ...)` lighten-black.
+- Source `CA` keeps `float luminance(...)`, the `vignette(...)` helper surface, vignette globals `vignout/vignin/vignfade`, and inert `green` / `greenLight` locals.
+- Source `CA` computes `vignetteF` but leaves `mixed.rgb *= vignetteF` commented out, so this batch preserves the inert computation without applying it.
+
+Runtime and tooling changes:
+
+- `homeCompositeFragment` now uses source-style `mixed`, `blend(...)`, `luminance`, `vignette`, vignette globals, and inert color locals.
+- Query-only debug composite replacements were updated to follow the new `mixed`/`blend(...)` surface.
+- Output probe now reports and hard-asserts `shaderSurface.formulaMode="source-CA-mixed-blend-surface"` plus source helper/local markers and absence of rebuild-only `sourceBlend(...)` calls.
+
+Verification notes:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s128-shader`.
+- Output probe passed and reported the new `OA/CA` shader-surface markers: `/tmp/rd-s128-output`.
+- Thumb spotlight probe passed: `/tmp/rd-s128-thumb`.
+- Project media probe passed; `/gc-2026/` and `/hashgraph-vc/` retain five visible media tracks: `/tmp/rd-s128-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/`: `/tmp/rd-s128-capture`.
+- Band analysis: desktop center-band delta `-0.0015`; mobile center-band delta `-0.0153`.
 - Phase 1 remains open for mobile/fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-122 `VA/zA` r164 Bridge Attribution
