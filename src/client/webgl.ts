@@ -640,6 +640,7 @@ function stripSourceVaFragmentPaths(fragmentShader: string) {
     .replace("#include <aomap_fragment>", "// source VA omits aomap_fragment")
     .replace("#include <transmission_fragment>", "// source VA omits transmission_fragment")
     .replace(/#ifdef USE_SHEEN\s+outgoingLight = outgoingLight \+ sheenSpecularDirect \+ sheenSpecularIndirect;\s+#endif/g, "// source VA omits sheen outgoing-light tail")
+    .replace(/#ifdef USE_SHEEN\s+float sheenEnergyComp = 1\.0 - 0\.157 \* max3\( material\.sheenColor \);\s+outgoingLight = outgoingLight \* sheenEnergyComp \+ sheenSpecularDirect \+ sheenSpecularIndirect;\s+#endif/g, "// source VA omits r164 sheen outgoing-light tail")
     .replace(/#ifdef USE_CLEARCOAT\s+float dotNVcc = saturate\( dot\( geometryClearcoatNormal, geometryViewDir \) \);\s+vec3 Fcc = F_Schlick\( material.clearcoatF0, material.clearcoatF90, dotNVcc \);\s+outgoingLight = outgoingLight \* \( 1.0 - material.clearcoat \* Fcc \) \+ \( clearcoatSpecularDirect \+ clearcoatSpecularIndirect \) \* material.clearcoat;\s+#endif/g, "// source VA omits clearcoat outgoing-light tail");
 }
 

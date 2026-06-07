@@ -97,6 +97,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 21 | S1-94 | Source `Pe/p1` DPR ownership split | Source `Pe` caps global DPR at `2` normally and `1.5` in low-res, while source `p1.resize()` passes `Math.min(n,1.5)` to the work scene, each `GA`, and about blocks. The rebuild had globally capped every render path at `1.5`. | Production now keeps global/main/media/canvas DPR on source `Pe.dpr`, while work raw/composite, work bloom, screen mouse simulation, and work item `uCoords` use source `p1` work DPR capped at `1.5`. Output probes expose `dprPolicy` and work/main target sizes. | Low-medium | Keep as source-correct. High-DPR QA confirms global/canvas/main at DPR `2` while work stays DPR `1.5`; Phase 1 remains open for mobile/fog-bed and strict projection/material residuals. |
 | 22 | S1-95 | Source `GA/Ka` mouse plane attribution | Source `GA.createPlane()` uses plane scale `35*1.3` by `23*1.3`, ray plane scaled again by `1.5`, `uUvOffset=(.25,.25)`, `uUvOffsetScale=1.5`, and `resize()` calls `mouseSim.onResize(plane.scale.x, plane.scale.y)`. | Production behavior was already source-shaped; this batch adds renderer-audit anchors and hard output-probe assertions for local target size, `uCoords`, UV offset/scale, ray-plane geometry/z, persistence, and thickness. | Low | Treat `GA/Ka` plane sizing as verified. Do not tune brightness through local mouse sim; remaining Phase 1 work should move to exact `VA` material/projection or mobile fog-bed evidence. |
 | 23 | S1-96 | Shader/WebGL QA gate and `VA` sheen attribution | A rejected test edit showed that changing r164 physical-material sheen chunks can compile-fail even when text-level shader residuals look plausible. Source `zA` declares `USE_SHEEN` through the material surface, but does not have the modern r164 outgoing-light sheen tail in the captured source body. | Production rendering is unchanged. Shader dump now splits `USE_SHEEN` declaration evidence from the r164 `sheenEnergyComp` outgoing-light tail, and the output probe now fails hard on shader/WebGL console errors instead of only reporting them. | Low | Keep as QA guardrail. Do not edit physical-material sheen chunks unless the dump/probe pair proves the exact source-safe replacement and project media probes remain green. |
+| 24 | S1-97 | Source `VA/zA` r164 sheen outgoing tail | Source `zA` has the ordinary `USE_SHEEN` declaration/uniform surface but its captured outgoing-light body does not include the modern r164 `sheenEnergyComp` compensation tail. After S1-96, the shader dump can distinguish declaration parity from body residuals. | Production now strips only the r164 `sheenEnergyComp` outgoing-light tail from ordinary work-block `VA`, preserving the `USE_SHEEN` declaration surface and all existing material uniforms. Shader dump reports `r164SheenOutgoingTail` source false / rebuild false with no WebGL console errors. | Low-medium | Keep as a narrow source-correct material-body alignment. It does not close Phase 1; mobile/fog-bed and broader projection/material feel remain open. |
 
 ### Phase 1 Open Blocker Board
 
@@ -210,6 +211,36 @@ Verification:
 | Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain visible media tracks |
 
 Decision: keep this as a QA guardrail before the next `VA/GA` or render-manager implementation batch. Phase 1 remains open; this does not resolve the remaining mobile/fog-bed or strict material/projection visual residuals.
+
+### S1-97 Source VA/zA r164 Sheen Outgoing Tail
+
+This batch made one narrow production shader-body alignment in ordinary work-block `VA`.
+
+Source/runtime evidence:
+
+- Source `zA` carries `USE_SHEEN` declaration and uniform evidence in the material surface.
+- The captured source outgoing-light body does not include the modern r164 tail `sheenEnergyComp` and the `outgoingLight * sheenEnergyComp + sheenSpecular...` expression.
+- S1-96 made shader/WebGL console errors a hard probe failure, so this change is now runtime-gated instead of relying on text diffing alone.
+
+Production change:
+
+- `stripSourceVaFragmentPaths()` now strips the r164 `sheenEnergyComp` outgoing-light tail only.
+- The `USE_SHEEN` declaration surface remains intact, preserving the standard material compile path.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Shader dump | No shader/WebGL console errors; `r164SheenOutgoingTail` is source false / rebuild false; fragment delta narrowed from `+902` to `+761` |
+| Output probe | No failures, exceptions, or shader/WebGL console errors |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `-0.0007` against source |
+| Mobile center-band delta | `-0.0129` against source |
+
+Decision: keep this narrow source-correct shader-body fix. Phase 1 remains open because it does not resolve the mobile/fog-bed residual or strict projection/material feel.
 
 ### S1-70 Source Floor Circle Geometry
 
