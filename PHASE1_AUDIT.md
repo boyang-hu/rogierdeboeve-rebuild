@@ -96,6 +96,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 20 | S1-93 | Source `Lu` mip/fluid resize ownership | Source `Lu.resize()` sizes render targets at CSS DPR size, then switches to `Fa(renderSize)/4` for luminosity/bloom and `Fa(renderSize)/4/3` for fluid. The rebuild still used a main-only half-resolution start for the disabled-default main bloom/fluid branch. | Production now uses the same quarter-power-of-two start size for main render-manager bloom and fluid as source `Lu`; output probes report work/main sizing mode and primary depth ownership, and renderer audit checks the source resize anchors. | Low-medium | Keep as source-correct. This mainly removes a main render-manager ownership divergence; Phase 1 remains open because the visible mobile/fog-bed residual is still present. |
 | 21 | S1-94 | Source `Pe/p1` DPR ownership split | Source `Pe` caps global DPR at `2` normally and `1.5` in low-res, while source `p1.resize()` passes `Math.min(n,1.5)` to the work scene, each `GA`, and about blocks. The rebuild had globally capped every render path at `1.5`. | Production now keeps global/main/media/canvas DPR on source `Pe.dpr`, while work raw/composite, work bloom, screen mouse simulation, and work item `uCoords` use source `p1` work DPR capped at `1.5`. Output probes expose `dprPolicy` and work/main target sizes. | Low-medium | Keep as source-correct. High-DPR QA confirms global/canvas/main at DPR `2` while work stays DPR `1.5`; Phase 1 remains open for mobile/fog-bed and strict projection/material residuals. |
 | 22 | S1-95 | Source `GA/Ka` mouse plane attribution | Source `GA.createPlane()` uses plane scale `35*1.3` by `23*1.3`, ray plane scaled again by `1.5`, `uUvOffset=(.25,.25)`, `uUvOffsetScale=1.5`, and `resize()` calls `mouseSim.onResize(plane.scale.x, plane.scale.y)`. | Production behavior was already source-shaped; this batch adds renderer-audit anchors and hard output-probe assertions for local target size, `uCoords`, UV offset/scale, ray-plane geometry/z, persistence, and thickness. | Low | Treat `GA/Ka` plane sizing as verified. Do not tune brightness through local mouse sim; remaining Phase 1 work should move to exact `VA` material/projection or mobile fog-bed evidence. |
+| 23 | S1-96 | Shader/WebGL QA gate and `VA` sheen attribution | A rejected test edit showed that changing r164 physical-material sheen chunks can compile-fail even when text-level shader residuals look plausible. Source `zA` declares `USE_SHEEN` through the material surface, but does not have the modern r164 outgoing-light sheen tail in the captured source body. | Production rendering is unchanged. Shader dump now splits `USE_SHEEN` declaration evidence from the r164 `sheenEnergyComp` outgoing-light tail, and the output probe now fails hard on shader/WebGL console errors instead of only reporting them. | Low | Keep as QA guardrail. Do not edit physical-material sheen chunks unless the dump/probe pair proves the exact source-safe replacement and project media probes remain green. |
 
 ### Phase 1 Open Blocker Board
 
@@ -182,6 +183,33 @@ Verification:
 | Mobile center-band delta | `-0.0144` against source |
 
 Decision: keep this as a QA/attribution closeout for `GA/Ka` mouse-plane sizing. Phase 1 remains open; the remaining visual work should not tune local mouse sim constants without new source evidence.
+
+### S1-96 Shader/WebGL QA Gate and VA Sheen Attribution
+
+This batch did not change production rendering. It hardens the QA harness after a rejected local shader experiment proved that small-looking r164 physical-material edits can produce WebGL shader compile failures.
+
+Source/runtime evidence:
+
+- The source `zA`/ordinary `VA` material surface carries `USE_SHEEN` declaration evidence through the standard material shader path.
+- The captured source body does not include the modern r164 `sheenEnergyComp` outgoing-light tail that Three can inject around sheen lighting.
+- A local attempt to remove that tail without preserving the declaration surface caused a shader compile error, so future material-body work needs a hard runtime gate, not only text diffing.
+
+QA now enforces:
+
+- `scripts/dump-va-shader.mjs` reports `sheenDeclaration` separately from `r164SheenOutgoingTail`.
+- `scripts/probe-output-color.mjs` throws when Chrome console output contains shader/WebGL error markers instead of only listing those messages in the JSON output.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Shader dump | No shader/WebGL console errors; `sheenDeclaration` present in source and rebuild; r164 outgoing sheen tail is now reported separately as source false / rebuild true |
+| Output probe | No shader/WebGL console errors |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain visible media tracks |
+
+Decision: keep this as a QA guardrail before the next `VA/GA` or render-manager implementation batch. Phase 1 remains open; this does not resolve the remaining mobile/fog-bed or strict material/projection visual residuals.
 
 ### S1-70 Source Floor Circle Geometry
 

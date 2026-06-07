@@ -508,7 +508,8 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
     sourceSpecularMacro: ["USE_SPECULARCOLORMAP", "USE_SPECULARINTENSITYMAP"],
     modernSpecularMacro: ["USE_SPECULAR_COLORMAP", "USE_SPECULAR_INTENSITYMAP"],
     modernPhysicalResidual: ["USE_DISPERSION", "USE_ANISOTROPY"],
-    sheenResidual: ["USE_SHEEN"],
+    sheenDeclaration: ["USE_SHEEN"],
+    r164SheenOutgoingTail: ["sheenEnergyComp", "outgoingLight=outgoingLight*sheenEnergyComp+sheenSpecularDirect+sheenSpecularIndirect"],
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
     name,

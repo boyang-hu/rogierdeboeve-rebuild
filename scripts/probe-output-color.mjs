@@ -136,6 +136,10 @@ async function runProbe() {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
   }
+  const shaderConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
+  if (shaderConsoleMessages.length) {
+    throw new Error(`Shader/WebGL console errors: ${shaderConsoleMessages.join("\n")}`);
+  }
   let screenshotFile = null;
   if (!skipScreenshot) {
     const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
@@ -148,7 +152,7 @@ async function runProbe() {
     ...parsed,
     failures: failures.filter((failure) => !failure.canceled).map((failure) => ({ type: failure.type, errorText: failure.errorText })),
     exceptions,
-    consoleMessages: consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message)),
+    consoleMessages: shaderConsoleMessages,
   };
 }
 
