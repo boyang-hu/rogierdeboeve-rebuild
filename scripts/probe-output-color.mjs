@@ -180,6 +180,10 @@ async function runProbe() {
   if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
   if (environmentUniforms?.customUniformsAlias !== true) environmentErrors.push("customUniformsAlias");
   if (environmentUniforms?.hierarchyMode !== "source-h1-group-owns-transform") environmentErrors.push("hierarchyMode");
+  if (environmentUniforms?.geometry?.mode !== "source-Du-icosahedron") environmentErrors.push("geometryMode");
+  if (environmentUniforms?.geometry?.type !== "IcosahedronGeometry") environmentErrors.push("geometryType");
+  if (environmentUniforms?.geometry && Math.abs((environmentUniforms.geometry.radius ?? 0) - 300) > 0.0001) environmentErrors.push("geometryRadius");
+  if (environmentUniforms?.geometry?.detail !== 10) environmentErrors.push("geometryDetail");
   if (environmentUniforms?.fog !== false) environmentErrors.push("materialFog");
   if (environmentUniforms?.dithering !== true) environmentErrors.push("materialDithering");
   if (environmentUniforms && Math.abs((environmentUniforms.envMapIntensity ?? 0) - 1) > 0.0001) environmentErrors.push("envMapIntensity");
@@ -188,6 +192,10 @@ async function runProbe() {
   if (environmentUniforms && Math.abs(environmentUniforms.meshRotationY ?? 0) > 0.0001) environmentErrors.push("meshRotationY");
   if (environmentHierarchy?.group?.children !== 1) environmentErrors.push("groupChildren");
   if (environmentHierarchy?.object?.position?.[1] !== 0) environmentErrors.push("meshLocalPosition");
+  if (environmentHierarchy?.geometry?.mode !== "source-Du-icosahedron") environmentErrors.push("reflectionGeometryMode");
+  if (environmentHierarchy?.geometry?.type !== "IcosahedronGeometry") environmentErrors.push("reflectionGeometryType");
+  if (environmentHierarchy?.geometry && Math.abs((environmentHierarchy.geometry.radius ?? 0) - 300) > 0.0001) environmentErrors.push("reflectionGeometryRadius");
+  if (environmentHierarchy?.geometry?.detail !== 10) environmentErrors.push("reflectionGeometryDetail");
   if (environmentHierarchy?.material?.mode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("reflectionMaterialMode");
   if (environmentHierarchy?.material?.customUniformsAlias !== true) environmentErrors.push("reflectionCustomUniformsAlias");
   if (environmentErrors.length) {
@@ -213,7 +221,12 @@ async function runProbe() {
     throw new Error(`Floor reflection visibility source-shape mismatch: ${floorErrors.join(", ")}`);
   }
   const skyUniforms = parsed.probe.textures?.skyComposite?.uniforms;
+  const skyComposite = parsed.probe.textures?.skyComposite;
+  const skyTarget = parsed.probe.targets?.skyComposite;
   const skyUniformErrors = [];
+  if (skyComposite?.sizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("sizingMode");
+  if (skyComposite?.timeMode !== (parsed.probe.renderer?.dprPolicy?.lowRes ? "source-V1-low-res-time-0" : "source-V1-live-time")) skyUniformErrors.push("timeMode");
+  if (skyTarget && skyComposite && (skyTarget.width !== skyComposite.expectedSize || skyTarget.height !== skyComposite.expectedSize)) skyUniformErrors.push("targetSize");
   if (skyUniforms?.uShader1Mix3Binding !== "source-declared-only") skyUniformErrors.push("uShader1Mix3Binding");
   if (skyUniforms?.uShader3ScaleBinding !== "source-declared-only") skyUniformErrors.push("uShader3ScaleBinding");
   if (skyUniformErrors.length) {

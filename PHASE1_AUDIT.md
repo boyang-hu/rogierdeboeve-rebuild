@@ -112,6 +112,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 35 | S1-108 | Source `u1/a1` environment and reflector ownership surface | Source `u1` extends `MeshStandardMaterial`, stores runtime bindings on `customUniforms`, patches `c1/l1` in `onBeforeCompile`, sets `dithering=true`, and is constructed by `h1` with `side=BackSide`, `envMapIntensity=1`, `fog=false`. Source `a1` hides its component group during `onBeforeRender` before calling `reflector.update()`. | Production now exposes the source `u1` `customUniforms` alias, adds hard output-probe assertions for material mode, fog/dithering/env intensity, and records source `a1` reflection visibility ownership. Renderer audit now records source `u1` and `a1` anchors. | Low | Keep as source-correct interface and QA hardening. This prevents future background/fog-bed work from misattributing the floor hidden-state or environment material surface, but does not close the mobile/fog-bed visual residual. |
 | 36 | S1-109 | Source `o1/t1` floor material and reflection blur shader surface | Source floor material `o1` and reflection blur material `t1` use raw shader surfaces; source blur fragment `QA` is GLSL3-shaped with `in vUv`, `out FragColor`, `texture(...)`, and `mix(tMapped, blurred, 1.25)`. | Production now reports the floor material as `source-o1-raw-glsl3`, uses `RawShaderMaterial`/`GLSL3` for the reflection blur material, dumps both `o1-floor-material` and `t1-floor-reflection-blur`, and hard-fails output probes if the floor/blur material modes drift. | Low-medium | Keep as source-correct floor shader-surface alignment. This narrows the floor/reflector bridge, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 | 37 | S1-110 | Source `o1` floor fragment branch surface | Source `o1` keeps conditional `USE_MAP`, `USE_NORMALMAP`, `USE_FOG`, and `DITHERING` branches in the raw fragment shader; runtime `a1` constructs it with `normalMap` only. | Production now restores the full conditional fragment branch surface while preserving source runtime branch state: `USE_NORMALMAP=true`, `USE_MAP=false`, `USE_FOG=false`, `DITHERING=false`. Shader dump hardens floor core checks and output probe asserts the branch state. | Low-medium | Keep as source-correct floor shader-body alignment. Do not enable floor fog/map/dithering as a visual tweak; Phase 1 remains open for the mobile fog-bed residual and projection/material parity. |
+| 38 | S1-111 | Source `h1/V1/Du` environment geometry and sky target QA surface | Source `h1` creates `new Du(300,10)` with `speed=5e-5`; `Du` is an `IcosahedronGeometry` with radius/detail parameters. Source `V1` sizes its sky render targets as a square `height*.75`, and low-res mode freezes sky `uTime` at `0`. | Production rendering is unchanged, but output probes now report and assert the source `Du` geometry metadata, sky target sizing mode, expected target size, and source low-res/live sky time mode. Renderer audit now extracts and checks `h1`, `V1`, and `Du` anchors. | Low | Keep as source-correct environment/sky QA hardening. This prevents future fog-bed work from drifting geometry or sky target ownership, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -721,6 +722,43 @@ Verification:
 | Mobile center-band delta | `-0.0122` against source |
 
 Decision: keep this source-correct `o1` floor fragment branch alignment. It narrows the floor shader bridge and prevents unsupported fog/map/dithering tuning, but it does not close Phase 1; the mobile fog-bed distribution and strict projection/material residuals remain open.
+
+### S1-111 Source `h1/V1/Du` Environment Geometry and Sky Target QA Surface
+
+This batch hardened the source environment/sky attribution surface without changing visual constants or shader formulas.
+
+Source/runtime evidence:
+
+- Source `h1` sets `speed=5e-5` and creates its environment geometry with `const e=new Du(300,10)`.
+- Source `Du` extends `IcosahedronGeometry` and stores `parameters={radius:e,detail:t}`.
+- Source `V1` sky targets are square and sized from viewport height at `.75`.
+- Source `V1.update()` freezes sky time at `0` in low-res mode and otherwise feeds the live time value.
+
+Production now exposes and asserts:
+
+- environment geometry mode `source-Du-icosahedron`,
+- geometry type `IcosahedronGeometry`, radius `300`, and detail `10`,
+- sky composite sizing mode `source-V1-height-0.75-square`,
+- sky target width/height equal to the expected `height*.75` square size,
+- sky time mode `source-V1-low-res-time-0` or `source-V1-live-time` according to the source low-res policy,
+- renderer audit anchors for `h1`, `V1`, and `Du`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `h1`, `V1`, and `Du` anchors present |
+| Output probe | Passed after rebuild server restart; environment geometry and sky target/time assertions passed |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `+0.0001` against source |
+| Mobile center-band delta | `-0.0116` against source |
+
+Decision: keep this as source-correct environment/sky QA hardening. It reduces the chance that later fog-bed work misattributes geometry, target sizing, or low-res time behavior, but it does not close Phase 1; the remaining visual residuals are still mobile fog-bed distribution, strict projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

@@ -128,6 +128,7 @@ const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 400, 1700);
+const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
 const sourceA1Floor = extractAround(bundle, "class a1 extends", 300, 1400);
 const sourceO1FloorMaterial = extractAround(bundle, "class o1 extends", 700, 1600);
 const sourceT1FloorBlur = extractAround(bundle, "class t1 extends", 800, 900);
@@ -418,10 +419,21 @@ const summary = {
       index: sourceH1.index,
       checks: checks(sourceH1.text, [
         "class h1 extends rt",
+        "this.speed=5e-5",
+        "const e=new Du(300,10)",
         "this.material=new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})",
         "const t=new at(e,this.material);this.add(t),this.mesh=t",
       ]),
       excerpt: compact(sourceH1.text),
+    },
+    environmentDuGeometry: sourceDu && {
+      index: sourceDu.index,
+      checks: checks(sourceDu.text, [
+        "class Du extends Au",
+        "this.type=\"IcosahedronGeometry\"",
+        "this.parameters={radius:e,detail:t}",
+      ]),
+      excerpt: compact(sourceDu.text),
     },
     environmentU1: sourceU1 && {
       index: sourceU1.index,

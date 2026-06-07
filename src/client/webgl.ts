@@ -5528,6 +5528,7 @@ export class WebGLBackdrop {
           postRenderFrame: this.sourcePostRenderFrame,
           environmentUpdateOrder: "source-p1-component-post-render",
           skyPassClearing: "source-Lo-no-explicit-clear",
+          skyUpdateMode: "source-V1-low-res-freezes-time",
         },
       },
       uniforms: {
@@ -5611,6 +5612,12 @@ export class WebGLBackdrop {
           visible: this.environmentGroup.visible,
           materialMode: "source-u1-meshstandard-onBeforeCompile",
           customUniformsAlias: this.environmentMaterial.customUniforms === this.environmentMaterial.uniforms,
+          geometry: {
+            mode: "source-Du-icosahedron",
+            type: this.environmentPlane.geometry.type,
+            radius: this.environmentPlane.geometry.parameters.radius,
+            detail: this.environmentPlane.geometry.parameters.detail,
+          },
           uTime: this.environmentMaterial.uniforms.uTime.value,
           uMultiplier: this.environmentMaterial.uniforms.uMultiplier.value,
           uDarken: this.environmentMaterial.uniforms.uDarken.value,
@@ -5674,6 +5681,9 @@ export class WebGLBackdrop {
           wrapT: this.noiseTexture.wrapT,
         },
         skyComposite: {
+          sizingMode: "source-V1-height-0.75-square",
+          expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
+          timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",
           wrapS: this.skyCompositeTarget.texture.wrapS,
           wrapT: this.skyCompositeTarget.texture.wrapT,
           colorSpace: this.skyCompositeTarget.texture.colorSpace,
@@ -5792,6 +5802,12 @@ export class WebGLBackdrop {
       environment: {
         group: objectSummary(this.environmentGroup),
         object: objectSummary(this.environmentPlane),
+        geometry: {
+          mode: "source-Du-icosahedron",
+          type: this.environmentPlane.geometry.type,
+          radius: this.environmentPlane.geometry.parameters.radius,
+          detail: this.environmentPlane.geometry.parameters.detail,
+        },
         material: {
           mode: "source-u1-meshstandard-onBeforeCompile",
           customUniformsAlias: this.environmentMaterial.customUniforms === this.environmentMaterial.uniforms,
