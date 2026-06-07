@@ -122,6 +122,7 @@ const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
+const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
   extractAround(bundle, "setOutputColorSpace", 180, 700),
@@ -329,6 +330,23 @@ const summary = {
         "this.sceneWrap.position.y=.3",
       ]),
       excerpt: compact(sourceP1Resize.text),
+    },
+    GA: sourceGA && {
+      index: sourceGA.index,
+      checks: checks(sourceGA.text, [
+        "this.settings={xNum:35,yNum:23,zNum:Le.LOW_RES?4:7,size:1.25,spacing:.1,scale:.09}",
+        "this.mouseSim=new Ka({renderer:e.renderer,camera:e.camera,mesh:this.plane,persistance:.85,thickness:.1,rayCastMesh:this.rayPlane})",
+        "this.plane.scale.set(35*e,23*e,1)",
+        "this.rayPlane.scale.set(35*e,23*e,1)",
+        "this.rayPlane.position.set(0,0,23*e/2+.01)",
+        "this.planeMaterial.uniforms.uRatio.value=35/23",
+        "this.rayPlane.scale.multiplyScalar(t)",
+        "this.material.customUniforms.uUvOffsetScale.value=t",
+        "resize(e,t,n){this.mouseSim.onResize(this.plane.scale.x,this.plane.scale.y)}",
+        "this.material.customUniforms.tMouseSim.value=this.mouseSim.bufferSim.output.texture",
+        "this.mouseSpeed=Yi(this.mouseSpeed,this.mouseSim.simulationMaterial.uniforms.uSpeed.value,10,t)",
+      ]),
+      excerpt: compact(sourceGA.text),
     },
   },
   rendererOutputRefs: rendererOutputRefs.map((entry) => ({

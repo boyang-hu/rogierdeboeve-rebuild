@@ -95,6 +95,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 19 | S1-83 | Source `A1/C1` pre-composite shader flow | Source `A1` keeps the inert `displacementUv` and `vignetteF` computations and samples `tNoise` before contrast/saturation/media, then applies the two noise mixes after media. The rebuild had removed those two computations and relocated the noise sample to the tail. | Production now restores those source flow details without changing constants or final formula, and `scripts/audit-renderer-output.mjs` now reports `A1` order and inert-computation residuals accurately. | Low-medium | Keep as source-correct. This closes an audit residual in `A1/C1`; Phase 1 remains open because mobile/fog-bed and projection residuals still require source-backed attribution. |
 | 20 | S1-93 | Source `Lu` mip/fluid resize ownership | Source `Lu.resize()` sizes render targets at CSS DPR size, then switches to `Fa(renderSize)/4` for luminosity/bloom and `Fa(renderSize)/4/3` for fluid. The rebuild still used a main-only half-resolution start for the disabled-default main bloom/fluid branch. | Production now uses the same quarter-power-of-two start size for main render-manager bloom and fluid as source `Lu`; output probes report work/main sizing mode and primary depth ownership, and renderer audit checks the source resize anchors. | Low-medium | Keep as source-correct. This mainly removes a main render-manager ownership divergence; Phase 1 remains open because the visible mobile/fog-bed residual is still present. |
 | 21 | S1-94 | Source `Pe/p1` DPR ownership split | Source `Pe` caps global DPR at `2` normally and `1.5` in low-res, while source `p1.resize()` passes `Math.min(n,1.5)` to the work scene, each `GA`, and about blocks. The rebuild had globally capped every render path at `1.5`. | Production now keeps global/main/media/canvas DPR on source `Pe.dpr`, while work raw/composite, work bloom, screen mouse simulation, and work item `uCoords` use source `p1` work DPR capped at `1.5`. Output probes expose `dprPolicy` and work/main target sizes. | Low-medium | Keep as source-correct. High-DPR QA confirms global/canvas/main at DPR `2` while work stays DPR `1.5`; Phase 1 remains open for mobile/fog-bed and strict projection/material residuals. |
+| 22 | S1-95 | Source `GA/Ka` mouse plane attribution | Source `GA.createPlane()` uses plane scale `35*1.3` by `23*1.3`, ray plane scaled again by `1.5`, `uUvOffset=(.25,.25)`, `uUvOffsetScale=1.5`, and `resize()` calls `mouseSim.onResize(plane.scale.x, plane.scale.y)`. | Production behavior was already source-shaped; this batch adds renderer-audit anchors and hard output-probe assertions for local target size, `uCoords`, UV offset/scale, ray-plane geometry/z, persistence, and thickness. | Low | Treat `GA/Ka` plane sizing as verified. Do not tune brightness through local mouse sim; remaining Phase 1 work should move to exact `VA` material/projection or mobile fog-bed evidence. |
 
 ### Phase 1 Open Blocker Board
 
@@ -146,6 +147,41 @@ Verification:
 | Mobile center-band delta | `-0.0140` against source |
 
 Decision: keep the `Pe/p1` DPR ownership split. This closes a high-DPR source-structure mismatch, but Phase 1 remains open because the mobile/fog-bed residual and strict `VA/GA`/projection feel are still unresolved.
+
+### S1-95 Source GA/Ka Mouse Plane Attribution
+
+This batch did not change the visual formula. It added hard evidence and QA gates around the source `GA.createPlane()` / local `Ka` shape so future projection work does not drift into guesswork.
+
+Source/runtime evidence:
+
+- Source `GA.createPlane()` sets the local mouse plane to `35 * 1.3` by `23 * 1.3`.
+- Source ray plane starts at the same size, then multiplies by `1.5`; this yields `uUvOffset` of roughly `(0.25, 0.25)` and `uUvOffsetScale = 1.5`.
+- Source `GA.resize()` calls `mouseSim.onResize(this.plane.scale.x,this.plane.scale.y)`.
+- Source `GA.update()` writes local `tMouseSim`, damps mouse speed through `Yi(...,10,delta)`, and keeps `persistance:.85`, `thickness:.1`.
+
+Production now exposes and asserts:
+
+- active local target size `46x30`,
+- active `uCoords = [46,30]`,
+- active `uUvOffset = [0.25,0.25,0]`,
+- active `uUvOffsetScale = 1.5`,
+- ray-plane geometry/z matching source scale after `GRID_SCALE`,
+- persistence/thickness source shape.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `npm run build` | Passed |
+| Renderer audit | Source `GA` anchors all present |
+| Output probe | New `GA` source-shape assertions passed |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Full source-vs-rebuild capture | Home/about/project pages captured without failures/exceptions |
+| Desktop center-band delta | `+0.0005` against source |
+| Mobile center-band delta | `-0.0144` against source |
+
+Decision: keep this as a QA/attribution closeout for `GA/Ka` mouse-plane sizing. Phase 1 remains open; the remaining visual work should not tune local mouse sim constants without new source evidence.
 
 ### S1-70 Source Floor Circle Geometry
 

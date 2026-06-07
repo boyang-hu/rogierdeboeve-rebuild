@@ -127,6 +127,15 @@ async function runProbe() {
   });
   const parsed = JSON.parse(result.result.value);
   if (!parsed.probe) throw new Error("No __rogierOutputProbe data found");
+  const gaShape = parsed.probe.mouseSimulation?.active?.sourceShape;
+  if (gaShape) {
+    const shapeErrors = Object.entries(gaShape)
+      .filter(([, value]) => typeof value === "boolean" && value !== true)
+      .map(([key]) => key);
+    if (shapeErrors.length) {
+      throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
+    }
+  }
   let screenshotFile = null;
   if (!skipScreenshot) {
     const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });

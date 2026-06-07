@@ -5724,6 +5724,16 @@ export class WebGLBackdrop {
     const activeTarget = active?.mouseTargets[active.mouseIndex];
     const uvOffset = active?.material.uniforms.uUvOffset.value as Vector3 | undefined;
     const uvOffsetScale = active?.material.uniforms.uUvOffsetScale.value as number | undefined;
+    const sourcePlaneSize = [GRID_COLS * MOUSE_PLANE_SCALE, GRID_ROWS * MOUSE_PLANE_SCALE];
+    const sourceRayPlaneSize = [
+      GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
+      GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE,
+    ];
+    const expectedTargetSize = {
+      width: Math.max(1, Math.round(GRID_COLS * MOUSE_PLANE_SCALE)),
+      height: Math.max(1, Math.round(GRID_ROWS * MOUSE_PLANE_SCALE)),
+    };
+    const expectedUvOffset = sourceMouseUvOffset();
     return {
       enabled: this.renderSettings.mousesim.enabled,
       screen: {
@@ -5757,8 +5767,29 @@ export class WebGLBackdrop {
           GRID_COLS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
           GRID_ROWS * MOUSE_PLANE_SCALE * GRID_SCALE * MOUSE_RAY_SCALE,
         ],
-        sourcePlaneSize: [GRID_COLS * MOUSE_PLANE_SCALE, GRID_ROWS * MOUSE_PLANE_SCALE],
-        sourceRayPlaneSize: [GRID_COLS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE, GRID_ROWS * MOUSE_PLANE_SCALE * MOUSE_RAY_SCALE],
+        sourcePlaneSize,
+        sourceRayPlaneSize,
+        expectedTargetSize,
+        sourceShape: {
+          planeScale: MOUSE_PLANE_SCALE,
+          rayScale: MOUSE_RAY_SCALE,
+          gridScale: GRID_SCALE,
+          targetSizeMatchesPlane: activeTarget.width === expectedTargetSize.width && activeTarget.height === expectedTargetSize.height,
+          uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
+          uvOffsetMatchesSource: Boolean(
+            uvOffset
+              && Math.abs(uvOffset.x - expectedUvOffset.x) < 1e-6
+              && Math.abs(uvOffset.y - expectedUvOffset.y) < 1e-6,
+          ),
+          uvOffsetScaleMatchesSource: uvOffsetScale === MOUSE_RAY_SCALE,
+          rayPlaneGeometryMatchesSource:
+            Math.abs(active.rayPlane.geometry.parameters.width - sourceRayPlaneSize[0] * GRID_SCALE) < 1e-6
+            && Math.abs(active.rayPlane.geometry.parameters.height - sourceRayPlaneSize[1] * GRID_SCALE) < 1e-6,
+          rayPlaneZMatchesSource:
+            Math.abs(active.rayPlane.position.z - (GRID_ROWS * MOUSE_PLANE_SCALE / 2 + 0.01) * GRID_SCALE) < 1e-6,
+          persistenceMatchesSource: Math.abs((active.mouseMaterial.uniforms.uPersistance.value as number) - Math.pow(0.85, 1 / 60 * 10)) < 0.2,
+          thicknessMatchesSource: Math.abs((active.mouseMaterial.uniforms.uThickness.value as number) - 0.1) < 1e-6,
+        },
         groupVisible: active.group.visible,
         stats: renderTargetProbe(this.renderer, activeTarget),
       } : null,
