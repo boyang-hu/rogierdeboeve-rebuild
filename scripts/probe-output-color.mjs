@@ -143,10 +143,13 @@ async function runProbe() {
   if (sourceDefaults.darken !== 0.2) sourceDefaultErrors.push("darken");
   if (sourceDefaults.saturation !== 0.35) sourceDefaultErrors.push("saturation");
   if (sourceDefaults.contrast !== 1.1) sourceDefaultErrors.push("contrast");
+  if (sourceDefaults.homeOverviewDarkenFallback !== 0.1) sourceDefaultErrors.push("homeOverviewDarkenFallback");
+  if (sourceDefaults.homeOverviewSaturationFallback !== 1) sourceDefaultErrors.push("homeOverviewSaturationFallback");
   if (sourceDefaults.projectDetailDarken !== 0.25) sourceDefaultErrors.push("projectDetailDarken");
   if (sourceDefaults.projectSaturationFallback !== 1) sourceDefaultErrors.push("projectSaturationFallback");
   if (sourceDefaults.projectContrastFallback !== 1.15) sourceDefaultErrors.push("projectContrastFallback");
   if (sourceDefaults.thumbDarknessIntensity !== 0.5) sourceDefaultErrors.push("thumbDarknessIntensity");
+  if (sourceDefaults.homeThumbDarknessFallback !== 0) sourceDefaultErrors.push("homeThumbDarknessFallback");
   if (sourceDefaults.thumbDarknessColor !== "#000000") sourceDefaultErrors.push("thumbDarknessColor");
   if (sourceDefaults.thumbSaturation !== 1) sourceDefaultErrors.push("thumbSaturation");
   if (sourceDefaults.thumbMouseLightness !== 1) sourceDefaultErrors.push("thumbMouseLightness");

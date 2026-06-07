@@ -125,6 +125,9 @@ async function runProbe() {
   if (sourceDefaults.thumbDarknessIntensity !== 0.5) {
     sourceShapeErrors.push(`thumbDefaultDarkness=${sourceDefaults.thumbDarknessIntensity}`);
   }
+  if (sourceDefaults.homeThumbDarknessFallback !== 0) {
+    sourceShapeErrors.push(`homeThumbDarknessFallback=${sourceDefaults.homeThumbDarknessFallback}`);
+  }
   if (sourceDefaults.thumbDarknessColor !== "#000000") {
     sourceShapeErrors.push(`thumbDefaultColor=${sourceDefaults.thumbDarknessColor}`);
   }

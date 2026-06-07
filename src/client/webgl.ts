@@ -278,10 +278,13 @@ const SOURCE_INITIAL_AMBIENT = 1;
 const SOURCE_INITIAL_DARKEN = 0.2;
 const SOURCE_INITIAL_SATURATION = 0.35;
 const SOURCE_INITIAL_CONTRAST = 1.1;
+const SOURCE_HOME_OVERVIEW_DARKEN_FALLBACK = 0.1;
+const SOURCE_HOME_OVERVIEW_SATURATION_FALLBACK = 1;
 const SOURCE_PROJECT_DETAIL_DARKEN = 0.25;
 const SOURCE_PROJECT_SATURATION_FALLBACK = 1;
 const SOURCE_PROJECT_CONTRAST_FALLBACK = 1.15;
 const SOURCE_INITIAL_THUMB_DARKNESS = 0.5;
+const SOURCE_HOME_THUMB_DARKNESS_FALLBACK = 0;
 const SOURCE_INITIAL_THUMB_DARKNESS_COLOR = "#000000";
 const SOURCE_INITIAL_THUMB_SATURATION = 1;
 const SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS = 1;
@@ -3198,14 +3201,16 @@ export class WebGLBackdrop {
     const ambientIntensity = numeric(payload.ambient, 0.5);
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
     const sceneDarkness = payload.overviewDarkness ?? payload.darkness;
+    const isProjectView = document.body.classList.contains("is-project");
     this.activeSlug = payload.slug ?? this.activeSlug;
     this.setMainColor(payload.color);
     this.setAmbientLight(ambientColor, ambientIntensity);
-    this.setDarken(numeric(sceneDarkness, document.body.classList.contains("is-project") ? SOURCE_PROJECT_DETAIL_DARKEN : SOURCE_INITIAL_DARKEN));
-    this.setSaturation(numeric(payload.saturation, SOURCE_INITIAL_SATURATION));
+    this.setDarken(numeric(sceneDarkness, isProjectView ? SOURCE_PROJECT_DETAIL_DARKEN : SOURCE_HOME_OVERVIEW_DARKEN_FALLBACK));
+    this.setSaturation(numeric(payload.saturation, isProjectView ? SOURCE_PROJECT_SATURATION_FALLBACK : SOURCE_HOME_OVERVIEW_SATURATION_FALLBACK));
     this.setContrast(numeric(payload.contrast, SOURCE_PROJECT_CONTRAST_FALLBACK));
     this.setMediaBackground(payload.mediaColor ?? payload.color);
-    this.setThumbDarknessIntensity(numeric(payload.thumbDarkness ?? payload.darkness, SOURCE_INITIAL_THUMB_DARKNESS));
+    const thumbDarkness = isProjectView ? payload.thumbDarkness ?? payload.darkness : payload.thumbDarkness;
+    this.setThumbDarknessIntensity(numeric(thumbDarkness, isProjectView ? SOURCE_INITIAL_THUMB_DARKNESS : SOURCE_HOME_THUMB_DARKNESS_FALLBACK));
     this.setThumbDarknessColor(payload.darknessColor ?? SOURCE_INITIAL_THUMB_DARKNESS_COLOR);
     this.setThumbSaturation(numeric(payload.thumbSaturation, SOURCE_INITIAL_THUMB_SATURATION));
     this.setThumbMouseLightness(numeric(payload.mouseLightness, SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS));
@@ -5925,6 +5930,7 @@ export class WebGLBackdrop {
       thumbProgress: this.thumbProgress,
       sourceDefaults: {
         thumbDarknessIntensity: SOURCE_INITIAL_THUMB_DARKNESS,
+        homeThumbDarknessFallback: SOURCE_HOME_THUMB_DARKNESS_FALLBACK,
         thumbDarknessColor: SOURCE_INITIAL_THUMB_DARKNESS_COLOR,
         thumbSaturation: SOURCE_INITIAL_THUMB_SATURATION,
         thumbMouseLightness: SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS,
@@ -6011,10 +6017,13 @@ export class WebGLBackdrop {
         darken: SOURCE_INITIAL_DARKEN,
         saturation: SOURCE_INITIAL_SATURATION,
         contrast: SOURCE_INITIAL_CONTRAST,
+        homeOverviewDarkenFallback: SOURCE_HOME_OVERVIEW_DARKEN_FALLBACK,
+        homeOverviewSaturationFallback: SOURCE_HOME_OVERVIEW_SATURATION_FALLBACK,
         projectDetailDarken: SOURCE_PROJECT_DETAIL_DARKEN,
         projectSaturationFallback: SOURCE_PROJECT_SATURATION_FALLBACK,
         projectContrastFallback: SOURCE_PROJECT_CONTRAST_FALLBACK,
         thumbDarknessIntensity: SOURCE_INITIAL_THUMB_DARKNESS,
+        homeThumbDarknessFallback: SOURCE_HOME_THUMB_DARKNESS_FALLBACK,
         thumbDarknessColor: SOURCE_INITIAL_THUMB_DARKNESS_COLOR,
         thumbSaturation: SOURCE_INITIAL_THUMB_SATURATION,
         thumbMouseLightness: SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS,
