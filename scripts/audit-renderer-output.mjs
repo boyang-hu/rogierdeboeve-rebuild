@@ -252,8 +252,8 @@ const summary = {
         "sourceBlend(1",
         "sourceBlend(11",
         "color *= uContrast",
-        "mix(color * noise, color, 0.75)",
-        "mix(color * noise, color, 1.5)",
+        "mix(color * noise.rgb, color, 0.75)",
+        "mix(color * noise.rgb, color, 1.5)",
       ]),
       order: rebuildA1Order,
       orderMatchesSource: JSON.stringify(sourceA1Signature) === JSON.stringify(rebuildA1Signature),
@@ -265,7 +265,9 @@ const summary = {
       inertSourceComputations: {
         displacementUv: /vec2\s+displacementUv\s*=/.test(sourceA1) && !/displacementUv/.test(rebuildA1),
         vignetteF: /float\s+vignetteF\s*=/.test(sourceA1) && !/vignetteF/.test(rebuildA1),
-        noiseSampleRelocated: sourceA1Signature.includes("noise sample") && rebuildA1Signature.includes("noise sample"),
+        noiseSampleRelocated: JSON.stringify(sourceA1Signature) !== JSON.stringify(rebuildA1Signature)
+          && sourceA1Signature.includes("noise sample")
+          && rebuildA1Signature.includes("noise sample"),
       },
     },
   },

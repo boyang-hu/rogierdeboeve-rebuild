@@ -92,6 +92,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 16 | S1-77 | `T1/x1/Lo` thumb render pass clearing | Source `Lo.update()` renders the thumb raw target and composite target with `setRenderTarget(...); render(...)` and does not explicitly call `renderer.clear()` between those passes. The rebuild still cleared both thumb targets every frame before rendering. | Production now removes the rebuild-only explicit clears from `renderThumbTargets()`, keeping source `Lo/x1` pass ownership for the spotlight map target. | Low-medium | Keep as source-correct after QA. Do not generalize this to `Lu/kA` work render-manager clears without porting the full source render-manager structure. |
 | 17 | S1-81 | Source `i1` reflection target/camera initialization | Source `i1` creates the raw reflection target with `depthBuffer:false`, clones read/write targets, then toggles only the raw target to `depthBuffer=true`; it also uses a default `PerspectiveCamera` for the virtual reflector camera before copying the real projection each update. | Production now follows that create-clone-toggle sequence, keeps read/write targets depthless, uses the default reflector camera surface, and exposes reflector target/camera state in `reflectionStateProbe()`. | Low-medium | Keep as source-correct. Phase 1 remains open because this is reflector ownership parity, not a visual closeout for the remaining mobile/fog-bed and projection residuals. |
 | 18 | S1-82 | Source `V1/H1/Lo` sky render pass clearing | Source sky scene uses `H1 extends Lo`; source `Lo.update()` renders `renderTargetA` and `renderTargetComposite` directly without explicit `renderer.clear()` calls. The rebuild still cleared both sky raw and sky composite targets every frame. | Production now removes those rebuild-only sky target clears and reports `skyPassClearing=source-Lo-no-explicit-clear` in the output probe. | Low-medium | Keep as source-correct. The sky target remains non-empty and project pages remain stable, but Phase 1 remains open for mobile/fog-bed and projection residuals. |
+| 19 | S1-83 | Source `A1/C1` pre-composite shader flow | Source `A1` keeps the inert `displacementUv` and `vignetteF` computations and samples `tNoise` before contrast/saturation/media, then applies the two noise mixes after media. The rebuild had removed those two computations and relocated the noise sample to the tail. | Production now restores those source flow details without changing constants or final formula, and `scripts/audit-renderer-output.mjs` now reports `A1` order and inert-computation residuals accurately. | Low-medium | Keep as source-correct. This closes an audit residual in `A1/C1`; Phase 1 remains open because mobile/fog-bed and projection residuals still require source-backed attribution. |
 
 ### Phase 1 Open Blocker Board
 
@@ -103,7 +104,7 @@ This board reflects the current active state after S1-46B through S1-50. Older r
 | `T1/w1/E1` thumb target | Source-shaped | Thumb target size, visible thumb count, composite uniforms, texture color-space fix, and S1-49 projection coverage are attributed. | No | Do not tune thumb darkness/intensity. |
 | `GA/VA` ordinary blocks | Stable bridge, still not full source shader | Material defaults, alpha tail, physical-response probes, vertex world/UV probes, and projection coverage are attributed; full `HA/zA` replacement was rejected as unsafe in the current bridge. | Yes for strict 1:1 | Keep stable bridge for runtime safety, but do not mark it accepted without user visual review or narrower source-safe shader evidence. |
 | `Ka` mouse simulation | Structurally attributed | S1-50 verifies target sizing, `uCoords`, UV offset/scale, persistence/thickness shape, and negligible static darken contribution. | No | Interactive feel QA only if visibly off. |
-| `A1/C1` pre-composite | Source-equivalent for home flow | S1-46B semantic flow order matches source except inert/relocated computations. | No for home brightness | Keep project pages as regression gates. |
+| `A1/C1` pre-composite | Source-equivalent for home flow | S1-83 confirms semantic flow order matches source, including the formerly inert/relocated computations. | No for home brightness | Keep project pages as regression gates. |
 | `OA/CA` final transfer | Open transfer/color interpretation gap | Source formulas, blend table, renderer output, and darken inputs are confirmed. Gamma-like transfer debug moves luma but lacks source proof. | Yes | Needs source-backed transfer fix, narrower source evidence, or explicit user acceptance after visual review. |
 | Project detail composite/media | Stable but darker | Full QA passes and previous offscreen-media attempt regressed luma. | Yes for strict 1:1 | Keep as regression gate; do not rewire without narrower source evidence. |
 | Floor/environment/about | Source-shaped bridge, not final parity | Prior probes show low brightness impact; about route passes full-canvas QA. | Maybe | Visual QA must decide whether these bridges are materially off before Phase 1 is closed. |
@@ -3647,3 +3648,38 @@ Band snapshot from `/tmp/rd-sky-no-clear-full`:
 | Mobile source -> rebuild | `-0.0126` | `+0.0163` |
 
 Decision: keep the source sky no-clear render pass. It removes a real `V1/H1/Lo` render-pass divergence without changing visual constants. Phase 1 remains open because the remaining mobile/fog-bed distribution and spotlight/thumb projection feel are not fully source-matched yet.
+
+### S1-83 Source `A1/C1` Pre-Composite Flow
+
+This batch closed a small but concrete `A1/C1` shader-flow residual without tuning brightness.
+
+Source evidence:
+
+- Source `A1` declares and computes `displacementUv` and `vignetteF` even though the current live output does not consume them.
+- Source `A1` computes `noiseUv` and samples `tNoise` immediately after the bloom branch and before contrast, saturation, background lighten, and media mix.
+- Source `A1` still applies the two noise mixes only after the media mix.
+
+Runtime and tooling changes:
+
+- `homePreCompositeFragment` now restores the source `displacementUv` and `vignetteF` computations.
+- The noise sample moved back to the source position, while the two tail noise mixes remain after media and use `noise.rgb`.
+- `scripts/audit-renderer-output.mjs` now checks the updated `noise.rgb` form and only reports `noiseSampleRelocated` when the full source/rebuild anchor order actually differs.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Renderer audit confirms `A1` `orderMatchesSource=true`, `flowOrderMatchesSource=true`, and no inert computation residuals: `/tmp/rd-a1-flow-audit-2`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-a1-flow-output`.
+- Thumb spotlight probe passed and retained the home spotlight map and non-empty thumb targets: `/tmp/rd-a1-flow-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-a1-flow-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-a1-flow-capture`.
+
+Band snapshot from `/tmp/rd-a1-flow-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0012` | `-0.0023` |
+| Mobile source -> rebuild | `-0.0134` | `+0.0171` |
+
+Decision: keep the source `A1/C1` flow alignment. It removes a real shader-flow mismatch and keeps project pages stable, but it is not a Phase 1 closeout. Continue with source-backed target-content/projection attribution rather than visual tuning.

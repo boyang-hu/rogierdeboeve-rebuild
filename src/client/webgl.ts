@@ -1117,10 +1117,16 @@ void main() {
   vec4 perlin = texture2D(tPerlin, perlinUv);
   perlin.rgb = contrast(perlin.rgb, 5.0);
 
+  vec2 displacementUv = vUv * 2.0;
+  displacementUv -= 0.5;
+  displacementUv.x *= uRatio;
+  displacementUv += 0.5;
+
   vec4 fluid = texture2D(tFluid, uv);
   vec2 fluidUv = uv + fluid.rg * -0.2 * uFluidStrength;
   uv = fluidUv;
   vec2 perlinCoords = baseUv;
+  float vignetteF = vignette(uv, 0.1, 0.55, 2.0, 0.25);
   if (uPerlin > 0.0) {
     perlinCoords += perlin.b * uPerlin;
     perlinCoords -= uPerlin * 0.065;
@@ -1144,6 +1150,14 @@ void main() {
     vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), amount / 0.5).rgb;
     color += bloom + bloomShift;
   }
+
+  vec2 noiseUv = baseUv;
+  noiseUv -= 0.5;
+  noiseUv.x *= uRatio;
+  noiseUv += 0.5;
+  noiseUv *= 15.0;
+  vec4 noise = texture2D(tNoise, noiseUv);
+
   color = contrast(color, uContrast);
   color *= uContrast;
   color = saturation(color, 1.15);
@@ -1151,14 +1165,8 @@ void main() {
 
   vec4 media = rgbshift(tMedia, fluidUv, length(fluidUv + 2.5), 0.15 * length(fluid.xy) * uFluidStrength);
   color = mix(color, media.rgb, media.a * uMediaReveal);
-
-  vec2 noiseUv = baseUv - 0.5;
-  noiseUv.x *= uRatio;
-  noiseUv += 0.5;
-  noiseUv *= 15.0;
-  vec3 noise = texture2D(tNoise, noiseUv).rgb;
-  color = mix(color * noise, color, 0.75);
-  color = mix(color * noise, color, 1.5);
+  color = mix(color * noise.rgb, color, 0.75);
+  color = mix(color * noise.rgb, color, 1.5);
   gl_FragColor = vec4(color, 1.0);
 }
 `;
