@@ -334,8 +334,10 @@ const summary = {
       checks: checks(sourceLo.text, [
         "this.renderTargetA=new Dn(1,1,{depthBuffer:!1,stencilBuffer:!1})",
         "this.renderTargetComposite=this.renderTargetA.clone()",
+        "this.renderTargetComposite=this.renderTargetA.clone(),this.compositeMaterial=new g1",
         "this.settings.renderToScreen&&(this.renderer.setPixelRatio(n),this.renderer.setSize(e,t))",
       ]),
+      renderTargetDefaults: targetSnapshot(new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false }).clone()),
       excerpt: compact(sourceLo.text),
     },
     OA: sourceOA && {

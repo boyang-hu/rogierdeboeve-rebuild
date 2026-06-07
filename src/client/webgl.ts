@@ -2965,8 +2965,6 @@ export class WebGLBackdrop {
     this.homeScene.add(this.directionalLight);
     this.skyCompositeMaterial = this.createSkyCompositeMaterial();
     this.skyCompositeScene.add(makeSourceFullscreenTriangle(this.skyCompositeMaterial));
-    this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
-    this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(makeFullscreenTriangle(this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
