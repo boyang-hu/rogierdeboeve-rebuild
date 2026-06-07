@@ -654,6 +654,7 @@ const summary = {
         "for(let r=0;r<this.scenes.length;r++)this.scenes[r].instance.update(e,t,n,i)",
         "this.addScene(this.workScene,\"work\")",
         "this.addScene(this.mainScene,\"main\")",
+        "pe.emit(xe.RESIZE),await fn(100)",
         "const e=this.skyScene.renderManager.renderTargetComposite.texture;e.wrapS=e.wrapT=ci",
         "this.workScene.env.material.customUniforms.tSky.value=e",
       ]),
@@ -904,6 +905,8 @@ const summary = {
       index: sourceSkyV1.index,
       checks: checks(sourceSkyV1.text, [
         "class V1 extends Uu",
+        "this.backgroundColor=new ye(\"#666666\").convertLinearToSRGB()",
+        "this.scene.background=this.backgroundColor",
         "this.renderManager.resize(t*.75,t*.75,1)",
         "this.renderManager.compositeMaterial.uniforms.uTime.value=Le.LOW_RES?0:e",
       ]),

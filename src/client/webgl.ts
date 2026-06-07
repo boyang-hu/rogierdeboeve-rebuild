@@ -6737,6 +6737,7 @@ void main() {
           environmentUpdateOrder: "source-p1-component-post-render",
           skyPassClearing: "source-Lo-no-explicit-clear",
           skyUpdateMode: "source-V1-low-res-freezes-time",
+          skyEnvironmentBinding: "source-nD-resize-delay-then-repeat-composite-bind",
         },
       },
       uniforms: {
@@ -6961,6 +6962,14 @@ void main() {
           uDarkenColor: (this.environmentMaterial.uniforms.uDarkenColor.value as Color).toArray(),
           tSkyIsComposite: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
           tSkySource: this.debugSkyTarget === "off" ? "placeholder" : this.debugSkyTarget === "raw" ? "raw" : "composite",
+          tSkyBindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
+          tSkyWrapS: this.environmentMaterial.uniforms.tSky.value instanceof Texture
+            ? this.environmentMaterial.uniforms.tSky.value.wrapS
+            : null,
+          tSkyWrapT: this.environmentMaterial.uniforms.tSky.value instanceof Texture
+            ? this.environmentMaterial.uniforms.tSky.value.wrapT
+            : null,
+          skyCompositeBindingMatchesUniform: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
           shaderSurface: {
             uShader1Alpha: this.environmentMaterial.uniforms.uShader1Alpha.value,
             uShader1Speed: this.environmentMaterial.uniforms.uShader1Speed.value,
@@ -7022,8 +7031,14 @@ void main() {
           materialMode: "source-z1-raw-glsl3",
           vertexMode: "source-tl-matrix-fullscreen",
           sizingMode: "source-V1-height-0.75-square",
+          rawSizingMode: "source-V1-height-0.75-square",
+          bindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
+          isEnvironmentSkySource: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
+          backgroundMode: "source-V1-background-666666-linear-to-srgb",
+          background: this.skyScene.background instanceof Color ? this.skyScene.background.toArray() : null,
           wrapMode: "source-nD-sky-composite-repeat-for-work-env",
           expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
+          expectedRawSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",
           glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           wrapS: this.skyCompositeTarget.texture.wrapS,
