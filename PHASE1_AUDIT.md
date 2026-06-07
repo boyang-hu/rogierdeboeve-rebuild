@@ -3510,3 +3510,38 @@ Band snapshot from `/tmp/rd-source-mouse-round-full`:
 | Mobile source -> rebuild | `-0.0133` | `+0.0140` |
 
 Decision: keep the source mouse-simulation rounding semantics. This is a source parity correction with low blast radius and no project-media regression. Phase 1 remains open because it does not materially close the remaining mobile/fog-bed or spotlight/projection residuals.
+
+### S1-79 Source `VA/zA` r164 Physical Residual Strip
+
+This batch removed two Three r164 generated physical-material residual branches that are not present in the source `VA/zA` work-block shader surface.
+
+Source evidence:
+
+- The mirrored source `zA` fragment does not declare r164 `dispersion` or `anisotropy` physical-material uniforms.
+- After the Three r164 pin, the rebuild production work fragment still carried generated `USE_DISPERSION` and `USE_ANISOTROPY` uniform branches from Three's physical material chunks.
+- A wider attempted strip of `USE_SHEEN`/physical macro tail code was rejected before acceptance because it was too broad and caused shader compilation failure. The accepted change only removes the two proven r164-only uniform branches.
+
+Runtime changes:
+
+- Added `stripSourceVaR164PhysicalBranches()` in the work-block shader patch path.
+- Removed production `USE_DISPERSION` and `USE_ANISOTROPY` uniform branches from the generated work fragment before compile.
+- Left `USE_SHEEN` and remaining generated Three chunk body differences untouched until there is a safer source-backed extraction.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Fresh shader dump passed with no console/WebGL shader errors and confirmed `fragmentAnalysis.uniformsOnlyRebuild=[]` for the production work fragment: `/tmp/rd-r164-physical-shader`.
+- Thumb spotlight probe passed and retained non-empty thumb/composite targets plus the home spotlight map: `/tmp/rd-r164-physical-thumb`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-r164-physical-output`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-r164-physical-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-r164-physical-capture`.
+
+Band snapshot from `/tmp/rd-r164-physical-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0009` | `-0.0009` |
+| Mobile source -> rebuild | `-0.0120` | `+0.0138` |
+
+Decision: keep the narrow r164 physical residual strip. It clears a real production `VA/zA` shader-surface divergence without changing visual constants. Phase 1 remains open because the remaining residual is still concentrated in mobile/fog-bed structure, spotlight/projection feel, and safe generated material-body attribution.

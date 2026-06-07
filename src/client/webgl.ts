@@ -642,6 +642,7 @@ function patchWorkBlockShader(
   if (variant === "work") {
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", workBlockSourceTailFragmentChunk);
     shader.fragmentShader = stripSourceVaFragmentPaths(shader.fragmentShader);
+    shader.fragmentShader = stripSourceVaR164PhysicalBranches(shader.fragmentShader);
   } else {
     shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", auxiliaryBlockOpaqueFragmentChunk);
   }
@@ -660,6 +661,12 @@ function patchWorkBlockShader(
       fragmentShader: shader.fragmentShader,
     });
   }
+}
+
+function stripSourceVaR164PhysicalBranches(fragmentShader: string) {
+  return fragmentShader
+    .replace(/#ifdef USE_DISPERSION[\s\S]*?uniform float dispersion;[\s\S]*?#endif/g, "// source VA omits r164 dispersion uniforms")
+    .replace(/#ifdef USE_ANISOTROPY[\s\S]*?uniform vec2 anisotropyVector;[\s\S]*?#ifdef USE_ANISOTROPYMAP[\s\S]*?uniform sampler2D anisotropyMap;[\s\S]*?#endif[\s\S]*?#endif/g, "// source VA omits r164 anisotropy uniforms");
 }
 
 const environmentVertexShader = `
