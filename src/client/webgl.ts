@@ -463,7 +463,6 @@ varying float vNoise;`;
 
 const workBlockBeginVertexChunk = `
 #include <begin_vertex>
-vUv = uv;
 vec2 newUv = uv;
 vec2 newOffset = instanceOffset.xy;
 newUv.x /= uGridSize.x;
@@ -522,12 +521,6 @@ transformedSpread.z -= instanceColor.z * spread;
 transformedSpread.z += spread / 2.0;
 transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
 transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
-
-vInstanceAlpha = instanceAlpha;
-vInstanceIndex = instanceIndex;
-vOffset = instanceOffset;
-vPosition = position;
-vInstanceColor = instanceColor;
 `;
 
 const workBlockSourceScreenUvBeginVertexChunk = workBlockBeginVertexChunk.replace(
@@ -556,6 +549,20 @@ vec4 worldPosition = vec4( transformed, 1.0 );
 
 worldPosition = instanceMatrix * worldPosition;
 worldPosition = modelMatrix * worldPosition;
+`;
+
+const workBlockSourceShadowmapVertexChunk = `
+#include <shadowmap_vertex>
+#include <fog_vertex>
+vInstanceIndex = instanceIndex;
+vInstanceAlpha = instanceAlpha;
+vOffset = instanceOffset;
+
+#ifdef USE_TRANSMISSION
+  vWorldPosition = worldPosition.xyz;
+#endif
+vPosition = position;
+vInstanceColor = instanceColor;
 `;
 
 const workBlockSourceProjectVertexChunk = `
@@ -735,8 +742,10 @@ function patchWorkBlockShader(
   Object.assign(shader.uniforms, uniforms);
   shader.vertexShader = `${workBlockVertexPars}\n${shader.vertexShader}`
     .replace("varying vec3 vViewPosition;", workBlockVertexSourceViewVaryings)
+    .replace("void main() {", "void main() {\n  vUv = uv;")
     .replace("#include <begin_vertex>", workBlockSourceScreenUvBeginVertexChunk)
-    .replace("#include <worldpos_vertex>", workBlockSourceWorldPositionChunk);
+    .replace("#include <worldpos_vertex>", workBlockSourceWorldPositionChunk)
+    .replace("#include <shadowmap_vertex>\n\t#include <fog_vertex>", workBlockSourceShadowmapVertexChunk);
   if (variant === "work") {
     shader.vertexShader = stripSourceHaR164VertexSurface(shader.vertexShader);
   }
@@ -792,7 +801,11 @@ function stripSourceHaR164VertexSurface(vertexShader: string) {
     .replace("#include <displacementmap_vertex>", "// source HA omits displacementmap_vertex")
     .replace("#include <project_vertex>", workBlockSourceProjectVertexChunk)
     .replace("#include <logdepthbuf_vertex>", "// source HA omits logdepthbuf_vertex")
-    .replace("#include <clipping_planes_vertex>", "// source HA omits clipping_planes_vertex");
+    .replace("#include <clipping_planes_vertex>", "// source HA omits clipping_planes_vertex")
+    .replace(
+      /\n#ifdef USE_TRANSMISSION\s+vWorldPosition = worldPosition\.xyz;\s+#endif(?=\s*\})/,
+      "",
+    );
 }
 
 function stripSourceVaR164PhysicalBranches(fragmentShader: string) {

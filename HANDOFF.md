@@ -135,20 +135,19 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `VA/HA/zA` declaration/helper shader surface parity was tightened without visual tuning:
-  - custom `HA` work-block vertex declarations now sit before the Three material header like source `HA`;
-  - source-proven `uUvOffset` stays a `vec2` bridge, but its declaration is ordered before reveal uniforms like the source surface;
-  - `vNoise` now sits with `vViewPosition`, matching source `HA`;
-  - custom `zA` fragment declarations now precede `#define STANDARD`;
-  - `random(...)` and `vignette(...)` now sit after the fragment pars/include surface and before `main()`;
-  - shader dump now records/asserts `vaVertexCoreChecks` and `vaFragmentCoreChecks` for those declaration/helper order rules.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
+- Source `HA` main-function varying assignment order was tightened without visual tuning:
+  - `vUv = uv;` now sits immediately after `void main() {` and before `#include <uv_vertex>`, matching source `HA`;
+  - instance varying assignments now sit after `#include <shadowmap_vertex>` / `#include <fog_vertex>`;
+  - `vWorldPosition` now appears between `vOffset` and `vPosition`, matching the source ordering;
+  - the local Three r164 `USE_TRANSMISSION` tail is stripped so `vWorldPosition = worldPosition.xyz` appears exactly once;
+  - shader dump now records/asserts `sourceUvAssignedBeforeUvChunk`, `sourceInstanceVaryingsAfterFog`, and `singleTransmissionWorldPositionAssignment`.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Final post-cleanup desktop output and project-media smoke also passed.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open; this was source surface parity, not a visual closeout or accepted deviation.
 
 ## Validation Status
 
-Last verified in the prior session:
+Last verified in the latest session:
 
 ```sh
 npm run build
@@ -157,14 +156,14 @@ git diff --check
 
 Both passed.
 
-Runtime QA was done with a local Chrome CDP fallback because the in-app browser `iab` was unavailable in that session.
+Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
 - Home can activate `gc-2026`.
 - Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
-- Project page detected 5 desktop WebGL media tracks.
+- Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
 - No runtime/console/WebGL shader errors were reported, excluding normal audio autoplay warnings.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

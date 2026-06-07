@@ -175,6 +175,10 @@ function orderedBefore(shader, first, second) {
   return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
 }
 
+function countOccurrences(shader, needle) {
+  return shader.split(needle).length - 1;
+}
+
 function findLines(shader, pattern) {
   return shader
     .split("\n")
@@ -859,6 +863,18 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
     ["sourceVNoiseAfterViewPosition", {
       source: orderedBefore(sourceShader, "varying vec3 vViewPosition", "varying float vNoise"),
       rebuild: orderedBefore(rebuildShader, "varying vec3 vViewPosition", "varying float vNoise"),
+    }],
+    ["sourceUvAssignedBeforeUvChunk", {
+      source: orderedBefore(sourceShader, "vUv = uv;", "#include <uv_vertex>"),
+      rebuild: orderedBefore(rebuildShader, "vUv = uv;", "#include <uv_vertex>"),
+    }],
+    ["sourceInstanceVaryingsAfterFog", {
+      source: orderedBefore(sourceShader, "#include <fog_vertex>", "vInstanceIndex = instanceIndex"),
+      rebuild: orderedBefore(rebuildShader, "#include <fog_vertex>", "vInstanceIndex = instanceIndex"),
+    }],
+    ["singleTransmissionWorldPositionAssignment", {
+      source: countOccurrences(sourceShader, "vWorldPosition = worldPosition.xyz") === 1,
+      rebuild: countOccurrences(rebuildShader, "vWorldPosition = worldPosition.xyz") === 1,
     }],
   ]));
 }
