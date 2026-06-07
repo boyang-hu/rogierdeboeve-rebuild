@@ -129,6 +129,12 @@ const sourceNa = extractAround(bundle, "class Na extends", 420, 900);
 const sourceCg = extractAround(bundle, "class cg extends", 320, 1000);
 const sourceIg = extractAround(bundle, "class ig extends", 320, 900);
 const sourceL1 = extractAround(bundle, "class L1 extends", 320, 1000);
+const sourceAg = extractAround(bundle, "class ag", 260, 3200);
+const sourceGT = extractAround(bundle, "class GT extends", 320, 1500);
+const sourceQT = extractAround(bundle, "class qT extends", 320, 1500);
+const sourceJT = extractAround(bundle, "class jT extends", 320, 1100);
+const sourceKT = extractAround(bundle, "class KT extends", 320, 1200);
+const sourcePressureJT = extractAround(bundle, "class JT extends", 320, 1100);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 7600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
@@ -465,6 +471,84 @@ const summary = {
           "depthWrite:!1",
         ]),
         excerpt: compact(sourceL1.text),
+      },
+      agFluid: {
+        ag: sourceAg && {
+          index: sourceAg.index,
+          checks: checks(sourceAg.text, [
+            "class ag",
+            "this.fbos={main:null,velocity_1:null,viscosity_0:null,viscosity_1:null,divergence:null,pressure_0:null,pressure_1:null}",
+            "this.options={mouseForce:20,resolution:.05,cursorSize:50,poissonIterations:5,bounce:!1,delta:.01,viscosityIntensity:30,viscosityIterations:5,viscosity:!1}",
+            "new Dn(this.fboSize.x,this.fboSize.y,{depthBuffer:!1,stencilBuffer:!1,type:kn})",
+            "this.advection=new GT",
+            "this.force=new qT",
+            "this.divergence=new jT",
+            "this.poisson=new KT",
+            "this.pressure=new JT",
+          ]),
+          excerpt: compact(sourceAg.text),
+        },
+        GT: sourceGT && {
+          index: sourceGT.index,
+          checks: checks(sourceGT.text, [
+            "class GT extends Ir",
+            "glslVersion:lt",
+            "blending:ot",
+            "vertexShader:Co",
+            "fragmentShader:Sf",
+            "this.createBounds()",
+            "vertexShader:VT",
+          ]),
+          excerpt: compact(sourceGT.text),
+        },
+        qT: sourceQT && {
+          index: sourceQT.index,
+          checks: checks(sourceQT.text, [
+            "class qT extends Ir",
+            "glslVersion:lt",
+            "vertexShader:XT",
+            "fragmentShader:$T",
+            "blending:Uc",
+            "this.mouse={coords:new Q,coordsOld:new Q,diff:new Q}",
+          ]),
+          excerpt: compact(sourceQT.text),
+        },
+        jT: sourceJT && {
+          index: sourceJT.index,
+          checks: checks(sourceJT.text, [
+            "class jT extends Ir",
+            "glslVersion:lt",
+            "blending:ot",
+            "vertexShader:Co",
+            "fragmentShader:WT",
+            "velocity:{value:e.src.texture}",
+          ]),
+          excerpt: compact(sourceJT.text),
+        },
+        KT: sourceKT && {
+          index: sourceKT.index,
+          checks: checks(sourceKT.text, [
+            "class KT extends Ir",
+            "glslVersion:lt",
+            "blending:ot",
+            "vertexShader:Co",
+            "fragmentShader:YT",
+            "poissonIterations:e",
+          ]),
+          excerpt: compact(sourceKT.text),
+        },
+        JT: sourcePressureJT && {
+          index: sourcePressureJT.index,
+          checks: checks(sourcePressureJT.text, [
+            "class JT extends Ir",
+            "glslVersion:lt",
+            "blending:ot",
+            "vertexShader:Co",
+            "fragmentShader:ZT",
+            "pressure:{value:e.pressure.texture}",
+          ]),
+          excerpt: compact(sourcePressureJT.text),
+        },
       },
     },
     mainI1: sourceMainI1 && {

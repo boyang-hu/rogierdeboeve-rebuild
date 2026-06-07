@@ -223,6 +223,29 @@ async function runProbe() {
   if (JSON.stringify(standardBlur.horizontal?.direction) !== JSON.stringify([1, 0])) materialSurfaceErrors.push("standardBlurHorizontalDirection");
   if (JSON.stringify(standardBlur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push("standardBlurVerticalDirection");
   if (passMaterials.fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("fxaaVertexMode");
+  const mainFluidMaterials = parsed.probe.mainFluid?.materialSurface || {};
+  for (const [key, expectedMode] of Object.entries({
+    advection: "source-GT-raw-glsl3",
+    force: "source-qT-raw-glsl3",
+    divergence: "source-jT-raw-glsl3",
+    poisson: "source-KT-raw-glsl3",
+    pressure: "source-JT-raw-glsl3",
+  })) {
+    if (mainFluidMaterials[key]?.materialMode !== expectedMode) materialSurfaceErrors.push(`mainFluid${key}MaterialMode`);
+    if (mainFluidMaterials[key]?.glslVersion !== "300 es") materialSurfaceErrors.push(`mainFluid${key}GlslVersion`);
+    if (mainFluidMaterials[key]?.depthWrite !== false) materialSurfaceErrors.push(`mainFluid${key}DepthWrite`);
+    if (mainFluidMaterials[key]?.depthTest !== false) materialSurfaceErrors.push(`mainFluid${key}DepthTest`);
+  }
+  for (const key of ["advection", "divergence", "poisson", "pressure"]) {
+    if (mainFluidMaterials[key]?.blending !== 0) materialSurfaceErrors.push(`mainFluid${key}Blending`);
+  }
+  if (mainFluidMaterials.force?.blending !== 2) materialSurfaceErrors.push("mainFluidForceBlending");
+  const mainFluidTargets = parsed.probe.mainFluid?.targets || {};
+  for (const key of ["main", "velocity", "divergence", "pressureA", "pressureB"]) {
+    if (mainFluidTargets[key]?.texture?.type !== 1015) materialSurfaceErrors.push(`mainFluid${key}FloatType`);
+    if (mainFluidTargets[key]?.depthBuffer !== false) materialSurfaceErrors.push(`mainFluid${key}DepthBuffer`);
+    if (mainFluidTargets[key]?.stencilBuffer !== false) materialSurfaceErrors.push(`mainFluid${key}StencilBuffer`);
+  }
   if (materialSurfaceErrors.length) {
     throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);
   }

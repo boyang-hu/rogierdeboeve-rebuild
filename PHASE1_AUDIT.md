@@ -119,6 +119,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 42 | S1-115 | Source `rg/ig` blur and FXAA shader body surface | Source `Lu.initRenderer()` creates five blur materials with `new rg(e[t])` for `[3,5,7,9,11]`; source `rg/kT` uses compile-time `defines:{KERNEL_RADIUS:e,SIGMA:e}` rather than runtime kernel uniforms. Source `ig` binds vertex shader `FT`, which computes `v_rgbNW/NE/SW/SE/M` neighbor UVs for fragment `UT`. | Production now creates one `rg` material/scene per mip for work and main bloom chains, moves kernel radius/sigma into material defines, removes runtime `uKernelRadius/uSigma`, and switches FXAA to the source `FT/UT` neighbor-UV surface. Output probe and shader dump now hard-check blur material count/defines/no runtime kernel uniforms and FXAA neighbor-UV macros/call shape. | Low-medium | Keep as source-correct helper shader-body alignment. This narrows the helper pass bridge without tuning constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 43 | S1-116 | Source `Na/HT/zT` standard blur pass surface | Source `Lu/I1` ordinary blur pass uses `hBlurMaterial=new Na(...)` and `vBlurMaterial=new Na(...)`; source `Na` is a raw GLSL3 material with `uBluriness`, `uDirection`, `uResolution`, vertex `HT`, and fragment `zT` using the shared 9-tap `og` blur helper. This is separate from bloom `rg/kT`. | Production now uses a dedicated `Na-standard-blur` raw GLSL3 material for the horizontal/vertical ordinary blur pass instead of reusing bloom `rg`. Output probe asserts `source-Na-raw-glsl3`, `uBluriness`, no bloom kernel defines, and source directions. Shader dump expands `og` into `zT` and hard-checks the 9-tap blur body. | Low-medium | Keep as source-correct render-manager branch alignment. The branch is source-disabled by default, so this is not a visual closeout. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 | 44 | S1-117 | Source `L1/R1/P1` lensflare pass surface | Source `I1.initSettings()` defines `lensflare:{scale:(1.5,1.5), exposure:1, clamp:1, enabled:false}`; source `I1.initRenderer()` owns `renderTargetLensflare`; source `L1` is a raw GLSL3 material using vertex `R1`, fragment `P1`, uniforms `tMap/uLightPosition/uScale/uExposure/uClamp/uResolution`, and `depthTest/depthWrite:false`. | Production now has a source-shaped `L1-lensflare` raw GLSL3 material/scene, keeps the full-resolution lensflare target wired into `C1/A1.tLensflare`, gates rendering behind the source default `enabled:false`, and records the source explicit-clear pass shape. Output probe and shader dump hard-check `L1` uniforms/defaults, GLSL surface, clear mode, and core `P1` fragment anchors. | Low | Keep as source-correct default-disabled render-manager surface alignment. This should not alter the current visual output; it closes the missing lensflare branch surface but Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
+| 45 | S1-118 | Source `ag/GT/qT/jT/KT/JT` main-fluid pass surface | Source `ag` owns float FBOs with `depthBuffer:false`, `stencilBuffer:false`, `type:FloatType`; source `GT/qT/jT/KT/JT` use raw GLSL3 materials, source advection/divergence/poisson/pressure use `blending:ot`, and source force uses `blending:Uc`. | Production main-fluid passes now use `RawShaderMaterial`/`GLSL3`, source-style `in/out`, `texture(...)`, and `FragColor`, with `NoBlending` for advection/divergence/poisson/pressure and `AdditiveBlending` for force. Output probe now hard-checks material modes, GLSL versions, depth flags, blending, and float target ownership; shader dump maps the five `ag-*` pass shaders to source `Co/XT/Sf/$T/WT/YT/ZT`; renderer audit records source `ag` and pass material anchors. | Low-medium | Keep as source-correct main-fluid render-manager surface alignment. This removes a real source pass-surface mismatch without tuning visual constants. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -988,6 +989,44 @@ Verification:
 | Mobile center-band delta | `-0.0133` against source |
 
 Decision: keep the source `L1/I1` lensflare pass surface. It closes a default-disabled branch that was missing from the rebuild render manager, while preserving current visual output and project media. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
+
+### S1-118 Source `ag/GT/qT/jT/KT/JT` Main-Fluid Pass Surface
+
+This batch aligned the source main-fluid simulation pass surface. It is a render-manager/material parity fix, not a visual constant tune.
+
+Source evidence:
+
+- Source `ag` creates `main`, `velocity_1`, `viscosity_0`, `viscosity_1`, `divergence`, `pressure_0`, and `pressure_1` FBOs with `depthBuffer:false`, `stencilBuffer:false`, and `type:FloatType`.
+- Source `GT` advection uses raw GLSL3 material `Co/Sf`, `blending:ot`, `depthWrite:false`, and `depthTest:false`.
+- Source `qT` force uses raw GLSL3 material `XT/$T`, `blending:Uc`, `depthWrite:false`, and `depthTest:false`.
+- Source `jT`, `KT`, and `JT` use raw GLSL3 materials `Co/WT`, `Co/YT`, and `Co/ZT` with `blending:ot`, `depthWrite:false`, and `depthTest:false`.
+- Source `I1.initFluid()` already drives the current main-fluid settings: `mouseForce:5`, `cursorSize:6`, `delta:.125`, `poissonIterations:1`, `bounce:false`, and the half-POT `/3` resize path from S1-101.
+
+Runtime and tooling changes:
+
+- Converted main-fluid advection, force, divergence, poisson, and pressure passes to `RawShaderMaterial` with `GLSL3`.
+- Converted fluid shader surfaces to source-style `in/out`, `texture(...)`, and `FragColor`.
+- Set source blending states: `NoBlending` for advection/divergence/poisson/pressure and `AdditiveBlending` for force.
+- Added `ag-advection`, `ag-force`, `ag-divergence`, `ag-poisson`, and `ag-pressure` shader dumps mapped to source `Co/XT/Sf/$T/WT/YT/ZT`.
+- Expanded output probes to assert main-fluid material modes, GLSL versions, blending/depth flags, and float/depthless target ownership.
+- Expanded renderer audit coverage for source `ag`, `GT`, `qT`, `jT`, `KT`, and `JT`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Passed; source `ag/GT/qT/jT/KT/JT` anchors recorded |
+| Output probe | Passed with `PROBE_WAIT=9000`; main-fluid pass surfaces and float FBOs asserted |
+| Shader dump | Passed; five `ag-*` rebuild shaders were dumped with source mappings |
+| Thumb spotlight probe | Passed; source thumb strip and spotlight map retained |
+| Project media probe | Passed; project detail pages retain five visible media tracks |
+| Full source-vs-rebuild capture | Passed for home desktop/mobile, about, `/gc-2026/`, and `/hashgraph-vc/` |
+| Desktop center-band delta | `+0.0013` against source |
+| Mobile center-band delta | `-0.0138` against source |
+
+Decision: keep the source main-fluid pass surface. It removes a real source material/GLSL/FBO mismatch while preserving project media. Phase 1 remains open for mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation.
 
 ### S1-70 Source Floor Circle Geometry
 

@@ -1836,9 +1836,10 @@ void main() {
 const fluidBoundedVertex = `
 precision mediump float;
 
+in vec3 position;
 uniform vec2 bounds;
 
-varying vec2 vUv;
+out vec2 vUv;
 
 void main() {
   vec3 pos = position;
@@ -1852,11 +1853,13 @@ void main() {
 const fluidForceVertex = `
 precision mediump float;
 
+in vec3 position;
+in vec2 uv;
 uniform vec2 center;
 uniform vec2 scale;
 uniform vec2 px;
 
-varying vec2 vUv;
+out vec2 vUv;
 
 void main() {
   vec2 pos = position.xy * scale * 2.0 * px + center;
@@ -1872,21 +1875,22 @@ uniform sampler2D velocity;
 uniform float dt;
 uniform vec2 fboSize;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
   vec2 ratio = max(fboSize.x, fboSize.y) / fboSize;
   vec2 spotNew = vUv;
-  vec2 velOld = texture2D(velocity, vUv).xy;
+  vec2 velOld = texture(velocity, vUv).xy;
   vec2 spotOld = spotNew - velOld * dt * ratio;
-  vec2 velNew1 = texture2D(velocity, spotOld).xy;
+  vec2 velNew1 = texture(velocity, spotOld).xy;
   vec2 spotNew2 = spotOld + velNew1 * dt * ratio;
   vec2 error = spotNew2 - spotNew;
   vec2 spotNew3 = spotNew - error / 2.0;
-  vec2 vel2 = texture2D(velocity, spotNew3).xy;
+  vec2 vel2 = texture(velocity, spotNew3).xy;
   vec2 spotOld2 = spotNew3 - vel2 * dt * ratio;
-  vec2 newVel2 = texture2D(velocity, spotOld2).xy;
-  gl_FragColor = vec4(newVel2, 0.0, 0.0);
+  vec2 newVel2 = texture(velocity, spotOld2).xy;
+  FragColor = vec4(newVel2, 0.0, 0.0);
 }
 `;
 
@@ -1895,13 +1899,14 @@ precision mediump float;
 
 uniform vec2 force;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
   vec2 circle = (vUv - 0.5) * 2.0;
   float d = 1.0 - min(length(circle), 1.0);
   d *= d;
-  gl_FragColor = vec4(force * d, 0.0, 1.0);
+  FragColor = vec4(force * d, 0.0, 1.0);
 }
 `;
 
@@ -1912,15 +1917,16 @@ uniform sampler2D velocity;
 uniform float dt;
 uniform vec2 px;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
-  float x0 = texture2D(velocity, vUv - vec2(px.x, 0.0)).x;
-  float x1 = texture2D(velocity, vUv + vec2(px.x, 0.0)).x;
-  float y0 = texture2D(velocity, vUv - vec2(0.0, px.y)).y;
-  float y1 = texture2D(velocity, vUv + vec2(0.0, px.y)).y;
+  float x0 = texture(velocity, vUv - vec2(px.x, 0.0)).x;
+  float x1 = texture(velocity, vUv + vec2(px.x, 0.0)).x;
+  float y0 = texture(velocity, vUv - vec2(0.0, px.y)).y;
+  float y1 = texture(velocity, vUv + vec2(0.0, px.y)).y;
   float divergence = (x1 - x0 + y1 - y0) / 2.0;
-  gl_FragColor = vec4(divergence / dt);
+  FragColor = vec4(divergence / dt);
 }
 `;
 
@@ -1931,16 +1937,17 @@ uniform sampler2D pressure;
 uniform sampler2D divergence;
 uniform vec2 px;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
-  float p0 = texture2D(pressure, vUv + vec2(px.x * 2.0, 0.0)).r;
-  float p1 = texture2D(pressure, vUv - vec2(px.x * 2.0, 0.0)).r;
-  float p2 = texture2D(pressure, vUv + vec2(0.0, px.y * 2.0)).r;
-  float p3 = texture2D(pressure, vUv - vec2(0.0, px.y * 2.0)).r;
-  float div = texture2D(divergence, vUv).r;
+  float p0 = texture(pressure, vUv + vec2(px.x * 2.0, 0.0)).r;
+  float p1 = texture(pressure, vUv - vec2(px.x * 2.0, 0.0)).r;
+  float p2 = texture(pressure, vUv + vec2(0.0, px.y * 2.0)).r;
+  float p3 = texture(pressure, vUv - vec2(0.0, px.y * 2.0)).r;
+  float div = texture(divergence, vUv).r;
   float newP = (p0 + p1 + p2 + p3) / 4.0 - div;
-  gl_FragColor = vec4(newP);
+  FragColor = vec4(newP);
 }
 `;
 
@@ -1952,18 +1959,19 @@ uniform sampler2D velocity;
 uniform float dt;
 uniform vec2 px;
 
-varying vec2 vUv;
+in vec2 vUv;
+out vec4 FragColor;
 
 void main() {
   float step = 1.0;
-  float p0 = texture2D(pressure, vUv + vec2(px.x * step, 0.0)).r;
-  float p1 = texture2D(pressure, vUv - vec2(px.x * step, 0.0)).r;
-  float p2 = texture2D(pressure, vUv + vec2(0.0, px.y * step)).r;
-  float p3 = texture2D(pressure, vUv - vec2(0.0, px.y * step)).r;
-  vec2 v = texture2D(velocity, vUv).xy;
+  float p0 = texture(pressure, vUv + vec2(px.x * step, 0.0)).r;
+  float p1 = texture(pressure, vUv - vec2(px.x * step, 0.0)).r;
+  float p2 = texture(pressure, vUv + vec2(0.0, px.y * step)).r;
+  float p3 = texture(pressure, vUv - vec2(0.0, px.y * step)).r;
+  vec2 v = texture(velocity, vUv).xy;
   vec2 gradP = vec2(p0 - p1, p2 - p3) * 0.5;
   v = v - dt * gradP;
-  gl_FragColor = vec4(v, 0.0, 1.0);
+  FragColor = vec4(v, 0.0, 1.0);
 }
 `;
 
@@ -2323,6 +2331,17 @@ function makeFullscreenTriangle(material: ShaderMaterial) {
   return mesh;
 }
 
+function sourceMaterialProbe(material: ShaderMaterial, materialMode: string) {
+  return {
+    materialMode,
+    glslVersion: material.glslVersion ?? null,
+    blending: material.blending,
+    depthWrite: material.depthWrite,
+    depthTest: material.depthTest,
+    transparent: material.transparent,
+  };
+}
+
 function renderTargetStats(renderer: WebGLRenderer, target: WebGLRenderTarget, sampleSize = 64): RenderTargetStats {
   const width = Math.max(1, target.width);
   const height = Math.max(1, target.height);
@@ -2443,6 +2462,8 @@ function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, s
   return {
     width: target.width,
     height: target.height,
+    depthBuffer: target.depthBuffer,
+    stencilBuffer: target.stencilBuffer,
     texture: {
       colorSpace: target.texture.colorSpace,
       type: target.texture.type,
@@ -4178,8 +4199,14 @@ export class WebGLBackdrop {
       scene.add(makeFullscreenTriangle(material));
       return scene;
     };
-    const advectionMaterial = new ShaderMaterial({
-      blending: NormalBlending,
+    dumpShader("ag-advection", fluidBoundedVertex, fluidAdvectionFragment);
+    dumpShader("ag-force", fluidForceVertex, fluidForceFragment);
+    dumpShader("ag-divergence", fluidBoundedVertex, fluidDivergenceFragment);
+    dumpShader("ag-poisson", fluidBoundedVertex, fluidPoissonFragment);
+    dumpShader("ag-pressure", fluidBoundedVertex, fluidPressureFragment);
+    const advectionMaterial = new RawShaderMaterial({
+      glslVersion: GLSL3,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -4191,7 +4218,8 @@ export class WebGLBackdrop {
       vertexShader: fluidBoundedVertex,
       fragmentShader: fluidAdvectionFragment,
     });
-    const forceMaterial = new ShaderMaterial({
+    const forceMaterial = new RawShaderMaterial({
+      glslVersion: GLSL3,
       blending: AdditiveBlending,
       depthWrite: false,
       depthTest: false,
@@ -4207,8 +4235,9 @@ export class WebGLBackdrop {
     });
     const forceScene = new Scene();
     forceScene.add(new Mesh(new PlaneGeometry(2, 2), forceMaterial));
-    const divergenceMaterial = new ShaderMaterial({
-      blending: NormalBlending,
+    const divergenceMaterial = new RawShaderMaterial({
+      glslVersion: GLSL3,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -4220,8 +4249,9 @@ export class WebGLBackdrop {
       vertexShader: fluidBoundedVertex,
       fragmentShader: fluidDivergenceFragment,
     });
-    const poissonMaterial = new ShaderMaterial({
-      blending: NormalBlending,
+    const poissonMaterial = new RawShaderMaterial({
+      glslVersion: GLSL3,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -4233,8 +4263,9 @@ export class WebGLBackdrop {
       vertexShader: fluidBoundedVertex,
       fragmentShader: fluidPoissonFragment,
     });
-    const pressureMaterial = new ShaderMaterial({
-      blending: NormalBlending,
+    const pressureMaterial = new RawShaderMaterial({
+      glslVersion: GLSL3,
+      blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -6210,6 +6241,13 @@ export class WebGLBackdrop {
       bounds: pass.bounds.toArray(),
       pointer: pass.pointer.toArray(),
       pointerOld: pass.pointerOld.toArray(),
+      materialSurface: {
+        advection: sourceMaterialProbe(pass.advectionMaterial, "source-GT-raw-glsl3"),
+        force: sourceMaterialProbe(pass.forceMaterial, "source-qT-raw-glsl3"),
+        divergence: sourceMaterialProbe(pass.divergenceMaterial, "source-jT-raw-glsl3"),
+        poisson: sourceMaterialProbe(pass.poissonMaterial, "source-KT-raw-glsl3"),
+        pressure: sourceMaterialProbe(pass.pressureMaterial, "source-JT-raw-glsl3"),
+      },
       targets: {
         main: renderTargetProbe(this.renderer, pass.targets.main),
         velocity: renderTargetProbe(this.renderer, pass.targets.velocity),
