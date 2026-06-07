@@ -457,47 +457,61 @@ const workBlockBeginVertexChunk = `
 vec3 transformed = vec3(position);
 vUv = uv;
 vec2 newUv = uv;
+vec2 newOffset = instanceOffset.xy;
 newUv.x /= uGridSize.x;
 newUv.y /= uGridSize.y;
-newUv += instanceOffset.xy;
-vec2 mouseUv = (newUv + uUvOffset.xy) / uUvOffsetScale;
+newUv.x += newOffset.x;
+newUv.y += newOffset.y;
+vec2 mouseUv = newUv + uUvOffset.xy;
+mouseUv /= uUvOffsetScale;
 vec4 mouseSim = texture2D(tMouseSim, mouseUv);
 
 vec4 instancePos = instanceMatrix[3];
-float revealMask = uReveal * uRevealProject;
+vec2 perlinUv = newUv * 0.75;
+vec4 perlin = texture2D(tPerlin, perlinUv - uTime * 0.05);
+
+float revealCombined = uReveal * uRevealProject;
+float perlinDisplacementHeight = 10.0;
+float perlinDisplacement = perlin.r * perlinDisplacementHeight;
 float toCenter = length(instancePos.xy);
 
-float fadeScale = (revealMask * 5.75) - (toCenter * (revealMask / 5.75));
+float fadeScale = (revealCombined * 5.75) - (toCenter * (revealCombined / 5.75));
 float fade = clamp(fadeScale, 0.0, 1.05);
-float fadeDisplacementScale = (revealMask * 4.85) - (toCenter * (revealMask / 4.85));
-float fadeDisplacement = clamp(fadeDisplacementScale, -1.0, 1.0);
-vec4 displacementMap = texture2D(tDisplacement, newUv);
-vec4 perlinMap = texture2D(tPerlin, newUv * 0.75 - uTime * 0.05);
-float perlinHeight = 10.0;
-float perlinDisplacement = perlinMap.r * perlinHeight;
 perlinDisplacement *= fade;
 
+float perlinScaleDisplacement = min(1.0, 1.0 - (perlinDisplacement - (perlinDisplacementHeight / 2.0)) * 0.1);
+
 vec3 perlinDisplaced = transformed;
-perlinDisplaced.z += perlinDisplacement - perlinHeight * 0.5;
-perlinDisplaced *= min(1.0, 1.0 - (perlinDisplacement - perlinHeight * 0.5) * 0.1);
+perlinDisplaced.z += perlinDisplacement - (perlinDisplacementHeight / 2.0);
+perlinDisplaced *= perlinScaleDisplacement;
 transformed *= 1.0 - mouseSim.r * 0.05;
-transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDisplacement) * 0.25);
-transformed *= fade * uRevealSides;
 
-float displacement = displacementMap.r;
+float fadeDiplacementScale = (revealCombined * 4.85) - (toCenter * (revealCombined / 4.85));
+float fadeDiplacement = clamp(fadeDiplacementScale, -1.0, 1.0);
+
+transformed = mix(transformed, perlinDisplaced, (1.0 - fadeDiplacement) * 0.25);
+transformed *= fade;
+transformed *= uRevealSides;
+
+float mouseTransform = mouseSim.r * 15.0;
+
+vec4 displacement = texture2D(tDisplacement, newUv);
+float displacementF = displacement.r;
+float waveDisplacement = displacementF * 3.0 + 6.0 * (1.0 - revealCombined);
+
 transformed.z -= 1.5;
-transformed.z += displacement * 3.0 + 6.0 * (1.0 - revealMask);
-transformed.z += mouseSim.r * 15.0 * uMouseFactor;
-transformed *= 1.0 - displacement * 0.1;
+transformed.z += waveDisplacement;
+transformed.z += mouseTransform * uMouseFactor;
+transformed *= 1.0 - displacementF * 0.1;
 
-vec3 transformedSpread = transformed;
 float spread = 3.0;
+vec3 transformedSpread = transformed;
 transformedSpread.x -= instanceColor.x * spread;
-transformedSpread.x += spread * 0.5;
+transformedSpread.x += spread / 2.0;
 transformedSpread.y -= instanceColor.y * spread;
-transformedSpread.y += spread * 0.5;
+transformedSpread.y += spread / 2.0;
 transformedSpread.z -= instanceColor.z * spread;
-transformedSpread.z += spread * 0.5;
+transformedSpread.z += spread / 2.0;
 transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
 transformed = mix(transformedSpread, transformed, 1.0 - uRevealSpread);
 
@@ -511,16 +525,20 @@ vInstanceColor = instanceColor;
 const workBlockSourceScreenUvBeginVertexChunk = workBlockBeginVertexChunk.replace(
   [
     "vec2 newUv = uv;",
+    "vec2 newOffset = instanceOffset.xy;",
     "newUv.x /= uGridSize.x;",
     "newUv.y /= uGridSize.y;",
-    "newUv += instanceOffset.xy;",
+    "newUv.x += newOffset.x;",
+    "newUv.y += newOffset.y;",
   ].join("\n"),
   [
     "vec2 screenUv = gl_Position.xy / uCoords.xy;",
     "vec2 newUv = screenUv;",
+    "vec2 newOffset = instanceOffset.xy;",
     "newUv.x /= uGridSize.x;",
     "newUv.y /= uGridSize.y;",
-    "newUv += instanceOffset.xy;",
+    "newUv.x += newOffset.x;",
+    "newUv.y += newOffset.y;",
   ].join("\n"),
 );
 
