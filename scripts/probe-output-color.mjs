@@ -190,8 +190,23 @@ async function runProbe() {
   if (camera.mobileResizeBranch !== expectedMobile) resizeErrors.push("mobileResizeBranch");
   if (Math.abs((camera.origin?.[2] ?? 0) - expectedOriginZ) > 0.001) resizeErrors.push("cameraOriginZ");
   if (Math.abs((camera.sceneWrapY ?? 0) - expectedSceneWrapY) > 0.001) resizeErrors.push("sceneWrapY");
+  if (camera.controllerMode !== "source-IT-three-group-matrix-decompose") resizeErrors.push("controllerMode");
+  if (camera.mouseInitialMode !== "source-IT-documentElement-center") resizeErrors.push("mouseInitialMode");
+  if (camera.updateLerpMode !== "source-IT-min-Fn-2-over-fps60-0-2-times-0_01") resizeErrors.push("updateLerpMode");
+  if (camera.updateTargetMode !== "source-IT-origin-plus-targetXY-and-y-z-depth-coupling") resizeErrors.push("updateTargetMode");
+  if (camera.entrySettingsMode !== "source-SD-yD-targetXY-1-0_5-rotateAngle-20") resizeErrors.push("entrySettingsMode");
+  if (camera.matrixMode !== "source-IT-group-rotateGroup-innerGroup-manual-matrices") resizeErrors.push("matrixMode");
+  if (Math.abs((camera.targetXY?.[0] ?? 0) - 1) > 0.001) resizeErrors.push("targetXYX");
+  if (Math.abs((camera.targetXY?.[1] ?? 0) - 0.5) > 0.001) resizeErrors.push("targetXYY");
+  if (Math.abs((camera.rotateAngle ?? 0) - 20) > 0.001) resizeErrors.push("rotateAngle");
+  if (!Array.isArray(camera.controllerPosition) || camera.controllerPosition.length !== 3) resizeErrors.push("controllerPosition");
+  if (!Array.isArray(camera.rotateGroupRotation) || camera.rotateGroupRotation.length !== 3) resizeErrors.push("rotateGroupRotation");
+  if (Math.abs((camera.rotateGroupRotation?.[1] ?? 0) - Math.PI) > 0.001) resizeErrors.push("rotateGroupRotationY");
+  if ((camera.lastLerp ?? 0) <= 0 || (camera.lastLerp ?? 0) > 0.021) resizeErrors.push("lastLerp");
+  if (!Array.isArray(camera.mousePixels) || camera.mousePixels.length !== 2) resizeErrors.push("mousePixels");
+  if (!Array.isArray(camera.mouseDeltaPixels) || camera.mouseDeltaPixels.length !== 2) resizeErrors.push("mouseDeltaPixels");
   if (resizeErrors.length) {
-    throw new Error(`p1.resize source-shape mismatch: ${resizeErrors.join(", ")}`);
+    throw new Error(`p1.resize/IT camera source-shape mismatch: ${resizeErrors.join(", ")}`);
   }
   const workSettings = parsed.probe.settings?.work || {};
   const activeMaterial = workSettings.activeMaterial;

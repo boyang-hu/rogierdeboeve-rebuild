@@ -144,6 +144,7 @@ const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floo
 const sourceP1SetLights = extractAround(bundle, "setLights(){this.ambientLight=new", 240, 1000);
 const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSettings(e=new L(0,0,0),t=new Q(.25,.25),n=10)", 240, 520);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
+const sourceIT = extractAround(bundle, "class IT{constructor", 120, 3200);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
@@ -713,6 +714,25 @@ const summary = {
         "this.cameraController.rotateAngle=Xc(n)",
       ]),
       excerpt: compact(sourceP1CameraSettings.text),
+    },
+    ITCameraController: sourceIT && {
+      index: sourceIT.index,
+      checks: checks(sourceIT.text, [
+        "class IT{constructor",
+        "this.mouse.set(document.documentElement.clientWidth/2,document.documentElement.clientHeight/2)",
+        "this.rotateGroup.add(this.innerGroup),this.group.add(this.rotateGroup)",
+        "this.group.matrixAutoUpdate=!1,this.rotateGroup.matrixAutoUpdate=!1,this.innerGroup.matrixAutoUpdate=!1",
+        "this.rotateGroup.rotation.y=Math.PI",
+        "this.targetXY=new Q(1,.5)",
+        "this.rotateAngle=Xc(20)",
+        "this.origin.z=this.group.position.z",
+        "const{w:r,h:o}=Pe,a=i!==void 0?Math.min(Fn(2/(i/60),0),2)*.01:.01",
+        "this.target.z=this.origin.z+this.targetXY.y*(u*1.25)",
+        "this.group.position.lerp(this.target,a)",
+        "this.rotateGroup.rotation.z+=(this.rotation-this.rotateGroup.rotation.z)*a",
+        "this.innerGroup.matrixWorld.decompose(this.camera.position,this.camera.quaternion,this.camera.scale)",
+      ]),
+      excerpt: compact(sourceIT.text),
     },
     homeGalleryAnimateIn: sourceYDAnimateIn && {
       index: sourceYDAnimateIn.index,

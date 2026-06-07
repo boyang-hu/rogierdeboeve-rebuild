@@ -3385,6 +3385,7 @@ export class WebGLBackdrop {
   private cameraTargetXY = new Vector2(0.25, 0.25);
   private cameraRoll = 0;
   private cameraRotateAngle = MathUtils.degToRad(10);
+  private cameraLastLerp = 0.01;
   private cameraControllerGroup = new Group();
   private cameraRotateGroup = new Group();
   private cameraInnerGroup = new Group();
@@ -6319,6 +6320,7 @@ void main() {
     const height = Math.max(1, window.innerHeight);
     const fps = 1 / delta;
     const cameraLerp = Math.min(Math.round(2 / (fps / 60)), 2) * 0.01 || 0.01;
+    this.cameraLastLerp = cameraLerp;
     this.pointerDeltaPixels.subVectors(this.pointerPixels, this.lastPointerPixels);
     this.lastPointerPixels.copy(this.pointerPixels);
 
@@ -6624,6 +6626,17 @@ void main() {
         resizeMode: "source-p1-mobile-origin-sceneWrap",
         breakpointMd: BREAKPOINT_MD,
         mobileResizeBranch: window.innerWidth < BREAKPOINT_MD,
+        controllerMode: "source-IT-three-group-matrix-decompose",
+        mouseInitialMode: "source-IT-documentElement-center",
+        updateLerpMode: "source-IT-min-Fn-2-over-fps60-0-2-times-0_01",
+        updateTargetMode: "source-IT-origin-plus-targetXY-and-y-z-depth-coupling",
+        entrySettingsMode: "source-SD-yD-targetXY-1-0_5-rotateAngle-20",
+        matrixMode: "source-IT-group-rotateGroup-innerGroup-manual-matrices",
+        lastLerp: this.cameraLastLerp,
+        mousePixels: this.pointerPixels.toArray(),
+        lastMousePixels: this.lastPointerPixels.toArray(),
+        mouseDeltaPixels: this.pointerDeltaPixels.toArray(),
+        target: this.cameraTarget.toArray(),
         controllerPosition: this.cameraControllerGroup.position.toArray(),
         controllerRotation: [
           this.cameraControllerGroup.rotation.x,
