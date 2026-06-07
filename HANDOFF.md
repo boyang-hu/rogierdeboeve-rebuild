@@ -8,7 +8,7 @@ This document records the current rebuild state for continuing work on another m
 
 Rebuild `https://rogierdeboeve.com/` locally with a modern, lighter stack while staying as close as possible to the original site.
 
-The user explicitly corrected the approach: do not rely mainly on visual screenshots. The rebuild should be source-code-driven from the mirrored original bundle, with visual QA only used as verification.
+The user explicitly corrected the approach: do not rely mainly on visual screenshots. The rebuild should be source-code-driven from the mirrored original bundle, with visual QA only used as verification. Visual improvement is not the goal by itself; production changes need mirrored-bundle evidence even when they appear to improve the result.
 
 ## Chosen Stack
 
@@ -239,4 +239,3 @@ Next focus:
 
 Be honest in status updates: it is not fully 1:1 yet.
 ```
-
