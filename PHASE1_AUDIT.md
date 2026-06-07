@@ -3972,3 +3972,38 @@ Band snapshot from `/tmp/rd-pass-blending-capture`:
 | Mobile source -> rebuild | `-0.0131` | `+0.0148` |
 
 Decision: keep the helper-pass draw-state alignment. This removes a real source-state divergence and does not regress project media. Phase 1 remains open because the mobile/fog-bed residual and strict `VA/GA`/projection feel are still unresolved.
+
+### S1-92 Source `i1` Floor-Reflection CSS Sizing
+
+This batch aligned the floor-reflection render-target sizing semantics with source `i1.setSize()`. It is a source-structure correction, not a brightness tune.
+
+Source evidence:
+
+- Source `i1.setSize(e,t,n)` receives DPR as its third argument but does not use it.
+- Source `i1.setSize()` sizes `renderTarget`, `renderTargetRead`, and `renderTargetWrite` to `e * .75` and `t * .75`, where `e/t` are the CSS viewport dimensions passed through the scene resize path.
+- Source `i1.setSize()` sets the blur material `uResolution` to `(e,t)`, not to the DPR-scaled render-buffer dimensions.
+
+Runtime and tooling changes:
+
+- Floor-reflection raw/read/write targets now size from CSS `width * .75` / `height * .75` instead of DPR-scaled `renderWidth * .75` / `renderHeight * .75`.
+- Floor-reflection blur `uResolution` now receives CSS `width,height` instead of DPR-scaled `renderWidth,renderHeight`.
+- Output/reflection probes now report `reflectionSizing="source-i1-css-viewport-0.75"`, expected CSS target size, and `sourceCssSized`.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-reflection-css-output`.
+- Output probe confirms reflection target/read sizes are `1080x675` for a `1440x900` CSS viewport, blur resolution is `1440x900`, and `reflectionState.targets.sourceCssSized=true`.
+- Thumb spotlight probe passed and retained the source thumb strip shape plus spotlight map: `/tmp/rd-reflection-css-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-reflection-css-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-reflection-css-capture`.
+
+Band snapshot from `/tmp/rd-reflection-css-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0014` | `-0.0011` |
+| Mobile source -> rebuild | `-0.0130` | `+0.0096` |
+
+Decision: keep the source `i1` CSS sizing correction. It reduces the mobile max-horizontal-delta residual compared with the previous helper-pass batch while preserving project media. Phase 1 remains open because mobile center luma and strict `VA/GA`/projection feel are still unresolved.

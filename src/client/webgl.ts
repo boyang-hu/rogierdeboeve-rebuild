@@ -4716,12 +4716,12 @@ export class WebGLBackdrop {
     const displacementSize = Math.max(1, Math.round(height / 10));
     this.displacementTarget.setSize(displacementSize, displacementSize);
     this.preCompositeMaterial.uniforms.uDisplacementSize.value.set(displacementSize, displacementSize);
-    const floorReflectionWidth = Math.max(1, Math.round(renderWidth * 0.75));
-    const floorReflectionHeight = Math.max(1, Math.round(renderHeight * 0.75));
+    const floorReflectionWidth = Math.max(1, Math.round(width * 0.75));
+    const floorReflectionHeight = Math.max(1, Math.round(height * 0.75));
     this.floorReflectionTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
-    this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(renderWidth, renderHeight);
+    this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(width, height);
     const screenSimWidth = Math.max(1, Math.round(renderWidth / SCREEN_MOUSE_SIM_SCALE));
     const screenSimHeight = Math.max(1, Math.round(renderHeight / SCREEN_MOUSE_SIM_SCALE));
     if (this.renderSettings.mousesim.enabled) {
@@ -5464,6 +5464,11 @@ export class WebGLBackdrop {
             width: this.floorReflectionReadTarget.width,
             height: this.floorReflectionReadTarget.height,
           },
+          reflectionSizing: "source-i1-css-viewport-0.75",
+          reflectionExpectedCssSize: {
+            width: Math.max(1, Math.round(window.innerWidth * 0.75)),
+            height: Math.max(1, Math.round(window.innerHeight * 0.75)),
+          },
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
         },
         environment: {
@@ -5644,6 +5649,8 @@ export class WebGLBackdrop {
         blurInputUsesRaw: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionTarget.texture,
         blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
+        sourceCssSized: this.floorReflectionTarget.width === Math.max(1, Math.round(window.innerWidth * 0.75))
+          && this.floorReflectionTarget.height === Math.max(1, Math.round(window.innerHeight * 0.75)),
       },
     };
   }
