@@ -448,6 +448,29 @@ function analyzeCompositeCore(sourceShader, rebuildShader) {
   ]));
 }
 
+function analyzeVertexCore(sourceShader, rebuildShader) {
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const checks = {
+    screenUvFromClip: ["gl_Position.xy/uCoords.xy"],
+    newUvFromScreenUv: ["vec2newUv=screenUv"],
+    localMouseSample: ["texture(tMouseSim,mouseUv)"],
+    perlinHeight: ["perlinDisplacementHeight=10.", "perlinHeight=10.0"],
+    mousePrePerlinScale: ["transformed*=1.-mouseSim.r*.05", "transformed*=1.0-mouseSim.r*0.05"],
+    perlinRevealMix: ["mix(transformed,perlinDisplaced,(1.-fadeDiplacement)*.25)", "mix(transformed,perlinDisplaced,(1.0-fadeDisplacement)*0.25)"],
+    mouseZTransform: ["mouseTransform*uMouseFactor", "mouseSim.r*15.0*uMouseFactor"],
+    spreadScale: ["floatspread=3.", "floatspread=3.0"],
+    sourceWorldDivide: ["transformed/=1.-mouseSim.r*.2", "transformed/=1.0-mouseSim.r*0.2"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
+    name,
+    {
+      source: candidates.some((candidate) => source.includes(candidate)),
+      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+    },
+  ]));
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
@@ -535,6 +558,7 @@ try {
   writeFileSync(path.join(outDir, "shader-dump-summary.json"), JSON.stringify(genericShaderAnalysis, null, 2));
   const vertexAnalysis = analyzeVertex(sourceH, workDump.vertexShader);
   const fragmentAnalysis = analyzeFragment(sourceZ, workDump.fragmentShader);
+  const vertexCoreChecks = analyzeVertexCore(sourceH, workDump.vertexShader);
   writeFileSync(path.join(outDir, "vertex-analysis.json"), JSON.stringify(vertexAnalysis, null, 2));
   writeFileSync(path.join(outDir, "fragment-analysis.json"), JSON.stringify(fragmentAnalysis, null, 2));
   const chunkAnalysis = {
@@ -557,6 +581,7 @@ try {
       uniformsOnlySource: vertexAnalysis.uniforms.onlySource,
       uniformsOnlyRebuild: vertexAnalysis.uniforms.onlyRebuild,
       keyChecks: vertexAnalysis.checks,
+      coreChecks: vertexCoreChecks,
       anchors: vertexAnalysis.anchors,
     },
     fragmentAnalysis: {
