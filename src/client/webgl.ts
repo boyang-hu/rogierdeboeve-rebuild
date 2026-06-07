@@ -5887,8 +5887,8 @@ void main() {
     }
     if (this.renderSettings.mousesim.enabled) {
       this.workItems.forEach((item) => {
-        const planeWidth = Math.max(1, Math.round(item.mousePlane.scale.x));
-        const planeHeight = Math.max(1, Math.round(item.mousePlane.scale.y));
+        const planeWidth = Math.max(1, item.mousePlane.scale.x);
+        const planeHeight = Math.max(1, item.mousePlane.scale.y);
         item.mouseTargets.forEach((target) => target.setSize(planeWidth, planeHeight));
         item.mouseMaterial.uniforms.uCoords.value.set(planeWidth, planeHeight);
       });
@@ -7354,8 +7354,8 @@ void main() {
     const sourcePlaneSize = sourceWorkMousePlaneSize();
     const sourceRayPlaneSize = sourceWorkRayPlaneSize();
     const expectedTargetSize = {
-      width: Math.max(1, Math.round(sourcePlaneSize.x)),
-      height: Math.max(1, Math.round(sourcePlaneSize.y)),
+      width: Math.max(1, sourcePlaneSize.x),
+      height: Math.max(1, sourcePlaneSize.y),
     };
     const expectedUvOffset = sourceMouseUvOffset();
     return {
@@ -7460,6 +7460,7 @@ void main() {
           ),
           uvOffsetTypeMatchesSource: Boolean(uvOffset?.isVector2),
           uvOffsetScaleMatchesSource: uvOffsetScale === MOUSE_RAY_SCALE,
+          targetSizingMode: "source-GA-resize-plane-scale-no-pre-rounding",
           rayPlaneScaleMatchesSource:
             Math.abs(active.rayPlane.scale.x - sourceRayPlaneSize.x) < 1e-6
             && Math.abs(active.rayPlane.scale.y - sourceRayPlaneSize.y) < 1e-6,

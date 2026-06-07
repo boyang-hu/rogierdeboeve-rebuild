@@ -257,6 +257,7 @@ async function runProbe() {
     const shapeErrors = Object.entries(gaShape)
       .filter(([, value]) => typeof value === "boolean" && value !== true)
       .map(([key]) => key);
+    if (gaShape.targetSizingMode !== "source-GA-resize-plane-scale-no-pre-rounding") shapeErrors.push("targetSizingMode");
     if (shapeErrors.length) {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
