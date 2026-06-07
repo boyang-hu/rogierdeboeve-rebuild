@@ -5169,7 +5169,6 @@ export class WebGLBackdrop {
       this.renderer.render(this.homeScene, this.floorReflectionCamera);
 
       this.renderer.setRenderTarget(this.floorReflectionReadTarget);
-      this.renderer.clear();
       if (this.debugFloorReflection === "no-blur") {
         this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
         this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
@@ -5187,7 +5186,6 @@ export class WebGLBackdrop {
             iteration % 2 === 0 ? 0 : direction,
           );
           this.renderer.setRenderTarget(writeTarget);
-          this.renderer.clear();
           this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
           const swap = readTarget;
           readTarget = writeTarget;

@@ -3545,3 +3545,37 @@ Band snapshot from `/tmp/rd-r164-physical-capture`:
 | Mobile source -> rebuild | `-0.0120` | `+0.0138` |
 
 Decision: keep the narrow r164 physical residual strip. It clears a real production `VA/zA` shader-surface divergence without changing visual constants. Phase 1 remains open because the remaining residual is still concentrated in mobile/fog-bed structure, spotlight/projection feel, and safe generated material-body attribution.
+
+### S1-80 Source `i1` Reflection Blur No-Clear
+
+This batch removed a rebuild-only clear from the floor-reflection blur pass.
+
+Source evidence:
+
+- Source `i1.update()` renders the reflected scene into `renderTarget`, conditionally calling `renderer.clear()` only for that reflected-scene target when `renderer.autoClear === false`.
+- The source blur loop then renders the fullscreen blur pass into `renderTargetWrite` and swaps read/write targets without any explicit clear call.
+- The rebuild still cleared `floorReflectionReadTarget` before blur and cleared every `writeTarget` inside the blur loop.
+
+Runtime changes:
+
+- Removed the extra clear before the floor-reflection blur/no-blur pass.
+- Removed the extra clear inside each floor-reflection blur iteration.
+- Kept the source two-pass blur direction loop and target swapping from the previous `i1` alignment.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-reflector-no-blur-clear-output`.
+- Thumb spotlight probe passed and retained non-empty thumb/composite targets plus the home spotlight map: `/tmp/rd-reflector-no-blur-clear-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-reflector-no-blur-clear-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-reflector-no-blur-clear-capture`.
+
+Band snapshot from `/tmp/rd-reflector-no-blur-clear-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0006` | `-0.0031` |
+| Mobile source -> rebuild | `-0.0125` | `+0.0235` |
+
+Decision: keep the source `i1` no-clear blur pass. It corrects a real render-pass divergence in the reflector lifecycle. Phase 1 remains open because mobile still has a larger horizontal residual, so the next floor/environment work should compare reflected target content and draw-state against source rather than adding clears back.
