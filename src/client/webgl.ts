@@ -793,27 +793,34 @@ varying vec3 vViewPosition;
 #include <transmission_pars_fragment>
 #include <shadowmap_pars_fragment>
 
-float environmentBlendColorDodgeChannel(float base, float blend) {
+float blendColorDodge(float base, float blend) {
   return blend == 1.0 ? blend : min(base / (1.0 - blend), 1.0);
 }
 
-vec3 environmentBlendColorDodge(vec3 base, vec3 blend, float opacity) {
+vec3 blendColorDodge(vec3 base, vec3 blend) {
+  return vec3(blendColorDodge(base.r, blend.r), blendColorDodge(base.g, blend.g), blendColorDodge(base.b, blend.b));
+}
+
+vec3 blendColorDodge(vec3 base, vec3 blend, float opacity) {
   vec3 mixed = vec3(
-    environmentBlendColorDodgeChannel(base.r, blend.r),
-    environmentBlendColorDodgeChannel(base.g, blend.g),
-    environmentBlendColorDodgeChannel(base.b, blend.b)
+    blendColorDodge(base.r, blend.r),
+    blendColorDodge(base.g, blend.g),
+    blendColorDodge(base.b, blend.b)
   );
   return mix(base, mixed, opacity);
 }
 
-vec3 environmentBlendNegation(vec3 base, vec3 blend, float opacity) {
-  vec3 mixed = vec3(1.0) - abs(vec3(1.0) - base - blend);
-  return mix(base, mixed, opacity);
+vec3 blendNegation(vec3 base, vec3 blend) {
+  return vec3(1.0) - abs(vec3(1.0) - base - blend);
 }
 
-vec3 environmentBlend(int mode, vec3 base, vec3 blend, float opacity) {
-  if (mode == 4) return environmentBlendColorDodge(base, blend, opacity);
-  if (mode == 16) return environmentBlendNegation(base, blend, opacity);
+vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
+  return blendNegation(base, blend) * opacity + base * (1.0 - opacity);
+}
+
+vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
+  if (mode == 4) return blendColorDodge(base, blend, opacity);
+  if (mode == 16) return blendNegation(base, blend, opacity);
   return base;
 }
 
@@ -843,7 +850,7 @@ void main() {
   m = clamp(m, 0.0, 1.0);
 
   vec4 noiseMixed = mix(noise, noise2, m);
-  diffuseColor.rgb = environmentBlend(4, diffuseColor.rgb, noiseMixed.rgb, 0.5);
+  diffuseColor.rgb = blend(4, diffuseColor.rgb, noiseMixed.rgb, 0.5);
 
   vec2 skyMaskUv = vUv;
   skyMaskUv.y -= 0.1;
@@ -851,7 +858,7 @@ void main() {
   float skyMask = mod(skyMaskUv.y * 5.0, 1.0);
   skyMask = max(skyMask, step(0.6, skyMaskUv.y));
 
-  diffuseColor.rgb = environmentBlend(16, diffuseColor.rgb, noiseMixed.rgb, skyMask);
+  diffuseColor.rgb = blend(16, diffuseColor.rgb, noiseMixed.rgb, skyMask);
   diffuseColor.rgb += vec3(smoothstep(vUv.y, 0.45, 0.595));
 
   float skyMask2 = mod(skyMaskUv.y * 2.5, 1.0);
@@ -876,7 +883,7 @@ void main() {
 
   #include <opaque_fragment>
 
-  gl_FragColor.rgb = environmentBlend(4, gl_FragColor.rgb, uDarkenColor, uDarken);
+  gl_FragColor.rgb = blend(4, gl_FragColor.rgb, uDarkenColor, uDarken);
   #include <dithering_fragment>
 }
 `;
@@ -4065,7 +4072,6 @@ export class WebGLBackdrop {
       uShader3Alpha: { value: 0 },
       uShader3Speed: { value: 0 },
       uShader3Scale: { value: 0 },
-      uShader1Mix2: { value: 0 },
       uShader1Mix3: { value: 1.5 },
     };
     const material = new MeshStandardMaterial({
@@ -5430,7 +5436,8 @@ export class WebGLBackdrop {
             uShader3Alpha: this.environmentMaterial.uniforms.uShader3Alpha.value,
             uShader3Speed: this.environmentMaterial.uniforms.uShader3Speed.value,
             uShader3Scale: this.environmentMaterial.uniforms.uShader3Scale.value,
-            uShader1Mix2: this.environmentMaterial.uniforms.uShader1Mix2.value,
+            uShader1Mix2: this.environmentMaterial.uniforms.uShader1Mix2?.value ?? null,
+            uShader1Mix2Binding: this.environmentMaterial.uniforms.uShader1Mix2 ? "runtime" : "source-declared-only",
             uShader1Mix3: this.environmentMaterial.uniforms.uShader1Mix3.value,
           },
           sceneEnvironment: this.homeScene.environment ? {

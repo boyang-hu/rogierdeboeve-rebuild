@@ -3793,3 +3793,40 @@ Band snapshot from `/tmp/rd-s1-86-capture`:
 | Mobile source -> rebuild | `-0.0128` | `+0.0208` |
 
 Decision: keep the audit cleanup. It prevents a non-runtime source comment from driving production shader changes. Phase 1 remains open for the remaining mobile/fog-bed, safe `u1/l1` shader-body, `VA/GA` material-body, and spotlight/thumb projection residuals.
+
+### S1-87 Source `h1/u1/l1` Environment Shader Runtime Surface
+
+This batch tightened the active environment dome shader/runtime surface without changing visual constants.
+
+Source evidence:
+
+- Source `l1` includes source blend helper `${Po}` and calls `blend(4, ...)` / `blend(16, ...)` directly in the environment fragment body.
+- Source `u1.customUniforms` binds `uTime`, `uMultiplier`, `uDarken`, `tSky`, `uDarkenColor`, `uShader1Alpha`, `uShader1Speed`, `uShader1Scale`, `uShader2Alpha`, `uShader2Scale`, `uShader3Alpha`, `uShader3Speed`, `uShader3Scale`, and `uShader1Mix3`.
+- Source `l1` declares `uniform float uShader1Mix2;`, but source `u1.customUniforms` does not create it and `onBeforeCompile` does not assign it into `shader.uniforms`. That makes it source-declared shader text, not a runtime-bound material uniform.
+
+Runtime and tooling changes:
+
+- Replaced rebuild-only environment helper names `environmentBlendColorDodge*`, `environmentBlendNegation`, and `environmentBlend(...)` with source-shaped `blendColorDodge`, `blendNegation`, and `blend(...)` calls while preserving the same active mode `4` and `16` math.
+- Removed the rebuild-only runtime `uShader1Mix2` material uniform while keeping the source shader declaration intact.
+- Updated output probe metadata so `uShader1Mix2` reports `null` and `uShader1Mix2Binding="source-declared-only"` instead of requiring a runtime uniform value.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s1-87-shader`.
+- Shader dump shows `u1-environment` fragment delta narrowed from `-519` to `-436`; live include and uniform deltas remain empty.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-s1-87-output`.
+- Output probe confirms `environment.shaderSurface.uShader1Mix2=null` and `uShader1Mix2Binding="source-declared-only"`.
+- Thumb spotlight probe passed and retained a non-empty thumb target/composite target plus spotlight map: `/tmp/rd-s1-87-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-s1-87-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-s1-87-capture`.
+
+Band snapshot from `/tmp/rd-s1-87-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0006` | `-0.0026` |
+| Mobile source -> rebuild | `-0.0126` | `+0.0190` |
+
+Decision: keep the source environment runtime-surface alignment. It removes a real helper/runtime-binding drift and slightly improves the desktop band delta, but Phase 1 remains open for the remaining mobile/fog-bed, generated `VA/GA` material-body, and spotlight/thumb projection residuals.
