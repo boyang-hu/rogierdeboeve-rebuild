@@ -8,7 +8,7 @@ This document records the current rebuild state for continuing work on another m
 
 Rebuild `https://rogierdeboeve.com/` locally with a modern, lighter stack while staying as close as possible to the original site.
 
-The user explicitly corrected the approach: do not rely mainly on visual screenshots. The rebuild should be source-code-driven from the mirrored original bundle, with visual QA only used as verification. Visual improvement is not the goal by itself; production changes need mirrored-bundle evidence even when they appear to improve the result.
+The user explicitly corrected the approach: do not rely mainly on visual screenshots. The rebuild should be source-code-driven from the mirrored original bundle, with visual QA only used as verification. Visual improvement is not the goal by itself; production changes need mirrored-bundle evidence even when they appear to improve the result. Known source mismatches must not be closed as "accepted deviations" based on visual review; they should either be fixed from source evidence, documented as unavoidable technical bridges, or left open.
 
 ## Chosen Stack
 
@@ -143,7 +143,7 @@ Latest Phase 1 batch:
   - output probes and shader dump now assert this source declaration order and cover-texture temporary.
 - QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this was source surface parity, not visual closeout.
+- Phase 1 remains open; this was source surface parity, not a visual closeout or accepted deviation.
 
 ## Validation Status
 

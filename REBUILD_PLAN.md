@@ -361,9 +361,9 @@ Cadence: batch related source-backed work into coherent commits, with an upper b
 
 ## Current Focus
 
-Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. Phase 1 is not complete: the previous closeout language in `PHASE1_AUDIT.md` has been superseded because the current 1:1 target does not allow the remaining home visual gaps to be treated as accepted deviations.
+Finish Phase 1 Home WebGL source parity before returning to Phase 2 DOM parity. Phase 1 is not complete: the previous closeout language in `PHASE1_AUDIT.md` has been superseded because the current 1:1 target does not allow known source mismatches to be treated as accepted deviations.
 
-Current governance note: do not mark remaining `VA` bridge, spotlight-map transfer, final `OA/CA` transfer, project-media brightness, floor/environment, or about bridge depth as accepted deviations without explicit user visual review. If no source-backed runtime fix is found in a batch, update the audit with the evidence and keep Phase 1 open.
+Current governance note: do not mark remaining `VA` bridge, spotlight-map transfer, final `OA/CA` transfer, project-media brightness, floor/environment, or about bridge depth as accepted deviations. If no source-backed runtime fix is found in a batch, update the audit with the evidence and keep Phase 1 open. Visual review can identify mismatches and regressions, but it cannot close a known source mismatch.
 
 Immediate source targets:
 
@@ -447,8 +447,8 @@ Latest verification:
 2. Continue source audit around remaining `Lu/kA/OA/I1` output/transfer ownership only when a source-backed target-content divergence is proven. The obvious source tonemapping include residual, dead pre-bloom graph artifact, `I1/C1` lensflare/default-disabled drift, `A1.tScene`, `A1` flow order, `u1/l1`, `x1/v1`, `Lu/aA`, default `OA/CA` shader-surface residuals, and `Lu` bloom-output target ownership are now aligned.
 3. Re-audit generated `GA/VA` and environment material body residuals only where they have source-backed visual relevance. The production `debug-va-*` fallback switches are now gone, `u1`'s uniform declaration surface is clean, and the obvious r164 `dispersion/anisotropy` work-fragment residual is stripped; remaining differences are mostly generated Three chunk bridge/body details and should not be treated as tuning license.
 4. Keep project detail pages as regression checks because the darker project composite may share render-manager or media-background ownership with home.
-5. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with accepted deviations or new source-proven fixes.
-6. Defer Phase 2 DOM/interaction work until Phase 1 has passed the real visual QA gate.
+5. Re-run `CAPTURE_SET=full` after the next WebGL batch and update `PHASE1_AUDIT.md` with new source-proven fixes, remaining source mismatches, or documented technical bridges.
+6. Defer Phase 2 DOM/interaction work until Phase 1 has passed the source-parity gate, with visual QA used only as a regression check.
 
 ## Verification Baseline
 
