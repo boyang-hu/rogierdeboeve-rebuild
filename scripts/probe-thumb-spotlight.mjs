@@ -213,8 +213,14 @@ async function runProbe() {
   if (probe.targets?.sizingMode !== "source-T1-renderManager-resize-height-height-dpr-1") {
     sourceShapeErrors.push(`thumbTargetSizing=${probe.targets?.sizingMode}`);
   }
-  if (probe.targets?.sourceTargetMode !== "source-Lo-depthless-clone-targets") {
+  if (probe.targets?.sourceTargetMode !== "source-Lo-renderTargetA-depthless-renderTargetComposite-clone") {
     sourceShapeErrors.push(`thumbTargetMode=${probe.targets?.sourceTargetMode}`);
+  }
+  if (probe.targets?.rawConstructionMode !== "source-Lo-renderTargetA-new-depthless-stencilless") {
+    sourceShapeErrors.push(`thumbRawConstruction=${probe.targets?.rawConstructionMode}`);
+  }
+  if (probe.targets?.compositeConstructionMode !== "source-Lo-renderTargetComposite-renderTargetA-clone") {
+    sourceShapeErrors.push(`thumbCompositeConstruction=${probe.targets?.compositeConstructionMode}`);
   }
   if (probe.targets?.thumb?.width !== 900 || probe.targets?.thumb?.height !== 900) {
     sourceShapeErrors.push(`thumbTarget=${probe.targets?.thumb?.width}x${probe.targets?.thumb?.height}`);

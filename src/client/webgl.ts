@@ -3731,7 +3731,7 @@ export class WebGLBackdrop {
   private workPerlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private skyCompositeMaterial: ShaderMaterial;
   private skyRawTarget = makeSourceRenderTarget(false);
-  private skyCompositeTarget = makeSourceRenderTarget(false);
+  private skyCompositeTarget = this.skyRawTarget.clone();
   private backgroundMaterial: ShaderMaterial;
   private compositeMaterial: ShaderMaterial;
   private workRawTarget = makeSourceRenderTarget(true);
@@ -3766,7 +3766,7 @@ export class WebGLBackdrop {
   private fxaaTarget = makeSourceRenderTarget(false);
   private displacementMaterial: ShaderMaterial;
   private displacementRawTarget = makeSourceRenderTarget(false);
-  private displacementTarget = makeSourceRenderTarget(false);
+  private displacementTarget = this.displacementRawTarget.clone();
   private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false });
   private floorReflectionReadTarget = this.floorReflectionTarget.clone();
   private floorReflectionWriteTarget = this.floorReflectionTarget.clone();
@@ -3804,8 +3804,8 @@ export class WebGLBackdrop {
   private environmentGroup = new Group();
   private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
   private readonly environmentSpeed = 0.00005;
-  private thumbTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
-  private thumbCompositeTarget = new WebGLRenderTarget(1024, 1024, { depthBuffer: false, stencilBuffer: false });
+  private thumbTarget = makeSourceRenderTarget(false);
+  private thumbCompositeTarget = this.thumbTarget.clone();
   private raycaster = new Raycaster();
   private raf = 0;
   private pointer = new Vector2();
@@ -4036,13 +4036,6 @@ export class WebGLBackdrop {
     this.characterScene.add(this.characterModelRoot);
     this.characterScene.add(this.characterAmbientLight);
     this.characterScene.add(this.characterDirectionalLight);
-    [this.thumbTarget, this.thumbCompositeTarget].forEach((target) => {
-      target.texture.generateMipmaps = false;
-      target.texture.minFilter = LinearFilter;
-      target.texture.magFilter = LinearFilter;
-      target.texture.wrapS = ClampToEdgeWrapping;
-      target.texture.wrapT = ClampToEdgeWrapping;
-    });
     if (this.debugThumbColorSpace === "both-srgb") {
       this.thumbTarget.texture.colorSpace = SRGBColorSpace;
       this.thumbCompositeTarget.texture.colorSpace = SRGBColorSpace;
@@ -7058,7 +7051,9 @@ void main() {
       },
       targets: {
         sizingMode: "source-T1-renderManager-resize-height-height-dpr-1",
-        sourceTargetMode: "source-Lo-depthless-clone-targets",
+        sourceTargetMode: "source-Lo-renderTargetA-depthless-renderTargetComposite-clone",
+        rawConstructionMode: "source-Lo-renderTargetA-new-depthless-stencilless",
+        compositeConstructionMode: "source-Lo-renderTargetComposite-renderTargetA-clone",
         thumb: renderTargetStats(this.renderer, this.thumbTarget),
         composite: renderTargetStats(this.renderer, this.thumbCompositeTarget),
         thumbState: renderTargetProbe(this.renderer, this.thumbTarget),
@@ -7531,6 +7526,8 @@ void main() {
             vertexMode: "source-tl-matrix-fullscreen",
             renderManagerOwnership: "source-H1-Lo-single-screen-material-swap",
             screenMode: this.skyPostScreen.material === this.skyCompositeMaterial ? "source-Lo-screen-material-composite" : "non-source",
+            rawTargetMode: "source-Lo-renderTargetA-new-depthless-stencilless",
+            compositeTargetMode: "source-Lo-renderTargetComposite-renderTargetA-clone",
             tSceneIsRawTarget: this.skyCompositeMaterial.uniforms.tScene.value === this.skyRawTarget.texture,
           },
           displacement: {
@@ -7541,6 +7538,8 @@ void main() {
             clearMode: "source-Lo-no-explicit-clear",
             renderManagerOwnership: "source-O1-Lo-single-screen-material-swap",
             screenMode: this.displacementPostScreen.material === this.displacementMaterial ? "source-Lo-screen-material-composite" : "non-source",
+            rawTargetMode: "source-Lo-renderTargetA-new-depthless-stencilless",
+            compositeTargetMode: "source-Lo-renderTargetComposite-renderTargetA-clone",
             targetSize: {
               width: this.displacementTarget.width,
               height: this.displacementTarget.height,

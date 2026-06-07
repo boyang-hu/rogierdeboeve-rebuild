@@ -618,6 +618,8 @@ async function runProbe() {
   if (displacement.clearMode !== "source-Lo-no-explicit-clear") materialSurfaceErrors.push("displacementClearMode");
   if (displacement.renderManagerOwnership !== "source-O1-Lo-single-screen-material-swap") materialSurfaceErrors.push("displacementOwnership");
   if (displacement.screenMode !== "source-Lo-screen-material-composite") materialSurfaceErrors.push("displacementScreenMode");
+  if (displacement.rawTargetMode !== "source-Lo-renderTargetA-new-depthless-stencilless") materialSurfaceErrors.push("displacementRawTargetMode");
+  if (displacement.compositeTargetMode !== "source-Lo-renderTargetComposite-renderTargetA-clone") materialSurfaceErrors.push("displacementCompositeTargetMode");
   if (displacement.tSceneBound !== true) materialSurfaceErrors.push("displacementTSceneBound");
   if (displacement.tSceneIsRawTarget !== true) materialSurfaceErrors.push("displacementRawSceneBinding");
   if (displacement.tSceneIsCompositeTarget !== false) materialSurfaceErrors.push("displacementCompositeSelfBinding");
@@ -639,6 +641,8 @@ async function runProbe() {
   const skyPassMaterial = passMaterials.skyComposite || {};
   if (skyPassMaterial.renderManagerOwnership !== "source-H1-Lo-single-screen-material-swap") materialSurfaceErrors.push("skyOwnership");
   if (skyPassMaterial.screenMode !== "source-Lo-screen-material-composite") materialSurfaceErrors.push("skyScreenMode");
+  if (skyPassMaterial.rawTargetMode !== "source-Lo-renderTargetA-new-depthless-stencilless") materialSurfaceErrors.push("skyRawTargetMode");
+  if (skyPassMaterial.compositeTargetMode !== "source-Lo-renderTargetComposite-renderTargetA-clone") materialSurfaceErrors.push("skyCompositeTargetMode");
   if (skyPassMaterial.tSceneIsRawTarget !== true) materialSurfaceErrors.push("skyRawSceneBinding");
   const mainFluidMaterials = parsed.probe.mainFluid?.materialSurface || {};
   for (const [key, expectedMode] of Object.entries({

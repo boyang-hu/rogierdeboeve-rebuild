@@ -454,6 +454,32 @@ const summary = {
         "renderManagerOwnership: \"source-O1-Lo-single-screen-material-swap\"",
         "renderManagerOwnership: \"source-x1-Lo-single-screen-material-swap\"",
       ]),
+      rebuildDerivedTargetOwnership: {
+        skyCompositeClone:
+          rebuildWebgl.includes("private skyRawTarget = makeSourceRenderTarget(false);")
+          && rebuildWebgl.includes("private skyCompositeTarget = this.skyRawTarget.clone();")
+          && rebuildWebgl.includes("compositeTargetMode: \"source-Lo-renderTargetComposite-renderTargetA-clone\""),
+        displacementCompositeClone:
+          rebuildWebgl.includes("private displacementRawTarget = makeSourceRenderTarget(false);")
+          && rebuildWebgl.includes("private displacementTarget = this.displacementRawTarget.clone();")
+          && rebuildWebgl.includes("compositeTargetMode: \"source-Lo-renderTargetComposite-renderTargetA-clone\""),
+        thumbCompositeClone:
+          rebuildWebgl.includes("private thumbTarget = makeSourceRenderTarget(false);")
+          && rebuildWebgl.includes("private thumbCompositeTarget = this.thumbTarget.clone();")
+          && rebuildWebgl.includes("compositeConstructionMode: \"source-Lo-renderTargetComposite-renderTargetA-clone\""),
+        noIndependentThumb1024Targets:
+          !rebuildWebgl.includes("new WebGLRenderTarget(1024, 1024")
+          && !rebuildWebgl.includes("new WebGLRenderTarget(1024,1024"),
+        noManualThumbTargetTextureDefaults:
+          ![
+            "this.thumbTarget.texture.generateMipmaps = false",
+            "this.thumbTarget.texture.minFilter = LinearFilter",
+            "this.thumbTarget.texture.magFilter = LinearFilter",
+            "this.thumbCompositeTarget.texture.generateMipmaps = false",
+            "this.thumbCompositeTarget.texture.minFilter = LinearFilter",
+            "this.thumbCompositeTarget.texture.magFilter = LinearFilter",
+          ].some((needle) => rebuildWebgl.includes(needle)),
+      },
       renderTargetDefaults: targetSnapshot(new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false }).clone()),
       excerpt: compact(sourceLo.text),
     },
