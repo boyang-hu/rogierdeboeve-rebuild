@@ -1094,7 +1094,7 @@ uniform int uDebugLightenMode;`,
   if (uDebugTransferMode == 1) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(1.0 / 2.2));
   if (uDebugTransferMode == 2) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(2.2));
   if (uDebugStage == 1) {
-    gl_FragColor = vec4(mixed.rgb, 1.0);
+    FragColor = vec4(mixed.rgb, 1.0);
     return;
   }`,
   )
@@ -1103,7 +1103,7 @@ uniform int uDebugLightenMode;`,
     `mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;
   }
   if (uDebugStage == 2) {
-    gl_FragColor = vec4(mixed.rgb, 1.0);
+    FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
   mixed.rgb += length(fluid.xy) * 0.015;`,
@@ -1112,7 +1112,7 @@ uniform int uDebugLightenMode;`,
     "mixed.rgb += length(fluid.xy) * 0.015;\n\n  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);",
     `mixed.rgb += length(fluid.xy) * 0.015;
   if (uDebugStage == 3) {
-    gl_FragColor = vec4(mixed.rgb, 1.0);
+    FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
   float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);`,
@@ -1125,7 +1125,7 @@ uniform int uDebugLightenMode;`,
   if (uDebugDarkenMode == 3) darkenOpacity = 0.0;
   mixed.rgb = blend(15, mixed.rgb, black, darkenOpacity);
   if (uDebugStage == 4) {
-    gl_FragColor = vec4(mixed.rgb, 1.0);
+    FragColor = vec4(mixed.rgb, 1.0);
     return;
   }`,
   )
@@ -1135,7 +1135,7 @@ uniform int uDebugLightenMode;`,
     mixed.rgb = blend(11, mixed.rgb, black, 1.0);
   }
   if (uDebugStage == 5) {
-    gl_FragColor = vec4(mixed.rgb, 1.0);
+    FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
   mixed.rgb = saturation(mixed.rgb, uSaturation);`,
@@ -3968,14 +3968,15 @@ export class WebGLBackdrop {
       uniforms.uDebugDarkenMode = { value: this.debugCompositeDarkenMode };
       uniforms.uDebugTransferMode = { value: this.debugCompositeTransferMode };
       uniforms.uDebugLightenMode = { value: this.debugCompositeLightenMode };
-      return new ShaderMaterial({
+      return new RawShaderMaterial({
+        glslVersion: GLSL3,
         toneMapped: false,
         transparent: true,
         blending: NoBlending,
         depthWrite: false,
         depthTest: false,
         uniforms,
-        vertexShader: backgroundVertex,
+        vertexShader: sourceFullscreenVertex,
         fragmentShader,
       });
     }
@@ -6050,8 +6051,8 @@ export class WebGLBackdrop {
           boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
         },
         composite: {
-          materialMode: this.debugCompositeShader ? "debug-OA-shadermaterial" : "source-OA-raw-glsl3",
-          glslVersion: this.debugCompositeShader ? null : ((this.compositeMaterial as RawShaderMaterial).glslVersion ?? null),
+          materialMode: this.debugCompositeShader ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3",
+          glslVersion: (this.compositeMaterial as RawShaderMaterial).glslVersion ?? null,
           blending: this.compositeMaterial.blending,
           uDarken: darkenValue,
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,

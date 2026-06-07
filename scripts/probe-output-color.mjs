@@ -21,6 +21,11 @@ const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.PROBE_WAIT || 5200);
 const deviceScaleFactor = Number(process.env.DEVICE_SCALE_FACTOR || 1);
 const skipScreenshot = process.env.SKIP_SCREENSHOT === "1";
+const rebuildSearchParams = new URL(rebuildUrl).searchParams;
+const debugCompositeProbe = rebuildSearchParams.has("debug-composite-stage")
+  || rebuildSearchParams.has("debug-composite-darken")
+  || rebuildSearchParams.has("debug-composite-transfer")
+  || rebuildSearchParams.has("debug-composite-lighten");
 
 function withProbeParams(url) {
   const parsed = new URL(url);
@@ -194,7 +199,8 @@ async function runProbe() {
   const passMaterials = parsed.probe.uniforms?.passMaterials || {};
   if (preCompositeUniforms?.materialMode !== "source-C1-raw-glsl3") materialSurfaceErrors.push("preCompositeMaterialMode");
   if (preCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("preCompositeGlslVersion");
-  if (workCompositeUniforms?.materialMode !== "source-OA-raw-glsl3") materialSurfaceErrors.push("workCompositeMaterialMode");
+  const expectedWorkCompositeMaterialMode = debugCompositeProbe ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3";
+  if (workCompositeUniforms?.materialMode !== expectedWorkCompositeMaterialMode) materialSurfaceErrors.push("workCompositeMaterialMode");
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
   const workCompositeSurface = workCompositeUniforms?.shaderSurface || {};
   if (workCompositeSurface.formulaMode !== "source-CA-mixed-blend-surface") materialSurfaceErrors.push("workCompositeFormulaMode");
