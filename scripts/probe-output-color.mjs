@@ -289,9 +289,19 @@ async function runProbe() {
       .map(([key]) => key);
     if (gaShape.targetSizingMode !== "source-GA-resize-plane-scale-no-pre-rounding") shapeErrors.push("targetSizingMode");
     if (gaShape.updateLerpMode !== "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp") shapeErrors.push("updateLerpMode");
+    if (gaShape.raycastMode !== "source-Ka-per-item-raycast-immediate-pointer") shapeErrors.push("raycastMode");
     if (shapeErrors.length) {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }
+  }
+  if (activeMouse?.raycastMode !== "source-Ka-per-item-raycast-immediate-pointer") {
+    throw new Error(`GA/Ka raycast mode mismatch: ${activeMouse?.raycastMode || "missing"}`);
+  }
+  if (activeMouse?.allVisibleHaveIndependentTargets !== true) {
+    throw new Error("GA/Ka visible item target ownership mismatch");
+  }
+  if (!Array.isArray(activeMouse?.visibleTargets) || activeMouse.visibleTargets.length !== activeMouse.visibleWorkItemCount) {
+    throw new Error("GA/Ka visible target list mismatch");
   }
   if (activeMouse && activeMouse.renderClearMode !== "source-sA-no-explicit-clear") {
     throw new Error(`Ka/sA mouse simulation clear mode mismatch: ${activeMouse.renderClearMode}`);

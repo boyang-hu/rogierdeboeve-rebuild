@@ -3363,6 +3363,7 @@ export class WebGLBackdrop {
   private raf = 0;
   private pointer = new Vector2();
   private targetPointer = new Vector2();
+  private pointerRay = new Vector2();
   private pointerPixels = new Vector2(document.documentElement.clientWidth / 2, document.documentElement.clientHeight / 2);
   private lastPointerPixels = this.pointerPixels.clone();
   private pointerDeltaPixels = new Vector2();
@@ -5850,6 +5851,7 @@ void main() {
     this.pointerPixels.set(event.clientX, event.clientY);
     this.targetPointer.x = (event.clientX / window.innerWidth - 0.5) * 2;
     this.targetPointer.y = -(event.clientY / window.innerHeight - 0.5) * 2;
+    this.pointerRay.set(this.targetPointer.x, this.targetPointer.y);
     this.screenMouseSimTargetPos.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
   };
 
@@ -6026,19 +6028,16 @@ void main() {
 
   private updatePointerProjection() {
     if (!this.sceneWrap.visible) return;
-    this.raycaster.setFromCamera(this.pointer, this.homeCamera);
-    const active = this.workItems.find((item) => item.slug === this.activeSlug && item.group.visible);
-    const orderedItems = [
-      ...(active ? [active] : []),
-      ...this.workItems.filter((item) => item !== active && item.group.visible),
-    ];
-    const hit = this.raycaster.intersectObjects(orderedItems.map((item) => item.rayPlane), false)[0];
-    if (!hit) return;
-    const item = orderedItems.find((candidate) => candidate.rayPlane === hit.object);
-    if (!item) return;
-    const x = MathUtils.clamp(hit.uv?.x ?? 0.5, 0, 1);
-    const y = MathUtils.clamp(hit.uv?.y ?? 0.5, 0, 1);
-    item.mouseTarget.set(x, y);
+    this.raycaster.setFromCamera(this.pointerRay, this.homeCamera);
+    this.workItems.forEach((item) => {
+      if (!item.group.visible) return;
+      const hit = this.raycaster.intersectObject(item.rayPlane, false)[0];
+      if (!hit?.uv) return;
+      item.mouseTarget.set(
+        MathUtils.clamp(hit.uv.x, 0, 1),
+        MathUtils.clamp(hit.uv.y, 0, 1),
+      );
+    });
   }
 
   private updateVisibleWorkItems(time: number) {
@@ -6673,6 +6672,8 @@ void main() {
         matrixMode: "source-IT-group-rotateGroup-innerGroup-manual-matrices",
         lastLerp: this.cameraLastLerp,
         mousePixels: this.pointerPixels.toArray(),
+        pointerRay: this.pointerRay.toArray(),
+        smoothedPointer: this.pointer.toArray(),
         lastMousePixels: this.lastPointerPixels.toArray(),
         mouseDeltaPixels: this.pointerDeltaPixels.toArray(),
         target: this.cameraTarget.toArray(),
@@ -7419,6 +7420,7 @@ void main() {
     const uvOffsetScale = active?.material.uniforms.uUvOffsetScale.value as number | undefined;
     const sourcePlaneSize = sourceWorkMousePlaneSize();
     const sourceRayPlaneSize = sourceWorkRayPlaneSize();
+    const visibleWorkItems = this.workItems.filter((item) => item.group.visible);
     const expectedTargetSize = {
       width: Math.max(1, sourcePlaneSize.x),
       height: Math.max(1, sourcePlaneSize.y),
@@ -7447,6 +7449,18 @@ void main() {
       },
       active: active && activeTarget && activeCoords ? {
         slug: active.slug,
+        raycastMode: "source-Ka-per-item-raycast-immediate-pointer",
+        pointerRay: this.pointerRay.toArray(),
+        smoothedPointer: this.pointer.toArray(),
+        visibleWorkItemCount: visibleWorkItems.length,
+        visibleMouseTargetCount: visibleWorkItems.filter((item) => item.mouseTarget).length,
+        allVisibleHaveIndependentTargets: visibleWorkItems.every((item) => item.mouseTarget instanceof Vector2),
+        visibleTargets: visibleWorkItems.map((item) => ({
+          slug: item.slug,
+          target: item.mouseTarget.toArray(),
+          rayPlaneVisible: item.rayPlane.visible,
+          rayPlaneParentIsRotationWrap: item.rayPlane.parent === item.rotationWrap,
+        })),
         index: active.mouseIndex,
         targetSize: { width: activeTarget.width, height: activeTarget.height },
         targetState: renderTargetStateProbe(activeTarget, "activeMouseSim"),
@@ -7518,6 +7532,9 @@ void main() {
             && activeTarget.texture.generateMipmaps === false,
           renderClearModeMatchesSource: active.mouseRenderClearMode === "source-sA-no-explicit-clear",
           updateLerpMode: "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp",
+          raycastMode: "source-Ka-per-item-raycast-immediate-pointer",
+          raycastModeMatchesSource: true,
+          allVisibleHaveIndependentTargets: visibleWorkItems.every((item) => item.mouseTarget instanceof Vector2),
           uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
           mousePlaneScaleMatchesSource:
             Math.abs(active.mousePlane.scale.x - sourcePlaneSize.x) < 1e-6

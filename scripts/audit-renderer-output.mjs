@@ -1016,6 +1016,32 @@ const summary = {
       ]),
       excerpt: compact(sourceGA.text),
     },
+    Ka: (() => {
+      const start = bundle.indexOf("class Ka{constructor");
+      const end = start >= 0 ? bundle.indexOf("const Ur=", start) : -1;
+      const sourceKa = start >= 0 && end > start ? bundle.slice(start, end) : null;
+      return sourceKa
+        ? {
+            index: start,
+            checks: checks(sourceKa, [
+              "onMouseMove({x:e,y:t}){this.onMesh?this.raycast({x:e,y:t}):this.targetPos.set(e/Pe.w,1-t/Pe.h)}",
+              "this.mouse.x=e/Pe.w*2-1",
+              "this.mouse.y=-(t/Pe.h)*2+1",
+              "this.raycaster.setFromCamera(this.mouse,this.camera)",
+              "this.intersects=this.raycaster.intersectObjects([this.rayCastMesh])",
+              "this.intersects.length>0&&(this.targetPos.x=this.intersects[0].uv.x,this.targetPos.y=this.intersects[0].uv.y)",
+            ]),
+            rebuildRaycastChecks: checks(rebuildWebgl, [
+              "private pointerRay = new Vector2()",
+              "this.pointerRay.set(this.targetPointer.x, this.targetPointer.y)",
+              "this.raycaster.setFromCamera(this.pointerRay, this.homeCamera)",
+              "const hit = this.raycaster.intersectObject(item.rayPlane, false)[0]",
+              "raycastMode: \"source-Ka-per-item-raycast-immediate-pointer\"",
+            ]),
+            excerpt: compact(sourceKa),
+          }
+        : null;
+    })(),
     sA: sourceSA
       ? {
           checks: checks(sourceSA, [
