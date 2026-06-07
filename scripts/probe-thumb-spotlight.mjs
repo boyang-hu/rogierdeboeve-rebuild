@@ -225,6 +225,8 @@ async function runProbe() {
   const composite = probe.thumbComposite || {};
   if (composite.mode !== "source-x1-_1-raw-glsl3") sourceShapeErrors.push(`thumbCompositeMode=${composite.mode}`);
   if (composite.glslVersion !== "300 es") sourceShapeErrors.push(`thumbCompositeGlsl=${composite.glslVersion}`);
+  if (composite.renderManagerOwnership !== "source-x1-Lo-single-screen-material-swap") sourceShapeErrors.push(`thumbCompositeOwnership=${composite.renderManagerOwnership}`);
+  if (composite.screenMode !== "source-Lo-screen-material-composite") sourceShapeErrors.push(`thumbCompositeScreen=${composite.screenMode}`);
   if (composite.toneMapped !== false) sourceShapeErrors.push(`thumbCompositeToneMapped=${composite.toneMapped}`);
   if (composite.transparent !== true) sourceShapeErrors.push(`thumbCompositeTransparent=${composite.transparent}`);
   if (composite.blending !== 0) sourceShapeErrors.push(`thumbCompositeBlending=${composite.blending}`);

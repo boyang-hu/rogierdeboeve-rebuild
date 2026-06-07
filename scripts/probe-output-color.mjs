@@ -596,7 +596,11 @@ async function runProbe() {
   if (displacement.blending !== 0) materialSurfaceErrors.push("displacementBlending");
   if (displacement.vertexMode !== "source-tl-matrix-fullscreen") materialSurfaceErrors.push("displacementVertexMode");
   if (displacement.clearMode !== "source-Lo-no-explicit-clear") materialSurfaceErrors.push("displacementClearMode");
+  if (displacement.renderManagerOwnership !== "source-O1-Lo-single-screen-material-swap") materialSurfaceErrors.push("displacementOwnership");
+  if (displacement.screenMode !== "source-Lo-screen-material-composite") materialSurfaceErrors.push("displacementScreenMode");
   if (displacement.tSceneBound !== true) materialSurfaceErrors.push("displacementTSceneBound");
+  if (displacement.tSceneIsRawTarget !== true) materialSurfaceErrors.push("displacementRawSceneBinding");
+  if (displacement.tSceneIsCompositeTarget !== false) materialSurfaceErrors.push("displacementCompositeSelfBinding");
   if (displacement.vignetteConstantsMode !== "source-F1-globals") materialSurfaceErrors.push("displacementVignetteConstants");
   if (displacement.toneMapped !== false) materialSurfaceErrors.push("displacementToneMapped");
   if (displacement.transparent !== true) materialSurfaceErrors.push("displacementTransparent");
@@ -606,6 +610,16 @@ async function runProbe() {
   )) {
     materialSurfaceErrors.push("displacementTargetSize");
   }
+  if (displacement.rawTargetSize && (
+    displacement.rawTargetSize.width !== expectedDisplacementSize ||
+    displacement.rawTargetSize.height !== expectedDisplacementSize
+  )) {
+    materialSurfaceErrors.push("displacementRawTargetSize");
+  }
+  const skyPassMaterial = passMaterials.skyComposite || {};
+  if (skyPassMaterial.renderManagerOwnership !== "source-H1-Lo-single-screen-material-swap") materialSurfaceErrors.push("skyOwnership");
+  if (skyPassMaterial.screenMode !== "source-Lo-screen-material-composite") materialSurfaceErrors.push("skyScreenMode");
+  if (skyPassMaterial.tSceneIsRawTarget !== true) materialSurfaceErrors.push("skyRawSceneBinding");
   const mainFluidMaterials = parsed.probe.mainFluid?.materialSurface || {};
   for (const [key, expectedMode] of Object.entries({
     advection: "source-GT-raw-glsl3",

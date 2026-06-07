@@ -3666,8 +3666,12 @@ export class WebGLBackdrop {
   private skyScene = new Scene();
   private thumbScene = new Scene();
   private mediaScene = new Scene();
+  private displacementRawScene = new Scene();
   private screenMouseSimulationScene = new Scene();
   private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private skyPostScreen = makeSourcePassScreen();
+  private displacementPostScreen = makeSourcePassScreen();
+  private thumbPostScreen = makeSourcePassScreen();
   private workPostScreen = makeSourcePassScreen();
   private mainPostScreen = makeSourcePassScreen();
   private homeCamera = new PerspectiveCamera(55, 1, 1, 2000);
@@ -3703,7 +3707,6 @@ export class WebGLBackdrop {
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private workPerlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private skyCompositeMaterial: ShaderMaterial;
-  private skyCompositeScene = new Scene();
   private skyRawTarget = makeSourceRenderTarget(false);
   private skyCompositeTarget = makeSourceRenderTarget(false);
   private backgroundMaterial: ShaderMaterial;
@@ -3751,8 +3754,8 @@ export class WebGLBackdrop {
   private fxaaScene = new Scene();
   private fxaaTarget = makeSourceRenderTarget(false);
   private displacementMaterial: ShaderMaterial;
-  private displacementScene = new Scene();
-  private displacementTarget = new WebGLRenderTarget(128, 128, { depthBuffer: false, stencilBuffer: false });
+  private displacementRawTarget = makeSourceRenderTarget(false);
+  private displacementTarget = makeSourceRenderTarget(false);
   private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
   private floorReflectionReadTarget = makeSourceRenderTarget(false);
   private floorReflectionWriteTarget = makeSourceRenderTarget(false);
@@ -3777,7 +3780,6 @@ export class WebGLBackdrop {
   private screenMouseSimulationIndex = 0;
   private mainFluidPass: MainFluidPass;
   private thumbCompositeMaterial: ShaderMaterial;
-  private thumbCompositeScene = new Scene();
   private characterMaterial: ShaderMaterial;
   private characterScene = new Scene();
   private characterModelRoot = new Group();
@@ -3953,6 +3955,7 @@ export class WebGLBackdrop {
     this.mediaCamera.position.set(0, 0, 1000);
     this.mainScene.background = sourceLinearToSrgbColor(SOURCE_MAIN_SCENE_BACKGROUND, SOURCE_MAIN_SCENE_BACKGROUND);
     this.skyScene.background = sourceLinearToSrgbColor("#666666", "#666666");
+    this.displacementRawScene.background = sourceLinearToSrgbColor("red", "red");
     this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG);
     this.spotLight.position.copy(this.spotLightPosition);
@@ -3967,7 +3970,6 @@ export class WebGLBackdrop {
     this.homeScene.add(this.spotLight.target);
     this.homeScene.add(this.directionalLight);
     this.skyCompositeMaterial = this.createSkyCompositeMaterial();
-    this.skyCompositeScene.add(makeSourceFullscreenTriangle(this.skyCompositeMaterial));
     this.backgroundMaterial = this.createBackgroundMaterial();
     this.backgroundScene.add(makeFullscreenTriangle(this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
@@ -4012,7 +4014,6 @@ export class WebGLBackdrop {
     this.fxaaScene.add(makeFullscreenTriangle(this.fxaaMaterial));
     this.gridLayers = sourceLowRes() ? SOURCE_LOW_RES_GRID_LAYERS : SOURCE_GRID_LAYERS;
     this.displacementMaterial = this.createDisplacementMaterial();
-    this.displacementScene.add(makeSourceFullscreenTriangle(this.displacementMaterial));
     this.floorReflectionTarget.depthBuffer = true;
     this.floorReflectionTarget.texture.generateMipmaps = false;
     this.floorReflectionTarget.texture.minFilter = LinearFilter;
@@ -4030,7 +4031,6 @@ export class WebGLBackdrop {
     this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
     this.mainFluidPass = this.createMainFluidPass();
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
-    this.thumbCompositeScene.add(makeSourceFullscreenTriangle(this.thumbCompositeMaterial));
     this.characterMaterial = this.createCharacterMaterial();
     this.characterFallbackMesh = new Mesh(new PlaneGeometry(2, 2), this.characterMaterial);
     this.characterDirectionalLight.position.set(2, 3, 5);
@@ -4522,6 +4522,7 @@ export class WebGLBackdrop {
     this.blurTargetB.dispose();
     this.fxaaMaterial.dispose();
     this.fxaaTarget.dispose();
+    this.displacementRawTarget.dispose();
     this.displacementTarget.dispose();
     this.floorReflectionTarget.dispose();
     this.floorReflectionReadTarget.dispose();
@@ -5321,7 +5322,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tScene: { value: this.displacementTarget.texture },
+        tScene: { value: this.displacementRawTarget.texture },
         uTime: { value: 0 },
         uRatio: { value: 1 },
       },
@@ -6354,6 +6355,7 @@ void main() {
     this.preCompositeMaterial.uniforms.uContainerSize.value.set(renderWidth, renderHeight);
     this.displacementMaterial.uniforms.uRatio.value = width / height;
     const displacementSize = Math.max(1, Math.round(height / 10));
+    this.displacementRawTarget.setSize(displacementSize, displacementSize);
     this.displacementTarget.setSize(displacementSize, displacementSize);
     this.preCompositeMaterial.uniforms.uDisplacementSize.value.set(displacementSize, displacementSize);
     const floorReflectionWidth = Math.max(1, width * 0.75);
@@ -6928,15 +6930,21 @@ void main() {
   private renderSkyTarget(time: number) {
     this.renderer.setRenderTarget(this.skyRawTarget);
     this.renderer.render(this.skyScene, this.backgroundCamera);
+    this.skyCompositeMaterial.uniforms.tScene.value = this.skyRawTarget.texture;
+    this.skyPostScreen.material = this.skyCompositeMaterial;
     this.renderer.setRenderTarget(this.skyCompositeTarget);
-    this.renderer.render(this.skyCompositeScene, this.backgroundCamera);
+    this.renderer.render(this.skyPostScreen, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
     this.skyCompositeMaterial.uniforms.uTime.value = sourceLowRes() ? 0 : time;
   }
 
   private renderDisplacementTarget(time: number) {
+    this.renderer.setRenderTarget(this.displacementRawTarget);
+    this.renderer.render(this.displacementRawScene, this.backgroundCamera);
+    this.displacementMaterial.uniforms.tScene.value = this.displacementRawTarget.texture;
+    this.displacementPostScreen.material = this.displacementMaterial;
     this.renderer.setRenderTarget(this.displacementTarget);
-    this.renderer.render(this.displacementScene, this.backgroundCamera);
+    this.renderer.render(this.displacementPostScreen, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
     this.displacementMaterial.uniforms.uTime.value = time;
   }
@@ -6944,8 +6952,10 @@ void main() {
   private renderThumbTargets() {
     this.renderer.setRenderTarget(this.thumbTarget);
     this.renderer.render(this.thumbScene, this.thumbCamera);
+    this.thumbCompositeMaterial.uniforms.tScene.value = this.thumbTarget.texture;
+    this.thumbPostScreen.material = this.thumbCompositeMaterial;
     this.renderer.setRenderTarget(this.thumbCompositeTarget);
-    this.renderer.render(this.thumbCompositeScene, this.backgroundCamera);
+    this.renderer.render(this.thumbPostScreen, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
   }
 
@@ -7009,6 +7019,8 @@ void main() {
       thumbComposite: {
         mode: "source-x1-_1-raw-glsl3",
         glslVersion: this.thumbCompositeMaterial.glslVersion ?? null,
+        renderManagerOwnership: "source-x1-Lo-single-screen-material-swap",
+        screenMode: this.thumbPostScreen.material === this.thumbCompositeMaterial ? "source-Lo-screen-material-composite" : "non-source",
         toneMapped: this.thumbCompositeMaterial.toneMapped,
         transparent: this.thumbCompositeMaterial.transparent,
         blending: this.thumbCompositeMaterial.blending,
@@ -7482,6 +7494,9 @@ void main() {
             materialMode: "source-z1-raw-glsl3",
             glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
             vertexMode: "source-tl-matrix-fullscreen",
+            renderManagerOwnership: "source-H1-Lo-single-screen-material-swap",
+            screenMode: this.skyPostScreen.material === this.skyCompositeMaterial ? "source-Lo-screen-material-composite" : "non-source",
+            tSceneIsRawTarget: this.skyCompositeMaterial.uniforms.tScene.value === this.skyRawTarget.texture,
           },
           displacement: {
             blending: this.displacementMaterial.blending,
@@ -7489,15 +7504,24 @@ void main() {
             glslVersion: (this.displacementMaterial as RawShaderMaterial).glslVersion ?? null,
             vertexMode: "source-tl-matrix-fullscreen",
             clearMode: "source-Lo-no-explicit-clear",
+            renderManagerOwnership: "source-O1-Lo-single-screen-material-swap",
+            screenMode: this.displacementPostScreen.material === this.displacementMaterial ? "source-Lo-screen-material-composite" : "non-source",
             targetSize: {
               width: this.displacementTarget.width,
               height: this.displacementTarget.height,
             },
+            rawTargetSize: {
+              width: this.displacementRawTarget.width,
+              height: this.displacementRawTarget.height,
+            },
             ratio: this.displacementMaterial.uniforms.uRatio.value,
-            tSceneBound: this.displacementMaterial.uniforms.tScene.value === this.displacementTarget.texture,
+            tSceneBound: this.displacementMaterial.uniforms.tScene.value === this.displacementRawTarget.texture,
+            tSceneIsRawTarget: this.displacementMaterial.uniforms.tScene.value === this.displacementRawTarget.texture,
+            tSceneIsCompositeTarget: this.displacementMaterial.uniforms.tScene.value === this.displacementTarget.texture,
             vignetteConstantsMode: "source-F1-globals",
             toneMapped: this.displacementMaterial.toneMapped,
             transparent: this.displacementMaterial.transparent,
+            rawSceneBackground: this.displacementRawScene.background instanceof Color ? this.displacementRawScene.background.toArray() : null,
           },
         },
         thumbComposite: {
@@ -7653,6 +7677,8 @@ void main() {
         floorReflectionRead: renderTargetProbe(this.renderer, this.floorReflectionReadTarget),
         skyRaw: renderTargetProbe(this.renderer, this.skyRawTarget),
         skyComposite: renderTargetProbe(this.renderer, this.skyCompositeTarget),
+        displacementRaw: renderTargetProbe(this.renderer, this.displacementRawTarget),
+        displacementComposite: renderTargetProbe(this.renderer, this.displacementTarget),
         thumb: renderTargetProbe(this.renderer, this.thumbTarget),
         thumbComposite: renderTargetProbe(this.renderer, this.thumbCompositeTarget),
         screenMouseSim: mouseSimProbe,

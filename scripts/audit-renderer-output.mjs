@@ -166,6 +166,7 @@ const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
 const sourceThumbT1 = extractAround(bundle, "class T1 extends Uu", 500, 1000);
 const sourceThumbE1 = extractAround(bundle, "class E1", 360, 900);
+const sourceDisplacementO1 = extractAround(bundle, "class O1 extends Lo", 700, 900);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 900, 1700);
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
@@ -411,6 +412,43 @@ const summary = {
         "this.renderTargetComposite=this.renderTargetA.clone()",
         "this.renderTargetComposite=this.renderTargetA.clone(),this.compositeMaterial=new g1",
         "this.settings.renderToScreen&&(this.renderer.setPixelRatio(n),this.renderer.setSize(e,t))",
+        "o.setRenderTarget(c),o.render(a,r)",
+        "this.compositeMaterial.uniforms.tScene.value=c.texture",
+        "this.screen.material=this.compositeMaterial",
+        "o.setRenderTarget(u),o.render(this.screen,this.screenCamera)",
+      ]),
+      subclassChecks: {
+        skyH1: checks(sourceSkyV1.text, [
+          "class H1 extends Lo",
+          "this.compositeMaterial=new z1",
+          "initSettings(){this.settings={renderToScreen:!1}}",
+        ]),
+        displacementO1: checks(sourceDisplacementO1.text, [
+          "class O1 extends Lo",
+          "this.compositeMaterial=new N1",
+          "initSettings(){this.settings={renderToScreen:!1}}",
+          "this.renderManager.resize(t/10,t/10,n)",
+          "this.renderManager.compositeMaterial.uniforms.uRatio.value=e/t",
+        ]),
+        thumbX1: checks(sourceThumbX1.text, [
+          "class x1 extends Lo",
+          "this.compositeMaterial=new _1",
+          "initSettings(){this.settings={renderToScreen:!1}}",
+        ]),
+      },
+      rebuildSubclassScreenSwap: checks(rebuildWebgl, [
+        "private skyPostScreen = makeSourcePassScreen()",
+        "private displacementPostScreen = makeSourcePassScreen()",
+        "private thumbPostScreen = makeSourcePassScreen()",
+        "this.skyPostScreen.material = this.skyCompositeMaterial",
+        "this.displacementPostScreen.material = this.displacementMaterial",
+        "this.thumbPostScreen.material = this.thumbCompositeMaterial",
+        "this.renderer.render(this.skyPostScreen, this.backgroundCamera)",
+        "this.renderer.render(this.displacementPostScreen, this.backgroundCamera)",
+        "this.renderer.render(this.thumbPostScreen, this.backgroundCamera)",
+        "renderManagerOwnership: \"source-H1-Lo-single-screen-material-swap\"",
+        "renderManagerOwnership: \"source-O1-Lo-single-screen-material-swap\"",
+        "renderManagerOwnership: \"source-x1-Lo-single-screen-material-swap\"",
       ]),
       renderTargetDefaults: targetSnapshot(new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false }).clone()),
       excerpt: compact(sourceLo.text),
