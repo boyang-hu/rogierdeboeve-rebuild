@@ -117,7 +117,7 @@ const rebuildA1 = extractConstTemplate(rebuildWebgl, "homePreCompositeFragment")
 const sourcePo = extractTemplate(bundle, "Po", "`,CA=");
 const sourceBlendLighten = extractTemplate(bundle, "fg", "`,yA=");
 const sourceBlendMultiply = extractTemplate(bundle, "hg", "`,dg=");
-const sourceLu = extractAround(bundle, "class Lu", 200, 3600);
+const sourceLu = extractAround(bundle, "class Lu", 200, 5200);
 const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
 const rendererOutputRefs = [
@@ -281,6 +281,8 @@ const summary = {
         "this.renderTargetComposite=this.renderTargetA.clone()",
         "this.renderTargetA.depthBuffer=!0",
         "this.settings.renderToScreen&&(this.renderer.setPixelRatio(n),this.renderer.setSize(e,t))",
+        "e=Fa(e)/4,t=Fa(t)/4",
+        "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
       ]),
       excerpt: compact(sourceLu.text),
     },

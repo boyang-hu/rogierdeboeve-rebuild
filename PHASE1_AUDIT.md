@@ -93,6 +93,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 17 | S1-81 | Source `i1` reflection target/camera initialization | Source `i1` creates the raw reflection target with `depthBuffer:false`, clones read/write targets, then toggles only the raw target to `depthBuffer=true`; it also uses a default `PerspectiveCamera` for the virtual reflector camera before copying the real projection each update. | Production now follows that create-clone-toggle sequence, keeps read/write targets depthless, uses the default reflector camera surface, and exposes reflector target/camera state in `reflectionStateProbe()`. | Low-medium | Keep as source-correct. Phase 1 remains open because this is reflector ownership parity, not a visual closeout for the remaining mobile/fog-bed and projection residuals. |
 | 18 | S1-82 | Source `V1/H1/Lo` sky render pass clearing | Source sky scene uses `H1 extends Lo`; source `Lo.update()` renders `renderTargetA` and `renderTargetComposite` directly without explicit `renderer.clear()` calls. The rebuild still cleared both sky raw and sky composite targets every frame. | Production now removes those rebuild-only sky target clears and reports `skyPassClearing=source-Lo-no-explicit-clear` in the output probe. | Low-medium | Keep as source-correct. The sky target remains non-empty and project pages remain stable, but Phase 1 remains open for mobile/fog-bed and projection residuals. |
 | 19 | S1-83 | Source `A1/C1` pre-composite shader flow | Source `A1` keeps the inert `displacementUv` and `vignetteF` computations and samples `tNoise` before contrast/saturation/media, then applies the two noise mixes after media. The rebuild had removed those two computations and relocated the noise sample to the tail. | Production now restores those source flow details without changing constants or final formula, and `scripts/audit-renderer-output.mjs` now reports `A1` order and inert-computation residuals accurately. | Low-medium | Keep as source-correct. This closes an audit residual in `A1/C1`; Phase 1 remains open because mobile/fog-bed and projection residuals still require source-backed attribution. |
+| 20 | S1-93 | Source `Lu` mip/fluid resize ownership | Source `Lu.resize()` sizes render targets at CSS DPR size, then switches to `Fa(renderSize)/4` for luminosity/bloom and `Fa(renderSize)/4/3` for fluid. The rebuild still used a main-only half-resolution start for the disabled-default main bloom/fluid branch. | Production now uses the same quarter-power-of-two start size for main render-manager bloom and fluid as source `Lu`; output probes report work/main sizing mode and primary depth ownership, and renderer audit checks the source resize anchors. | Low-medium | Keep as source-correct. This mainly removes a main render-manager ownership divergence; Phase 1 remains open because the visible mobile/fog-bed residual is still present. |
 
 ### Phase 1 Open Blocker Board
 
@@ -4007,3 +4008,41 @@ Band snapshot from `/tmp/rd-reflection-css-capture`:
 | Mobile source -> rebuild | `-0.0130` | `+0.0096` |
 
 Decision: keep the source `i1` CSS sizing correction. It reduces the mobile max-horizontal-delta residual compared with the previous helper-pass batch while preserving project media. Phase 1 remains open because mobile center luma and strict `VA/GA`/projection feel are still unresolved.
+
+### S1-93 Source `Lu` Main Mip/Fluid Resize Ownership
+
+This batch aligned a grouped `Lu/kA/I1` render-manager sizing residual. It did not change shader formulas, project data, route transitions, or project media mapping.
+
+Source evidence:
+
+- Source `Lu.resize(e,t,n)` first converts CSS size to DPR render size via `e=Math.round(e*n), t=Math.round(t*n)`.
+- Source then sizes `renderTargetA` and `renderTargetComposite` at full render size.
+- Source then switches to `e=Fa(e)/4, t=Fa(t)/4` before luminosity, bloom mip, and fluid sizing.
+- Source fluid uses `fluidSimulation.onResize(e/3,t/3)` from that quarter-power-of-two size.
+- Source `Lu.initRenderer()` creates `renderTargetA` from a no-depth target and then sets only `renderTargetA.depthBuffer=true`; `Lo` render targets remain depthless.
+
+Runtime and tooling changes:
+
+- Main render-manager bloom sizing now uses the same source `Fa(renderSize)/4` start as work `kA/Lu`, instead of the rebuild-only half-resolution start.
+- Main fluid sizing now uses `Fa(renderSize)/4/3`, matching source `Lu.resize()`, instead of `Fa(renderSize)/2/3`.
+- `__rogierOutputProbe` now reports work/main render-manager sizing mode, bloom start size, fluid sizing mode, mouse-sim scale, and primary depth-buffer ownership.
+- `scripts/audit-renderer-output.mjs` now checks the source `Lu.resize()` quarter-size and fluid resize anchors; its source excerpt window was expanded so these anchors are not truncated.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-lu-sizing-output`.
+- Output probe confirms work bloom starts at `256x128` for a `1440x900` render size, work primary depth is `true`, main primary depth is `false`, and main fluid targets are now `85x43` (`Fa(1440)/4/3` by `Fa(900)/4/3`).
+- Renderer audit confirms source `Lu` contains `renderTargetA.depthBuffer=true`, `e=Fa(e)/4,t=Fa(t)/4`, and `fluidSimulation.onResize(e/3,t/3)`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-lu-sizing-project`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-lu-sizing-capture`.
+
+Band snapshot from `/tmp/rd-lu-sizing-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `+0.0013` | `-0.0030` |
+| Mobile source -> rebuild | `-0.0127` | `+0.0134` |
+
+Decision: keep the source `Lu` sizing correction. This removes a real source render-manager ownership divergence and keeps project media stable. Phase 1 remains open because the mobile/fog-bed residual and strict `VA/GA`/projection feel are still unresolved.

@@ -4689,19 +4689,17 @@ export class WebGLBackdrop {
     this.mainLensflareTarget.setSize(renderWidth, renderHeight);
     this.mediaRawTarget.setSize(renderWidth, renderHeight);
     this.mediaTarget.setSize(renderWidth, renderHeight);
-    const halfMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 2));
-    const halfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
     const quarterMipWidth = Math.max(1, Math.round(floorPowerOfTwo(renderWidth) / 4));
     const quarterMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 4));
     if (this.renderSettings.luminosity.enabled) this.bloomBrightTarget.setSize(quarterMipWidth, quarterMipHeight);
     if (this.renderSettings.bloom.enabled) {
       this.resizeBloomMipChain(this.bloomHorizontalTargets, this.bloomVerticalTargets, quarterMipWidth, quarterMipHeight);
     }
-    if (this.sourceMainRenderSettings.luminosity.enabled) this.mainBloomBrightTarget.setSize(halfMipWidth, halfMipHeight);
+    if (this.sourceMainRenderSettings.luminosity.enabled) this.mainBloomBrightTarget.setSize(quarterMipWidth, quarterMipHeight);
     if (this.sourceMainRenderSettings.bloom.enabled) {
-      this.resizeBloomMipChain(this.mainBloomHorizontalTargets, this.mainBloomVerticalTargets, halfMipWidth, halfMipHeight);
+      this.resizeBloomMipChain(this.mainBloomHorizontalTargets, this.mainBloomVerticalTargets, quarterMipWidth, quarterMipHeight);
     }
-    if (this.sourceMainRenderSettings.fluid.enabled) this.resizeMainFluidPass(halfMipWidth / 3, halfMipHeight / 3);
+    if (this.sourceMainRenderSettings.fluid.enabled) this.resizeMainFluidPass(quarterMipWidth / 3, quarterMipHeight / 3);
     const skySize = Math.max(1, Math.round(height * 0.75));
     this.skyRawTarget.setSize(skySize, skySize);
     this.skyCompositeTarget.setSize(skySize, skySize);
@@ -5380,6 +5378,14 @@ export class WebGLBackdrop {
           blur: this.renderSettings.blur,
           mousesim: this.renderSettings.mousesim,
           fluid: this.renderSettings.fluid,
+          renderManagerSizing: {
+            primaryDepthBuffer: this.workRawTarget.depthBuffer,
+            bloomStart: this.bloomHorizontalTargets[0]
+              ? { width: this.bloomHorizontalTargets[0].width, height: this.bloomHorizontalTargets[0].height }
+              : null,
+            bloomStartMode: "source-Lu-Fa-render-size-div-4",
+            mouseSimScale: SCREEN_MOUSE_SIM_SCALE,
+          },
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),
             emissive: activeWorkItem.material.emissive.toArray(),
@@ -5396,6 +5402,14 @@ export class WebGLBackdrop {
           blur: this.sourceMainRenderSettings.blur,
           mousesim: this.sourceMainRenderSettings.mousesim,
           fluid: this.sourceMainRenderSettings.fluid,
+          renderManagerSizing: {
+            primaryDepthBuffer: this.compositeTarget.depthBuffer,
+            bloomStart: this.mainBloomHorizontalTargets[0]
+              ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
+              : null,
+            bloomStartMode: "source-Lu-Fa-render-size-div-4",
+            fluidSizeMode: "source-Lu-Fa-render-size-div-4-then-div-3",
+          },
         },
         updateOrder: {
           source: this.sourceUpdateOrder,
