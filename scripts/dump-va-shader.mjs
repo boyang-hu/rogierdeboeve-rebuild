@@ -605,6 +605,7 @@ function analyzeVaFragmentCore(sourceShader, rebuildShader) {
       "mix(gl_FragColor.rgb,gl_FragColor.rgb*vec3(mouseF),1.0-uMouseLightness)",
     ],
     sourceAlphaGrid: ["mixedAlpha=((alpha*alpha2)*vInstanceAlpha)", "floatalpha=alpha1*alpha2*vAlpha"],
+    sourceDisplacementSample: ["vec4displacement=texture2D(tDisplacement,newUv)", "vec4displacement=texture(tDisplacement,newUv)"],
     sourceRevealRadius: ["2.0*pow(revealCombined,.25)", "2.0*pow(revealCombined,0.25)"],
     sourceMouseAlpha: [
       "mixedAlpha+=clamp(mouseSim.r*(uMouseFactor*0.5),0.,1.)",

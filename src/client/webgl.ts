@@ -590,21 +590,22 @@ gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
 const workBlockSourceTailFragmentChunk = `
 #include <opaque_fragment>
 
-vec2 sourceUv = vLocalUv / uGridSize.xy + vOffset;
+vec2 newUv = vLocalUv / uGridSize.xy + vOffset;
 vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
 float simLight = texture2D(tMouseSim2, screenUv).r;
 float mouseF = 1.0 - simLight;
 gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), 1.0 - uMouseLightness);
 
-vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
-vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
+vec2 gridUv = vec2(floor(newUv.x * uGridSize.x), floor(newUv.y * uGridSize.y));
+vec2 gridUv2 = vec2(floor(newUv.y * uGridSize.y), floor(newUv.x * uGridSize.y));
 float alpha1 = mix(sourceRandom(gridUv * vAlpha), sourceRandom(gridUv), 1.0);
 float alpha2 = mix(sourceRandom(gridUv2 * vAlpha), sourceRandom(gridUv2), 1.0);
 float alpha = alpha1 * alpha2 * vAlpha;
+vec4 displacement = texture2D(tDisplacement, newUv);
 float revealCombined = uReveal * uRevealProject;
 float revealRadius = 2.0 * pow(revealCombined, 0.25);
-float centerAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-float revealAlpha = sourceVignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
+float centerAlpha = sourceVignette(newUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
+float revealAlpha = sourceVignette(newUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
 if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * 0.5), 0.0, 1.0);
 alpha += centerAlpha * 0.1;
 alpha -= 1.0 - revealAlpha;
