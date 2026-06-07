@@ -1548,6 +1548,8 @@ uniform bool boolFxaa;
 uniform float uDarken;
 uniform float uSaturation;
 
+${sourceBlendHelper}
+
 float vignout = 0.55;
 float vignin = 0.1;
 float vignfade = 2.0;
@@ -1563,20 +1565,6 @@ float luminance(vec3 rgb) {
 vec3 saturation(vec3 color, float amount) {
   float gray = dot(color, vec3(0.2125, 0.7154, 0.0721));
   return mix(vec3(gray), color, amount);
-}
-
-vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
-  return max(blend, base) * opacity + base * (1.0 - opacity);
-}
-
-vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
-  return base * blend * opacity + base * (1.0 - opacity);
-}
-
-vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
-  if (mode == 11) return blendLighten(base, blend, opacity);
-  if (mode == 15) return blendMultiply(base, blend, opacity);
-  return base;
 }
 
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
@@ -1717,6 +1705,8 @@ uniform vec3 uBgColor;
 uniform vec2 uDisplacementSize;
 uniform vec2 uContainerSize;
 
+${sourceBlendHelper}
+
 in vec2 vUv;
 out vec4 FragColor;
 
@@ -1747,20 +1737,6 @@ vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
   vec2 uv = ouv * s / newSize + newOffset;
   return texture(tex, uv);
-}
-
-vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
-  return max(blend, base) * opacity + base * (1.0 - opacity);
-}
-
-vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
-  return min(base + blend, vec3(1.0)) * opacity + base * (1.0 - opacity);
-}
-
-vec3 blend(int mode, vec3 base, vec3 blendColor, float opacity) {
-  if (mode == 1) return blendAdd(base, blendColor, opacity);
-  if (mode == 11) return blendLighten(base, blendColor, opacity);
-  return base;
 }
 
 vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {

@@ -466,6 +466,7 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
     && source.includes("uniformsampler2DtMedia")
     && source.includes("uniformfloatuMediaReveal")
     && source.includes("uniformfloatuDisplacement");
+  const usesSourceFullBlendDispatcher = ["A1-pre-composite", "OA-work-composite"].includes(shaderName);
   const checks = {
     sceneRgbshift: ["rgbshift(tScene,uv,-1.,.0015)", "rgbshift(tScene,uv,-1.0,0.0015)"],
     bloomPrimaryRgbshift: ["rgbshift(tBloom,uv,-1.5,.02)", "rgbshift(tBloom,uv,-1.5,0.02)"],
@@ -477,6 +478,12 @@ function analyzeCompositeCore(sourceShader, rebuildShader, shaderName = "") {
     lightenBlack: ["blend(11,", "sourceBlend(11,"],
     saturationTail: ["saturation("],
     tonemappingTail: ["#include<tonemapping_fragment>"],
+    ...(usesSourceFullBlendDispatcher ? {
+      sourceFullBlendDispatcher: ["if(mode==25){returnblendVividLight(base,blend,opacity);}"],
+      sourceBlendAddSurface: ["vec3blendAdd(vec3base,vec3blend,floatopacity)"],
+      sourceBlendMultiplySurface: ["vec3blendMultiply(vec3base,vec3blend,floatopacity)"],
+      sourceBlendLightenSurface: ["vec3blendLighten(vec3base,vec3blend,floatopacity)"],
+    } : {}),
     ...(isA1PreComposite ? {
       a1LuminanceHelper: ["floatluminance(vec3rgb)"],
       a1CoverTextureHelper: ["vec4coverTexture(sampler2Dtex,vec2imgSize,vec2ouv,vec2containerSize)"],
