@@ -81,7 +81,10 @@ function classify(name, entry) {
     || entry.rgBlurCoreChecks
     || entry.standardBlurCoreChecks
     || entry.lensflareCoreChecks
-    || entry.igFxaaCoreChecks;
+    || entry.igFxaaCoreChecks
+    || entry.thumbPlaneCoreChecks
+    || entry.displacementCoreChecks
+    || entry.mainFluidCoreChecks;
   const checkText = checksStatus(relevantChecks);
   const hasCheckMismatch = checkText !== "-" && checkText !== "source/rebuild anchors match";
   if (sourceIncludeCount || rebuildIncludeCount || sourceUniformCount || rebuildUniformCount || hasCheckMismatch) {
@@ -118,7 +121,10 @@ const rows = focusOrder
           || entry.rgBlurCoreChecks
           || entry.standardBlurCoreChecks
           || entry.lensflareCoreChecks
-          || entry.igFxaaCoreChecks,
+          || entry.igFxaaCoreChecks
+          || entry.thumbPlaneCoreChecks
+          || entry.displacementCoreChecks
+          || entry.mainFluidCoreChecks,
       ),
     };
   });

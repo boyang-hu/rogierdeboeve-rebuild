@@ -596,6 +596,8 @@ async function runProbe() {
   if (mainFluidMaterials.advectionBounds?.blending !== 0) materialSurfaceErrors.push("mainFluidAdvectionBoundsBlending");
   if (mainFluidMaterials.advectionBounds?.sharedUniforms !== true) materialSurfaceErrors.push("mainFluidAdvectionBoundsSharedUniforms");
   if (mainFluidMaterials.advectionBounds?.sceneChildren !== 2) materialSurfaceErrors.push("mainFluidAdvectionBoundsSceneChildren");
+  if (!mainFluidMaterials.advection?.uniformKeys?.includes("px")) materialSurfaceErrors.push("mainFluidAdvectionPxUniform");
+  if (!mainFluidMaterials.advection?.uniformKeys?.includes("bounds")) materialSurfaceErrors.push("mainFluidAdvectionBoundsUniform");
   if (mainFluidMaterials.force?.blending !== 2) materialSurfaceErrors.push("mainFluidForceBlending");
   const mainFluidTargets = parsed.probe.mainFluid?.targets || {};
   for (const key of ["main", "velocity", "divergence", "pressureA", "pressureB"]) {

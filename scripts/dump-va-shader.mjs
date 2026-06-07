@@ -671,6 +671,94 @@ function analyzeThumbPlaneCore(sourceVertex, sourceFragment, rebuildVertex, rebu
   return checks;
 }
 
+function analyzeDisplacementCore(sourceFragment, rebuildFragment) {
+  if (!sourceFragment) return null;
+  const source = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuild = normalizeShaderForCoreChecks(rebuildFragment);
+  const checks = {
+    sourceVignetteHelper: {
+      source: source.includes("floatvignette(vec2coords,floatvignin,floatvignout,floatvignfade,floatfstop)"),
+      rebuild: rebuild.includes("floatvignette(vec2coords,floatvignin,floatvignout,floatvignfade,floatfstop)"),
+    },
+    tonemappingParsInclude: {
+      source: source.includes("#include<tonemapping_pars_fragment>"),
+      rebuild: rebuild.includes("#include<tonemapping_pars_fragment>"),
+    },
+    uniformSurface: {
+      source: source.includes("uniformsampler2DtScene") && source.includes("uniformfloatuTime") && source.includes("uniformfloatuRatio"),
+      rebuild: rebuild.includes("uniformsampler2DtScene") && rebuild.includes("uniformfloatuTime") && rebuild.includes("uniformfloatuRatio"),
+    },
+    vignetteGlobals: {
+      source: source.includes("floatvignout=.5") && source.includes("floatvignin=0.01") && source.includes("floatvignfade=2.0"),
+      rebuild: rebuild.includes("floatvignout=.5") && rebuild.includes("floatvignin=0.01") && rebuild.includes("floatvignfade=2.0"),
+    },
+    uvRatioPath: {
+      source: source.includes("uvOff.x-=0.5") && source.includes("uvOff.x*=uRatio") && source.includes("uvOff.x+=0.5"),
+      rebuild: rebuild.includes("uvOff.x-=0.5") && rebuild.includes("uvOff.x*=uRatio") && rebuild.includes("uvOff.x+=0.5"),
+    },
+    sourceScaleLiteral: {
+      source: source.includes("uvOff*=5."),
+      rebuild: rebuild.includes("uvOff*=5."),
+    },
+    strengthFormula: {
+      source: source.includes("floatstrength=1.-abs(sin(distance(uvOff,vec2(0.5))-0.5-uTime))"),
+      rebuild: rebuild.includes("floatstrength=1.-abs(sin(distance(uvOff,vec2(0.5))-0.5-uTime))"),
+    },
+    tonemappingTail: {
+      source: source.includes("#include<tonemapping_fragment>"),
+      rebuild: rebuild.includes("#include<tonemapping_fragment>"),
+    },
+  };
+  return checks;
+}
+
+function analyzeMainFluidCore(sourceVertex, sourceFragment, rebuildVertex, rebuildFragment, shaderName = "") {
+  if (!sourceVertex || !sourceFragment || !shaderName.startsWith("ag-")) return null;
+  const sourceV = normalizeShaderForCoreChecks(sourceVertex);
+  const rebuildV = normalizeShaderForCoreChecks(rebuildVertex);
+  const sourceF = normalizeShaderForCoreChecks(sourceFragment);
+  const rebuildF = normalizeShaderForCoreChecks(rebuildFragment);
+  const checks = {
+    vertexGlslifyDefine: {
+      source: sourceV.includes("#defineGLSLIFY1"),
+      rebuild: rebuildV.includes("#defineGLSLIFY1"),
+    },
+    fragmentGlslifyDefine: {
+      source: sourceF.includes("#defineGLSLIFY1"),
+      rebuild: rebuildF.includes("#defineGLSLIFY1"),
+    },
+  };
+  if (["ag-advection", "ag-advection-bounds", "ag-divergence", "ag-poisson", "ag-pressure"].includes(shaderName)) {
+    checks.vertexSourceUniformSurface = {
+      source: sourceV.includes("uniformvec2px") && (shaderName.includes("force") || sourceV.includes("uniformvec2bounds")),
+      rebuild: rebuildV.includes("uniformvec2px") && (shaderName.includes("force") || rebuildV.includes("uniformvec2bounds")),
+    };
+  }
+  if (shaderName === "ag-force") {
+    checks.vertexSourceUniformSurface = {
+      source: sourceV.includes("uniformvec2px") && sourceV.includes("uniformvec2center") && sourceV.includes("uniformvec2scale"),
+      rebuild: rebuildV.includes("uniformvec2px") && rebuildV.includes("uniformvec2center") && rebuildV.includes("uniformvec2scale"),
+    };
+  }
+  if (["ag-advection", "ag-advection-bounds"].includes(shaderName)) {
+    checks.advectionSourceVariableNames = {
+      source: ["spot_new", "vel_old", "spot_old", "vel_new1", "spot_new2", "spot_new3", "vel_2", "spot_old2", "newVel2"].every((value) => sourceF.includes(value)),
+      rebuild: ["spot_new", "vel_old", "spot_old", "vel_new1", "spot_new2", "spot_new3", "vel_2", "spot_old2", "newVel2"].every((value) => rebuildF.includes(value)),
+    };
+    checks.noCamelAdvectionNames = {
+      source: !["spotNew", "velOld", "spotOld", "velNew1", "spotNew2", "spotNew3", "vel2", "spotOld2"].some((value) => sourceF.includes(value)),
+      rebuild: !["spotNew", "velOld", "spotOld", "velNew1", "spotNew2", "spotNew3", "vel2", "spotOld2"].some((value) => rebuildF.includes(value)),
+    };
+  }
+  if (shaderName === "ag-force") {
+    checks.forceUniformSurface = {
+      source: ["uniformvec2force", "uniformvec2center", "uniformvec2scale", "uniformvec2px"].every((value) => sourceF.includes(value)),
+      rebuild: ["uniformvec2force", "uniformvec2center", "uniformvec2scale", "uniformvec2px"].every((value) => rebuildF.includes(value)),
+    };
+  }
+  return checks;
+}
+
 function analyzeVertexCore(sourceShader, rebuildShader) {
   const source = normalizeShaderForCoreChecks(sourceShader);
   const rebuild = normalizeShaderForCoreChecks(rebuildShader);
@@ -1115,6 +1203,8 @@ try {
       standardBlurCoreChecks: entry.name === "Na-standard-blur" ? analyzeStandardBlurCore(sourceFragment, entry.fragmentShader) : null,
       lensflareCoreChecks: entry.name === "L1-lensflare" ? analyzeLensflareCore(sourceFragment, entry.fragmentShader) : null,
       thumbPlaneCoreChecks: entry.name === "M1-thumb-plane" ? analyzeThumbPlaneCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
+      displacementCoreChecks: entry.name === "N1-displacement-composite" ? analyzeDisplacementCore(sourceFragment, entry.fragmentShader) : null,
+      mainFluidCoreChecks: analyzeMainFluidCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader, entry.name),
       igFxaaCoreChecks: entry.name === "ig-fxaa" ? analyzeIgFxaaCore(sourceVertex, sourceFragment, entry.vertexShader, entry.fragmentShader) : null,
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       vaBridgeCompatibility: entry.name === "VA-work" ? analyzeVaBridgeCompatibility(sourceFragment, entry.fragmentShader) : null,

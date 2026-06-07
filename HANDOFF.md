@@ -135,10 +135,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `tA/lg/cg` shader-surface parity was restored:
-  - shared dither helper now uses source `random(vec2 co)` with local `a/b/c/dt/sn` variables and `sn = mod(dt, 3.14)`;
-  - work/main bloom composite materials now keep source `cg` `DITHERING: undefined` define ownership;
-  - output probe, shader dump, and renderer audit now assert those source surfaces.
+- Source `x1/M1/N1/ag` GLSL surface parity was restored:
+  - thumb composite helper order now matches source `_1/x1`;
+  - thumb plane declaration order and `transition (...)` surface now match source `S1/M1`;
+  - displacement composite helper, uniform order, vignette globals/comments, and literal surfaces now match source `F1/N1`;
+  - main-fluid shaders now carry source `#define GLSLIFY 1`, source advection variable names, and source `GT` advection `px` uniform ownership;
+  - shader dump now reports `N1`, `x1`, `M1`, and all `ag-*` helpers with source/rebuild core anchors matched.
 - QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open; this was source surface parity, not visual closeout.

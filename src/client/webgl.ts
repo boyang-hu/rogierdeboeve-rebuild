@@ -2240,16 +2240,6 @@ void main() {
 const thumbFragment = `
 precision highp float;
 
-uniform sampler2D tMap;
-uniform vec2 uMapSize;
-uniform vec2 uResolution;
-uniform float uProgress;
-uniform float uTransitionCount;
-uniform float uTransitionSmoothness;
-
-in vec2 vUv;
-out vec4 FragColor;
-
 vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   vec2 s = containerSize;
   vec2 i = imgSize;
@@ -2263,7 +2253,16 @@ vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   return color;
 }
 
-vec4 transition(vec4 color1, vec4 color2, float progress, vec2 uv) {
+uniform sampler2D tMap;
+uniform vec2 uMapSize;
+uniform vec2 uResolution;
+uniform float uProgress;
+uniform float uTransitionCount;
+uniform float uTransitionSmoothness;
+in vec2 vUv;
+out vec4 FragColor;
+
+vec4 transition (vec4 color1, vec4 color2, float progress, vec2 uv) {
   float pr = smoothstep(-uTransitionSmoothness, 0.0, uv.y - progress * (1.0 + uTransitionSmoothness));
   float s = step(pr, fract(uTransitionCount * uv.y));
   return mix(color1, color2, s);
@@ -2308,6 +2307,9 @@ void main() {
 const thumbCompositeFragment = `
 precision highp float;
 
+${sourceBlendMultiplyHelper}
+${sourceSaturationHelper}
+
 #include <tonemapping_pars_fragment>
 
 uniform sampler2D tScene;
@@ -2318,15 +2320,14 @@ uniform float uSaturation;
 in vec2 vUv;
 out vec4 FragColor;
 
-${sourceBlendMultiplyHelper}
-${sourceSaturationHelper}
-
 void main() {
-  vec2 uv = vUv;
+  vec2 uv = vUv ;
   vec4 mixed = texture(tScene, uv);
+
   mixed.rgb = blendMultiply(mixed.rgb, uDarkenColor, uDarkenIntensity);
   mixed.rgb = saturation(mixed.rgb, uSaturation);
   FragColor = vec4(mixed.rgb, 1.);
+
   #include <tonemapping_fragment>
 }
 `;
@@ -2481,8 +2482,11 @@ void main() {
 
 const fluidBoundedVertex = `
 precision mediump float;
+#define GLSLIFY 1
 
 in vec3 position;
+in vec2 uv;
+uniform vec2 px;
 uniform vec2 bounds;
 
 out vec2 vUv;
@@ -2490,14 +2494,15 @@ out vec2 vUv;
 void main() {
   vec3 pos = position;
   vec2 scale = 1.0 - bounds * 2.0;
-  pos.xy *= scale;
-  vUv = vec2(0.5) + pos.xy * 0.5;
+  pos.xy = pos.xy * scale;
+  vUv = vec2(0.5) + (pos.xy) * 0.5;
   gl_Position = vec4(pos, 1.0);
 }
 `;
 
 const fluidBoundsVertex = `
 precision mediump float;
+#define GLSLIFY 1
 
 in vec3 position;
 in vec2 uv;
@@ -2517,6 +2522,7 @@ void main() {
 
 const fluidForceVertex = `
 precision mediump float;
+#define GLSLIFY 1
 
 in vec3 position;
 in vec2 uv;
@@ -2535,6 +2541,7 @@ void main() {
 
 const fluidAdvectionFragment = `
 precision mediump float;
+#define GLSLIFY 1
 
 uniform sampler2D velocity;
 uniform float dt;
@@ -2545,22 +2552,23 @@ out vec4 FragColor;
 
 void main() {
   vec2 ratio = max(fboSize.x, fboSize.y) / fboSize;
-  vec2 spotNew = vUv;
-  vec2 velOld = texture(velocity, vUv).xy;
-  vec2 spotOld = spotNew - velOld * dt * ratio;
-  vec2 velNew1 = texture(velocity, spotOld).xy;
-  vec2 spotNew2 = spotOld + velNew1 * dt * ratio;
-  vec2 error = spotNew2 - spotNew;
-  vec2 spotNew3 = spotNew - error / 2.0;
-  vec2 vel2 = texture(velocity, spotNew3).xy;
-  vec2 spotOld2 = spotNew3 - vel2 * dt * ratio;
-  vec2 newVel2 = texture(velocity, spotOld2).xy;
+  vec2 spot_new = vUv;
+  vec2 vel_old = texture(velocity, vUv).xy;
+  vec2 spot_old = spot_new - vel_old * dt * ratio;
+  vec2 vel_new1 = texture(velocity, spot_old).xy;
+  vec2 spot_new2 = spot_old + vel_new1 * dt * ratio;
+  vec2 error = spot_new2 - spot_new;
+  vec2 spot_new3 = spot_new - error / 2.0;
+  vec2 vel_2 = texture(velocity, spot_new3).xy;
+  vec2 spot_old2 = spot_new3 - vel_2 * dt * ratio;
+  vec2 newVel2 = texture(velocity, spot_old2).xy;
   FragColor = vec4(newVel2, 0.0, 0.0);
 }
 `;
 
 const fluidForceFragment = `
 precision mediump float;
+#define GLSLIFY 1
 
 uniform vec2 force;
 uniform vec2 center;
@@ -2580,6 +2588,7 @@ void main() {
 
 const fluidDivergenceFragment = `
 precision mediump float;
+#define GLSLIFY 1
 
 uniform sampler2D velocity;
 uniform float dt;
@@ -2600,6 +2609,7 @@ void main() {
 
 const fluidPoissonFragment = `
 precision mediump float;
+#define GLSLIFY 1
 
 uniform sampler2D pressure;
 uniform sampler2D divergence;
@@ -2621,6 +2631,7 @@ void main() {
 
 const fluidPressureFragment = `
 precision mediump float;
+#define GLSLIFY 1
 
 uniform sampler2D pressure;
 uniform sampler2D velocity;
@@ -2760,40 +2771,44 @@ void main() {
 const displacementFragment = `
 precision highp float;
 
-#include <tonemapping_pars_fragment>
-
-uniform float uTime;
-uniform float uRatio;
-uniform sampler2D tScene;
-
-float vignout = 0.5;
-float vignin = 0.01;
-float vignfade = 2.0;
-
-in vec2 vUv;
-out vec4 FragColor;
-
 float vignette(vec2 coords, float vignin, float vignout, float vignfade, float fstop) {
   float dist = distance(coords.xy, vec2(0.5));
   dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
   return clamp(dist, 0.0, 1.0);
 }
 
+#include <tonemapping_pars_fragment>
+
+uniform sampler2D tScene;
+uniform float uTime;
+uniform float uRatio;
+
+float vignout = .5; // vignetting outer border
+float vignin = 0.01; // vignetting inner border
+float vignfade = 2.0; // f-stops till vignete fades
+
+in vec2 vUv;
+out vec4 FragColor;
+
 void main() {
   vec2 uvOff = vUv;
+
   uvOff.x -= 0.5;
   uvOff.x *= uRatio;
   uvOff.x += 0.5;
 
   vec2 uvVignette = uvOff;
-  uvOff -= 0.5;
-  uvOff *= 5.0;
-  uvOff += 0.5;
 
-  float strength = 1.0 - abs(sin(distance(uvOff, vec2(0.5)) - 0.5 - uTime));
-  float vignetteF = vignette(uvVignette, vignin, vignout, vignfade, 0.4);
-  FragColor = vec4(vec3(strength), 1.0);
-  FragColor.rgb *= 1.0 - vignetteF;
+  uvOff.xy -= 0.5;
+  uvOff *= 5.;
+  uvOff.xy += 0.5;
+
+  float strength = 1. - abs(sin(distance(uvOff, vec2(0.5)) - 0.5 - uTime)) ;
+
+  float vignetteF = vignette(uvVignette.xy, vignin, vignout, vignfade, .4);
+
+  FragColor = vec4(vec3(strength), 1.);
+  FragColor.rgb *= 1. - vignetteF;
 
   #include <tonemapping_fragment>
 }
@@ -2993,6 +3008,7 @@ function sourceMaterialProbe(material: ShaderMaterial, materialMode: string) {
     depthWrite: material.depthWrite,
     depthTest: material.depthTest,
     transparent: material.transparent,
+    uniformKeys: Object.keys(material.uniforms ?? {}),
   };
 }
 
@@ -5020,6 +5036,7 @@ void main() {
       depthTest: false,
       uniforms: {
         bounds: { value: cellScale },
+        px: { value: cellScale },
         fboSize: { value: fboSize },
         velocity: { value: this.fluidPlaceholder },
         dt: { value: settings.delta },
