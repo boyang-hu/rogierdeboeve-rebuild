@@ -2781,7 +2781,8 @@ export class WebGLBackdrop {
   private floorReflectionClipPlane = new Vector4();
   private floorReflectionQ = new Vector4();
   private floorReflectionBlurMaterial: ShaderMaterial;
-  private floorReflectionBlurScene = new Scene();
+  private floorReflectionScreenCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private floorReflectionScreen: Mesh<BufferGeometry, ShaderMaterial>;
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
   private screenMouseSimulationIndex = 0;
@@ -3022,7 +3023,7 @@ export class WebGLBackdrop {
     this.floorReflectionWriteTarget.texture.minFilter = LinearFilter;
     this.floorReflectionWriteTarget.texture.magFilter = LinearFilter;
     this.floorReflectionBlurMaterial = this.createFloorReflectionBlurMaterial();
-    this.floorReflectionBlurScene.add(makeFullscreenTriangle(this.floorReflectionBlurMaterial));
+    this.floorReflectionScreen = makeFullscreenTriangle(this.floorReflectionBlurMaterial);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
@@ -3504,6 +3505,7 @@ export class WebGLBackdrop {
     this.floorReflectionReadTarget.dispose();
     this.floorReflectionWriteTarget.dispose();
     this.floorReflectionBlurMaterial.dispose();
+    this.floorReflectionScreen.geometry.dispose();
     this.displacementMaterial.dispose();
     this.screenMouseSimulationTargets.forEach((target) => target.dispose());
     this.screenMouseSimulationMaterial.dispose();
@@ -5764,7 +5766,7 @@ export class WebGLBackdrop {
       if (this.debugFloorReflection === "no-blur") {
         this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
         this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
-        this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+        this.renderer.render(this.floorReflectionScreen, this.floorReflectionScreenCamera);
       } else {
         let readTarget = this.floorReflectionReadTarget;
         let writeTarget = this.floorReflectionWriteTarget;
@@ -5778,7 +5780,7 @@ export class WebGLBackdrop {
             iteration % 2 === 0 ? 0 : direction,
           );
           this.renderer.setRenderTarget(writeTarget);
-          this.renderer.render(this.floorReflectionBlurScene, this.backgroundCamera);
+          this.renderer.render(this.floorReflectionScreen, this.floorReflectionScreenCamera);
           const swap = readTarget;
           readTarget = writeTarget;
           writeTarget = swap;
@@ -6462,6 +6464,7 @@ export class WebGLBackdrop {
         blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
         blurMaterialMode: "source-t1-raw-glsl3",
+        blurPassScreenMode: "source-i1-private-screen-camera",
         floorVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
         rawClearMode: "source-autoClear-false-only",
         cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",

@@ -156,6 +156,7 @@ async function runProbe() {
   if (reflectionTargets) {
     if (reflectionTargets.rawClearMode !== "source-autoClear-false-only") reflectionErrors.push("rawClearMode");
     if (reflectionTargets.cameraProjectionCopyOrder !== "source-updateMatrixWorld-before-projection-copy") reflectionErrors.push("cameraProjectionCopyOrder");
+    if (reflectionTargets.blurPassScreenMode !== "source-i1-private-screen-camera") reflectionErrors.push("blurPassScreenMode");
     if (reflectionTargets.sourceCssSized !== true) reflectionErrors.push("sourceCssSized");
   }
   if (reflectionErrors.length) {
@@ -352,6 +353,7 @@ async function runProbe() {
   if (parsed.probe.reflectionState?.floor?.material?.branches?.fog !== false) floorErrors.push("reflectionFogBranch");
   if (parsed.probe.reflectionState?.floor?.material?.branches?.dithering !== false) floorErrors.push("reflectionDitheringBranch");
   if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
+  if (reflectionTargets?.blurPassScreenMode !== "source-i1-private-screen-camera") floorErrors.push("blurPassScreenMode");
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
   if (floorErrors.length) {
     throw new Error(`Floor reflection visibility source-shape mismatch: ${floorErrors.join(", ")}`);
