@@ -13,6 +13,8 @@ import {
 const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-renderer-output-audit");
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
 const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
+const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
+const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
 
 function extractTemplate(bundle, name, terminator) {
   const start = bundle.indexOf(`${name}=\``);
@@ -139,11 +141,13 @@ const sourceMainI1 = extractAround(bundle, "class I1", 200, 9600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 500, 900);
+const sourceP1SetLights = extractAround(bundle, "setLights(){this.ambientLight=new", 240, 1000);
 const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSettings(e=new L(0,0,0),t=new Q(.25,.25),n=10)", 240, 520);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
+const sourceSDInitSpotlight = extractAround(bundle, "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture", 260, 520);
 const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
 const sourceThumbT1 = extractAround(bundle, "class T1 extends Uu", 500, 1000);
@@ -712,6 +716,41 @@ const summary = {
         "J.workScene.setMouseFactor(this.mouseF)",
       ]),
       excerpt: compact(sourceYDAnimateIn.text),
+    },
+    homeSpotlightMap: sourceSDInitSpotlight && {
+      index: sourceSDInitSpotlight.index,
+      checks: checks(sourceSDInitSpotlight.text, [
+        "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture",
+      ]),
+      p1SetLights: sourceP1SetLights && {
+        index: sourceP1SetLights.index,
+        checks: checks(sourceP1SetLights.text, [
+          "this.maxSpotLightIntensity=220",
+          "this.spotLight.position.set(0,0,3.7)",
+          "this.spotLight.angle=Math.PI/4",
+          "this.spotLight.penumbra=.95",
+        ]),
+        excerpt: compact(sourceP1SetLights.text),
+      },
+      sdInitChecks: checks(sourceSDInitSpotlight.text, [
+        "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture",
+        "J.workScene.spotLight.position.set(0,0,3.7)",
+        "J.workScene.spotLight.target.position.set(0,0,-8)",
+        "J.workScene.spotLight.intensity=220",
+      ]),
+      threeR164MapPath: {
+        lightsFragmentBegin: checks(threeLightsFragmentBegin, [
+          "spotLightCoord = vSpotLightCoord[ i ].xyz / vSpotLightCoord[ i ].w",
+          "spotColor = texture2D( spotLightMap[ SPOT_LIGHT_MAP_INDEX ], spotLightCoord.xy )",
+          "directLight.color = inSpotLightMap ? directLight.color * spotColor.rgb : directLight.color",
+        ]),
+        shadowmapVertex: checks(threeShadowmapVertex, [
+          "NUM_SPOT_LIGHT_COORDS > 0",
+          "shadowWorldPosition = worldPosition",
+          "vSpotLightCoord[ i ] = spotLightMatrix[ i ] * shadowWorldPosition",
+        ]),
+      },
+      excerpt: compact(sourceSDInitSpotlight.text),
     },
     p1EnvironmentHierarchy: sourceP1InitEnv && {
       index: sourceP1InitEnv.index,

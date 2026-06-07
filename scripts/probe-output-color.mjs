@@ -160,11 +160,21 @@ async function runProbe() {
   const spotlightErrors = [];
   if (!spotlight) spotlightErrors.push("missing");
   if (spotlight?.spotlight?.mapMode !== "source-thumb-composite-target") spotlightErrors.push("mapMode");
+  if (spotlight?.spotlight?.mapProjectionMode !== "three-r164-spotLightMap-vSpotLightCoord") spotlightErrors.push("mapProjectionMode");
+  if (spotlight?.projectionMatrixMode !== "source-SD-SpotLight-map-through-three-shadow-matrix") spotlightErrors.push("projectionMatrixMode");
+  if (spotlight?.threeChunkMode !== "r164-lights_fragment_begin-multiplies-directLight-by-spotLightMap") spotlightErrors.push("threeChunkMode");
   if (spotlight?.sampleGridMode !== "source-spotlight-map-3x3-active-bounds") spotlightErrors.push("sampleGridMode");
   if (spotlight?.sampleCount !== 9) spotlightErrors.push("sampleCount");
   if (spotlight?.inMapCount !== 9) spotlightErrors.push("inMapCount");
   if (spotlight?.inMapCoverage !== 1) spotlightErrors.push("inMapCoverage");
   if ((spotlight?.mapLumaMean ?? 0) <= 0) spotlightErrors.push("mapLumaMean");
+  const light = spotlight?.spotlight || {};
+  if (Math.abs((light.intensity ?? 0) - 220) > 0.001) spotlightErrors.push("intensity");
+  if (Math.abs((light.angle ?? 0) - Math.PI / 4) > 0.0001) spotlightErrors.push("angle");
+  if (Math.abs((light.penumbra ?? 0) - 0.95) > 0.0001) spotlightErrors.push("penumbra");
+  if (JSON.stringify(light.position) !== JSON.stringify([0, 0, 3.7])) spotlightErrors.push(`position=${JSON.stringify(light.position)}`);
+  if (JSON.stringify(light.target) !== JSON.stringify([0, 0, -8])) spotlightErrors.push(`target=${JSON.stringify(light.target)}`);
+  if (!Array.isArray(light.shadowMatrix) || light.shadowMatrix.length !== 16) spotlightErrors.push("shadowMatrix");
   if (spotlightErrors.length) {
     throw new Error(`Spotlight/thumb projection source-shape mismatch: ${spotlightErrors.join(", ")}`);
   }
