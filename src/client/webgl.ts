@@ -846,7 +846,474 @@ void main() {
 }
 `;
 
+const sourceContrastHelper = `
+vec3 contrast(vec3 color, float value) {
+  return 0.5 + value * (color - 0.5);
+}
+`;
+
+const sourceSimplexNoiseHelper = `
+vec3 mod289(vec3 x) {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec2 mod289(vec2 x) {
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
+
+vec3 permute(vec3 x) {
+  return mod289(((x * 34.0) + 10.0) * x);
+}
+
+float snoise(vec2 v) {
+  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+  vec2 i = floor(v + dot(v, C.yy));
+  vec2 x0 = v - i + dot(i, C.xx);
+  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+  i = mod289(i);
+  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+  vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+  m = m * m;
+  m = m * m;
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 ox = floor(x + 0.5);
+  vec3 a0 = x - ox;
+  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+  vec3 g;
+  g.x = a0.x * x0.x + h.x * x0.y;
+  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+  return 130.0 * dot(m, g);
+}
+`;
+
+const sourceNoiseShaderHelper = `
+float noiseShaderRandom(vec2 n) {
+  return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+}
+
+float noise(vec2 p) {
+  vec2 ip = floor(p);
+  vec2 u = fract(p);
+  u = u * u * (3.0 - 2.0 * u);
+  float res = mix(
+    mix(noiseShaderRandom(ip), noiseShaderRandom(ip + vec2(1.0, 0.0)), u.x),
+    mix(noiseShaderRandom(ip + vec2(0.0, 1.0)), noiseShaderRandom(ip + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
+  return res * res;
+}
+
+const mat2 mtx = mat2(0.80, 0.60, -0.60, 0.80);
+
+float fbm(vec2 p, float time, float speed) {
+  float f = 0.0;
+  f += 0.500000 * noise(p - time * speed);
+  p = mtx * p * 2.02;
+  f += 0.031250 * noise(p);
+  p = mtx * p * 2.01;
+  f += 0.250000 * noise(p);
+  p = mtx * p * 2.03;
+  f += 0.125000 * noise(p);
+  p = mtx * p * 2.01;
+  f += 0.062500 * noise(p - time * (speed * 5.0));
+  p = mtx * p * 2.04;
+  f += 0.015625 * noise(p + time * (speed * 5.0));
+  return f / 0.96875;
+}
+
+float pattern(vec2 p, float time, float speed) {
+  float f1 = fbm(p, time, speed);
+  float f2 = fbm(p + f1, time, speed);
+  return fbm(p + f2, time, speed);
+}
+
+vec4 noiseShader(vec2 uv, float time, float speed) {
+  float shade = pattern(uv, time, speed);
+  return vec4(vec3(shade), shade);
+}
+`;
+
+const sourceBlendHelper = `
+float blendColorDodge(float base, float blend) {
+  return (blend == 1.0) ? blend : min(base / (1.0 - blend), 1.0);
+}
+
+vec3 blendColorDodge(vec3 base, vec3 blend) {
+  return vec3(blendColorDodge(base.r, blend.r), blendColorDodge(base.g, blend.g), blendColorDodge(base.b, blend.b));
+}
+
+vec3 blendColorDodge(vec3 base, vec3 blend, float opacity) {
+  return (blendColorDodge(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendColorBurn(float base, float blend) {
+  return (blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0);
+}
+
+vec3 blendColorBurn(vec3 base, vec3 blend) {
+  return vec3(blendColorBurn(base.r, blend.r), blendColorBurn(base.g, blend.g), blendColorBurn(base.b, blend.b));
+}
+
+vec3 blendColorBurn(vec3 base, vec3 blend, float opacity) {
+  return (blendColorBurn(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendLinearBurn(float base, float blend) {
+  return max(base + blend - 1.0, 0.0);
+}
+
+vec3 blendLinearBurn(vec3 base, vec3 blend) {
+  return max(base + blend - vec3(1.0), vec3(0.0));
+}
+
+vec3 blendLinearBurn(vec3 base, vec3 blend, float opacity) {
+  return (blendLinearBurn(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendLinearDodge(float base, float blend) {
+  return min(base + blend, 1.0);
+}
+
+vec3 blendLinearDodge(vec3 base, vec3 blend) {
+  return min(base + blend, vec3(1.0));
+}
+
+vec3 blendLinearDodge(vec3 base, vec3 blend, float opacity) {
+  return (blendLinearDodge(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendDarken(float base, float blend) {
+  return min(blend, base);
+}
+
+vec3 blendDarken(vec3 base, vec3 blend) {
+  return vec3(blendDarken(base.r, blend.r), blendDarken(base.g, blend.g), blendDarken(base.b, blend.b));
+}
+
+vec3 blendDarken(vec3 base, vec3 blend, float opacity) {
+  return (blendDarken(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendLighten(float base, float blend) {
+  return max(blend, base);
+}
+
+vec3 blendLighten(vec3 base, vec3 blend) {
+  return vec3(blendLighten(base.r, blend.r), blendLighten(base.g, blend.g), blendLighten(base.b, blend.b));
+}
+
+vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
+  return (blendLighten(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendOverlay(float base, float blend) {
+  return base < 0.5 ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend));
+}
+
+vec3 blendOverlay(vec3 base, vec3 blend) {
+  return vec3(blendOverlay(base.r, blend.r), blendOverlay(base.g, blend.g), blendOverlay(base.b, blend.b));
+}
+
+vec3 blendOverlay(vec3 base, vec3 blend, float opacity) {
+  return (blendOverlay(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendReflect(float base, float blend) {
+  return (blend == 1.0) ? blend : min(base * base / (1.0 - blend), 1.0);
+}
+
+vec3 blendReflect(vec3 base, vec3 blend) {
+  return vec3(blendReflect(base.r, blend.r), blendReflect(base.g, blend.g), blendReflect(base.b, blend.b));
+}
+
+vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
+  return (blendReflect(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendVividLight(float base, float blend) {
+  return (blend < 0.5) ? blendColorBurn(base, (2.0 * blend)) : blendColorDodge(base, (2.0 * (blend - 0.5)));
+}
+
+vec3 blendVividLight(vec3 base, vec3 blend) {
+  return vec3(blendVividLight(base.r, blend.r), blendVividLight(base.g, blend.g), blendVividLight(base.b, blend.b));
+}
+
+vec3 blendVividLight(vec3 base, vec3 blend, float opacity) {
+  return (blendVividLight(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendHardMix(float base, float blend) {
+  return (blendVividLight(base, blend) < 0.5) ? 0.0 : 1.0;
+}
+
+vec3 blendHardMix(vec3 base, vec3 blend) {
+  return vec3(blendHardMix(base.r, blend.r), blendHardMix(base.g, blend.g), blendHardMix(base.b, blend.b));
+}
+
+vec3 blendHardMix(vec3 base, vec3 blend, float opacity) {
+  return (blendHardMix(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendLinearLight(float base, float blend) {
+  return blend < 0.5 ? blendLinearBurn(base, (2.0 * blend)) : blendLinearDodge(base, (2.0 * (blend - 0.5)));
+}
+
+vec3 blendLinearLight(vec3 base, vec3 blend) {
+  return vec3(blendLinearLight(base.r, blend.r), blendLinearLight(base.g, blend.g), blendLinearLight(base.b, blend.b));
+}
+
+vec3 blendLinearLight(vec3 base, vec3 blend, float opacity) {
+  return (blendLinearLight(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendPinLight(float base, float blend) {
+  return (blend < 0.5) ? blendDarken(base, (2.0 * blend)) : blendLighten(base, (2.0 * (blend - 0.5)));
+}
+
+vec3 blendPinLight(vec3 base, vec3 blend) {
+  return vec3(blendPinLight(base.r, blend.r), blendPinLight(base.g, blend.g), blendPinLight(base.b, blend.b));
+}
+
+vec3 blendPinLight(vec3 base, vec3 blend, float opacity) {
+  return (blendPinLight(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendGlow(vec3 base, vec3 blend) {
+  return blendReflect(blend, base);
+}
+
+vec3 blendGlow(vec3 base, vec3 blend, float opacity) {
+  return (blendGlow(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendHardLight(vec3 base, vec3 blend) {
+  return blendOverlay(blend, base);
+}
+
+vec3 blendHardLight(vec3 base, vec3 blend, float opacity) {
+  return (blendHardLight(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendPhoenix(vec3 base, vec3 blend) {
+  return min(base, blend) - max(base, blend) + vec3(1.0);
+}
+
+vec3 blendPhoenix(vec3 base, vec3 blend, float opacity) {
+  return (blendPhoenix(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendNormal(vec3 base, vec3 blend) {
+  return blend;
+}
+
+vec3 blendNormal(vec3 base, vec3 blend, float opacity) {
+  return (blendNormal(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendNegation(vec3 base, vec3 blend) {
+  return vec3(1.0) - abs(vec3(1.0) - base - blend);
+}
+
+vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
+  return (blendNegation(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendMultiply(vec3 base, vec3 blend) {
+  return base * blend;
+}
+
+vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
+  return (blendMultiply(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendAverage(vec3 base, vec3 blend) {
+  return (base + blend) / 2.0;
+}
+
+vec3 blendAverage(vec3 base, vec3 blend, float opacity) {
+  return (blendAverage(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendScreen(float base, float blend) {
+  return 1.0 - ((1.0 - base) * (1.0 - blend));
+}
+
+vec3 blendScreen(vec3 base, vec3 blend) {
+  return vec3(blendScreen(base.r, blend.r), blendScreen(base.g, blend.g), blendScreen(base.b, blend.b));
+}
+
+vec3 blendScreen(vec3 base, vec3 blend, float opacity) {
+  return (blendScreen(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendSoftLight(float base, float blend) {
+  return (blend < 0.5)
+    ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend))
+    : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
+}
+
+vec3 blendSoftLight(vec3 base, vec3 blend) {
+  return vec3(blendSoftLight(base.r, blend.r), blendSoftLight(base.g, blend.g), blendSoftLight(base.b, blend.b));
+}
+
+vec3 blendSoftLight(vec3 base, vec3 blend, float opacity) {
+  return (blendSoftLight(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendSubtract(float base, float blend) {
+  return max(base + blend - 1.0, 0.0);
+}
+
+vec3 blendSubtract(vec3 base, vec3 blend) {
+  return max(base + blend - vec3(1.0), vec3(0.0));
+}
+
+vec3 blendSubtract(vec3 base, vec3 blend, float opacity) {
+  return (blendSubtract(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendExclusion(vec3 base, vec3 blend) {
+  return base + blend - 2.0 * base * blend;
+}
+
+vec3 blendExclusion(vec3 base, vec3 blend, float opacity) {
+  return (blendExclusion(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendDifference(vec3 base, vec3 blend) {
+  return abs(base - blend);
+}
+
+vec3 blendDifference(vec3 base, vec3 blend, float opacity) {
+  return (blendDifference(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendAdd(float base, float blend) {
+  return min(base + blend, 1.0);
+}
+
+vec3 blendAdd(vec3 base, vec3 blend) {
+  return min(base + blend, vec3(1.0));
+}
+
+vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
+  return (blendAdd(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
+  if (mode == 1) {
+    return blendAdd(base, blend, opacity);
+  } else if (mode == 2) {
+    return blendAverage(base, blend, opacity);
+  } else if (mode == 3) {
+    return blendColorBurn(base, blend, opacity);
+  } else if (mode == 4) {
+    return blendColorDodge(base, blend, opacity);
+  } else if (mode == 5) {
+    return blendDarken(base, blend, opacity);
+  } else if (mode == 6) {
+    return blendDifference(base, blend, opacity);
+  } else if (mode == 7) {
+    return blendExclusion(base, blend, opacity);
+  } else if (mode == 8) {
+    return blendGlow(base, blend, opacity);
+  } else if (mode == 9) {
+    return blendHardLight(base, blend, opacity);
+  } else if (mode == 10) {
+    return blendHardMix(base, blend, opacity);
+  } else if (mode == 11) {
+    return blendLighten(base, blend, opacity);
+  } else if (mode == 12) {
+    return blendLinearBurn(base, blend, opacity);
+  } else if (mode == 13) {
+    return blendLinearDodge(base, blend, opacity);
+  } else if (mode == 14) {
+    return blendLinearLight(base, blend, opacity);
+  } else if (mode == 15) {
+    return blendMultiply(base, blend, opacity);
+  } else if (mode == 16) {
+    return blendNegation(base, blend, opacity);
+  } else if (mode == 17) {
+    return blendNormal(base, blend, opacity);
+  } else if (mode == 18) {
+    return blendOverlay(base, blend, opacity);
+  } else if (mode == 19) {
+    return blendPhoenix(base, blend, opacity);
+  } else if (mode == 20) {
+    return blendPinLight(base, blend, opacity);
+  } else if (mode == 21) {
+    return blendReflect(base, blend, opacity);
+  } else if (mode == 22) {
+    return blendScreen(base, blend, opacity);
+  } else if (mode == 23) {
+    return blendSoftLight(base, blend, opacity);
+  } else if (mode == 24) {
+    return blendSubtract(base, blend, opacity);
+  } else if (mode == 25) {
+    return blendVividLight(base, blend, opacity);
+  }
+  return base;
+}
+`;
+
+const sourceSkyBlendHelper = `
+float blendColorBurn(float base, float blend) {
+  return (blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0);
+}
+
+vec3 blendColorBurn(vec3 base, vec3 blend) {
+  return vec3(blendColorBurn(base.r, blend.r), blendColorBurn(base.g, blend.g), blendColorBurn(base.b, blend.b));
+}
+
+vec3 blendColorBurn(vec3 base, vec3 blend, float opacity) {
+  return (blendColorBurn(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+float blendReflect(float base, float blend) {
+  return (blend == 1.0) ? blend : min(base * base / (1.0 - blend), 1.0);
+}
+
+vec3 blendReflect(vec3 base, vec3 blend) {
+  return vec3(blendReflect(base.r, blend.r), blendReflect(base.g, blend.g), blendReflect(base.b, blend.b));
+}
+
+vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
+  return (blendReflect(base, blend) * opacity + base * (1.0 - opacity));
+}
+
+vec3 blendNegation(vec3 base, vec3 blend) {
+  return vec3(1.0) - abs(vec3(1.0) - base - blend);
+}
+
+vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
+  return (blendNegation(base, blend) * opacity + base * (1.0 - opacity));
+}
+`;
+
+const sourceOilHelper = `
+vec4 oil(vec2 uv, float time, float strength) {
+  float t = time;
+  vec3 col = vec3(0.0);
+  vec2 pos = uv;
+  float noisePos = snoise(uv * 1.15) * 0.005;
+  for (float k = 1.0; k < 5.0; k += 1.0) {
+    pos.x += strength * sin(2.0 * t + k * 1.5 * pos.y + noisePos * 10.0);
+    pos.y += strength * cos(2.0 * t + k * 1.5 * pos.x - noisePos);
+  }
+  col += clamp(-0.0 + 0.5 * cos(t * 0.5 + pos.xyx * 3.0).xxx, -0.1, 0.99);
+  return vec4(col, 1.0);
+}
+`;
+
 const environmentFragmentShader = `
+${sourceSimplexNoiseHelper}
+${sourceNoiseShaderHelper}
+${sourceBlendHelper}
+${sourceOilHelper}
+
 uniform float uDarken;
 uniform vec3 uDarkenColor;
 uniform sampler2D tSky;
@@ -939,37 +1406,6 @@ varying vec3 vViewPosition;
 // #include <metalnessmap_pars_fragment>
 // #include <logdepthbuf_pars_fragment>
 // #include <clipping_planes_pars_fragment>
-
-float blendColorDodge(float base, float blend) {
-  return blend == 1.0 ? blend : min(base / (1.0 - blend), 1.0);
-}
-
-vec3 blendColorDodge(vec3 base, vec3 blend) {
-  return vec3(blendColorDodge(base.r, blend.r), blendColorDodge(base.g, blend.g), blendColorDodge(base.b, blend.b));
-}
-
-vec3 blendColorDodge(vec3 base, vec3 blend, float opacity) {
-  vec3 mixed = vec3(
-    blendColorDodge(base.r, blend.r),
-    blendColorDodge(base.g, blend.g),
-    blendColorDodge(base.b, blend.b)
-  );
-  return mix(base, mixed, opacity);
-}
-
-vec3 blendNegation(vec3 base, vec3 blend) {
-  return vec3(1.0) - abs(vec3(1.0) - base - blend);
-}
-
-vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
-  return blendNegation(base, blend) * opacity + base * (1.0 - opacity);
-}
-
-vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
-  if (mode == 4) return blendColorDodge(base, blend, opacity);
-  if (mode == 16) return blendNegation(base, blend, opacity);
-  return base;
-}
 
 float smoothMask(float coord, float center, float spread) {
   return (1.0 - smoothstep(coord, center, center - spread)) + (1.0 - smoothstep(coord, center, center + spread));
@@ -2268,6 +2704,12 @@ void main() {
 const skyCompositeFragment = `
 precision highp float;
 
+${sourceContrastHelper}
+${sourceSimplexNoiseHelper}
+${sourceNoiseShaderHelper}
+${sourceSkyBlendHelper}
+${sourceOilHelper}
+
 #include <tonemapping_pars_fragment>
 
 uniform sampler2D tScene;
@@ -2283,66 +2725,6 @@ uniform float uShaderMix;
 
 in vec2 vUv;
 out vec4 FragColor;
-
-float noiseShaderRandom(vec2 n) {
-  return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-}
-
-float noise(vec2 p) {
-  vec2 ip = floor(p);
-  vec2 u = fract(p);
-  u = u * u * (3.0 - 2.0 * u);
-  float res = mix(
-    mix(noiseShaderRandom(ip), noiseShaderRandom(ip + vec2(1.0, 0.0)), u.x),
-    mix(noiseShaderRandom(ip + vec2(0.0, 1.0)), noiseShaderRandom(ip + vec2(1.0, 1.0)), u.x),
-    u.y
-  );
-  return res * res;
-}
-
-const mat2 mtx = mat2(0.80, 0.60, -0.60, 0.80);
-
-float fbm(vec2 p, float time, float speed) {
-  float f = 0.0;
-
-  f += 0.500000 * noise(p - time * speed);
-  p = mtx * p * 2.02;
-  f += 0.031250 * noise(p);
-  p = mtx * p * 2.01;
-  f += 0.250000 * noise(p);
-  p = mtx * p * 2.03;
-  f += 0.125000 * noise(p);
-  p = mtx * p * 2.01;
-  f += 0.062500 * noise(p - time * (speed * 5.0));
-  p = mtx * p * 2.04;
-  f += 0.015625 * noise(p + time * (speed * 5.0));
-
-  return f / 0.96875;
-}
-
-float pattern(vec2 p, float time, float speed) {
-  float f1 = fbm(p, time, speed);
-  float f2 = fbm(p + f1, time, speed);
-  return fbm(p + f2, time, speed);
-}
-
-vec4 noiseShader(vec2 uv, float time, float speed) {
-  float shade = pattern(uv, time, speed);
-  return vec4(vec3(shade), shade);
-}
-
-vec3 contrast(vec3 color, float amount) {
-  return (color - 0.5) * amount + 0.5;
-}
-
-vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
-  vec3 mixed = vec3(
-    blend.r == 1.0 ? blend.r : min(base.r * base.r / (1.0 - blend.r), 1.0),
-    blend.g == 1.0 ? blend.g : min(base.g * base.g / (1.0 - blend.g), 1.0),
-    blend.b == 1.0 ? blend.b : min(base.b * base.b / (1.0 - blend.b), 1.0)
-  );
-  return mix(base, mixed, opacity);
-}
 
 void main() {
   vec2 uv = vUv;

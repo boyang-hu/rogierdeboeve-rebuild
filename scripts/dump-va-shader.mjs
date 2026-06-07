@@ -841,6 +841,9 @@ function analyzeEnvironmentCore(sourceShader, rebuildShader) {
     indirectDiffuseOnly: ["vec3totalDiffuse=reflectedLight.indirectDiffuse"],
     inertBlack: ["vec3black=vec3(0.095,0.095,0.095)"],
     darkenColorDodgeTail: ["gl_FragColor.rgb=blend(4,gl_FragColor.rgb,uDarkenColor,uDarken)"],
+    sourceFullBlendDispatcher: ["if(mode==25){returnblendVividLight(base,blend,opacity);}"],
+    sourceOilHelperSurface: ["vec4oil(vec2uv,floattime,floatstrength)"],
+    sourceSimplexNoiseSurface: ["floatsnoise(vec2v)"],
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
     name,
@@ -863,6 +866,9 @@ function analyzeSkyCompositeCore(sourceShader, rebuildShader) {
     contrastCall: ["diffuseColor.rgb=contrast(diffuseColor.rgb,2.)", "diffuseColor.rgb=contrast(diffuseColor.rgb,2.0)"],
     multiplyStep: ["diffuseColor.rgb=diffuseColor.rgb*2.", "diffuseColor.rgb=diffuseColor.rgb*2.0"],
     sourceOutput: ["FragColor=vec4(.9-diffuseColor.rgb,1.)", "FragColor=vec4(0.9-diffuseColor.rgb,1.0)"],
+    sourceSkyBlendSurface: ["vec3blendColorBurn(vec3base,vec3blend,floatopacity)", "vec3blendNegation(vec3base,vec3blend,floatopacity)", "vec3blendReflect(vec3base,vec3blend,floatopacity)"],
+    sourceOilHelperSurface: ["vec4oil(vec2uv,floattime,floatstrength)"],
+    sourceSimplexNoiseSurface: ["floatsnoise(vec2v)"],
     noRebuildProceduralName: ["vec4procedural="],
     noRebuildContrastColorName: ["contrastColor("],
   };
