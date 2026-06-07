@@ -189,13 +189,13 @@ async function runProbe() {
   const mainOwnership = parsed.probe.settings?.main?.renderManagerOwnership;
   const ownershipErrors = [];
   if (workOwnership?.source !== "Lu-single-screen-mesh-material-swap") ownershipErrors.push("workSourceOwnership");
-  if (workOwnership?.bridge !== "rebuild-dedicated-pass-scenes") ownershipErrors.push("workBridgeOwnership");
-  if (workOwnership?.compositeScreenMode !== "rebuild-dedicated-composite-scene") ownershipErrors.push("workCompositeScreenMode");
-  if (workOwnership?.productionOutputChanged !== false) ownershipErrors.push("workProductionOutputChanged");
+  if (workOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("workBridgeOwnership");
+  if (workOwnership?.compositeScreenMode !== "source-work-post-screen") ownershipErrors.push("workCompositeScreenMode");
+  if (workOwnership?.productionOutputChanged !== true) ownershipErrors.push("workProductionOutputChanged");
   if (mainOwnership?.source !== "I1-single-screen-mesh-material-swap") ownershipErrors.push("mainSourceOwnership");
-  if (mainOwnership?.bridge !== "rebuild-dedicated-pass-scenes") ownershipErrors.push("mainBridgeOwnership");
-  if (mainOwnership?.finalScreenMode !== "rebuild-dedicated-main-composite-scene") ownershipErrors.push("mainFinalScreenMode");
-  if (mainOwnership?.productionOutputChanged !== false) ownershipErrors.push("mainProductionOutputChanged");
+  if (mainOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("mainBridgeOwnership");
+  if (mainOwnership?.finalScreenMode !== "source-main-post-screen") ownershipErrors.push("mainFinalScreenMode");
+  if (mainOwnership?.productionOutputChanged !== true) ownershipErrors.push("mainProductionOutputChanged");
   if (ownershipErrors.length) {
     throw new Error(`Render-manager ownership attribution mismatch: ${ownershipErrors.join(", ")}`);
   }

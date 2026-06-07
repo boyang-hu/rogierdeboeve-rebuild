@@ -2464,7 +2464,7 @@ function makeFluidRenderTarget() {
   return target;
 }
 
-function makeFullscreenTriangle(material: ShaderMaterial) {
+function makeFullscreenTriangle(material: Material) {
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
   geometry.setAttribute("uv", new Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
@@ -2473,7 +2473,16 @@ function makeFullscreenTriangle(material: ShaderMaterial) {
   return mesh;
 }
 
-function makeSourceFullscreenTriangle(material: ShaderMaterial) {
+function makeSourcePassScreen() {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
+  const mesh = new Mesh(geometry);
+  mesh.frustumCulled = false;
+  return mesh as Mesh<BufferGeometry, Material>;
+}
+
+function makeSourceFullscreenTriangle(material: Material) {
   const mesh = makeFullscreenTriangle(material);
   mesh.matrixAutoUpdate = false;
   mesh.updateMatrix();
@@ -2705,6 +2714,8 @@ export class WebGLBackdrop {
   private mediaScene = new Scene();
   private screenMouseSimulationScene = new Scene();
   private backgroundCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private workPostScreen = makeSourcePassScreen();
+  private mainPostScreen = makeSourcePassScreen();
   private homeCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private characterCamera = new PerspectiveCamera(30, 1, 0.1, 100);
@@ -5992,10 +6003,10 @@ export class WebGLBackdrop {
           },
           renderManagerOwnership: {
             source: "Lu-single-screen-mesh-material-swap",
-            bridge: "rebuild-dedicated-pass-scenes",
-            compositeScreenMode: "rebuild-dedicated-composite-scene",
+            bridge: "source-single-screen-material-swap",
+            compositeScreenMode: "source-work-post-screen",
             sourceCompositeRender: "o.setRenderTarget(h),o.render(this.screen,this.screenCamera)",
-            productionOutputChanged: false,
+            productionOutputChanged: true,
           },
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),
@@ -6033,10 +6044,10 @@ export class WebGLBackdrop {
           },
           renderManagerOwnership: {
             source: "I1-single-screen-mesh-material-swap",
-            bridge: "rebuild-dedicated-pass-scenes",
-            finalScreenMode: "rebuild-dedicated-main-composite-scene",
+            bridge: "source-single-screen-material-swap",
+            finalScreenMode: "source-main-post-screen",
             sourceFinalRender: "settings.renderToScreen -> setRenderTarget(null), render(this.screen,this.screenCamera)",
-            productionOutputChanged: false,
+            productionOutputChanged: true,
           },
         },
         updateOrder: {
@@ -6736,37 +6747,39 @@ export class WebGLBackdrop {
     horizontalTargets: WebGLRenderTarget[],
     verticalTargets: WebGLRenderTarget[],
     blurMaterials: ShaderMaterial[],
-    blurScenes: Scene[],
-    compositeScene: Scene,
+    screen: Mesh<BufferGeometry, Material>,
+    compositeMaterial: ShaderMaterial,
     brightTarget?: WebGLRenderTarget,
   ) {
     let bloomSource = brightTarget ?? sourceTarget;
     horizontalTargets.forEach((horizontalTarget, index) => {
       const verticalTarget = verticalTargets[index];
       const blurMaterial = blurMaterials[index] ?? blurMaterials[blurMaterials.length - 1];
-      const blurScene = blurScenes[index] ?? blurScenes[blurScenes.length - 1];
       blurMaterial.uniforms.tMap.value = bloomSource.texture;
       blurMaterial.uniforms.uResolution.value.set(horizontalTarget.width, horizontalTarget.height);
       blurMaterial.uniforms.uDirection.value.set(1, 0);
+      screen.material = blurMaterial;
       this.renderer.setRenderTarget(horizontalTarget);
-      this.renderer.render(blurScene, this.backgroundCamera);
+      this.renderer.render(screen, this.backgroundCamera);
       blurMaterial.uniforms.tMap.value = horizontalTarget.texture;
       blurMaterial.uniforms.uResolution.value.set(verticalTarget.width, verticalTarget.height);
       blurMaterial.uniforms.uDirection.value.set(0, 1);
       this.renderer.setRenderTarget(verticalTarget);
-      this.renderer.render(blurScene, this.backgroundCamera);
+      this.renderer.render(screen, this.backgroundCamera);
       bloomSource = verticalTarget;
     });
+    screen.material = compositeMaterial;
     this.renderer.setRenderTarget(horizontalTargets[0]);
-    this.renderer.render(compositeScene, this.backgroundCamera);
+    this.renderer.render(screen, this.backgroundCamera);
   }
 
   private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
     let brightTarget: WebGLRenderTarget | undefined;
     if (this.renderSettings.luminosity.enabled) {
       this.luminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
+      this.workPostScreen.material = this.luminosityMaterial;
       this.renderer.setRenderTarget(this.bloomBrightTarget);
-      this.renderer.render(this.luminosityScene, this.backgroundCamera);
+      this.renderer.render(this.workPostScreen, this.backgroundCamera);
       brightTarget = this.bloomBrightTarget;
     }
     this.renderBloomChain(
@@ -6774,8 +6787,8 @@ export class WebGLBackdrop {
       this.bloomHorizontalTargets,
       this.bloomVerticalTargets,
       this.bloomBlurMaterials,
-      this.bloomBlurScenes,
-      this.bloomCompositeScene,
+      this.workPostScreen,
+      this.bloomCompositeMaterial,
       brightTarget,
     );
   }
@@ -6784,8 +6797,9 @@ export class WebGLBackdrop {
     let brightTarget: WebGLRenderTarget | undefined;
     if (this.sourceMainRenderSettings.luminosity.enabled) {
       this.luminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
+      this.mainPostScreen.material = this.luminosityMaterial;
       this.renderer.setRenderTarget(this.mainBloomBrightTarget);
-      this.renderer.render(this.luminosityScene, this.backgroundCamera);
+      this.renderer.render(this.mainPostScreen, this.backgroundCamera);
       brightTarget = this.mainBloomBrightTarget;
     }
     this.renderBloomChain(
@@ -6793,8 +6807,8 @@ export class WebGLBackdrop {
       this.mainBloomHorizontalTargets,
       this.mainBloomVerticalTargets,
       this.mainBloomBlurMaterials,
-      this.mainBloomBlurScenes,
-      this.mainBloomCompositeScene,
+      this.mainPostScreen,
+      this.mainBloomCompositeMaterial,
       brightTarget,
     );
   }
@@ -6802,8 +6816,9 @@ export class WebGLBackdrop {
   private renderHomeCompositePass() {
     const settings = this.sourceMainRenderSettings;
     if (!settings.blur.enabled && !settings.bloom.enabled && !settings.fxaa.enabled) {
+      this.mainPostScreen.material = this.preCompositeMaterial;
       this.renderer.setRenderTarget(null);
-      this.renderer.render(this.preCompositeScene, this.backgroundCamera);
+      this.renderer.render(this.mainPostScreen, this.backgroundCamera);
       return;
     }
     this.mainCompositeMaterial.uniforms.tScene.value = settings.blur.enabled ? this.blurTargetB.texture : this.compositeTarget.texture;
@@ -6814,16 +6829,18 @@ export class WebGLBackdrop {
     this.mainCompositeMaterial.uniforms.boolFluid.value = settings.fluid.enabled;
     this.mainCompositeMaterial.uniforms.boolLuminosity.value = settings.luminosity.enabled;
     this.mainCompositeMaterial.uniforms.boolFxaa.value = settings.fxaa.enabled;
+    this.mainPostScreen.material = this.mainCompositeMaterial;
     if (settings.fxaa.enabled) {
       this.renderer.setRenderTarget(this.fxaaTarget);
-      this.renderer.render(this.mainCompositeScene, this.backgroundCamera);
+      this.renderer.render(this.mainPostScreen, this.backgroundCamera);
       this.fxaaMaterial.uniforms.tMap.value = this.fxaaTarget.texture;
+      this.mainPostScreen.material = this.fxaaMaterial;
       this.renderer.setRenderTarget(null);
-      this.renderer.render(this.fxaaScene, this.backgroundCamera);
+      this.renderer.render(this.mainPostScreen, this.backgroundCamera);
       return;
     }
     this.renderer.setRenderTarget(null);
-    this.renderer.render(this.mainCompositeScene, this.backgroundCamera);
+    this.renderer.render(this.mainPostScreen, this.backgroundCamera);
   }
 
   private tick = () => {
@@ -6876,8 +6893,9 @@ export class WebGLBackdrop {
           this.compositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
           this.compositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
           this.compositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
+          this.workPostScreen.material = this.compositeMaterial;
           this.renderer.setRenderTarget(this.workCompositeTarget);
-          this.renderer.render(this.compositeScene, this.backgroundCamera);
+          this.renderer.render(this.workPostScreen, this.backgroundCamera);
         }
       } finally {
         this.floorPlane.visible = previousFloorVisible;
@@ -6900,8 +6918,9 @@ export class WebGLBackdrop {
       this.renderMainBloomPass(preCompositeWorkTarget);
     }
     this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
+    this.mainPostScreen.material = this.preCompositeMaterial;
     this.renderer.setRenderTarget(this.compositeTarget);
-    this.renderer.render(this.preCompositeScene, this.backgroundCamera);
+    this.renderer.render(this.mainPostScreen, this.backgroundCamera);
     const sceneSourceTarget = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB : this.compositeTarget;
     if (this.sourceMainRenderSettings.blur.enabled) {
       this.renderHomeBlurPass();

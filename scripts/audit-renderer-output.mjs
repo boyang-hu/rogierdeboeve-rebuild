@@ -345,10 +345,11 @@ const summary = {
           "this.screen.material=this.compositeMaterial",
         ].every((needle) => sourceLu.text.includes(needle)),
         sourceCompositeRender: sourceLu.text.includes("o.setRenderTarget(h),o.render(this.screen,this.screenCamera)"),
-        rebuildDedicatedPassScenes: [
-          "this.compositeScene.add(makeFullscreenTriangle(this.compositeMaterial))",
-          "this.bloomCompositeScene.add(makeFullscreenTriangle(this.bloomCompositeMaterial))",
-          "this.renderer.render(this.compositeScene, this.backgroundCamera)",
+        rebuildSourceScreenSwap: [
+          "private workPostScreen = makeSourcePassScreen()",
+          "this.workPostScreen.material = this.luminosityMaterial",
+          "this.workPostScreen.material = this.compositeMaterial",
+          "this.renderer.render(this.workPostScreen, this.backgroundCamera)",
         ].every((needle) => rebuildWebgl.includes(needle)),
       },
       excerpt: compact(sourceLu.text),
@@ -622,10 +623,11 @@ const summary = {
           "this.screen.material=this.compositeMaterial",
         ].every((needle) => sourceMainI1.text.includes(needle)),
         sourceRenderToScreen: sourceMainI1.text.includes("r.setRenderTarget(null),r.render(this.screen,this.screenCamera)"),
-        rebuildDedicatedPassScenes: [
-          "this.preCompositeScene.add(makeFullscreenTriangle(this.preCompositeMaterial))",
-          "this.mainCompositeScene.add(makeFullscreenTriangle(this.mainCompositeMaterial))",
-          "this.renderer.render(this.mainCompositeScene, this.backgroundCamera)",
+        rebuildSourceScreenSwap: [
+          "private mainPostScreen = makeSourcePassScreen()",
+          "this.mainPostScreen.material = this.preCompositeMaterial",
+          "this.mainPostScreen.material = this.mainCompositeMaterial",
+          "this.renderer.render(this.mainPostScreen, this.backgroundCamera)",
         ].every((needle) => rebuildWebgl.includes(needle)),
       },
       excerpt: compact(sourceMainI1.text),
