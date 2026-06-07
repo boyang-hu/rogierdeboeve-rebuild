@@ -558,6 +558,50 @@ function analyzeEnvironmentCore(sourceShader, rebuildShader) {
   ]));
 }
 
+function analyzeFloorCore(sourceShader, rebuildShader) {
+  if (!sourceShader) return null;
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const checks = {
+    colorMapBranch: ["#ifdefUSE_MAP"],
+    normalMapBranch: ["#ifdefUSE_NORMALMAP"],
+    normalDistortion: ["normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.)", "normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.0)"],
+    projectedRawReflect: ["textureProj(tReflect,vCoord)"],
+    normalDistortedReflect: ["coord.xy+coord.z*normal.xz*0.05"],
+    fresnelReflectance: ["pow((1.-theta),5.)", "pow((1.0-theta),5.0)"],
+    floorMix: ["color.rgb*((1.-min(1.,uMirror))+reflectColor.rgb*uFloorMixStrength)", "color.rgb*((1.0-min(1.0,uMirror))+reflectColor.rgb*uFloorMixStrength)"],
+    fogBranch: ["#ifdefUSE_FOG"],
+    fragColor: ["FragColor.rgb=", "FragColor=vec4"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
+    name,
+    {
+      source: candidates.some((candidate) => source.includes(candidate)),
+      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+    },
+  ]));
+}
+
+function analyzeFloorBlurCore(sourceShader, rebuildShader) {
+  if (!sourceShader) return null;
+  const source = normalizeShaderForCoreChecks(sourceShader);
+  const rebuild = normalizeShaderForCoreChecks(rebuildShader);
+  const checks = {
+    glsl3Input: ["invec2vUv"],
+    mappedSampleName: ["vec4tMapped=texture(tMap,vUv)"],
+    distanceMask: ["smootherstep(1.0,0.0,vUv.y)*uDirection"],
+    blurCall: ["blur(tMap,vUv,uResolution,distance)"],
+    mixAmount: ["FragColor=mix(tMapped,blurred,1.25)"],
+  };
+  return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
+    name,
+    {
+      source: candidates.some((candidate) => source.includes(candidate)),
+      rebuild: candidates.some((candidate) => rebuild.includes(candidate)),
+    },
+  ]));
+}
+
 mkdirSync(outDir, { recursive: true });
 
 const bundle = readFileSync(bundlePath, "utf8");
@@ -573,10 +617,14 @@ const sourceFragmentShaders = {
   "j1-media-composite": tryExtractSourceShader(bundle, "G1"),
   "UD-project-media": tryExtractSourceShader(bundle, "LD"),
   "u1-environment": tryExtractSourceShader(bundle, "l1"),
+  "o1-floor-material": tryExtractSourceShader(bundle, "s1"),
+  "t1-floor-reflection-blur": tryExtractSourceShader(bundle, "QA"),
 };
 const sourceVertexShaders = {
   "VA-work": sourceH,
   "M1-thumb-plane": tryExtractSourceShader(bundle, "b1"),
+  "o1-floor-material": tryExtractSourceShader(bundle, "r1"),
+  "t1-floor-reflection-blur": tryExtractSourceShader(bundle, "e1"),
 };
 writeFileSync(path.join(outDir, "source-HA.glsl"), sourceH);
 writeFileSync(path.join(outDir, "source-zA.glsl"), sourceZ);
@@ -648,6 +696,8 @@ try {
       compositeCoreChecks: analyzeCompositeCore(sourceFragment, entry.fragmentShader),
       vaFragmentCoreChecks: entry.name === "VA-work" ? analyzeVaFragmentCore(sourceFragment, entry.fragmentShader) : null,
       environmentCoreChecks: entry.name === "u1-environment" ? analyzeEnvironmentCore(sourceFragment, entry.fragmentShader) : null,
+      floorCoreChecks: entry.name === "o1-floor-material" ? analyzeFloorCore(sourceFragment, entry.fragmentShader) : null,
+      floorBlurCoreChecks: entry.name === "t1-floor-reflection-blur" ? analyzeFloorBlurCore(sourceFragment, entry.fragmentShader) : null,
       commentedIncludes: {
         fragmentSource: sourceFragment ? collectCommentedIncludes(sourceFragment) : [],
         fragmentRebuild: collectCommentedIncludes(entry.fragmentShader),

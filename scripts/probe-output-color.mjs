@@ -196,6 +196,10 @@ async function runProbe() {
   const floorUniforms = parsed.probe.uniforms?.floor;
   const floorErrors = [];
   if (floorUniforms?.reflectionVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("reflectionVisibilityMode");
+  if (floorUniforms?.materialMode !== "source-o1-raw-glsl3") floorErrors.push("materialMode");
+  if (floorUniforms?.reflectionBlurMode !== "source-t1-raw-glsl3") floorErrors.push("reflectionBlurMode");
+  if (parsed.probe.reflectionState?.floor?.material?.mode !== "source-o1-raw-glsl3") floorErrors.push("reflectionFloorMaterialMode");
+  if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
   if (floorErrors.length) {
     throw new Error(`Floor reflection visibility source-shape mismatch: ${floorErrors.join(", ")}`);

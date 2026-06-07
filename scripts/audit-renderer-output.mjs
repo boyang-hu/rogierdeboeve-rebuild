@@ -129,6 +129,8 @@ const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 400, 1700);
 const sourceA1Floor = extractAround(bundle, "class a1 extends", 300, 1400);
+const sourceO1FloorMaterial = extractAround(bundle, "class o1 extends", 700, 1600);
+const sourceT1FloorBlur = extractAround(bundle, "class t1 extends", 800, 900);
 const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
@@ -445,6 +447,30 @@ const summary = {
         "this.add(i),this.material=n",
       ]),
       excerpt: compact(sourceA1Floor.text),
+    },
+    floorO1Material: sourceO1FloorMaterial && {
+      index: sourceO1FloorMaterial.index,
+      checks: checks(sourceO1FloorMaterial.text, [
+        "class o1 extends mt",
+        "glslVersion:lt",
+        "fragmentShader:s1",
+        "blending:ot",
+        "USE_NORMALMAP",
+        "uFloorMixStrength:new I(a)",
+      ]),
+      excerpt: compact(sourceO1FloorMaterial.text),
+    },
+    floorT1Blur: sourceT1FloorBlur && {
+      index: sourceT1FloorBlur.index,
+      checks: checks(sourceT1FloorBlur.text, [
+        "class t1 extends mt",
+        "glslVersion:lt",
+        "fragmentShader:QA",
+        "blending:ot",
+        "depthWrite:!1",
+        "depthTest:!1",
+      ]),
+      excerpt: compact(sourceT1FloorBlur.text),
     },
     IuUpdate: sourceIuUpdate && {
       index: sourceIuUpdate.index,

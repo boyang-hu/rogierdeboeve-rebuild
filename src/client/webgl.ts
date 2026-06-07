@@ -1314,14 +1314,26 @@ void main() {
 }
 `;
 
+const floorReflectionBlurVertex = `
+in vec3 position;
+in vec2 uv;
+out vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position, 1.0);
+}
+`;
+
 const floorReflectionBlurFragment = `
-precision highp float;
+precision mediump float;
 
 uniform sampler2D tMap;
 uniform vec2 uDirection;
 uniform vec2 uResolution;
 
-varying vec2 vUv;
+in vec2 vUv;
+
+out vec4 FragColor;
 
 float smootherstep(float edge0, float edge1, float x) {
   x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -1331,23 +1343,25 @@ float smootherstep(float edge0, float edge1, float x) {
 vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
   vec4 sum = vec4(0.0);
   vec2 pixel = 1.0 / resolution;
-  sum += texture2D(image, uv - 4.0 * pixel * direction) * 0.051;
-  sum += texture2D(image, uv - 3.0 * pixel * direction) * 0.0918;
-  sum += texture2D(image, uv - 2.0 * pixel * direction) * 0.12245;
-  sum += texture2D(image, uv - 1.0 * pixel * direction) * 0.1531;
-  sum += texture2D(image, uv) * 0.1633;
-  sum += texture2D(image, uv + 1.0 * pixel * direction) * 0.1531;
-  sum += texture2D(image, uv + 2.0 * pixel * direction) * 0.12245;
-  sum += texture2D(image, uv + 3.0 * pixel * direction) * 0.0918;
-  sum += texture2D(image, uv + 4.0 * pixel * direction) * 0.051;
+  sum += texture(image, uv - 4.0 * pixel * direction) * 0.051;
+  sum += texture(image, uv - 3.0 * pixel * direction) * 0.0918;
+  sum += texture(image, uv - 2.0 * pixel * direction) * 0.12245;
+  sum += texture(image, uv - 1.0 * pixel * direction) * 0.1531;
+  sum += texture(image, uv) * 0.1633;
+  sum += texture(image, uv + 1.0 * pixel * direction) * 0.1531;
+  sum += texture(image, uv + 2.0 * pixel * direction) * 0.12245;
+  sum += texture(image, uv + 3.0 * pixel * direction) * 0.0918;
+  sum += texture(image, uv + 4.0 * pixel * direction) * 0.051;
   return sum;
 }
 
 void main() {
+  vec4 tMapped = texture(tMap, vUv);
+
   vec2 distance = smootherstep(1.0, 0.0, vUv.y) * uDirection;
-  vec4 mapped = texture2D(tMap, vUv);
   vec4 blurred = blur(tMap, vUv, uResolution, distance);
-  gl_FragColor = mix(mapped, blurred, 1.25);
+
+  FragColor = mix(tMapped, blurred, 1.25);
 }
 `;
 
@@ -3715,7 +3729,9 @@ export class WebGLBackdrop {
   }
 
   private createFloorReflectionBlurMaterial() {
-    return new ShaderMaterial({
+    dumpShader("t1-floor-reflection-blur", floorReflectionBlurVertex, floorReflectionBlurFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
@@ -3724,7 +3740,7 @@ export class WebGLBackdrop {
         uDirection: { value: new Vector2(1, 0) },
         uResolution: { value: new Vector2(1, 1) },
       },
-      vertexShader: backgroundVertex,
+      vertexShader: floorReflectionBlurVertex,
       fragmentShader: floorReflectionBlurFragment,
     });
   }
@@ -4082,6 +4098,7 @@ export class WebGLBackdrop {
   }
 
   private createFloorMaterial() {
+    dumpShader("o1-floor-material", floorVertex, floorFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
@@ -5547,6 +5564,8 @@ export class WebGLBackdrop {
             height: Math.max(1, Math.round(window.innerHeight * 0.75)),
           },
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
+          materialMode: "source-o1-raw-glsl3",
+          reflectionBlurMode: "source-t1-raw-glsl3",
         },
         environment: {
           visible: this.environmentGroup.visible,
@@ -5721,6 +5740,7 @@ export class WebGLBackdrop {
           depthWrite: this.floorMaterial.depthWrite,
           depthTest: this.floorMaterial.depthTest,
           blending: this.floorMaterial.blending,
+          mode: "source-o1-raw-glsl3",
         },
       },
       environment: {
@@ -5768,6 +5788,7 @@ export class WebGLBackdrop {
         blurInputUsesRaw: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionTarget.texture,
         blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
+        blurMaterialMode: "source-t1-raw-glsl3",
         floorVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
         rawClearMode: "source-autoClear-false-only",
         cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",

@@ -110,6 +110,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 | 33 | S1-106 | Source `Xt.preloadTextures()` wrapping ownership | Source preloads blue-noise, floor-normal, and `perlin2` with `ci=RepeatWrapping=1000`; `perlin1` uses `vo=MirroredRepeatWrapping=1002`. | Production now loads work-block `perlin1` with `MirroredRepeatWrapping` while keeping A1/C1 `perlin2`, blue-noise, and floor-normal on `RepeatWrapping`. Output probe exposes and hard-fails on wrapping drift; renderer audit records the source `Xt.preloadTextures()` anchors. | Low-medium | Keep as source-correct texture ownership. This fixes a concrete earlier misread where `vo` had been documented as clamp; Phase 1 remains open for fog-bed and projection/material parity. |
 | 34 | S1-107 | Source `h1/p1` environment hierarchy ownership | Source constructs `env=this.add(h1)`, where `h1` is a group that owns position `y=-12.65` and rotation `-rotationAdjustment`; the environment mesh is a local child at origin. | Production now wraps the environment mesh in `environmentGroup`, moves y/rotation ownership to the group, keeps the mesh local at origin, and hard-fails output probe if the hierarchy drifts. Renderer audit records source `h1` and `p1` environment hierarchy anchors. | Low-medium | Keep as source-correct hierarchy ownership. World transform is equivalent, so this is not a visual closeout; Phase 1 remains open for fog-bed distribution and projection/material parity. |
 | 35 | S1-108 | Source `u1/a1` environment and reflector ownership surface | Source `u1` extends `MeshStandardMaterial`, stores runtime bindings on `customUniforms`, patches `c1/l1` in `onBeforeCompile`, sets `dithering=true`, and is constructed by `h1` with `side=BackSide`, `envMapIntensity=1`, `fog=false`. Source `a1` hides its component group during `onBeforeRender` before calling `reflector.update()`. | Production now exposes the source `u1` `customUniforms` alias, adds hard output-probe assertions for material mode, fog/dithering/env intensity, and records source `a1` reflection visibility ownership. Renderer audit now records source `u1` and `a1` anchors. | Low | Keep as source-correct interface and QA hardening. This prevents future background/fog-bed work from misattributing the floor hidden-state or environment material surface, but does not close the mobile/fog-bed visual residual. |
+| 36 | S1-109 | Source `o1/t1` floor material and reflection blur shader surface | Source floor material `o1` and reflection blur material `t1` use raw shader surfaces; source blur fragment `QA` is GLSL3-shaped with `in vUv`, `out FragColor`, `texture(...)`, and `mix(tMapped, blurred, 1.25)`. | Production now reports the floor material as `source-o1-raw-glsl3`, uses `RawShaderMaterial`/`GLSL3` for the reflection blur material, dumps both `o1-floor-material` and `t1-floor-reflection-blur`, and hard-fails output probes if the floor/blur material modes drift. | Low-medium | Keep as source-correct floor shader-surface alignment. This narrows the floor/reflector bridge, but Phase 1 remains open for mobile fog-bed distribution, strict projection/material feel, and transfer interpretation. |
 
 ### Phase 1 Open Blocker Board
 
@@ -651,6 +652,40 @@ Verification:
 | Mobile center-band delta | `-0.0128` against source |
 
 Decision: keep this as source-correct environment/floor ownership hardening. Phase 1 remains open because this batch proves interface ownership and prevents wrong future changes; it does not resolve the remaining mobile/fog-bed and projection/material residuals.
+
+### S1-109 Source `o1/t1` Floor Material and Reflection Blur Shader Surface
+
+This batch stayed on the home floor/reflection chain and aligned the shader material surface without tuning visual constants.
+
+Source/runtime evidence:
+
+- Source `o1` owns the floor material shader path, and the renderer audit now tracks that source floor material anchor directly.
+- Source `t1` uses the blur shader pair `e1/QA`; the fragment surface is GLSL3-shaped with `in vec2 vUv`, `out vec4 FragColor`, `texture(...)`, and `FragColor = mix(tMapped, blurred, 1.25)`.
+- The rebuild previously rendered the reflection blur through a regular `ShaderMaterial` surface, which was a bridge mismatch even when the visible floor result was stable.
+
+Production now exposes and asserts:
+
+- `createFloorReflectionBlurMaterial()` uses `RawShaderMaterial` with `GLSL3`,
+- shader dump includes `o1-floor-material` and `t1-floor-reflection-blur`,
+- renderer audit extracts source `o1` and `t1` anchors,
+- output probe reports and hard-fails on `floor.materialMode=source-o1-raw-glsl3` and `floor.reflectionBlurMode=source-t1-raw-glsl3`.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `git diff --check` | Passed |
+| `ASTRO_TELEMETRY_DISABLED=1 npm run build` | Passed |
+| Renderer audit | Source `o1` and `t1` anchors present |
+| Output probe | New floor and reflection-blur material mode assertions passed after restarting rebuild server |
+| Thumb spotlight probe | Passed; spotlight map, target, position, and intensity stayed source-shaped |
+| Project media probe | `/gc-2026/` and `/hashgraph-vc/` retain 5 visible media tracks |
+| Shader dump | No shader/WebGL console errors; floor and blur shader dumps include the new source IDs |
+| Home source-vs-rebuild capture | Home desktop/mobile captured without failures/exceptions |
+| Desktop center-band delta | `+0.0003` against source |
+| Mobile center-band delta | `-0.0125` against source |
+
+Decision: keep this source-correct floor/reflection shader-surface alignment. Phase 1 remains open because the remaining residual is still mobile fog-bed distribution, strict `VA/GA` projection/material feel, and transfer interpretation, not this material surface.
 
 ### S1-70 Source Floor Circle Geometry
 
