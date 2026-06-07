@@ -802,6 +802,11 @@ const summary = {
       index: sourceP1Update.index,
       checks: checks(sourceP1Update.text, [
         "update(e,t,n,i){super.update(e,t,n,i),this.spotLight&&this.spotLightParallax",
+        "a.x>5.5||a.x<-5.5||a.z>5?o.instance.visible=!1",
+        "o.instance.visible=!0",
+        "o.instance.material.customUniforms.uRevealSides.value=Cs(Math.abs(a.x),0,5,1,0,!0)",
+        "o.instance.material.customUniforms.uRevealSpreadSides.value=Cs(Math.abs(a.x),2,6,1,0,!0)",
+        "o.instance.material.customUniforms.tMouseSim2.value=this.renderManager.mouseSimulation.bufferSim.output.texture",
         "o.instance.update(e,t,n,Math.min(Pe.dpr,1.5))",
         "this.aboutBlocks.visible&&(this.aboutBlocks.update(e,t,n,Math.min(Pe.dpr,1.5))",
       ]),

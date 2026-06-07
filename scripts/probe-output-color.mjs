@@ -208,6 +208,18 @@ async function runProbe() {
   if (materialErrors.length) {
     throw new Error(`VA material source-state mismatch: ${materialErrors.join(", ")}`);
   }
+  const p1UpdateCulling = workSettings.p1UpdateCulling || {};
+  const cullingErrors = [];
+  if (p1UpdateCulling.source !== "p1.update-world-position-cull-then-visible-block-update") cullingErrors.push("source");
+  if (JSON.stringify(p1UpdateCulling.bounds) !== JSON.stringify({ minX: -5.5, maxX: 5.5, maxZ: 5 })) cullingErrors.push("bounds");
+  if (p1UpdateCulling.total !== 10) cullingErrors.push("total");
+  if (p1UpdateCulling.sourceVisibilityAllMatch !== true) cullingErrors.push("sourceVisibilityAllMatch");
+  if (p1UpdateCulling.visibleUpdateShapeAllMatch !== true) cullingErrors.push("visibleUpdateShapeAllMatch");
+  if (!Array.isArray(p1UpdateCulling.items) || p1UpdateCulling.items.length !== p1UpdateCulling.total) cullingErrors.push("items");
+  if ((p1UpdateCulling.visibleCount ?? 0) < 1) cullingErrors.push("visibleCount");
+  if (cullingErrors.length) {
+    throw new Error(`p1.update source culling mismatch: ${cullingErrors.join(", ")}`);
+  }
   const gaShape = parsed.probe.mouseSimulation?.active?.sourceShape;
   if (gaShape) {
     const shapeErrors = Object.entries(gaShape)
@@ -338,6 +350,8 @@ async function runProbe() {
   const expectedWorkCompositeMaterialMode = debugCompositeProbe ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3";
   if (workCompositeUniforms?.materialMode !== expectedWorkCompositeMaterialMode) materialSurfaceErrors.push("workCompositeMaterialMode");
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
+  if (!debugCompositeProbe && workCompositeUniforms?.debugShaderActive !== false) materialSurfaceErrors.push("workCompositeDebugShaderActive");
+  if (!debugCompositeProbe && workCompositeUniforms?.productionShaderIsSourceSurface !== true) materialSurfaceErrors.push("workCompositeProductionShader");
   const workCompositeSurface = workCompositeUniforms?.shaderSurface || {};
   if (workCompositeSurface.formulaMode !== "source-CA-mixed-blend-surface") materialSurfaceErrors.push("workCompositeFormulaMode");
   if (workCompositeSurface.blendEntry !== "source-Po-blend") materialSurfaceErrors.push("workCompositeBlendEntry");

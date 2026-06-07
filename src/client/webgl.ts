@@ -5553,6 +5553,46 @@ void main() {
     });
   }
 
+  private p1UpdateCullingProbe() {
+    const items = this.workItems.map((item) => {
+      const world = new Vector3();
+      item.group.getWorldPosition(world);
+      const culledBySourceBounds = world.x > 5.5 || world.x < -5.5 || world.z > 5;
+      return {
+        slug: item.slug,
+        world: world.toArray(),
+        visible: item.group.visible,
+        culledBySourceBounds,
+        sourceVisibilityMatches: item.group.visible === !culledBySourceBounds,
+        revealSides: item.material.uniforms.uRevealSides.value,
+        revealSpreadSides: item.material.uniforms.uRevealSpreadSides.value,
+        revealSidesInSourceRange: item.material.uniforms.uRevealSides.value >= 0 && item.material.uniforms.uRevealSides.value <= 1,
+        revealSpreadSidesInSourceRange:
+          item.material.uniforms.uRevealSpreadSides.value >= 0 && item.material.uniforms.uRevealSpreadSides.value <= 1,
+        tMouseSim2IsScreen: item.material.uniforms.tMouseSim2.value === this.screenMouseSimulationTexture,
+        tMouseSimIsLocal: item.material.uniforms.tMouseSim.value === (item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder),
+      };
+    });
+    const visible = items.filter((item) => item.visible);
+    return {
+      source: "p1.update-world-position-cull-then-visible-block-update",
+      bounds: {
+        minX: -5.5,
+        maxX: 5.5,
+        maxZ: 5,
+      },
+      total: items.length,
+      visibleCount: visible.length,
+      culledCount: items.length - visible.length,
+      sourceVisibilityAllMatch: items.every((item) => item.sourceVisibilityMatches),
+      visibleUpdateShapeAllMatch: visible.every((item) =>
+        item.revealSidesInSourceRange
+        && item.revealSpreadSidesInSourceRange,
+      ),
+      items,
+    };
+  }
+
   private resizeAuxiliaryBlocks(width: number, height: number, dpr: number) {
     const updateTracked = (item?: AuxiliaryBlockItem) => {
       if (!item) return;
@@ -6173,6 +6213,7 @@ void main() {
             sourceCompositeRender: "o.setRenderTarget(h),o.render(this.screen,this.screenCamera)",
             productionOutputChanged: true,
           },
+          p1UpdateCulling: this.p1UpdateCullingProbe(),
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),
             emissive: activeWorkItem.material.emissive.toArray(),
@@ -6273,6 +6314,8 @@ void main() {
           materialMode: this.debugCompositeShader ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3",
           glslVersion: (this.compositeMaterial as RawShaderMaterial).glslVersion ?? null,
           blending: this.compositeMaterial.blending,
+          debugShaderActive: this.debugCompositeShader,
+          productionShaderIsSourceSurface: !this.debugCompositeShader && !("uDebugStage" in this.compositeMaterial.uniforms),
           uDarken: darkenValue,
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
           uDebugStage: this.compositeMaterial.uniforms.uDebugStage?.value ?? 0,
