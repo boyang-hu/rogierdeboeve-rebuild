@@ -2880,6 +2880,7 @@ export class WebGLBackdrop {
   private floorReflectionTargetPosition = new Vector3();
   private floorReflectionClipPlane = new Vector4();
   private floorReflectionQ = new Vector4();
+  private floorReflectionClipBias = 0;
   private floorReflectionBlurMaterial: ShaderMaterial;
   private floorReflectionScreenCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private floorReflectionScreen: Mesh<BufferGeometry, ShaderMaterial>;
@@ -5937,7 +5938,7 @@ void main() {
       this.floorReflectionClipPlane.multiplyScalar(2 / this.floorReflectionClipPlane.dot(this.floorReflectionQ));
       projectionElements[2] = this.floorReflectionClipPlane.x;
       projectionElements[6] = this.floorReflectionClipPlane.y;
-      projectionElements[10] = this.floorReflectionClipPlane.z + 1;
+      projectionElements[10] = this.floorReflectionClipPlane.z + 1 - this.floorReflectionClipBias;
       projectionElements[14] = this.floorReflectionClipPlane.w;
     }
 
@@ -5949,11 +5950,15 @@ void main() {
       if (!this.renderer.autoClear) this.renderer.clear();
       this.renderer.render(this.homeScene, this.floorReflectionCamera);
 
-      this.renderer.setRenderTarget(this.floorReflectionReadTarget);
       if (this.debugFloorReflection === "no-blur") {
         this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
         this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
+        this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
         this.renderer.render(this.floorReflectionScreen, this.floorReflectionScreenCamera);
+        const swap = this.floorReflectionReadTarget;
+        this.floorReflectionReadTarget = this.floorReflectionWriteTarget;
+        this.floorReflectionWriteTarget = swap;
+        this.floorMaterial.uniforms.tReflect.value = this.floorReflectionReadTarget.texture;
       } else {
         let readTarget = this.floorReflectionReadTarget;
         let writeTarget = this.floorReflectionWriteTarget;
@@ -5971,10 +5976,10 @@ void main() {
           const swap = readTarget;
           readTarget = writeTarget;
           writeTarget = swap;
+          this.floorMaterial.uniforms.tReflect.value = readTarget.texture;
         }
         this.floorReflectionReadTarget = readTarget;
         this.floorReflectionWriteTarget = writeTarget;
-        this.floorMaterial.uniforms.tReflect.value = this.floorReflectionReadTarget.texture;
       }
     } finally {
       this.renderer.xr.enabled = previousXrEnabled;
@@ -6750,6 +6755,9 @@ void main() {
         floorVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
         rawClearMode: "source-autoClear-false-only",
         cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",
+        clipBias: this.floorReflectionClipBias,
+        blurSwapMode: "source-i1-write-target-loop-swap",
+        renderTargetUniformMode: "source-i1-update-after-each-blur-swap",
         sourceCssSized: this.floorReflectionTarget.width === Math.max(1, Math.round(window.innerWidth * 0.75))
           && this.floorReflectionTarget.height === Math.max(1, Math.round(window.innerHeight * 0.75)),
       },

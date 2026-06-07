@@ -511,6 +511,9 @@ async function runProbe() {
   if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
   if (reflectionTargets?.blurPassScreenMode !== "source-i1-private-screen-camera") floorErrors.push("blurPassScreenMode");
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
+  if (reflectionTargets?.clipBias !== 0) floorErrors.push("clipBias");
+  if (reflectionTargets?.blurSwapMode !== "source-i1-write-target-loop-swap") floorErrors.push("blurSwapMode");
+  if (reflectionTargets?.renderTargetUniformMode !== "source-i1-update-after-each-blur-swap") floorErrors.push("renderTargetUniformMode");
   if (floorErrors.length) {
     throw new Error(`Floor reflection visibility source-shape mismatch: ${floorErrors.join(", ")}`);
   }
