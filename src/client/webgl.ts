@@ -2020,7 +2020,12 @@ void main() {
 
 const sourceDitherHelper = `
 float random(vec2 co) {
-  return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  float a = 12.9898;
+  float b = 78.233;
+  float c = 43758.5453;
+  float dt = dot(co.xy, vec2(a, b));
+  float sn = mod(dt, 3.14);
+  return fract(sin(sn) * c);
 }
 
 vec3 dither(vec3 color) {
@@ -4738,6 +4743,7 @@ export class WebGLBackdrop {
       glslVersion: GLSL3,
       defines: {
         NUM_MIPS: 5,
+        DITHERING: undefined,
       },
       blending: NoBlending,
       depthWrite: false,
@@ -6956,6 +6962,11 @@ void main() {
             uniformMode: "source-cg-tBlur-uBloomFactors",
             numMipsDefine: this.bloomCompositeMaterial.defines?.NUM_MIPS ?? null,
             ditheringDefine: this.bloomCompositeMaterial.defines?.DITHERING ?? null,
+            ditheringDefinePresent: Object.hasOwn(this.bloomCompositeMaterial.defines ?? {}, "DITHERING"),
+            ditheringDefineString: Object.hasOwn(this.bloomCompositeMaterial.defines ?? {}, "DITHERING")
+              ? String(this.bloomCompositeMaterial.defines?.DITHERING)
+              : null,
+            ditheringDefineMode: "source-cg-defines-DITHERING-undefined",
             hasBloomFactorsArray: Array.isArray(this.bloomCompositeMaterial.uniforms.uBloomFactors?.value),
             hasSourceBlurUniforms: [1, 2, 3, 4, 5].every((index) => `tBlur${index}` in this.bloomCompositeMaterial.uniforms),
             hasRebuildBloomUniforms: [1, 2, 3, 4, 5].some((index) => `tBloom${index}` in this.bloomCompositeMaterial.uniforms),
@@ -6977,6 +6988,11 @@ void main() {
             uniformMode: "source-cg-tBlur-uBloomFactors",
             numMipsDefine: this.mainBloomCompositeMaterial.defines?.NUM_MIPS ?? null,
             ditheringDefine: this.mainBloomCompositeMaterial.defines?.DITHERING ?? null,
+            ditheringDefinePresent: Object.hasOwn(this.mainBloomCompositeMaterial.defines ?? {}, "DITHERING"),
+            ditheringDefineString: Object.hasOwn(this.mainBloomCompositeMaterial.defines ?? {}, "DITHERING")
+              ? String(this.mainBloomCompositeMaterial.defines?.DITHERING)
+              : null,
+            ditheringDefineMode: "source-cg-defines-DITHERING-undefined",
             hasBloomFactorsArray: Array.isArray(this.mainBloomCompositeMaterial.uniforms.uBloomFactors?.value),
             hasSourceBlurUniforms: [1, 2, 3, 4, 5].every((index) => `tBlur${index}` in this.mainBloomCompositeMaterial.uniforms),
             hasRebuildBloomUniforms: [1, 2, 3, 4, 5].some((index) => `tBloom${index}` in this.mainBloomCompositeMaterial.uniforms),

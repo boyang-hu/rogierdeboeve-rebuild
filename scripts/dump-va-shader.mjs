@@ -937,6 +937,7 @@ function analyzeFloorCore(sourceShader, rebuildShader) {
     normalMapBranch: ["#ifdefUSE_NORMALMAP"],
     normalDistortion: ["normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.)", "normalColor.r*uNormalDistortionStrength-(uNormalDistortionStrength/2.0)"],
     sourceDitherRandomHelper: ["floatrandom(vec2co)"],
+    sourceDitherRandomFormula: ["floata=12.9898", "floatb=78.233", "floatc=43758.5453", "floatdt=dot(co.xy,vec2(a,b))", "floatsn=mod(dt,3.14)", "returnfract(sin(sn)*c)"],
     sourceDitherHelper: ["vec3dither(vec3color)", "dither_shift_RGB"],
     sourceDistortedUvName: ["vec2uv=coord.xy+coord.z*normal.xz*0.05"],
     sourceDistortedUvSample: ["texture(tReflect,uv)"],

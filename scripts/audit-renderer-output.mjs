@@ -117,6 +117,9 @@ const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
+const sourceFloorS1 = extractTemplate(bundle, "s1", "`,r1=");
+const sourceDitherRandomTA = extractTemplate(bundle, "tA", "`,lg=");
+const sourceDitherLG = extractTemplate(bundle, "lg", "`,nA=");
 const sourceC1 = extractAround(bundle, "class C1 extends", 320, 1600);
 const rebuildA1 = extractConstTemplate(rebuildWebgl, "homePreCompositeFragment");
 const sourcePo = extractTemplate(bundle, "Po", "`,CA=");
@@ -176,6 +179,9 @@ const rendererOutputRefs = [
 
 writeFileSync(path.join(outDir, "source-CA.glsl"), sourceCA);
 writeFileSync(path.join(outDir, "source-A1.glsl"), sourceA1);
+writeFileSync(path.join(outDir, "source-s1-floor.glsl"), sourceFloorS1);
+writeFileSync(path.join(outDir, "source-tA-dither-random.glsl"), sourceDitherRandomTA);
+writeFileSync(path.join(outDir, "source-lg-dither.glsl"), sourceDitherLG);
 writeFileSync(path.join(outDir, "rebuild-homePreComposite.glsl"), rebuildA1);
 writeFileSync(path.join(outDir, "source-Po-blend.glsl"), sourcePo);
 writeFileSync(path.join(outDir, "source-fg-blend-lighten.glsl"), sourceBlendLighten);
@@ -288,6 +294,29 @@ const summary = {
         "#include <tonemapping_fragment>",
       ]),
       order: sourceA1Order,
+    },
+    floorS1: {
+      length: sourceFloorS1.length,
+      checks: checks(sourceFloorS1, [
+        "${lg}",
+        "#ifdef DITHERING",
+      ]),
+    },
+    ditherHelper: {
+      randomLength: sourceDitherRandomTA.length,
+      helperLength: sourceDitherLG.length,
+      checks: {
+        ...checks(sourceDitherRandomTA, [
+          "float random(vec2 co)",
+          "float sn = mod(dt, 3.14)",
+          "return fract(sin(sn) * c)",
+        ]),
+        ...checks(sourceDitherLG, [
+          "${tA}",
+          "vec3 dither(vec3 color)",
+          "dither_shift_RGB",
+        ]),
+      },
     },
     rebuildA1: {
       length: rebuildA1.length,
@@ -486,10 +515,17 @@ const summary = {
         checks: checks(sourceCg.text, [
           "class cg extends mt",
           "glslVersion:lt",
+          "defines:{NUM_MIPS:5,DITHERING:e}",
           "fragmentShader:nA",
           "blending:ot",
           "depthWrite:!1",
           "depthTest:!1",
+        ]),
+        rebuildChecks: checks(rebuildWebgl, [
+          "DITHERING: undefined",
+          "ditheringDefineMode: \"source-cg-defines-DITHERING-undefined\"",
+          "ditheringDefinePresent",
+          "ditheringDefineString",
         ]),
         excerpt: compact(sourceCg.text),
       },
@@ -886,6 +922,25 @@ const summary = {
         "blending:ot",
         "USE_NORMALMAP",
         "uFloorMixStrength:new I(a)",
+      ]),
+      sourceShaderChecks: checks(sourceFloorS1, [
+        "${lg}",
+        "#ifdef DITHERING",
+      ]),
+      sourceDitherChecks: {
+        ...checks(sourceDitherRandomTA, [
+          "float random(vec2 co)",
+          "float sn = mod(dt, 3.14)",
+          "return fract(sin(sn) * c)",
+        ]),
+        ...checks(sourceDitherLG, [
+          "${tA}",
+          "vec3 dither(vec3 color)",
+        ]),
+      },
+      rebuildChecks: checks(rebuildWebgl, [
+        "float sn = mod(dt, 3.14)",
+        "return fract(sin(sn) * c)",
       ]),
       excerpt: compact(sourceO1FloorMaterial.text),
     },

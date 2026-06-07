@@ -1,6 +1,6 @@
 # Rogier de Boeve Rebuild Handoff
 
-Last updated: 2026-06-05
+Last updated: 2026-06-07
 
 This document records the current rebuild state for continuing work on another machine.
 
@@ -132,6 +132,16 @@ Known remaining gaps:
   - rebuild approximates these in a simpler Three shader pipeline.
 - The original projects the thumb render target through a spotlight map. The rebuild currently uses a reduced projection helper plus cube shader sampling. This is closer than a flat preview, but still not exact.
 - Mouse/fluid simulation is approximated; original `Ka` mouse simulation and render-manager chain are not fully ported.
+
+Latest Phase 1 batch:
+
+- Source `tA/lg/cg` shader-surface parity was restored:
+  - shared dither helper now uses source `random(vec2 co)` with local `a/b/c/dt/sn` variables and `sn = mod(dt, 3.14)`;
+  - work/main bloom composite materials now keep source `cg` `DITHERING: undefined` define ownership;
+  - output probe, shader dump, and renderer audit now assert those source surfaces.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
+- Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
+- Phase 1 remains open; this was source surface parity, not visual closeout.
 
 ## Validation Status
 

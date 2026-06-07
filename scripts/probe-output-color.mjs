@@ -537,7 +537,10 @@ async function runProbe() {
     const material = passMaterials[key];
     if (material?.uniformMode !== "source-cg-tBlur-uBloomFactors") materialSurfaceErrors.push(`${key}UniformMode`);
     if (material?.numMipsDefine !== 5) materialSurfaceErrors.push(`${key}NumMipsDefine`);
-    if (material?.ditheringDefine != null) materialSurfaceErrors.push(`${key}DitheringDefine`);
+    if (material?.ditheringDefinePresent !== true) materialSurfaceErrors.push(`${key}DitheringDefinePresent`);
+    if (material?.ditheringDefine !== null) materialSurfaceErrors.push(`${key}DitheringDefineJsonValue`);
+    if (material?.ditheringDefineString !== "undefined") materialSurfaceErrors.push(`${key}DitheringDefineString`);
+    if (material?.ditheringDefineMode !== "source-cg-defines-DITHERING-undefined") materialSurfaceErrors.push(`${key}DitheringDefineMode`);
     if (material?.hasBloomFactorsArray !== true) materialSurfaceErrors.push(`${key}BloomFactorsArray`);
     if (material?.hasSourceBlurUniforms !== true) materialSurfaceErrors.push(`${key}SourceBlurUniforms`);
     if (material?.hasRebuildBloomUniforms !== false) materialSurfaceErrors.push(`${key}RebuildBloomUniforms`);
