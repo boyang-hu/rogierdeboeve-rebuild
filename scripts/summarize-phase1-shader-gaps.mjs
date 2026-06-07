@@ -20,6 +20,8 @@ const focusOrder = [
   "x1-thumb-composite",
   "M1-thumb-plane",
   "u1-environment",
+  "o1-floor-material",
+  "t1-floor-reflection-blur",
   "j1-media-composite",
   "ag-advection",
   "ag-advection-bounds",
@@ -78,6 +80,8 @@ function classify(name, entry) {
   const relevantChecks = entry.vaFragmentCoreChecks
     || entry.compositeCoreChecks
     || entry.environmentCoreChecks
+    || entry.floorCoreChecks
+    || entry.floorBlurCoreChecks
     || entry.rgBlurCoreChecks
     || entry.standardBlurCoreChecks
     || entry.lensflareCoreChecks
@@ -118,6 +122,8 @@ const rows = focusOrder
         entry.vaFragmentCoreChecks
           || entry.compositeCoreChecks
           || entry.environmentCoreChecks
+          || entry.floorCoreChecks
+          || entry.floorBlurCoreChecks
           || entry.rgBlurCoreChecks
           || entry.standardBlurCoreChecks
           || entry.lensflareCoreChecks
@@ -168,7 +174,7 @@ const markdown = [
   "",
   "## Current Phase 1 Reading",
   "",
-  "- `OA-work-composite`, `A1-pre-composite`, `u1-environment`, thumb, media, and main-fluid helper shaders currently have matched core anchors in the generated dump.",
+  "- `OA-work-composite`, `A1-pre-composite`, `u1-environment`, floor, thumb, media, and main-fluid helper shaders currently have matched core anchors in the generated dump.",
   vaWorkReading,
   "- Treat this report as attribution input. It is not visual acceptance and does not close Phase 1.",
   "",

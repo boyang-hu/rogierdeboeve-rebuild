@@ -135,12 +135,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `x1/M1/N1/ag` GLSL surface parity was restored:
-  - thumb composite helper order now matches source `_1/x1`;
-  - thumb plane declaration order and `transition (...)` surface now match source `S1/M1`;
-  - displacement composite helper, uniform order, vignette globals/comments, and literal surfaces now match source `F1/N1`;
-  - main-fluid shaders now carry source `#define GLSLIFY 1`, source advection variable names, and source `GT` advection `px` uniform ownership;
-  - shader dump now reports `N1`, `x1`, `M1`, and all `ag-*` helpers with source/rebuild core anchors matched.
+- Source `a1/o1/s1` floor-chain parity was tightened without visual tuning:
+  - floor fragment normal-map uniform order now matches source `s1` (`tNormalMap` before `uNormalScale`);
+  - normal distortion / zero-vector literal surfaces now match source `s1`;
+  - output probes now assert source `o1` material defaults: `transparent=false`, `depthWrite=true`, `depthTest=true`, `blending=NoBlending`, inherited `toneMapped=true`;
+  - output probes now assert source `a1` geometry/hierarchy: `CircleGeometry(60,32)`, `floorGroup -> floorPlane -> reflector`, group y `-1.65`, plane rotation `-PI/2`;
+  - shader residual summaries now include `o1-floor-material` and `t1-floor-reflection-blur`, both with source/rebuild core anchors matched.
 - QA passed for `git diff --check`, `npm run build`, renderer audit, desktop/mobile output probes, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open; this was source surface parity, not visual closeout.

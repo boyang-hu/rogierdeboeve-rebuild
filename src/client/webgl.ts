@@ -2831,8 +2831,8 @@ uniform sampler2D tMap;
 #endif
 
 #ifdef USE_NORMALMAP
-uniform vec2 uNormalScale;
 uniform sampler2D tNormalMap;
+uniform vec2 uNormalScale;
 #endif
 
 #ifdef USE_FOG
@@ -2857,11 +2857,7 @@ void main() {
 
 #ifdef USE_NORMALMAP
   vec4 normalColor = texture(tNormalMap, vUv * uNormalScale);
-  vec3 normal = normalize(vec3(
-    normalColor.r * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0),
-    normalColor.b,
-    normalColor.g * uNormalDistortionStrength - (uNormalDistortionStrength / 2.0)
-  ));
+  vec3 normal = normalize(vec3(normalColor.r * uNormalDistortionStrength - (uNormalDistortionStrength / 2.), normalColor.b, normalColor.g * uNormalDistortionStrength - (uNormalDistortionStrength / 2.)));
   vec3 coord = vCoord.xyz / vCoord.w;
   vec2 uv = coord.xy + coord.z * normal.xz * 0.05;
   vec4 reflectColor = texture(tReflect, uv);
@@ -2872,10 +2868,10 @@ void main() {
 
   // Fresnel term
   vec3 toEye = normalize(vToEye);
-  float theta = max(dot(toEye, normal), 0.0);
+  float theta = max(dot(toEye, normal), .0);
   float reflectance = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow((1.0 - theta), 5.0), 1.0));
 
-  reflectColor = mix(vec4(0.0), reflectColor, reflectance);
+  reflectColor = mix(vec4(0), reflectColor, reflectance);
 
   FragColor.rgb = color.rgb * ((1.0 - min(1.0, uMirror)) + reflectColor.rgb * uFloorMixStrength);
 
@@ -7082,6 +7078,30 @@ void main() {
           uMirror: this.floorMaterial.uniforms.uMirror.value,
           uFloorMixStrength: this.floorMaterial.uniforms.uFloorMixStrength.value,
           uNormalScale: (this.floorMaterial.uniforms.uNormalScale.value as Vector2).toArray(),
+          materialDefaults: {
+            transparent: this.floorMaterial.transparent,
+            depthWrite: this.floorMaterial.depthWrite,
+            depthTest: this.floorMaterial.depthTest,
+            blending: this.floorMaterial.blending,
+            toneMapped: this.floorMaterial.toneMapped,
+          },
+          geometry: {
+            mode: "source-a1-Tu-circle-geometry",
+            type: this.floorPlane.geometry.type,
+            radius: this.floorPlane.geometry.parameters.radius,
+            segments: this.floorPlane.geometry.parameters.segments,
+          },
+          hierarchy: {
+            mode: "source-a1-floorGroup-floorPlane-reflector",
+            groupChildren: this.floorGroup.children.length,
+            planeChildren: this.floorPlane.children.length,
+            reflectorParentIsPlane: this.floorReflector.parent === this.floorPlane,
+            planeParentIsGroup: this.floorPlane.parent === this.floorGroup,
+            groupParentIsSceneWrap: this.floorGroup.parent === this.sceneWrap,
+            groupPositionY: this.floorGroup.position.y,
+            planeRotationX: this.floorPlane.rotation.x,
+            planePosition: this.floorPlane.position.toArray(),
+          },
           reflectionTargetSize: {
             width: this.floorReflectionTarget.width,
             height: this.floorReflectionTarget.height,
@@ -7335,6 +7355,7 @@ void main() {
           depthWrite: this.floorMaterial.depthWrite,
           depthTest: this.floorMaterial.depthTest,
           blending: this.floorMaterial.blending,
+          toneMapped: this.floorMaterial.toneMapped,
           mode: "source-o1-raw-glsl3",
           branches: {
             map: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_MAP"),
@@ -7342,6 +7363,23 @@ void main() {
             fog: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_FOG"),
             dithering: Object.hasOwn(this.floorMaterial.defines ?? {}, "DITHERING"),
           },
+        },
+        geometry: {
+          mode: "source-a1-Tu-circle-geometry",
+          type: this.floorPlane.geometry.type,
+          radius: this.floorPlane.geometry.parameters.radius,
+          segments: this.floorPlane.geometry.parameters.segments,
+        },
+        hierarchy: {
+          mode: "source-a1-floorGroup-floorPlane-reflector",
+          groupChildren: this.floorGroup.children.length,
+          planeChildren: this.floorPlane.children.length,
+          reflectorParentIsPlane: this.floorReflector.parent === this.floorPlane,
+          planeParentIsGroup: this.floorPlane.parent === this.floorGroup,
+          groupParentIsSceneWrap: this.floorGroup.parent === this.sceneWrap,
+          groupPositionY: this.floorGroup.position.y,
+          planeRotationX: this.floorPlane.rotation.x,
+          planePosition: this.floorPlane.position.toArray(),
         },
       },
       environment: {
