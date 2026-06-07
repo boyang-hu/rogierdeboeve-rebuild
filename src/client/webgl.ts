@@ -504,17 +504,11 @@ const workBlockSourceScreenUvBeginVertexChunk = workBlockBeginVertexChunk.replac
 );
 
 const workBlockSourceWorldPositionChunk = `
-#if defined( USE_ENVMAP ) || defined( DISTANCE ) || defined ( USE_SHADOWMAP ) || defined ( USE_TRANSMISSION ) || NUM_SPOT_LIGHT_COORDS > 0
-  transformed /= 1. - mouseSim.r * .2;
-  vec4 worldPosition = vec4(transformed, 1.0);
-  #ifdef USE_BATCHING
-    worldPosition = batchingMatrix * worldPosition;
-  #endif
-  #ifdef USE_INSTANCING
-    worldPosition = instanceMatrix * worldPosition;
-  #endif
-  worldPosition = modelMatrix * worldPosition;
-#endif
+transformed /= 1. - mouseSim.r * .2;
+vec4 worldPosition = vec4( transformed, 1.0 );
+
+worldPosition = instanceMatrix * worldPosition;
+worldPosition = modelMatrix * worldPosition;
 `;
 
 const workBlockFragmentPars = `
@@ -6023,6 +6017,7 @@ export class WebGLBackdrop {
             dithering: activeWorkItem.material.dithering,
           } : null,
           materialStateMode: "source-VA-meshstandard-default-toneMapped",
+          vertexWorldPositionMode: "source-HA-unconditional-instance-world",
           auxiliaryMaterial: this.aboutBlocks ? {
             toneMapped: this.aboutBlocks.material.toneMapped,
             transparent: this.aboutBlocks.material.transparent,

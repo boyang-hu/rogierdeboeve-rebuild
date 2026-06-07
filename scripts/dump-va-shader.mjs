@@ -305,6 +305,8 @@ function analyzeVertex(sourceShader, rebuildShader) {
     "NUM_SPOT_LIGHT_COORDS",
     "USE_BATCHING",
     "USE_INSTANCING",
+    "worldPosition = instanceMatrix * worldPosition",
+    "worldPosition = batchingMatrix * worldPosition",
   ];
   return {
     lengths: {
@@ -599,6 +601,8 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
     mouseZTransform: ["mouseTransform*uMouseFactor", "mouseSim.r*15.0*uMouseFactor"],
     spreadScale: ["floatspread=3.", "floatspread=3.0"],
     sourceWorldDivide: ["transformed/=1.-mouseSim.r*.2", "transformed/=1.0-mouseSim.r*0.2"],
+    sourceWorldInstanceMatrix: ["worldPosition=instanceMatrix*worldPosition"],
+    noBatchingWorldMatrix: ["worldPosition=batchingMatrix*worldPosition"],
   };
   return Object.fromEntries(Object.entries(checks).map(([name, candidates]) => [
     name,

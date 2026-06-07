@@ -183,6 +183,7 @@ async function runProbe() {
   const auxiliaryMaterial = workSettings.auxiliaryMaterial;
   const materialErrors = [];
   if (workSettings.materialStateMode !== "source-VA-meshstandard-default-toneMapped") materialErrors.push("materialStateMode");
+  if (workSettings.vertexWorldPositionMode !== "source-HA-unconditional-instance-world") materialErrors.push("vertexWorldPositionMode");
   if (!activeMaterial) materialErrors.push("activeMaterialMissing");
   if (activeMaterial?.toneMapped !== true) materialErrors.push("activeToneMapped");
   if (activeMaterial?.transparent !== true) materialErrors.push("activeTransparent");
