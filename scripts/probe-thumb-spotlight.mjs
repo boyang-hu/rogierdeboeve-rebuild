@@ -119,6 +119,33 @@ async function runProbe() {
   const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
   const parsed = JSON.parse(result.result.value);
   if (!parsed.probe) throw new Error("No __rogierThumbProbe data found");
+  const probe = parsed.probe;
+  const sourceShapeErrors = [];
+  if (probe.thumbPositionMode !== "source-w1-x-only") {
+    sourceShapeErrors.push(`thumbPositionMode=${probe.thumbPositionMode}`);
+  }
+  if (probe.itemWidth !== 2) {
+    sourceShapeErrors.push(`itemWidth=${probe.itemWidth}`);
+  }
+  if (probe.totalWidth !== probe.totalItems * probe.itemWidth) {
+    sourceShapeErrors.push(`totalWidth=${probe.totalWidth}`);
+  }
+  if (probe.offsetY !== 0) {
+    sourceShapeErrors.push(`offsetY=${probe.offsetY}`);
+  }
+  if (probe.isTransitioning !== false) {
+    sourceShapeErrors.push(`isTransitioning=${probe.isTransitioning}`);
+  }
+  for (const thumb of probe.thumbs || []) {
+    const y = thumb.position?.[1];
+    const z = thumb.position?.[2];
+    if (Math.abs(y) > 1e-6 || Math.abs(z) > 1e-6) {
+      sourceShapeErrors.push(`${thumb.slug}:position=${JSON.stringify(thumb.position)}`);
+    }
+  }
+  if (sourceShapeErrors.length) {
+    throw new Error(`Thumb gallery source-shape mismatch: ${sourceShapeErrors.join(", ")}`);
+  }
   const screenshotFile = path.join(outDir, "rebuild-home-thumb-probe.png");
   writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
   ws.close();

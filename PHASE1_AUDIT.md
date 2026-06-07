@@ -1,6 +1,6 @@
 # Phase 1 Audit: Home WebGL Source Parity
 
-Last updated: 2026-06-06
+Last updated: 2026-06-07
 
 ## Scope
 
@@ -3867,3 +3867,38 @@ Band snapshot from `/tmp/rd-s1-88-capture`:
 | Mobile source -> rebuild | `-0.0129` | `+0.0183` |
 
 Decision: keep the `VA/GA` attribution upgrade. It does not change runtime behavior or close Phase 1, but it prevents another unsafe broad material-body edit. The next production candidates should be isolated against this evidence: specular macro/interface compatibility if proven non-inert, source `bsdfs`/`opaque_fragment` shape if it affects generated output, or the separate spotlight/thumb projection chain.
+
+### S1-89 Source `T1/w1/E1` Thumb Strip Position Ownership
+
+This batch aligned one source-backed runtime difference in the thumb/spotlight projection chain and expanded the browser probe so the same source shape is now enforced automatically.
+
+Source evidence:
+
+- Source `E1` creates a thumb plane with `mesh.scale.set(2,2,2)` and initializes `yHook=0`.
+- Source `w1` stores `progress`, `itemWidth`, `totalItems`, `offsetY`, and `isTransitioning`, but `updateGalleryProgress()` positions each thumb with `r.mesh.position.set(c,0,0)`.
+- Source `w1.updateGalleryProgress()` uses horizontal wrapping only: `itemWidth`, `totalWidth`, `progress * totalWidth`, modulo wrap with `67890`, and visibility in roughly `[-1.5, 1.5]`.
+
+Runtime and tooling changes:
+
+- `updateThumbGallery()` now writes thumb mesh positions as `(x,0,0)` instead of the rebuild-only `thumbYHook + thumbOffsetY` y path.
+- `__rogierThumbProbe` now reports `thumbPositionMode="source-w1-x-only"`, `itemWidth`, `totalItems`, `totalWidth`, `offsetY`, `isTransitioning`, and every thumb's `xHook`, `yHook`, position, and visibility.
+- `scripts/probe-thumb-spotlight.mjs` now fails if the thumb strip no longer matches the source shape: item width `2`, total width calculation, `offsetY=0`, `isTransitioning=false`, and all thumb y/z positions at zero during the default home probe.
+
+Verification:
+
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Shader dump passed with no WebGL shader errors: `/tmp/rd-s1-89-va`.
+- Home output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-s1-89-output`.
+- Thumb spotlight probe passed and confirmed `thumbPositionMode="source-w1-x-only"`, `itemWidth=2`, `totalItems=10`, `totalWidth=20`, `offsetY=0`, `isTransitioning=false`, `visibleThumbs=1`, all thumb y/z positions at `0`, spotlight map present, target `(0,0,-8)`, and intensity `220`: `/tmp/rd-s1-89-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-s1-89-media`.
+- Full source-vs-rebuild capture passed for home desktop/mobile, about desktop, `/gc-2026/`, and `/hashgraph-vc/` with no failed requests or runtime exceptions: `/tmp/rd-s1-89-capture`.
+
+Band snapshot from `/tmp/rd-s1-89-capture`:
+
+| Pair | Center-band luma delta | Max horizontal delta delta |
+| --- | ---: | ---: |
+| Desktop source -> rebuild | `-0.0003` | `-0.0006` |
+| Mobile source -> rebuild | `-0.0116` | `+0.0150` |
+
+Decision: keep the source thumb strip position ownership. This removes a rebuild-only y-position path from the spotlight-map source and gives future projection work a stricter probe. Phase 1 remains open because this does not solve the remaining mobile/fog-bed, exact `VA/GA` material-body, or projection-feel residuals.

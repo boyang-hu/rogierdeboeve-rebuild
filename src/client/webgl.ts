@@ -141,15 +141,33 @@ type ThumbProbeWindow = Window & {
     activeSlug: string;
     galleryProgress: number;
     thumbProgress: number;
+    thumbPositionMode: string;
+    itemWidth: number;
+    totalItems: number;
+    totalWidth: number;
+    offsetY: number;
+    isTransitioning: boolean;
     visibleThumbs: number;
+    thumbs: Array<{
+      slug: string;
+      xHook: number;
+      yHook: number;
+      position: [number, number, number];
+      visible: boolean;
+    }>;
     thumbComposite: {
       darkness: number;
+      darkenIntensity: number;
       darknessColor: [number, number, number];
+      darkenColor: [number, number, number];
       saturation: number;
     };
     spotlight: {
       hasMap: boolean;
       intensity: number;
+      position: number[];
+      target: number[];
+      parallax: boolean;
       mapColorSpace: string;
       rendererOutputColorSpace: string;
     };
@@ -4793,7 +4811,7 @@ export class WebGLBackdrop {
       item.thumbXHook = hook;
       let x = (hook + this.thumbProgress + totalWidth * 67890) % totalWidth;
       if (x > totalWidth / 2) x -= totalWidth;
-      item.thumb.position.set(x, item.thumbYHook + this.thumbOffsetY, 0);
+      item.thumb.position.set(x, 0, 0);
       item.thumb.visible = x >= -1.5 && x <= 1.5;
     });
   }
@@ -5258,7 +5276,20 @@ export class WebGLBackdrop {
       activeSlug: this.activeSlug,
       galleryProgress: this.galleryProgress,
       thumbProgress: this.thumbProgress,
+      thumbPositionMode: "source-w1-x-only",
+      itemWidth: this.thumbItemWidth,
+      totalItems: this.thumbTotalItems,
+      totalWidth: this.thumbTotalItems * this.thumbItemWidth,
+      offsetY: this.thumbOffsetY,
+      isTransitioning: this.thumbIsTransitioning,
       visibleThumbs: this.workItems.filter((item) => item.thumb.visible).length,
+      thumbs: this.workItems.map((item) => ({
+        slug: item.slug,
+        xHook: item.thumbXHook,
+        yHook: item.thumbYHook,
+        position: item.thumb.position.toArray() as [number, number, number],
+        visible: item.thumb.visible,
+      })),
       thumbComposite: {
         darkness: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
         darkenIntensity: this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number,
