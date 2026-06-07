@@ -3641,6 +3641,11 @@ function sourceWorkRayPlaneSize() {
   return sourceWorkMousePlaneSize().multiplyScalar(MOUSE_RAY_SCALE);
 }
 
+function sourceYgFov(width: number, aspect: number, distance: number, scale = 1) {
+  const safeAspect = Math.max(0.0001, aspect);
+  return MathUtils.radToDeg(2 * Math.atan(width / safeAspect / (2 * (distance / scale))));
+}
+
 function tweenColorOwned(target: Color, value?: string, duration = 1.6, tweens?: gsap.core.Tween[], fallback?: string) {
   const next = sourceRgbColor(value, fallback ?? `#${target.getHexString()}`);
   if (duration <= 0) {
@@ -3676,6 +3681,8 @@ export class WebGLBackdrop {
   private mainPostScreen = makeSourcePassScreen();
   private homeCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private mainCamera = new PerspectiveCamera(55, 1, 1, 2000);
+  private mainCameraDistance = 1000;
   private characterCamera = new PerspectiveCamera(30, 1, 0.1, 100);
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private characterAmbientLight = new AmbientLight(colorFrom("white"), 1.2);
@@ -3938,6 +3945,7 @@ export class WebGLBackdrop {
     this.cameraControllerGroup.add(this.cameraRotateGroup);
     this.cameraOrigin.copy(this.cameraControllerGroup.position);
     this.thumbCamera.position.set(0, 0, 0);
+    this.mainCamera.position.set(0, 0, this.mainCameraDistance);
     this.characterCamera.position.set(0, 0, 12);
     this.characterCamera.lookAt(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
@@ -6316,6 +6324,11 @@ void main() {
     this.skyCompositeTarget.setSize(skySize, skySize);
     this.homeCamera.aspect = width / height;
     this.homeCamera.updateProjectionMatrix();
+    this.mainCamera.fov = sourceYgFov(width, width / height, this.mainCameraDistance);
+    this.mainCamera.aspect = width / height;
+    this.mainCamera.far = this.mainCameraDistance * 2;
+    this.mainCamera.position.set(0, 0, this.mainCameraDistance);
+    this.mainCamera.updateProjectionMatrix();
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
     this.cameraControllerGroup.lookAt(this.cameraLookAt);
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
@@ -7251,6 +7264,16 @@ void main() {
             noPostC1Bloom: true,
           },
           mainRawSceneMode: "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb",
+          mainRawCameraMode: "source-yg-perspective-distance-1000-no-camera-controller",
+          mainRawRenderCamera: "source-U1-I1-renderTargetA-uses-yg-camera",
+          mainRawCamera: {
+            fov: this.mainCamera.fov,
+            aspect: this.mainCamera.aspect,
+            near: this.mainCamera.near,
+            far: this.mainCamera.far,
+            position: this.mainCamera.position.toArray(),
+            distance: this.mainCameraDistance,
+          },
           mainRawSceneBackground: this.mainScene.background instanceof Color ? this.mainScene.background.toArray() : null,
         },
         updateOrder: {
@@ -7260,6 +7283,7 @@ void main() {
           rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"],
           workUpdateOrder: ["Lu.renderManager.raw", "Lu.renderManager.bloom", "Ka.mouseSimulation", "Lu.renderManager.composite", "IT.cameraController", "p1.components"],
           mainUpdateOrder: ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"],
+          mainCompositeUpdateOrder: "source-U1-super-update-renders-I1-before-C1-update",
           frameTail: "source-work-renderManager-then-p1-update-before-main",
           mouseSimulationOrder: "source-Lu-mousesim-after-raw-bloom-before-composite",
           postRenderFrame: this.sourcePostRenderFrame,
@@ -7286,6 +7310,8 @@ void main() {
           tSceneIsMainRawTarget: this.preCompositeMaterial.uniforms.tScene.value === this.mainRawTarget.texture,
           tSceneIsCompositeTarget: this.preCompositeMaterial.uniforms.tScene.value === this.compositeTarget.texture,
           uBgColor: (this.preCompositeMaterial.uniforms.uBgColor.value as Color).toArray(),
+          uTime: this.preCompositeMaterial.uniforms.uTime.value,
+          uTimeUpdateOrder: "source-U1-C1-update-after-I1-render",
           uContrast: this.preCompositeMaterial.uniforms.uContrast.value,
           uFluidStrength: this.preCompositeMaterial.uniforms.uFluidStrength.value,
           uMediaReveal: this.preCompositeMaterial.uniforms.uMediaReveal.value,
@@ -8309,7 +8335,6 @@ void main() {
     this.pointer.lerp(this.targetPointer, 0.055);
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
-    this.preCompositeMaterial.uniforms.uTime.value = time;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
     this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;
@@ -8365,7 +8390,7 @@ void main() {
     this.updateWorkSceneForNextFrame(time, delta);
     this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
     this.renderer.setRenderTarget(this.mainRawTarget);
-    this.renderer.render(this.mainScene, this.homeCamera);
+    this.renderer.render(this.mainScene, this.mainCamera);
     this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
     this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
     if (this.sourceMainRenderSettings.blur.enabled) {
@@ -8386,6 +8411,7 @@ void main() {
     this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
     this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     this.renderHomeCompositePass();
+    this.preCompositeMaterial.uniforms.uTime.value = time;
     this.renderThumbTargets();
     this.renderDisplacementTarget(time);
     if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();

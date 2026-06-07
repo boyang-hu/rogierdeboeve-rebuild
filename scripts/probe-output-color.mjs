@@ -391,6 +391,19 @@ async function runProbe() {
   if (mainSettings?.mainRawSceneMode !== "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb") {
     ownershipErrors.push("mainRawSceneMode");
   }
+  if (mainSettings?.mainRawCameraMode !== "source-yg-perspective-distance-1000-no-camera-controller") {
+    ownershipErrors.push("mainRawCameraMode");
+  }
+  if (mainSettings?.mainRawRenderCamera !== "source-U1-I1-renderTargetA-uses-yg-camera") {
+    ownershipErrors.push("mainRawRenderCamera");
+  }
+  const mainRawCamera = mainSettings?.mainRawCamera || {};
+  if (Math.abs((mainRawCamera.distance ?? 0) - 1000) > 0.001) ownershipErrors.push("mainRawCameraDistance");
+  if (Math.abs((mainRawCamera.far ?? 0) - 2000) > 0.001) ownershipErrors.push("mainRawCameraFar");
+  if (Math.abs((mainRawCamera.aspect ?? 0) - (viewport.width / viewport.height)) > 0.001) ownershipErrors.push("mainRawCameraAspect");
+  if (JSON.stringify(mainRawCamera.position || null) !== JSON.stringify([0, 0, 1000])) {
+    ownershipErrors.push(`mainRawCameraPosition=${JSON.stringify(mainRawCamera.position || null)}`);
+  }
   const mainPassInputs = mainSettings?.renderManagerPassInputs || {};
   for (const [key, expected] of Object.entries({
     blurSource: "source-I1-renderTargetA",
@@ -491,6 +504,9 @@ async function runProbe() {
   if (preCompositeUniforms?.tSceneSourceMode !== "source-I1-renderTargetA-raw-main-scene") materialSurfaceErrors.push("preCompositeSceneSourceMode");
   if (preCompositeUniforms?.tSceneIsMainRawTarget !== true) materialSurfaceErrors.push("preCompositeSceneMainRawBinding");
   if (preCompositeUniforms?.tSceneIsCompositeTarget !== false) materialSurfaceErrors.push("preCompositeSceneCompositeSelfBinding");
+  if (preCompositeUniforms?.uTimeUpdateOrder !== "source-U1-C1-update-after-I1-render") {
+    materialSurfaceErrors.push("preCompositeUTimeUpdateOrder");
+  }
   const expectedWorkCompositeMaterialMode = debugCompositeProbe ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3";
   if (workCompositeUniforms?.materialMode !== expectedWorkCompositeMaterialMode) materialSurfaceErrors.push("workCompositeMaterialMode");
   if (workCompositeUniforms?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("workCompositeVertexMode");
@@ -678,6 +694,9 @@ async function runProbe() {
   const expectedMainUpdateOrder = ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"];
   if (JSON.stringify(updateOrder?.mainUpdateOrder) !== JSON.stringify(expectedMainUpdateOrder)) {
     throw new Error(`Main update order source-shape mismatch: ${JSON.stringify(updateOrder?.mainUpdateOrder || null)}`);
+  }
+  if (updateOrder?.mainCompositeUpdateOrder !== "source-U1-super-update-renders-I1-before-C1-update") {
+    throw new Error(`Main C1 update order source-shape mismatch: ${updateOrder?.mainCompositeUpdateOrder || "missing"}`);
   }
   if (updateOrder?.mouseSimulationOrder !== "source-Lu-mousesim-after-raw-bloom-before-composite") {
     throw new Error(`Mouse simulation order source-shape mismatch: ${updateOrder?.mouseSimulationOrder || "missing"}`);

@@ -138,16 +138,16 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `Lu/I1` remaining screen-pass ownership cleanup was completed without visual tuning.
-- Source `Lu.update()` and `I1.update()` use one fullscreen `screen` mesh and repeatedly swap `this.screen.material` for optional blur, lensflare, luminosity, bloom blur/composite, composite, and FXAA passes.
-- The rebuild had already moved the central production passes to `workPostScreen/mainPostScreen`, but still retained old dedicated pass scenes and still rendered main optional blur/lensflare through dedicated scene meshes.
-- The rebuild now removes those old dedicated pass-scene fields/initializers for work/main composite, pre-composite, bloom/luminosity/fxaa helpers, and main optional blur/lensflare.
-- `renderHomeBlurPass()` now renders `Na` horizontal/vertical blur through `mainPostScreen`; `renderMainLensflarePass()` now renders `L1` through `mainPostScreen` after the source explicit lensflare clear.
-- Runtime probes expose/assert `optionalBlurScreenMode=source-I1-mainPostScreen-material-swap`, `lensflareScreenMode=source-I1-mainPostScreen-material-swap`, and per-material screen modes for `standardBlur` and `lensflare`.
-- Static audit checks source `I1` material-swap anchors, rebuild `mainPostScreen` blur/lensflare assignments, and `rebuildNoDedicatedPassScenes=true`.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0065` and mobile center `+0.0301`, recorded only as regression evidence.
+- Source `U1/yg/I1/C1` main raw camera and `C1` update-order ownership was completed without visual tuning.
+- Source `yg` owns a perspective main camera with `distance=1000`, `far=2000`, source `Ef(...)` fov calculation, z position `1000`, and an empty `setCameraController(){}`.
+- Source `U1.update()` runs `super.update(e,t,n)` first, which renders `I1`, then calls `this.renderManager.compositeMaterial.update(e,t,n)` on `C1/A1`.
+- The rebuild now renders `mainRawTarget` with a dedicated source-shaped `mainCamera` instead of the home work camera, and resize keeps its fov/aspect/far/position aligned to source `yg`.
+- `C1/A1.uTime` is now written after `renderHomeCompositePass()`, matching source `U1.update()` where the `I1` render pass occurs before `C1.update(...)`.
+- Runtime probes expose/assert `mainRawCameraMode=source-yg-perspective-distance-1000-no-camera-controller`, `mainRawRenderCamera=source-U1-I1-renderTargetA-uses-yg-camera`, `mainCompositeUpdateOrder=source-U1-super-update-renders-I1-before-C1-update`, and `preComposite.uTimeUpdateOrder=source-U1-C1-update-after-I1-render`.
+- Static audit extracts source `yg` and `U1` anchors and checks the rebuild main raw camera/render/update-order ownership.
+- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0060` and mobile center `+0.0300`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a `Lu/I1` remaining pass-scene ownership mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes a `U1/yg/I1/C1` main-camera/update-order mismatch, not the remaining spotlight projection/content transfer, unresolved `A1/OA/kA/Lu` target/transfer graph evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -165,7 +165,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `Lu/I1` remaining screen-pass ownership cleanup batch.
+All passed in the `U1/yg/I1/C1` main raw camera and `C1` update-order batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

@@ -166,6 +166,8 @@ const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
 const sourceThumbT1 = extractAround(bundle, "class T1 extends Uu", 500, 1000);
 const sourceThumbE1 = extractAround(bundle, "class E1", 360, 900);
+const sourceMainYg = extractAround(bundle, "class yg extends Iu", 300, 1200);
+const sourceMainU1Scene = extractAround(bundle, "class U1 extends yg", 300, 1100);
 const sourceDisplacementO1 = extractAround(bundle, "class O1 extends Lo", 700, 900);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 900, 1700);
@@ -778,8 +780,49 @@ const summary = {
           "this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.blurTargetB.texture : this.mainRawTarget.texture",
           "this.sourceMainRenderSettings.luminosity.enabled ? this.mainBloomBrightTarget : undefined",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        rebuildSourceMainCamera:
+          rebuildWebgl.includes("private mainCamera = new PerspectiveCamera(55, 1, 1, 2000)")
+          && rebuildWebgl.includes("private mainCameraDistance = 1000")
+          && rebuildWebgl.includes("this.mainCamera.fov = sourceYgFov(width, width / height, this.mainCameraDistance)")
+          && rebuildWebgl.includes("this.renderer.render(this.mainScene, this.mainCamera)")
+          && !rebuildWebgl.includes("this.renderer.render(this.mainScene, this.homeCamera)"),
+        rebuildC1UpdateAfterRender:
+          rebuildWebgl.indexOf("this.renderHomeCompositePass();") >= 0
+          && rebuildWebgl.indexOf("this.preCompositeMaterial.uniforms.uTime.value = time;", rebuildWebgl.indexOf("this.renderHomeCompositePass();")) > rebuildWebgl.indexOf("this.renderHomeCompositePass();")
+          && rebuildWebgl.includes("mainCompositeUpdateOrder: \"source-U1-super-update-renders-I1-before-C1-update\""),
       },
       excerpt: compact(sourceMainI1.text),
+    },
+    mainYg: sourceMainYg && {
+      index: sourceMainYg.index,
+      checks: checks(sourceMainYg.text, [
+        "class yg extends Iu",
+        "this.distance=1e3",
+        "this.fov=Ef(innerWidth,innerWidth/innerHeight,this.distance)",
+        "this.camera=new Ya(this.fov,Pe.aspect,1,this.distance*2)",
+        "this.camera.position.set(0,0,this.distance)",
+        "setCameraController(){}",
+        "this.camera.fov=Ef(e,e/t,this.distance)",
+        "this.camera.aspect=e/t",
+        "this.camera.updateProjectionMatrix()",
+      ]),
+      excerpt: compact(sourceMainYg.text),
+    },
+    mainU1Scene: sourceMainU1Scene && {
+      index: sourceMainU1Scene.index,
+      checks: checks(sourceMainU1Scene.text, [
+        "class U1 extends yg",
+        "this.scene.background=new ye(\"#D9D9D9\").convertLinearToSRGB()",
+        "setRenderManager(){this.renderManager=new I1(this.renderer,this.scene,this.camera)}",
+        "update(e,t,n){super.update(e,t,n),this.renderManager.compositeMaterial.update(e,t,n)}",
+        "resize(e,t,n){super.resize(e,t,n),this.renderManager.compositeMaterial.resize(e,t)}",
+      ]),
+      rebuildChecks: {
+        mainRawCameraMode: rebuildWebgl.includes("mainRawCameraMode: \"source-yg-perspective-distance-1000-no-camera-controller\""),
+        mainRawRenderCamera: rebuildWebgl.includes("mainRawRenderCamera: \"source-U1-I1-renderTargetA-uses-yg-camera\""),
+        c1UpdateOrder: rebuildWebgl.includes("uTimeUpdateOrder: \"source-U1-C1-update-after-I1-render\""),
+      },
+      excerpt: compact(sourceMainU1Scene.text),
     },
     renderer: sourceRenderer && {
       index: sourceRenderer.index,
