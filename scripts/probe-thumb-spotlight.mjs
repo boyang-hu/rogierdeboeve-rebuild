@@ -134,7 +134,7 @@ async function runProbe() {
   if (sourceDefaults.thumbMouseLightness !== 1) {
     sourceShapeErrors.push(`thumbDefaultMouseLightness=${sourceDefaults.thumbMouseLightness}`);
   }
-  if (probe.thumbPositionMode !== "source-w1-x-only") {
+  if (probe.thumbPositionMode !== "source-w1-centered-x-wrap") {
     sourceShapeErrors.push(`thumbPositionMode=${probe.thumbPositionMode}`);
   }
   if (probe.itemWidth !== 2) {
@@ -150,8 +150,15 @@ async function runProbe() {
     sourceShapeErrors.push(`isTransitioning=${probe.isTransitioning}`);
   }
   for (const thumb of probe.thumbs || []) {
+    const x = thumb.position?.[0];
     const y = thumb.position?.[1];
     const z = thumb.position?.[2];
+    if (Math.abs(x) > probe.totalWidth / 2 + 1e-6) {
+      sourceShapeErrors.push(`${thumb.slug}:xWrap=${x}`);
+    }
+    if (thumb.visible !== (x >= -1.5 && x <= 1.5)) {
+      sourceShapeErrors.push(`${thumb.slug}:visible=${thumb.visible},x=${x}`);
+    }
     if (Math.abs(y) > 1e-6 || Math.abs(z) > 1e-6) {
       sourceShapeErrors.push(`${thumb.slug}:position=${JSON.stringify(thumb.position)}`);
     }

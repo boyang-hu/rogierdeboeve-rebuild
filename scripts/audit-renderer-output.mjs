@@ -141,6 +141,7 @@ const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Mat
 const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 500, 900);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
+const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 400, 1700);
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
@@ -719,6 +720,19 @@ const summary = {
         "this.aboutBlocks.visible&&(this.aboutBlocks.update(e,t,n,Math.min(Pe.dpr,1.5))",
       ]),
       excerpt: compact(sourceP1Update.text),
+    },
+    thumbW1: sourceThumbW1 && {
+      index: sourceThumbW1.index,
+      checks: checks(sourceThumbW1.text, [
+        "class w1 extends rt",
+        "this.progress=e*n",
+        "r.xHook=o",
+        "let c=(o+this.progress+n*67890)%n",
+        "c>n/2&&(c-=n)",
+        "r.mesh.position.set(c,0,0)",
+        "c<-1.5||c>1.5?r.mesh.visible=!1:r.mesh.visible=!0",
+      ]),
+      excerpt: compact(sourceThumbW1.text),
     },
     skyV1: sourceSkyV1 && {
       index: sourceSkyV1.index,

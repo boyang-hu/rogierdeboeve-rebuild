@@ -5835,7 +5835,7 @@ export class WebGLBackdrop {
         thumbSaturation: SOURCE_INITIAL_THUMB_SATURATION,
         thumbMouseLightness: SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS,
       },
-      thumbPositionMode: "source-w1-x-only",
+      thumbPositionMode: "source-w1-centered-x-wrap",
       itemWidth: this.thumbItemWidth,
       totalItems: this.thumbTotalItems,
       totalWidth: this.thumbTotalItems * this.thumbItemWidth,
