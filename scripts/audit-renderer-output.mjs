@@ -48,6 +48,25 @@ function extractAround(bundle, needle, before = 400, after = 1400) {
   };
 }
 
+function extractBlock(source, needle) {
+  const start = source.indexOf(needle);
+  if (start < 0) return null;
+  const braceStart = source.indexOf("{", start);
+  if (braceStart < 0) return null;
+  let depth = 0;
+  for (let index = braceStart; index < source.length; index += 1) {
+    const char = source[index];
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(start, index + 1);
+      }
+    }
+  }
+  return null;
+}
+
 function compact(text) {
   return text.replace(/\s+/g, " ").trim();
 }
@@ -118,6 +137,7 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
+const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
@@ -1254,10 +1274,26 @@ const summary = {
         "tSky:new I(null)",
         "uShader1Alpha:new I(Qn.SHADER_1_ALPHA)",
         "uShader1Mix3:new I(Qn.SHADER_1_MIX_3)",
+        "t.uniforms.uMultiplier=this.customUniforms.uMultiplier",
+        "t.uniforms.tSky=this.customUniforms.tSky",
         "float customRoughness(float roughness, vec2 vUv, float size, float time)",
         "float randomF(vec2 st)",
         "t.vertexShader=c1,t.fragmentShader=l1",
       ]),
+      rebuildCustomUniformOwnership: {
+        factoryFound: Boolean(rebuildEnvironmentMaterialFactory),
+        customUniformsOnly: Boolean(rebuildEnvironmentMaterialFactory)
+          && rebuildEnvironmentMaterialFactory.includes("material.customUniforms = uniforms;")
+          && !rebuildEnvironmentMaterialFactory.includes("material.uniforms = uniforms;"),
+        runtimeProbe: rebuildWebgl.includes("customUniformsMode: \"source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias\"")
+          && rebuildWebgl.includes("hasMaterialUniformsAlias: \"uniforms\" in this.environmentMaterial"),
+        updatePathsUseCustomUniforms: [
+          "this.environmentMaterial.customUniforms.uDarkenColor.value",
+          "this.environmentMaterial.customUniforms.uTime.value",
+          "this.environmentMaterial.customUniforms.tSky.value",
+        ].every((needle) => rebuildWebgl.includes(needle)),
+        noRuntimeEnvironmentUniformAliasAccess: !rebuildWebgl.includes("this.environmentMaterial.uniforms."),
+      },
       excerpt: compact(sourceU1.text),
     },
     floorA1: sourceA1Floor && {

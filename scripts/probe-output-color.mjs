@@ -771,7 +771,8 @@ async function runProbe() {
   const environmentHierarchy = parsed.probe.reflectionState?.environment;
   const environmentErrors = [];
   if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
-  if (environmentUniforms?.customUniformsAlias !== true) environmentErrors.push("customUniformsAlias");
+  if (environmentUniforms?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("customUniformsMode");
+  if (environmentUniforms?.hasMaterialUniformsAlias !== false) environmentErrors.push("materialUniformsAlias");
   if (environmentUniforms?.hierarchyMode !== "source-h1-group-owns-transform") environmentErrors.push("hierarchyMode");
   if (environmentUniforms?.updateMode !== "source-h1-material-update-only") environmentErrors.push("updateMode");
   if (environmentUniforms?.rotationMode !== "source-p1-demorgen-initial-adjustment-only") environmentErrors.push("rotationMode");
@@ -798,7 +799,8 @@ async function runProbe() {
   if (environmentHierarchy?.geometry && Math.abs((environmentHierarchy.geometry.radius ?? 0) - 300) > 0.0001) environmentErrors.push("reflectionGeometryRadius");
   if (environmentHierarchy?.geometry?.detail !== 10) environmentErrors.push("reflectionGeometryDetail");
   if (environmentHierarchy?.material?.mode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("reflectionMaterialMode");
-  if (environmentHierarchy?.material?.customUniformsAlias !== true) environmentErrors.push("reflectionCustomUniformsAlias");
+  if (environmentHierarchy?.material?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("reflectionCustomUniformsMode");
+  if (environmentHierarchy?.material?.hasMaterialUniformsAlias !== false) environmentErrors.push("reflectionMaterialUniformsAlias");
   if (environmentHierarchy?.material?.constructorParamsMode !== "source-h1-passes-side-envMapIntensity-fog-only") environmentErrors.push("reflectionConstructorParamsMode");
   if (environmentHierarchy?.material?.defaultStandardParamsMode !== "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants") environmentErrors.push("reflectionDefaultStandardParamsMode");
   if (environmentErrors.length) {

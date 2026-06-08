@@ -105,7 +105,6 @@ type WorkItem = {
 
 type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { value: any }> };
 type EnvironmentMaterial = MeshStandardMaterial & {
-  uniforms: Record<string, { value: any }>;
   customUniforms: Record<string, { value: any }>;
   sourceConstructorParams?: Record<string, any>;
 };
@@ -5744,7 +5743,6 @@ void main() {
       fog: false,
       dithering: true,
     }) as EnvironmentMaterial;
-    material.uniforms = uniforms;
     material.customUniforms = uniforms;
     material.sourceConstructorParams = {
       side: BackSide,
@@ -5956,14 +5954,14 @@ void main() {
       this.ambientLight.color.copy(next);
       this.ambientLight.intensity = intensity;
       this.backgroundMaterial.uniforms.uAmbientColor.value.copy(next);
-      this.environmentMaterial.uniforms.uDarkenColor.value.copy(next);
+      this.environmentMaterial.customUniforms.uDarkenColor.value.copy(next);
       this.backgroundMaterial.uniforms.uAmbientIntensity.value = intensity;
       return;
     }
     this.ambientTweens.push(gsap.to(this.ambientLight.color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.ambientLight, { intensity, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
-    this.ambientTweens.push(gsap.to(this.environmentMaterial.uniforms.uDarkenColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+    this.ambientTweens.push(gsap.to(this.environmentMaterial.customUniforms.uDarkenColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
     this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
       value: intensity,
       duration,
@@ -6735,7 +6733,7 @@ void main() {
   }
 
   private updateWorkSceneForNextFrame(time: number, delta: number) {
-    this.environmentMaterial.uniforms.uTime.value = time;
+    this.environmentMaterial.customUniforms.uTime.value = time;
     this.updateHomeCamera(delta);
     if (this.spotLightParallax) {
       this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
@@ -7734,41 +7732,42 @@ void main() {
         environment: {
           visible: this.environmentGroup.visible,
           materialMode: "source-u1-meshstandard-onBeforeCompile",
-          customUniformsAlias: this.environmentMaterial.customUniforms === this.environmentMaterial.uniforms,
+          customUniformsMode: "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias",
+          hasMaterialUniformsAlias: "uniforms" in this.environmentMaterial,
           geometry: {
             mode: "source-Du-icosahedron",
             type: this.environmentPlane.geometry.type,
             radius: this.environmentPlane.geometry.parameters.radius,
             detail: this.environmentPlane.geometry.parameters.detail,
           },
-          uTime: this.environmentMaterial.uniforms.uTime.value,
+          uTime: this.environmentMaterial.customUniforms.uTime.value,
           updateMode: "source-h1-material-update-only",
           speed: this.environmentSpeed,
-          uMultiplier: this.environmentMaterial.uniforms.uMultiplier.value,
-          uDarken: this.environmentMaterial.uniforms.uDarken.value,
-          uDarkenColor: (this.environmentMaterial.uniforms.uDarkenColor.value as Color).toArray(),
-          tSkyIsComposite: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
+          uMultiplier: this.environmentMaterial.customUniforms.uMultiplier.value,
+          uDarken: this.environmentMaterial.customUniforms.uDarken.value,
+          uDarkenColor: (this.environmentMaterial.customUniforms.uDarkenColor.value as Color).toArray(),
+          tSkyIsComposite: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,
           tSkySource: this.debugSkyTarget === "off" ? "placeholder" : this.debugSkyTarget === "raw" ? "raw" : "composite",
           tSkyBindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
-          tSkyWrapS: this.environmentMaterial.uniforms.tSky.value instanceof Texture
-            ? this.environmentMaterial.uniforms.tSky.value.wrapS
+          tSkyWrapS: this.environmentMaterial.customUniforms.tSky.value instanceof Texture
+            ? this.environmentMaterial.customUniforms.tSky.value.wrapS
             : null,
-          tSkyWrapT: this.environmentMaterial.uniforms.tSky.value instanceof Texture
-            ? this.environmentMaterial.uniforms.tSky.value.wrapT
+          tSkyWrapT: this.environmentMaterial.customUniforms.tSky.value instanceof Texture
+            ? this.environmentMaterial.customUniforms.tSky.value.wrapT
             : null,
-          skyCompositeBindingMatchesUniform: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
+          skyCompositeBindingMatchesUniform: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,
           shaderSurface: {
-            uShader1Alpha: this.environmentMaterial.uniforms.uShader1Alpha.value,
-            uShader1Speed: this.environmentMaterial.uniforms.uShader1Speed.value,
-            uShader1Scale: this.environmentMaterial.uniforms.uShader1Scale.value,
-            uShader2Alpha: this.environmentMaterial.uniforms.uShader2Alpha.value,
-            uShader2Scale: this.environmentMaterial.uniforms.uShader2Scale.value,
-            uShader3Alpha: this.environmentMaterial.uniforms.uShader3Alpha.value,
-            uShader3Speed: this.environmentMaterial.uniforms.uShader3Speed.value,
-            uShader3Scale: this.environmentMaterial.uniforms.uShader3Scale.value,
-            uShader1Mix2: this.environmentMaterial.uniforms.uShader1Mix2?.value ?? null,
-            uShader1Mix2Binding: this.environmentMaterial.uniforms.uShader1Mix2 ? "runtime" : "source-declared-only",
-            uShader1Mix3: this.environmentMaterial.uniforms.uShader1Mix3.value,
+            uShader1Alpha: this.environmentMaterial.customUniforms.uShader1Alpha.value,
+            uShader1Speed: this.environmentMaterial.customUniforms.uShader1Speed.value,
+            uShader1Scale: this.environmentMaterial.customUniforms.uShader1Scale.value,
+            uShader2Alpha: this.environmentMaterial.customUniforms.uShader2Alpha.value,
+            uShader2Scale: this.environmentMaterial.customUniforms.uShader2Scale.value,
+            uShader3Alpha: this.environmentMaterial.customUniforms.uShader3Alpha.value,
+            uShader3Speed: this.environmentMaterial.customUniforms.uShader3Speed.value,
+            uShader3Scale: this.environmentMaterial.customUniforms.uShader3Scale.value,
+            uShader1Mix2: this.environmentMaterial.customUniforms.uShader1Mix2?.value ?? null,
+            uShader1Mix2Binding: this.environmentMaterial.customUniforms.uShader1Mix2 ? "runtime" : "source-declared-only",
+            uShader1Mix3: this.environmentMaterial.customUniforms.uShader1Mix3.value,
           },
           sceneEnvironment: this.homeScene.environment ? {
             colorSpace: this.homeScene.environment.colorSpace,
@@ -7832,7 +7831,7 @@ void main() {
           sizingMode: "source-V1-height-0.75-square",
           rawSizingMode: "source-V1-height-0.75-square",
           bindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
-          isEnvironmentSkySource: this.environmentMaterial.uniforms.tSky.value === this.skyCompositeTarget.texture,
+          isEnvironmentSkySource: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,
           backgroundMode: "source-V1-background-666666-linear-to-srgb",
           background: this.skyScene.background instanceof Color ? this.skyScene.background.toArray() : null,
           wrapMode: "source-nD-sky-composite-repeat-for-work-env",
@@ -7977,7 +7976,8 @@ void main() {
         },
         material: {
           mode: "source-u1-meshstandard-onBeforeCompile",
-          customUniformsAlias: this.environmentMaterial.customUniforms === this.environmentMaterial.uniforms,
+          customUniformsMode: "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias",
+          hasMaterialUniformsAlias: "uniforms" in this.environmentMaterial,
           transparent: this.environmentMaterial.transparent,
           depthWrite: this.environmentMaterial.depthWrite,
           depthTest: this.environmentMaterial.depthTest,

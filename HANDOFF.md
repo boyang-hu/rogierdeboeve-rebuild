@@ -139,14 +139,15 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `I1` optional `L1` lensflare material ownership was completed without visual tuning.
-- Source `I1.initRenderer()` always creates `renderTargetLensflare=this.renderTargetA.clone()`, but only creates `this.lensflareMaterial=new L1` inside `this.settings.lensflare.enabled&&(...)`; default `I1.initSettings()` sets `lensflare.enabled:false`.
-- The rebuild now keeps `mainLensflareTarget` on the source clone graph and full-size resize path, but `mainLensflareMaterial` is optional and only created when `SOURCE_MAIN_LENSFLARE_SETTINGS.enabled` is true.
-- Dispose, resize, render, and runtime probe paths are guarded. Default probes now report `enabled:false`, `materialCreated:false`, `materialMode:null`, and `ownership=source-I1-lensflareMaterial-created-only-when-enabled`.
-- `probe-output-color.mjs` now asserts the default disabled/no-material path, and `audit-renderer-output.mjs` checks the source optional creation anchor plus absence of the old unconditional constructor call.
-- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0044` and mobile center `+0.0313`, recorded only as regression evidence.
+- Source `h1/u1` environment custom-uniform ownership was completed without visual tuning.
+- Source `u1` creates `this.customUniforms={...}` and injects individual entries into the compiled shader inside `onBeforeCompile`, including `t.uniforms.uMultiplier=this.customUniforms.uMultiplier` and `t.uniforms.tSky=this.customUniforms.tSky`.
+- The rebuild no longer adds a non-source `material.uniforms = uniforms` alias to the environment material. It now keeps only `material.customUniforms = uniforms`.
+- Environment ambient color updates, environment time updates, sky binding probes, and reflection-state probes now read/write `environmentMaterial.customUniforms`.
+- Runtime probes now report/assert `customUniformsMode=source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias` and `hasMaterialUniformsAlias:false`.
+- `probe-output-color.mjs` now asserts the no-alias path for both direct environment uniforms and reflection material metadata. `audit-renderer-output.mjs` checks the source `u1` injection anchors and scopes the negative `material.uniforms = uniforms` check to `createEnvironmentMaterial()` so ordinary work-block materials are not false positives.
+- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. The first concurrent 9s output probes hit the existing texture-preload timing guard; desktop and mobile reruns with `PROBE_WAIT=20000` passed. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0046` and mobile center `+0.0300`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the disabled-default `I1` optional lensflare material bridge, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the `u1` environment material uniform-alias bridge, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -164,7 +165,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `Lu/I1` pass material ownership batch.
+All passed in the `h1/u1` environment custom-uniform ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
