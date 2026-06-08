@@ -138,6 +138,7 @@ const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
+const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
@@ -1421,6 +1422,10 @@ const summary = {
       index: sourceThumbE1.index,
       checks: checks(sourceThumbE1.text, [
         "class E1",
+        "this.setImage(e)",
+        "await Xt.thumbsReady",
+        "await(await Xt.getProjectThumbById(e)).src",
+        "this.material.uniforms.tMap.value=n",
         "this.material=new M1",
         "this.mesh=new at(this.geometry,this.material)",
         "this.mesh.scale.set(2,2,2)",
@@ -1433,6 +1438,26 @@ const summary = {
         rebuildHasNoInitialHiddenState:
           !rebuildWebgl.includes("mesh.visible = false;")
           && rebuildWebgl.includes("sourceInitialVisibleMode: \"source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible\""),
+        sourceThumbPreloadLifecycle:
+          sourceTextureManager?.text.includes("static preloadThumbs(){this.characterModel=this.loadGLTF")
+          && sourceTextureManager?.text.includes("this.projectThumbs=[]")
+          && sourceTextureManager?.text.includes("this.projectThumbs.push({id:t.id,src:this[t.data.thumbnail.type===")
+          && sourceTextureManager?.text.includes("this.thumbsReadyResolve()")
+          && sourceTextureManager?.text.includes("static getProjectThumbById(e){return this.projectThumbs.find(t=>t.id===e)}"),
+        rebuildThumbPreloadLifecycle:
+          rebuildWebgl.includes("private sourceProjectThumbs: SourceProjectThumb[] = [];")
+          && rebuildWebgl.includes("private sourceThumbsReady = new Promise<void>")
+          && rebuildWebgl.includes("private preloadSourceThumbsFromCards(cards: HTMLElement[])")
+          && rebuildWebgl.includes("bindingMode: \"source-Xt-projectThumbs-src-promise\"")
+          && rebuildWebgl.includes("private getSourceProjectThumbById(id: string)")
+          && rebuildWebgl.includes("private setSourceThumbImage(id: string, mesh: Mesh<PlaneGeometry, RawShaderMaterial>)")
+          && rebuildWebgl.includes("void this.sourceThumbsReady.then(async () =>")
+          && rebuildWebgl.includes("const projectThumb = this.getSourceProjectThumbById(id)")
+          && rebuildWebgl.includes("material.uniforms.tMap.value = texture;"),
+        rebuildNoDirectPayloadThumbLoadInCreateWorkScene:
+          Boolean(rebuildCreateWorkScene)
+          && !rebuildCreateWorkScene.includes("payload.thumb) this.loadTexture")
+          && !rebuildCreateWorkScene.includes("this.loadTexture(payload.thumb"),
       },
       excerpt: compact(sourceThumbE1.text),
     },

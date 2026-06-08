@@ -143,6 +143,33 @@ async function runProbe() {
   if (probe.thumbHierarchyMode !== "source-T1-w1-scrollWrap-E1-mesh") {
     sourceShapeErrors.push(`thumbHierarchyMode=${probe.thumbHierarchyMode}`);
   }
+  const imageOwnership = probe.thumbImageOwnership || {};
+  if (imageOwnership.mode !== "source-Xt-preloadThumbs-projectThumbs-thumbsReady-E1-setImage") {
+    sourceShapeErrors.push(`thumbImageOwnership=${imageOwnership.mode}`);
+  }
+  if (imageOwnership.thumbsReadyResolved !== true) {
+    sourceShapeErrors.push(`thumbsReadyResolved=${imageOwnership.thumbsReadyResolved}`);
+  }
+  if (imageOwnership.projectThumbCount !== probe.totalItems) {
+    sourceShapeErrors.push(`projectThumbCount=${imageOwnership.projectThumbCount},total=${probe.totalItems}`);
+  }
+  if (imageOwnership.allProjectThumbsUseSourcePromise !== true) {
+    sourceShapeErrors.push(`allProjectThumbsUseSourcePromise=${imageOwnership.allProjectThumbsUseSourcePromise}`);
+  }
+  if (![true, false].includes(imageOwnership.webpSupport)) {
+    sourceShapeErrors.push(`thumbWebpSupport=${imageOwnership.webpSupport}`);
+  }
+  if (!["webp", "jpg"].includes(imageOwnership.assetExt)) {
+    sourceShapeErrors.push(`thumbAssetExt=${imageOwnership.assetExt}`);
+  }
+  if (!Array.isArray(imageOwnership.urls) || imageOwnership.urls.length !== probe.totalItems) {
+    sourceShapeErrors.push(`thumbUrls=${JSON.stringify(imageOwnership.urls || null)}`);
+  } else if (!imageOwnership.urls.every((url) => typeof url === "string" && url.endsWith(`.${imageOwnership.assetExt}`))) {
+    sourceShapeErrors.push(`thumbUrlExts=${JSON.stringify(imageOwnership.urls)}`);
+  }
+  if (!Array.isArray(imageOwnership.loaders) || !imageOwnership.loaders.every((loader) => loader === "loadImage" || loader === "loadVideo")) {
+    sourceShapeErrors.push(`thumbLoaders=${JSON.stringify(imageOwnership.loaders || null)}`);
+  }
   if (probe.thumbWrapParentIsScene !== true) {
     sourceShapeErrors.push(`thumbWrapParentIsScene=${probe.thumbWrapParentIsScene}`);
   }
@@ -179,6 +206,30 @@ async function runProbe() {
     }
     if (thumb.sourceInitialVisibleMode !== "source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible") {
       sourceShapeErrors.push(`${thumb.slug}:initialVisibleMode=${thumb.sourceInitialVisibleMode}`);
+    }
+    if (thumb.sourceImageMode !== "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById") {
+      sourceShapeErrors.push(`${thumb.slug}:imageMode=${thumb.sourceImageMode}`);
+    }
+    if (thumb.sourceImageId !== thumb.slug) {
+      sourceShapeErrors.push(`${thumb.slug}:imageId=${thumb.sourceImageId}`);
+    }
+    if (thumb.sourceImageBound !== true || thumb.sourceMaterialBound !== true) {
+      sourceShapeErrors.push(`${thumb.slug}:imageBound=${thumb.sourceImageBound}/${thumb.sourceMaterialBound}`);
+    }
+    if (thumb.sourceMaterialImageMode !== "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById") {
+      sourceShapeErrors.push(`${thumb.slug}:materialImageMode=${thumb.sourceMaterialImageMode}`);
+    }
+    if (thumb.sourceMaterialReady !== true) {
+      sourceShapeErrors.push(`${thumb.slug}:materialReady=${thumb.sourceMaterialReady}`);
+    }
+    if (thumb.sourceMaterialBindingMode !== "source-Xt-projectThumbs-src-promise") {
+      sourceShapeErrors.push(`${thumb.slug}:bindingMode=${thumb.sourceMaterialBindingMode}`);
+    }
+    if (typeof thumb.sourceMaterialUrl !== "string" || !thumb.sourceMaterialUrl.endsWith(`.${imageOwnership.assetExt}`)) {
+      sourceShapeErrors.push(`${thumb.slug}:materialUrl=${thumb.sourceMaterialUrl}`);
+    }
+    if (!["loadImage", "loadVideo"].includes(thumb.sourceMaterialLoader)) {
+      sourceShapeErrors.push(`${thumb.slug}:materialLoader=${thumb.sourceMaterialLoader}`);
     }
     if (Math.abs(y) > 1e-6 || Math.abs(z) > 1e-6) {
       sourceShapeErrors.push(`${thumb.slug}:position=${JSON.stringify(thumb.position)}`);

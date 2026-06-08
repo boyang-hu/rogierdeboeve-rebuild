@@ -139,15 +139,15 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `h1/u1` environment custom-uniform ownership was completed without visual tuning.
-- Source `u1` creates `this.customUniforms={...}` and injects individual entries into the compiled shader inside `onBeforeCompile`, including `t.uniforms.uMultiplier=this.customUniforms.uMultiplier` and `t.uniforms.tSky=this.customUniforms.tSky`.
-- The rebuild no longer adds a non-source `material.uniforms = uniforms` alias to the environment material. It now keeps only `material.customUniforms = uniforms`.
-- Environment ambient color updates, environment time updates, sky binding probes, and reflection-state probes now read/write `environmentMaterial.customUniforms`.
-- Runtime probes now report/assert `customUniformsMode=source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias` and `hasMaterialUniformsAlias:false`.
-- `probe-output-color.mjs` now asserts the no-alias path for both direct environment uniforms and reflection material metadata. `audit-renderer-output.mjs` checks the source `u1` injection anchors and scopes the negative `material.uniforms = uniforms` check to `createEnvironmentMaterial()` so ordinary work-block materials are not false positives.
-- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. The first concurrent 9s output probes hit the existing texture-preload timing guard; desktop and mobile reruns with `PROBE_WAIT=20000` passed. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0046` and mobile center `+0.0300`, recorded only as regression evidence.
+- Source `Xt/preloadThumbs -> E1.setImage` thumb image lifecycle was aligned without visual tuning.
+- Source `Xt.preloadThumbs()` builds `projectThumbs` entries with `{ id, src }`, where `src` is the `loadImage` / `loadVideo` promise, then resolves `thumbsReady`.
+- Source `E1` calls `this.setImage(e)` from the constructor; `setImage(e)` awaits `Xt.thumbsReady`, awaits `Xt.getProjectThumbById(e).src`, binds the result to `M1.tMap`, and sets `uMapSize` / `uResolution` to `1,1`.
+- The rebuild now preloads thumbs through `sourceProjectThumbs`, `sourceThumbsReady`, source WebP-selected thumb URLs, image/video loader ownership, and `setSourceThumbImage(id, mesh)` instead of direct `payload.thumb` texture loading inside `createWorkScene()`.
+- Runtime probes now report/assert `thumbImageOwnership=source-Xt-preloadThumbs-projectThumbs-thumbsReady-E1-setImage`, promise binding mode, matching thumb count, URL extension/loader state, and per-thumb ready/bound metadata.
+- `probe-thumb-spotlight.mjs` now hard-checks the source thumb image lifecycle. `audit-renderer-output.mjs` checks the source `Xt/E1` lifecycle anchors and rejects the old direct `payload.thumb` load path inside `createWorkScene()`.
+- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, thumb spotlight probe, desktop output probe rerun with `PROBE_WAIT=30000`, mobile output probe, shader dump, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0046` and mobile center `+0.0306`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the `u1` environment material uniform-alias bridge, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the `Xt/E1` thumb image preload/binding lifecycle, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -165,7 +165,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `h1/u1` environment custom-uniform ownership batch.
+All passed in the `Xt/E1` thumb preload lifecycle ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

@@ -79,6 +79,14 @@ type ProjectPayload = {
   blocks?: string;
 };
 
+type SourceProjectThumb = {
+  id: string;
+  src: Promise<Texture>;
+  url: string | null;
+  loader: "loadImage" | "loadVideo" | null;
+  bindingMode: "source-Xt-projectThumbs-src-promise";
+};
+
 type WorkItem = {
   slug: string;
   payload: ProjectPayload;
@@ -3718,6 +3726,13 @@ export class WebGLBackdrop {
   private loader = new TextureLoader();
   private cubeLoader = new CubeTextureLoader();
   private textureCache = new Map<string, Texture>();
+  private videoTextureCache = new Map<string, Texture>();
+  private sourceProjectThumbs: SourceProjectThumb[] = [];
+  private sourceThumbsReadyResolve?: () => void;
+  private sourceThumbsReady = new Promise<void>((resolve) => {
+    this.sourceThumbsReadyResolve = resolve;
+  });
+  private sourceThumbsReadyResolved = false;
   private placeholder = makePlaceholderTexture();
   private fluidPlaceholder = makePlaceholderTexture([0, 0, 0, 255]);
   private renderSettings = SOURCE_HOME_RENDER_SETTINGS;
@@ -4574,6 +4589,8 @@ export class WebGLBackdrop {
       return;
     }
 
+    this.preloadSourceThumbs(cards);
+
     const count = cards.length;
     const theta = 360 / count;
     const itemWidth = 6.5;
@@ -4586,7 +4603,8 @@ export class WebGLBackdrop {
       const payload = this.payloadFromElement(card);
       const material = this.createWorkBlockMaterial(payload, card.classList.contains("is-active") ? 1 : 0);
       const mesh = this.createBlockMesh(material);
-      const thumb = this.createThumbPlane(payload);
+      const slug = card.dataset.slug ?? String(index);
+      const thumb = this.createThumbPlane(slug);
       const mousePlane = this.createWorkMousePlane();
       const rayPlane = this.createWorkRayPlane();
       const mouseSimulation = this.createWorkMouseSimulation();
@@ -4603,7 +4621,7 @@ export class WebGLBackdrop {
       this.blocksWrap.add(group);
       this.thumbScrollWrap.add(thumb);
       this.workItems.push({
-        slug: card.dataset.slug ?? String(index),
+        slug,
         payload,
         group,
         rotationWrap,
@@ -4624,11 +4642,6 @@ export class WebGLBackdrop {
         mouseNew: new Vector2(0.5, 0.5),
         mouseSpeed: 0,
         reveal: card.classList.contains("is-active") ? 1 : 0,
-      });
-      if (payload.thumb) this.loadTexture(payload.thumb, (texture) => {
-        thumb.material.uniforms.tMap.value = texture;
-        thumb.material.uniforms.uMapSize.value.set(1, 1);
-        thumb.material.uniforms.uResolution.value.set(1, 1);
       });
     });
     this.thumbTotalItems = this.workItems.length;
@@ -4925,7 +4938,7 @@ export class WebGLBackdrop {
     };
   }
 
-  private createThumbPlane(payload: ProjectPayload) {
+  private createThumbPlane(id: string) {
     dumpShader("M1-thumb-plane", thumbVertex, thumbFragment);
     const material = new RawShaderMaterial({
       glslVersion: GLSL3,
@@ -4945,8 +4958,79 @@ export class WebGLBackdrop {
       fragmentShader: thumbFragment,
     });
     const mesh = new Mesh(new PlaneGeometry(1, 1), material);
+    mesh.userData.sourceThumbId = id;
+    mesh.userData.sourceThumbMode = "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById";
+    mesh.userData.sourceThumbBound = false;
+    this.setSourceThumbImage(id, mesh);
     mesh.scale.set(2, 2, 2);
     return mesh;
+  }
+
+  private preloadSourceThumbs(cards: HTMLElement[]) {
+    void this.preloadSourceThumbsFromCards(cards);
+  }
+
+  private async preloadSourceThumbsFromCards(cards: HTMLElement[]) {
+    const sourceWebpSupport = await detectSourceWebpSupport();
+    this.sourceWebpSupport = sourceWebpSupport;
+    const sourceExt: "webp" | "jpg" = sourceWebpSupport ? "webp" : "jpg";
+    this.sourceAssetExt = sourceExt;
+    this.sourceProjectThumbs = cards.map((card, index) => {
+      const payload = this.payloadFromElement(card);
+      const id = card.dataset.slug ?? String(index);
+      const url = this.sourceThumbUrl(payload.thumb, sourceExt);
+      const loader = url?.endsWith(".mp4") ? "loadVideo" : url ? "loadImage" : null;
+      const src = url
+        ? loader === "loadVideo"
+          ? this.loadVideoTextureAsync(url)
+          : this.loadTextureAsync(url)
+        : Promise.resolve(this.placeholder);
+      return {
+        id,
+        src,
+        url,
+        loader,
+        bindingMode: "source-Xt-projectThumbs-src-promise" as const,
+      };
+    });
+    this.sourceThumbsReadyResolved = true;
+    this.sourceThumbsReadyResolve?.();
+  }
+
+  private sourceThumbUrl(src: string | undefined, sourceExt: "webp" | "jpg") {
+    if (!src) return null;
+    if (src.endsWith(".mp4")) return src;
+    if (/\.(webp|jpe?g)$/i.test(src)) return src.replace(/\.(webp|jpe?g)$/i, `.${sourceExt}`);
+    return `${src}.${sourceExt}`;
+  }
+
+  private getSourceProjectThumbById(id: string) {
+    return this.sourceProjectThumbs.find((thumb) => thumb.id === id);
+  }
+
+  private setSourceThumbImage(id: string, mesh: Mesh<PlaneGeometry, RawShaderMaterial>) {
+    const material = mesh.material;
+    material.userData.sourceThumbId = id;
+    material.userData.sourceThumbImageMode = "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById";
+    material.userData.sourceThumbBound = false;
+    void this.sourceThumbsReady.then(async () => {
+      const projectThumb = this.getSourceProjectThumbById(id);
+      mesh.userData.sourceThumbReady = this.sourceThumbsReadyResolved;
+      mesh.userData.sourceThumbUrl = projectThumb?.url ?? null;
+      mesh.userData.sourceThumbLoader = projectThumb?.loader ?? null;
+      mesh.userData.sourceThumbBindingMode = projectThumb?.bindingMode ?? null;
+      material.userData.sourceThumbReady = this.sourceThumbsReadyResolved;
+      material.userData.sourceThumbUrl = projectThumb?.url ?? null;
+      material.userData.sourceThumbLoader = projectThumb?.loader ?? null;
+      material.userData.sourceThumbBindingMode = projectThumb?.bindingMode ?? null;
+      if (!projectThumb) return;
+      const texture = await projectThumb.src;
+      material.uniforms.tMap.value = texture;
+      material.uniforms.uMapSize.value.set(1, 1);
+      material.uniforms.uResolution.value.set(1, 1);
+      material.userData.sourceThumbBound = true;
+      mesh.userData.sourceThumbBound = true;
+    });
   }
 
   private createBackgroundMaterial() {
@@ -6279,6 +6363,30 @@ void main() {
     });
   }
 
+  private loadVideoTextureAsync(src: string) {
+    const cached = this.videoTextureCache.get(src);
+    if (cached) return Promise.resolve(cached);
+    return new Promise<Texture>((resolve, reject) => {
+      const video = Object.assign(document.createElement("video"), {
+        crossOrigin: "anonymous",
+        muted: true,
+        loop: true,
+        playsInline: true,
+        preload: "metadata",
+        src,
+      });
+      video.addEventListener("loadedmetadata", () => {
+        video.play().catch(() => {});
+        const texture = new VideoTexture(video);
+        applySourceLoadedTextureState(texture, this.loadedTextureColorSpace());
+        this.videoTextureCache.set(src, texture);
+        resolve(texture);
+      }, { once: true });
+      video.addEventListener("error", () => reject(new Error(`Unable to load source thumb video ${src}`)), { once: true });
+      video.load();
+    });
+  }
+
   private payloadFromElement(element: HTMLElement): ProjectPayload {
     return {
       slug: element.dataset.slug ?? element.dataset.project,
@@ -7020,6 +7128,16 @@ void main() {
       },
       thumbPositionMode: "source-w1-centered-x-wrap",
       thumbHierarchyMode: "source-T1-w1-scrollWrap-E1-mesh",
+      thumbImageOwnership: {
+        mode: "source-Xt-preloadThumbs-projectThumbs-thumbsReady-E1-setImage",
+        thumbsReadyResolved: this.sourceThumbsReadyResolved,
+        projectThumbCount: this.sourceProjectThumbs.length,
+        allProjectThumbsUseSourcePromise: this.sourceProjectThumbs.every((thumb) => thumb.bindingMode === "source-Xt-projectThumbs-src-promise"),
+        webpSupport: this.sourceWebpSupport,
+        assetExt: this.sourceAssetExt,
+        urls: this.sourceProjectThumbs.map((thumb) => thumb.url),
+        loaders: this.sourceProjectThumbs.map((thumb) => thumb.loader),
+      },
       thumbWrapParentIsScene: this.thumbWrap.parent === this.thumbScene,
       thumbScrollWrapParentIsThumbWrap: this.thumbScrollWrap.parent === this.thumbWrap,
       thumbWrapFrustumCulled: this.thumbWrap.frustumCulled,
@@ -7038,6 +7156,15 @@ void main() {
         scale: item.thumb.scale.toArray() as [number, number, number],
         visible: item.thumb.visible,
         sourceInitialVisibleMode: "source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible",
+        sourceImageMode: item.thumb.userData.sourceThumbMode,
+        sourceImageId: item.thumb.userData.sourceThumbId,
+        sourceImageBound: item.thumb.userData.sourceThumbBound,
+        sourceMaterialImageMode: item.thumb.material.userData.sourceThumbImageMode,
+        sourceMaterialReady: item.thumb.material.userData.sourceThumbReady,
+        sourceMaterialBound: item.thumb.material.userData.sourceThumbBound,
+        sourceMaterialUrl: item.thumb.material.userData.sourceThumbUrl,
+        sourceMaterialLoader: item.thumb.material.userData.sourceThumbLoader,
+        sourceMaterialBindingMode: item.thumb.material.userData.sourceThumbBindingMode,
       })),
       thumbMaterial: (() => {
         const first = this.workItems[0]?.thumb.material as RawShaderMaterial | undefined;
