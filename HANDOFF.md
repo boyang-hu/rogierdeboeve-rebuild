@@ -139,15 +139,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `SD/p1/TD` direct `SpotLight` state ownership was aligned without visual tuning.
-- Source `SD.init()` writes `J.workScene.spotLight.map`, `position`, `target.position`, and `intensity` directly.
-- Source `p1.update()` directly mutates `this.spotLight.position.x/y` from camera position when `spotLightParallax` is true.
-- Source `TD.updateSpotLight()` directly writes the about spotlight `position` and `target.position` from `aboutBlocks`.
-- The rebuild now writes directly to `this.spotLight.position` and `this.spotLight.target.position` for home init, home parallax, and about spotlight updates. It removed rebuild-only `spotLightPosition`, `spotLightTarget`, `spotLightRight`, `spotLightUp`, and `updateSpotLightBasis()`.
-- Runtime probes now report/assert `positionOwnershipMode=source-direct-SpotLight-position-target-no-local-mirror`; renderer audit checks source direct-state anchors, rebuild direct writes, and absence of the mirror fields/method.
-- QA passed for `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, thumb spotlight probe, desktop/mobile output probes with `PROBE_WAIT=30000`, shader dump, project-media probe, full capture, and band analysis. The first desktop output probe hit the existing texture-preload timing guard at 20s; the 30s rerun passed. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0059` and mobile center `+0.0299`, recorded only as regression evidence.
+- Source `M1/x1` thumb shader source surfaces were aligned without changing formulas, constants, or visual tuning.
+- Source `M1/S1` keeps two blank-line positions and trailing spaces after `uProgress;` / `uTransitionCount;`; source `b1` has no blank line before `void main()`.
+- Source `x1/_1/v1` expands `${hg}` with tab-indented `return base*blend;` and `${Ur}` with four-space saturation helper indentation; source `tl` also has no blank line before `void main()`.
+- The rebuild now matches those source surfaces. It uses `SOURCE_TRAILING_SPACE` so the runtime shader text matches the mirrored bundle while the TypeScript file still passes `git diff --check`.
+- Shader dump reports `M1-thumb-plane` and `x1-thumb-composite` as `source-shaped`, with vertex delta `0` and fragment delta `0`.
+- QA passed for `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, thumb spotlight probe, desktop/mobile output probes with `PROBE_WAIT=30000`, shader dump, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0045` and mobile center `+0.0308`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the `SpotLight` state ownership bridge, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the thumb shader text surface residuals, not the remaining spotlight/thumb projection content and transfer parity, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -165,7 +164,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `SD/p1/TD` direct `SpotLight` state ownership batch.
+All passed in the `M1/x1` thumb shader source-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -214,7 +213,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, but the projected thumb feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path and has source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Extract the original main composite/render-manager shader behavior from `bundle.250f01b7.js`.
    - Look near original `A1`, `OA`, `kA`, `Lu`, and main scene render manager code.
    - Port source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.

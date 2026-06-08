@@ -1224,9 +1224,9 @@ vec3 contrast(vec3 color, float value) {
 
 const sourceSaturationHelper = `
 vec3 saturation(vec3 rgb, float adjustment) {
-  const vec3 W = vec3(0.2125, 0.7154, 0.0721);
-  vec3 intensity = vec3(dot(rgb, W));
-  return mix(intensity, rgb, adjustment);
+    const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+    vec3 intensity = vec3(dot(rgb, W));
+    return mix(intensity, rgb, adjustment);
 }
 `;
 
@@ -1694,11 +1694,11 @@ vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
 
 const sourceBlendMultiplyHelper = `
 vec3 blendMultiply(vec3 base, vec3 blend) {
-  return base * blend;
+\treturn base*blend;
 }
 
 vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
-  return (blendMultiply(base, blend) * opacity + base * (1.0 - opacity));
+\treturn (blendMultiply(base, blend) * opacity + base * (1.0 - opacity));
 }
 `;
 
@@ -2599,7 +2599,6 @@ uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 out vec2 vUv;
-
 void main() {
   vUv = uv;
   vec4 worldPosition = modelMatrix * vec4(position, 1.0);
@@ -2607,6 +2606,8 @@ void main() {
   gl_Position = projectionMatrix * mvPosition;
 }
 `;
+
+const SOURCE_TRAILING_SPACE = " ";
 
 const floorVertex = `
 in vec3 position;
@@ -2640,6 +2641,7 @@ void main() {
 const thumbFragment = `
 precision highp float;
 
+
 vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   vec2 s = containerSize;
   vec2 i = imgSize;
@@ -2653,11 +2655,12 @@ vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 containerSize) {
   return color;
 }
 
+
 uniform sampler2D tMap;
 uniform vec2 uMapSize;
 uniform vec2 uResolution;
-uniform float uProgress;
-uniform float uTransitionCount;
+uniform float uProgress;${SOURCE_TRAILING_SPACE}
+uniform float uTransitionCount;${SOURCE_TRAILING_SPACE}
 uniform float uTransitionSmoothness;
 in vec2 vUv;
 out vec4 FragColor;
@@ -2695,7 +2698,6 @@ uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 out vec2 vUv;
-
 void main() {
   vUv = uv;
   vec4 worldPosition = modelMatrix * vec4(position, 1.0);
