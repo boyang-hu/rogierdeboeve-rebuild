@@ -3892,10 +3892,6 @@ export class WebGLBackdrop {
   private spotLightIntensity = 220;
   private directionalLightIntensity = 1.5;
   private directionalLight2Intensity = 1;
-  private spotLightPosition = new Vector3(0, 0, 3.7);
-  private spotLightTarget = new Vector3(0, 0, -8);
-  private spotLightRight = new Vector3(1, 0, 0);
-  private spotLightUp = new Vector3(0, 1, 0);
   private spotLightParallax = true;
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
@@ -4012,8 +4008,8 @@ export class WebGLBackdrop {
     this.displacementRawScene.background = sourceLinearToSrgbColor("red", "red");
     this.homeScene.fog = new Fog("grey", 0, 100);
     this.homeScene.background = sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG);
-    this.spotLight.position.copy(this.spotLightPosition);
-    this.spotLight.target.position.copy(this.spotLightTarget);
+    this.spotLight.position.set(0, 0, 3.7);
+    this.spotLight.target.position.set(0, 0, -8);
     this.spotLight.angle = Math.PI / 4;
     this.spotLight.penumbra = 0.95;
     this.spotLight.map = this.homeSpotlightMap();
@@ -4243,8 +4239,8 @@ export class WebGLBackdrop {
   initHomeSpotlight() {
     this.spotLightParallax = true;
     this.spotLight.map = this.homeSpotlightMap();
-    this.spotLightPosition.set(0, 0, 3.7);
-    this.spotLightTarget.set(0, 0, -8);
+    this.spotLight.position.set(0, 0, 3.7);
+    this.spotLight.target.position.set(0, 0, -8);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 0);
   }
 
@@ -6228,7 +6224,6 @@ void main() {
     this.spotLightTween?.kill();
     const update = () => {
       this.spotLight.intensity = this.spotLightIntensity;
-      this.updateSpotLightBasis();
     };
     if (duration <= 0) {
       this.spotLightIntensity = value;
@@ -6844,15 +6839,11 @@ void main() {
     this.environmentMaterial.customUniforms.uTime.value = time;
     this.updateHomeCamera(delta);
     if (this.spotLightParallax) {
-      this.spotLightPosition.x = this.homeCamera.position.x * 0.175;
-      this.spotLightPosition.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
-      this.spotLightPosition.z = 3.7;
+      this.spotLight.position.x = this.homeCamera.position.x * 0.175;
+      this.spotLight.position.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
     } else {
       this.updateAboutSpotlight();
     }
-    this.spotLight.position.copy(this.spotLightPosition);
-    this.spotLight.target.position.copy(this.spotLightTarget);
-    this.updateSpotLightBasis();
     this.updateVisibleWorkItems(time, delta);
     this.updateAuxiliaryBlocks(time, delta);
     this.sourcePostRenderFrame += 1;
@@ -6921,21 +6912,11 @@ void main() {
     return pass.targets.main.texture;
   }
 
-  private updateSpotLightBasis() {
-    const direction = this.spotLightTarget.clone().sub(this.spotLightPosition).normalize();
-    this.spotLightRight.crossVectors(direction, new Vector3(0, 1, 0)).normalize();
-    if (this.spotLightRight.lengthSq() < 0.0001) this.spotLightRight.set(1, 0, 0);
-    this.spotLightUp.crossVectors(this.spotLightRight, direction).normalize();
-  }
-
   private updateAboutSpotlight() {
     const item = this.aboutBlocks;
     if (!item?.group.visible) return;
-    this.spotLightPosition.set(item.group.position.x - 0.5, item.group.position.y, item.group.position.z + 4.2);
-    this.spotLightTarget.set(item.group.position.x + 1.5, item.group.position.y, item.group.position.z - 8);
-    this.spotLight.position.copy(this.spotLightPosition);
-    this.spotLight.target.position.copy(this.spotLightTarget);
-    this.updateSpotLightBasis();
+    this.spotLight.position.set(item.group.position.x - 0.5, item.group.position.y, item.group.position.z + 4.2);
+    this.spotLight.target.position.set(item.group.position.x + 1.5, item.group.position.y, item.group.position.z - 8);
   }
 
   private updateHomeCamera(delta: number) {
@@ -7205,6 +7186,7 @@ void main() {
       },
       spotlight: {
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
+        positionOwnershipMode: "source-direct-SpotLight-position-target-no-local-mirror",
         intensity: this.spotLight.intensity,
         position: this.spotLight.position.toArray(),
         target: this.spotLight.target.position.toArray(),
@@ -8443,6 +8425,7 @@ void main() {
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
         mapMode: this.spotLight.map === this.thumbCompositeTarget.texture ? "source-thumb-composite-target" : "missing-or-debug-disabled",
         mapProjectionMode: "three-r164-spotLightMap-vSpotLightCoord",
+        positionOwnershipMode: "source-direct-SpotLight-position-target-no-local-mirror",
         position: this.spotLight.position.toArray(),
         target: this.spotLight.target.position.toArray(),
         angle: this.spotLight.angle,

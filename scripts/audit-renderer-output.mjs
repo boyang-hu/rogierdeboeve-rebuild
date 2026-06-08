@@ -180,6 +180,7 @@ const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSetting
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceIT = extractAround(bundle, "class IT{constructor", 120, 3200);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
+const sourceTDSpotlight = extractAround(bundle, "updateSpotLight(){J.workScene.spotLight.position.set", 520, 900);
 const sourceWebpDetection = extractAround(bundle, "await k0(\"lossy\").then(()=>{Le.WEBP=!0}).catch(()=>{Le.WEBP=!1})", 240, 420);
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
@@ -1224,6 +1225,23 @@ const summary = {
       excerpt: compact(sourceSDInitSpotlight.text),
       sourceNoExplicitCastShadow: !sourceSDInitSpotlight.text.includes(".castShadow")
         && !sourceP1SetLights?.text.includes(".castShadow"),
+      sourceDirectSpotlightState:
+        sourceP1Update?.text.includes("this.spotLight.position.x=this.camera.position.x*.175")
+        && sourceP1Update?.text.includes("this.spotLight.position.y=this.camera.position.y*.175")
+        && sourceSDInitSpotlight.text.includes("J.workScene.spotLight.target.position.set(0,0,-8)")
+        && sourceTDSpotlight?.text.includes("J.workScene.spotLight.position.set(J.workScene.aboutBlocks.position.x-.5")
+        && sourceTDSpotlight?.text.includes("J.workScene.spotLight.target.position.set(J.workScene.aboutBlocks.position.x+1.5"),
+      rebuildDirectSpotlightState:
+        rebuildWebgl.includes("positionOwnershipMode: \"source-direct-SpotLight-position-target-no-local-mirror\"")
+        && rebuildWebgl.includes("this.spotLight.position.x = this.homeCamera.position.x * 0.175")
+        && rebuildWebgl.includes("this.spotLight.target.position.set(0, 0, -8)")
+        && rebuildWebgl.includes("this.spotLight.position.set(item.group.position.x - 0.5")
+        && rebuildWebgl.includes("this.spotLight.target.position.set(item.group.position.x + 1.5")
+        && !rebuildWebgl.includes("spotLightPosition")
+        && !rebuildWebgl.includes("spotLightTarget")
+        && !rebuildWebgl.includes("updateSpotLightBasis")
+        && !rebuildWebgl.includes("spotLightRight")
+        && !rebuildWebgl.includes("spotLightUp"),
       rebuildMapProjectionGuards:
         rebuildWebgl.includes("this.thumbWrap.frustumCulled = false")
         && rebuildWebgl.includes("projectionPath: \"source-SpotLight.map-without-castShadow\"")

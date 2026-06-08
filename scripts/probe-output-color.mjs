@@ -171,6 +171,7 @@ async function runProbe() {
   if (spotlight?.inMapCoverage !== 1) spotlightErrors.push("inMapCoverage");
   if ((spotlight?.mapLumaMean ?? 0) <= 0) spotlightErrors.push("mapLumaMean");
   const light = spotlight?.spotlight || {};
+  if (light.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") spotlightErrors.push("positionOwnershipMode");
   if (Math.abs((light.intensity ?? 0) - 220) > 0.001) spotlightErrors.push("intensity");
   if (Math.abs((light.angle ?? 0) - Math.PI / 4) > 0.0001) spotlightErrors.push("angle");
   if (Math.abs((light.penumbra ?? 0) - 0.95) > 0.0001) spotlightErrors.push("penumbra");

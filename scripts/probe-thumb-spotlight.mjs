@@ -143,6 +143,9 @@ async function runProbe() {
   if (probe.thumbHierarchyMode !== "source-T1-w1-scrollWrap-E1-mesh") {
     sourceShapeErrors.push(`thumbHierarchyMode=${probe.thumbHierarchyMode}`);
   }
+  if (probe.spotlight?.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") {
+    sourceShapeErrors.push(`spotlightPositionOwnership=${probe.spotlight?.positionOwnershipMode}`);
+  }
   const imageOwnership = probe.thumbImageOwnership || {};
   if (imageOwnership.mode !== "source-Xt-preloadThumbs-projectThumbs-thumbsReady-E1-setImage") {
     sourceShapeErrors.push(`thumbImageOwnership=${imageOwnership.mode}`);

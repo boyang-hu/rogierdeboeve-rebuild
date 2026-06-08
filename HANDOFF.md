@@ -139,15 +139,15 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `Xt/preloadThumbs -> E1.setImage` thumb image lifecycle was aligned without visual tuning.
-- Source `Xt.preloadThumbs()` builds `projectThumbs` entries with `{ id, src }`, where `src` is the `loadImage` / `loadVideo` promise, then resolves `thumbsReady`.
-- Source `E1` calls `this.setImage(e)` from the constructor; `setImage(e)` awaits `Xt.thumbsReady`, awaits `Xt.getProjectThumbById(e).src`, binds the result to `M1.tMap`, and sets `uMapSize` / `uResolution` to `1,1`.
-- The rebuild now preloads thumbs through `sourceProjectThumbs`, `sourceThumbsReady`, source WebP-selected thumb URLs, image/video loader ownership, and `setSourceThumbImage(id, mesh)` instead of direct `payload.thumb` texture loading inside `createWorkScene()`.
-- Runtime probes now report/assert `thumbImageOwnership=source-Xt-preloadThumbs-projectThumbs-thumbsReady-E1-setImage`, promise binding mode, matching thumb count, URL extension/loader state, and per-thumb ready/bound metadata.
-- `probe-thumb-spotlight.mjs` now hard-checks the source thumb image lifecycle. `audit-renderer-output.mjs` checks the source `Xt/E1` lifecycle anchors and rejects the old direct `payload.thumb` load path inside `createWorkScene()`.
-- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, thumb spotlight probe, desktop output probe rerun with `PROBE_WAIT=30000`, mobile output probe, shader dump, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0046` and mobile center `+0.0306`, recorded only as regression evidence.
+- Source `SD/p1/TD` direct `SpotLight` state ownership was aligned without visual tuning.
+- Source `SD.init()` writes `J.workScene.spotLight.map`, `position`, `target.position`, and `intensity` directly.
+- Source `p1.update()` directly mutates `this.spotLight.position.x/y` from camera position when `spotLightParallax` is true.
+- Source `TD.updateSpotLight()` directly writes the about spotlight `position` and `target.position` from `aboutBlocks`.
+- The rebuild now writes directly to `this.spotLight.position` and `this.spotLight.target.position` for home init, home parallax, and about spotlight updates. It removed rebuild-only `spotLightPosition`, `spotLightTarget`, `spotLightRight`, `spotLightUp`, and `updateSpotLightBasis()`.
+- Runtime probes now report/assert `positionOwnershipMode=source-direct-SpotLight-position-target-no-local-mirror`; renderer audit checks source direct-state anchors, rebuild direct writes, and absence of the mirror fields/method.
+- QA passed for `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, thumb spotlight probe, desktop/mobile output probes with `PROBE_WAIT=30000`, shader dump, project-media probe, full capture, and band analysis. The first desktop output probe hit the existing texture-preload timing guard at 20s; the 30s rerun passed. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0059` and mobile center `+0.0299`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the `Xt/E1` thumb image preload/binding lifecycle, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the `SpotLight` state ownership bridge, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -165,7 +165,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `Xt/E1` thumb preload lifecycle ownership batch.
+All passed in the `SD/p1/TD` direct `SpotLight` state ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
