@@ -3754,7 +3754,7 @@ export class WebGLBackdrop {
   private compositeTarget = this.mainRawTarget.clone();
   private mainCompositeMaterial: ShaderMaterial;
   private mainLensflareTarget = this.mainRawTarget.clone();
-  private mainLensflareMaterial: ShaderMaterial;
+  private mainLensflareMaterial?: ShaderMaterial;
   private mainBloomBrightTarget = this.mainRawTarget.clone();
   private mainBloomHorizontalTargets: WebGLRenderTarget[] = [];
   private mainBloomVerticalTargets: WebGLRenderTarget[] = [];
@@ -4014,7 +4014,9 @@ export class WebGLBackdrop {
     this.backgroundScene.add(makeFullscreenTriangle(this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
     this.mainCompositeMaterial = this.createMainCompositeMaterial();
-    this.mainLensflareMaterial = this.createLensflareMaterial();
+    if (SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) {
+      this.mainLensflareMaterial = this.createLensflareMaterial();
+    }
     this.compositeMaterial = this.createCompositeMaterial();
     this.workBloomHorizontalTargets = Array.from({ length: 5 }, () => this.workRawTarget.clone());
     this.workBloomVerticalTargets = Array.from({ length: 5 }, () => this.workRawTarget.clone());
@@ -4517,7 +4519,7 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.dispose();
     this.compositeTarget.dispose();
     this.mainCompositeMaterial.dispose();
-    this.mainLensflareMaterial.dispose();
+    this.mainLensflareMaterial?.dispose();
     this.mainLensflareTarget.dispose();
     this.mediaRawTarget.dispose();
     this.mediaTarget.dispose();
@@ -6363,7 +6365,7 @@ void main() {
     this.mainRawTarget.setSize(renderWidth, renderHeight);
     this.compositeTarget.setSize(renderWidth, renderHeight);
     this.mainLensflareTarget.setSize(renderWidth, renderHeight);
-    if (SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) {
+    if (SOURCE_MAIN_LENSFLARE_SETTINGS.enabled && this.mainLensflareMaterial) {
       this.mainLensflareMaterial.uniforms.uResolution.value.set(width / 8, height / 8);
     }
     this.mediaRawTarget.setSize(renderWidth, renderHeight);
@@ -7487,22 +7489,23 @@ void main() {
             glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           },
           lensflare: {
-            blending: this.mainLensflareMaterial.blending,
-            materialMode: "source-L1-raw-glsl3",
-            glslVersion: (this.mainLensflareMaterial as RawShaderMaterial).glslVersion ?? null,
+            blending: this.mainLensflareMaterial?.blending ?? null,
+            materialCreated: Boolean(this.mainLensflareMaterial),
+            materialMode: this.mainLensflareMaterial ? "source-L1-raw-glsl3" : null,
+            glslVersion: this.mainLensflareMaterial ? ((this.mainLensflareMaterial as RawShaderMaterial).glslVersion ?? null) : null,
             screenMode: "source-I1-mainPostScreen-material-swap",
-            ownership: "source-I1-lensflareMaterial-main-render-manager",
+            ownership: "source-I1-lensflareMaterial-created-only-when-enabled",
             enabled: SOURCE_MAIN_LENSFLARE_SETTINGS.enabled,
             clearMode: "source-I1-lensflare-explicit-clear",
             targetSize: {
               width: this.mainLensflareTarget.width,
               height: this.mainLensflareTarget.height,
             },
-            lightPosition: (this.mainLensflareMaterial.uniforms.uLightPosition.value as Vector2).toArray(),
-            scale: (this.mainLensflareMaterial.uniforms.uScale.value as Vector2).toArray(),
-            exposure: this.mainLensflareMaterial.uniforms.uExposure.value,
-            clamp: this.mainLensflareMaterial.uniforms.uClamp.value,
-            resolution: (this.mainLensflareMaterial.uniforms.uResolution.value as Vector2).toArray(),
+            lightPosition: this.mainLensflareMaterial ? (this.mainLensflareMaterial.uniforms.uLightPosition.value as Vector2).toArray() : null,
+            scale: this.mainLensflareMaterial ? (this.mainLensflareMaterial.uniforms.uScale.value as Vector2).toArray() : null,
+            exposure: this.mainLensflareMaterial?.uniforms.uExposure.value ?? null,
+            clamp: this.mainLensflareMaterial?.uniforms.uClamp.value ?? null,
+            resolution: this.mainLensflareMaterial ? (this.mainLensflareMaterial.uniforms.uResolution.value as Vector2).toArray() : null,
           },
         passMaterials: {
           mediaComposite: {
@@ -8376,7 +8379,7 @@ void main() {
   }
 
   private renderMainLensflarePass(sourceTarget: WebGLRenderTarget) {
-    if (!SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) return;
+    if (!SOURCE_MAIN_LENSFLARE_SETTINGS.enabled || !this.mainLensflareMaterial) return;
     this.mainLensflareMaterial.uniforms.tMap.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : sourceTarget.texture;
     this.mainPostScreen.material = this.mainLensflareMaterial;
     this.renderer.setRenderTarget(this.mainLensflareTarget);

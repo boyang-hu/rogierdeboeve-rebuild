@@ -139,16 +139,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `Lu/I1` pass-material object ownership was completed without visual tuning.
-- Source `Lu.initRenderer()` creates its own `hBlurMaterial=new Na(bf)`, `vBlurMaterial=new Na(Mf)`, `FxaaMaterial=new ig`, `luminosityMaterial=new sg`, five `rg` bloom blur materials, and `BloomMaterial=new cg`; source `kA` only replaces the composite material with `OA`.
-- Source `I1.initRenderer()` separately creates its own `hBlurMaterial=new Na(wf)`, `vBlurMaterial=new Na(Tf)`, `FxaaMaterial=new ig`, `luminosityMaterial=new sg`, five `rg` bloom blur materials, and `BloomMaterial=new cg`, with `L1` lensflare still behind `settings.lensflare.enabled`.
-- The rebuild now splits shared/generic pass-material fields into work-owned `workLuminosityMaterial`, `workBlurHorizontalMaterial`, `workBlurVerticalMaterial`, `workFxaaMaterial` and main-owned `mainLuminosityMaterial`, `mainBlurHorizontalMaterial`, `mainBlurVerticalMaterial`, `mainFxaaMaterial`; work/main bloom materials remain separate and are now guarded.
-- The main lensflare branch is renamed `mainLensflareMaterial` and remains default-disabled; exact source optional instantiation for disabled `I1` lensflare is still a separate bridge.
-- Runtime probes expose/assert `source-Lu-pass-materials-owned-by-work-render-manager`, `source-I1-pass-materials-owned-by-main-render-manager`, and all work/main material sharing flags as false.
-- Static audit checks source/rebuild owned material construction anchors and absence of old shared pass-material fields.
-- QA passed for `git diff --check`, `npm run build`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0051` and mobile center `+0.0316`, recorded only as regression evidence.
+- Source `I1` optional `L1` lensflare material ownership was completed without visual tuning.
+- Source `I1.initRenderer()` always creates `renderTargetLensflare=this.renderTargetA.clone()`, but only creates `this.lensflareMaterial=new L1` inside `this.settings.lensflare.enabled&&(...)`; default `I1.initSettings()` sets `lensflare.enabled:false`.
+- The rebuild now keeps `mainLensflareTarget` on the source clone graph and full-size resize path, but `mainLensflareMaterial` is optional and only created when `SOURCE_MAIN_LENSFLARE_SETTINGS.enabled` is true.
+- Dispose, resize, render, and runtime probe paths are guarded. Default probes now report `enabled:false`, `materialCreated:false`, `materialMode:null`, and `ownership=source-I1-lensflareMaterial-created-only-when-enabled`.
+- `probe-output-color.mjs` now asserts the default disabled/no-material path, and `audit-renderer-output.mjs` checks the source optional creation anchor plus absence of the old unconditional constructor call.
+- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, desktop output probe, mobile output probe, shader dump, thumb spotlight probe, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0044` and mobile center `+0.0313`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes a `Lu/I1` pass-material ownership mismatch, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, interactive mouse/fluid verification, or disabled-lensflare optional-instantiation bridge.
+- Phase 1 remains open; this closes the disabled-default `I1` optional lensflare material bridge, not the remaining spotlight projection/content transfer, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
 
 ## Validation Status
 

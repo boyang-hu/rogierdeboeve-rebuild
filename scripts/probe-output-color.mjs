@@ -559,16 +559,17 @@ async function runProbe() {
   if (mainCompositeUniforms?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mainCompositeVertexMode");
   if (mainCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("mainCompositeGlslVersion");
   const lensflareUniforms = parsed.probe.uniforms?.lensflare;
-  if (lensflareUniforms?.materialMode !== "source-L1-raw-glsl3") materialSurfaceErrors.push("lensflareMaterialMode");
-  if (lensflareUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("lensflareGlslVersion");
   if (lensflareUniforms?.screenMode !== "source-I1-mainPostScreen-material-swap") materialSurfaceErrors.push("lensflareScreenMode");
-  if (lensflareUniforms?.ownership !== "source-I1-lensflareMaterial-main-render-manager") materialSurfaceErrors.push("lensflareOwnership");
+  if (lensflareUniforms?.ownership !== "source-I1-lensflareMaterial-created-only-when-enabled") materialSurfaceErrors.push("lensflareOwnership");
   if (lensflareUniforms?.enabled !== false) materialSurfaceErrors.push("lensflareDefaultEnabled");
+  if (lensflareUniforms?.materialCreated !== false) materialSurfaceErrors.push("lensflareDefaultMaterialCreated");
+  if (lensflareUniforms?.materialMode !== null) materialSurfaceErrors.push("lensflareDefaultMaterialMode");
+  if (lensflareUniforms?.glslVersion !== null) materialSurfaceErrors.push("lensflareDefaultGlslVersion");
   if (lensflareUniforms?.clearMode !== "source-I1-lensflare-explicit-clear") materialSurfaceErrors.push("lensflareClearMode");
-  if (JSON.stringify(lensflareUniforms?.lightPosition) !== JSON.stringify([0.5, 0.5])) materialSurfaceErrors.push("lensflareLightPosition");
-  if (JSON.stringify(lensflareUniforms?.scale) !== JSON.stringify([1.5, 1.5])) materialSurfaceErrors.push("lensflareScale");
-  if (lensflareUniforms?.exposure !== 1) materialSurfaceErrors.push("lensflareExposure");
-  if (lensflareUniforms?.clamp !== 1) materialSurfaceErrors.push("lensflareClamp");
+  if (lensflareUniforms?.lightPosition !== null) materialSurfaceErrors.push("lensflareDefaultLightPosition");
+  if (lensflareUniforms?.scale !== null) materialSurfaceErrors.push("lensflareDefaultScale");
+  if (lensflareUniforms?.exposure !== null) materialSurfaceErrors.push("lensflareDefaultExposure");
+  if (lensflareUniforms?.clamp !== null) materialSurfaceErrors.push("lensflareDefaultClamp");
   const passMaterialOwnership = passMaterials.ownership || {};
   if (passMaterialOwnership.source !== "Lu-and-I1-each-create-owned-pass-materials-in-initRenderer") {
     materialSurfaceErrors.push("passMaterialOwnershipSource");
