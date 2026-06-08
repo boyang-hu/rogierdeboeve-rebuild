@@ -2352,18 +2352,6 @@ void main() {
 const floorReflectionBlurFragment = `
 precision mediump float;
 
-uniform sampler2D tMap;
-uniform vec2 uDirection;
-uniform vec2 uResolution;
-
-in vec2 vUv;
-
-out vec4 FragColor;
-
-float smootherstep(float edge0, float edge1, float x) {
-  x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
-  return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
-}
 
 vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
   vec4 sum = vec4(0.0);
@@ -2380,6 +2368,21 @@ vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
   return sum;
 }
 
+
+float smootherstep(float edge0, float edge1, float x) {
+    x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+}
+
+
+uniform sampler2D tMap;
+uniform vec2 uDirection;
+uniform vec2 uResolution;
+
+in vec2 vUv;
+
+out vec4 FragColor;
+
 void main() {
   vec4 tMapped = texture(tMap, vUv);
 
@@ -2391,20 +2394,26 @@ void main() {
 `;
 
 const sourceDitherHelper = `
+
 float random(vec2 co) {
-  float a = 12.9898;
-  float b = 78.233;
-  float c = 43758.5453;
-  float dt = dot(co.xy, vec2(a, b));
-  float sn = mod(dt, 3.14);
-  return fract(sin(sn) * c);
+    float a = 12.9898;
+    float b = 78.233;
+    float c = 43758.5453;
+    float dt = dot(co.xy, vec2(a, b));
+    float sn = mod(dt, 3.14);
+    return fract(sin(sn) * c);
 }
 
+
 vec3 dither(vec3 color) {
-  float grid_position = random(gl_FragCoord.xy);
-  vec3 dither_shift_RGB = vec3(0.25 / 255.0, -0.25 / 255.0, 0.25 / 255.0);
-  dither_shift_RGB = mix(2.0 * dither_shift_RGB, -2.0 * dither_shift_RGB, grid_position);
-  return color + dither_shift_RGB;
+    // Calculate grid position
+    float grid_position = random(gl_FragCoord.xy);
+    // Shift the individual colors differently, thus making it even harder to see the dithering pattern
+    vec3 dither_shift_RGB = vec3(0.25 / 255.0, -0.25 / 255.0, 0.25 / 255.0);
+    // Modify shift acording to grid position
+    dither_shift_RGB = mix(2.0 * dither_shift_RGB, -2.0 * dither_shift_RGB, grid_position);
+    // Shift the color by dither_shift
+    return color + dither_shift_RGB;
 }
 `;
 
@@ -2419,10 +2428,8 @@ uniform sampler2D tBlur3;
 uniform sampler2D tBlur4;
 uniform sampler2D tBlur5;
 uniform float uBloomFactors[NUM_MIPS];
-
 in vec2 vUv;
 out vec4 FragColor;
-
 void main() {
   FragColor = uBloomFactors[0] * texture(tBlur1, vUv) +
     uBloomFactors[1] * texture(tBlur2, vUv) +
@@ -2613,7 +2620,6 @@ const floorVertex = `
 in vec3 position;
 in vec3 normal;
 in vec2 uv;
-
 uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
@@ -2621,12 +2627,10 @@ uniform mat3 normalMatrix;
 uniform vec3 cameraPosition;
 uniform mat3 uMapTransform;
 uniform mat4 uMatrix;
-
 out vec2 vUv;
 out vec4 vCoord;
 out vec3 vNormal;
 out vec3 vToEye;
-
 void main() {
   vUv = (uMapTransform * vec3(uv, 1.0)).xy;
   vCoord = uMatrix * vec4(position, 1.0);
@@ -2636,6 +2640,7 @@ void main() {
   vec4 mvPosition = viewMatrix * worldPosition;
   gl_Position = projectionMatrix * mvPosition;
 }
+
 `;
 
 const thumbFragment = `
@@ -3188,17 +3193,19 @@ void main() {
 const displacementFragment = `
 precision highp float;
 
+
 float vignette(vec2 coords, float vignin, float vignout, float vignfade, float fstop) {
-  float dist = distance(coords.xy, vec2(0.5));
+  float dist = distance(coords.xy, vec2(0.5, 0.5));
   dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
   return clamp(dist, 0.0, 1.0);
 }
+
 
 #include <tonemapping_pars_fragment>
 
 uniform sampler2D tScene;
 uniform float uTime;
-uniform float uRatio;
+uniform float uRatio;${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
 
 float vignout = .5; // vignetting outer border
 float vignin = 0.01; // vignetting inner border
@@ -3209,13 +3216,13 @@ out vec4 FragColor;
 
 void main() {
   vec2 uvOff = vUv;
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   uvOff.x -= 0.5;
   uvOff.x *= uRatio;
   uvOff.x += 0.5;
 
-  vec2 uvVignette = uvOff;
-
+  vec2 uvVignette = uvOff;${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   uvOff.xy -= 0.5;
   uvOff *= 5.;
   uvOff.xy += 0.5;
@@ -3266,41 +3273,44 @@ in vec3 vToEye;
 out vec4 FragColor;
 
 void main() {
-#ifdef USE_MAP
+    #ifdef USE_MAP
   vec4 color = texture(tMap, vUv);
-#else
+    #else
   vec4 color = vec4(uColor, 1.0);
-#endif
+    #endif
 
-#ifdef USE_NORMALMAP
+    #ifdef USE_NORMALMAP
   vec4 normalColor = texture(tNormalMap, vUv * uNormalScale);
   vec3 normal = normalize(vec3(normalColor.r * uNormalDistortionStrength - (uNormalDistortionStrength / 2.), normalColor.b, normalColor.g * uNormalDistortionStrength - (uNormalDistortionStrength / 2.)));
   vec3 coord = vCoord.xyz / vCoord.w;
   vec2 uv = coord.xy + coord.z * normal.xz * 0.05;
   vec4 reflectColor = texture(tReflect, uv);
-#else
+    #else
   vec3 normal = vNormal;
   vec4 reflectColor = textureProj(tReflect, vCoord);
-#endif
+    #endif
 
-  // Fresnel term
+    // Fresnel term
   vec3 toEye = normalize(vToEye);
   float theta = max(dot(toEye, normal), .0);
-  float reflectance = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow((1.0 - theta), 5.0), 1.0));
+  float reflectance = max(0.01, min(uReflectivity + (1.0 - uReflectivity) * pow((1.0 - theta), 5.0), 1.));
 
   reflectColor = mix(vec4(0), reflectColor, reflectance);
 
   FragColor.rgb = color.rgb * ((1.0 - min(1.0, uMirror)) + reflectColor.rgb * uFloorMixStrength);
 
-#ifdef USE_FOG
+    #ifdef USE_FOG
   float fogDepth = gl_FragCoord.z / gl_FragCoord.w;
   float fogFactor = smoothstep(uFogNear, uFogFar, fogDepth);
-  FragColor.rgb = mix(FragColor.rgb, uFogColor, fogFactor);
-#endif
 
-#ifdef DITHERING
+  FragColor.rgb = mix(FragColor.rgb, uFogColor, fogFactor);
+    #endif
+
+    #ifdef DITHERING
   FragColor.rgb = dither(FragColor.rgb);
-#endif
+    #endif
+
+
 
   FragColor.a = 1.0;
 }

@@ -139,14 +139,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `M1/x1` thumb shader source surfaces were aligned without changing formulas, constants, or visual tuning.
-- Source `M1/S1` keeps two blank-line positions and trailing spaces after `uProgress;` / `uTransitionCount;`; source `b1` has no blank line before `void main()`.
-- Source `x1/_1/v1` expands `${hg}` with tab-indented `return base*blend;` and `${Ur}` with four-space saturation helper indentation; source `tl` also has no blank line before `void main()`.
-- The rebuild now matches those source surfaces. It uses `SOURCE_TRAILING_SPACE` so the runtime shader text matches the mirrored bundle while the TypeScript file still passes `git diff --check`.
-- Shader dump reports `M1-thumb-plane` and `x1-thumb-composite` as `source-shaped`, with vertex delta `0` and fragment delta `0`.
-- QA passed for `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, thumb spotlight probe, desktop/mobile output probes with `PROBE_WAIT=30000`, shader dump, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0045` and mobile center `+0.0308`, recorded only as regression evidence.
+- Source `N1/F1`, `o1/s1/r1`, `t1/QA/e1`, and shared `cg/nA` shader source surfaces were aligned without changing formulas, constants, or visual tuning.
+- Source `F1` displacement composite now matches the mirrored blank-line, `vec2(0.5, 0.5)`, `uRatio` trailing-space, and `uvOff` trailing-space surface. Runtime source trailing spaces are generated with `SOURCE_TRAILING_SPACE` so the TypeScript file still passes whitespace checks.
+- Source floor reflection blur `QA` now keeps the source declaration order: `blur(...)`, `smootherstep(...)`, uniforms, varyings, then `main()`.
+- Source floor material `s1/r1` now matches the source floor vertex spacing and source floor fragment macro indentation, dither helper comments, and `1.` literal surface. The shared dither helper now also makes `cg-bloom-composite` source-shaped.
+- Shader dump reports `N1-displacement-composite`, `o1-floor-material`, `t1-floor-reflection-blur`, and `cg-bloom-composite` as `source-shaped`, with vertex delta `0` and fragment delta `0`. Existing `M1-thumb-plane` and `x1-thumb-composite` remained `source-shaped`.
+- QA passed for `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, thumb spotlight probe, desktop/mobile output probes with `PROBE_WAIT=30000`, shader dump, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0052` and mobile center `+0.0285`, recorded only as regression evidence.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the thumb shader text surface residuals, not the remaining spotlight/thumb projection content and transfer parity, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment residuals, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the displacement/floor/blur/shared-dither shader text surface residuals, not the remaining spotlight/thumb projection content and transfer parity, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment distribution parity, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -164,7 +164,7 @@ node scripts/capture.mjs
 node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `M1/x1` thumb shader source-surface batch.
+All passed in the `N1/o1/t1/cg` shader source-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
