@@ -200,6 +200,15 @@ type ThumbProbeWindow = Window & {
       darknessColor: [number, number, number];
       darkenColor: [number, number, number];
       saturation: number;
+      stateOwnership: string;
+      state: {
+        darknessIntensity: number;
+        darknessColor: number[];
+        saturation: number;
+        mouseLightness: number;
+      };
+      stateUniformsMatch: boolean;
+      mouseLightnessUniformsMatchState: boolean;
     };
     spotlight: {
       hasMap: boolean;
@@ -3924,6 +3933,12 @@ export class WebGLBackdrop {
   private thumbDarknessColorTweens: gsap.core.Tween[] = [];
   private thumbSaturationTweens: gsap.core.Tween[] = [];
   private thumbMouseLightnessTweens: gsap.core.Tween[] = [];
+  private thumbState = {
+    darknessIntensity: 0,
+    darknessColor: sourceRgbColor("#000000", "#000000"),
+    saturation: 1,
+    mouseLightness: 1,
+  };
   private darkenTween?: gsap.core.Tween;
   private revealSpreadTween?: gsap.core.Tween;
   private sceneRevealTween?: gsap.core.Tween;
@@ -6129,11 +6144,20 @@ void main() {
   private setThumbDarknessIntensity(value: number, duration = 1.6) {
     this.thumbDarknessTweens.forEach((tween) => tween.kill());
     this.thumbDarknessTweens = [];
+    const update = () => {
+      this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value = this.thumbState.darknessIntensity;
+    };
     if (duration <= 0) {
-      this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value = value;
+      this.thumbState.darknessIntensity = value;
+      update();
       return;
     }
-    this.thumbDarknessTweens.push(gsap.to(this.thumbCompositeMaterial.uniforms.uDarkenIntensity, { value, duration, ease: "expo.out" }));
+    this.thumbDarknessTweens.push(gsap.to(this.thumbState, {
+      darknessIntensity: value,
+      duration,
+      ease: "expo.out",
+      onUpdate: update,
+    }));
   }
 
   private setSaturation(value: number, duration = 1.6) {
@@ -6157,11 +6181,20 @@ void main() {
   private setThumbSaturation(value: number, duration = 1.6) {
     this.thumbSaturationTweens.forEach((tween) => tween.kill());
     this.thumbSaturationTweens = [];
+    const update = () => {
+      this.thumbCompositeMaterial.uniforms.uSaturation.value = this.thumbState.saturation;
+    };
     if (duration <= 0) {
-      this.thumbCompositeMaterial.uniforms.uSaturation.value = value;
+      this.thumbState.saturation = value;
+      update();
       return;
     }
-    this.thumbSaturationTweens.push(gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation, { value, duration, ease: "expo.out" }));
+    this.thumbSaturationTweens.push(gsap.to(this.thumbState, {
+      saturation: value,
+      duration,
+      ease: "expo.out",
+      onUpdate: update,
+    }));
   }
 
   private setContrast(value: number, duration = 1.6) {
@@ -6185,19 +6218,44 @@ void main() {
   private setThumbDarknessColor(value?: string, duration = 1.6) {
     this.thumbDarknessColorTweens.forEach((tween) => tween.kill());
     this.thumbDarknessColorTweens = [];
-    tweenColorOwned(this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color, value ?? "#000000", duration, this.thumbDarknessColorTweens, "#000000");
+    const next = sourceRgbColor(value ?? "#000000", "#000000");
+    const update = () => {
+      (this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color).copy(this.thumbState.darknessColor);
+    };
+    if (duration <= 0) {
+      this.thumbState.darknessColor.copy(next);
+      update();
+      return;
+    }
+    this.thumbDarknessColorTweens.push(gsap.to(this.thumbState.darknessColor, {
+      r: next.r,
+      g: next.g,
+      b: next.b,
+      duration,
+      ease: "expo.out",
+      onUpdate: update,
+    }));
   }
 
   private setThumbMouseLightness(value: number, duration = 1.6) {
     this.thumbMouseLightnessTweens.forEach((tween) => tween.kill());
     this.thumbMouseLightnessTweens = [];
-    this.workItems.forEach((item) => {
-      if (duration <= 0) {
-        item.material.uniforms.uMouseLightness.value = value;
-        return;
-      }
-      this.thumbMouseLightnessTweens.push(gsap.to(item.material.uniforms.uMouseLightness, { value, duration, ease: "expo.out" }));
-    });
+    const update = () => {
+      this.workItems.forEach((item) => {
+        item.material.uniforms.uMouseLightness.value = this.thumbState.mouseLightness;
+      });
+    };
+    if (duration <= 0) {
+      this.thumbState.mouseLightness = value;
+      update();
+      return;
+    }
+    this.thumbMouseLightnessTweens.push(gsap.to(this.thumbState, {
+      mouseLightness: value,
+      duration,
+      ease: "expo.out",
+      onUpdate: update,
+    }));
   }
 
   private setMouseFactor(value: number, duration = 0, ease = "none") {
@@ -7274,6 +7332,22 @@ void main() {
         darknessColor: [color.r, color.g, color.b],
         darkenColor: [color.r, color.g, color.b],
         saturation: this.thumbCompositeMaterial.uniforms.uSaturation.value as number,
+        stateOwnership: "source-Se-settings-thumb-state-onUpdate-uniforms",
+        state: {
+          darknessIntensity: this.thumbState.darknessIntensity,
+          darknessColor: this.thumbState.darknessColor.toArray(),
+          saturation: this.thumbState.saturation,
+          mouseLightness: this.thumbState.mouseLightness,
+        },
+        stateUniformsMatch:
+          Math.abs((this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value as number) - this.thumbState.darknessIntensity) < 1e-6
+          && Math.abs(color.r - this.thumbState.darknessColor.r) < 1e-6
+          && Math.abs(color.g - this.thumbState.darknessColor.g) < 1e-6
+          && Math.abs(color.b - this.thumbState.darknessColor.b) < 1e-6
+          && Math.abs((this.thumbCompositeMaterial.uniforms.uSaturation.value as number) - this.thumbState.saturation) < 1e-6,
+        mouseLightnessUniformsMatchState: this.workItems.every((item) => (
+          Math.abs((item.material.uniforms.uMouseLightness.value as number) - this.thumbState.mouseLightness) < 1e-6
+        )),
       },
       spotlight: {
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,

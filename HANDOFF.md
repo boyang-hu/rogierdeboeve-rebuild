@@ -142,12 +142,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `yD/onProjectActive` active project reveal ownership without visual tuning.
-- Source `yD.onProjectActive(e)` tweens only `a.instance.material.customUniforms.uReveal`: inactive blocks to `0` with `duration:1.6`, and the active block to `1` with `delay:.2` and `duration:4`.
-- Source `yD.onProjectActive(e)` calls `Se.setRevealSpread(0)` and does not write `uRevealProject`.
-- The rebuild `setProjectBlockReveal(active)` now only owns active-project `uReveal` tweens and no longer kills, clears, or creates `projectRevealProjectTweens` / `uRevealProject` tweens in that path.
-- Output probes now assert `activeProjectRevealOwnership=source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out` and `activeProjectRevealTweenCount === p1UpdateCulling.total`; `revealProjectTweenCount` remains informational because gallery enter/out owns `uRevealProject`.
-- Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection transfer feel, and floor/environment distribution parity.
+- Aligned source `Se.settings.thumb` tween ownership without visual tuning.
+- Source `Se.init()` initializes one thumb state object with `darknessIntensity=0`, black `darknessColor`, `saturation=1`, and `mouseLightness=1`.
+- Source `Se.setThumbDarknessIntensity`, `setThumbDarknessColor`, `setThumbSaturation`, and `setThumbMouseLightness` tween `this.settings.thumb` and write uniforms in `onUpdate`.
+- The rebuild now keeps a `thumbState` mirror, tweens that state in all four thumb setters, writes composite uniforms from the state, and fans out one `mouseLightness` state tween to every work-item `uMouseLightness` uniform.
+- Thumb probe now asserts `stateOwnership=source-Se-settings-thumb-state-onUpdate-uniforms`, `stateUniformsMatch=true`, and `mouseLightnessUniformsMatchState=true`; renderer audit rejects the old direct-uniform and per-block tween paths.
+- Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
 
@@ -155,27 +155,28 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-active-reveal-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9321 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-active-reveal-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9322 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-active-reveal-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9323 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-active-reveal-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9324 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-active-reveal-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-state-audit-final.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9341 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-state-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9342 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-state-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9343 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-state-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9344 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-state-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `yD/onProjectActive` active project reveal ownership batch.
+All passed in the `Se` thumb state tween ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `yD.onProjectActive()` / `setProjectBlockReveal()` active-project reveal ownership, including source `uReveal` tweens and absence of active-path `uRevealProject` writes. It also retains the existing source `Lu.update()` final non-screen branch, bloom resize-loop ownership, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
-- Desktop/mobile output probes confirm source active-project reveal ownership and `activeProjectRevealTweenCount=10`, matching `p1UpdateCulling.total=10`, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Renderer audit checks source/rebuild `Se.settings.thumb` ownership, including state-owned thumb darkness intensity/color, saturation, and mouse-lightness tweens. It also rejects the old direct composite-uniform tween and per-block mouse-lightness tween paths.
+- Thumb spotlight probe confirms `stateOwnership=source-Se-settings-thumb-state-onUpdate-uniforms`, state/uniform parity, and mouse-lightness parity with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Desktop/mobile output probes passed with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
-- Thumb spotlight probe retained the source thumb strip shape and spotlight map guardrails.
+- Existing source render-manager, active reveal, spotlight map, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 

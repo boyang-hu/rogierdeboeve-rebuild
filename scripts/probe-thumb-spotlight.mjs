@@ -386,6 +386,19 @@ async function runProbe() {
   if (composite.depthWrite !== false) sourceShapeErrors.push(`thumbCompositeDepthWrite=${composite.depthWrite}`);
   if (composite.depthTest !== false) sourceShapeErrors.push(`thumbCompositeDepthTest=${composite.depthTest}`);
   if (composite.tSceneIsThumbTarget !== true) sourceShapeErrors.push(`thumbCompositeSceneTarget=${composite.tSceneIsThumbTarget}`);
+  if (composite.stateOwnership !== "source-Se-settings-thumb-state-onUpdate-uniforms") {
+    sourceShapeErrors.push(`thumbStateOwnership=${composite.stateOwnership}`);
+  }
+  if (composite.stateUniformsMatch !== true) sourceShapeErrors.push(`thumbStateUniformsMatch=${composite.stateUniformsMatch}`);
+  if (composite.mouseLightnessUniformsMatchState !== true) {
+    sourceShapeErrors.push(`thumbMouseLightnessUniformsMatch=${composite.mouseLightnessUniformsMatchState}`);
+  }
+  if (Math.abs((composite.state?.darknessIntensity ?? -1) - composite.darkenIntensity) > 1e-6) {
+    sourceShapeErrors.push(`thumbStateDarkness=${composite.state?.darknessIntensity},uniform=${composite.darkenIntensity}`);
+  }
+  if (Math.abs((composite.state?.saturation ?? -1) - composite.saturation) > 1e-6) {
+    sourceShapeErrors.push(`thumbStateSaturation=${composite.state?.saturation},uniform=${composite.saturation}`);
+  }
   for (const [label, target] of Object.entries({
     thumb: probe.targets?.thumbState,
     thumbComposite: probe.targets?.compositeState,

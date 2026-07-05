@@ -150,6 +150,10 @@ const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoaded
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
 const rebuildSetProjectBlockReveal = extractBlock(rebuildWebgl, "private setProjectBlockReveal(");
+const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
+const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
+const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
+const rebuildSetThumbMouseLightness = extractBlock(rebuildWebgl, "private setThumbMouseLightness(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildResizeBloomMipChain = extractBlock(rebuildWebgl, "private resizeBloomMipChain(");
 const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomChain(");
@@ -749,6 +753,32 @@ const summary = {
         "static formatColor=e=>(typeof e==\"string\"",
         "e=sr(e)",
       ]),
+      thumbStateOwnership: {
+        source:
+          sourceSe.text.includes("static setThumbDarknessIntensity=(e,t=1.6)=>{t===0?J.workThumbScene.renderManager.compositeMaterial.uniforms.uDarkenIntensity.value=this.settings.thumb.darknessIntensity=e:oe.to(this.settings.thumb,{darknessIntensity:e")
+          && sourceSe.text.includes("static setThumbDarknessColor=(e,t=1.6)=>{if(typeof e==\"string\"&&(e=sr(e)),t===0)")
+          && sourceSe.text.includes("J.workThumbScene.renderManager.compositeMaterial.uniforms.uDarkenColor.value.set(n,i,r),this.settings.thumb.darknessColor=e")
+          && sourceSe.text.includes("static setThumbSaturation=(e,t=1.6)=>{t===0?J.workThumbScene.renderManager.compositeMaterial.uniforms.uSaturation.value=this.settings.thumb.saturation=e:oe.to(this.settings.thumb,{saturation:e")
+          && sourceSe.text.includes("static setThumbMouseLightness=(e,t=1.6)=>{t===0?J.workScene.blocks.forEach(n=>{n.instance.material.customUniforms.uMouseLightness.value=this.settings.thumb.mouseLightness=e}):oe.to(this.settings.thumb,{mouseLightness:e"),
+        rebuild:
+          rebuildWebgl.includes("private thumbState = {")
+          && Boolean(rebuildSetThumbDarknessIntensity)
+          && Boolean(rebuildSetThumbDarknessColor)
+          && Boolean(rebuildSetThumbSaturation)
+          && Boolean(rebuildSetThumbMouseLightness)
+          && rebuildSetThumbDarknessIntensity.includes("gsap.to(this.thumbState, {")
+          && rebuildSetThumbDarknessIntensity.includes("darknessIntensity: value")
+          && rebuildSetThumbDarknessColor.includes("gsap.to(this.thumbState.darknessColor")
+          && rebuildSetThumbSaturation.includes("gsap.to(this.thumbState, {")
+          && rebuildSetThumbSaturation.includes("saturation: value")
+          && rebuildSetThumbMouseLightness.includes("gsap.to(this.thumbState, {")
+          && rebuildSetThumbMouseLightness.includes("mouseLightness: value")
+          && rebuildWebgl.includes("stateOwnership: \"source-Se-settings-thumb-state-onUpdate-uniforms\"")
+          && !rebuildSetThumbDarknessIntensity.includes("gsap.to(this.thumbCompositeMaterial.uniforms.uDarkenIntensity")
+          && !rebuildSetThumbSaturation.includes("gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation")
+          && !rebuildSetThumbDarknessColor.includes("tweenColorOwned(this.thumbCompositeMaterial.uniforms.uDarkenColor")
+          && !rebuildSetThumbMouseLightness.includes("gsap.to(item.material.uniforms.uMouseLightness"),
+      },
       excerpt: compact(sourceSe.text),
     },
     helperMaterialSurfaces: {
