@@ -177,6 +177,18 @@ async function runProbe() {
   if (probe.spotlight?.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") {
     sourceShapeErrors.push(`spotlightPositionOwnership=${probe.spotlight?.positionOwnershipMode}`);
   }
+  if (probe.spotlight?.parallaxMode !== "source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile") {
+    sourceShapeErrors.push(`spotlightParallaxMode=${probe.spotlight?.parallaxMode}`);
+  }
+  if (probe.spotlight?.parallaxYOffsetMode !== "source-p1-desktop-camera-y-parallax") {
+    sourceShapeErrors.push(`spotlightParallaxYOffsetMode=${probe.spotlight?.parallaxYOffsetMode}`);
+  }
+  if (probe.spotlight?.mobileBreakpoint !== 800) {
+    sourceShapeErrors.push(`spotlightMobileBreakpoint=${probe.spotlight?.mobileBreakpoint}`);
+  }
+  if (probe.spotlight?.mobileYOffset !== 0) {
+    sourceShapeErrors.push(`spotlightMobileYOffset=${probe.spotlight?.mobileYOffset}`);
+  }
   if (probe.spotlight?.hasMap !== true) {
     sourceShapeErrors.push(`spotlightHasMap=${probe.spotlight?.hasMap}`);
   }

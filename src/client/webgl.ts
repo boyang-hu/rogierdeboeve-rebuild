@@ -203,6 +203,11 @@ type ThumbProbeWindow = Window & {
     };
     spotlight: {
       hasMap: boolean;
+      positionOwnershipMode: string;
+      parallaxMode: string;
+      parallaxYOffsetMode: string;
+      mobileBreakpoint: number;
+      mobileYOffset: number;
       intensity: number;
       position: number[];
       target: number[];
@@ -7276,6 +7281,12 @@ void main() {
       spotlight: {
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
         positionOwnershipMode: "source-direct-SpotLight-position-target-no-local-mirror",
+        parallaxMode: "source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile",
+        parallaxYOffsetMode: window.innerWidth >= BREAKPOINT_MD
+          ? "source-p1-desktop-camera-y-parallax"
+          : "source-p1-mobile-0_3-plus-camera-y-parallax",
+        mobileBreakpoint: BREAKPOINT_MD,
+        mobileYOffset: window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3,
         intensity: this.spotLight.intensity,
         position: this.spotLight.position.toArray(),
         target: this.spotLight.target.position.toArray(),
@@ -8625,6 +8636,12 @@ void main() {
         mapMode: this.spotLight.map === this.thumbCompositeTarget.texture ? "source-thumb-composite-target" : "missing-or-debug-disabled",
         mapProjectionMode: "three-r164-spotLightMap-vSpotLightCoord",
         positionOwnershipMode: "source-direct-SpotLight-position-target-no-local-mirror",
+        parallaxMode: "source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile",
+        parallaxYOffsetMode: window.innerWidth >= BREAKPOINT_MD
+          ? "source-p1-desktop-camera-y-parallax"
+          : "source-p1-mobile-0_3-plus-camera-y-parallax",
+        mobileBreakpoint: BREAKPOINT_MD,
+        mobileYOffset: window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3,
         position: this.spotLight.position.toArray(),
         target: this.spotLight.target.position.toArray(),
         angle: this.spotLight.angle,

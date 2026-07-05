@@ -179,6 +179,13 @@ async function runProbe() {
   const expectedMobile = viewport.width < 800;
   const expectedSpotlightY = expectedMobile ? 0.3 : 0;
   const expectedSpotlightPosition = [0, expectedSpotlightY, 3.7];
+  const expectedSpotlightYOffsetMode = expectedMobile
+    ? "source-p1-mobile-0_3-plus-camera-y-parallax"
+    : "source-p1-desktop-camera-y-parallax";
+  if (light.parallaxMode !== "source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile") spotlightErrors.push("parallaxMode");
+  if (light.parallaxYOffsetMode !== expectedSpotlightYOffsetMode) spotlightErrors.push("parallaxYOffsetMode");
+  if (light.mobileBreakpoint !== 800) spotlightErrors.push("mobileBreakpoint");
+  if (Math.abs((light.mobileYOffset ?? -1) - expectedSpotlightY) > 0.0001) spotlightErrors.push("mobileYOffset");
   if (JSON.stringify(light.position) !== JSON.stringify(expectedSpotlightPosition)) spotlightErrors.push(`position=${JSON.stringify(light.position)}`);
   if (JSON.stringify(light.target) !== JSON.stringify([0, 0, -8])) spotlightErrors.push(`target=${JSON.stringify(light.target)}`);
   if (!Array.isArray(light.shadowMatrix) || light.shadowMatrix.length !== 16) spotlightErrors.push("shadowMatrix");

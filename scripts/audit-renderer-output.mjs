@@ -1466,12 +1466,15 @@ const summary = {
       sourceDirectSpotlightState:
         sourceP1Update?.text.includes("this.spotLight.position.x=this.camera.position.x*.175")
         && sourceP1Update?.text.includes("this.spotLight.position.y=this.camera.position.y*.175")
+        && sourceP1Update?.text.includes("Pe.w>=Le.BREAKPOINTS.MD?this.spotLight.position.y=this.camera.position.y*.175:this.spotLight.position.y=.3+this.camera.position.y*.175")
         && sourceSDInitSpotlight.text.includes("J.workScene.spotLight.target.position.set(0,0,-8)")
         && sourceTDSpotlight?.text.includes("J.workScene.spotLight.position.set(J.workScene.aboutBlocks.position.x-.5")
         && sourceTDSpotlight?.text.includes("J.workScene.spotLight.target.position.set(J.workScene.aboutBlocks.position.x+1.5"),
       rebuildDirectSpotlightState:
         rebuildWebgl.includes("positionOwnershipMode: \"source-direct-SpotLight-position-target-no-local-mirror\"")
+        && rebuildWebgl.includes("parallaxMode: \"source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile\"")
         && rebuildWebgl.includes("this.spotLight.position.x = this.homeCamera.position.x * 0.175")
+        && rebuildWebgl.includes("this.spotLight.position.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175")
         && rebuildWebgl.includes("this.spotLight.target.position.set(0, 0, -8)")
         && rebuildWebgl.includes("this.spotLight.position.set(item.group.position.x - 0.5")
         && rebuildWebgl.includes("this.spotLight.target.position.set(item.group.position.x + 1.5")

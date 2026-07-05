@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Lu.update()` work composite final render-target reset.
-- Source `Lu.update()` with `renderToScreen:false` renders to `renderTargetComposite`, then immediately calls `setRenderTarget(null)` before returning to `Iu.update()` and the source component update chain.
-- The rebuild now calls `this.renderer.setRenderTarget(null)` immediately after rendering the production work composite into `workCompositeTarget`.
-- The debug raw-work composite branch and no-home project-page placeholder path are unchanged because they are explicit rebuild diagnostics/route guards rather than the source production `Lu.update()` branch.
-- Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
+- Hardened source `p1` spotlight parallax branch evidence without changing production rendering.
+- Source `p1.update()` moves the direct `SpotLight` by `x=camera.x*.175` and uses `Pe.w>=Le.BREAKPOINTS.MD ? camera.y*.175 : .3+camera.y*.175` for y.
+- The rebuild already follows that branch. Output/thumb probes now expose the source parallax mode, active desktop/mobile y-offset mode, `mobileBreakpoint=800`, and the current source y offset.
+- `scripts/probe-output-color.mjs` asserts the desktop and mobile branches, `scripts/probe-thumb-spotlight.mjs` asserts the desktop thumb-map branch, and renderer audit checks the source ternary plus rebuild markers.
+- Phase 1 remains open for actual spotlight/thumb projection transfer feel, `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
 
@@ -155,24 +155,25 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/probe-output-color.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-renderer-audit-work-final-reset.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9581 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-work-final-reset-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9582 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-work-final-reset-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9583 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-work-final-reset-project-media node scripts/probe-project-media.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9584 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-work-final-reset-thumb node scripts/probe-thumb-spotlight.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-spotlight-parallax-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9591 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-spotlight-parallax-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9592 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-spotlight-parallax-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9593 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-spotlight-parallax-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9594 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-spotlight-parallax-project-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `Lu` work composite final target reset batch.
+All passed in the `p1` spotlight parallax branch guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source `Lu.update()` final non-screen branch, rebuild work composite render followed by `setRenderTarget(null)`, bloom resize-loop ownership, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
-- Output probes confirm `sourceFinalTargetReset=source-Lu-renderToScreen-false-renderTargetComposite-then-null` on desktop/mobile, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Renderer audit checks the source `p1.update()` spotlight parallax ternary, rebuild direct `SpotLight` branch markers, source `Lu.update()` final non-screen branch, bloom resize-loop ownership, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
+- Output probes confirm desktop `source-p1-desktop-camera-y-parallax` and mobile `source-p1-mobile-0_3-plus-camera-y-parallax`, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Thumb spotlight probe retained the source thumb strip shape and spotlight map guardrails.
 
@@ -213,7 +214,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path and has source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1` desktop/mobile spotlight parallax branch, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
