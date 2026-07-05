@@ -222,6 +222,15 @@ async function runProbe() {
   if (probe.thumbScrollWrapParentIsThumbWrap !== true) {
     sourceShapeErrors.push(`thumbScrollWrapParentIsThumbWrap=${probe.thumbScrollWrapParentIsThumbWrap}`);
   }
+  if (probe.thumbObjectMode !== "source-w1-rt-object3d-scrollWrap") {
+    sourceShapeErrors.push(`thumbObjectMode=${probe.thumbObjectMode}`);
+  }
+  if (probe.thumbWrapType !== "Object3D") {
+    sourceShapeErrors.push(`thumbWrapType=${probe.thumbWrapType}`);
+  }
+  if (probe.thumbScrollWrapType !== "Object3D") {
+    sourceShapeErrors.push(`thumbScrollWrapType=${probe.thumbScrollWrapType}`);
+  }
   if (probe.thumbWrapFrustumCulled !== false) {
     sourceShapeErrors.push(`thumbWrapFrustumCulled=${probe.thumbWrapFrustumCulled}`);
   }

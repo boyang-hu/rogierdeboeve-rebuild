@@ -195,6 +195,10 @@ async function runProbe() {
   if (Math.abs((camera.origin?.[2] ?? 0) - expectedOriginZ) > 0.001) resizeErrors.push("cameraOriginZ");
   if (Math.abs((camera.sceneWrapY ?? 0) - expectedSceneWrapY) > 0.001) resizeErrors.push("sceneWrapY");
   if (camera.controllerMode !== "source-IT-three-group-matrix-decompose") resizeErrors.push("controllerMode");
+  if (camera.controllerObjectMode !== "source-IT-rt-object3d-containers") resizeErrors.push("controllerObjectMode");
+  for (const key of ["group", "rotateGroup", "innerGroup"]) {
+    if (camera.controllerObjectTypes?.[key] !== "Object3D") resizeErrors.push(`controllerObjectType-${key}`);
+  }
   if (camera.mouseInitialMode !== "source-IT-documentElement-center") resizeErrors.push("mouseInitialMode");
   if (camera.updateLerpMode !== "source-IT-min-Fn-2-over-fps60-0-2-times-0_01") resizeErrors.push("updateLerpMode");
   if (camera.updateTargetMode !== "source-IT-origin-plus-targetXY-and-y-z-depth-coupling") resizeErrors.push("updateTargetMode");
@@ -861,7 +865,8 @@ async function runProbe() {
   if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
   if (environmentUniforms?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("customUniformsMode");
   if (environmentUniforms?.hasMaterialUniformsAlias !== false) environmentErrors.push("materialUniformsAlias");
-  if (environmentUniforms?.hierarchyMode !== "source-h1-group-owns-transform") environmentErrors.push("hierarchyMode");
+  if (environmentUniforms?.hierarchyMode !== "source-h1-rt-object3d-owns-transform") environmentErrors.push("hierarchyMode");
+  if (environmentUniforms?.groupType !== "Object3D") environmentErrors.push("groupType");
   if (environmentUniforms?.updateMode !== "source-h1-material-update-only") environmentErrors.push("updateMode");
   if (environmentUniforms?.rotationMode !== "source-p1-demorgen-initial-adjustment-only") environmentErrors.push("rotationMode");
   if (environmentUniforms && Math.abs((environmentUniforms.speed ?? 0) - 0.00005) > 0.0000001) environmentErrors.push("speed");
@@ -880,6 +885,7 @@ async function runProbe() {
   if (environmentUniforms && Math.abs((environmentUniforms.groupPositionY ?? 0) + 12.65) > 0.0001) environmentErrors.push("groupPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshPositionY ?? 0) > 0.0001) environmentErrors.push("meshPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshRotationY ?? 0) > 0.0001) environmentErrors.push("meshRotationY");
+  if (environmentHierarchy?.group?.type !== "Object3D") environmentErrors.push("reflectionGroupType");
   if (environmentHierarchy?.group?.children !== 1) environmentErrors.push("groupChildren");
   if (environmentHierarchy?.object?.position?.[1] !== 0) environmentErrors.push("meshLocalPosition");
   if (environmentHierarchy?.geometry?.mode !== "source-Du-icosahedron") environmentErrors.push("reflectionGeometryMode");
@@ -927,10 +933,11 @@ async function runProbe() {
   if (floorUniforms?.geometry?.type !== "CircleGeometry") floorErrors.push("floorGeometryType");
   if (floorUniforms?.geometry && Math.abs((floorUniforms.geometry.radius ?? 0) - 60) > 0.0001) floorErrors.push("floorGeometryRadius");
   if (floorUniforms?.geometry?.segments !== 32) floorErrors.push("floorGeometrySegments");
-  if (floorUniforms?.hierarchy?.mode !== "source-a1-floorGroup-floorPlane-reflector") floorErrors.push("floorHierarchyMode");
+  if (floorUniforms?.hierarchy?.mode !== "source-a1-i1-rt-object3d-floorPlane-reflector") floorErrors.push("floorHierarchyMode");
+  if (floorUniforms?.hierarchy?.groupType !== "Object3D") floorErrors.push("floorGroupType");
   if (floorUniforms?.hierarchy?.groupChildren !== 1) floorErrors.push("floorGroupChildren");
   if (floorUniforms?.hierarchy?.planeChildren !== 1) floorErrors.push("floorPlaneChildren");
-  if (floorUniforms?.hierarchy?.reflectorType !== "Group") floorErrors.push("floorReflectorType");
+  if (floorUniforms?.hierarchy?.reflectorType !== "Object3D") floorErrors.push("floorReflectorType");
   if (floorUniforms?.hierarchy?.reflectorParentIsPlane !== true) floorErrors.push("floorReflectorParent");
   if (floorUniforms?.hierarchy?.planeParentIsGroup !== true) floorErrors.push("floorPlaneParent");
   if (floorUniforms?.hierarchy?.groupParentIsSceneWrap !== true) floorErrors.push("floorGroupParent");
@@ -951,8 +958,9 @@ async function runProbe() {
   if (parsed.probe.reflectionState?.floor?.geometry?.type !== "CircleGeometry") floorErrors.push("reflectionFloorGeometryType");
   if (parsed.probe.reflectionState?.floor?.geometry && Math.abs((parsed.probe.reflectionState.floor.geometry.radius ?? 0) - 60) > 0.0001) floorErrors.push("reflectionFloorGeometryRadius");
   if (parsed.probe.reflectionState?.floor?.geometry?.segments !== 32) floorErrors.push("reflectionFloorGeometrySegments");
-  if (parsed.probe.reflectionState?.floor?.hierarchy?.mode !== "source-a1-floorGroup-floorPlane-reflector") floorErrors.push("reflectionFloorHierarchyMode");
-  if (parsed.probe.reflectionState?.floor?.hierarchy?.reflectorType !== "Group") floorErrors.push("reflectionFloorReflectorType");
+  if (parsed.probe.reflectionState?.floor?.hierarchy?.mode !== "source-a1-i1-rt-object3d-floorPlane-reflector") floorErrors.push("reflectionFloorHierarchyMode");
+  if (parsed.probe.reflectionState?.floor?.hierarchy?.groupType !== "Object3D") floorErrors.push("reflectionFloorGroupType");
+  if (parsed.probe.reflectionState?.floor?.hierarchy?.reflectorType !== "Object3D") floorErrors.push("reflectionFloorReflectorType");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.reflectorParentIsPlane !== true) floorErrors.push("reflectionFloorReflectorParent");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.planeParentIsGroup !== true) floorErrors.push("reflectionFloorPlaneParent");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.groupParentIsSceneWrap !== true) floorErrors.push("reflectionFloorGroupParent");

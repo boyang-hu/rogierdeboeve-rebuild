@@ -90,8 +90,8 @@ type SourceProjectThumb = {
 type WorkItem = {
   slug: string;
   payload: ProjectPayload;
-  group: Group;
-  rotationWrap: Group;
+  group: Object3D;
+  rotationWrap: Object3D;
   material: WorkBlockMaterial;
   mesh: InstancedMesh;
   thumb: Mesh<PlaneGeometry, ShaderMaterial>;
@@ -218,9 +218,9 @@ type ThumbProbeWindow = Window & {
 
 type AuxiliaryBlockItem = {
   kind: "about" | "floating";
-  group: Group;
-  scaleWrap: Group;
-  rotationWrap: Group;
+  group: Object3D;
+  scaleWrap: Object3D;
+  rotationWrap: Object3D;
   material: WorkBlockMaterial;
   mesh: InstancedMesh;
   rayPlane?: Mesh<PlaneGeometry, MeshBasicMaterial>;
@@ -3754,12 +3754,12 @@ export class WebGLBackdrop {
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private characterAmbientLight = new AmbientLight(colorFrom("white"), 1.2);
   private characterDirectionalLight = new DirectionalLight(colorFrom("white"), 2.5);
-  private sceneWrap = new Group();
-  private blocksWrap = new Group();
+  private sceneWrap = new Object3D();
+  private blocksWrap = new Object3D();
   private aboutBlocks?: AuxiliaryBlockItem;
   private floatingBlocks?: AuxiliaryBlockItem;
-  private thumbWrap = new Group();
-  private thumbScrollWrap = new Group();
+  private thumbWrap = new Object3D();
+  private thumbScrollWrap = new Object3D();
   private workItems: WorkItem[] = [];
   private mediaPlanes: MediaPlane[] = [];
   private loader = new TextureLoader();
@@ -3865,11 +3865,11 @@ export class WebGLBackdrop {
   private characterFallbackMesh: Mesh<PlaneGeometry, ShaderMaterial>;
   private characterTarget = makeSourceRenderTarget(false);
   private floorMaterial: ShaderMaterial;
-  private floorGroup = new Group();
-  private floorReflector = new Group();
+  private floorGroup = new Object3D();
+  private floorReflector = new Object3D();
   private floorPlane: Mesh<CircleGeometry, ShaderMaterial>;
   private environmentMaterial: EnvironmentMaterial;
-  private environmentGroup = new Group();
+  private environmentGroup = new Object3D();
   private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
   private readonly environmentSpeed = 0.00005;
   private thumbTarget = makeSourceRenderTarget(false);
@@ -3902,9 +3902,9 @@ export class WebGLBackdrop {
   private cameraRoll = 0;
   private cameraRotateAngle = MathUtils.degToRad(10);
   private cameraLastLerp = 0.01;
-  private cameraControllerGroup = new Group();
-  private cameraRotateGroup = new Group();
-  private cameraInnerGroup = new Group();
+  private cameraControllerGroup = new Object3D();
+  private cameraRotateGroup = new Object3D();
+  private cameraInnerGroup = new Object3D();
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
@@ -4648,8 +4648,8 @@ export class WebGLBackdrop {
       const mousePlane = this.createWorkMousePlane();
       const rayPlane = this.createWorkRayPlane();
       const mouseSimulation = this.createWorkMouseSimulation();
-      const group = new Group();
-      const rotationWrap = new Group();
+      const group = new Object3D();
+      const rotationWrap = new Object3D();
       rotationWrap.scale.setScalar(GRID_SCALE);
       rotationWrap.add(mesh);
       rotationWrap.add(rayPlane);
@@ -4842,9 +4842,9 @@ export class WebGLBackdrop {
     const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 1, 0.05);
     const maxCount = xNum * yNum * zNum;
     const mesh = new InstancedMesh(geometry, material, maxCount);
-    const rotationWrap = new Group();
-    const scaleWrap = new Group();
-    const group = new Group();
+    const rotationWrap = new Object3D();
+    const scaleWrap = new Object3D();
+    const group = new Object3D();
     const rayPlane = new Mesh(new PlaneGeometry(xNum, yNum), new MeshBasicMaterial({ visible: false }));
     const colors = new Float32Array(maxCount * 3);
     const alphas = new Float32Array(maxCount);
@@ -4920,9 +4920,9 @@ export class WebGLBackdrop {
     const geometry = new BoxGeometry(0.5, 0.5, 0.5);
     const count = xNum * yNum * zNum;
     const mesh = new InstancedMesh(geometry, material, count);
-    const group = new Group();
-    const rotationWrap = new Group();
-    const scaleWrap = new Group();
+    const group = new Object3D();
+    const rotationWrap = new Object3D();
+    const scaleWrap = new Object3D();
     const colors = new Float32Array(count * 3);
     const alphas = new Float32Array(count);
     const offsets = new Float32Array(count * 3);
@@ -7175,6 +7175,9 @@ void main() {
       },
       thumbWrapParentIsScene: this.thumbWrap.parent === this.thumbScene,
       thumbScrollWrapParentIsThumbWrap: this.thumbScrollWrap.parent === this.thumbWrap,
+      thumbObjectMode: "source-w1-rt-object3d-scrollWrap",
+      thumbWrapType: this.thumbWrap.type,
+      thumbScrollWrapType: this.thumbScrollWrap.type,
       thumbWrapFrustumCulled: this.thumbWrap.frustumCulled,
       thumbSceneMode: "source-T1-square-height-target-orthographic",
       itemWidth: this.thumbItemWidth,
@@ -7362,6 +7365,12 @@ void main() {
         breakpointMd: BREAKPOINT_MD,
         mobileResizeBranch: window.innerWidth < BREAKPOINT_MD,
         controllerMode: "source-IT-three-group-matrix-decompose",
+        controllerObjectMode: "source-IT-rt-object3d-containers",
+        controllerObjectTypes: {
+          group: this.cameraControllerGroup.type,
+          rotateGroup: this.cameraRotateGroup.type,
+          innerGroup: this.cameraInnerGroup.type,
+        },
         mouseInitialMode: "source-IT-documentElement-center",
         updateLerpMode: "source-IT-min-Fn-2-over-fps60-0-2-times-0_01",
         updateTargetMode: "source-IT-origin-plus-targetXY-and-y-z-depth-coupling",
@@ -7873,7 +7882,8 @@ void main() {
             segments: this.floorPlane.geometry.parameters.segments,
           },
           hierarchy: {
-            mode: "source-a1-floorGroup-floorPlane-reflector",
+            mode: "source-a1-i1-rt-object3d-floorPlane-reflector",
+            groupType: this.floorGroup.type,
             groupChildren: this.floorGroup.children.length,
             planeChildren: this.floorPlane.children.length,
             reflectorType: this.floorReflector.type,
@@ -7987,7 +7997,8 @@ void main() {
           roughness: this.environmentMaterial.roughness,
           metalness: this.environmentMaterial.metalness,
           emissiveIntensity: this.environmentMaterial.emissiveIntensity,
-          hierarchyMode: "source-h1-group-owns-transform",
+          hierarchyMode: "source-h1-rt-object3d-owns-transform",
+          groupType: this.environmentGroup.type,
           rotationMode: "source-p1-demorgen-initial-adjustment-only",
           groupRotationY: this.environmentGroup.rotation.y,
           groupPositionY: this.environmentGroup.position.y,
@@ -8111,6 +8122,7 @@ void main() {
         } : null,
       },
       sceneWrap: {
+        type: this.sceneWrap.type,
         visible: this.sceneWrap.visible,
         position: this.sceneWrap.position.toArray(),
         rotation: [this.sceneWrap.rotation.x, this.sceneWrap.rotation.y, this.sceneWrap.rotation.z],
@@ -8152,7 +8164,8 @@ void main() {
           segments: this.floorPlane.geometry.parameters.segments,
         },
           hierarchy: {
-            mode: "source-a1-floorGroup-floorPlane-reflector",
+            mode: "source-a1-i1-rt-object3d-floorPlane-reflector",
+            groupType: this.floorGroup.type,
             groupChildren: this.floorGroup.children.length,
             planeChildren: this.floorPlane.children.length,
             reflectorType: this.floorReflector.type,

@@ -142,14 +142,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned and guarded the source `U1 -> C1.resize` vector runtime surface without visual tuning.
-- Source evidence: `U1.resize(e,t,n)` calls `this.renderManager.compositeMaterial.resize(e,t)`, source `C1.resize(e,t)` writes only `uContainerSize.value.set(e,t)`, and source `uDisplacementSize:new I(new Q)` has no runtime write in the mirrored bundle.
-- `src/client/webgl.ts` now initializes `C1.uDisplacementSize` and `C1.uContainerSize` to `[0,0]`, writes `uContainerSize` from CSS viewport width/height rather than DPR render size, and no longer writes `C1.uDisplacementSize` during resize.
-- The existing source `O1/k1` displacement render-target sizing remains `height / 10`; this batch only corrected the unused `C1.uDisplacementSize` uniform surface.
-- `scripts/probe-output-color.mjs` now asserts `resizeMode=source-U1-C1-resize-css-width-height`, desktop `uContainerSize=[1440,900]`, mobile `uContainerSize=[390,844]`, and `uDisplacementSize=[0,0]`.
-- `scripts/audit-renderer-output.mjs` records the source `C1.resize` anchor, rebuild CSS-size write, source `[0,0]` vector defaults, and absence of a runtime `uDisplacementSize` write.
-- QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, desktop/mobile output probes with `PROBE_WAIT=30000`, and project-media probe.
-- Project media remained stable: `gc-2026` 5/5 visible media and `hashgraph-vc` 5/5 visible media, with no failures/exceptions/console messages in the browser probes.
+- Aligned source `rt` container identity to Three `Object3D` without visual tuning.
+- Source evidence: `p1` uses `new rt` for `blocksWrap`/`sceneWrap`; `IT` uses `new rt` for `group`/`rotateGroup`/`innerGroup`; `a1`, `i1`, `h1`, `w1`, and `GA` extend `rt`; `w1` and `GA` construct child wraps with `new rt`. In the mirrored Three r164 bundle, `rt` is `Object3D`, not `Group`.
+- `src/client/webgl.ts` now uses `Object3D` for source `rt` containers: home wraps, thumb wraps, floor group/reflector, environment group, camera controller groups, per-work groups, and auxiliary wraps.
+- `characterModelRoot` remains `Group`; this batch did not establish source evidence for that model-root surface.
+- Output/thumb probes now assert source `Object3D` types for camera controller, thumb wraps, floor hierarchy, environment hierarchy, reflection `sceneWrap`, and floor reflector.
+- `scripts/audit-renderer-output.mjs` records matching source `rt` anchors for `p1`, `IT`, `a1/i1`, `h1`, `w1`, and `GA`, plus rebuild `Object3D` markers.
+- QA passed for `git diff --check`, script syntax checks, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
+- Project media remained stable with five visible media tracks on the probed project pages, and browser probes reported no failures/exceptions/console messages.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,23 +159,25 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/probe-output-color.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9290 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-resize-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9291 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-resize-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9292 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-resize-media node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9333 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-rt-object3d-output node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9334 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-rt-object3d-mobile-output node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9335 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-rt-object3d-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9336 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-rt-object3d-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `C1/A1` resize vector runtime-surface batch.
+All passed in the `rt` Object3D container-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Desktop output probe reports `C1.uContainerSize=[1440,900]` and `uDisplacementSize=[0,0]`.
-- Mobile output probe reports `C1.uContainerSize=[390,844]` and `uDisplacementSize=[0,0]`.
+- Desktop and mobile output probes report the camera controller chain, floor hierarchy, environment hierarchy, reflection `sceneWrap`, and floor reflector as `Object3D`.
+- Thumb spotlight probe reports `thumbWrapType=Object3D` and `thumbScrollWrapType=Object3D`.
 - Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
 - Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
 - No failed requests, runtime exceptions, console messages, or WebGL shader errors were reported.
