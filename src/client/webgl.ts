@@ -4103,7 +4103,6 @@ export class WebGLBackdrop {
     this.floorReflectionScreen = makeFullscreenTriangle(this.floorReflectionBlurMaterial);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
-    this.bindSourceMainMouseSimulationTexture();
     this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
     this.mainFluidPass = this.createMainFluidPass();
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
@@ -4154,6 +4153,7 @@ export class WebGLBackdrop {
     this.loadCompositeTextures();
 
     this.resize();
+    this.bindSourceMainCompositeInputs();
     this.bind();
     this.tick();
   }
@@ -6458,7 +6458,9 @@ void main() {
     return this.screenMouseSimulationTargets[this.screenMouseSimulationIndex]?.texture ?? this.placeholder;
   }
 
-  private bindSourceMainMouseSimulationTexture() {
+  private bindSourceMainCompositeInputs() {
+    this.preCompositeMaterial.uniforms.tWork.value = this.workCompositeTarget.texture;
+    this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
     this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTargets[0]?.texture ?? this.placeholder;
   }
 
@@ -7628,6 +7630,11 @@ void main() {
             tPortalBindingMode: "source-C1-material-uniform-A1-unused",
             tPortalIsPlaceholder: c1Uniforms.tPortal.value === this.fluidPlaceholder,
             tBlurIsPlaceholder: c1Uniforms.tBlur.value === this.fluidPlaceholder,
+            tWorkBindingMode: "source-nD-init-one-time-C1-tWork-work-renderTargetComposite",
+            tWorkIsWorkCompositeTarget: c1Uniforms.tWork.value === this.workCompositeTarget.texture,
+            tWorkIsWorkRawTarget: c1Uniforms.tWork.value === this.workRawTarget.texture,
+            tMediaBindingMode: "source-nD-init-one-time-C1-tMedia-media-renderTargetComposite",
+            tMediaIsMediaCompositeTarget: c1Uniforms.tMedia.value === this.mediaTarget.texture,
             tMouseSimBindingMode: "source-nD-init-one-time-C1-tMouseSim-initial-work-mousesim-output",
             tMouseSimIsInitialScreenMouseTarget: c1Uniforms.tMouseSim.value === this.screenMouseSimulationTargets[0]?.texture,
             tMouseSimIsCurrentScreenMouseTarget: c1Uniforms.tMouseSim.value === this.screenMouseSimulationTexture,
@@ -8736,7 +8743,7 @@ void main() {
     const isProjectView = document.body.classList.contains("is-project");
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
-    let preCompositeWorkTarget = this.debugPassOrder === "raw-work-composite" ? this.workRawTarget : this.workCompositeTarget;
+    const debugRawWorkComposite = this.debugPassOrder === "raw-work-composite";
 
     this.renderSkyTarget(time);
     this.renderMediaCompositeTarget(isProjectView && hasMedia);
@@ -8749,7 +8756,7 @@ void main() {
       if (this.debugEnvironment === "off") this.environmentGroup.visible = false;
       try {
         this.renderer.render(this.homeScene, this.homeCamera);
-        if (preCompositeWorkTarget === this.workCompositeTarget) {
+        if (!debugRawWorkComposite) {
           if (this.renderSettings.bloom.enabled) {
             this.renderHomeBloomPass(this.workRawTarget);
           }
@@ -8775,14 +8782,14 @@ void main() {
     } else {
       this.renderer.setRenderTarget(this.workRawTarget);
       this.renderer.setRenderTarget(this.workCompositeTarget);
-      preCompositeWorkTarget = this.workCompositeTarget;
     }
     this.updateWorkSceneForNextFrame(time, delta);
-    this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture;
+    if (debugRawWorkComposite) {
+      this.preCompositeMaterial.uniforms.tWork.value = this.workRawTarget.texture;
+    }
     this.renderer.setRenderTarget(this.mainRawTarget);
     this.renderer.render(this.mainScene, this.mainCamera);
     this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
-    this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture;
     if (this.sourceMainRenderSettings.blur.enabled) {
       this.renderHomeBlurPass();
     }

@@ -142,11 +142,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the source `nD/C1` main mouse-sim binding timing without visual tuning.
-- Source `nD.init()` assigns `mainScene.renderManager.compositeMaterial.uniforms.tMouseSim` once, after the initial resize delay, to `workScene.renderManager.mouseSimulation.bufferSim.output.texture`.
-- Source `C1.update()` only writes `uTime`, so the main pre-composite `A1` mouse-sim input does not chase the current ping-pong output every frame.
-- The rebuild now calls `bindSourceMainMouseSimulationTexture()` once after creating the screen mouse-sim targets and no longer rebinds `preCompositeMaterial.uniforms.tMouseSim` in the frame loop.
-- Output probe now exposes `tMouseSimBindingMode=source-nD-init-one-time-C1-tMouseSim-initial-work-mousesim-output`; renderer audit checks the source/rebuild anchors plus absence of the per-frame C1 mouse-sim rebind.
+- Aligned the source `nD/C1` main cross-scene input bindings without visual tuning.
+- Source `nD.init()` assigns `mainScene.renderManager.compositeMaterial.uniforms.tWork`, `tMedia`, and `tMouseSim` once after the initial resize delay.
+- Source `C1.update()` only writes `uTime`, so those `A1` cross-scene inputs do not chase current target references every frame.
+- The rebuild now calls `bindSourceMainCompositeInputs()` after resize to bind `tWork` to `workCompositeTarget.texture`, `tMedia` to `mediaTarget.texture`, and `tMouseSim` to the initial screen mouse-sim target.
+- Production no longer rebinds `preCompositeMaterial.uniforms.tWork`, `tMedia`, or `tMouseSim` in the frame loop; the raw-work target path remains only as the explicit `debug-pass-order=raw-work-composite` diagnostic.
+- Output probe now exposes source one-time binding markers for `tWork`, `tMedia`, and `tMouseSim`; renderer audit checks the source/rebuild anchors plus absence of the old production rebind bridges.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,23 +160,23 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9348 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-mousesim-binding-output node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9349 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-mousesim-binding-media node scripts/probe-project-media.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9350 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-mousesim-binding-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9351 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-mousesim-binding-interactive node scripts/probe-interactive-mouse.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9352 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-cross-input-output node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9353 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-cross-input-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9354 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-cross-input-media node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9355 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-cross-input-interactive node scripts/probe-interactive-mouse.mjs
 ```
 
-All passed in the `nD/C1` main mouse-sim binding-timing batch.
+All passed in the `nD/C1` main cross-scene input-binding batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks the source one-time `nD.init()` C1 mouse-sim binding and rebuild one-time binder.
-- Desktop and mobile output probes report the source C1 mouse-sim binding marker and initial-target binding.
-- Project media retained five visible media tracks on the probed project pages.
-- Interactive mouse probe retained source-shaped screen/local mouse response and main-fluid pointer response.
+- Renderer audit checks source one-time `nD.init()` bindings for `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim`, plus the rebuild one-time binder.
+- Desktop and mobile output probes reported the source binding markers and target identities for `tWork`, `tMedia`, and `tMouseSim`: `/tmp/rd-c1-cross-input-output`, `/tmp/rd-c1-cross-input-mobile`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-c1-cross-input-media`.
+- Interactive mouse probe passed with source-shaped screen/local mouse response and main-fluid pointer response: `/tmp/rd-c1-cross-input-interactive`.
 - Browser probes reported no failed requests, runtime exceptions, console messages, or WebGL shader errors.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
