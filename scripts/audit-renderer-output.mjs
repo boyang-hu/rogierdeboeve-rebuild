@@ -1025,6 +1025,31 @@ const summary = {
           "depthWrite:!1",
           "depthTest:!1",
         ]),
+        ownership: {
+          sourceConstructorDefaults:
+            sourceSg.text.includes("uniforms:{tMap:new I(null),uThreshold:new I(1),uSmoothing:new I(1)}"),
+          sourceLuInitSettingsWrites:
+            sourceLu.text.includes("this.luminosityMaterial=new sg,this.luminosityMaterial.uniforms.uThreshold.value=this.settings.luminosity.threshold")
+            && sourceLu.text.includes("this.luminosityMaterial.uniforms.uSmoothing.value=this.settings.luminosity.smoothing"),
+          sourceI1InitSettingsWrites:
+            sourceMainI1.text.includes("this.luminosityMaterial=new sg,this.luminosityMaterial.uniforms.uThreshold.value=this.settings.luminosity.threshold")
+            && sourceMainI1.text.includes("this.luminosityMaterial.uniforms.uSmoothing.value=this.settings.luminosity.smoothing"),
+          rebuildConstructorDefaultsThenSettings:
+            Boolean(rebuildCreateLuminosityMaterial)
+            && rebuildCreateLuminosityMaterial.includes("uThreshold: { value: 1 }")
+            && rebuildCreateLuminosityMaterial.includes("uSmoothing: { value: 1 }")
+            && rebuildCreateLuminosityMaterial.includes("sourceConstructorThreshold")
+            && rebuildCreateLuminosityMaterial.includes("sourceConstructorSmoothing")
+            && rebuildCreateLuminosityMaterial.includes("sourceInitSettingsOwnership = \"source-Lu-I1-initRenderer-writes-sg-threshold-smoothing-after-construction\"")
+            && rebuildCreateLuminosityMaterial.includes("material.uniforms.uThreshold.value = luminosity.threshold")
+            && rebuildCreateLuminosityMaterial.includes("material.uniforms.uSmoothing.value = luminosity.smoothing")
+            && !rebuildCreateLuminosityMaterial.includes("uThreshold: { value: luminosity.threshold }")
+            && !rebuildCreateLuminosityMaterial.includes("uSmoothing: { value: luminosity.smoothing }"),
+          rebuildProbeCoverage:
+            rebuildWebgl.includes("constructorThreshold: material.userData.sourceConstructorThreshold")
+            && rebuildWebgl.includes("constructorSmoothing: material.userData.sourceConstructorSmoothing")
+            && rebuildWebgl.includes("initSettingsOwnership: material.userData.sourceInitSettingsOwnership"),
+        },
         excerpt: compact(sourceSg.text),
       },
       rg: sourceRg && {

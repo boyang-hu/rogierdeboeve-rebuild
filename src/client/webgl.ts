@@ -5300,19 +5300,25 @@ export class WebGLBackdrop {
   private createLuminosityMaterial(settings: SourceRenderSettings) {
     const { luminosity } = settings;
     dumpShader("sg-luminosity", sourceFullscreenVertex, homeLuminosityFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
         tMap: { value: null },
-        uThreshold: { value: luminosity.threshold },
-        uSmoothing: { value: luminosity.smoothing },
+        uThreshold: { value: 1 },
+        uSmoothing: { value: 1 },
       },
       vertexShader: sourceFullscreenVertex,
       fragmentShader: homeLuminosityFragment,
     });
+    material.userData.sourceConstructorThreshold = material.uniforms.uThreshold.value;
+    material.userData.sourceConstructorSmoothing = material.uniforms.uSmoothing.value;
+    material.userData.sourceInitSettingsOwnership = "source-Lu-I1-initRenderer-writes-sg-threshold-smoothing-after-construction";
+    material.uniforms.uThreshold.value = luminosity.threshold;
+    material.uniforms.uSmoothing.value = luminosity.smoothing;
+    return material;
   }
 
   private createBloomBlurMaterial(kernelRadius = SOURCE_BLOOM_KERNELS[0]) {
@@ -7421,6 +7427,9 @@ void main() {
       materialMode: "source-sg-raw-glsl3",
       glslVersion: (material as RawShaderMaterial).glslVersion ?? null,
       tMapConstructorMode: "source-sg-tMap-construct-null-branch-owned-binding",
+      constructorThreshold: material.userData.sourceConstructorThreshold,
+      constructorSmoothing: material.userData.sourceConstructorSmoothing,
+      initSettingsOwnership: material.userData.sourceInitSettingsOwnership,
       threshold: material.uniforms.uThreshold.value,
       smoothing: material.uniforms.uSmoothing.value,
     });

@@ -814,6 +814,20 @@ async function runProbe() {
     if (passMaterials[key]?.tMapConstructorMode !== "source-sg-tMap-construct-null-branch-owned-binding") {
       materialSurfaceErrors.push(`${key}TMapConstructorMode`);
     }
+    if (passMaterials[key]?.constructorThreshold !== 1) materialSurfaceErrors.push(`${key}ConstructorThreshold`);
+    if (passMaterials[key]?.constructorSmoothing !== 1) materialSurfaceErrors.push(`${key}ConstructorSmoothing`);
+    if (passMaterials[key]?.initSettingsOwnership !== "source-Lu-I1-initRenderer-writes-sg-threshold-smoothing-after-construction") {
+      materialSurfaceErrors.push(`${key}InitSettingsOwnership`);
+    }
+  }
+  const expectedLuminositySettings = {
+    luminosity: parsed.probe.settings?.main?.luminosity,
+    workLuminosity: parsed.probe.settings?.work?.luminosity,
+    mainLuminosity: parsed.probe.settings?.main?.luminosity,
+  };
+  for (const [key, settings] of Object.entries(expectedLuminositySettings)) {
+    if (settings && passMaterials[key]?.threshold !== settings.threshold) materialSurfaceErrors.push(`${key}ThresholdSetting`);
+    if (settings && passMaterials[key]?.smoothing !== settings.smoothing) materialSurfaceErrors.push(`${key}SmoothingSetting`);
   }
   if (passMaterials.mediaComposite?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mediaCompositeVertexMode");
   const expectedBloomKernels = [3, 5, 7, 9, 11];
