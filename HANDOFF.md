@@ -139,15 +139,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `A1/C1` pre-composite and `OA/CA` work-composite fragment surfaces were aligned without changing formulas, constants, target wiring, or visual tuning.
-- Source `A1` and `CA` keep the shared color helpers, full `Po` blend dispatcher, source declaration order, source comments, compact numeric literals, and source A1 body variable surface.
-- The rebuild now restores those surfaces in `sourceCompositeColorHelper`, `sourceBlendHelper`, `homeCompositeFragment`, and `homePreCompositeFragment`.
-- Runtime-only source trailing spaces are emitted with `SOURCE_TRAILING_SPACE`, so shader text matches the bundle while `git diff --check` remains clean.
-- Shader dump now reports `A1-pre-composite` and `OA-work-composite` as `source-shaped` with vertex delta `0` and fragment delta `0`.
-- `u1-environment` still has its existing helper/body text bridge residuals, but live includes/uniforms and core anchors remain matched.
+- Source `u1/l1` environment and `z1/B1` sky composite fragment surfaces were aligned without changing formulas, constants, material ownership, target wiring, or visual tuning.
+- The shared simplex/noise/oil helper surfaces now keep mirrored source comments, blank lines, indentation, compact numeric literal spelling, and runtime-only source trailing spaces through `SOURCE_TRAILING_SPACE`.
+- Source `sourceSkyBlendHelper`, `skyCompositeFragment`, and `environmentFragmentShader` now match the bundle declaration/body surfaces.
+- Shader dump now reports `u1-environment` as `source-shaped` with fragment delta `0`, and `z1-sky-composite` with vertex delta `0` and fragment delta `0`.
+- `A1-pre-composite`, `OA-work-composite`, `N1`, `M1`, `x1`, `o1`, and `t1` stayed source-shaped.
 - QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the A1/OA shader source-surface residual, not remaining `kA/Lu/I1` transfer/composite evidence, spotlight/thumb projection content and transfer parity, floor/environment distribution parity, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes sky/environment shader source-surface residuals, not remaining `kA/Lu/I1` transfer/composite evidence, spotlight/thumb projection content and transfer parity, floor/environment distribution parity beyond shader text, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -162,7 +161,7 @@ node scripts/probe-thumb-spotlight.mjs
 node scripts/probe-project-media.mjs
 ```
 
-All passed in the `A1/OA` composite shader source-surface batch.
+All passed in the `u1/z1` sky/environment shader source-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -214,7 +213,8 @@ Continue source-driven implementation in this order:
    - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path and has source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
-   - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation, plus `u1` environment helper/body residuals if the bundle text gives a safe path.
+   - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
+   - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
    - The visible fog-bed/horizon still differs from the source.
@@ -256,7 +256,7 @@ Current state:
 - Project detail media pages are closer and should not regress.
 
 Next focus:
-1. Continue analyzing original source classes/shaders, especially `p1`, `GA`, `T1/w1/E1`, `Se`, and main composite/render-manager code around `A1`, `OA`, `kA`.
+1. Continue analyzing original source classes/shaders, especially `p1`, `GA`, `T1/w1/E1`, `Se`, and main composite/render-manager code around `A1`, `OA`, `kA`, `Lu`, and `I1`.
 2. Improve home WebGL fidelity, especially the original spotlight/thumb render-target projection, postprocessing/composite, and mouse/fluid simulation.
 3. After each change, run `npm run build`, `git diff --check`, and browser QA on:
    - `/ ?skip-preloader`

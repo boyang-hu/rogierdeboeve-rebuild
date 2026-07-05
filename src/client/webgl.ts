@@ -1279,28 +1279,54 @@ vec2 mod289(vec2 x) {
 }
 
 vec3 permute(vec3 x) {
-  return mod289(((x * 34.0) + 10.0) * x);
+  return mod289(((x*34.0)+10.0)*x);
 }
 
-float snoise(vec2 v) {
-  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-  vec2 i = floor(v + dot(v, C.yy));
-  vec2 x0 = v - i + dot(i, C.xx);
-  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+float snoise(vec2 v)
+  {
+  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                     -0.577350269189626,  // -1.0 + 2.0 * C.x
+                      0.024390243902439); // 1.0 / 41.0
+// First corner
+  vec2 i  = floor(v + dot(v, C.yy) );
+  vec2 x0 = v -   i + dot(i, C.xx);
+
+// Other corners
+  vec2 i1;
+  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+  //i1.y = 1.0 - i1.x;
+  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  // x0 = x0 - 0.0 + 0.0 * C.xx ;
+  // x1 = x0 - i1 + 1.0 * C.xx ;
+  // x2 = x0 - 1.0 + 2.0 * C.xx ;
   vec4 x12 = x0.xyxy + C.xxzz;
   x12.xy -= i1;
-  i = mod289(i);
-  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-  vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
-  m = m * m;
-  m = m * m;
+
+// Permutations
+  i = mod289(i); // Avoid truncation effects in permutation
+  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+\t\t+ i.x + vec3(0.0, i1.x, 1.0 ));
+
+  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+  m = m*m ;
+  m = m*m ;
+
+// Gradients: 41 points uniformly over a line, mapped onto a diamond.
+// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+
   vec3 x = 2.0 * fract(p * C.www) - 1.0;
   vec3 h = abs(x) - 0.5;
   vec3 ox = floor(x + 0.5);
   vec3 a0 = x - ox;
-  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+
+// Normalise gradients implicitly by scaling m
+// Approximation of: m *= inversesqrt( a0*a0 + h*h );
+  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+
+// Compute final noise value at P
   vec3 g;
-  g.x = a0.x * x0.x + h.x * x0.y;
+  g.x  = a0.x  * x0.x  + h.x  * x0.y;
   g.yz = a0.yz * x12.xz + h.yz * x12.yw;
   return 130.0 * dot(m, g);
 }
@@ -1308,26 +1334,31 @@ float snoise(vec2 v) {
 
 const sourceNoiseShaderHelper = `
 float randomF(vec2 st) {
-  return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 float customRoughness(float roughness, vec2 vUv, float size, float time) {
   float roughnessFactor = roughness;
+  // Triangular tiling
   vec2 triangle = vec2(mod(vUv.x * size, 1.0), mod(vUv.y * size, 1.0));
-  vec2 cell = floor(vUv * size);
-  float shade = randomF(cell) * 0.8 + 0.1;
-  vec4 roughnessColor = vec4(1.0);
 
-  if (triangle.y > triangle.x) {
+    // Generate random shades of grey based on the cell position
+  vec2 cell = floor(vUv * size);
+  float shade = randomF(cell) * 0.8 + 0.1; // Shades between 0.25 and 0.75
+  vec4 roughnessColor = vec4(1.);
+
+    // Create the triangle pattern
+  if(triangle.y > triangle.x) {
     roughnessColor = vec4(vec3(shade), 1.0);
   } else {
     roughnessColor = vec4(vec3(1.0 - shade), 1.0);
   }
 
-  roughnessFactor *= roughnessColor.g;
+   roughnessFactor *= roughnessColor.g;
 
   return roughnessFactor;
 }
+
 
 float noiseShaderRandom(vec2 n) {
   return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
@@ -1337,11 +1368,8 @@ float noise(vec2 p) {
   vec2 ip = floor(p);
   vec2 u = fract(p);
   u = u * u * (3.0 - 2.0 * u);
-  float res = mix(
-    mix(noiseShaderRandom(ip), noiseShaderRandom(ip + vec2(1.0, 0.0)), u.x),
-    mix(noiseShaderRandom(ip + vec2(0.0, 1.0)), noiseShaderRandom(ip + vec2(1.0, 1.0)), u.x),
-    u.y
-  );
+
+  float res = mix(mix(noiseShaderRandom(ip), noiseShaderRandom(ip + vec2(1.0, 0.0)), u.x), mix(noiseShaderRandom(ip + vec2(0.0, 1.0)), noiseShaderRandom(ip + vec2(1.0, 1.0)), u.x), u.y);
   return res * res;
 }
 
@@ -1349,6 +1377,7 @@ const mat2 mtx = mat2(0.80, 0.60, -0.60, 0.80);
 
 float fbm(vec2 p, float time, float speed) {
   float f = 0.0;
+
   f += 0.500000 * noise(p - time * speed);
   p = mtx * p * 2.02;
   f += 0.031250 * noise(p);
@@ -1357,18 +1386,19 @@ float fbm(vec2 p, float time, float speed) {
   p = mtx * p * 2.03;
   f += 0.125000 * noise(p);
   p = mtx * p * 2.01;
-  f += 0.062500 * noise(p - time * (speed * 5.0));
+  f += 0.062500 * noise(p - time * (speed * 5.));
   p = mtx * p * 2.04;
-  f += 0.015625 * noise(p + time * (speed * 5.0));
+  f += 0.015625 * noise(p + time * (speed * 5.));
+
   return f / 0.96875;
 }
 
 float pattern(vec2 p, float time, float speed) {
   float f1 = fbm(p, time, speed);
   float f2 = fbm(p + f1, time, speed);
+
   return fbm(p + f2, time, speed);
 }
-
 vec4 noiseShader(vec2 uv, float time, float speed) {
   float shade = pattern(uv, time, speed);
   return vec4(vec3(shade), shade);
@@ -1738,51 +1768,56 @@ vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
 `;
 
 const sourceSkyBlendHelper = `
-float blendColorBurn(float base, float blend) {
-  return (blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0);
-}
-
-vec3 blendColorBurn(vec3 base, vec3 blend) {
-  return vec3(blendColorBurn(base.r, blend.r), blendColorBurn(base.g, blend.g), blendColorBurn(base.b, blend.b));
-}
-
-vec3 blendColorBurn(vec3 base, vec3 blend, float opacity) {
-  return (blendColorBurn(base, blend) * opacity + base * (1.0 - opacity));
-}
-
 float blendReflect(float base, float blend) {
-  return (blend == 1.0) ? blend : min(base * base / (1.0 - blend), 1.0);
+\treturn (blend==1.0)?blend:min(base*base/(1.0-blend),1.0);
 }
 
 vec3 blendReflect(vec3 base, vec3 blend) {
-  return vec3(blendReflect(base.r, blend.r), blendReflect(base.g, blend.g), blendReflect(base.b, blend.b));
+\treturn vec3(blendReflect(base.r,blend.r),blendReflect(base.g,blend.g),blendReflect(base.b,blend.b));
 }
 
 vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
-  return (blendReflect(base, blend) * opacity + base * (1.0 - opacity));
+\treturn (blendReflect(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendNegation(vec3 base, vec3 blend) {
-  return vec3(1.0) - abs(vec3(1.0) - base - blend);
+\treturn vec3(1.0)-abs(vec3(1.0)-base-blend);
 }
 
 vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
-  return (blendNegation(base, blend) * opacity + base * (1.0 - opacity));
+\treturn (blendNegation(base, blend) * opacity + base * (1.0 - opacity));
 }
+
+
+float blendColorBurn(float base, float blend) {
+\treturn (blend==0.0)?blend:max((1.0-((1.0-base)/blend)),0.0);
+}
+
+vec3 blendColorBurn(vec3 base, vec3 blend) {
+\treturn vec3(blendColorBurn(base.r,blend.r),blendColorBurn(base.g,blend.g),blendColorBurn(base.b,blend.b));
+}
+
+vec3 blendColorBurn(vec3 base, vec3 blend, float opacity) {
+\treturn (blendColorBurn(base, blend) * opacity + base * (1.0 - opacity));
+}
+
 `;
 
 const sourceOilHelper = `
 vec4 oil(vec2 uv, float time, float strength) {
-  float t = time;
-  vec3 col = vec3(0.0);
-  vec2 pos = uv;
-  float noisePos = snoise(uv * 1.15) * 0.005;
-  for (float k = 1.0; k < 5.0; k += 1.0) {
-    pos.x += strength * sin(2.0 * t + k * 1.5 * pos.y + noisePos * 10.0);
-    pos.y += strength * cos(2.0 * t + k * 1.5 * pos.x - noisePos);
-  }
-  col += clamp(-0.0 + 0.5 * cos(t * 0.5 + pos.xyx * 3.0).xxx, -0.1, 0.99);
-  return vec4(col, 1.0);
+    float t = time;
+    vec3 col = vec3(0.0);
+    vec2 pos = uv;
+    float noisePos = snoise(uv * 1.15) * .005;
+
+    for (float k = 1.0; k < 5.0; k += 1.) {${SOURCE_TRAILING_SPACE}
+        pos.x += strength * sin(2.0 * t + k * 1.5 * pos.y + noisePos * 10.);
+        pos.y += strength * cos(2.0 * t + k * 1.5 * pos.x - noisePos);
+    }
+
+    col += clamp(-0.0 + 0.5 * cos(t * 0.5 + pos.xyx * 3.0).xxx, -0.1, 0.99);
+    return vec4(col, 1.0);
 }
 `;
 
@@ -1792,28 +1827,33 @@ ${sourceNoiseShaderHelper}
 ${sourceBlendHelper}
 ${sourceOilHelper}
 
-uniform float uDarken;
-uniform vec3 uDarkenColor;
-uniform sampler2D tSky;
-uniform float uTime;
 uniform float uMultiplier;
-uniform float uShader1Alpha;
 uniform float uShader1Speed;
+uniform float uShader1Alpha;
 uniform float uShader1Scale;
+
 uniform float uShader2Alpha;
 uniform float uShader2Scale;
-uniform float uShader3Alpha;
+
 uniform float uShader3Speed;
+uniform float uShader3Alpha;
 uniform float uShader3Scale;
+
 uniform float uShader1Mix2;
 uniform float uShader1Mix3;
 
+uniform vec3 uDarkenColor;
+uniform float uDarken;
+
+uniform sampler2D tSky;
+
+uniform float uTime;
 varying vec2 vUv;
 
 #define STANDARD
 #ifdef PHYSICAL
-  #define IOR
-  #define SPECULAR
+\t#define IOR
+\t#define SPECULAR
 #endif
 uniform vec3 diffuse;
 uniform vec3 emissive;
@@ -1826,12 +1866,12 @@ uniform float ior;
 #ifdef SPECULAR
 uniform float specularIntensity;
 uniform vec3 specularColor;
-  #ifdef USE_SPECULARINTENSITYMAP
+\t#ifdef USE_SPECULARINTENSITYMAP
 uniform sampler2D specularIntensityMap;
-  #endif
-  #ifdef USE_SPECULARCOLORMAP
+\t#endif
+\t#ifdef USE_SPECULARCOLORMAP
 uniform sampler2D specularColorMap;
-  #endif
+\t#endif
 #endif
 #ifdef USE_CLEARCOAT
 uniform float clearcoat;
@@ -1846,12 +1886,12 @@ uniform float iridescenceThicknessMaximum;
 #ifdef USE_SHEEN
 uniform vec3 sheenColor;
 uniform float sheenRoughness;
-  #ifdef USE_SHEENCOLORMAP
+\t#ifdef USE_SHEENCOLORMAP
 uniform sampler2D sheenColorMap;
-  #endif
-  #ifdef USE_SHEENROUGHNESSMAP
+\t#endif
+\t#ifdef USE_SHEENROUGHNESSMAP
 uniform sampler2D sheenRoughnessMap;
-  #endif
+\t#endif
 #endif
 varying vec3 vViewPosition;
 #include <common>
@@ -1886,86 +1926,94 @@ varying vec3 vViewPosition;
 // #include <clipping_planes_pars_fragment>
 
 float smoothMask(float coord, float center, float spread) {
-  return (1.0 - smoothstep(coord, center, center - spread)) + (1.0 - smoothstep(coord, center, center + spread));
+  return (1. - smoothstep(coord,  center, center - spread)) + (1. - smoothstep(coord,  center, center + spread));
 }
 
 void main() {
-  // #include <clipping_planes_fragment>
+\t// #include <clipping_planes_fragment>
   vec4 diffuseColor = vec4(diffuse, opacity);
   ReflectedLight reflectedLight = ReflectedLight(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
   vec3 totalEmissiveRadiance = emissive;
 
-  // #include <logdepthbuf_fragment>
-  // #include <map_fragment>
-  // #include <color_fragment>
+\t// #include <logdepthbuf_fragment>
+\t// #include <map_fragment>
+\t// #include <color_fragment>
 
   vec2 skyUv = vUv;
   vec2 skyUv2 = vUv;
 
-  skyUv.x += 0.5;
-  skyUv2.x -= 0.75;
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  skyUv.x += .5;
+  skyUv2.x -= .75;
 
-  vec4 noise = texture2D(tSky, skyUv * 2.0);
-  vec4 noise2 = texture2D(tSky, skyUv2);
-
+  vec4 noise = texture(tSky, (skyUv * 2.));
+  vec4 noise2 = texture(tSky, (skyUv2 * 1.));
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec3 maskColor = vec3(1.0, 1.0, 1.0);
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   float m = 0.0;
-  m = max(m, 1.0 - smoothstep(vUv.x, 0.00, 0.015));
-  m = max(m, 1.0 - smoothstep(vUv.x, 1.015, 0.985));
-  m = max(m, smoothMask(vUv.x, 0.5, 0.01));
-  m = m * 1.0 - smoothMask(vUv.x, 0.75, 0.02);
+
+  m = max(m, 1. - smoothstep(vUv.x, 0.00, 0.015));
+  m = max(m, 1. - smoothstep(vUv.x, 1.015, 0.985));
+  m = max(m, smoothMask(vUv.x, .5, 0.01));
+  m = m * 1. - smoothMask(vUv.x, .75, 0.02);
   m = clamp(m, 0.0, 1.0);
 
   vec4 noiseMixed = mix(noise, noise2, m);
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   diffuseColor.rgb = blend(4, diffuseColor.rgb, noiseMixed.rgb, 0.5);
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec2 skyMaskUv = vUv;
-  skyMaskUv.y -= 0.1;
-
-  float skyMask = mod(skyMaskUv.y * 5.0, 1.0);
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  skyMaskUv.y -= .1;
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  float skyMask = mod((skyMaskUv.y) * 5., 1.);
   skyMask = max(skyMask, step(0.6, skyMaskUv.y));
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  diffuseColor.rgb = blend(16, diffuseColor.rgb, noiseMixed.rgb , skyMask);
+  diffuseColor.rgb += vec3(smoothstep(vUv.y, .45, .595));
 
-  diffuseColor.rgb = blend(16, diffuseColor.rgb, noiseMixed.rgb, skyMask);
-  diffuseColor.rgb += vec3(smoothstep(vUv.y, 0.45, 0.595));
-
-  float skyMask2 = mod(skyMaskUv.y * 2.5, 1.0);
+  float skyMask2 = mod((skyMaskUv.y) * 2.5, 1.);
   skyMask2 = max(skyMask, step(0.6, skyMaskUv.y));
 
-  diffuseColor.rgb = mix(vec3(1.0), diffuseColor.rgb, skyMask2 * 1.5);
+  diffuseColor.rgb = mix(vec3(1.0, 1.0, 1.0), diffuseColor.rgb, skyMask2 * 1.5);
   diffuseColor.rgb *= 1.15;
   diffuseColor.rgb *= clamp(diffuseColor.rgb, vec3(0.0), vec3(1.0));
-
-  // #include <alphamap_fragment>
-  // #include <alphatest_fragment>
-  #include <roughnessmap_fragment>
-  #include <metalnessmap_fragment>
-  #include <normal_fragment_begin>
-  #include <normal_fragment_maps>
-  // #include <clearcoat_normal_fragment_begin>
-  // #include <clearcoat_normal_fragment_maps>
-  // #include <emissivemap_fragment>
-  #include <lights_physical_fragment>
-  #include <lights_fragment_begin>
-  #include <lights_fragment_maps>
-  #include <lights_fragment_end>
-  // #include <aomap_fragment>
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+\t// #include <alphamap_fragment>
+\t// #include <alphatest_fragment>
+\t#include <roughnessmap_fragment>
+\t#include <metalnessmap_fragment>
+\t#include <normal_fragment_begin>
+\t#include <normal_fragment_maps>
+\t// #include <clearcoat_normal_fragment_begin>
+\t// #include <clearcoat_normal_fragment_maps>
+\t// #include <emissivemap_fragment>
+\t#include <lights_physical_fragment>
+\t#include <lights_fragment_begin>
+\t#include <lights_fragment_maps>
+\t#include <lights_fragment_end>
+\t// #include <aomap_fragment>
   vec3 totalDiffuse = reflectedLight.indirectDiffuse;
   vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
-  // #include <transmission_fragment>
+\t// #include <transmission_fragment>
   vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec3 black = vec3(0.095, 0.095, 0.095);
-
-  #include <opaque_fragment>
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+\t#include <opaque_fragment>
 
   gl_FragColor.rgb = blend(4, gl_FragColor.rgb, uDarkenColor, uDarken);
-  // #include <tonemapping_fragment>
-  // #include <colorspace_fragment>
-  // #include <fog_fragment>
-  // #include <premultiplied_alpha_fragment>
-  #include <dithering_fragment>
+  // gl_FragColor.rgb = 1. - noiseMixed.rgb;
+  // gl_FragColor.rgb = vec3(mask4);
+
+
+
+\t// #include <tonemapping_fragment>
+\t// #include <colorspace_fragment>
+\t// #include <fog_fragment>
+\t// #include <premultiplied_alpha_fragment>
+\t#include <dithering_fragment>
 }
 `;
 
@@ -3245,17 +3293,18 @@ out vec4 FragColor;
 void main() {
   vec2 uv = vUv;
 
-  vec2 pos = vUv.xy * 4.0;
+  vec2 pos = vUv.xy * 4.;
   pos.x *= 1.5;
 
-  vec4 noise = noiseShader(pos, uTime, uShader1Speed * 0.1);
+  vec4 noise = noiseShader(pos, uTime, uShader1Speed * .1);
   vec4 diffuseColor = texture(tScene, vUv);
 
-  diffuseColor.rgb = blendReflect(diffuseColor.rgb, noise.rgb, 0.5);
-  diffuseColor.rgb = contrast(diffuseColor.rgb, 2.0);
-  diffuseColor.rgb = diffuseColor.rgb * 2.0;
+  diffuseColor.rgb = blendReflect(diffuseColor.rgb, noise.rgb, .5);
+  diffuseColor.rgb = contrast(diffuseColor.rgb, 2.);
+  diffuseColor.rgb = diffuseColor.rgb * 2.;
 
-  FragColor = vec4(0.9 - diffuseColor.rgb, 1.0);
+  FragColor = vec4(.9 - diffuseColor.rgb, 1.);
+
   #include <tonemapping_fragment>
 }
 `;
