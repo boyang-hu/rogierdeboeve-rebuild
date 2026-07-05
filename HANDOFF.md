@@ -142,10 +142,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Cleaned the renderer audit scope for the source `nD/C1` cross-scene input bindings without runtime changes.
-- Source `nD.init()` owns one-time `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim` bindings after the initial resize delay, while source `C1.update()` only writes `uTime`.
-- The audit now extracts the rebuild `private tick` frame loop before checking absence of production per-frame `C1` rebinds, so the one-time `bindSourceMainCompositeInputs()` `tMedia` assignment is not misreported as a frame-loop rebind.
-- Recursive audit false/null review now drops the stale `sourceManagers.C1.rebuildChecks.noPerFrameTMediaRebind=false` entry and reports only known source-negative/default evidence.
+- Aligned source-null constructor/default sampler ownership for the composite material chain.
+- Source `C1`, `OA`, `lA`, `W1`, and `_1` construct sampler uniforms with `new I(null)`, while source `Lu.update()` and `I1.update()` assign `tBloom` only inside their bloom-enabled branches.
+- The rebuild now initializes those pass-material sampler uniforms to `null`, keeps `C1.tWork/tMedia/tMouseSim` on the source one-time `nD.init()` binder, binds work/main `tBloom` only in the corresponding bloom branches, and leaves default-disabled `C1.tBloom/tBlur/tPortal` source-null.
+- Output probes and renderer audit now assert `samplerConstructorMode=source-C1-sampler-uniforms-construct-null-branch-owned-bindings`, source-null `tPortal/tBlur`, and branch-owned `tBloom`.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -157,21 +157,24 @@ git diff --check
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-renderer-audit-s240-final.json
-node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync("/tmp/rd-renderer-audit-s240-final.json","utf8")); const hits=[]; function walk(v,p){ if(v===false||v===null) hits.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(data,[]); if(hits.some(([p])=>p==="sourceManagers.C1.rebuildChecks.noPerFrameTMediaRebind")) process.exit(2); console.log(`falseOrNull=${hits.length}`);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-renderer-audit-null-sampler.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9361 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-null-sampler-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9362 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-null-sampler-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9363 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-null-sampler-project-media node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9364 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-null-sampler-thumb node scripts/probe-thumb-spotlight.mjs
 ```
 
-All passed in the renderer audit `C1` rebind-scope cleanup batch.
+All passed in the source-null composite sampler ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source one-time `nD.init()` bindings for `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim`, plus the rebuild one-time binder.
-- The no-per-frame `C1` rebind checks are now scoped to `private tick`, not the full file.
-- Recursive audit false/null review reports `falseOrNull=19` and no stale `sourceManagers.C1.rebuildChecks.noPerFrameTMediaRebind=false`.
-- Browser probes from the prior runtime-changing S1-239 batch passed under `/tmp/rd-c1-cross-input-*`; this S1-240 batch changed only static audit logic.
+- Renderer audit checks source `new I(null)` sampler constructor surfaces and branch-owned work/main `tBloom` bindings.
+- Output probes confirm default-disabled `C1.tBloom/tBlur/tPortal` source-null ownership, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
+- Thumb spotlight probe retained the source thumb strip shape and spotlight map guardrails.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 

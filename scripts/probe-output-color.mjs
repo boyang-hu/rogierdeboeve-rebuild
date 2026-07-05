@@ -563,11 +563,35 @@ async function runProbe() {
   }
   if (c1MaterialSurface.matchesSourceOrder !== true) materialSurfaceErrors.push("preCompositeC1UniformOrder");
   if (c1MaterialSurface.hasTPortalUniform !== true) materialSurfaceErrors.push("preCompositeC1TPortalUniform");
-  if (c1MaterialSurface.tPortalBindingMode !== "source-C1-material-uniform-A1-unused") {
+  if (c1MaterialSurface.samplerConstructorMode !== "source-C1-sampler-uniforms-construct-null-branch-owned-bindings") {
+    materialSurfaceErrors.push("preCompositeC1SamplerConstructorMode");
+  }
+  if (c1MaterialSurface.tBloomBindingMode !== "source-I1-bloom-branch-only") {
+    materialSurfaceErrors.push("preCompositeC1TBloomBindingMode");
+  }
+  if (preCompositeUniforms?.boolBloom === false && c1MaterialSurface.tBloomIsNullWhenDisabled !== true) {
+    materialSurfaceErrors.push("preCompositeC1TBloomNullWhenDisabled");
+  }
+  if (preCompositeUniforms?.boolBloom === true && c1MaterialSurface.tBloomIsMainBloomTargetWhenEnabled !== true) {
+    materialSurfaceErrors.push("preCompositeC1TBloomMainTargetWhenEnabled");
+  }
+  if (c1MaterialSurface.tPortalBindingMode !== "source-C1-material-uniform-A1-unused-constructor-null") {
     materialSurfaceErrors.push("preCompositeC1TPortalBindingMode");
   }
-  if (c1MaterialSurface.tPortalIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TPortalPlaceholder");
-  if (c1MaterialSurface.tBlurIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TBlurPlaceholder");
+  if (c1MaterialSurface.tPortalIsSourceNull !== true) materialSurfaceErrors.push("preCompositeC1TPortalSourceNull");
+  if (c1MaterialSurface.tBlurBindingMode !== "source-C1-constructor-null-A1-unused") {
+    materialSurfaceErrors.push("preCompositeC1TBlurBindingMode");
+  }
+  if (c1MaterialSurface.tBlurIsSourceNull !== true) materialSurfaceErrors.push("preCompositeC1TBlurSourceNull");
+  if (c1MaterialSurface.tFluidBindingMode !== "source-I1-fluid-branch-when-enabled-else-constructor-null") {
+    materialSurfaceErrors.push("preCompositeC1TFluidBindingMode");
+  }
+  if (preCompositeUniforms?.boolFluid === false && c1MaterialSurface.tFluidIsNullWhenDisabled !== true) {
+    materialSurfaceErrors.push("preCompositeC1TFluidNullWhenDisabled");
+  }
+  if (preCompositeUniforms?.boolFluid === true && c1MaterialSurface.tFluidIsMainFluidTargetWhenEnabled !== true) {
+    materialSurfaceErrors.push("preCompositeC1TFluidMainTargetWhenEnabled");
+  }
   if (c1MaterialSurface.tWorkBindingMode !== "source-nD-init-one-time-C1-tWork-work-renderTargetComposite") {
     materialSurfaceErrors.push("preCompositeC1TWorkBindingMode");
   }

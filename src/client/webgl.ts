@@ -5099,11 +5099,11 @@ export class WebGLBackdrop {
     dumpShader("OA-work-composite", sourceMatrixFullscreenVertex, homeCompositeFragment);
     const fragmentShader = this.debugCompositeShader ? homeCompositeDebugFragment : homeCompositeFragment;
     const uniforms: Record<string, { value: any }> = {
-      tScene: { value: this.compositeTarget.texture },
-      tBloom: { value: this.fluidPlaceholder },
-      tBlur: { value: this.fluidPlaceholder },
-      tFluid: { value: this.fluidPlaceholder },
-      tMouseSim: { value: this.screenMouseSimulationTexture },
+      tScene: { value: null },
+      tBloom: { value: null },
+      tBlur: { value: null },
+      tFluid: { value: null },
+      tMouseSim: { value: null },
       boolBloom: { value: settings.bloom.enabled },
       boolFluid: { value: settings.fluid.enabled },
       boolLuminosity: { value: settings.luminosity.enabled },
@@ -5150,21 +5150,21 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tScene: { value: this.mainRawTarget.texture },
-        tWork: { value: this.workRawTarget.texture },
-        tMedia: { value: this.fluidPlaceholder },
-        tBloom: { value: this.fluidPlaceholder },
-        tBlur: { value: this.fluidPlaceholder },
-        tFluid: { value: this.fluidPlaceholder },
-        tPortal: { value: this.fluidPlaceholder },
-        tMouseSim: { value: this.screenMouseSimulationTexture },
+        tScene: { value: null },
+        tWork: { value: null },
+        tMedia: { value: null },
+        tBloom: { value: null },
+        tBlur: { value: null },
+        tFluid: { value: null },
+        tPortal: { value: null },
+        tMouseSim: { value: null },
         boolBloom: { value: false },
         boolFluid: { value: false },
         boolLuminosity: { value: false },
         boolFxaa: { value: false },
         uTime: { value: 0 },
         tNoise: { value: this.noiseTexture },
-        tLensflare: { value: this.mainLensflareTarget.texture },
+        tLensflare: { value: null },
         uRatio: { value: 1 },
         tPerlin: { value: this.perlinTexture },
         uDisplacementSize: { value: new Vector2(0, 0) },
@@ -5193,11 +5193,11 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tScene: { value: this.compositeTarget.texture },
-        tBloom: { value: this.fluidPlaceholder },
-        tBlur: { value: this.fluidPlaceholder },
-        tFluid: { value: this.fluidPlaceholder },
-        tMouseSim: { value: this.fluidPlaceholder },
+        tScene: { value: null },
+        tBloom: { value: null },
+        tBlur: { value: null },
+        tFluid: { value: null },
+        tMouseSim: { value: null },
         boolBloom: { value: settings.bloom.enabled },
         boolFluid: { value: settings.fluid.enabled },
         boolLuminosity: { value: settings.luminosity.enabled },
@@ -5237,11 +5237,11 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tScene: { value: this.mediaRawTarget.texture },
-        tBloom: { value: this.fluidPlaceholder },
-        tBlur: { value: this.fluidPlaceholder },
-        tFluid: { value: this.fluidPlaceholder },
-        tMouseSim: { value: this.fluidPlaceholder },
+        tScene: { value: null },
+        tBloom: { value: null },
+        tBlur: { value: null },
+        tFluid: { value: null },
+        tMouseSim: { value: null },
         boolBloom: { value: false },
         boolFluid: { value: false },
         boolLuminosity: { value: false },
@@ -5735,7 +5735,7 @@ void main() {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tScene: { value: this.thumbTarget.texture },
+        tScene: { value: null },
         uDarkenIntensity: { value: 0 },
         uDarkenColor: { value: sourceRgbColor("#000000", "#000000") },
         uSaturation: { value: 1 },
@@ -6893,7 +6893,6 @@ void main() {
       0.25,
     );
     this.screenMouseSimulationIndex = screenResult.index;
-    this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
   }
 
@@ -7618,6 +7617,7 @@ void main() {
             height: this.mainLensflareTarget.height,
           },
           boolBloom: this.preCompositeMaterial.uniforms.boolBloom.value,
+          boolFluid: this.preCompositeMaterial.uniforms.boolFluid.value,
           boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
           materialUniformSurface: {
             mode: "source-C1-constructor-uniform-order-with-unused-tPortal",
@@ -7627,9 +7627,21 @@ void main() {
             matchesSourceOrder: c1UniformKeys.length === SOURCE_C1_UNIFORM_KEYS.length
               && SOURCE_C1_UNIFORM_KEYS.every((key, index) => c1UniformKeys[index] === key),
             hasTPortalUniform: Object.hasOwn(c1Uniforms, "tPortal"),
-            tPortalBindingMode: "source-C1-material-uniform-A1-unused",
-            tPortalIsPlaceholder: c1Uniforms.tPortal.value === this.fluidPlaceholder,
-            tBlurIsPlaceholder: c1Uniforms.tBlur.value === this.fluidPlaceholder,
+            samplerConstructorMode: "source-C1-sampler-uniforms-construct-null-branch-owned-bindings",
+            tBloomBindingMode: "source-I1-bloom-branch-only",
+            tBloomIsNullWhenDisabled: !this.sourceMainRenderSettings.bloom.enabled && c1Uniforms.tBloom.value === null,
+            tBloomIsMainBloomTargetWhenEnabled:
+              this.sourceMainRenderSettings.bloom.enabled
+              && c1Uniforms.tBloom.value === this.mainBloomHorizontalTargets[0]?.texture,
+            tPortalBindingMode: "source-C1-material-uniform-A1-unused-constructor-null",
+            tPortalIsSourceNull: c1Uniforms.tPortal.value === null,
+            tBlurBindingMode: "source-C1-constructor-null-A1-unused",
+            tBlurIsSourceNull: c1Uniforms.tBlur.value === null,
+            tFluidBindingMode: "source-I1-fluid-branch-when-enabled-else-constructor-null",
+            tFluidIsNullWhenDisabled: !this.sourceMainRenderSettings.fluid.enabled && c1Uniforms.tFluid.value === null,
+            tFluidIsMainFluidTargetWhenEnabled:
+              this.sourceMainRenderSettings.fluid.enabled
+              && c1Uniforms.tFluid.value === this.mainFluidPass.targets.main.texture,
             tWorkBindingMode: "source-nD-init-one-time-C1-tWork-work-renderTargetComposite",
             tWorkIsWorkCompositeTarget: c1Uniforms.tWork.value === this.workCompositeTarget.texture,
             tWorkIsWorkRawTarget: c1Uniforms.tWork.value === this.workRawTarget.texture,
@@ -8733,7 +8745,6 @@ void main() {
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
-    this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;
     this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;
     this.preCompositeMaterial.uniforms.boolLuminosity.value = this.sourceMainRenderSettings.luminosity.enabled;
@@ -8759,12 +8770,10 @@ void main() {
         if (!debugRawWorkComposite) {
           if (this.renderSettings.bloom.enabled) {
             this.renderHomeBloomPass(this.workRawTarget);
+            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;
           }
           this.updateScreenMouseSimulation(time, delta);
           this.compositeMaterial.uniforms.tScene.value = this.workRawTarget.texture;
-          this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;
-          this.compositeMaterial.uniforms.tBlur.value = this.fluidPlaceholder;
-          this.compositeMaterial.uniforms.tFluid.value = this.fluidPlaceholder;
           this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
           this.compositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled;
           this.compositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;
@@ -8797,15 +8806,17 @@ void main() {
     this.renderMainLuminosityPass(this.mainRawTarget);
     if (this.sourceMainRenderSettings.bloom.enabled) {
       this.renderMainBloomPass(this.mainRawTarget);
+      this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     }
     this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;
-    this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
-    const mainFluidTexture = this.sourceMainRenderSettings.fluid.enabled && this.fluidStrength > 0
-      ? this.updateMainFluidPass()
-      : this.mainFluidPass.enabled
-        ? this.mainFluidPass.targets.main.texture
-        : this.fluidPlaceholder;
-    this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
+    if (this.sourceMainRenderSettings.fluid.enabled) {
+      const mainFluidTexture = this.fluidStrength > 0
+        ? this.updateMainFluidPass()
+        : this.mainFluidPass.enabled
+          ? this.mainFluidPass.targets.main.texture
+          : null;
+      this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
+    }
     this.renderHomeCompositePass();
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.renderThumbTargets();
