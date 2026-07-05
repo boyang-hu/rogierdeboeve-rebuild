@@ -152,6 +152,9 @@ const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildResizeBloomMipChain = extractBlock(rebuildWebgl, "private resizeBloomMipChain(");
 const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomChain(");
+const rebuildRenderWorkBlurPass = extractBlock(rebuildWebgl, "private renderWorkBlurPass()");
+const rebuildRenderHomeBlurPass = extractBlock(rebuildWebgl, "private renderHomeBlurPass()");
+const rebuildRenderHomeBloomPass = extractBlock(rebuildWebgl, "private renderHomeBloomPass(");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
 const sourceTl = extractTemplate(bundle, "tl", "`;class g1");
@@ -444,6 +447,8 @@ const summary = {
         ),
         rebuildSourceScreenSwap: [
           "private workPostScreen = makeSourcePassScreen()",
+          "this.workPostScreen.material = this.workBlurHorizontalMaterial",
+          "this.workPostScreen.material = this.workBlurVerticalMaterial",
           "this.workPostScreen.material = this.workLuminosityMaterial",
           "this.workPostScreen.material = this.compositeMaterial",
           "this.renderer.render(this.workPostScreen, this.backgroundCamera)",
@@ -512,6 +517,33 @@ const summary = {
           "this.workBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);",
           "source-Lu-Na-resize-css-width-height-when-blur-enabled",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceBlurBranchRender:
+          sourceLu.text.includes("this.settings.blur.enabled&&(this.hBlurMaterial.uniforms.tMap.value=c.texture")
+          && sourceLu.text.includes("this.screen.material=this.hBlurMaterial,o.setRenderTarget(f),o.render(this.screen,this.screenCamera)")
+          && sourceLu.text.includes("this.vBlurMaterial.uniforms.tMap.value=f.texture")
+          && sourceLu.text.includes("this.screen.material=this.vBlurMaterial,o.setRenderTarget(g),o.render(this.screen,this.screenCamera)")
+          && sourceLu.text.includes("this.luminosityMaterial.uniforms.tMap.value=this.settings.blur.enabled?g.texture:c.texture")
+          && sourceLu.text.includes("this.compositeMaterial.uniforms.tScene.value=this.settings.blur.enabled?g.texture:c.texture"),
+        rebuildBlurBranchRender:
+          rebuildRenderWorkBlurPass?.includes("this.workBlurHorizontalMaterial.uniforms.tMap.value = this.workRawTarget.texture;")
+          && rebuildRenderWorkBlurPass?.includes("this.workPostScreen.material = this.workBlurHorizontalMaterial;")
+          && rebuildRenderWorkBlurPass?.includes("this.renderer.setRenderTarget(this.workBlurTargetA);")
+          && rebuildRenderWorkBlurPass?.includes("this.workBlurVerticalMaterial.uniforms.tMap.value = this.workBlurTargetA.texture;")
+          && rebuildRenderWorkBlurPass?.includes("this.workPostScreen.material = this.workBlurVerticalMaterial;")
+          && rebuildRenderWorkBlurPass?.includes("this.renderer.setRenderTarget(this.workBlurTargetB);")
+          && rebuildTick?.includes("if (this.renderSettings.blur.enabled) {\n            this.renderWorkBlurPass();\n          }\n          const workSceneTarget = this.renderSettings.blur.enabled ? this.workBlurTargetB : this.workRawTarget;")
+          && rebuildTick?.includes("this.renderHomeBloomPass(this.workRawTarget, workSceneTarget);")
+          && rebuildTick?.includes("this.compositeMaterial.uniforms.tScene.value = workSceneTarget.texture;")
+          && rebuildWebgl.includes("luminositySource: \"source-Lu-renderTargetBlurB-if-blur-else-renderTargetA\""),
+        sourceBlurinessInitOnly:
+          sourceLu.text.includes("this.hBlurMaterial.uniforms.uBluriness.value=0")
+          && sourceLu.text.includes("this.vBlurMaterial.uniforms.uBluriness.value=0")
+          && !sourceLu.text.includes("settings.blur.strength"),
+        rebuildBlurinessInitOnly:
+          rebuildCreateBlurMaterial?.includes("uBluriness: { value: 0 }")
+          && !rebuildRenderWorkBlurPass?.includes("uBluriness.value")
+          && !rebuildRenderHomeBlurPass?.includes("uBluriness.value")
+          && rebuildWebgl.includes("blurinessUpdateMode: \"source-Na-uBluriness-init-zero-no-update-write\""),
         sourceFxaaResizeResolution:
           sourceLu.text.includes("this.settings.fxaa.enabled&&(this.renderTargetFXAA.setSize(e*n,t*n),this.FxaaMaterial.uniforms.uResolution.value.set(e*n,t*n))"),
         rebuildFxaaResizeResolution: [
@@ -529,7 +561,9 @@ const summary = {
           && rebuildWebgl.includes("sourceFinalTargetReset: \"source-Lu-renderToScreen-false-renderTargetComposite-then-null\""),
         sourceBloomBranchBinding: sourceLu.text.includes("this.compositeMaterial.uniforms.tBloom.value=d[0].texture"),
         rebuildBloomBranchBinding:
-          rebuildWebgl.includes("if (this.renderSettings.bloom.enabled) {\n            this.renderHomeBloomPass(this.workRawTarget);\n            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;\n          }"),
+          rebuildTick?.includes("if (this.renderSettings.bloom.enabled) {\n            this.renderHomeBloomPass(this.workRawTarget, workSceneTarget);\n            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;\n          }")
+          && rebuildRenderHomeBloomPass?.includes("private renderHomeBloomPass(sourceTarget: WebGLRenderTarget, luminositySourceTarget = sourceTarget)")
+          && rebuildRenderHomeBloomPass?.includes("this.workLuminosityMaterial.uniforms.tMap.value = luminositySourceTarget.texture;"),
         sourceBloomBlurResizeResolution:
           sourceLu.text.includes("this.blurMaterials[i].uniforms.uResolution.value.set(e,t),e/=2,t/=2")
           && !sourceLu.text.includes("this.blurMaterials[p].uniforms.uResolution"),
@@ -1100,6 +1134,10 @@ const summary = {
           && sourceMainI1.text.includes("r.setRenderTarget(h),r.render(this.screen,this.screenCamera)")
           && sourceMainI1.text.includes("this.vBlurMaterial.uniforms.tMap.value=h.texture")
           && sourceMainI1.text.includes("r.setRenderTarget(f),r.render(this.screen,this.screenCamera)"),
+        sourceBlurinessInitOnly:
+          sourceMainI1.text.includes("this.hBlurMaterial.uniforms.uBluriness.value=0")
+          && sourceMainI1.text.includes("this.vBlurMaterial.uniforms.uBluriness.value=0")
+          && !sourceMainI1.text.includes("settings.blur.strength"),
         sourceBlurCompositeNotUsed:
           sourceMainI1.text.includes("l=this.renderTargetComposite,h=this.renderTargetBlurA,f=this.renderTargetBlurB")
           && !sourceMainI1.text.includes("this.vBlurMaterial.uniforms.tMap.value=l.texture")

@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Hardened source `p1` spotlight parallax branch evidence without changing production rendering.
-- Source `p1.update()` moves the direct `SpotLight` by `x=camera.x*.175` and uses `Pe.w>=Le.BREAKPOINTS.MD ? camera.y*.175 : .3+camera.y*.175` for y.
-- The rebuild already follows that branch. Output/thumb probes now expose the source parallax mode, active desktop/mobile y-offset mode, `mobileBreakpoint=800`, and the current source y offset.
-- `scripts/probe-output-color.mjs` asserts the desktop and mobile branches, `scripts/probe-thumb-spotlight.mjs` asserts the desktop thumb-map branch, and renderer audit checks the source ternary plus rebuild markers.
-- Phase 1 remains open for actual spotlight/thumb projection transfer feel, `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
+- Aligned the optional source `Lu/I1` `Na` standard-blur update path without visual tuning.
+- Source `Lu.update()` renders optional work blur as `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`, feeds luminosity and final `OA.tScene` from blurB only when blur is enabled, and keeps bloom's non-luminosity source on raw `renderTargetA`.
+- Source `Na` initializes `uBluriness` to `0`; the mirrored bundle has no `settings.blur.strength` runtime update in `Lu.update()` or `I1.update()`.
+- The rebuild now has `renderWorkBlurPass()` through `workPostScreen`, separates work luminosity input from bloom's raw source, uses the source blur-or-raw target for `OA.tScene`, removes non-source main blur `uBluriness` writes, and probes `source-Na-uBluriness-init-zero-no-update-write`.
+- Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
 
@@ -158,22 +158,22 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-spotlight-parallax-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9591 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-spotlight-parallax-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9592 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-spotlight-parallax-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9593 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-spotlight-parallax-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9594 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-spotlight-parallax-project-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-lu-blur-update-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9321 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-lu-blur-update-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9322 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-lu-blur-update-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9323 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-lu-blur-update-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9324 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-lu-blur-update-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `p1` spotlight parallax branch guardrail batch.
+All passed in the `Lu/I1` optional `Na` blur update ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks the source `p1.update()` spotlight parallax ternary, rebuild direct `SpotLight` branch markers, source `Lu.update()` final non-screen branch, bloom resize-loop ownership, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
-- Output probes confirm desktop `source-p1-desktop-camera-y-parallax` and mobile `source-p1-mobile-0_3-plus-camera-y-parallax`, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Renderer audit checks source/rebuild `Lu` work optional blur branch anchors, source init-only `Na.uBluriness` ownership for `Lu/I1`, source `Lu.update()` final non-screen branch, bloom resize-loop ownership, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
+- Output probes confirm work pass-input markers and `source-Na-uBluriness-init-zero-no-update-write`, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Thumb spotlight probe retained the source thumb strip shape and spotlight map guardrails.
 

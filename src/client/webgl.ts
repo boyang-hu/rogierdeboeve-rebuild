@@ -7362,6 +7362,7 @@ void main() {
         direction: (horizontalMaterial.uniforms.uDirection.value as Vector2).toArray(),
         resolution: (horizontalMaterial.uniforms.uResolution.value as Vector2).toArray(),
         bluriness: horizontalMaterial.uniforms.uBluriness.value,
+        blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
       },
       vertical: {
         blending: verticalMaterial.blending,
@@ -7375,6 +7376,7 @@ void main() {
         direction: (verticalMaterial.uniforms.uDirection.value as Vector2).toArray(),
         resolution: (verticalMaterial.uniforms.uResolution.value as Vector2).toArray(),
         bluriness: verticalMaterial.uniforms.uBluriness.value,
+        blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
       },
     });
     const fxaaProbe = (material: ShaderMaterial, screenMode: string, resizeMode: string) => ({
@@ -7517,6 +7519,13 @@ void main() {
             sourceCompositeRender: "o.setRenderTarget(h),o.render(this.screen,this.screenCamera)",
             sourceFinalTargetReset: "source-Lu-renderToScreen-false-renderTargetComposite-then-null",
             productionOutputChanged: true,
+          },
+          renderManagerPassInputs: {
+            blurSource: "source-Lu-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB",
+            luminositySource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
+            bloomSource: "source-Lu-renderTargetBright-if-luminosity-else-renderTargetA",
+            oaSceneSource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
+            blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
           },
           p1UpdateCulling: this.p1UpdateCullingProbe(),
           activeMaterial: activeWorkItem ? {
@@ -8691,9 +8700,18 @@ void main() {
     this.renderer.autoClear = previousAutoClear;
   }
 
+  private renderWorkBlurPass() {
+    this.workBlurHorizontalMaterial.uniforms.tMap.value = this.workRawTarget.texture;
+    this.workPostScreen.material = this.workBlurHorizontalMaterial;
+    this.renderer.setRenderTarget(this.workBlurTargetA);
+    this.renderer.render(this.workPostScreen, this.backgroundCamera);
+    this.workBlurVerticalMaterial.uniforms.tMap.value = this.workBlurTargetA.texture;
+    this.workPostScreen.material = this.workBlurVerticalMaterial;
+    this.renderer.setRenderTarget(this.workBlurTargetB);
+    this.renderer.render(this.workPostScreen, this.backgroundCamera);
+  }
+
   private renderHomeBlurPass() {
-    this.mainBlurHorizontalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
-    this.mainBlurVerticalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
     this.mainBlurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture;
     this.mainPostScreen.material = this.mainBlurHorizontalMaterial;
     this.renderer.setRenderTarget(this.mainBlurTargetA);
@@ -8750,10 +8768,10 @@ void main() {
     this.renderer.render(screen, this.backgroundCamera);
   }
 
-  private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
+  private renderHomeBloomPass(sourceTarget: WebGLRenderTarget, luminositySourceTarget = sourceTarget) {
     let brightTarget: WebGLRenderTarget | undefined;
     if (this.renderSettings.luminosity.enabled) {
-      this.workLuminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
+      this.workLuminosityMaterial.uniforms.tMap.value = luminositySourceTarget.texture;
       this.workPostScreen.material = this.workLuminosityMaterial;
       this.renderer.setRenderTarget(this.workBloomBrightTarget);
       this.renderer.render(this.workPostScreen, this.backgroundCamera);
@@ -8830,12 +8848,16 @@ void main() {
       try {
         this.renderer.render(this.homeScene, this.homeCamera);
         if (!debugRawWorkComposite) {
+          if (this.renderSettings.blur.enabled) {
+            this.renderWorkBlurPass();
+          }
+          const workSceneTarget = this.renderSettings.blur.enabled ? this.workBlurTargetB : this.workRawTarget;
           if (this.renderSettings.bloom.enabled) {
-            this.renderHomeBloomPass(this.workRawTarget);
+            this.renderHomeBloomPass(this.workRawTarget, workSceneTarget);
             this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;
           }
           this.updateScreenMouseSimulation(time, delta);
-          this.compositeMaterial.uniforms.tScene.value = this.workRawTarget.texture;
+          this.compositeMaterial.uniforms.tScene.value = workSceneTarget.texture;
           this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
           this.compositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled;
           this.compositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled;

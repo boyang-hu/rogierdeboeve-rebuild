@@ -419,6 +419,16 @@ async function runProbe() {
   if (JSON.stringify(mainRawCamera.position || null) !== JSON.stringify([0, 0, 1000])) {
     ownershipErrors.push(`mainRawCameraPosition=${JSON.stringify(mainRawCamera.position || null)}`);
   }
+  const workPassInputs = parsed.probe.settings?.work?.renderManagerPassInputs || {};
+  for (const [key, expected] of Object.entries({
+    blurSource: "source-Lu-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB",
+    luminositySource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
+    bloomSource: "source-Lu-renderTargetBright-if-luminosity-else-renderTargetA",
+    oaSceneSource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
+    blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
+  })) {
+    if (workPassInputs[key] !== expected) ownershipErrors.push(`workPassInput-${key}`);
+  }
   const mainPassInputs = mainSettings?.renderManagerPassInputs || {};
   for (const [key, expected] of Object.entries({
     blurSource: "source-I1-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB",
@@ -820,6 +830,10 @@ async function runProbe() {
       }
       if (material?.blending !== 0) materialSurfaceErrors.push(`${group}${key}Blending`);
       if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`${group}${key}BlurinessUniform`);
+      if (material?.bluriness !== 0) materialSurfaceErrors.push(`${group}${key}BlurinessValue`);
+      if (material?.blurinessUpdateMode !== "source-Na-uBluriness-init-zero-no-update-write") {
+        materialSurfaceErrors.push(`${group}${key}BlurinessUpdateMode`);
+      }
       if (material?.hasKernelDefines !== false) materialSurfaceErrors.push(`${group}${key}KernelDefines`);
       const expectedResizeMode = group === "workStandardBlur"
         ? "source-Lu-Na-resize-css-width-height-when-blur-enabled"
