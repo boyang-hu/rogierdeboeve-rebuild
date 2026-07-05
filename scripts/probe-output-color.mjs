@@ -732,6 +732,13 @@ async function runProbe() {
       if (material?.blending !== 0) materialSurfaceErrors.push(`${group}${key}Blending`);
       if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`${group}${key}BlurinessUniform`);
       if (material?.hasKernelDefines !== false) materialSurfaceErrors.push(`${group}${key}KernelDefines`);
+      const expectedResizeMode = group === "workStandardBlur"
+        ? "source-Lu-Na-resize-css-width-height-when-blur-enabled"
+        : "source-I1-Na-resize-css-width-height-when-blur-enabled";
+      if (material?.resizeMode !== expectedResizeMode) materialSurfaceErrors.push(`${group}${key}ResizeMode`);
+      if (!Array.isArray(material?.resolution) || material.resolution.length !== 2) {
+        materialSurfaceErrors.push(`${group}${key}ResolutionVector`);
+      }
     }
     if (JSON.stringify(blur.horizontal?.direction) !== JSON.stringify([1, 0])) materialSurfaceErrors.push(`${group}HorizontalDirection`);
     if (JSON.stringify(blur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push(`${group}VerticalDirection`);

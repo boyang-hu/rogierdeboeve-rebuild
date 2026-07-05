@@ -6500,6 +6500,8 @@ void main() {
       const workBlurHeight = Math.max(1, Math.round(height * this.renderSettings.blur.scale));
       this.workBlurTargetA.setSize(workBlurWidth, workBlurHeight);
       this.workBlurTargetB.setSize(workBlurWidth, workBlurHeight);
+      this.workBlurHorizontalMaterial.uniforms.uResolution.value.set(width, height);
+      this.workBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);
     }
     if (this.sourceMainRenderSettings.blur.enabled) {
       const blurWidth = Math.max(1, Math.round(width * this.sourceMainRenderSettings.blur.scale));
@@ -7291,15 +7293,18 @@ void main() {
       horizontalMaterial: ShaderMaterial,
       verticalMaterial: ShaderMaterial,
       screenMode: string,
+      resizeMode: string,
     ) => ({
       horizontal: {
         blending: horizontalMaterial.blending,
         materialMode: "source-Na-raw-glsl3",
         glslVersion: (horizontalMaterial as RawShaderMaterial).glslVersion ?? null,
         screenMode,
+        resizeMode,
         hasBlurinessUniform: "uBluriness" in horizontalMaterial.uniforms,
         hasKernelDefines: Boolean(horizontalMaterial.defines?.KERNEL_RADIUS || horizontalMaterial.defines?.SIGMA),
         direction: (horizontalMaterial.uniforms.uDirection.value as Vector2).toArray(),
+        resolution: (horizontalMaterial.uniforms.uResolution.value as Vector2).toArray(),
         bluriness: horizontalMaterial.uniforms.uBluriness.value,
       },
       vertical: {
@@ -7307,9 +7312,11 @@ void main() {
         materialMode: "source-Na-raw-glsl3",
         glslVersion: (verticalMaterial as RawShaderMaterial).glslVersion ?? null,
         screenMode,
+        resizeMode,
         hasBlurinessUniform: "uBluriness" in verticalMaterial.uniforms,
         hasKernelDefines: Boolean(verticalMaterial.defines?.KERNEL_RADIUS || verticalMaterial.defines?.SIGMA),
         direction: (verticalMaterial.uniforms.uDirection.value as Vector2).toArray(),
+        resolution: (verticalMaterial.uniforms.uResolution.value as Vector2).toArray(),
         bluriness: verticalMaterial.uniforms.uBluriness.value,
       },
     });
@@ -7797,16 +7804,19 @@ void main() {
             this.mainBlurHorizontalMaterial,
             this.mainBlurVerticalMaterial,
             "source-I1-mainPostScreen-material-swap",
+            "source-I1-Na-resize-css-width-height-when-blur-enabled",
           ),
           workStandardBlur: standardBlurProbe(
             this.workBlurHorizontalMaterial,
             this.workBlurVerticalMaterial,
             "source-Lu-workPostScreen-material-swap",
+            "source-Lu-Na-resize-css-width-height-when-blur-enabled",
           ),
           mainStandardBlur: standardBlurProbe(
             this.mainBlurHorizontalMaterial,
             this.mainBlurVerticalMaterial,
             "source-I1-mainPostScreen-material-swap",
+            "source-I1-Na-resize-css-width-height-when-blur-enabled",
           ),
           fxaa: fxaaProbe(this.mainFxaaMaterial),
           workFxaa: fxaaProbe(this.workFxaaMaterial),

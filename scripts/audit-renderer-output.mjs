@@ -401,6 +401,8 @@ const summary = {
         "this.screen=new at(this.screenGeometry)",
         "this.screen.frustumCulled=!1",
         "this.settings.renderToScreen&&(this.renderer.setPixelRatio(n),this.renderer.setSize(e,t))",
+        "this.hBlurMaterial.uniforms.uResolution.value.set(e,t)",
+        "this.vBlurMaterial.uniforms.uResolution.value.set(e,t)",
         "e=Fa(e)/4,t=Fa(t)/4",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
         "this.screen.material=this.luminosityMaterial",
@@ -487,6 +489,14 @@ const summary = {
           "this.bloomHorizontalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));",
           "this.bloomVerticalTargets = Array.from({ length: 5 }, () => makeSourceRenderTarget(false));",
         ].every((needle) => !rebuildWebgl.includes(needle)),
+        sourceBlurResizeResolution:
+          sourceLu.text.includes("this.hBlurMaterial.uniforms.uResolution.value.set(e,t)")
+          && sourceLu.text.includes("this.vBlurMaterial.uniforms.uResolution.value.set(e,t)"),
+        rebuildBlurResizeResolution: [
+          "this.workBlurHorizontalMaterial.uniforms.uResolution.value.set(width, height);",
+          "this.workBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);",
+          "source-Lu-Na-resize-css-width-height-when-blur-enabled",
+        ].every((needle) => rebuildWebgl.includes(needle)),
       },
       excerpt: compact(sourceLu.text),
     },

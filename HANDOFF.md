@@ -142,12 +142,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Cleaned renderer-audit false negatives after the `rt` Object3D batch without changing runtime behavior.
-- Fresh shader dump at `/tmp/rd-phase1-next-shader` reports the focused Phase 1 shader set as source-shaped, including `VA-work`, composites, environment, floor, thumb, media, and main-fluid helper shaders.
-- `scripts/audit-renderer-output.mjs` now widens the source `p1` and texture-manager excerpt windows, extracts raw `l1` and `B1` templates for environment/sky helper-surface checks, keeps `u1/z1` class checks focused on constructor/material bindings, relaxes thumb preload lifecycle matching to stable async method/behavior, and removes a stale optional-lensflare negative check while still rejecting old shared pass-material fields.
-- `node --check scripts/audit-renderer-output.mjs` and `node scripts/audit-renderer-output.mjs` passed.
-- Recursive false-value review of the generated audit now shows only expected negative/default evidence such as source `A1` lacking tonemapping and source-like render-target defaults with `depthBuffer/stencilBuffer/generateMipmaps=false`.
-- The latest runtime code commit remains `bf1cc7c Align rt object container surface`; this cleanup is QA/evidence work only.
+- Aligned the optional source `Lu/Na` work blur resize surface without visual tuning.
+- Source `Lu.resize(e,t,n)` writes CSS viewport dimensions into `hBlurMaterial.uniforms.uResolution` and `vBlurMaterial.uniforms.uResolution` when `settings.blur.enabled`; the rebuild resized work blur targets but did not mirror those `Na.uResolution` writes.
+- Source `kA.initSettings()` keeps `blur.enabled=false`, so this is source-structure parity for an inactive default Home branch.
+- `src/client/webgl.ts` now writes `width,height` into `workBlurHorizontalMaterial` and `workBlurVerticalMaterial` `uResolution` inside the work blur-enabled branch.
+- Output probes expose `source-Lu-Na-resize-css-width-height-when-blur-enabled` for work standard blur and keep `source-I1-Na-resize-css-width-height-when-blur-enabled` for main standard blur.
+- `scripts/audit-renderer-output.mjs` now checks the source `Lu.resize` blur-resolution anchors and rebuild work blur writes.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -156,20 +156,26 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
+node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9342 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-lu-blur-resolution-output node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9343 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-lu-blur-resolution-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9344 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-lu-blur-resolution-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the renderer-audit source-window cleanup batch.
+All passed in the `Lu/Na` work blur resize-resolution batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit source-manager checks no longer have stale false negatives from excerpt-window or class/template mismatch.
-- Latest runtime browser QA remains the prior `rt` Object3D container-surface batch: desktop/mobile output probes, thumb spotlight probe, and project-media probe all passed with no failures/exceptions/console messages.
+- Renderer audit source-manager checks the source `Lu.resize` blur-resolution writes and rebuild work blur writes.
+- Desktop and mobile output probes report the standard blur resize-mode markers for work/main managers.
+- Project media retained five visible media tracks on the probed project pages.
+- Browser probes reported no failed requests, runtime exceptions, console messages, or WebGL shader errors.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 
