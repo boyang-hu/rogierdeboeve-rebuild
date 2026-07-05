@@ -548,6 +548,9 @@ async function runProbe() {
   if (c1MaterialSurface.mode !== "source-C1-constructor-uniform-order-with-unused-tPortal") {
     materialSurfaceErrors.push("preCompositeC1UniformSurfaceMode");
   }
+  if (c1MaterialSurface.resizeMode !== "source-U1-C1-resize-css-width-height") {
+    materialSurfaceErrors.push("preCompositeC1ResizeMode");
+  }
   if (JSON.stringify(c1MaterialSurface.sourceUniformKeys || null) !== JSON.stringify(expectedC1UniformKeys)) {
     materialSurfaceErrors.push("preCompositeC1SourceUniformKeys");
   }
@@ -562,6 +565,9 @@ async function runProbe() {
   if (c1MaterialSurface.tPortalIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TPortalPlaceholder");
   if (c1MaterialSurface.tBlurIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TBlurPlaceholder");
   if (c1MaterialSurface.tPerlinIsLoadedTexture !== true) materialSurfaceErrors.push("preCompositeC1TPerlinBinding");
+  if (c1MaterialSurface.uDisplacementSizeMode !== "source-C1-constructor-default-new-Vector2-no-runtime-write") {
+    materialSurfaceErrors.push("preCompositeC1UDisplacementSizeMode");
+  }
   if (Math.abs((c1MaterialSurface.uDisplacement ?? 0) - 0.1) > 0.0001) {
     materialSurfaceErrors.push("preCompositeC1UDisplacement");
   }
@@ -571,8 +577,14 @@ async function runProbe() {
   if (!Array.isArray(c1MaterialSurface.uDisplacementSize) || c1MaterialSurface.uDisplacementSize.length !== 2) {
     materialSurfaceErrors.push("preCompositeC1UDisplacementSize");
   }
+  if (JSON.stringify(c1MaterialSurface.uDisplacementSize || null) !== JSON.stringify([0, 0])) {
+    materialSurfaceErrors.push("preCompositeC1UDisplacementSizeDefault");
+  }
   if (!Array.isArray(c1MaterialSurface.uContainerSize) || c1MaterialSurface.uContainerSize.length !== 2) {
     materialSurfaceErrors.push("preCompositeC1UContainerSize");
+  }
+  if (JSON.stringify(c1MaterialSurface.uContainerSize || null) !== JSON.stringify([viewport.width, viewport.height])) {
+    materialSurfaceErrors.push("preCompositeC1UContainerSizeCssViewport");
   }
   const expectedWorkCompositeMaterialMode = debugCompositeProbe ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3";
   if (workCompositeUniforms?.materialMode !== expectedWorkCompositeMaterialMode) materialSurfaceErrors.push("workCompositeMaterialMode");

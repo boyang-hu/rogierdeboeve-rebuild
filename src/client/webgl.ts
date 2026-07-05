@@ -5165,8 +5165,8 @@ export class WebGLBackdrop {
         tLensflare: { value: this.mainLensflareTarget.texture },
         uRatio: { value: 1 },
         tPerlin: { value: this.perlinTexture },
-        uDisplacementSize: { value: new Vector2(1, 1) },
-        uContainerSize: { value: new Vector2(1, 1) },
+        uDisplacementSize: { value: new Vector2(0, 0) },
+        uContainerSize: { value: new Vector2(0, 0) },
         uDisplacement: { value: 0.1 },
         uPerlin: { value: 0.1 },
         uBgColor: { value: sourceLinearToSrgbColor(SOURCE_COMPOSITE_BG) },
@@ -6546,12 +6546,11 @@ void main() {
     this.cameraControllerGroup.lookAt(this.cameraLookAt);
     this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
-    this.preCompositeMaterial.uniforms.uContainerSize.value.set(renderWidth, renderHeight);
+    this.preCompositeMaterial.uniforms.uContainerSize.value.set(width, height);
     this.displacementMaterial.uniforms.uRatio.value = width / height;
     const displacementSize = Math.max(1, Math.round(height / 10));
     this.displacementRawTarget.setSize(displacementSize, displacementSize);
     this.displacementTarget.setSize(displacementSize, displacementSize);
-    this.preCompositeMaterial.uniforms.uDisplacementSize.value.set(displacementSize, displacementSize);
     const floorReflectionWidth = Math.max(1, width * 0.75);
     const floorReflectionHeight = Math.max(1, height * 0.75);
     this.floorReflectionTarget.setSize(floorReflectionWidth, floorReflectionHeight);
@@ -7597,6 +7596,7 @@ void main() {
           boolLuminosity: this.preCompositeMaterial.uniforms.boolLuminosity.value,
           materialUniformSurface: {
             mode: "source-C1-constructor-uniform-order-with-unused-tPortal",
+            resizeMode: "source-U1-C1-resize-css-width-height",
             sourceUniformKeys: [...SOURCE_C1_UNIFORM_KEYS],
             uniformKeys: c1UniformKeys,
             matchesSourceOrder: c1UniformKeys.length === SOURCE_C1_UNIFORM_KEYS.length
@@ -7606,6 +7606,7 @@ void main() {
             tPortalIsPlaceholder: c1Uniforms.tPortal.value === this.fluidPlaceholder,
             tBlurIsPlaceholder: c1Uniforms.tBlur.value === this.fluidPlaceholder,
             tPerlinIsLoadedTexture: c1Uniforms.tPerlin.value === this.perlinTexture,
+            uDisplacementSizeMode: "source-C1-constructor-default-new-Vector2-no-runtime-write",
             uDisplacement: c1Uniforms.uDisplacement.value,
             uPerlin: c1Uniforms.uPerlin.value,
             uDisplacementSize: (c1Uniforms.uDisplacementSize.value as Vector2).toArray(),

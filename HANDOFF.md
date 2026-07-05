@@ -142,11 +142,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned and guarded the source `C1/A1` material-uniform constructor surface without visual tuning.
-- Source evidence: `C1` declares `tScene`, `tWork`, `tMedia`, `tBloom`, `tBlur`, `tFluid`, unused `tPortal`, `tMouseSim`, the four bools, `uTime`, `tNoise`, `tLensflare`, `uRatio`, `tPerlin`, displacement/container fields, and the background/reveal/contrast/transform/fluid fields in a fixed constructor order; all four bools initialize false.
-- `src/client/webgl.ts` now records `SOURCE_C1_UNIFORM_KEYS`, orders `createPreCompositeMaterial()` to match that source constructor surface, initializes the four bools false before runtime `I1.update()` writes source settings, and exposes `materialUniformSurface` in the output probe.
-- `scripts/probe-output-color.mjs` asserts the exact `C1` uniform key order, unused `tPortal` material-uniform binding, placeholder `tPortal/tBlur`, loaded `tPerlin`, and source `.1` displacement/perlin defaults; `scripts/audit-renderer-output.mjs` records the source/rebuild anchors.
-- Production formulas, target wiring, visual constants, and the default `I1/C1` screen path are unchanged.
+- Aligned and guarded the source `U1 -> C1.resize` vector runtime surface without visual tuning.
+- Source evidence: `U1.resize(e,t,n)` calls `this.renderManager.compositeMaterial.resize(e,t)`, source `C1.resize(e,t)` writes only `uContainerSize.value.set(e,t)`, and source `uDisplacementSize:new I(new Q)` has no runtime write in the mirrored bundle.
+- `src/client/webgl.ts` now initializes `C1.uDisplacementSize` and `C1.uContainerSize` to `[0,0]`, writes `uContainerSize` from CSS viewport width/height rather than DPR render size, and no longer writes `C1.uDisplacementSize` during resize.
+- The existing source `O1/k1` displacement render-target sizing remains `height / 10`; this batch only corrected the unused `C1.uDisplacementSize` uniform surface.
+- `scripts/probe-output-color.mjs` now asserts `resizeMode=source-U1-C1-resize-css-width-height`, desktop `uContainerSize=[1440,900]`, mobile `uContainerSize=[390,844]`, and `uDisplacementSize=[0,0]`.
+- `scripts/audit-renderer-output.mjs` records the source `C1.resize` anchor, rebuild CSS-size write, source `[0,0]` vector defaults, and absence of a runtime `uDisplacementSize` write.
 - QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, desktop/mobile output probes with `PROBE_WAIT=30000`, and project-media probe.
 - Project media remained stable: `gc-2026` 5/5 visible media and `hashgraph-vc` 5/5 visible media, with no failures/exceptions/console messages in the browser probes.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
@@ -161,26 +162,23 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9251 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-va-trailing-space-shader node scripts/dump-va-shader.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9252 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9253 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9254 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9255 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9256 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9290 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-resize-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9291 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-resize-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9292 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-resize-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `VA/HA/zA` source trailing-space shader-surface batch.
+All passed in the `C1/A1` resize vector runtime-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Home can activate `gc-2026`.
-- Shader dump reports every focused Phase 1 shader row as source-shaped; `VA-work`, `j1-media-composite`, `A1-pre-composite`, `OA-work-composite`, and focused `ag-*` passes all have vertex/fragment deltas as `0` where applicable.
+- Desktop output probe reports `C1.uContainerSize=[1440,900]` and `uDisplacementSize=[0,0]`.
+- Mobile output probe reports `C1.uContainerSize=[390,844]` and `uDisplacementSize=[0,0]`.
 - Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
 - Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
-- No runtime/console/WebGL shader errors were reported, excluding normal audio autoplay warnings.
+- No failed requests, runtime exceptions, console messages, or WebGL shader errors were reported.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 
