@@ -6050,9 +6050,7 @@ void main() {
 
   private setProjectBlockReveal(active: WorkItem) {
     this.projectRevealTweens.forEach((tween) => tween.kill());
-    this.projectRevealProjectTweens.forEach((tween) => tween.kill());
     this.projectRevealTweens = [];
-    this.projectRevealProjectTweens = [];
     this.workItems.forEach((item) => {
       const isActive = item === active;
       item.reveal = isActive ? 1 : 0;
@@ -6063,7 +6061,6 @@ void main() {
         ease: "power4.out",
       });
       this.projectRevealTweens.push(revealTween);
-      this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
     });
   }
 
@@ -7527,6 +7524,9 @@ void main() {
             oaSceneSource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
             blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
           },
+          activeProjectRevealOwnership: "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out",
+          activeProjectRevealTweenCount: this.projectRevealTweens.length,
+          revealProjectTweenCount: this.projectRevealProjectTweens.length,
           p1UpdateCulling: this.p1UpdateCullingProbe(),
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),

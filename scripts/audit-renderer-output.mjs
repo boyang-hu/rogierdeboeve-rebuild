@@ -149,6 +149,7 @@ const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkSce
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
+const rebuildSetProjectBlockReveal = extractBlock(rebuildWebgl, "private setProjectBlockReveal(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildResizeBloomMipChain = extractBlock(rebuildWebgl, "private resizeBloomMipChain(");
 const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomChain(");
@@ -199,6 +200,7 @@ const sourceWebpDetection = extractAround(bundle, "await k0(\"lossy\").then(()=>
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
 const sourceYDUpdateScene = extractAround(bundle, "J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)", 360, 760);
+const sourceYDOnProjectActive = extractAround(bundle, "async onProjectActive(e){", 240, 1600);
 const sourceSDInitSpotlight = extractAround(bundle, "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture", 260, 520);
 const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
@@ -1464,6 +1466,28 @@ const summary = {
           < rebuildSetGalleryProgress.indexOf("this.homeScene.position.z = this.homeScene.rotation.z - this.zoom"),
       },
       excerpt: compact(sourceYDUpdateScene.text),
+    },
+    homeGalleryActiveReveal: sourceYDOnProjectActive && {
+      index: sourceYDOnProjectActive.index,
+      checks: checks(sourceYDOnProjectActive.text, [
+        "J.workScene.blocks.forEach((a,c)=>{c!==n&&this.inAnimation.to(a.instance.material.customUniforms.uReveal",
+        "this.inAnimation.to(J.workScene.blocks[n].instance.material.customUniforms.uReveal,{value:1,delay:.2,ease:\"power4.out\",duration:4},0)",
+        "Se.setRevealSpread(0)",
+      ]),
+      ownership: {
+        sourceActiveRevealOnly:
+          sourceYDOnProjectActive.text.includes("customUniforms.uReveal,{value:0,ease:\"power4.out\",duration:1.6}")
+          && sourceYDOnProjectActive.text.includes("customUniforms.uReveal,{value:1,delay:.2,ease:\"power4.out\",duration:4}")
+          && !sourceYDOnProjectActive.text.includes("uRevealProject"),
+        rebuildActiveRevealOnly:
+          Boolean(rebuildSetProjectBlockReveal)
+          && rebuildSetProjectBlockReveal.includes("const revealTween = gsap.to(item.material.uniforms.uReveal")
+          && rebuildSetProjectBlockReveal.includes("duration: isActive ? 4 : 1.6")
+          && rebuildWebgl.includes("activeProjectRevealOwnership: \"source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out\"")
+          && !rebuildSetProjectBlockReveal.includes("projectRevealProjectTweens")
+          && !rebuildSetProjectBlockReveal.includes("uRevealProject"),
+      },
+      excerpt: compact(sourceYDOnProjectActive.text),
     },
     homeSpotlightMap: sourceSDInitSpotlight && {
       index: sourceSDInitSpotlight.index,

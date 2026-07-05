@@ -256,6 +256,14 @@ async function runProbe() {
     throw new Error(`VA material source-state mismatch: ${materialErrors.join(", ")}`);
   }
   const p1UpdateCulling = workSettings.p1UpdateCulling || {};
+  const activeRevealErrors = [];
+  if (workSettings.activeProjectRevealOwnership !== "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out") {
+    activeRevealErrors.push("ownership");
+  }
+  if ((workSettings.activeProjectRevealTweenCount ?? 0) !== p1UpdateCulling?.total) activeRevealErrors.push("uRevealTweenCount");
+  if (activeRevealErrors.length) {
+    throw new Error(`Active project reveal source-shape mismatch: ${activeRevealErrors.join(", ")}`);
+  }
   const cullingErrors = [];
   if (p1UpdateCulling.source !== "p1.update-world-position-cull-then-visible-block-update") cullingErrors.push("source");
   if (JSON.stringify(p1UpdateCulling.bounds) !== JSON.stringify({ minX: -5.5, maxX: 5.5, maxZ: 5 })) cullingErrors.push("bounds");
