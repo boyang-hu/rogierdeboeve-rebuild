@@ -136,18 +136,17 @@ Known remaining gaps:
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path and the source `yD -> w1` negative-progress thumb wrapping at nonzero progress, but the projected thumb content/transfer feel is still not exact.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
+- Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 
 Latest Phase 1 batch:
 
-- Aligned the source `lA/aA` main composite shader/material surface without visual tuning.
-- Source evidence: `aA` expands `Ur/Ro/Za/Fr/Ja/Qa`, keeps `luminance(...)`, orders `tFluid` before `tBlur`, declares vignette globals, computes source-inert `vignetteF`, and source `lA` keeps an unused `tMouseSim` material uniform even though `aA` does not declare or sample it.
-- `src/client/webgl.ts` now mirrors that `aA` surface through `sourceCompositeColorHelper`, source literal/formula surfaces, and the unused source `tMouseSim` material-uniform object.
-- `scripts/probe-output-color.mjs` now asserts the `source-aA-helper-surface-and-vignette-local` marker, helper/vignette/uniform-order anchors, and `hasSourceUnusedMouseSimUniform=true`.
-- `scripts/audit-renderer-output.mjs` now records the source `lA` `tMouseSim` uniform and matching rebuild `aA`/uniform markers.
+- Aligned the source `ag` main-fluid shader surfaces without visual tuning.
+- Source evidence: `Co`, `VT`, `Sf`, `XT`, `$T`, `WT`, `YT`, and `ZT` are compact GLSL3 pass templates; source `GT` owns the bounded/advection uniform surface and source `qT` owns the additive force pass.
+- `src/client/webgl.ts` now mirrors those one-line source surfaces in `fluidBoundedVertex`, `fluidBoundsVertex`, `fluidForceVertex`, `fluidAdvectionFragment`, `fluidForceFragment`, `fluidDivergenceFragment`, `fluidPoissonFragment`, and `fluidPressureFragment`.
 - QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, project-media probe, and interactive mouse probe.
-- Shader dump reported `Lu-main-composite` vertex delta `0`, fragment delta `0`, and no source/rebuild fragment uniform residuals. Desktop/mobile output probes reported no failures/exceptions/console messages and confirmed the new main-composite runtime markers.
-- Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
+- Shader dump reported `ag-advection`, `ag-advection-bounds`, `ag-force`, `ag-divergence`, `ag-poisson`, and `ag-pressure` as `source-shaped` with vertex delta `0` and fragment delta `0`.
+- Interactive mouse retained source `ag/qT` pointer/center response with no failures/exceptions/console messages. Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, and floor/environment distribution parity.
 
 ## Validation Status
@@ -160,7 +159,7 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9231 PROBE_WAIT=30000 node scripts/dump-va-shader.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9241 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-ag-surface-shader node scripts/dump-va-shader.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9232 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9233 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9234 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
@@ -168,7 +167,7 @@ REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9236 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
 ```
 
-All passed in the `lA/aA` main composite shader-surface batch.
+All passed in the `ag` main-fluid shader-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -177,6 +176,7 @@ Verified:
 - Home loads with `.gl-canvas`.
 - Home can activate `gc-2026`.
 - Interactive mouse moves update source-shaped screen/local `Ka` state and main-fluid pointer/center state.
+- Shader dump reports all focused `ag-*` pass vertex/fragment deltas as `0`.
 - Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
 - Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
 - No runtime/console/WebGL shader errors were reported, excluding normal audio autoplay warnings.
@@ -222,6 +222,7 @@ Continue source-driven implementation in this order:
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
+   - `ag` main-fluid pass shaders are now source-shaped; do not reformat them away from the source literal surface.
    - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
    - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
