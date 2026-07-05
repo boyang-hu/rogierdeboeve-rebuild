@@ -174,7 +174,7 @@ const sourcePressureJT = extractAround(bundle, "class JT extends", 320, 1100);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 9600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
-const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 500, 900);
+const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 700, 900);
 const sourceP1SetLights = extractAround(bundle, "setLights(){this.ambientLight=new", 240, 1000);
 const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSettings(e=new L(0,0,0),t=new Q(.25,.25),n=10)", 240, 520);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
@@ -195,12 +195,14 @@ const sourceMainU1Scene = extractAround(bundle, "class U1 extends yg", 300, 1100
 const sourceDisplacementO1 = extractAround(bundle, "class O1 extends Lo", 700, 900);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 900, 1700);
+const sourceEnvironmentL1 = extractTemplate(bundle, "l1", "`,c1=");
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
 const sourceA1Floor = extractAround(bundle, "class a1 extends", 300, 1400);
 const sourceO1FloorMaterial = extractAround(bundle, "class o1 extends", 700, 1600);
 const sourceT1FloorBlur = extractAround(bundle, "class t1 extends", 800, 900);
 const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
+const sourceSkyB1 = extractTemplate(bundle, "B1", "`,Zs=");
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceSA = bundle.match(/class sA\{[\s\S]*?class Ka\{/)?.[0] ?? null;
 const sourceMouseSimulationFragment = extractTemplate(bundle, "rA", "`,oA=");
@@ -208,7 +210,7 @@ const sourceMouseSimulationVertex = extractTemplate(bundle, "oA", "`;class Ka");
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
-const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 120, 900);
+const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 120, 1300);
 const sourceP1AddEnvironment = extractAround(bundle, "async addEnvironment(){const e=Le.WEBP?\"webp\":\"jpg\"", 220, 420);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
@@ -930,7 +932,6 @@ const summary = {
           "private blurVerticalMaterial: ShaderMaterial;",
           "private fxaaMaterial: ShaderMaterial;",
           "private lensflareMaterial: ShaderMaterial;",
-          "this.mainLensflareMaterial = this.createLensflareMaterial();",
         ].every((needle) => !rebuildWebgl.includes(needle)),
         rebuildNoDedicatedPassScenes: [
           "private compositeScene",
@@ -1377,9 +1378,15 @@ const summary = {
         "uShader1Mix3:new I(Qn.SHADER_1_MIX_3)",
         "t.uniforms.uMultiplier=this.customUniforms.uMultiplier",
         "t.uniforms.tSky=this.customUniforms.tSky",
-        "float customRoughness(float roughness, vec2 vUv, float size, float time)",
-        "float randomF(vec2 st)",
         "t.vertexShader=c1,t.fragmentShader=l1",
+      ]),
+      fragmentChecks: checks(sourceEnvironmentL1, [
+        "${xg}",
+        "${gg}",
+        "${vg}",
+        "${Po}",
+        "#define STANDARD",
+        "uniform sampler2D tSky",
       ]),
       rebuildCustomUniformOwnership: {
         factoryFound: Boolean(rebuildEnvironmentMaterialFactory),
@@ -1567,7 +1574,7 @@ const summary = {
         rebuildThumbPreloadLifecycle:
           rebuildWebgl.includes("private sourceProjectThumbs: SourceProjectThumb[] = [];")
           && rebuildWebgl.includes("private sourceThumbsReady = new Promise<void>")
-          && rebuildWebgl.includes("private preloadSourceThumbsFromCards(cards: HTMLElement[])")
+          && rebuildWebgl.includes("preloadSourceThumbsFromCards(cards: HTMLElement[])")
           && rebuildWebgl.includes("bindingMode: \"source-Xt-projectThumbs-src-promise\"")
           && rebuildWebgl.includes("private getSourceProjectThumbById(id: string)")
           && rebuildWebgl.includes("private setSourceThumbImage(id: string, mesh: Mesh<PlaneGeometry, RawShaderMaterial>)")
@@ -1631,13 +1638,23 @@ const summary = {
         "class z1 extends mt",
         "glslVersion:lt",
         "uniforms:{tScene:new I(null),uTime:new I(0),uShader1Alpha:new I(Zs.SHADER_1_ALPHA),uShader1Speed:new I(Zs.SHADER_1_SPEED),uShader2Speed:new I(Zs.SHADER_2_SPEED),uShader1Scale:new I(Zs.SHADER_1_SCALE),uShader2Scale:new I(Zs.SHADER_2_SCALE),uShaderMix:new I(Zs.SHADER_1_MIX_3)}",
-        "float customRoughness(float roughness, vec2 vUv, float size, float time)",
-        "float randomF(vec2 st)",
         "fragmentShader:B1",
         "blending:ot",
         "transparent:!0",
         "depthWrite:!1",
         "depthTest:!1",
+      ]),
+      fragmentChecks: checks(sourceSkyB1, [
+        "${Fr}",
+        "${xg}",
+        "${gg}",
+        "${vg}",
+        "${dg}",
+        "${ug}",
+        "${pg}",
+        "${_g}",
+        "uniform sampler2D tScene",
+        "FragColor = vec4(.9 - diffuseColor.rgb, 1.)",
       ]),
       excerpt: compact(sourceSkyZ1.text),
     },

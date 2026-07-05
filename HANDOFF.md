@@ -142,14 +142,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `rt` container identity to Three `Object3D` without visual tuning.
-- Source evidence: `p1` uses `new rt` for `blocksWrap`/`sceneWrap`; `IT` uses `new rt` for `group`/`rotateGroup`/`innerGroup`; `a1`, `i1`, `h1`, `w1`, and `GA` extend `rt`; `w1` and `GA` construct child wraps with `new rt`. In the mirrored Three r164 bundle, `rt` is `Object3D`, not `Group`.
-- `src/client/webgl.ts` now uses `Object3D` for source `rt` containers: home wraps, thumb wraps, floor group/reflector, environment group, camera controller groups, per-work groups, and auxiliary wraps.
-- `characterModelRoot` remains `Group`; this batch did not establish source evidence for that model-root surface.
-- Output/thumb probes now assert source `Object3D` types for camera controller, thumb wraps, floor hierarchy, environment hierarchy, reflection `sceneWrap`, and floor reflector.
-- `scripts/audit-renderer-output.mjs` records matching source `rt` anchors for `p1`, `IT`, `a1/i1`, `h1`, `w1`, and `GA`, plus rebuild `Object3D` markers.
-- QA passed for `git diff --check`, script syntax checks, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
-- Project media remained stable with five visible media tracks on the probed project pages, and browser probes reported no failures/exceptions/console messages.
+- Cleaned renderer-audit false negatives after the `rt` Object3D batch without changing runtime behavior.
+- Fresh shader dump at `/tmp/rd-phase1-next-shader` reports the focused Phase 1 shader set as source-shaped, including `VA-work`, composites, environment, floor, thumb, media, and main-fluid helper shaders.
+- `scripts/audit-renderer-output.mjs` now widens the source `p1` and texture-manager excerpt windows, extracts raw `l1` and `B1` templates for environment/sky helper-surface checks, keeps `u1/z1` class checks focused on constructor/material bindings, relaxes thumb preload lifecycle matching to stable async method/behavior, and removes a stale optional-lensflare negative check while still rejecting old shared pass-material fields.
+- `node --check scripts/audit-renderer-output.mjs` and `node scripts/audit-renderer-output.mjs` passed.
+- Recursive false-value review of the generated audit now shows only expected negative/default evidence such as source `A1` lacking tonemapping and source-like render-target defaults with `depthBuffer/stencilBuffer/generateMipmaps=false`.
+- The latest runtime code commit remains `bf1cc7c Align rt object container surface`; this cleanup is QA/evidence work only.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -158,29 +156,20 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check scripts/probe-output-color.mjs
-node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9333 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-rt-object3d-output node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9334 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-rt-object3d-mobile-output node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9335 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-rt-object3d-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9336 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-rt-object3d-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `rt` Object3D container-surface batch.
+All passed in the renderer-audit source-window cleanup batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Desktop and mobile output probes report the camera controller chain, floor hierarchy, environment hierarchy, reflection `sceneWrap`, and floor reflector as `Object3D`.
-- Thumb spotlight probe reports `thumbWrapType=Object3D` and `thumbScrollWrapType=Object3D`.
-- Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
-- Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
-- No failed requests, runtime exceptions, console messages, or WebGL shader errors were reported.
+- Renderer audit source-manager checks no longer have stale false negatives from excerpt-window or class/template mismatch.
+- Latest runtime browser QA remains the prior `rt` Object3D container-surface batch: desktop/mobile output probes, thumb spotlight probe, and project-media probe all passed with no failures/exceptions/console messages.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 
