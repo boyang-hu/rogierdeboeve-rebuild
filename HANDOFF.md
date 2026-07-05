@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Se.settings.thumb` tween ownership without visual tuning.
-- Source `Se.init()` initializes one thumb state object with `darknessIntensity=0`, black `darknessColor`, `saturation=1`, and `mouseLightness=1`.
-- Source `Se.setThumbDarknessIntensity`, `setThumbDarknessColor`, `setThumbSaturation`, and `setThumbMouseLightness` tween `this.settings.thumb` and write uniforms in `onUpdate`.
-- The rebuild now keeps a `thumbState` mirror, tweens that state in all four thumb setters, writes composite uniforms from the state, and fans out one `mouseLightness` state tween to every work-item `uMouseLightness` uniform.
-- Thumb probe now asserts `stateOwnership=source-Se-settings-thumb-state-onUpdate-uniforms`, `stateUniformsMatch=true`, and `mouseLightnessUniformsMatchState=true`; renderer audit rejects the old direct-uniform and per-block tween paths.
+- Aligned source `Se.settings` light intensity tween ownership without visual tuning.
+- Source `Se.init()` initializes `settings.directionalLight`, `settings.directionalLight2`, and `settings.spotLight` as nested state objects with `intensity:0`.
+- Source `Se.setDirectionalLightIntensity`, `setDirectionalLight2Intensity`, and `setSpotLightIntensity` tween those state objects and write the actual Three light intensities in `onUpdate`.
+- The rebuild now keeps a `lightState` mirror, tweens the nested state objects, writes `directionalLight`, `directionalLight2`, and `spotLight` intensities from state updates, and removes the old scalar mirror fields.
+- Output/thumb probes now assert `stateOwnership=source-Se-settings-light-state-onUpdate-intensities`, state values, and state/light parity; renderer audit rejects the old scalar fields and `gsap.to(this, ...)` light-intensity tween paths.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -156,25 +156,26 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
+node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-state-audit-final.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9341 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-state-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9342 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-state-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9343 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-state-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9344 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-state-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-light-state-audit-final.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9351 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-light-state-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9353 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-light-state-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9352 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-light-state-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9354 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-light-state-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `Se` thumb state tween ownership batch.
+All passed in the `Se` light intensity state tween ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `Se.settings.thumb` ownership, including state-owned thumb darkness intensity/color, saturation, and mouse-lightness tweens. It also rejects the old direct composite-uniform tween and per-block mouse-lightness tween paths.
-- Thumb spotlight probe confirms `stateOwnership=source-Se-settings-thumb-state-onUpdate-uniforms`, state/uniform parity, and mouse-lightness parity with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
-- Desktop/mobile output probes passed with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Renderer audit checks source/rebuild `Se.settings` light intensity ownership, including state-owned directional, secondary directional, and spotlight intensity tweens. It also rejects the old scalar mirror fields and direct `this` tween paths.
+- Desktop/mobile output probes confirm `lightStateOwnership.mode=source-Se-settings-light-state-onUpdate-intensities`, state values `directionalLight=1.5`, `directionalLight2=1`, `spotLight=220`, and state/light parity with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Thumb spotlight probe confirms the same spotlight state ownership, `stateIntensity=220`, and `stateIntensityMatchesLight=true`.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, and project-media guardrails remain in the audit/probe surface.
 

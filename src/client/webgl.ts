@@ -3939,6 +3939,11 @@ export class WebGLBackdrop {
     saturation: 1,
     mouseLightness: 1,
   };
+  private lightState = {
+    directionalLight: { intensity: 0 },
+    directionalLight2: { intensity: 0 },
+    spotLight: { intensity: 0 },
+  };
   private darkenTween?: gsap.core.Tween;
   private revealSpreadTween?: gsap.core.Tween;
   private sceneRevealTween?: gsap.core.Tween;
@@ -3951,9 +3956,6 @@ export class WebGLBackdrop {
   private mediaOpacityTween?: gsap.core.Tween;
   private mediaTranslationTweens: gsap.core.Tween[] = [];
   private maxSpotLightIntensity = 220;
-  private spotLightIntensity = 220;
-  private directionalLightIntensity = 1.5;
-  private directionalLight2Intensity = 1;
   private spotLightParallax = true;
   private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
@@ -6340,15 +6342,10 @@ void main() {
   private setSpotLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
     this.spotLightTween?.kill();
     const update = () => {
-      this.spotLight.intensity = this.spotLightIntensity;
+      this.spotLight.intensity = this.lightState.spotLight.intensity;
     };
-    if (duration <= 0) {
-      this.spotLightIntensity = value;
-      update();
-      return;
-    }
-    this.spotLightTween = gsap.to(this, {
-      spotLightIntensity: value,
+    this.spotLightTween = gsap.to(this.lightState.spotLight, {
+      intensity: value,
       duration,
       ease,
       onUpdate: update,
@@ -6367,34 +6364,24 @@ void main() {
 
   private setDirectionalLightIntensity(value: number, duration = 1.6, ease = "expo.out") {
     this.directionalLightTween?.kill();
-    if (duration <= 0) {
-      this.directionalLightIntensity = value;
-      this.directionalLight.intensity = value;
-      return;
-    }
-    this.directionalLightTween = gsap.to(this, {
-      directionalLightIntensity: value,
+    this.directionalLightTween = gsap.to(this.lightState.directionalLight, {
+      intensity: value,
       duration,
       ease,
       onUpdate: () => {
-        this.directionalLight.intensity = this.directionalLightIntensity;
+        this.directionalLight.intensity = this.lightState.directionalLight.intensity;
       },
     });
   }
 
   private setDirectionalLight2Intensity(value: number, duration = 1.6, ease = "expo.out") {
     this.directionalLight2Tween?.kill();
-    if (duration <= 0) {
-      this.directionalLight2Intensity = value;
-      this.directionalLight2.intensity = value;
-      return;
-    }
-    this.directionalLight2Tween = gsap.to(this, {
-      directionalLight2Intensity: value,
+    this.directionalLight2Tween = gsap.to(this.lightState.directionalLight2, {
+      intensity: value,
       duration,
       ease,
       onUpdate: () => {
-        this.directionalLight2.intensity = this.directionalLight2Intensity;
+        this.directionalLight2.intensity = this.lightState.directionalLight2.intensity;
       },
     });
   }
@@ -7359,6 +7346,9 @@ void main() {
         mobileBreakpoint: BREAKPOINT_MD,
         mobileYOffset: window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3,
         intensity: this.spotLight.intensity,
+        stateOwnership: "source-Se-settings-light-state-onUpdate-intensities",
+        stateIntensity: this.lightState.spotLight.intensity,
+        stateIntensityMatchesLight: Math.abs(this.spotLight.intensity - this.lightState.spotLight.intensity) < 1e-6,
         position: this.spotLight.position.toArray(),
         target: this.spotLight.target.position.toArray(),
         parallax: this.spotLightParallax,
@@ -7601,6 +7591,18 @@ void main() {
           activeProjectRevealOwnership: "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out",
           activeProjectRevealTweenCount: this.projectRevealTweens.length,
           revealProjectTweenCount: this.projectRevealProjectTweens.length,
+          lightStateOwnership: {
+            mode: "source-Se-settings-light-state-onUpdate-intensities",
+            state: {
+              directionalLight: this.lightState.directionalLight.intensity,
+              directionalLight2: this.lightState.directionalLight2.intensity,
+              spotLight: this.lightState.spotLight.intensity,
+            },
+            matchesLights:
+              Math.abs(this.directionalLight.intensity - this.lightState.directionalLight.intensity) < 1e-6
+              && Math.abs(this.directionalLight2.intensity - this.lightState.directionalLight2.intensity) < 1e-6
+              && Math.abs(this.spotLight.intensity - this.lightState.spotLight.intensity) < 1e-6,
+          },
           p1UpdateCulling: this.p1UpdateCullingProbe(),
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),
@@ -8729,6 +8731,9 @@ void main() {
       activeSlug: active.slug,
       spotlight: {
         intensity: this.spotLight.intensity,
+        stateOwnership: "source-Se-settings-light-state-onUpdate-intensities",
+        stateIntensity: this.lightState.spotLight.intensity,
+        stateIntensityMatchesLight: Math.abs(this.spotLight.intensity - this.lightState.spotLight.intensity) < 1e-6,
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
         mapMode: this.spotLight.map === this.thumbCompositeTarget.texture ? "source-thumb-composite-target" : "missing-or-debug-disabled",
         mapProjectionMode: "three-r164-spotLightMap-vSpotLightCoord",

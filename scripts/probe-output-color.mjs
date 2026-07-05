@@ -172,7 +172,10 @@ async function runProbe() {
   if ((spotlight?.mapLumaMean ?? 0) <= 0) spotlightErrors.push("mapLumaMean");
   const light = spotlight?.spotlight || {};
   if (light.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") spotlightErrors.push("positionOwnershipMode");
+  if (light.stateOwnership !== "source-Se-settings-light-state-onUpdate-intensities") spotlightErrors.push("stateOwnership");
+  if (light.stateIntensityMatchesLight !== true) spotlightErrors.push("stateIntensityMatchesLight");
   if (Math.abs((light.intensity ?? 0) - 220) > 0.001) spotlightErrors.push("intensity");
+  if (Math.abs((light.stateIntensity ?? 0) - 220) > 0.001) spotlightErrors.push("stateIntensity");
   if (Math.abs((light.angle ?? 0) - Math.PI / 4) > 0.0001) spotlightErrors.push("angle");
   if (Math.abs((light.penumbra ?? 0) - 0.95) > 0.0001) spotlightErrors.push("penumbra");
   if (light.castShadow !== false) spotlightErrors.push("castShadow");
@@ -261,6 +264,12 @@ async function runProbe() {
     activeRevealErrors.push("ownership");
   }
   if ((workSettings.activeProjectRevealTweenCount ?? 0) !== p1UpdateCulling?.total) activeRevealErrors.push("uRevealTweenCount");
+  const lightStateOwnership = workSettings.lightStateOwnership || {};
+  if (lightStateOwnership.mode !== "source-Se-settings-light-state-onUpdate-intensities") activeRevealErrors.push("lightStateOwnership");
+  if (lightStateOwnership.matchesLights !== true) activeRevealErrors.push("lightStateMatches");
+  if (Math.abs((lightStateOwnership.state?.spotLight ?? 0) - 220) > 0.001) activeRevealErrors.push("lightStateSpot");
+  if (Math.abs((lightStateOwnership.state?.directionalLight ?? 0) - 1.5) > 0.001) activeRevealErrors.push("lightStateDirectional");
+  if (Math.abs((lightStateOwnership.state?.directionalLight2 ?? 0) - 1) > 0.001) activeRevealErrors.push("lightStateDirectional2");
   if (activeRevealErrors.length) {
     throw new Error(`Active project reveal source-shape mismatch: ${activeRevealErrors.join(", ")}`);
   }

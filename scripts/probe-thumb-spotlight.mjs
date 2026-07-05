@@ -195,6 +195,15 @@ async function runProbe() {
   if (probe.spotlight?.intensity !== 220) {
     sourceShapeErrors.push(`spotlightIntensity=${probe.spotlight?.intensity}`);
   }
+  if (probe.spotlight?.stateOwnership !== "source-Se-settings-light-state-onUpdate-intensities") {
+    sourceShapeErrors.push(`spotlightStateOwnership=${probe.spotlight?.stateOwnership}`);
+  }
+  if (probe.spotlight?.stateIntensityMatchesLight !== true) {
+    sourceShapeErrors.push(`spotlightStateIntensityMatchesLight=${probe.spotlight?.stateIntensityMatchesLight}`);
+  }
+  if (probe.spotlight?.stateIntensity !== 220) {
+    sourceShapeErrors.push(`spotlightStateIntensity=${probe.spotlight?.stateIntensity}`);
+  }
   if (JSON.stringify(probe.spotlight?.position) !== JSON.stringify([0, 0, 3.7])) {
     sourceShapeErrors.push(`spotlightPosition=${JSON.stringify(probe.spotlight?.position)}`);
   }

@@ -154,6 +154,9 @@ const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private set
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
 const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
 const rebuildSetThumbMouseLightness = extractBlock(rebuildWebgl, "private setThumbMouseLightness(");
+const rebuildSetSpotLightIntensity = extractBlock(rebuildWebgl, "private setSpotLightIntensity(");
+const rebuildSetDirectionalLightIntensity = extractBlock(rebuildWebgl, "private setDirectionalLightIntensity(");
+const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private setDirectionalLight2Intensity(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildResizeBloomMipChain = extractBlock(rebuildWebgl, "private resizeBloomMipChain(");
 const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomChain(");
@@ -778,6 +781,34 @@ const summary = {
           && !rebuildSetThumbSaturation.includes("gsap.to(this.thumbCompositeMaterial.uniforms.uSaturation")
           && !rebuildSetThumbDarknessColor.includes("tweenColorOwned(this.thumbCompositeMaterial.uniforms.uDarkenColor")
           && !rebuildSetThumbMouseLightness.includes("gsap.to(item.material.uniforms.uMouseLightness"),
+      },
+      lightStateOwnership: {
+        source:
+          sourceSe.text.includes("directionalLight:{intensity:0},directionalLight2:{intensity:0},spotLight:{intensity:0}")
+          && sourceSe.text.includes("static setDirectionalLightIntensity=(e,t=1.6,n=\"expo.out\")=>{this.directionalLightAnim&&this.directionalLightAnim.kill(),this.directionalLightAnim=oe.to(this.settings.directionalLight,{intensity:e")
+          && sourceSe.text.includes("J.workScene.directionalLight.intensity=this.settings.directionalLight.intensity")
+          && sourceSe.text.includes("static setDirectionalLight2Intensity=(e,t=1.6,n=\"expo.out\")=>{this.directionalLight2Anim&&this.directionalLight2Anim.kill(),this.directionalLight2Anim=oe.to(this.settings.directionalLight2,{intensity:e")
+          && sourceSe.text.includes("J.workScene.directionalLight2.intensity=this.settings.directionalLight2.intensity")
+          && sourceSe.text.includes("static setSpotLightIntensity=(e,t=1.6,n=\"expo.out\")=>{this.spotlightAnim&&this.spotlightAnim.kill(),this.spotlightAnim=oe.to(this.settings.spotLight,{intensity:e")
+          && sourceSe.text.includes("J.workScene.spotLight.intensity=this.settings.spotLight.intensity"),
+        rebuild:
+          rebuildWebgl.includes("private lightState = {")
+          && Boolean(rebuildSetSpotLightIntensity)
+          && Boolean(rebuildSetDirectionalLightIntensity)
+          && Boolean(rebuildSetDirectionalLight2Intensity)
+          && rebuildSetSpotLightIntensity.includes("gsap.to(this.lightState.spotLight")
+          && rebuildSetSpotLightIntensity.includes("this.spotLight.intensity = this.lightState.spotLight.intensity")
+          && rebuildSetDirectionalLightIntensity.includes("gsap.to(this.lightState.directionalLight")
+          && rebuildSetDirectionalLightIntensity.includes("this.directionalLight.intensity = this.lightState.directionalLight.intensity")
+          && rebuildSetDirectionalLight2Intensity.includes("gsap.to(this.lightState.directionalLight2")
+          && rebuildSetDirectionalLight2Intensity.includes("this.directionalLight2.intensity = this.lightState.directionalLight2.intensity")
+          && rebuildWebgl.includes("mode: \"source-Se-settings-light-state-onUpdate-intensities\"")
+          && !rebuildWebgl.includes("private spotLightIntensity =")
+          && !rebuildWebgl.includes("private directionalLightIntensity =")
+          && !rebuildWebgl.includes("private directionalLight2Intensity =")
+          && !rebuildSetSpotLightIntensity.includes("gsap.to(this, {")
+          && !rebuildSetDirectionalLightIntensity.includes("gsap.to(this, {")
+          && !rebuildSetDirectionalLight2Intensity.includes("gsap.to(this, {"),
       },
       excerpt: compact(sourceSe.text),
     },
