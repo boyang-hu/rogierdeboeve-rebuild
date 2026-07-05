@@ -275,6 +275,9 @@ async function runProbe() {
   if (settingsStateOwnership.matchesUniforms !== true) activeRevealErrors.push("settingsStateUniforms");
   if (settingsStateOwnership.revealSpreadUniformsMatch !== true) activeRevealErrors.push("settingsStateRevealSpread");
   if (settingsStateOwnership.envRotationMatches !== true) activeRevealErrors.push("settingsStateEnvRotation");
+  if (settingsStateOwnership.mainColorElementsMatchState !== true) activeRevealErrors.push("settingsStateMainColor");
+  if (settingsStateOwnership.mediaBackgroundMatchesState !== true) activeRevealErrors.push("settingsStateMediaBackground");
+  if (settingsStateOwnership.mediaPlaneBackgroundsMatchState !== true) activeRevealErrors.push("settingsStateMediaPlanes");
   if (activeRevealErrors.length) {
     throw new Error(`Active project reveal source-shape mismatch: ${activeRevealErrors.join(", ")}`);
   }

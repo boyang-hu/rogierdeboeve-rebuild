@@ -142,12 +142,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `VA/XA` material `uCoords` runtime ownership without visual tuning.
-- Source `VA.update(e,t,n,i)` and about-block `XA.update(e,t,n,i)` write `uCoords` from `Pe.w*i,Pe.h*i`.
-- Source `p1.resize(e,t,n)` caps work DPR through `Math.min(n,1.5)`, so this value is CSS viewport width/height times capped work DPR, not rounded render-target dimensions.
-- The rebuild now applies `sourceWorkViewportCoords()` through `setSourceWorkMaterialUCoords()` for ordinary work items and the about auxiliary material in resize/update paths.
-- The floating auxiliary material keeps its existing resize-owned `uCoords` behavior because source `KA.update()` only writes `uTime`.
-- Output probes now assert `sourceUCoordsMode=source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding` and `uCoordsMatchesSource`; renderer audit rejects the old rounded work-target `uCoords` writes.
+- Aligned source `Se.settings` main/media background color tween ownership without visual tuning.
+- Source `Se.init()` initializes `settings.mainColor` and `settings.media.background`.
+- Source `setMainColor()` tweens `this.settings.mainColor` and writes `.c-color` DOM styles from state in `onUpdate`, using source `Fn` rounding.
+- Source `setMediaBackground()` tweens `this.settings.media.background` and writes media scene background color from state in `onUpdate`.
+- The rebuild now keeps `settingsState.mainColor` and `settingsState.media.background`, writes DOM colors and media plane background uniforms from those state values, and removes the old per-element main-color tween plus standalone media-background state.
+- Output probes now assert `mainColorElementsMatchState`, `mediaBackgroundMatchesState`, and `mediaPlaneBackgroundsMatchState`; renderer audit rejects the old direct DOM tween / standalone media state paths.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -160,23 +160,24 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-ucoords-audit-final.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9371 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-ucoords-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9373 PROBE_WAIT=30000 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-ucoords-output-mobile-dpr125 node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9372 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-ucoords-thumb node scripts/probe-thumb-spotlight.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-color-state-audit-final.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9391 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-color-state-output-desktop-final node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9393 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-color-state-output-mobile-final node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9392 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-color-state-thumb-final node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9394 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-color-state-media-final node scripts/probe-project-media.mjs
 ```
 
-All passed in the `VA/XA` material `uCoords` runtime ownership batch.
+All passed in the `Se` main/media background color state tween ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `VA/XA` `uCoords` ownership and rejects the old rounded work-target write paths.
-- Desktop output probe confirms `sourceUCoordsExpected=[1440,900]`, `uCoords=[1440,900]`, `uCoordsMatchesSource=true`, and `uCoordsMatchesWorkTarget=true`.
-- Mobile DPR `1.25` output probe confirms render/work target `488x1055`, `sourceUCoordsExpected=[487.5,1055]`, `uCoords=[487.5,1055]`, `uCoordsMatchesSource=true`, and `uCoordsMatchesWorkTarget=false`.
+- Renderer audit checks source/rebuild `Se.setMainColor()` and `Se.setMediaBackground()` state ownership and rejects the old per-element DOM tween / standalone media-background state paths.
+- Desktop/mobile output probes confirm `mainColorElementsMatchState=true`, `mediaBackgroundMatchesState=true`, and `mediaPlaneBackgroundsMatchState=true`.
 - Thumb spotlight probe retained the source thumb/light state guardrails.
+- Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

@@ -157,6 +157,8 @@ const rebuildSetRevealSpread = extractBlock(rebuildWebgl, "private setRevealSpre
 const rebuildSetEnvRotation = extractBlock(rebuildWebgl, "private setEnvRotation(");
 const rebuildSetFluidStrength = extractBlock(rebuildWebgl, "private setFluidStrength(");
 const rebuildSetMediaOpacity = extractBlock(rebuildWebgl, "private setMediaOpacity(");
+const rebuildSetMainColor = extractBlock(rebuildWebgl, "private setMainColor(");
+const rebuildSetMediaBackground = extractBlock(rebuildWebgl, "private setMediaBackground(");
 const rebuildShowScene = extractBlock(rebuildWebgl, "showScene()");
 const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
@@ -823,6 +825,7 @@ const summary = {
       settingsStateOwnership: {
         source:
           sourceSe.text.includes("contrast:xt.contrast,darken:xt.darken,saturation:xt.saturation")
+          && sourceSe.text.includes("mainColor:{r:0,g:0,b:0}")
           && sourceSe.text.includes("sceneReveal:0,envRotation:0,revealSpread:0,fluidStrength:0")
           && sourceSe.text.includes("media:{background:{r:0,g:0,b:0},opacity:0}")
           && sourceSe.text.includes("static setFluidStrength=(e,t=.5)=>{t===0?J.mainScene.renderManager.compositeMaterial.uniforms.uFluidStrength.value=this.settings.fluidStrength=e:oe.to(this.settings,{fluidStrength:e")
@@ -879,6 +882,38 @@ const summary = {
           && !rebuildSetFluidStrength.includes("gsap.to(this, {")
           && !rebuildSetMediaOpacity.includes("gsap.to(this, {")
           && !rebuildShowScene.includes("gsap.to(this, {"),
+      },
+      colorStateOwnership: {
+        source:
+          sourceSe.text.includes("static setMainColor=(e,t=1.6)=>{const n=this.formatColor(e),i=document.querySelectorAll(\".c-color\")")
+          && sourceSe.text.includes("this.settings.mainColor={r,g:o,b:a}")
+          && sourceSe.text.includes("oe.to(this.settings.mainColor,{r:n.r,g:n.g,b:n.b")
+          && sourceSe.text.includes("u.style.color=`rgb(${Fn(r*255,0)}, ${Fn(o*255,0)}, ${Fn(a*255,0)})`")
+          && sourceSe.text.includes("static setMediaBackground=(e,t=1.6)=>{const n=this.formatColor(e)")
+          && sourceSe.text.includes("this.settings.media.background=n,J.mediaScene.mediaItems.backgroundColor.set(n.r,n.g,n.b)")
+          && sourceSe.text.includes("oe.to(this.settings.media.background,{r:n.r,g:n.g,b:n.b")
+          && sourceSe.text.includes("J.mediaScene.mediaItems.backgroundColor.set(i,r,o)"),
+        rebuild:
+          rebuildWebgl.includes("mainColor: sourceRgbColor(SOURCE_INITIAL_PRIMARY, SOURCE_INITIAL_PRIMARY)")
+          && rebuildWebgl.includes("background: sourceRgbColor(DEFAULT_BG, DEFAULT_BG)")
+          && Boolean(rebuildSetMainColor)
+          && Boolean(rebuildSetMediaBackground)
+          && rebuildSetMainColor.includes("const css = sourceMainColorCss(this.settingsState.mainColor, decimals)")
+          && rebuildSetMainColor.includes("this.settingsState.mainColor = next")
+          && rebuildSetMainColor.includes("gsap.to(this.settingsState.mainColor")
+          && rebuildSetMainColor.includes("onUpdate: () => writeColor(0)")
+          && rebuildSetMediaBackground.includes("this.mediaBackground.copy(this.settingsState.media.background)")
+          && rebuildSetMediaBackground.includes("plane.material.uniforms.uBackgroundColor.value.copy(this.settingsState.media.background)")
+          && rebuildSetMediaBackground.includes("this.settingsState.media.background = next")
+          && rebuildSetMediaBackground.includes("gsap.to(this.settingsState.media.background")
+          && rebuildWebgl.includes("mainColorElementsMatchState")
+          && rebuildWebgl.includes("mediaBackgroundMatchesState")
+          && rebuildWebgl.includes("mediaPlaneBackgroundsMatchState")
+          && !rebuildWebgl.includes("private mainColorTweens")
+          && !rebuildWebgl.includes("private mediaBackgroundTweens")
+          && !rebuildWebgl.includes("private mediaBackgroundState")
+          && !rebuildSetMainColor.includes("gsap.to(element")
+          && !rebuildSetMediaBackground.includes("gsap.to(this.mediaBackgroundState"),
       },
       excerpt: compact(sourceSe.text),
     },

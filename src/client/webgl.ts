@@ -303,7 +303,8 @@ const SOURCE_WORK_MAX_DPR = 1.5;
 const SOURCE_WORK_BG = "#1a1a1a";
 const SOURCE_COMPOSITE_BG = "#1f1f1f";
 const DEFAULT_BG = SOURCE_WORK_BG;
-const DEFAULT_COLOR = "#bcbcbc";
+const SOURCE_INITIAL_PRIMARY = "#bcbcbc";
+const DEFAULT_COLOR = SOURCE_INITIAL_PRIMARY;
 const SOURCE_INITIAL_SECONDARY = "#464646";
 const SOURCE_INITIAL_AMBIENT = 1;
 const SOURCE_INITIAL_DARKEN = 0.2;
@@ -3399,6 +3400,15 @@ function sourceRgbColor(value?: string, fallback = DEFAULT_COLOR) {
   return colorFrom(value, fallback);
 }
 
+function sourceRounded(value: number, decimals = 4) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function sourceMainColorCss(color: Color, decimals: number) {
+  return `rgb(${sourceRounded(color.r * 255, decimals)}, ${sourceRounded(color.g * 255, decimals)}, ${sourceRounded(color.b * 255, decimals)})`;
+}
+
 function numeric(value: string | number | undefined, fallback: number) {
   if (value === undefined || value === "") return fallback;
   const parsed = Number(value);
@@ -3931,9 +3941,7 @@ export class WebGLBackdrop {
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
-  private mainColorTweens: gsap.core.Tween[] = [];
   private ambientTweens: gsap.core.Tween[] = [];
-  private mediaBackgroundTweens: gsap.core.Tween[] = [];
   private saturationTween?: gsap.core.Tween;
   private contrastTween?: gsap.core.Tween;
   private blockColorTweens: gsap.core.Tween[] = [];
@@ -3956,11 +3964,13 @@ export class WebGLBackdrop {
     contrast: SOURCE_INITIAL_CONTRAST,
     darken: SOURCE_INITIAL_DARKEN,
     saturation: SOURCE_INITIAL_SATURATION,
+    mainColor: sourceRgbColor(SOURCE_INITIAL_PRIMARY, SOURCE_INITIAL_PRIMARY),
     sceneReveal: 0,
     envRotation: 0,
     revealSpread: 0,
     fluidStrength: 0,
     media: {
+      background: sourceRgbColor(DEFAULT_BG, DEFAULT_BG),
       opacity: 0,
     },
   };
@@ -4012,8 +4022,7 @@ export class WebGLBackdrop {
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
   private currentAmbientIntensity = SOURCE_INITIAL_AMBIENT;
-  private mediaBackground = colorFrom(DEFAULT_BG);
-  private mediaBackgroundState = colorFrom(DEFAULT_BG);
+  private mediaBackground = this.settingsState.media.background.clone();
   private gridLayers = SOURCE_GRID_LAYERS;
   private radius = 8;
   private ambientLight = new AmbientLight(colorFrom(SOURCE_INITIAL_SECONDARY), SOURCE_INITIAL_AMBIENT);
@@ -6094,22 +6103,26 @@ void main() {
   }
 
   private setMainColor(color?: string, duration = 1.6) {
-    this.mainColorTweens.forEach((tween) => tween.kill());
-    this.mainColorTweens = [];
     const elements = document.querySelectorAll<HTMLElement>(".c-color");
     const next = sourceRgbColor(color);
-    if (duration <= 0) {
+    const writeColor = (decimals: number) => {
+      const css = sourceMainColorCss(this.settingsState.mainColor, decimals);
       elements.forEach((element) => {
-        element.style.color = `rgb(${Math.round(next.r * 255)}, ${Math.round(next.g * 255)}, ${Math.round(next.b * 255)})`;
+        element.style.color = css;
       });
+    };
+    if (duration <= 0) {
+      this.settingsState.mainColor = next;
+      writeColor(2);
       return;
     }
-    elements.forEach((element) => {
-      this.mainColorTweens.push(gsap.to(element, {
-        color: `rgb(${Math.round(next.r * 255)}, ${Math.round(next.g * 255)}, ${Math.round(next.b * 255)})`,
-        duration,
-        ease: "expo.out",
-      }));
+    gsap.to(this.settingsState.mainColor, {
+      r: next.r,
+      g: next.g,
+      b: next.b,
+      duration,
+      ease: "expo.out",
+      onUpdate: () => writeColor(0),
     });
   }
 
@@ -6293,28 +6306,26 @@ void main() {
   }
 
   private setMediaBackground(value?: string, duration = 1.6) {
-    this.mediaBackgroundTweens.forEach((tween) => tween.kill());
-    this.mediaBackgroundTweens = [];
     const next = sourceRgbColor(value, DEFAULT_BG);
     const update = () => {
-      this.mediaBackground.copy(this.mediaBackgroundState);
+      this.mediaBackground.copy(this.settingsState.media.background);
       this.mediaPlanes.forEach((plane) => {
-        plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackgroundState);
+        plane.material.uniforms.uBackgroundColor.value.copy(this.settingsState.media.background);
       });
     };
     if (duration <= 0) {
-      this.mediaBackgroundState.copy(next);
+      this.settingsState.media.background = next;
       update();
       return;
     }
-    this.mediaBackgroundTweens.push(gsap.to(this.mediaBackgroundState, {
+    gsap.to(this.settingsState.media.background, {
       r: next.r,
       g: next.g,
       b: next.b,
       duration,
       ease: "expo.out",
       onUpdate: update,
-    }));
+    });
   }
 
   private setBlocksColor(value?: string, duration = 1.6) {
@@ -7626,6 +7637,8 @@ void main() {
               envRotation: this.settingsState.envRotation,
               revealSpread: this.settingsState.revealSpread,
               fluidStrength: this.settingsState.fluidStrength,
+              mainColor: this.settingsState.mainColor.toArray(),
+              mediaBackground: this.settingsState.media.background.toArray(),
               mediaOpacity: this.settingsState.media.opacity,
             },
             matchesUniforms:
@@ -7639,6 +7652,19 @@ void main() {
               Math.abs((item.material.uniforms.uRevealSpread.value as number) - this.settingsState.revealSpread) < 1e-6
             )),
             envRotationMatches: Math.abs(this.sceneWrap.rotation.x - this.settingsState.envRotation) < 1e-6,
+            mainColorElementsMatchState: Array.from(document.querySelectorAll<HTMLElement>(".c-color")).every(
+              (element) => element.style.color === sourceMainColorCss(this.settingsState.mainColor, 0),
+            ),
+            mediaBackgroundMatchesState:
+              Math.abs(this.mediaBackground.r - this.settingsState.media.background.r) < 1e-6
+              && Math.abs(this.mediaBackground.g - this.settingsState.media.background.g) < 1e-6
+              && Math.abs(this.mediaBackground.b - this.settingsState.media.background.b) < 1e-6,
+            mediaPlaneBackgroundsMatchState: this.mediaPlanes.every((plane) => {
+              const uniformColor = plane.material.uniforms.uBackgroundColor.value as Color;
+              return Math.abs(uniformColor.r - this.settingsState.media.background.r) < 1e-6
+                && Math.abs(uniformColor.g - this.settingsState.media.background.g) < 1e-6
+                && Math.abs(uniformColor.b - this.settingsState.media.background.b) < 1e-6;
+            }),
           },
           p1UpdateCulling: this.p1UpdateCullingProbe(),
           activeMaterial: activeWorkItem ? {
