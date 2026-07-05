@@ -139,14 +139,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `u1/l1` environment and `z1/B1` sky composite fragment surfaces were aligned without changing formulas, constants, material ownership, target wiring, or visual tuning.
-- The shared simplex/noise/oil helper surfaces now keep mirrored source comments, blank lines, indentation, compact numeric literal spelling, and runtime-only source trailing spaces through `SOURCE_TRAILING_SPACE`.
-- Source `sourceSkyBlendHelper`, `skyCompositeFragment`, and `environmentFragmentShader` now match the bundle declaration/body surfaces.
-- Shader dump now reports `u1-environment` as `source-shaped` with fragment delta `0`, and `z1-sky-composite` with vertex delta `0` and fragment delta `0`.
-- `A1-pre-composite`, `OA-work-composite`, `N1`, `M1`, `x1`, `o1`, and `t1` stayed source-shaped.
+- Source `I1.update()` optional blur target ownership was corrected from current bundle evidence without visual tuning.
+- The source local mapping is `l=renderTargetComposite`, `h=renderTargetBlurA`, and `f=renderTargetBlurB`; optional blur writes `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`.
+- The rebuild now renders `mainBlurHorizontalMaterial` into `mainBlurTargetA`, feeds `mainBlurVerticalMaterial` from `mainBlurTargetA.texture`, and records `renderManagerPassInputs.blurSource=source-I1-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB`.
+- Static audit now confirms the source local mapping and rejects the old `compositeTarget` blur bridge; output probes assert the updated runtime marker.
+- Default source `I1.blur.enabled=false`, so this is optional-path source parity, not a default visual-output change.
 - QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes sky/environment shader source-surface residuals, not remaining `kA/Lu/I1` transfer/composite evidence, spotlight/thumb projection content and transfer parity, floor/environment distribution parity beyond shader text, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the `I1` optional blur target-chain residual, not remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, floor/environment distribution parity, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -161,7 +161,7 @@ node scripts/probe-thumb-spotlight.mjs
 node scripts/probe-project-media.mjs
 ```
 
-All passed in the `u1/z1` sky/environment shader source-surface batch.
+All passed in the `I1` optional blur target-chain batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -214,6 +214,7 @@ Continue source-driven implementation in this order:
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
+   - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
    - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.

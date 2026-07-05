@@ -407,7 +407,7 @@ async function runProbe() {
   }
   const mainPassInputs = mainSettings?.renderManagerPassInputs || {};
   for (const [key, expected] of Object.entries({
-    blurSource: "source-I1-renderTargetA-to-renderTargetComposite-then-renderTargetBlurB",
+    blurSource: "source-I1-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB",
     lensflareSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
     luminositySource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
     bloomSource: "source-I1-renderTargetBright-if-luminosity-else-renderTargetA",

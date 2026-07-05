@@ -7604,7 +7604,7 @@ void main() {
             productionOutputChanged: false,
           },
           renderManagerPassInputs: {
-            blurSource: "source-I1-renderTargetA-to-renderTargetComposite-then-renderTargetBlurB",
+            blurSource: "source-I1-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB",
             lensflareSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
             luminositySource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
             bloomSource: "source-I1-renderTargetBright-if-luminosity-else-renderTargetA",
@@ -8622,9 +8622,9 @@ void main() {
     this.mainBlurVerticalMaterial.uniforms.uBluriness.value = this.sourceMainRenderSettings.blur.strength;
     this.mainBlurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture;
     this.mainPostScreen.material = this.mainBlurHorizontalMaterial;
-    this.renderer.setRenderTarget(this.compositeTarget);
+    this.renderer.setRenderTarget(this.mainBlurTargetA);
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
-    this.mainBlurVerticalMaterial.uniforms.tMap.value = this.compositeTarget.texture;
+    this.mainBlurVerticalMaterial.uniforms.tMap.value = this.mainBlurTargetA.texture;
     this.mainPostScreen.material = this.mainBlurVerticalMaterial;
     this.renderer.setRenderTarget(this.mainBlurTargetB);
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);

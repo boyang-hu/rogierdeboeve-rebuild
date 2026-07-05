@@ -917,8 +917,8 @@ const summary = {
           && rebuildWebgl.includes("preCompositeTargetRole: \"source-I1-renderTargetComposite-unused-in-default-renderToScreen\""),
         rebuildSourcePassInputs: [
           "this.mainBlurHorizontalMaterial.uniforms.tMap.value = this.mainRawTarget.texture",
-          "this.renderer.setRenderTarget(this.compositeTarget)",
-          "this.mainBlurVerticalMaterial.uniforms.tMap.value = this.compositeTarget.texture",
+          "this.renderer.setRenderTarget(this.mainBlurTargetA)",
+          "this.mainBlurVerticalMaterial.uniforms.tMap.value = this.mainBlurTargetA.texture",
           "this.renderer.setRenderTarget(this.mainBlurTargetB)",
           "this.renderMainLensflarePass(this.mainRawTarget)",
           "this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture",
@@ -933,11 +933,18 @@ const summary = {
           "this.renderTargetBlurB=this.renderTargetA.clone()",
           "this.renderTargetFXAA=this.renderTargetA.clone()",
         ].every((needle) => sourceMainI1.text.includes(needle)),
-        sourceBlurCompositeReuse:
-          sourceMainI1.text.includes("this.hBlurMaterial.uniforms.tMap.value=a.texture")
+        sourceBlurTargetAReuse:
+          sourceMainI1.text.includes("l=this.renderTargetComposite,h=this.renderTargetBlurA,f=this.renderTargetBlurB")
+          && sourceMainI1.text.includes("this.hBlurMaterial.uniforms.tMap.value=a.texture")
           && sourceMainI1.text.includes("r.setRenderTarget(h),r.render(this.screen,this.screenCamera)")
           && sourceMainI1.text.includes("this.vBlurMaterial.uniforms.tMap.value=h.texture")
           && sourceMainI1.text.includes("r.setRenderTarget(f),r.render(this.screen,this.screenCamera)"),
+        sourceBlurCompositeNotUsed:
+          sourceMainI1.text.includes("l=this.renderTargetComposite,h=this.renderTargetBlurA,f=this.renderTargetBlurB")
+          && !sourceMainI1.text.includes("this.vBlurMaterial.uniforms.tMap.value=l.texture")
+          && !rebuildWebgl.includes("this.mainBlurVerticalMaterial.uniforms.tMap.value = this.compositeTarget.texture")
+          && rebuildWebgl.includes("blurSource: \"source-I1-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB\"")
+          && !rebuildWebgl.includes("blurSource: \"source-I1-renderTargetA-to-renderTargetComposite-then-renderTargetBlurB\""),
         rebuildTargetCloneGraph: [
           "private backgroundTarget = this.mainRawTarget.clone();",
           "private compositeTarget = this.mainRawTarget.clone();",
