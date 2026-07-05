@@ -5032,9 +5032,9 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tMap: { value: this.placeholder },
-        uMapSize: { value: new Vector2(1, 1) },
-        uResolution: { value: new Vector2(1, 1) },
+        tMap: { value: null },
+        uMapSize: { value: new Vector2() },
+        uResolution: { value: new Vector2() },
         uProgress: { value: 1 },
         uTransitionCount: { value: 150 },
         uTransitionSmoothness: { value: 0.2 },
@@ -5043,6 +5043,11 @@ export class WebGLBackdrop {
       fragmentShader: thumbFragment,
     });
     const mesh = new Mesh(new PlaneGeometry(1, 1), material);
+    material.userData.sourceConstructorMode = "source-M1-constructor-null-tMap-zero-size-vectors";
+    material.userData.sourceConstructorTMapWasNull = material.uniforms.tMap.value === null;
+    material.userData.sourceConstructorMapSize = (material.uniforms.uMapSize.value as Vector2).toArray();
+    material.userData.sourceConstructorResolution = (material.uniforms.uResolution.value as Vector2).toArray();
+    material.userData.sourceSetImageBindingMode = "source-E1-setImage-binds-texture-and-1x1-size-after-Xt-thumbsReady";
     mesh.userData.sourceThumbId = id;
     mesh.userData.sourceThumbMode = "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById";
     mesh.userData.sourceThumbBound = false;
@@ -7318,11 +7323,16 @@ void main() {
           blending: first.blending,
           depthWrite: first.depthWrite,
           depthTest: first.depthTest,
+          constructorMode: first.userData.sourceConstructorMode,
+          constructorTMapWasNull: first.userData.sourceConstructorTMapWasNull,
+          constructorMapSize: first.userData.sourceConstructorMapSize,
+          constructorResolution: first.userData.sourceConstructorResolution,
+          setImageBindingMode: first.userData.sourceSetImageBindingMode,
           uProgress: first.uniforms.uProgress.value as number,
           uTransitionCount: first.uniforms.uTransitionCount.value as number,
           uTransitionSmoothness: first.uniforms.uTransitionSmoothness.value as number,
-          mapBound: first.uniforms.tMap.value !== this.placeholder,
-          mapTexture: sourceTextureProbe(first.uniforms.tMap.value as Texture),
+          mapBound: first.uniforms.tMap.value !== null,
+          mapTexture: first.uniforms.tMap.value ? sourceTextureProbe(first.uniforms.tMap.value as Texture) : null,
           mapSize: (first.uniforms.uMapSize.value as Vector2).toArray() as [number, number],
           resolution: (first.uniforms.uResolution.value as Vector2).toArray() as [number, number],
         };

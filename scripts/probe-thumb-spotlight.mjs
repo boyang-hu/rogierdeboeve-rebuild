@@ -348,6 +348,21 @@ async function runProbe() {
     if (material.blending !== 1) sourceShapeErrors.push(`thumbBlending=${material.blending}`);
     if (material.depthWrite !== false) sourceShapeErrors.push(`thumbDepthWrite=${material.depthWrite}`);
     if (material.depthTest !== false) sourceShapeErrors.push(`thumbDepthTest=${material.depthTest}`);
+    if (material.constructorMode !== "source-M1-constructor-null-tMap-zero-size-vectors") {
+      sourceShapeErrors.push(`thumbConstructorMode=${material.constructorMode}`);
+    }
+    if (material.constructorTMapWasNull !== true) {
+      sourceShapeErrors.push(`thumbConstructorTMapWasNull=${material.constructorTMapWasNull}`);
+    }
+    if (JSON.stringify(material.constructorMapSize) !== JSON.stringify([0, 0])) {
+      sourceShapeErrors.push(`thumbConstructorMapSize=${JSON.stringify(material.constructorMapSize)}`);
+    }
+    if (JSON.stringify(material.constructorResolution) !== JSON.stringify([0, 0])) {
+      sourceShapeErrors.push(`thumbConstructorResolution=${JSON.stringify(material.constructorResolution)}`);
+    }
+    if (material.setImageBindingMode !== "source-E1-setImage-binds-texture-and-1x1-size-after-Xt-thumbsReady") {
+      sourceShapeErrors.push(`thumbSetImageBindingMode=${material.setImageBindingMode}`);
+    }
     if (material.uProgress !== 1) sourceShapeErrors.push(`thumbProgressUniform=${material.uProgress}`);
     if (material.uTransitionCount !== 150) sourceShapeErrors.push(`thumbTransitionCount=${material.uTransitionCount}`);
     if (material.uTransitionSmoothness !== 0.2) sourceShapeErrors.push(`thumbTransitionSmoothness=${material.uTransitionSmoothness}`);

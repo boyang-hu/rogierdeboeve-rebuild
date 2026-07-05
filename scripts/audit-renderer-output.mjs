@@ -160,6 +160,7 @@ const rebuildSetMediaOpacity = extractBlock(rebuildWebgl, "private setMediaOpaci
 const rebuildSetMainColor = extractBlock(rebuildWebgl, "private setMainColor(");
 const rebuildSetMediaBackground = extractBlock(rebuildWebgl, "private setMediaBackground(");
 const rebuildShowScene = extractBlock(rebuildWebgl, "showScene()");
+const rebuildCreateThumbPlane = extractBlock(rebuildWebgl, "private createThumbPlane(");
 const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
 const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
@@ -1971,6 +1972,20 @@ const summary = {
         "this.mesh.scale.set(2,2,2)",
       ]),
       ownership: {
+        sourceM1ConstructorDefaults:
+          sourceThumbE1.text.includes("uniforms:{tMap:new I(null),uResolution:new I(new Q),uMapSize:new I(new Q),uProgress:new I(1)")
+          && sourceThumbE1.text.includes("this.material.uniforms.tMap.value=n")
+          && sourceThumbE1.text.includes("this.material.uniforms.uMapSize.value.set(1,1),this.material.uniforms.uResolution.value.set(1,1)"),
+        rebuildM1ConstructorDefaults:
+          Boolean(rebuildCreateThumbPlane)
+          && rebuildCreateThumbPlane.includes("tMap: { value: null }")
+          && rebuildCreateThumbPlane.includes("uMapSize: { value: new Vector2() }")
+          && rebuildCreateThumbPlane.includes("uResolution: { value: new Vector2() }")
+          && rebuildCreateThumbPlane.includes("sourceConstructorMode = \"source-M1-constructor-null-tMap-zero-size-vectors\"")
+          && rebuildCreateThumbPlane.includes("sourceSetImageBindingMode = \"source-E1-setImage-binds-texture-and-1x1-size-after-Xt-thumbsReady\"")
+          && !rebuildCreateThumbPlane.includes("tMap: { value: this.placeholder }")
+          && !rebuildCreateThumbPlane.includes("uMapSize: { value: new Vector2(1, 1) }")
+          && !rebuildCreateThumbPlane.includes("uResolution: { value: new Vector2(1, 1) }"),
         sourceHasNoInitialHiddenState:
           sourceThumbE1.text.includes("this.mesh=new at(this.geometry,this.material),this.mesh.scale.set(2,2,2)")
           && !sourceThumbE1.text.includes("this.mesh.visible=!1")
