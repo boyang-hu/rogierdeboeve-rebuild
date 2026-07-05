@@ -137,17 +137,18 @@ Known remaining gaps:
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
+- Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 
 Latest Phase 1 batch:
 
-- Aligned the source `ag` main-fluid shader surfaces without visual tuning.
-- Source evidence: `Co`, `VT`, `Sf`, `XT`, `$T`, `WT`, `YT`, and `ZT` are compact GLSL3 pass templates; source `GT` owns the bounded/advection uniform surface and source `qT` owns the additive force pass.
-- `src/client/webgl.ts` now mirrors those one-line source surfaces in `fluidBoundedVertex`, `fluidBoundsVertex`, `fluidForceVertex`, `fluidAdvectionFragment`, `fluidForceFragment`, `fluidDivergenceFragment`, `fluidPoissonFragment`, and `fluidPressureFragment`.
-- QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, project-media probe, and interactive mouse probe.
-- Shader dump reported `ag-advection`, `ag-advection-bounds`, `ag-force`, `ag-divergence`, `ag-poisson`, and `ag-pressure` as `source-shaped` with vertex delta `0` and fragment delta `0`.
-- Interactive mouse retained source `ag/qT` pointer/center response with no failures/exceptions/console messages. Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, and floor/environment distribution parity.
+- Aligned the source `$1/j1/W1/G1` project-media composite shader surface without visual tuning.
+- Source evidence: `G1` expands the shared helper templates, declares `luminance(...)`, orders uniforms as `tScene`, `tBloom`, `tFluid`, `tBlur`, and `tMouseSim`, then uses the inert pass-through body `vec4 mixed = texture(tScene, vUv); FragColor = mixed;`.
+- `src/client/webgl.ts` now mirrors that helper/declaration/body surface in `mediaCompositeFragment`, while leaving project-media target wiring, material ownership, formulas, and visual constants unchanged.
+- QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, and project-media probe.
+- Shader dump reported `j1-media-composite` as `source-shaped` with vertex delta `0`, fragment delta `0`, and no include/uniform residuals; `A1-pre-composite`, `OA-work-composite`, and `ag-advection` stayed source-shaped.
+- Project media remained stable: `gc-2026` 5/5 visible media and `hashgraph-vc` 5/5 visible media, with no failures/exceptions/console messages. Desktop/mobile output probes also had no failures, exceptions, or console messages.
+- Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, floor/environment distribution parity, and any remaining source-proven project-media render-manager target evidence.
 
 ## Validation Status
 
@@ -159,15 +160,13 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9241 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-ag-surface-shader node scripts/dump-va-shader.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9232 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9233 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9234 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9235 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9236 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9242 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-j1-surface-shader node scripts/dump-va-shader.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9243 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9244 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9245 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
 ```
 
-All passed in the `ag` main-fluid shader-surface batch.
+All passed in the `$1/j1/W1/G1` media composite shader-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -175,8 +174,7 @@ Verified:
 
 - Home loads with `.gl-canvas`.
 - Home can activate `gc-2026`.
-- Interactive mouse moves update source-shaped screen/local `Ka` state and main-fluid pointer/center state.
-- Shader dump reports all focused `ag-*` pass vertex/fragment deltas as `0`.
+- Shader dump reports `j1-media-composite` as source-shaped with vertex/fragment deltas as `0`; `A1-pre-composite`, `OA-work-composite`, and focused `ag-*` passes stayed source-shaped.
 - Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
 - Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
 - No runtime/console/WebGL shader errors were reported, excluding normal audio autoplay warnings.
@@ -223,6 +221,7 @@ Continue source-driven implementation in this order:
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
    - `ag` main-fluid pass shaders are now source-shaped; do not reformat them away from the source literal surface.
+   - `$1/j1/W1/G1` media composite shader text is now source-shaped; do not remove its inert helper/luminance surface just because the active body is pass-through.
    - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
    - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.

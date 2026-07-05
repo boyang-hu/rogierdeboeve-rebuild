@@ -2875,11 +2875,20 @@ precision highp float;
 
 #include <tonemapping_pars_fragment>
 
+${sourceCompositeColorHelper}
+${sourceBlendHelper}
+
+float luminance(vec3 rgb) {
+  const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+  return dot(rgb, W);
+}
+
 uniform sampler2D tScene;
 uniform sampler2D tBloom;
-uniform sampler2D tBlur;
 uniform sampler2D tFluid;
+uniform sampler2D tBlur;
 uniform sampler2D tMouseSim;
+
 uniform bool boolBloom;
 uniform bool boolFluid;
 uniform bool boolLuminosity;
@@ -2889,8 +2898,8 @@ in vec2 vUv;
 out vec4 FragColor;
 
 void main() {
-  vec4 color = texture(tScene, vUv);
-  FragColor = color;
+  vec4 mixed = texture(tScene, vUv);
+  FragColor = mixed;
 
   #include <tonemapping_fragment>
 }
