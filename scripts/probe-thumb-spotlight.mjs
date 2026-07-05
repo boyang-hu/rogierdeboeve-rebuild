@@ -19,9 +19,24 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-thumb-spotligh
 const port = Number(process.env.CDP_PORT || 9233);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.PROBE_WAIT || 5000);
+const sourceProbeProgress = Number(process.env.THUMB_PROGRESS || 0.27);
+
+if (!Number.isFinite(sourceProbeProgress)) {
+  throw new Error(`Invalid THUMB_PROGRESS: ${process.env.THUMB_PROGRESS}`);
+}
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function closeTo(actual, expected, epsilon = 1e-6) {
+  return Math.abs(actual - expected) <= epsilon;
+}
+
+function expectedThumbX(hook, thumbProgress, totalWidth) {
+  let x = (hook + thumbProgress + totalWidth * 67890) % totalWidth;
+  if (x > totalWidth / 2) x -= totalWidth;
+  return x;
 }
 
 function waitForPort(portNumber, timeout = 6000) {
@@ -101,7 +116,11 @@ async function runProbe() {
     screenWidth: 1440,
     screenHeight: 900,
   });
-  await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&debug-thumb-probe=1` });
+  const url = new URL(rebuildUrl);
+  url.searchParams.set("skip-preloader", "");
+  url.searchParams.set("debug-thumb-probe", "1");
+  url.searchParams.set("debug-thumb-progress", String(sourceProbeProgress));
+  await send(ws, "Page.navigate", { url: url.href });
   await wait(waitAfter);
   const result = await send(ws, "Runtime.evaluate", {
     expression: `JSON.stringify({
@@ -140,11 +159,35 @@ async function runProbe() {
   if (probe.thumbPositionMode !== "source-w1-centered-x-wrap") {
     sourceShapeErrors.push(`thumbPositionMode=${probe.thumbPositionMode}`);
   }
+  if (probe.sourceProgressSignMode !== "source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress") {
+    sourceShapeErrors.push(`sourceProgressSignMode=${probe.sourceProgressSignMode}`);
+  }
+  if (probe.debugProgress !== sourceProbeProgress) {
+    sourceShapeErrors.push(`debugProgress=${probe.debugProgress}`);
+  }
+  if (!closeTo(probe.galleryProgress, sourceProbeProgress)) {
+    sourceShapeErrors.push(`galleryProgress=${probe.galleryProgress},expected=${sourceProbeProgress}`);
+  }
   if (probe.thumbHierarchyMode !== "source-T1-w1-scrollWrap-E1-mesh") {
     sourceShapeErrors.push(`thumbHierarchyMode=${probe.thumbHierarchyMode}`);
   }
   if (probe.spotlight?.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") {
     sourceShapeErrors.push(`spotlightPositionOwnership=${probe.spotlight?.positionOwnershipMode}`);
+  }
+  if (probe.spotlight?.hasMap !== true) {
+    sourceShapeErrors.push(`spotlightHasMap=${probe.spotlight?.hasMap}`);
+  }
+  if (probe.spotlight?.intensity !== 220) {
+    sourceShapeErrors.push(`spotlightIntensity=${probe.spotlight?.intensity}`);
+  }
+  if (JSON.stringify(probe.spotlight?.position) !== JSON.stringify([0, 0, 3.7])) {
+    sourceShapeErrors.push(`spotlightPosition=${JSON.stringify(probe.spotlight?.position)}`);
+  }
+  if (JSON.stringify(probe.spotlight?.target) !== JSON.stringify([0, 0, -8])) {
+    sourceShapeErrors.push(`spotlightTarget=${JSON.stringify(probe.spotlight?.target)}`);
+  }
+  if (probe.spotlight?.parallax !== true) {
+    sourceShapeErrors.push(`spotlightParallax=${probe.spotlight?.parallax}`);
   }
   const imageOwnership = probe.thumbImageOwnership || {};
   if (imageOwnership.mode !== "source-Xt-preloadThumbs-projectThumbs-thumbsReady-E1-setImage") {
@@ -191,21 +234,41 @@ async function runProbe() {
   if (probe.totalWidth !== probe.totalItems * probe.itemWidth) {
     sourceShapeErrors.push(`totalWidth=${probe.totalWidth}`);
   }
+  const expectedThumbProgress = -sourceProbeProgress * probe.totalWidth;
+  if (!closeTo(probe.thumbProgress, expectedThumbProgress)) {
+    sourceShapeErrors.push(`thumbProgress=${probe.thumbProgress},expected=${expectedThumbProgress}`);
+  }
   if (probe.offsetY !== 0) {
     sourceShapeErrors.push(`offsetY=${probe.offsetY}`);
   }
   if (probe.isTransitioning !== false) {
     sourceShapeErrors.push(`isTransitioning=${probe.isTransitioning}`);
   }
-  for (const thumb of probe.thumbs || []) {
+  const expectedVisibleCount = (probe.thumbs || []).reduce((count, thumb, index) => {
+    const hook = probe.itemWidth * index;
+    const x = expectedThumbX(hook, expectedThumbProgress, probe.totalWidth);
+    return count + (x >= -1.5 && x <= 1.5 ? 1 : 0);
+  }, 0);
+  if (probe.visibleThumbs !== expectedVisibleCount) {
+    sourceShapeErrors.push(`visibleThumbs=${probe.visibleThumbs},expected=${expectedVisibleCount}`);
+  }
+  for (const [index, thumb] of (probe.thumbs || []).entries()) {
     const x = thumb.position?.[0];
     const y = thumb.position?.[1];
     const z = thumb.position?.[2];
+    const expectedHook = probe.itemWidth * index;
+    const expectedX = expectedThumbX(expectedHook, expectedThumbProgress, probe.totalWidth);
+    if (!closeTo(thumb.xHook, expectedHook)) {
+      sourceShapeErrors.push(`${thumb.slug}:xHook=${thumb.xHook},expected=${expectedHook}`);
+    }
+    if (!closeTo(x, expectedX)) {
+      sourceShapeErrors.push(`${thumb.slug}:x=${x},expected=${expectedX}`);
+    }
     if (Math.abs(x) > probe.totalWidth / 2 + 1e-6) {
       sourceShapeErrors.push(`${thumb.slug}:xWrap=${x}`);
     }
-    if (thumb.visible !== (x >= -1.5 && x <= 1.5)) {
-      sourceShapeErrors.push(`${thumb.slug}:visible=${thumb.visible},x=${x}`);
+    if (thumb.visible !== (expectedX >= -1.5 && expectedX <= 1.5)) {
+      sourceShapeErrors.push(`${thumb.slug}:visible=${thumb.visible},expectedX=${expectedX}`);
     }
     if (thumb.sourceInitialVisibleMode !== "source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible") {
       sourceShapeErrors.push(`${thumb.slug}:initialVisibleMode=${thumb.sourceInitialVisibleMode}`);
@@ -281,6 +344,12 @@ async function runProbe() {
   }
   if (probe.targets?.composite?.width !== 900 || probe.targets?.composite?.height !== 900) {
     sourceShapeErrors.push(`thumbCompositeTarget=${probe.targets?.composite?.width}x${probe.targets?.composite?.height}`);
+  }
+  if (!Number.isFinite(probe.targets?.thumb?.luma) || probe.targets.thumb.luma <= 0) {
+    sourceShapeErrors.push(`thumbTargetLuma=${probe.targets?.thumb?.luma}`);
+  }
+  if (!Number.isFinite(probe.targets?.composite?.luma) || probe.targets.composite.luma <= 0) {
+    sourceShapeErrors.push(`thumbCompositeLuma=${probe.targets?.composite?.luma}`);
   }
   const composite = probe.thumbComposite || {};
   if (composite.mode !== "source-x1-_1-raw-glsl3") sourceShapeErrors.push(`thumbCompositeMode=${composite.mode}`);

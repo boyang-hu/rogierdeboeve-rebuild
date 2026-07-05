@@ -184,6 +184,7 @@ const sourceTDSpotlight = extractAround(bundle, "updateSpotLight(){J.workScene.s
 const sourceWebpDetection = extractAround(bundle, "await k0(\"lossy\").then(()=>{Le.WEBP=!0}).catch(()=>{Le.WEBP=!1})", 240, 420);
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
+const sourceYDUpdateScene = extractAround(bundle, "J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)", 360, 760);
 const sourceSDInitSpotlight = extractAround(bundle, "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture", 260, 520);
 const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
@@ -1184,6 +1185,26 @@ const summary = {
         "J.workScene.setMouseFactor(this.mouseF)",
       ]),
       excerpt: compact(sourceYDAnimateIn.text),
+    },
+    homeGalleryUpdateScene: sourceYDUpdateScene && {
+      index: sourceYDUpdateScene.index,
+      checks: checks(sourceYDUpdateScene.text, [
+        "J.workScene.sceneWrap.rotation.y=_a.degToRad(this.scroll.progress*360+180)",
+        "J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value=this.scroll.progress*1",
+        "J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)",
+        "J.workScene.scene.rotation.z=_a.degToRad(this.sceneRotation)",
+        "J.workScene.scene.position.z=J.workScene.scene.rotation.z-this.zoom",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "this.preCompositeMaterial.uniforms.uTransformX.value = progress",
+        "const targetRotation = MathUtils.degToRad(progress * 360 + 180)",
+        "this.sceneWrap.rotation.y = targetRotation",
+        "this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation)",
+        "this.homeScene.position.z = this.homeScene.rotation.z - this.zoom",
+        "this.updateThumbGallery(-progress)",
+        "sourceProgressSignMode: \"source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress\"",
+      ]),
+      excerpt: compact(sourceYDUpdateScene.text),
     },
     homeSpotlightMap: sourceSDInitSpotlight && {
       index: sourceSDInitSpotlight.index,

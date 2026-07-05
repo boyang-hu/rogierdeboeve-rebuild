@@ -157,6 +157,8 @@ type ThumbProbeWindow = Window & {
     activeSlug: string;
     galleryProgress: number;
     thumbProgress: number;
+    debugProgress: number | null;
+    sourceProgressSignMode: string;
     thumbPositionMode: string;
     thumbHierarchyMode: string;
     thumbWrapParentIsScene: boolean;
@@ -4032,6 +4034,9 @@ export class WebGLBackdrop {
   private debugPassOrder = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-pass-order") : null;
   private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
+  private debugThumbProgress = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-progress")
+    ? numeric(new URLSearchParams(window.location.search).get("debug-thumb-progress"), 0)
+    : null;
   private debugOutputProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-output-probe");
   private debugCompositeStage =
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-stage"), 0)), 0, 5) : 0;
@@ -6746,6 +6751,11 @@ void main() {
     });
   }
 
+  private applyDebugThumbProgress() {
+    if (!this.debugThumbProbe || this.debugThumbProgress === null) return;
+    this.setGalleryProgress(this.debugThumbProgress, 0, 1 / 60);
+  }
+
   private updatePointerProjection() {
     if (!this.sceneWrap.visible) return;
     this.raycaster.setFromCamera(this.pointerRay, this.homeCamera);
@@ -7236,6 +7246,8 @@ void main() {
       activeSlug: this.activeSlug,
       galleryProgress: this.galleryProgress,
       thumbProgress: this.thumbProgress,
+      debugProgress: this.debugThumbProgress,
+      sourceProgressSignMode: "source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress",
       sourceDefaults: {
         thumbDarknessIntensity: SOURCE_INITIAL_THUMB_DARKNESS,
         homeThumbDarknessFallback: SOURCE_HOME_THUMB_DARKNESS_FALLBACK,
@@ -8737,6 +8749,7 @@ void main() {
     const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
     this.lastTickTime = time;
     this.pointer.lerp(this.targetPointer, 0.055);
+    this.applyDebugThumbProgress();
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;

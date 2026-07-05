@@ -133,19 +133,19 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
-- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, but the projected thumb content/transfer feel is still not exact.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path and the source `yD -> w1` negative-progress thumb wrapping at nonzero progress, but the projected thumb content/transfer feel is still not exact.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 
 Latest Phase 1 batch:
 
-- Added a source-driven interactive mouse/fluid guardrail without visual tuning.
-- `src/client/webgl.ts` now exposes `mainFluid.interaction` from the source `ag/qT` force pass: `source`, `force`, `center`, and `scale`.
-- New `scripts/probe-interactive-mouse.mjs` drives Chrome CDP mouse moves under `?debug-output-probe=1`.
-- The probe asserts source-shaped `Ka` screen target normalization, active `GA/Ka` immediate raycast pointer and local target movement, active source-shape flags, and main-fluid pointer/center/scale response.
-- Delayed `force` is recorded as transient debug data, not used as a pass/fail condition; source `qT` naturally zeroes it after the responding frame.
-- QA passed for `git diff --check`, `node --check scripts/probe-interactive-mouse.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, the interactive mouse probe, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
-- The interactive probe reported screen target `[0.5798611111111112,0.54]`, active pointer ray `[0.15972222222222232,0.07999999999999996]`, moved active local target, main-fluid pointer/center at that same normalized coordinate, and no failures/exceptions/console messages.
+- Added a source-driven nonzero thumb progress guardrail without visual tuning.
+- Source evidence: `yD.updateScene()` calls `J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)`, and `w1.updateGalleryProgress(e)` owns `progress=e*totalWidth`, `xHook`, centered modulo wrapping with `67890`, and source visibility bounds `[-1.5,1.5]`.
+- `src/client/webgl.ts` now exposes debug-only `debug-thumb-progress` under `debug-thumb-probe`, applies it through `setGalleryProgress()` before rendering the thumb targets, and records `debugProgress` plus `sourceProgressSignMode` in `__rogierThumbProbe`.
+- `scripts/probe-thumb-spotlight.mjs` now drives `debug-thumb-progress=0.27` and asserts `galleryProgress=0.27`, `thumbProgress=-5.4`, every thumb `xHook` and wrapped x position, `visibleThumbs=2`, source spotlight map/position/target/intensity/parallax, non-empty thumb/composite targets, and existing `Xt/E1/M1/x1/T1` ownership.
+- `scripts/audit-renderer-output.mjs` now records the source `yD.updateScene()` negative-progress call and matching rebuild markers.
+- QA passed for `git diff --check`, `node --check scripts/probe-thumb-spotlight.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, updated thumb spotlight probe, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, project-media probe, and interactive mouse probe.
+- The updated thumb probe reported source WebP thumbs ready, `galleryProgress=0.27`, `thumbProgress=-5.4`, `visibleThumbs=2`, thumb/composite luma `0.5015`, spotlight map present, and no failures/exceptions/console messages.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
 - Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, and floor/environment distribution parity.
 
@@ -155,18 +155,19 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check scripts/probe-interactive-mouse.mjs
+node --check scripts/probe-thumb-spotlight.mjs
+node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9241 PROBE_WAIT=12000 PROBE_MOVE_WAIT=900 node scripts/probe-interactive-mouse.mjs
 node scripts/audit-renderer-output.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9231 PROBE_WAIT=30000 node scripts/dump-va-shader.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9232 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9233 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9234 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
 REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9235 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9236 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
 ```
 
-All passed in the interactive mouse/fluid probe guardrail batch.
+All passed in the nonzero thumb progress guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
