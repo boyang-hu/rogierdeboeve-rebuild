@@ -379,6 +379,9 @@ async function runProbe() {
   if (workOwnership?.source !== "Lu-single-screen-mesh-material-swap") ownershipErrors.push("workSourceOwnership");
   if (workOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("workBridgeOwnership");
   if (workOwnership?.compositeScreenMode !== "source-work-post-screen") ownershipErrors.push("workCompositeScreenMode");
+  if (workOwnership?.sourceFinalTargetReset !== "source-Lu-renderToScreen-false-renderTargetComposite-then-null") {
+    ownershipErrors.push("workFinalTargetReset");
+  }
   if (workOwnership?.productionOutputChanged !== true) ownershipErrors.push("workProductionOutputChanged");
   if (mainOwnership?.source !== "I1-single-screen-mesh-material-swap") ownershipErrors.push("mainSourceOwnership");
   if (mainOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("mainBridgeOwnership");

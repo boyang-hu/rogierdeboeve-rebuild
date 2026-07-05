@@ -439,6 +439,9 @@ const summary = {
           "this.screen.material=this.compositeMaterial",
         ].every((needle) => sourceLu.text.includes(needle)),
         sourceCompositeRender: sourceLu.text.includes("o.setRenderTarget(h),o.render(this.screen,this.screenCamera)"),
+        sourceFinalTargetReset: sourceLu.text.includes(
+          "this.settings.renderToScreen?(o.setRenderTarget(null),o.render(this.screen,this.screenCamera)):(o.setRenderTarget(h),o.render(this.screen,this.screenCamera),o.setRenderTarget(null))",
+        ),
         rebuildSourceScreenSwap: [
           "private workPostScreen = makeSourcePassScreen()",
           "this.workPostScreen.material = this.workLuminosityMaterial",
@@ -521,6 +524,9 @@ const summary = {
           && sourceLu.text.includes("o.setRenderTarget(h),o.render(this.screen,this.screenCamera)"),
         rebuildFxaaBranchRender:
           rebuildWebgl.includes("if (this.renderSettings.fxaa.enabled) {\n            this.renderer.setRenderTarget(this.workFxaaTarget);\n            this.renderer.render(this.workPostScreen, this.backgroundCamera);\n            this.workFxaaMaterial.uniforms.tMap.value = this.workFxaaTarget.texture;\n            this.workPostScreen.material = this.workFxaaMaterial;\n          }\n          this.renderer.setRenderTarget(this.workCompositeTarget);\n          this.renderer.render(this.workPostScreen, this.backgroundCamera);"),
+        rebuildFinalTargetReset:
+          rebuildTick?.includes("this.renderer.setRenderTarget(this.workCompositeTarget);\n          this.renderer.render(this.workPostScreen, this.backgroundCamera);\n          this.renderer.setRenderTarget(null);")
+          && rebuildWebgl.includes("sourceFinalTargetReset: \"source-Lu-renderToScreen-false-renderTargetComposite-then-null\""),
         sourceBloomBranchBinding: sourceLu.text.includes("this.compositeMaterial.uniforms.tBloom.value=d[0].texture"),
         rebuildBloomBranchBinding:
           rebuildWebgl.includes("if (this.renderSettings.bloom.enabled) {\n            this.renderHomeBloomPass(this.workRawTarget);\n            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;\n          }"),

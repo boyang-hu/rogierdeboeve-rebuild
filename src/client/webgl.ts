@@ -7504,6 +7504,7 @@ void main() {
             bridge: "source-single-screen-material-swap",
             compositeScreenMode: "source-work-post-screen",
             sourceCompositeRender: "o.setRenderTarget(h),o.render(this.screen,this.screenCamera)",
+            sourceFinalTargetReset: "source-Lu-renderToScreen-false-renderTargetComposite-then-null",
             productionOutputChanged: true,
           },
           p1UpdateCulling: this.p1UpdateCullingProbe(),
@@ -8832,6 +8833,7 @@ void main() {
           }
           this.renderer.setRenderTarget(this.workCompositeTarget);
           this.renderer.render(this.workPostScreen, this.backgroundCamera);
+          this.renderer.setRenderTarget(null);
         }
       } finally {
         this.floorPlane.visible = previousFloorVisible;
