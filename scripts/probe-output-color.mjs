@@ -270,6 +270,11 @@ async function runProbe() {
   if (Math.abs((lightStateOwnership.state?.spotLight ?? 0) - 220) > 0.001) activeRevealErrors.push("lightStateSpot");
   if (Math.abs((lightStateOwnership.state?.directionalLight ?? 0) - 1.5) > 0.001) activeRevealErrors.push("lightStateDirectional");
   if (Math.abs((lightStateOwnership.state?.directionalLight2 ?? 0) - 1) > 0.001) activeRevealErrors.push("lightStateDirectional2");
+  const settingsStateOwnership = workSettings.settingsStateOwnership || {};
+  if (settingsStateOwnership.mode !== "source-Se-settings-scalar-media-state-onUpdate") activeRevealErrors.push("settingsStateOwnership");
+  if (settingsStateOwnership.matchesUniforms !== true) activeRevealErrors.push("settingsStateUniforms");
+  if (settingsStateOwnership.revealSpreadUniformsMatch !== true) activeRevealErrors.push("settingsStateRevealSpread");
+  if (settingsStateOwnership.envRotationMatches !== true) activeRevealErrors.push("settingsStateEnvRotation");
   if (activeRevealErrors.length) {
     throw new Error(`Active project reveal source-shape mismatch: ${activeRevealErrors.join(", ")}`);
   }

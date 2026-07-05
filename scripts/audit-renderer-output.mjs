@@ -150,6 +150,14 @@ const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoaded
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
 const rebuildSetProjectBlockReveal = extractBlock(rebuildWebgl, "private setProjectBlockReveal(");
+const rebuildSetDarken = extractBlock(rebuildWebgl, "private setDarken(");
+const rebuildSetSaturation = extractBlock(rebuildWebgl, "private setSaturation(");
+const rebuildSetContrast = extractBlock(rebuildWebgl, "private setContrast(");
+const rebuildSetRevealSpread = extractBlock(rebuildWebgl, "private setRevealSpread(");
+const rebuildSetEnvRotation = extractBlock(rebuildWebgl, "private setEnvRotation(");
+const rebuildSetFluidStrength = extractBlock(rebuildWebgl, "private setFluidStrength(");
+const rebuildSetMediaOpacity = extractBlock(rebuildWebgl, "private setMediaOpacity(");
+const rebuildShowScene = extractBlock(rebuildWebgl, "showScene()");
 const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
 const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
@@ -809,6 +817,66 @@ const summary = {
           && !rebuildSetSpotLightIntensity.includes("gsap.to(this, {")
           && !rebuildSetDirectionalLightIntensity.includes("gsap.to(this, {")
           && !rebuildSetDirectionalLight2Intensity.includes("gsap.to(this, {"),
+      },
+      settingsStateOwnership: {
+        source:
+          sourceSe.text.includes("contrast:xt.contrast,darken:xt.darken,saturation:xt.saturation")
+          && sourceSe.text.includes("sceneReveal:0,envRotation:0,revealSpread:0,fluidStrength:0")
+          && sourceSe.text.includes("media:{background:{r:0,g:0,b:0},opacity:0}")
+          && sourceSe.text.includes("static setFluidStrength=(e,t=.5)=>{t===0?J.mainScene.renderManager.compositeMaterial.uniforms.uFluidStrength.value=this.settings.fluidStrength=e:oe.to(this.settings,{fluidStrength:e")
+          && sourceSe.text.includes("static setRevealSpread=(e,t=1.6,n=\"power4.out\")=>{this.revealSpreadAnim&&this.revealSpreadAnim.kill(),this.revealSpreadAnim=oe.to(this.settings,{revealSpread:e")
+          && sourceSe.text.includes("J.workScene.blocks.forEach((i,r)=>{i.instance.material.customUniforms.uRevealSpread.value=this.settings.revealSpread})")
+          && sourceSe.text.includes("static setEnvRotation=(e,t=5.6)=>{this.envRotationAnim&&this.envRotationAnim.kill(),t===0?J.workScene.sceneWrap.rotation.x=this.settings.envRotation=e:this.envRotationAnim=oe.to(this.settings,{envRotation:e")
+          && sourceSe.text.includes("static setSaturation=(e,t=1.6)=>{t===0?J.workScene.renderManager.compositeMaterial.uniforms.uSaturation.value=this.settings.saturation=e:oe.to(this.settings,{saturation:e")
+          && sourceSe.text.includes("static setDarken=(e=.25,t=.5)=>{t===0?J.workScene.renderManager.compositeMaterial.uniforms.uDarken.value=this.settings.darken=e:oe.to(this.settings,{darken:e")
+          && sourceSe.text.includes("static showScene=(e,t=1.6)=>{oe.to(this.settings,{sceneReveal:1")
+          && sourceSe.text.includes("J.mainScene.renderManager.compositeMaterial.uniforms.uReveal.value=this.settings.sceneReveal")
+          && sourceSe.text.includes("static setContrast=(e,t=1.6)=>{t===0?J.mainScene.renderManager.compositeMaterial.uniforms.uContrast.value=this.settings.contrast=e:oe.to(this.settings,{contrast:e")
+          && sourceSe.text.includes("static setMediaOpacity=(e,t=1.6,n=\"expo.out\",i=.25)=>{oe.to(this.settings.media,{opacity:e")
+          && sourceSe.text.includes("J.mainScene.renderManager.compositeMaterial.uniforms.uMediaReveal.value=this.settings.media.opacity"),
+        rebuild:
+          rebuildWebgl.includes("private settingsState = {")
+          && Boolean(rebuildSetDarken)
+          && Boolean(rebuildSetSaturation)
+          && Boolean(rebuildSetContrast)
+          && Boolean(rebuildSetRevealSpread)
+          && Boolean(rebuildSetEnvRotation)
+          && Boolean(rebuildSetFluidStrength)
+          && Boolean(rebuildSetMediaOpacity)
+          && Boolean(rebuildShowScene)
+          && rebuildSetDarken.includes("gsap.to(this.settingsState, {")
+          && rebuildSetDarken.includes("this.compositeMaterial.uniforms.uDarken.value = this.settingsState.darken")
+          && rebuildSetSaturation.includes("gsap.to(this.settingsState, {")
+          && rebuildSetSaturation.includes("this.compositeMaterial.uniforms.uSaturation.value = this.settingsState.saturation")
+          && rebuildSetContrast.includes("gsap.to(this.settingsState, {")
+          && rebuildSetContrast.includes("this.preCompositeMaterial.uniforms.uContrast.value = this.settingsState.contrast")
+          && rebuildSetRevealSpread.includes("gsap.to(this.settingsState, {")
+          && rebuildSetRevealSpread.includes("item.material.uniforms.uRevealSpread.value = this.settingsState.revealSpread")
+          && rebuildSetEnvRotation.includes("gsap.to(this.settingsState, {")
+          && rebuildSetEnvRotation.includes("this.sceneWrap.rotation.x = this.settingsState.envRotation")
+          && rebuildSetFluidStrength.includes("gsap.to(this.settingsState, {")
+          && rebuildSetFluidStrength.includes("this.preCompositeMaterial.uniforms.uFluidStrength.value = this.settingsState.fluidStrength")
+          && rebuildSetMediaOpacity.includes("gsap.to(this.settingsState.media, {")
+          && rebuildSetMediaOpacity.includes("this.preCompositeMaterial.uniforms.uMediaReveal.value = this.settingsState.media.opacity")
+          && rebuildShowScene.includes("gsap.to(this.settingsState, {")
+          && rebuildShowScene.includes("this.preCompositeMaterial.uniforms.uReveal.value = this.settingsState.sceneReveal")
+          && rebuildWebgl.includes("mode: \"source-Se-settings-scalar-media-state-onUpdate\"")
+          && !rebuildWebgl.includes("private fluidStrength =")
+          && !rebuildWebgl.includes("private darken =")
+          && !rebuildWebgl.includes("private saturation =")
+          && !rebuildWebgl.includes("private contrast =")
+          && !rebuildWebgl.includes("private envRotation =")
+          && !rebuildWebgl.includes("private sceneReveal =")
+          && !rebuildWebgl.includes("private revealSpread =")
+          && !rebuildWebgl.includes("private mediaSceneOpacity =")
+          && !rebuildSetDarken.includes("gsap.to(this, {")
+          && !rebuildSetSaturation.includes("gsap.to(this, {")
+          && !rebuildSetContrast.includes("gsap.to(this, {")
+          && !rebuildSetRevealSpread.includes("gsap.to(this, {")
+          && !rebuildSetEnvRotation.includes("gsap.to(this, {")
+          && !rebuildSetFluidStrength.includes("gsap.to(this, {")
+          && !rebuildSetMediaOpacity.includes("gsap.to(this, {")
+          && !rebuildShowScene.includes("gsap.to(this, {"),
       },
       excerpt: compact(sourceSe.text),
     },

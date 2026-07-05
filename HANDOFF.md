@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Se.settings` light intensity tween ownership without visual tuning.
-- Source `Se.init()` initializes `settings.directionalLight`, `settings.directionalLight2`, and `settings.spotLight` as nested state objects with `intensity:0`.
-- Source `Se.setDirectionalLightIntensity`, `setDirectionalLight2Intensity`, and `setSpotLightIntensity` tween those state objects and write the actual Three light intensities in `onUpdate`.
-- The rebuild now keeps a `lightState` mirror, tweens the nested state objects, writes `directionalLight`, `directionalLight2`, and `spotLight` intensities from state updates, and removes the old scalar mirror fields.
-- Output/thumb probes now assert `stateOwnership=source-Se-settings-light-state-onUpdate-intensities`, state values, and state/light parity; renderer audit rejects the old scalar fields and `gsap.to(this, ...)` light-intensity tween paths.
+- Aligned source `Se.settings` scalar/media tween ownership without visual tuning.
+- Source `Se.init()` initializes scalar/media state for `darken`, `saturation`, `contrast`, `sceneReveal`, `envRotation`, `revealSpread`, `fluidStrength`, and `media.opacity`.
+- Source setters for those values tween `this.settings` or `this.settings.media` and write uniforms, work-item `uRevealSpread`, or `sceneWrap.rotation.x` from state in `onUpdate`.
+- The rebuild now keeps a `settingsState` mirror, tweens that state in `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setEnvRotation()`, `setRevealSpread()`, `setFluidStrength()`, and `setMediaOpacity()`, and removes the old standalone scalar mirror fields for this chain.
+- Output probes now assert `settingsStateOwnership.mode=source-Se-settings-scalar-media-state-onUpdate`, uniform parity, reveal-spread fan-out parity, and env rotation parity; renderer audit rejects the old scalar fields and `gsap.to(this, ...)` paths.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,23 +159,23 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-light-state-audit-final.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9351 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-light-state-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9353 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-light-state-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9352 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-light-state-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9354 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-light-state-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-settings-state-audit-final.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9361 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-settings-state-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9363 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-settings-state-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9362 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-settings-state-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9364 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-settings-state-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `Se` light intensity state tween ownership batch.
+All passed in the `Se` settings scalar/media state tween ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `Se.settings` light intensity ownership, including state-owned directional, secondary directional, and spotlight intensity tweens. It also rejects the old scalar mirror fields and direct `this` tween paths.
-- Desktop/mobile output probes confirm `lightStateOwnership.mode=source-Se-settings-light-state-onUpdate-intensities`, state values `directionalLight=1.5`, `directionalLight2=1`, `spotLight=220`, and state/light parity with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
-- Thumb spotlight probe confirms the same spotlight state ownership, `stateIntensity=220`, and `stateIntensityMatchesLight=true`.
+- Renderer audit checks source/rebuild `Se.settings` scalar/media ownership for darken, saturation, contrast, scene reveal, env rotation, reveal spread, fluid strength, and media opacity. It also rejects the old scalar mirror fields and direct `this` tween paths for this chain.
+- Desktop/mobile output probes confirm `settingsStateOwnership.mode=source-Se-settings-scalar-media-state-onUpdate`, state/uniform parity, reveal-spread fan-out parity, and env rotation parity with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Thumb spotlight probe retained the source thumb/light state guardrails.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, and project-media guardrails remain in the audit/probe surface.
 

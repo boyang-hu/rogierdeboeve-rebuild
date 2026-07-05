@@ -3944,6 +3944,18 @@ export class WebGLBackdrop {
     directionalLight2: { intensity: 0 },
     spotLight: { intensity: 0 },
   };
+  private settingsState = {
+    contrast: SOURCE_INITIAL_CONTRAST,
+    darken: SOURCE_INITIAL_DARKEN,
+    saturation: SOURCE_INITIAL_SATURATION,
+    sceneReveal: 0,
+    envRotation: 0,
+    revealSpread: 0,
+    fluidStrength: 0,
+    media: {
+      opacity: 0,
+    },
+  };
   private darkenTween?: gsap.core.Tween;
   private revealSpreadTween?: gsap.core.Tween;
   private sceneRevealTween?: gsap.core.Tween;
@@ -3989,19 +4001,11 @@ export class WebGLBackdrop {
   private outputProbeLastUpdate = 0;
   private sourceUpdateOrder = "nD.scenes sky -> media -> work -> main -> workthumb -> wavves -> character; Iu.renderManager -> IT.cameraController -> components";
   private sourcePostRenderFrame = 0;
-  private fluidStrength = 0.5;
-  private darken = SOURCE_INITIAL_DARKEN;
-  private saturation = SOURCE_INITIAL_SATURATION;
-  private contrast = SOURCE_INITIAL_CONTRAST;
-  private envRotation = 0;
-  private sceneReveal = 0;
-  private revealSpread = 0;
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
   private currentAmbientIntensity = SOURCE_INITIAL_AMBIENT;
   private mediaBackground = colorFrom(DEFAULT_BG);
   private mediaBackgroundState = colorFrom(DEFAULT_BG);
-  private mediaSceneOpacity = 0;
   private gridLayers = SOURCE_GRID_LAYERS;
   private radius = 8;
   private ambientLight = new AmbientLight(colorFrom(SOURCE_INITIAL_SECONDARY), SOURCE_INITIAL_AMBIENT);
@@ -4339,12 +4343,12 @@ export class WebGLBackdrop {
 
   showScene() {
     this.sceneRevealTween?.kill();
-    this.sceneRevealTween = gsap.to(this, {
+    this.sceneRevealTween = gsap.to(this.settingsState, {
       sceneReveal: 1,
       duration: 1.6,
       ease: "expo.out",
       onUpdate: () => {
-        this.preCompositeMaterial.uniforms.uReveal.value = this.sceneReveal;
+        this.preCompositeMaterial.uniforms.uReveal.value = this.settingsState.sceneReveal;
       },
     });
   }
@@ -5130,8 +5134,8 @@ export class WebGLBackdrop {
       boolFluid: { value: settings.fluid.enabled },
       boolLuminosity: { value: settings.luminosity.enabled },
       boolFxaa: { value: settings.fxaa.enabled },
-      uDarken: { value: this.darken },
-      uSaturation: { value: this.saturation },
+      uDarken: { value: this.settingsState.darken },
+      uSaturation: { value: this.settingsState.saturation },
     };
     if (this.debugCompositeShader) {
       uniforms.uDebugStage = { value: this.debugCompositeStage };
@@ -5196,9 +5200,9 @@ export class WebGLBackdrop {
         uBgColor: { value: sourceLinearToSrgbColor(SOURCE_COMPOSITE_BG) },
         uReveal: { value: 0 },
         uMediaReveal: { value: 0 },
-        uContrast: { value: this.contrast },
+        uContrast: { value: this.settingsState.contrast },
         uTransformX: { value: 0 },
-        uFluidStrength: { value: this.fluidStrength },
+        uFluidStrength: { value: this.settingsState.fluidStrength },
       },
       vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader: homePreCompositeFragment,
@@ -6128,14 +6132,14 @@ void main() {
   private setDarken(value: number, duration = 0.5) {
     this.darkenTween?.kill();
     const update = () => {
-      this.compositeMaterial.uniforms.uDarken.value = this.darken;
+      this.compositeMaterial.uniforms.uDarken.value = this.settingsState.darken;
     };
     if (duration <= 0) {
-      this.darken = value;
+      this.settingsState.darken = value;
       update();
       return;
     }
-    this.darkenTween = gsap.to(this, {
+    this.darkenTween = gsap.to(this.settingsState, {
       darken: value,
       duration: 0.5,
       ease: "none",
@@ -6165,14 +6169,14 @@ void main() {
   private setSaturation(value: number, duration = 1.6) {
     this.saturationTween?.kill();
     const update = () => {
-      this.compositeMaterial.uniforms.uSaturation.value = this.saturation;
+      this.compositeMaterial.uniforms.uSaturation.value = this.settingsState.saturation;
     };
     if (duration <= 0) {
-      this.saturation = value;
+      this.settingsState.saturation = value;
       update();
       return;
     }
-    this.saturationTween = gsap.to(this, {
+    this.saturationTween = gsap.to(this.settingsState, {
       saturation: value,
       duration,
       ease: "expo.out",
@@ -6202,14 +6206,14 @@ void main() {
   private setContrast(value: number, duration = 1.6) {
     this.contrastTween?.kill();
     const update = () => {
-      this.preCompositeMaterial.uniforms.uContrast.value = this.contrast;
+      this.preCompositeMaterial.uniforms.uContrast.value = this.settingsState.contrast;
     };
     if (duration <= 0) {
-      this.contrast = value;
+      this.settingsState.contrast = value;
       update();
       return;
     }
-    this.contrastTween = gsap.to(this, {
+    this.contrastTween = gsap.to(this.settingsState, {
       contrast: value,
       duration,
       ease: "expo.out",
@@ -6320,20 +6324,13 @@ void main() {
 
   private setRevealSpread(value: number, duration = 1.6, ease = "power4.out") {
     this.revealSpreadTween?.kill();
-    if (duration <= 0) {
-      this.revealSpread = value;
-      this.workItems.forEach((item) => {
-        item.material.uniforms.uRevealSpread.value = this.revealSpread;
-      });
-      return;
-    }
-    this.revealSpreadTween = gsap.to(this, {
+    this.revealSpreadTween = gsap.to(this.settingsState, {
       revealSpread: value,
       duration,
       ease,
       onUpdate: () => {
         this.workItems.forEach((item) => {
-          item.material.uniforms.uRevealSpread.value = this.revealSpread;
+          item.material.uniforms.uRevealSpread.value = this.settingsState.revealSpread;
         });
       },
     });
@@ -6389,14 +6386,14 @@ void main() {
   private setEnvRotation(value: number, duration = 5.6, ease = "expo.inOut") {
     this.envRotationTween?.kill();
     const update = () => {
-      this.sceneWrap.rotation.x = this.envRotation;
+      this.sceneWrap.rotation.x = this.settingsState.envRotation;
     };
     if (duration <= 0) {
-      this.envRotation = value;
+      this.settingsState.envRotation = value;
       update();
       return;
     }
-    this.envRotationTween = gsap.to(this, {
+    this.envRotationTween = gsap.to(this.settingsState, {
       envRotation: value,
       duration,
       ease,
@@ -6407,14 +6404,14 @@ void main() {
   private setFluidStrength(value: number, duration = 0.5) {
     this.fluidStrengthTween?.kill();
     const update = () => {
-      this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
+      this.preCompositeMaterial.uniforms.uFluidStrength.value = this.settingsState.fluidStrength;
     };
     if (duration <= 0) {
-      this.fluidStrength = value;
+      this.settingsState.fluidStrength = value;
       update();
       return;
     }
-    this.fluidStrengthTween = gsap.to(this, {
+    this.fluidStrengthTween = gsap.to(this.settingsState, {
       fluidStrength: value,
       duration,
       ease: "none",
@@ -6425,15 +6422,10 @@ void main() {
   private setMediaOpacity(value: number, duration = 1.6, ease = "expo.out", delay = 0.25) {
     this.mediaOpacityTween?.kill();
     const update = () => {
-      this.preCompositeMaterial.uniforms.uMediaReveal.value = this.mediaSceneOpacity;
-    };
-    if (duration <= 0) {
-      this.mediaSceneOpacity = value;
-      update();
-      return;
+      this.preCompositeMaterial.uniforms.uMediaReveal.value = this.settingsState.media.opacity;
     }
-    this.mediaOpacityTween = gsap.to(this, {
-      mediaSceneOpacity: value,
+    this.mediaOpacityTween = gsap.to(this.settingsState.media, {
+      opacity: value,
       duration,
       ease,
       delay,
@@ -7602,6 +7594,30 @@ void main() {
               Math.abs(this.directionalLight.intensity - this.lightState.directionalLight.intensity) < 1e-6
               && Math.abs(this.directionalLight2.intensity - this.lightState.directionalLight2.intensity) < 1e-6
               && Math.abs(this.spotLight.intensity - this.lightState.spotLight.intensity) < 1e-6,
+          },
+          settingsStateOwnership: {
+            mode: "source-Se-settings-scalar-media-state-onUpdate",
+            state: {
+              darken: this.settingsState.darken,
+              saturation: this.settingsState.saturation,
+              contrast: this.settingsState.contrast,
+              sceneReveal: this.settingsState.sceneReveal,
+              envRotation: this.settingsState.envRotation,
+              revealSpread: this.settingsState.revealSpread,
+              fluidStrength: this.settingsState.fluidStrength,
+              mediaOpacity: this.settingsState.media.opacity,
+            },
+            matchesUniforms:
+              Math.abs((this.compositeMaterial.uniforms.uDarken.value as number) - this.settingsState.darken) < 1e-6
+              && Math.abs((this.compositeMaterial.uniforms.uSaturation.value as number) - this.settingsState.saturation) < 1e-6
+              && Math.abs((this.preCompositeMaterial.uniforms.uContrast.value as number) - this.settingsState.contrast) < 1e-6
+              && Math.abs((this.preCompositeMaterial.uniforms.uReveal.value as number) - this.settingsState.sceneReveal) < 1e-6
+              && Math.abs((this.preCompositeMaterial.uniforms.uFluidStrength.value as number) - this.settingsState.fluidStrength) < 1e-6
+              && Math.abs((this.preCompositeMaterial.uniforms.uMediaReveal.value as number) - this.settingsState.media.opacity) < 1e-6,
+            revealSpreadUniformsMatch: this.workItems.every((item) => (
+              Math.abs((item.material.uniforms.uRevealSpread.value as number) - this.settingsState.revealSpread) < 1e-6
+            )),
+            envRotationMatches: Math.abs(this.sceneWrap.rotation.x - this.settingsState.envRotation) < 1e-6,
           },
           p1UpdateCulling: this.p1UpdateCullingProbe(),
           activeMaterial: activeWorkItem ? {
@@ -8917,7 +8933,7 @@ void main() {
     this.applyDebugThumbProgress();
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
-    this.preCompositeMaterial.uniforms.uFluidStrength.value = this.fluidStrength;
+    this.preCompositeMaterial.uniforms.uFluidStrength.value = this.settingsState.fluidStrength;
     this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;
     this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;
     this.preCompositeMaterial.uniforms.boolLuminosity.value = this.sourceMainRenderSettings.luminosity.enabled;
@@ -8994,7 +9010,7 @@ void main() {
     }
     this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;
     if (this.sourceMainRenderSettings.fluid.enabled) {
-      const mainFluidTexture = this.fluidStrength > 0
+      const mainFluidTexture = this.settingsState.fluidStrength > 0
         ? this.updateMainFluidPass()
         : this.mainFluidPass.enabled
           ? this.mainFluidPass.targets.main.texture
