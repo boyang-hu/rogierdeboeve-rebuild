@@ -517,6 +517,17 @@ const summary = {
           "this.workBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);",
           "source-Lu-Na-resize-css-width-height-when-blur-enabled",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceMouseSimResizeNoPostRound:
+          sourceLu.text.includes("this.settings.mousesim.enabled&&this.mouseSimulation.onResize(e/10,t/10)")
+          && !sourceLu.text.includes("Math.round(e/10)")
+          && !sourceLu.text.includes("Math.round(t/10)"),
+        rebuildScreenMouseSimResizeNoPostRound: [
+          "const screenSimWidth = Math.max(1, workRenderWidth / SCREEN_MOUSE_SIM_SCALE);",
+          "const screenSimHeight = Math.max(1, workRenderHeight / SCREEN_MOUSE_SIM_SCALE);",
+          "targetSizingMode: \"source-Lu-mousesim-render-size-div-10-no-post-rounding\"",
+        ].every((needle) => rebuildWebgl.includes(needle))
+          && !rebuildWebgl.includes("Math.round(workRenderWidth / SCREEN_MOUSE_SIM_SCALE)")
+          && !rebuildWebgl.includes("Math.round(workRenderHeight / SCREEN_MOUSE_SIM_SCALE)"),
         sourceBlurBranchRender:
           sourceLu.text.includes("this.settings.blur.enabled&&(this.hBlurMaterial.uniforms.tMap.value=c.texture")
           && sourceLu.text.includes("this.screen.material=this.hBlurMaterial,o.setRenderTarget(f),o.render(this.screen,this.screenCamera)")
@@ -1930,6 +1941,7 @@ const summary = {
         ? {
             index: start,
             checks: checks(sourceKa, [
+              "onResize(e,t){this.bufferSim.onResize(e,t),this.simulationMaterial.uniforms.uCoords.value.set(e,t)}",
               "onMouseMove({x:e,y:t}){this.onMesh?this.raycast({x:e,y:t}):this.targetPos.set(e/Pe.w,1-t/Pe.h)}",
               "this.mouse.x=e/Pe.w*2-1",
               "this.mouse.y=-(t/Pe.h)*2+1",

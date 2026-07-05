@@ -163,6 +163,9 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (!screen.target) errors.push("missing-screen-mouse-probe");
   if (screen.uniformSurfaceMode !== "source-Ka-simulationMaterial-uniform-surface") errors.push("screen-uniform-surface");
   if (screen.targetState?.depthBuffer !== false || screen.targetState?.stencilBuffer !== false) errors.push("screen-target-state");
+  if (screen.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding") errors.push("screen-target-sizing-mode");
+  if (screen.targetSizeMatchesSource !== true) errors.push("screen-target-size");
+  if (screen.uCoordsMatchesSource !== true) errors.push("screen-ucoords");
   if (distance2(screen.target, expectedScreenTarget) > 0.015) errors.push(`screen-target=${JSON.stringify(screen.target)}`);
   if (distance2(screen.old, beforeScreen.old) < 0.001 && distance2(screen.new, beforeScreen.new) < 0.001) errors.push("screen-old-new-did-not-move");
   if ((screen.speed ?? 0) <= 0.0001) errors.push(`screen-speed=${screen.speed}`);

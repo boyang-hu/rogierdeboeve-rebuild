@@ -5829,3 +5829,37 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-lu-blur-update-media`.
 
 Decision: keep optional `Na` blur update ownership source-shaped and do not reintroduce runtime `blur.strength` writes without bundle evidence. Phase 1 remains open because this closes a default-inactive optional branch mismatch only; the broader `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution gaps remain unresolved.
+
+### S1-248 `Lu/Ka` Screen Mouse Simulation Sizing
+
+This batch aligned source screen mouse-simulation target sizing. It does not change shader formulas, visual constants, route state, project data, or project-media mapping.
+
+Source evidence:
+
+- Source `Lu.resize(e,t,n)` rounds the work render size for DPR and then, when `settings.mousesim.enabled`, calls `this.mouseSimulation.onResize(e/10,t/10)`.
+- Source `Lu.resize(e,t,n)` has no `Math.round(e/10)` or `Math.round(t/10)` post-division sizing step.
+- Source `Ka.onResize(e,t)` directly forwards those values to `bufferSim.onResize(e,t)` and `simulationMaterial.uniforms.uCoords.value.set(e,t)`.
+
+Runtime and tooling changes:
+
+- Work screen mouse-sim targets now use `workRenderWidth / SCREEN_MOUSE_SIM_SCALE` and `workRenderHeight / SCREEN_MOUSE_SIM_SCALE`, with only the existing minimum size clamp.
+- This preserves source-shaped non-integer target sizes when the source path produces them, for example mobile `390 / 10 = 39` and `844 / 10 = 84.4`.
+- Runtime probes now expose `expectedTargetSize`, `targetSizingMode=source-Lu-mousesim-render-size-div-10-no-post-rounding`, `targetSizeMatchesSource`, and `uCoordsMatchesSource`.
+- Output and interactive mouse probes now assert the source-shaped target size and `uCoords` surface.
+- `scripts/audit-renderer-output.mjs` now checks the source `Lu` `onResize(e/10,t/10)` anchor, rejects the old rebuild post-rounding path, and checks the source `Ka.onResize(e,t)` direct buffer/`uCoords` binding.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- `node scripts/audit-renderer-output.mjs` passed and wrote `/tmp/rd-screen-mousesim-sizing-audit.json`; recursive false/null review stayed at the expected `19` source-negative/default entries.
+- Desktop output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors: `/tmp/rd-screen-mousesim-sizing-output-desktop`.
+- Mobile output probe passed with no failed requests, runtime exceptions, console messages, or WebGL shader errors and confirmed the source-shaped non-integer path: `/tmp/rd-screen-mousesim-sizing-output-mobile`.
+- Interactive mouse probe passed with source-shaped screen/local mouse response and no browser failures, runtime exceptions, or console messages: `/tmp/rd-screen-mousesim-sizing-interactive`.
+- Thumb spotlight probe passed and retained source thumb strip/spotlight map guardrails: `/tmp/rd-screen-mousesim-sizing-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-screen-mousesim-sizing-media`.
+
+Decision: keep the source `Lu/Ka` no-post-rounding screen mouse-simulation sizing. Phase 1 remains open because this closes a narrow render-manager sizing mismatch only; the broader `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution gaps remain unresolved.

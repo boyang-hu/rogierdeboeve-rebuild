@@ -308,6 +308,15 @@ async function runProbe() {
   if (uniformSurfaceErrors.length) {
     throw new Error(`Ka simulation uniform source-shape mismatch: ${uniformSurfaceErrors.join(", ")}`);
   }
+  const screenSizingErrors = [];
+  if (screenMouse?.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding") {
+    screenSizingErrors.push("targetSizingMode");
+  }
+  if (screenMouse?.targetSizeMatchesSource !== true) screenSizingErrors.push("targetSize");
+  if (screenMouse?.uCoordsMatchesSource !== true) screenSizingErrors.push("uCoords");
+  if (screenSizingErrors.length) {
+    throw new Error(`Lu screen mouse-sim sizing mismatch: ${screenSizingErrors.join(", ")}`);
+  }
   const mouseShaderSurface = parsed.probe.mouseSimulation?.shaderSurface || {};
   const mouseShaderErrors = [];
   if (mouseShaderSurface.mode !== "source-Ka-rA-oA-shader-surface") mouseShaderErrors.push("mode");

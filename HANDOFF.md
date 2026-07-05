@@ -142,10 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the optional source `Lu/I1` `Na` standard-blur update path without visual tuning.
-- Source `Lu.update()` renders optional work blur as `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`, feeds luminosity and final `OA.tScene` from blurB only when blur is enabled, and keeps bloom's non-luminosity source on raw `renderTargetA`.
-- Source `Na` initializes `uBluriness` to `0`; the mirrored bundle has no `settings.blur.strength` runtime update in `Lu.update()` or `I1.update()`.
-- The rebuild now has `renderWorkBlurPass()` through `workPostScreen`, separates work luminosity input from bloom's raw source, uses the source blur-or-raw target for `OA.tScene`, removes non-source main blur `uBluriness` writes, and probes `source-Na-uBluriness-init-zero-no-update-write`.
+- Aligned source `Lu/Ka` screen mouse-simulation target sizing without visual tuning.
+- Source `Lu.resize(e,t,n)` calls `this.mouseSimulation.onResize(e/10,t/10)` after DPR render-size rounding, with no post-division `Math.round`.
+- Source `Ka.onResize(e,t)` directly passes those values into `bufferSim.onResize(e,t)` and `uCoords.value.set(e,t)`.
+- The rebuild now sizes screen mouse-sim targets from `workRenderWidth / SCREEN_MOUSE_SIM_SCALE` and `workRenderHeight / SCREEN_MOUSE_SIM_SCALE`, preserving source non-integer sizes such as mobile `844 / 10 = 84.4`.
+- Output and interactive probes now assert `targetSizingMode=source-Lu-mousesim-render-size-div-10-no-post-rounding`, target-size parity, and `uCoords` parity.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -155,25 +156,27 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/probe-output-color.mjs
+node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-lu-blur-update-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9321 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-lu-blur-update-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9322 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-lu-blur-update-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9323 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-lu-blur-update-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9324 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-lu-blur-update-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-screen-mousesim-sizing-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9321 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-screen-mousesim-sizing-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9322 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-screen-mousesim-sizing-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9323 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-screen-mousesim-sizing-interactive node scripts/probe-interactive-mouse.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9324 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-screen-mousesim-sizing-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9325 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-screen-mousesim-sizing-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `Lu/I1` optional `Na` blur update ownership batch.
+All passed in the `Lu/Ka` screen mouse simulation sizing batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `Lu` work optional blur branch anchors, source init-only `Na.uBluriness` ownership for `Lu/I1`, source `Lu.update()` final non-screen branch, bloom resize-loop ownership, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
-- Output probes confirm work pass-input markers and `source-Na-uBluriness-init-zero-no-update-write`, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Renderer audit checks source/rebuild `Lu` screen mouse-simulation `onResize(e/10,t/10)`, source `Ka.onResize(e,t)` direct target/`uCoords` binding, the no-post-rounding rebuild markers, source `Lu.update()` final non-screen branch, bloom resize-loop ownership, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
+- Output and interactive probes confirm source-shaped screen mouse-sim target sizing and `uCoords`, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Thumb spotlight probe retained the source thumb strip shape and spotlight map guardrails.
 

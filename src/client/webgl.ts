@@ -6592,8 +6592,8 @@ void main() {
     this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(width, height);
-    const screenSimWidth = Math.max(1, Math.round(workRenderWidth / SCREEN_MOUSE_SIM_SCALE));
-    const screenSimHeight = Math.max(1, Math.round(workRenderHeight / SCREEN_MOUSE_SIM_SCALE));
+    const screenSimWidth = Math.max(1, workRenderWidth / SCREEN_MOUSE_SIM_SCALE);
+    const screenSimHeight = Math.max(1, workRenderHeight / SCREEN_MOUSE_SIM_SCALE);
     if (this.renderSettings.mousesim.enabled) {
       this.screenMouseSimulationTargets.forEach((target) => target.setSize(screenSimWidth, screenSimHeight));
       this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(screenSimWidth, screenSimHeight);
@@ -8418,6 +8418,10 @@ void main() {
       width: Math.max(1, sourcePlaneSize.x),
       height: Math.max(1, sourcePlaneSize.y),
     };
+    const expectedScreenTargetSize = {
+      width: Math.max(1, this.workRawTarget.width / SCREEN_MOUSE_SIM_SCALE),
+      height: Math.max(1, this.workRawTarget.height / SCREEN_MOUSE_SIM_SCALE),
+    };
     const expectedUvOffset = sourceMouseUvOffset();
     return {
       enabled: this.renderSettings.mousesim.enabled,
@@ -8440,8 +8444,18 @@ void main() {
       screen: {
         index: this.screenMouseSimulationIndex,
         targetSize: screenTarget ? { width: screenTarget.width, height: screenTarget.height } : null,
+        expectedTargetSize: expectedScreenTargetSize,
+        targetSizingMode: "source-Lu-mousesim-render-size-div-10-no-post-rounding",
+        targetSizeMatchesSource: Boolean(
+          screenTarget
+            && Math.abs(screenTarget.width - expectedScreenTargetSize.width) < 1e-6
+            && Math.abs(screenTarget.height - expectedScreenTargetSize.height) < 1e-6,
+        ),
         targetState: screenTarget ? renderTargetStateProbe(screenTarget, "screenMouseSim") : null,
         uCoords: screenCoords.toArray(),
+        uCoordsMatchesSource:
+          Math.abs(screenCoords.x - expectedScreenTargetSize.width) < 1e-6
+          && Math.abs(screenCoords.y - expectedScreenTargetSize.height) < 1e-6,
         uniformSurfaceMode: "source-Ka-simulationMaterial-uniform-surface",
         hasNoiseTexture: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value instanceof Texture,
         noiseTextureIsBlueNoise: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === this.noiseTexture,
