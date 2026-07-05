@@ -515,6 +515,65 @@ async function runProbe() {
   if (preCompositeUniforms?.uTimeUpdateOrder !== "source-U1-C1-update-after-I1-render") {
     materialSurfaceErrors.push("preCompositeUTimeUpdateOrder");
   }
+  const expectedC1UniformKeys = [
+    "tScene",
+    "tWork",
+    "tMedia",
+    "tBloom",
+    "tBlur",
+    "tFluid",
+    "tPortal",
+    "tMouseSim",
+    "boolBloom",
+    "boolFluid",
+    "boolLuminosity",
+    "boolFxaa",
+    "uTime",
+    "tNoise",
+    "tLensflare",
+    "uRatio",
+    "tPerlin",
+    "uDisplacementSize",
+    "uContainerSize",
+    "uDisplacement",
+    "uPerlin",
+    "uBgColor",
+    "uReveal",
+    "uMediaReveal",
+    "uContrast",
+    "uTransformX",
+    "uFluidStrength",
+  ];
+  const c1MaterialSurface = preCompositeUniforms?.materialUniformSurface || {};
+  if (c1MaterialSurface.mode !== "source-C1-constructor-uniform-order-with-unused-tPortal") {
+    materialSurfaceErrors.push("preCompositeC1UniformSurfaceMode");
+  }
+  if (JSON.stringify(c1MaterialSurface.sourceUniformKeys || null) !== JSON.stringify(expectedC1UniformKeys)) {
+    materialSurfaceErrors.push("preCompositeC1SourceUniformKeys");
+  }
+  if (JSON.stringify(c1MaterialSurface.uniformKeys || null) !== JSON.stringify(expectedC1UniformKeys)) {
+    materialSurfaceErrors.push("preCompositeC1RuntimeUniformKeys");
+  }
+  if (c1MaterialSurface.matchesSourceOrder !== true) materialSurfaceErrors.push("preCompositeC1UniformOrder");
+  if (c1MaterialSurface.hasTPortalUniform !== true) materialSurfaceErrors.push("preCompositeC1TPortalUniform");
+  if (c1MaterialSurface.tPortalBindingMode !== "source-C1-material-uniform-A1-unused") {
+    materialSurfaceErrors.push("preCompositeC1TPortalBindingMode");
+  }
+  if (c1MaterialSurface.tPortalIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TPortalPlaceholder");
+  if (c1MaterialSurface.tBlurIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TBlurPlaceholder");
+  if (c1MaterialSurface.tPerlinIsLoadedTexture !== true) materialSurfaceErrors.push("preCompositeC1TPerlinBinding");
+  if (Math.abs((c1MaterialSurface.uDisplacement ?? 0) - 0.1) > 0.0001) {
+    materialSurfaceErrors.push("preCompositeC1UDisplacement");
+  }
+  if (Math.abs((c1MaterialSurface.uPerlin ?? 0) - 0.1) > 0.0001) {
+    materialSurfaceErrors.push("preCompositeC1UPerlin");
+  }
+  if (!Array.isArray(c1MaterialSurface.uDisplacementSize) || c1MaterialSurface.uDisplacementSize.length !== 2) {
+    materialSurfaceErrors.push("preCompositeC1UDisplacementSize");
+  }
+  if (!Array.isArray(c1MaterialSurface.uContainerSize) || c1MaterialSurface.uContainerSize.length !== 2) {
+    materialSurfaceErrors.push("preCompositeC1UContainerSize");
+  }
   const expectedWorkCompositeMaterialMode = debugCompositeProbe ? "debug-OA-raw-glsl3" : "source-OA-raw-glsl3";
   if (workCompositeUniforms?.materialMode !== expectedWorkCompositeMaterialMode) materialSurfaceErrors.push("workCompositeMaterialMode");
   if (workCompositeUniforms?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("workCompositeVertexMode");

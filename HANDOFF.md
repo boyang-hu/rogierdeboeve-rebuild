@@ -142,13 +142,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the remaining avoidable `VA/HA/zA` ordinary work shader text residuals without visual tuning.
-- Source evidence: raw shader diff showed the `zA` fragment delta was only source trailing spaces, while the `HA` vertex delta was source trailing spaces plus the already documented equal-length `uUvOffset vec3`/`vec2` runtime bridge.
-- `src/client/webgl.ts` now emits those source trailing spaces through `SOURCE_TRAILING_SPACE` in the direct `VA-work` shader templates, while leaving formulas, material ownership, projection, and runtime uniforms unchanged.
-- QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, project-media probe, and interactive mouse probe.
-- Shader dump reported every focused Phase 1 shader row as `source-shaped`; `VA-work` now has vertex delta `0`, fragment delta `0`, and no include/uniform residuals.
-- Project media remained stable: `gc-2026` 5/5 visible media and `hashgraph-vc` 5/5 visible media, with no failures/exceptions/console messages. Output, thumb, and interactive probes also had no failures, exceptions, or console messages.
-- Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, and floor/environment distribution parity.
+- Aligned and guarded the source `C1/A1` material-uniform constructor surface without visual tuning.
+- Source evidence: `C1` declares `tScene`, `tWork`, `tMedia`, `tBloom`, `tBlur`, `tFluid`, unused `tPortal`, `tMouseSim`, the four bools, `uTime`, `tNoise`, `tLensflare`, `uRatio`, `tPerlin`, displacement/container fields, and the background/reveal/contrast/transform/fluid fields in a fixed constructor order; all four bools initialize false.
+- `src/client/webgl.ts` now records `SOURCE_C1_UNIFORM_KEYS`, orders `createPreCompositeMaterial()` to match that source constructor surface, initializes the four bools false before runtime `I1.update()` writes source settings, and exposes `materialUniformSurface` in the output probe.
+- `scripts/probe-output-color.mjs` asserts the exact `C1` uniform key order, unused `tPortal` material-uniform binding, placeholder `tPortal/tBlur`, loaded `tPerlin`, and source `.1` displacement/perlin defaults; `scripts/audit-renderer-output.mjs` records the source/rebuild anchors.
+- Production formulas, target wiring, visual constants, and the default `I1/C1` screen path are unchanged.
+- QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, desktop/mobile output probes with `PROBE_WAIT=30000`, and project-media probe.
+- Project media remained stable: `gc-2026` 5/5 visible media and `hashgraph-vc` 5/5 visible media, with no failures/exceptions/console messages in the browser probes.
+- Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
 
