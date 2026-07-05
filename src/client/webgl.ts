@@ -4103,6 +4103,7 @@ export class WebGLBackdrop {
     this.floorReflectionScreen = makeFullscreenTriangle(this.floorReflectionBlurMaterial);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
+    this.bindSourceMainMouseSimulationTexture();
     this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
     this.mainFluidPass = this.createMainFluidPass();
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
@@ -6457,6 +6458,10 @@ void main() {
     return this.screenMouseSimulationTargets[this.screenMouseSimulationIndex]?.texture ?? this.placeholder;
   }
 
+  private bindSourceMainMouseSimulationTexture() {
+    this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTargets[0]?.texture ?? this.placeholder;
+  }
+
   private bind() {
     window.addEventListener("resize", this.resize);
     window.addEventListener("mousemove", this.onMouseMove, { passive: true });
@@ -7623,6 +7628,10 @@ void main() {
             tPortalBindingMode: "source-C1-material-uniform-A1-unused",
             tPortalIsPlaceholder: c1Uniforms.tPortal.value === this.fluidPlaceholder,
             tBlurIsPlaceholder: c1Uniforms.tBlur.value === this.fluidPlaceholder,
+            tMouseSimBindingMode: "source-nD-init-one-time-C1-tMouseSim-initial-work-mousesim-output",
+            tMouseSimIsInitialScreenMouseTarget: c1Uniforms.tMouseSim.value === this.screenMouseSimulationTargets[0]?.texture,
+            tMouseSimIsCurrentScreenMouseTarget: c1Uniforms.tMouseSim.value === this.screenMouseSimulationTexture,
+            screenMouseSimulationIndex: this.screenMouseSimulationIndex,
             tPerlinIsLoadedTexture: c1Uniforms.tPerlin.value === this.perlinTexture,
             uDisplacementSizeMode: "source-C1-constructor-default-new-Vector2-no-runtime-write",
             uDisplacement: c1Uniforms.uDisplacement.value,
@@ -8790,7 +8799,6 @@ void main() {
         ? this.mainFluidPass.targets.main.texture
         : this.fluidPlaceholder;
     this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
-    this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
     this.renderHomeCompositePass();
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.renderThumbTargets();

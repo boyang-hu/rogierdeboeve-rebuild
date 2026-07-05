@@ -568,6 +568,12 @@ async function runProbe() {
   }
   if (c1MaterialSurface.tPortalIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TPortalPlaceholder");
   if (c1MaterialSurface.tBlurIsPlaceholder !== true) materialSurfaceErrors.push("preCompositeC1TBlurPlaceholder");
+  if (c1MaterialSurface.tMouseSimBindingMode !== "source-nD-init-one-time-C1-tMouseSim-initial-work-mousesim-output") {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimBindingMode");
+  }
+  if (c1MaterialSurface.tMouseSimIsInitialScreenMouseTarget !== true) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimInitialTarget");
+  }
   if (c1MaterialSurface.tPerlinIsLoadedTexture !== true) materialSurfaceErrors.push("preCompositeC1TPerlinBinding");
   if (c1MaterialSurface.uDisplacementSizeMode !== "source-C1-constructor-default-new-Vector2-no-runtime-write") {
     materialSurfaceErrors.push("preCompositeC1UDisplacementSizeMode");

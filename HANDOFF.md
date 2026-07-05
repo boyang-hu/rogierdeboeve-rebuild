@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the source `yD/w1` thumb progress update order without visual tuning.
-- Source `yD.updateScene()` applies `workScene.sceneWrap.rotation.y`, writes `mainScene.renderManager.compositeMaterial.uniforms.uTransformX`, calls `workThumbScene.thumbs.updateGalleryProgress(-scroll.progress)`, then computes/applies work-scene roll and zoom.
-- `setGalleryProgress()` now calls `updateThumbGallery(-progress)` at that source point, after `sceneWrap.rotation.y` and before roll/zoom smoothing.
-- Thumb probe now exposes `sourceProgressUpdateOrder=source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom`, and `scripts/probe-thumb-spotlight.mjs` asserts it.
-- `scripts/audit-renderer-output.mjs` now checks both source and rebuild relative order for sceneWrap/uTransformX/thumb progress before roll/zoom.
+- Aligned the source `nD/C1` main mouse-sim binding timing without visual tuning.
+- Source `nD.init()` assigns `mainScene.renderManager.compositeMaterial.uniforms.tMouseSim` once, after the initial resize delay, to `workScene.renderManager.mouseSimulation.bufferSim.output.texture`.
+- Source `C1.update()` only writes `uTime`, so the main pre-composite `A1` mouse-sim input does not chase the current ping-pong output every frame.
+- The rebuild now calls `bindSourceMainMouseSimulationTexture()` once after creating the screen mouse-sim targets and no longer rebinds `preCompositeMaterial.uniforms.tMouseSim` in the frame loop.
+- Output probe now exposes `tMouseSimBindingMode=source-nD-init-one-time-C1-tMouseSim-initial-work-mousesim-output`; renderer audit checks the source/rebuild anchors plus absence of the per-frame C1 mouse-sim rebind.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -155,26 +155,27 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check scripts/probe-thumb-spotlight.mjs
+node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9345 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-progress-order node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9346 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-progress-order-output node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9347 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-progress-order-media node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9348 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-mousesim-binding-output node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9349 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-mousesim-binding-media node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9350 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-mousesim-binding-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9351 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-mousesim-binding-interactive node scripts/probe-interactive-mouse.mjs
 ```
 
-All passed in the `yD/w1` thumb progress update-order batch.
+All passed in the `nD/C1` main mouse-sim binding-timing batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks the source and rebuild relative order for sceneWrap/uTransformX/thumb progress before roll/zoom.
-- Thumb spotlight probe reports the source progress update-order marker and retains the nonzero-progress thumb/spotlight guardrail.
-- Desktop output probe passed after the runtime order correction.
+- Renderer audit checks the source one-time `nD.init()` C1 mouse-sim binding and rebuild one-time binder.
+- Desktop and mobile output probes report the source C1 mouse-sim binding marker and initial-target binding.
 - Project media retained five visible media tracks on the probed project pages.
+- Interactive mouse probe retained source-shaped screen/local mouse response and main-fluid pointer response.
 - Browser probes reported no failed requests, runtime exceptions, console messages, or WebGL shader errors.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
