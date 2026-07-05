@@ -142,12 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the optional source `Lu/Na` work blur resize surface without visual tuning.
-- Source `Lu.resize(e,t,n)` writes CSS viewport dimensions into `hBlurMaterial.uniforms.uResolution` and `vBlurMaterial.uniforms.uResolution` when `settings.blur.enabled`; the rebuild resized work blur targets but did not mirror those `Na.uResolution` writes.
-- Source `kA.initSettings()` keeps `blur.enabled=false`, so this is source-structure parity for an inactive default Home branch.
-- `src/client/webgl.ts` now writes `width,height` into `workBlurHorizontalMaterial` and `workBlurVerticalMaterial` `uResolution` inside the work blur-enabled branch.
-- Output probes expose `source-Lu-Na-resize-css-width-height-when-blur-enabled` for work standard blur and keep `source-I1-Na-resize-css-width-height-when-blur-enabled` for main standard blur.
-- `scripts/audit-renderer-output.mjs` now checks the source `Lu.resize` blur-resolution anchors and rebuild work blur writes.
+- Aligned the source `yD/w1` thumb progress update order without visual tuning.
+- Source `yD.updateScene()` applies `workScene.sceneWrap.rotation.y`, writes `mainScene.renderManager.compositeMaterial.uniforms.uTransformX`, calls `workThumbScene.thumbs.updateGalleryProgress(-scroll.progress)`, then computes/applies work-scene roll and zoom.
+- `setGalleryProgress()` now calls `updateThumbGallery(-progress)` at that source point, after `sceneWrap.rotation.y` and before roll/zoom smoothing.
+- Thumb probe now exposes `sourceProgressUpdateOrder=source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom`, and `scripts/probe-thumb-spotlight.mjs` asserts it.
+- `scripts/audit-renderer-output.mjs` now checks both source and rebuild relative order for sceneWrap/uTransformX/thumb progress before roll/zoom.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -156,24 +155,25 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check scripts/probe-output-color.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9342 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-lu-blur-resolution-output node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9343 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-lu-blur-resolution-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9344 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-lu-blur-resolution-media node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9345 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-progress-order node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9346 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-progress-order-output node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9347 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-progress-order-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `Lu/Na` work blur resize-resolution batch.
+All passed in the `yD/w1` thumb progress update-order batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit source-manager checks the source `Lu.resize` blur-resolution writes and rebuild work blur writes.
-- Desktop and mobile output probes report the standard blur resize-mode markers for work/main managers.
+- Renderer audit checks the source and rebuild relative order for sceneWrap/uTransformX/thumb progress before roll/zoom.
+- Thumb spotlight probe reports the source progress update-order marker and retains the nonzero-progress thumb/spotlight guardrail.
+- Desktop output probe passed after the runtime order correction.
 - Project media retained five visible media tracks on the probed project pages.
 - Browser probes reported no failed requests, runtime exceptions, console messages, or WebGL shader errors.
 

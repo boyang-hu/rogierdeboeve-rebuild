@@ -141,6 +141,7 @@ const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private cr
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
+const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
 const sourceTl = extractTemplate(bundle, "tl", "`;class g1");
@@ -1259,7 +1260,36 @@ const summary = {
         "this.homeScene.position.z = this.homeScene.rotation.z - this.zoom",
         "this.updateThumbGallery(-progress)",
         "sourceProgressSignMode: \"source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress\"",
+        "sourceProgressUpdateOrder: \"source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom\"",
       ]),
+      sourceOrder: {
+        sceneWrapBeforeThumb:
+          sourceYDUpdateScene.text.indexOf("J.workScene.sceneWrap.rotation.y=_a.degToRad(this.scroll.progress*360+180)")
+          < sourceYDUpdateScene.text.indexOf("J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)"),
+        transformBeforeThumb:
+          sourceYDUpdateScene.text.indexOf("J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value=this.scroll.progress*1")
+          < sourceYDUpdateScene.text.indexOf("J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)"),
+        thumbBeforeRoll:
+          sourceYDUpdateScene.text.indexOf("J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)")
+          < sourceYDUpdateScene.text.indexOf("J.workScene.scene.rotation.z=_a.degToRad(this.sceneRotation)"),
+        thumbBeforeZoom:
+          sourceYDUpdateScene.text.indexOf("J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)")
+          < sourceYDUpdateScene.text.indexOf("J.workScene.scene.position.z=J.workScene.scene.rotation.z-this.zoom"),
+      },
+      rebuildOrder: rebuildSetGalleryProgress && {
+        sceneWrapBeforeThumb:
+          rebuildSetGalleryProgress.indexOf("this.sceneWrap.rotation.y = targetRotation")
+          < rebuildSetGalleryProgress.indexOf("this.updateThumbGallery(-progress)"),
+        transformBeforeThumb:
+          rebuildSetGalleryProgress.indexOf("this.preCompositeMaterial.uniforms.uTransformX.value = progress")
+          < rebuildSetGalleryProgress.indexOf("this.updateThumbGallery(-progress)"),
+        thumbBeforeRoll:
+          rebuildSetGalleryProgress.indexOf("this.updateThumbGallery(-progress)")
+          < rebuildSetGalleryProgress.indexOf("this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation)"),
+        thumbBeforeZoom:
+          rebuildSetGalleryProgress.indexOf("this.updateThumbGallery(-progress)")
+          < rebuildSetGalleryProgress.indexOf("this.homeScene.position.z = this.homeScene.rotation.z - this.zoom"),
+      },
       excerpt: compact(sourceYDUpdateScene.text),
     },
     homeSpotlightMap: sourceSDInitSpotlight && {

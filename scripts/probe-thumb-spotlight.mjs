@@ -162,6 +162,9 @@ async function runProbe() {
   if (probe.sourceProgressSignMode !== "source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress") {
     sourceShapeErrors.push(`sourceProgressSignMode=${probe.sourceProgressSignMode}`);
   }
+  if (probe.sourceProgressUpdateOrder !== "source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom") {
+    sourceShapeErrors.push(`sourceProgressUpdateOrder=${probe.sourceProgressUpdateOrder}`);
+  }
   if (probe.debugProgress !== sourceProbeProgress) {
     sourceShapeErrors.push(`debugProgress=${probe.debugProgress}`);
   }

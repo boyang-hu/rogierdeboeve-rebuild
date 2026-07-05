@@ -159,6 +159,7 @@ type ThumbProbeWindow = Window & {
     thumbProgress: number;
     debugProgress: number | null;
     sourceProgressSignMode: string;
+    sourceProgressUpdateOrder: string;
     thumbPositionMode: string;
     thumbHierarchyMode: string;
     thumbWrapParentIsScene: boolean;
@@ -4228,12 +4229,12 @@ export class WebGLBackdrop {
     this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     const targetRotation = MathUtils.degToRad(progress * 360 + 180);
     const lerpFactor = 1 - Math.exp(-5 * Math.max(0.001, delta));
+    this.sceneWrap.rotation.y = targetRotation;
+    this.updateThumbGallery(-progress);
     this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * lerpFactor;
     this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * lerpFactor;
-    this.sceneWrap.rotation.y = targetRotation;
     this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation);
     this.homeScene.position.z = this.homeScene.rotation.z - this.zoom;
-    this.updateThumbGallery(-progress);
   }
 
   enterWorkGallery(activeSlug = this.activeSlug) {
@@ -7156,6 +7157,7 @@ void main() {
       thumbProgress: this.thumbProgress,
       debugProgress: this.debugThumbProgress,
       sourceProgressSignMode: "source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress",
+      sourceProgressUpdateOrder: "source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom",
       sourceDefaults: {
         thumbDarknessIntensity: SOURCE_INITIAL_THUMB_DARKNESS,
         homeThumbDarknessFallback: SOURCE_HOME_THUMB_DARKNESS_FALLBACK,
