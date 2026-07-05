@@ -1216,6 +1216,8 @@ void main() {
 }
 `;
 
+const SOURCE_TRAILING_SPACE = " ";
+
 const sourceContrastHelper = `
 vec3 contrast(vec3 color, float value) {
   return 0.5 + value * (color - 0.5);
@@ -1230,23 +1232,26 @@ vec3 saturation(vec3 rgb, float adjustment) {
 }
 `;
 
-const sourceCompositeColorHelper = `
-${sourceSaturationHelper}
+const sourceCompositeColorHelper = `${sourceSaturationHelper}
+
 float vignette(vec2 coords, float vignin, float vignout, float vignfade, float fstop) {
   float dist = distance(coords.xy, vec2(0.5, 0.5));
   dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
   return clamp(dist, 0.0, 1.0);
 }
 
+
 vec3 circle(vec2 uv, vec2 center, vec3 color, float size) {
   float circle = length(uv - center);
-  circle = 1.0 - smoothstep(0.0, size, circle);
+  circle = 1. - smoothstep(0.0, size, circle);
   return color * circle;
 }
+
 
 vec3 contrast(vec3 color, float value) {
   return 0.5 + value * (color - 0.5);
 }
+
 
 vec3 hue(vec3 color, float hue) {
   const vec3 k = vec3(0.57735, 0.57735, 0.57735);
@@ -1254,12 +1259,13 @@ vec3 hue(vec3 color, float hue) {
   return vec3(color * cosAngle + cross(k, color) * sin(hue) + k * dot(k, color) * (1.0 - cosAngle));
 }
 
+
 vec4 rgbshift(sampler2D image, vec2 uv, float angle, float amount) {
-  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
-  vec4 r = texture(image, uv + offset);
-  vec4 g = texture(image, uv);
-  vec4 b = texture(image, uv - offset);
-  return vec4(r.r, g.g, b.b, g.a);
+    vec2 offset = vec2(cos(angle), sin(angle)) * amount;
+    vec4 r = texture(image, uv + offset);
+    vec4 g = texture(image, uv);
+    vec4 b = texture(image, uv - offset);
+    return vec4(r.r, g.g, b.b, g.a);
 }
 `;
 
@@ -1370,326 +1376,355 @@ vec4 noiseShader(vec2 uv, float time, float speed) {
 `;
 
 const sourceBlendHelper = `
+
 float blendColorDodge(float base, float blend) {
-  return (blend == 1.0) ? blend : min(base / (1.0 - blend), 1.0);
+	return (blend==1.0)?blend:min(base/(1.0-blend),1.0);
 }
 
 vec3 blendColorDodge(vec3 base, vec3 blend) {
-  return vec3(blendColorDodge(base.r, blend.r), blendColorDodge(base.g, blend.g), blendColorDodge(base.b, blend.b));
+	return vec3(blendColorDodge(base.r,blend.r),blendColorDodge(base.g,blend.g),blendColorDodge(base.b,blend.b));
 }
 
 vec3 blendColorDodge(vec3 base, vec3 blend, float opacity) {
-  return (blendColorDodge(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendColorDodge(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendColorBurn(float base, float blend) {
-  return (blend == 0.0) ? blend : max((1.0 - ((1.0 - base) / blend)), 0.0);
+	return (blend==0.0)?blend:max((1.0-((1.0-base)/blend)),0.0);
 }
 
 vec3 blendColorBurn(vec3 base, vec3 blend) {
-  return vec3(blendColorBurn(base.r, blend.r), blendColorBurn(base.g, blend.g), blendColorBurn(base.b, blend.b));
+	return vec3(blendColorBurn(base.r,blend.r),blendColorBurn(base.g,blend.g),blendColorBurn(base.b,blend.b));
 }
 
 vec3 blendColorBurn(vec3 base, vec3 blend, float opacity) {
-  return (blendColorBurn(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendColorBurn(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendLinearBurn(float base, float blend) {
-  return max(base + blend - 1.0, 0.0);
+	// Note : Same implementation as BlendSubtractf
+	return max(base+blend-1.0,0.0);
 }
 
 vec3 blendLinearBurn(vec3 base, vec3 blend) {
-  return max(base + blend - vec3(1.0), vec3(0.0));
+	// Note : Same implementation as BlendSubtract
+	return max(base+blend-vec3(1.0),vec3(0.0));
 }
 
 vec3 blendLinearBurn(vec3 base, vec3 blend, float opacity) {
-  return (blendLinearBurn(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendLinearBurn(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendLinearDodge(float base, float blend) {
-  return min(base + blend, 1.0);
+	// Note : Same implementation as BlendAddf
+	return min(base+blend,1.0);
 }
 
 vec3 blendLinearDodge(vec3 base, vec3 blend) {
-  return min(base + blend, vec3(1.0));
+	// Note : Same implementation as BlendAdd
+	return min(base+blend,vec3(1.0));
 }
 
 vec3 blendLinearDodge(vec3 base, vec3 blend, float opacity) {
-  return (blendLinearDodge(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendLinearDodge(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendDarken(float base, float blend) {
-  return min(blend, base);
+	return min(blend,base);
 }
 
 vec3 blendDarken(vec3 base, vec3 blend) {
-  return vec3(blendDarken(base.r, blend.r), blendDarken(base.g, blend.g), blendDarken(base.b, blend.b));
+	return vec3(blendDarken(base.r,blend.r),blendDarken(base.g,blend.g),blendDarken(base.b,blend.b));
 }
 
 vec3 blendDarken(vec3 base, vec3 blend, float opacity) {
-  return (blendDarken(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendDarken(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendLighten(float base, float blend) {
-  return max(blend, base);
+	return max(blend,base);
 }
 
 vec3 blendLighten(vec3 base, vec3 blend) {
-  return vec3(blendLighten(base.r, blend.r), blendLighten(base.g, blend.g), blendLighten(base.b, blend.b));
+	return vec3(blendLighten(base.r,blend.r),blendLighten(base.g,blend.g),blendLighten(base.b,blend.b));
 }
 
 vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
-  return (blendLighten(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendLighten(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendOverlay(float base, float blend) {
-  return base < 0.5 ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend));
+	return base<0.5?(2.0*base*blend):(1.0-2.0*(1.0-base)*(1.0-blend));
 }
 
 vec3 blendOverlay(vec3 base, vec3 blend) {
-  return vec3(blendOverlay(base.r, blend.r), blendOverlay(base.g, blend.g), blendOverlay(base.b, blend.b));
+	return vec3(blendOverlay(base.r,blend.r),blendOverlay(base.g,blend.g),blendOverlay(base.b,blend.b));
 }
 
 vec3 blendOverlay(vec3 base, vec3 blend, float opacity) {
-  return (blendOverlay(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendOverlay(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendReflect(float base, float blend) {
-  return (blend == 1.0) ? blend : min(base * base / (1.0 - blend), 1.0);
+	return (blend==1.0)?blend:min(base*base/(1.0-blend),1.0);
 }
 
 vec3 blendReflect(vec3 base, vec3 blend) {
-  return vec3(blendReflect(base.r, blend.r), blendReflect(base.g, blend.g), blendReflect(base.b, blend.b));
+	return vec3(blendReflect(base.r,blend.r),blendReflect(base.g,blend.g),blendReflect(base.b,blend.b));
 }
 
 vec3 blendReflect(vec3 base, vec3 blend, float opacity) {
-  return (blendReflect(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendReflect(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendVividLight(float base, float blend) {
-  return (blend < 0.5) ? blendColorBurn(base, (2.0 * blend)) : blendColorDodge(base, (2.0 * (blend - 0.5)));
+	return (blend<0.5)?blendColorBurn(base,(2.0*blend)):blendColorDodge(base,(2.0*(blend-0.5)));
 }
 
 vec3 blendVividLight(vec3 base, vec3 blend) {
-  return vec3(blendVividLight(base.r, blend.r), blendVividLight(base.g, blend.g), blendVividLight(base.b, blend.b));
+	return vec3(blendVividLight(base.r,blend.r),blendVividLight(base.g,blend.g),blendVividLight(base.b,blend.b));
 }
 
 vec3 blendVividLight(vec3 base, vec3 blend, float opacity) {
-  return (blendVividLight(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendVividLight(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendHardMix(float base, float blend) {
-  return (blendVividLight(base, blend) < 0.5) ? 0.0 : 1.0;
+	return (blendVividLight(base,blend)<0.5)?0.0:1.0;
 }
 
 vec3 blendHardMix(vec3 base, vec3 blend) {
-  return vec3(blendHardMix(base.r, blend.r), blendHardMix(base.g, blend.g), blendHardMix(base.b, blend.b));
+	return vec3(blendHardMix(base.r,blend.r),blendHardMix(base.g,blend.g),blendHardMix(base.b,blend.b));
 }
 
 vec3 blendHardMix(vec3 base, vec3 blend, float opacity) {
-  return (blendHardMix(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendHardMix(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendLinearLight(float base, float blend) {
-  return blend < 0.5 ? blendLinearBurn(base, (2.0 * blend)) : blendLinearDodge(base, (2.0 * (blend - 0.5)));
+	return blend<0.5?blendLinearBurn(base,(2.0*blend)):blendLinearDodge(base,(2.0*(blend-0.5)));
 }
 
 vec3 blendLinearLight(vec3 base, vec3 blend) {
-  return vec3(blendLinearLight(base.r, blend.r), blendLinearLight(base.g, blend.g), blendLinearLight(base.b, blend.b));
+	return vec3(blendLinearLight(base.r,blend.r),blendLinearLight(base.g,blend.g),blendLinearLight(base.b,blend.b));
 }
 
 vec3 blendLinearLight(vec3 base, vec3 blend, float opacity) {
-  return (blendLinearLight(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendLinearLight(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendPinLight(float base, float blend) {
-  return (blend < 0.5) ? blendDarken(base, (2.0 * blend)) : blendLighten(base, (2.0 * (blend - 0.5)));
+	return (blend<0.5)?blendDarken(base,(2.0*blend)):blendLighten(base,(2.0*(blend-0.5)));
 }
 
 vec3 blendPinLight(vec3 base, vec3 blend) {
-  return vec3(blendPinLight(base.r, blend.r), blendPinLight(base.g, blend.g), blendPinLight(base.b, blend.b));
+	return vec3(blendPinLight(base.r,blend.r),blendPinLight(base.g,blend.g),blendPinLight(base.b,blend.b));
 }
 
 vec3 blendPinLight(vec3 base, vec3 blend, float opacity) {
-  return (blendPinLight(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendPinLight(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendGlow(vec3 base, vec3 blend) {
-  return blendReflect(blend, base);
+	return blendReflect(blend,base);
 }
 
 vec3 blendGlow(vec3 base, vec3 blend, float opacity) {
-  return (blendGlow(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendGlow(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendHardLight(vec3 base, vec3 blend) {
-  return blendOverlay(blend, base);
+	return blendOverlay(blend,base);
 }
 
 vec3 blendHardLight(vec3 base, vec3 blend, float opacity) {
-  return (blendHardLight(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendHardLight(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendPhoenix(vec3 base, vec3 blend) {
-  return min(base, blend) - max(base, blend) + vec3(1.0);
+	return min(base,blend)-max(base,blend)+vec3(1.0);
 }
 
 vec3 blendPhoenix(vec3 base, vec3 blend, float opacity) {
-  return (blendPhoenix(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendPhoenix(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendNormal(vec3 base, vec3 blend) {
-  return blend;
+	return blend;
 }
 
 vec3 blendNormal(vec3 base, vec3 blend, float opacity) {
-  return (blendNormal(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendNormal(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendNegation(vec3 base, vec3 blend) {
-  return vec3(1.0) - abs(vec3(1.0) - base - blend);
+	return vec3(1.0)-abs(vec3(1.0)-base-blend);
 }
 
 vec3 blendNegation(vec3 base, vec3 blend, float opacity) {
-  return (blendNegation(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendNegation(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendMultiply(vec3 base, vec3 blend) {
-  return base * blend;
+	return base*blend;
 }
 
 vec3 blendMultiply(vec3 base, vec3 blend, float opacity) {
-  return (blendMultiply(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendMultiply(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendAverage(vec3 base, vec3 blend) {
-  return (base + blend) / 2.0;
+	return (base+blend)/2.0;
 }
 
 vec3 blendAverage(vec3 base, vec3 blend, float opacity) {
-  return (blendAverage(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendAverage(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendScreen(float base, float blend) {
-  return 1.0 - ((1.0 - base) * (1.0 - blend));
+	return 1.0-((1.0-base)*(1.0-blend));
 }
 
 vec3 blendScreen(vec3 base, vec3 blend) {
-  return vec3(blendScreen(base.r, blend.r), blendScreen(base.g, blend.g), blendScreen(base.b, blend.b));
+	return vec3(blendScreen(base.r,blend.r),blendScreen(base.g,blend.g),blendScreen(base.b,blend.b));
 }
 
 vec3 blendScreen(vec3 base, vec3 blend, float opacity) {
-  return (blendScreen(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendScreen(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendSoftLight(float base, float blend) {
-  return (blend < 0.5)
-    ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend))
-    : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
+	return (blend<0.5)?(2.0*base*blend+base*base*(1.0-2.0*blend)):(sqrt(base)*(2.0*blend-1.0)+2.0*base*(1.0-blend));
 }
 
 vec3 blendSoftLight(vec3 base, vec3 blend) {
-  return vec3(blendSoftLight(base.r, blend.r), blendSoftLight(base.g, blend.g), blendSoftLight(base.b, blend.b));
+	return vec3(blendSoftLight(base.r,blend.r),blendSoftLight(base.g,blend.g),blendSoftLight(base.b,blend.b));
 }
 
 vec3 blendSoftLight(vec3 base, vec3 blend, float opacity) {
-  return (blendSoftLight(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendSoftLight(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendSubtract(float base, float blend) {
-  return max(base + blend - 1.0, 0.0);
+	return max(base+blend-1.0,0.0);
 }
 
 vec3 blendSubtract(vec3 base, vec3 blend) {
-  return max(base + blend - vec3(1.0), vec3(0.0));
+	return max(base+blend-vec3(1.0),vec3(0.0));
 }
 
 vec3 blendSubtract(vec3 base, vec3 blend, float opacity) {
-  return (blendSubtract(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendSubtract(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendExclusion(vec3 base, vec3 blend) {
-  return base + blend - 2.0 * base * blend;
+	return base+blend-2.0*base*blend;
 }
 
 vec3 blendExclusion(vec3 base, vec3 blend, float opacity) {
-  return (blendExclusion(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendExclusion(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 vec3 blendDifference(vec3 base, vec3 blend) {
-  return abs(base - blend);
+	return abs(base-blend);
 }
 
 vec3 blendDifference(vec3 base, vec3 blend, float opacity) {
-  return (blendDifference(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendDifference(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
 float blendAdd(float base, float blend) {
-  return min(base + blend, 1.0);
+	return min(base+blend,1.0);
 }
 
 vec3 blendAdd(vec3 base, vec3 blend) {
-  return min(base + blend, vec3(1.0));
+	return min(base+blend,vec3(1.0));
 }
 
 vec3 blendAdd(vec3 base, vec3 blend, float opacity) {
-  return (blendAdd(base, blend) * opacity + base * (1.0 - opacity));
+	return (blendAdd(base, blend) * opacity + base * (1.0 - opacity));
 }
 
+
+
 vec3 blend(int mode, vec3 base, vec3 blend, float opacity) {
-  if (mode == 1) {
+  if(mode == 1) {
     return blendAdd(base, blend, opacity);
-  } else if (mode == 2) {
+  } else if(mode == 2) {
     return blendAverage(base, blend, opacity);
-  } else if (mode == 3) {
+  } else if(mode == 3) {
     return blendColorBurn(base, blend, opacity);
-  } else if (mode == 4) {
+  } else if(mode == 4) {
     return blendColorDodge(base, blend, opacity);
-  } else if (mode == 5) {
+  } else if(mode == 5) {
     return blendDarken(base, blend, opacity);
-  } else if (mode == 6) {
+  } else if(mode == 6) {
     return blendDifference(base, blend, opacity);
-  } else if (mode == 7) {
+  } else if(mode == 7) {
     return blendExclusion(base, blend, opacity);
-  } else if (mode == 8) {
+  } else if(mode == 8) {
     return blendGlow(base, blend, opacity);
-  } else if (mode == 9) {
+  } else if(mode == 9) {
     return blendHardLight(base, blend, opacity);
-  } else if (mode == 10) {
+  } else if(mode == 10) {
     return blendHardMix(base, blend, opacity);
-  } else if (mode == 11) {
+  } else if(mode == 11) {
     return blendLighten(base, blend, opacity);
-  } else if (mode == 12) {
+  } else if(mode == 12) {
     return blendLinearBurn(base, blend, opacity);
-  } else if (mode == 13) {
+  } else if(mode == 13) {
     return blendLinearDodge(base, blend, opacity);
-  } else if (mode == 14) {
+  } else if(mode == 14) {
     return blendLinearLight(base, blend, opacity);
-  } else if (mode == 15) {
+  } else if(mode == 15) {
     return blendMultiply(base, blend, opacity);
-  } else if (mode == 16) {
+  } else if(mode == 16) {
     return blendNegation(base, blend, opacity);
-  } else if (mode == 17) {
+  } else if(mode == 17) {
     return blendNormal(base, blend, opacity);
-  } else if (mode == 18) {
+  } else if(mode == 18) {
     return blendOverlay(base, blend, opacity);
-  } else if (mode == 19) {
+  } else if(mode == 19) {
     return blendPhoenix(base, blend, opacity);
-  } else if (mode == 20) {
+  } else if(mode == 20) {
     return blendPinLight(base, blend, opacity);
-  } else if (mode == 21) {
+  } else if(mode == 21) {
     return blendReflect(base, blend, opacity);
-  } else if (mode == 22) {
+  } else if(mode == 22) {
     return blendScreen(base, blend, opacity);
-  } else if (mode == 23) {
+  } else if(mode == 23) {
     return blendSoftLight(base, blend, opacity);
-  } else if (mode == 24) {
+  } else if(mode == 24) {
     return blendSubtract(base, blend, opacity);
-  } else if (mode == 25) {
+  } else if(mode == 25) {
     return blendVividLight(base, blend, opacity);
   }
-  return base;
 }
+
 `;
 
 const sourceBlendMultiplyHelper = `
@@ -1957,60 +1992,70 @@ precision highp float;
 
 #include <tonemapping_pars_fragment>
 
-uniform sampler2D tScene;
-uniform sampler2D tBloom;
-uniform sampler2D tBlur;
-uniform sampler2D tFluid;
-uniform sampler2D tMouseSim;
-uniform bool boolBloom;
-uniform bool boolFluid;
-uniform bool boolLuminosity;
-uniform bool boolFxaa;
-uniform float uDarken;
-uniform float uSaturation;
-
 ${sourceCompositeColorHelper}
 ${sourceBlendHelper}
-
-float vignout = 0.55;
-float vignin = 0.1;
-float vignfade = 2.0;
-
-in vec2 vUv;
-out vec4 FragColor;
 
 float luminance(vec3 rgb) {
   const vec3 W = vec3(0.2125, 0.7154, 0.0721);
   return dot(rgb, W);
 }
 
+uniform sampler2D tScene;
+uniform sampler2D tBloom;
+uniform sampler2D tFluid;
+uniform sampler2D tBlur;
+uniform sampler2D tMouseSim;
+
+uniform bool boolBloom;
+uniform bool boolFluid;
+uniform bool boolLuminosity;
+uniform bool boolFxaa;
+
+uniform float uDarken;
+uniform float uSaturation;
+
+float vignout = .55; // vignetting outer border
+float vignin = 0.1; // vignetting inner border
+float vignfade = 2.0; // f-stops till vignete fades
+
+in vec2 vUv;
+out vec4 FragColor;
+
 void main() {
   vec4 fluid = texture(tFluid, vUv);
   vec4 mouseSim = texture(tMouseSim, vUv);
   vec2 uv = vUv;
-  vec4 mixed = rgbshift(tScene, uv, -1.0, 0.0015);
-  if (boolBloom) {
-    vec4 bloom = rgbshift(tBloom, uv, -1.5, 0.02);
+  vec4 mixed = rgbshift(tScene, uv, -1., .0015);
+
+  if(boolBloom) {
+    vec4 bloom = rgbshift(tBloom, uv, -1.5, .02);
     float angle = length(uv + 0.5);
     float uBloomDistortion = 2.5;
-    float amount = 0.001 * uBloomDistortion;
+    float amount = .001 * uBloomDistortion;
+
     mixed.rgb += bloom.rgb;
-    mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;
+    mixed.rgb += rgbshift(tBloom, uv, angle, amount / .5).rgb;
   }
 
-  mixed.rgb += length(fluid.xy) * 0.015;
 
-  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);
+  mixed.rgb += length(fluid.xy) * .015;
 
-  vec3 green = vec3(0.063, 0.141, 0.086);
-  vec3 greenLight = vec3(0.337, 1.0, 0.561);
-  vec3 black = vec3(0.095, 0.095, 0.095);
+  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, .75);
 
-  mixed.rgb = blend(15, mixed.rgb, black, uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);
-  mixed.rgb = blend(11, mixed.rgb, black, 1.0);
+  // mixed.rgb *= vignetteF;
+
+  vec3 green = vec3(0.063,0.141,0.086);
+  vec3 greenLight = vec3(0.337,1.,0.561);
+  vec3 black = vec3(0.095,0.095,0.095);
+
+  // mixed.rgb = blend(5, mixed.rgb, greenLight, .5);
+  mixed.rgb = blend(15, mixed.rgb, black, uDarken * 2. + mouseSim.r * .25 * uDarken);
+  mixed.rgb = blend(11, mixed.rgb, black, 1.);
+
   mixed.rgb = saturation(mixed.rgb, uSaturation);
 
-  FragColor = vec4(mixed.rgb, 1.0);
+  FragColor = vec4(mixed.rgb, 1.);
+
   #include <tonemapping_fragment>
 }
 `;
@@ -2025,8 +2070,8 @@ uniform int uDebugTransferMode;
 uniform int uDebugLightenMode;`,
   )
   .replace(
-    "vec4 mixed = rgbshift(tScene, uv, -1.0, 0.0015);",
-    `vec4 mixed = rgbshift(tScene, uv, -1.0, 0.0015);
+    "vec4 mixed = rgbshift(tScene, uv, -1., .0015);",
+    `vec4 mixed = rgbshift(tScene, uv, -1., .0015);
   if (uDebugTransferMode == 1) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(1.0 / 2.2));
   if (uDebugTransferMode == 2) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(2.2));
   if (uDebugStage == 1) {
@@ -2035,26 +2080,26 @@ uniform int uDebugLightenMode;`,
   }`,
   )
   .replace(
-    "mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;\n  }\n\n  mixed.rgb += length(fluid.xy) * 0.015;",
-    `mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;
+    "mixed.rgb += rgbshift(tBloom, uv, angle, amount / .5).rgb;\n  }\n\n\n  mixed.rgb += length(fluid.xy) * .015;",
+    `mixed.rgb += rgbshift(tBloom, uv, angle, amount / .5).rgb;
   }
   if (uDebugStage == 2) {
     FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
-  mixed.rgb += length(fluid.xy) * 0.015;`,
+  mixed.rgb += length(fluid.xy) * .015;`,
   )
   .replace(
-    "mixed.rgb += length(fluid.xy) * 0.015;\n\n  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);",
-    `mixed.rgb += length(fluid.xy) * 0.015;
+    "mixed.rgb += length(fluid.xy) * .015;\n\n  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, .75);",
+    `mixed.rgb += length(fluid.xy) * .015;
   if (uDebugStage == 3) {
     FragColor = vec4(mixed.rgb, 1.0);
     return;
   }
-  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, 0.75);`,
+  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, .75);`,
   )
   .replace(
-    "mixed.rgb = blend(15, mixed.rgb, black, uDarken * 2.0 + mouseSim.r * 0.25 * uDarken);",
+    "mixed.rgb = blend(15, mixed.rgb, black, uDarken * 2. + mouseSim.r * .25 * uDarken);",
     `float darkenOpacity = uDarken * 2.0 + mouseSim.r * 0.25 * uDarken;
   if (uDebugDarkenMode == 1) darkenOpacity = uDarken * 2.0;
   if (uDebugDarkenMode == 2) darkenOpacity = mouseSim.r * 0.25 * uDarken;
@@ -2066,7 +2111,7 @@ uniform int uDebugLightenMode;`,
   }`,
   )
   .replace(
-    "mixed.rgb = blend(11, mixed.rgb, black, 1.0);\n  mixed.rgb = saturation(mixed.rgb, uSaturation);",
+    "mixed.rgb = blend(11, mixed.rgb, black, 1.);\n\n  mixed.rgb = saturation(mixed.rgb, uSaturation);",
     `if (uDebugLightenMode != 1) {
     mixed.rgb = blend(11, mixed.rgb, black, 1.0);
   }
@@ -2137,74 +2182,101 @@ out vec4 FragColor;
 
 float random(vec2 st)
 {
-  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
 }
 
+
 void main() {
-  vec2 uv = vUv;
-  vec2 baseUv = vUv;
-  vec2 perlinUv = uv * 0.25;
-  perlinUv -= 0.5;
+  vec2 perlinUv = vUv * .25;
+
+  // apply ratio
+  perlinUv.xy -= 0.5;
   perlinUv.x *= uRatio;
-  perlinUv += 0.5;
-  perlinUv.x -= uTime * 0.01;
-  perlinUv.y -= uTime * 0.005;
+  perlinUv.xy += 0.5;
+
+  perlinUv.x -= uTime * .01;${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  perlinUv.y -= uTime * .005;${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+
   perlinUv.x += uTransformX;
 
   vec4 perlin = texture(tPerlin, perlinUv);
-  perlin.rgb = contrast(perlin.rgb, 5.0);
+  perlin.rgb = contrast(perlin.rgb, 5.);
 
-  vec2 displacementUv = vUv * 2.0;
-  displacementUv -= 0.5;
+  vec2 displacementUv = vUv * 2.;
+
+  displacementUv.xy -= 0.5;
   displacementUv.x *= uRatio;
-  displacementUv += 0.5;
+  displacementUv.xy += 0.5;
 
-  vec4 fluid = texture(tFluid, uv);
-  vec2 fluidUv = uv + fluid.rg * -0.2 * uFluidStrength;
-  uv = fluidUv;
-  vec2 perlinCoords = baseUv;
-  float vignetteF = vignette(uv, 0.1, 0.55, 2.0, 0.25);
-  if (uPerlin > 0.0) {
+  vec4 fluid = texture(tFluid, vUv);
+  vec2 fluidUv = vUv + fluid.rg * -.2 * uFluidStrength;
+  vec2 uv = vUv + fluid.rg * -.2 * uFluidStrength;
+
+  // vec2 uv = vUv;
+  vec2 perlinCoords = vUv;
+
+  float vignetteF = vignette(uv.xy, 0.1, .55, 2.0, .25);
+
+  if(uPerlin > 0.0) {
     perlinCoords += perlin.b * uPerlin;
-    perlinCoords -= uPerlin * 0.065;
+    perlinCoords -= uPerlin * .065;
   }
 
   vec4 mouseSim = texture(tMouseSim, mix(perlinCoords, uv, 2.5));
-  mouseSim.rgb = contrast(mouseSim.rgb, 1.0);
 
-  float perlinVignette = vignette(perlinCoords, 0.1, 0.35, 2.0, 0.5);
-  float displacementVignette = vignette(uv, 0.1, 0.5, 2.0, 0.5);
-  vec4 sceneDisplaced = rgbshift(tWork, uv, -1.0, 0.005);
-  vec4 scene = rgbshift(tWork, uv, -1.0, 0.0005 + 0.1 * length(fluid.xy) * uFluidStrength);
-  vec3 color = mix(scene.rgb, sceneDisplaced.rgb, 1.0 - displacementVignette);
-  color = mix(uBgColor, color, 1.0);
-  color += mouseSim.rgb * 0.065;
-  color = mix(color, color * 5.0, (1.0 - perlinVignette) * 0.075);
-  color = blend(1, color, perlin.rgb, (1.0 - displacementVignette + mouseSim.r * 0.5) * 0.05);
-  if (boolBloom) {
-    vec3 bloom = rgbshift(tBloom, uv, -1.5, 0.02).rgb;
-    float amount = 0.001 * 2.5;
-    vec3 bloomShift = rgbshift(tBloom, uv, length(uv + 0.5), amount / 0.5).rgb;
-    color += bloom + bloomShift;
+  mouseSim.rgb = contrast(mouseSim.rgb, 1.);
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  float perlinVignette = vignette(perlinCoords.xy, 0.1, .35, 2.0, .5);
+  float displacementVignette = vignette(uv.xy, 0.1, .5, 2.0, .5);
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  vec4 sceneDisplaced = rgbshift(tWork, uv, -1., .005);
+  vec4 scene = rgbshift(tWork, uv, -1., .0005 + .1 * length(fluid.xy) * uFluidStrength);
+
+  vec3 sceneMixed = mix(scene.rgb, sceneDisplaced.rgb, (1. - displacementVignette) * 1.);
+  vec3 mixed = mix(uBgColor, sceneMixed.rgb, 1.);
+
+  mixed.rgb += mouseSim.rgb * .065;
+  mixed.rgb = mix(mixed.rgb, mixed.rgb * 5., (1. - perlinVignette) * .075);
+
+  vec3 displacedPerlin = perlin.rgb;
+  mixed.rgb = blend(1, mixed.rgb, displacedPerlin, (1. - displacementVignette +  mouseSim.r * .5) * .05);
+
+  if(boolBloom) {
+    vec4 bloom = rgbshift(tBloom, uv, -1.5, .02);
+    float angle = length(uv + 0.5);
+    float uBloomDistortion = 2.5;
+    float amount = .001 * uBloomDistortion;
+
+    mixed.rgb += bloom.rgb;
+    mixed.rgb += rgbshift(tBloom, uv, angle, amount / .5).rgb;
   }
 
-  vec2 noiseUv = baseUv;
-  noiseUv -= 0.5;
+
+  vec2 noiseUv = vUv;
+
+  noiseUv.xy -= 0.5;
   noiseUv.x *= uRatio;
-  noiseUv += 0.5;
-  noiseUv *= 15.0;
+  noiseUv.xy += 0.5;
+
+  noiseUv.xy *= 15.;
+
   vec4 noise = texture(tNoise, noiseUv);
 
-  color = contrast(color, uContrast);
-  color *= uContrast;
-  color = saturation(color, 1.15);
-  color = blend(11, color, uBgColor, 0.85);
+  mixed.rgb = contrast(mixed.rgb, uContrast);
+  mixed.rgb *= uContrast;
 
-  vec4 media = rgbshift(tMedia, fluidUv, length(fluidUv + 2.5), 0.15 * length(fluid.xy) * uFluidStrength);
-  color = mix(color, media.rgb, media.a * uMediaReveal);
-  color = mix(color * noise.rgb, color, 0.75);
-  color = mix(color * noise.rgb, color, 1.5);
-  FragColor = vec4(color, 1.0);
+  // mixed.rgb += length(fluid.xy) * 1.15;
+
+  mixed.rgb = saturation(mixed.rgb, 1.15);
+  mixed.rgb = blend(11, mixed.rgb, uBgColor.rgb, .85);
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  vec4 media = rgbshift(tMedia, fluidUv, length(fluidUv + 2.5), .15 * length(fluid.xy) * uFluidStrength);
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  mixed.rgb = mix(mixed.rgb, media.rgb, media.a * uMediaReveal);
+  mixed.rgb = mix(mixed.rgb * noise.rgb, mixed.rgb, .75);
+  mixed.rgb = mix(mixed.rgb * noise.rgb, mixed.rgb, 1.5);
+${SOURCE_TRAILING_SPACE}
+  FragColor = vec4(mixed.rgb, 1.);
 }
 `;
 
@@ -2613,8 +2685,6 @@ void main() {
   gl_Position = projectionMatrix * mvPosition;
 }
 `;
-
-const SOURCE_TRAILING_SPACE = " ";
 
 const floorVertex = `
 in vec3 position;

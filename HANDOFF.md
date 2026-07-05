@@ -139,14 +139,15 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `a1/i1` floor reflection uniform ownership was aligned without changing formulas, constants, or visual tuning.
-- Source `a1` assigns `n.uniforms.tReflect=this.reflector.renderTargetUniform` and `n.uniforms.uMatrix=this.reflector.textureMatrixUniform`; source `i1` owns those uniform objects and updates `renderTargetUniform.value` after blur swaps.
-- The rebuild now keeps shared `floorReflectionRenderTargetUniform` and `floorReflectionTextureMatrixUniform` objects, binds `o1-floor-material` directly to them, and updates only the shared render-target uniform value during raw/debug and blur paths.
-- Runtime probes report `reflectionUniformOwnership=source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform`, `tReflectUniformShared:true`, and `uMatrixUniformShared:true`; output probes now fail if those source-shaped shared uniform objects drift.
-- Reflection expected CSS size now uses the unrounded source `window.innerWidth * 0.75` / `window.innerHeight * 0.75` values at the probe layer.
-- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, desktop/mobile output probes with `PROBE_WAIT=30000`, and project-media probe after the code change.
+- Source `A1/C1` pre-composite and `OA/CA` work-composite fragment surfaces were aligned without changing formulas, constants, target wiring, or visual tuning.
+- Source `A1` and `CA` keep the shared color helpers, full `Po` blend dispatcher, source declaration order, source comments, compact numeric literals, and source A1 body variable surface.
+- The rebuild now restores those surfaces in `sourceCompositeColorHelper`, `sourceBlendHelper`, `homeCompositeFragment`, and `homePreCompositeFragment`.
+- Runtime-only source trailing spaces are emitted with `SOURCE_TRAILING_SPACE`, so shader text matches the bundle while `git diff --check` remains clean.
+- Shader dump now reports `A1-pre-composite` and `OA-work-composite` as `source-shaped` with vertex delta `0` and fragment delta `0`.
+- `u1-environment` still has its existing helper/body text bridge residuals, but live includes/uniforms and core anchors remain matched.
+- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the floor-reflection uniform ownership residual, not the remaining spotlight/thumb projection content and transfer parity, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment distribution parity beyond this uniform ownership fix, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the A1/OA shader source-surface residual, not remaining `kA/Lu/I1` transfer/composite evidence, spotlight/thumb projection content and transfer parity, floor/environment distribution parity, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -157,10 +158,11 @@ npm run build
 git diff --check
 node scripts/audit-renderer-output.mjs
 node scripts/probe-output-color.mjs
+node scripts/probe-thumb-spotlight.mjs
 node scripts/probe-project-media.mjs
 ```
 
-All passed in the `a1/i1` floor reflection uniform ownership batch.
+All passed in the `A1/OA` composite shader source-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -210,9 +212,10 @@ Continue source-driven implementation in this order:
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
    - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path and has source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
-2. Extract the original main composite/render-manager shader behavior from `bundle.250f01b7.js`.
-   - Look near original `A1`, `OA`, `kA`, `Lu`, and main scene render manager code.
-   - Port source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
+2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
+   - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
+   - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation, plus `u1` environment helper/body residuals if the bundle text gives a safe path.
+   - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
