@@ -512,6 +512,7 @@ const summary = {
         "this.renderTargetA=new Dn(1,1,{depthBuffer:!1,stencilBuffer:!1})",
         "this.renderTargetComposite=this.renderTargetA.clone()",
         "this.renderTargetComposite=this.renderTargetA.clone(),this.compositeMaterial=new g1",
+        "uniforms:{tScene:new I(null)}",
         "this.settings.renderToScreen&&(this.renderer.setPixelRatio(n),this.renderer.setSize(e,t))",
         "o.setRenderTarget(c),o.render(a,r)",
         "this.compositeMaterial.uniforms.tScene.value=c.texture",
@@ -525,6 +526,8 @@ const summary = {
           "initSettings(){this.settings={renderToScreen:!1}}",
         ]),
         displacementO1: checks(sourceDisplacementO1.text, [
+          "class N1 extends mt",
+          "uniforms:{tScene:new I(null),uRatio:new I(1),uTime:new I(0)}",
           "class O1 extends Lo",
           "this.compositeMaterial=new N1",
           "initSettings(){this.settings={renderToScreen:!1}}",
@@ -544,6 +547,8 @@ const summary = {
         "this.skyPostScreen.material = this.skyCompositeMaterial",
         "this.displacementPostScreen.material = this.displacementMaterial",
         "this.thumbPostScreen.material = this.thumbCompositeMaterial",
+        "this.skyCompositeMaterial.uniforms.tScene.value = this.skyRawTarget.texture",
+        "this.displacementMaterial.uniforms.tScene.value = this.displacementRawTarget.texture",
         "this.renderer.render(this.skyPostScreen, this.backgroundCamera)",
         "this.renderer.render(this.displacementPostScreen, this.backgroundCamera)",
         "this.renderer.render(this.thumbPostScreen, this.backgroundCamera)",
@@ -560,6 +565,9 @@ const summary = {
           rebuildWebgl.includes("private displacementRawTarget = makeSourceRenderTarget(false);")
           && rebuildWebgl.includes("private displacementTarget = this.displacementRawTarget.clone();")
           && rebuildWebgl.includes("compositeTargetMode: \"source-Lo-renderTargetComposite-renderTargetA-clone\""),
+        skyDisplacementSourceNullTSceneConstructors:
+          rebuildWebgl.includes("tSceneConstructorMode: \"source-z1-tScene-construct-null-Lo-update-binds-raw\"")
+          && rebuildWebgl.includes("tSceneConstructorMode: \"source-N1-tScene-construct-null-Lo-update-binds-raw\""),
         thumbCompositeClone:
           rebuildWebgl.includes("private thumbTarget = makeSourceRenderTarget(false);")
           && rebuildWebgl.includes("private thumbCompositeTarget = this.thumbTarget.clone();")

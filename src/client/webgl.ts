@@ -5456,7 +5456,7 @@ export class WebGLBackdrop {
       depthTest: false,
       blending: NoBlending,
       uniforms: {
-        tScene: { value: this.skyRawTarget.texture },
+        tScene: { value: null },
         uTime: { value: 0 },
         uShader1Alpha: { value: 0.5 },
         uShader1Speed: { value: 0.5 },
@@ -5480,7 +5480,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tScene: { value: this.displacementRawTarget.texture },
+        tScene: { value: null },
         uTime: { value: 0 },
         uRatio: { value: 1 },
       },
@@ -7860,6 +7860,7 @@ void main() {
             screenMode: this.skyPostScreen.material === this.skyCompositeMaterial ? "source-Lo-screen-material-composite" : "non-source",
             rawTargetMode: "source-Lo-renderTargetA-new-depthless-stencilless",
             compositeTargetMode: "source-Lo-renderTargetComposite-renderTargetA-clone",
+            tSceneConstructorMode: "source-z1-tScene-construct-null-Lo-update-binds-raw",
             tSceneIsRawTarget: this.skyCompositeMaterial.uniforms.tScene.value === this.skyRawTarget.texture,
           },
           displacement: {
@@ -7872,6 +7873,7 @@ void main() {
             screenMode: this.displacementPostScreen.material === this.displacementMaterial ? "source-Lo-screen-material-composite" : "non-source",
             rawTargetMode: "source-Lo-renderTargetA-new-depthless-stencilless",
             compositeTargetMode: "source-Lo-renderTargetComposite-renderTargetA-clone",
+            tSceneConstructorMode: "source-N1-tScene-construct-null-Lo-update-binds-raw",
             targetSize: {
               width: this.displacementTarget.width,
               height: this.displacementTarget.height,
@@ -8081,6 +8083,8 @@ void main() {
           sizingMode: "source-V1-height-0.75-square",
           rawSizingMode: "source-V1-height-0.75-square",
           bindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
+          tSceneConstructorMode: "source-z1-tScene-construct-null-Lo-update-binds-raw",
+          tSceneIsRawTarget: this.skyCompositeMaterial.uniforms.tScene.value === this.skyRawTarget.texture,
           isEnvironmentSkySource: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,
           backgroundMode: "source-V1-background-666666-linear-to-srgb",
           background: this.skyScene.background instanceof Color ? this.skyScene.background.toArray() : null,

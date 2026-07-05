@@ -800,6 +800,9 @@ async function runProbe() {
   if (displacement.screenMode !== "source-Lo-screen-material-composite") materialSurfaceErrors.push("displacementScreenMode");
   if (displacement.rawTargetMode !== "source-Lo-renderTargetA-new-depthless-stencilless") materialSurfaceErrors.push("displacementRawTargetMode");
   if (displacement.compositeTargetMode !== "source-Lo-renderTargetComposite-renderTargetA-clone") materialSurfaceErrors.push("displacementCompositeTargetMode");
+  if (displacement.tSceneConstructorMode !== "source-N1-tScene-construct-null-Lo-update-binds-raw") {
+    materialSurfaceErrors.push("displacementTSceneConstructorMode");
+  }
   if (displacement.tSceneBound !== true) materialSurfaceErrors.push("displacementTSceneBound");
   if (displacement.tSceneIsRawTarget !== true) materialSurfaceErrors.push("displacementRawSceneBinding");
   if (displacement.tSceneIsCompositeTarget !== false) materialSurfaceErrors.push("displacementCompositeSelfBinding");
@@ -823,6 +826,9 @@ async function runProbe() {
   if (skyPassMaterial.screenMode !== "source-Lo-screen-material-composite") materialSurfaceErrors.push("skyScreenMode");
   if (skyPassMaterial.rawTargetMode !== "source-Lo-renderTargetA-new-depthless-stencilless") materialSurfaceErrors.push("skyRawTargetMode");
   if (skyPassMaterial.compositeTargetMode !== "source-Lo-renderTargetComposite-renderTargetA-clone") materialSurfaceErrors.push("skyCompositeTargetMode");
+  if (skyPassMaterial.tSceneConstructorMode !== "source-z1-tScene-construct-null-Lo-update-binds-raw") {
+    materialSurfaceErrors.push("skyTSceneConstructorMode");
+  }
   if (skyPassMaterial.tSceneIsRawTarget !== true) materialSurfaceErrors.push("skyRawSceneBinding");
   const mainFluidMaterials = parsed.probe.mainFluid?.materialSurface || {};
   for (const [key, expectedMode] of Object.entries({
@@ -1050,6 +1056,8 @@ async function runProbe() {
   if (skyComposite?.sizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("sizingMode");
   if (skyComposite?.rawSizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("rawSizingMode");
   if (skyComposite?.bindingMode !== "source-nD-after-init-resize-delay-bind-repeat-composite") skyUniformErrors.push("bindingMode");
+  if (skyComposite?.tSceneConstructorMode !== "source-z1-tScene-construct-null-Lo-update-binds-raw") skyUniformErrors.push("tSceneConstructorMode");
+  if (skyComposite?.tSceneIsRawTarget !== true) skyUniformErrors.push("tSceneRawBinding");
   if (skyComposite?.isEnvironmentSkySource !== true) skyUniformErrors.push("environmentSkySource");
   if (skyComposite?.backgroundMode !== "source-V1-background-666666-linear-to-srgb") skyUniformErrors.push("backgroundMode");
   if (!Array.isArray(skyComposite?.background) || skyComposite.background.length !== 3) skyUniformErrors.push("backgroundValue");
