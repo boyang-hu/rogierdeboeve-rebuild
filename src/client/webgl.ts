@@ -6543,11 +6543,23 @@ void main() {
     const mainHalfMipHeight = Math.max(1, Math.round(floorPowerOfTwo(renderHeight) / 2));
     if (this.renderSettings.luminosity.enabled) this.workBloomBrightTarget.setSize(workQuarterMipWidth, workQuarterMipHeight);
     if (this.renderSettings.bloom.enabled) {
-      this.resizeBloomMipChain(this.workBloomHorizontalTargets, this.workBloomVerticalTargets, workQuarterMipWidth, workQuarterMipHeight);
+      this.resizeBloomMipChain(
+        this.workBloomHorizontalTargets,
+        this.workBloomVerticalTargets,
+        this.bloomBlurMaterials,
+        workQuarterMipWidth,
+        workQuarterMipHeight,
+      );
     }
     if (this.sourceMainRenderSettings.luminosity.enabled) this.mainBloomBrightTarget.setSize(mainHalfMipWidth, mainHalfMipHeight);
     if (this.sourceMainRenderSettings.bloom.enabled) {
-      this.resizeBloomMipChain(this.mainBloomHorizontalTargets, this.mainBloomVerticalTargets, mainHalfMipWidth, mainHalfMipHeight);
+      this.resizeBloomMipChain(
+        this.mainBloomHorizontalTargets,
+        this.mainBloomVerticalTargets,
+        this.mainBloomBlurMaterials,
+        mainHalfMipWidth,
+        mainHalfMipHeight,
+      );
     }
     if (this.sourceMainRenderSettings.fluid.enabled) this.resizeMainFluidPass(mainHalfMipWidth / 3, mainHalfMipHeight / 3);
     const skySize = Math.max(1, Math.round(height * 0.75));
@@ -6625,6 +6637,7 @@ void main() {
   private resizeBloomMipChain(
     horizontalTargets: WebGLRenderTarget[],
     verticalTargets: WebGLRenderTarget[],
+    blurMaterials: ShaderMaterial[],
     startWidth: number,
     startHeight: number,
   ) {
@@ -6633,6 +6646,7 @@ void main() {
     horizontalTargets.forEach((target, index) => {
       target.setSize(mipWidth, mipHeight);
       verticalTargets[index].setSize(mipWidth, mipHeight);
+      blurMaterials[index]?.uniforms.uResolution.value.set(mipWidth, mipHeight);
       mipWidth = Math.max(1, Math.round(mipWidth / 2));
       mipHeight = Math.max(1, Math.round(mipHeight / 2));
     });
@@ -7306,6 +7320,19 @@ void main() {
       threshold: material.uniforms.uThreshold.value,
       smoothing: material.uniforms.uSmoothing.value,
     });
+    const bloomBlurProbe = (materials: ShaderMaterial[]) => ({
+      blending: materials[0]?.blending ?? null,
+      materialMode: "source-rg-raw-glsl3",
+      glslVersion: (materials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
+      tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
+      materialCount: materials.length,
+      kernelDefines: materials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
+      sigmaDefines: materials.map((material) => material.defines?.SIGMA ?? null),
+      runtimeKernelUniforms: materials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
+      resolutionResizeMode: "source-Lu-I1-rg-uResolution-resize-loop",
+      resolutionUpdateMode: "source-Lu-I1-rg-update-keeps-resize-resolution",
+      resolutions: materials.map((material) => (material.uniforms.uResolution.value as Vector2).toArray()),
+    });
     const standardBlurProbe = (
       horizontalMaterial: ShaderMaterial,
       verticalMaterial: ShaderMaterial,
@@ -7793,16 +7820,7 @@ void main() {
           luminosity: luminosityProbe(this.mainLuminosityMaterial),
           workLuminosity: luminosityProbe(this.workLuminosityMaterial),
           mainLuminosity: luminosityProbe(this.mainLuminosityMaterial),
-          bloomBlur: {
-            blending: this.bloomBlurMaterials[0]?.blending ?? null,
-            materialMode: "source-rg-raw-glsl3",
-            glslVersion: (this.bloomBlurMaterials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
-            tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
-            materialCount: this.bloomBlurMaterials.length,
-            kernelDefines: this.bloomBlurMaterials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
-            sigmaDefines: this.bloomBlurMaterials.map((material) => material.defines?.SIGMA ?? null),
-            runtimeKernelUniforms: this.bloomBlurMaterials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
-          },
+          bloomBlur: bloomBlurProbe(this.bloomBlurMaterials),
           bloomComposite: {
             blending: this.bloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
@@ -7821,16 +7839,7 @@ void main() {
             hasRebuildBloomUniforms: [1, 2, 3, 4, 5].some((index) => `tBloom${index}` in this.bloomCompositeMaterial.uniforms),
             hasRebuildFactorUniforms: [1, 2, 3, 4, 5].some((index) => `uFactor${index}` in this.bloomCompositeMaterial.uniforms),
           },
-          mainBloomBlur: {
-            blending: this.mainBloomBlurMaterials[0]?.blending ?? null,
-            materialMode: "source-rg-raw-glsl3",
-            glslVersion: (this.mainBloomBlurMaterials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
-            tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
-            materialCount: this.mainBloomBlurMaterials.length,
-            kernelDefines: this.mainBloomBlurMaterials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
-            sigmaDefines: this.mainBloomBlurMaterials.map((material) => material.defines?.SIGMA ?? null),
-            runtimeKernelUniforms: this.mainBloomBlurMaterials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
-          },
+          mainBloomBlur: bloomBlurProbe(this.mainBloomBlurMaterials),
           mainBloomComposite: {
             blending: this.mainBloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
@@ -8708,13 +8717,11 @@ void main() {
       const verticalTarget = verticalTargets[index];
       const blurMaterial = blurMaterials[index] ?? blurMaterials[blurMaterials.length - 1];
       blurMaterial.uniforms.tMap.value = bloomSource.texture;
-      blurMaterial.uniforms.uResolution.value.set(horizontalTarget.width, horizontalTarget.height);
       blurMaterial.uniforms.uDirection.value.set(1, 0);
       screen.material = blurMaterial;
       this.renderer.setRenderTarget(horizontalTarget);
       this.renderer.render(screen, this.backgroundCamera);
       blurMaterial.uniforms.tMap.value = horizontalTarget.texture;
-      blurMaterial.uniforms.uResolution.value.set(verticalTarget.width, verticalTarget.height);
       blurMaterial.uniforms.uDirection.value.set(0, 1);
       this.renderer.setRenderTarget(verticalTarget);
       this.renderer.render(screen, this.backgroundCamera);

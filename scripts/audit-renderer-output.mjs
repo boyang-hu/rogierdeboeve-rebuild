@@ -150,6 +150,8 @@ const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoaded
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
+const rebuildResizeBloomMipChain = extractBlock(rebuildWebgl, "private resizeBloomMipChain(");
+const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomChain(");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
 const sourceTl = extractTemplate(bundle, "tl", "`;class g1");
@@ -522,6 +524,13 @@ const summary = {
         sourceBloomBranchBinding: sourceLu.text.includes("this.compositeMaterial.uniforms.tBloom.value=d[0].texture"),
         rebuildBloomBranchBinding:
           rebuildWebgl.includes("if (this.renderSettings.bloom.enabled) {\n            this.renderHomeBloomPass(this.workRawTarget);\n            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;\n          }"),
+        sourceBloomBlurResizeResolution:
+          sourceLu.text.includes("this.blurMaterials[i].uniforms.uResolution.value.set(e,t),e/=2,t/=2")
+          && !sourceLu.text.includes("this.blurMaterials[p].uniforms.uResolution"),
+        rebuildBloomBlurResizeResolution:
+          rebuildResizeBloomMipChain?.includes("blurMaterials[index]?.uniforms.uResolution.value.set(mipWidth, mipHeight);")
+          && rebuildWebgl.includes("this.resizeBloomMipChain(\n        this.workBloomHorizontalTargets,\n        this.workBloomVerticalTargets,\n        this.bloomBlurMaterials,")
+          && !rebuildRenderBloomChain?.includes("blurMaterial.uniforms.uResolution.value.set"),
       },
       excerpt: compact(sourceLu.text),
     },
@@ -1122,6 +1131,13 @@ const summary = {
           rebuildWebgl.indexOf("this.renderHomeCompositePass();") >= 0
           && rebuildWebgl.indexOf("this.preCompositeMaterial.uniforms.uTime.value = time;", rebuildWebgl.indexOf("this.renderHomeCompositePass();")) > rebuildWebgl.indexOf("this.renderHomeCompositePass();")
           && rebuildWebgl.includes("mainCompositeUpdateOrder: \"source-U1-super-update-renders-I1-before-C1-update\""),
+        sourceBloomBlurResizeResolution:
+          sourceMainI1.text.includes("this.blurMaterials[i].uniforms.uResolution.value.set(e,t),e/=2,t/=2")
+          && !sourceMainI1.text.includes("this.blurMaterials[p].uniforms.uResolution"),
+        rebuildBloomBlurResizeResolution:
+          rebuildResizeBloomMipChain?.includes("blurMaterials[index]?.uniforms.uResolution.value.set(mipWidth, mipHeight);")
+          && rebuildWebgl.includes("this.resizeBloomMipChain(\n        this.mainBloomHorizontalTargets,\n        this.mainBloomVerticalTargets,\n        this.mainBloomBlurMaterials,")
+          && !rebuildRenderBloomChain?.includes("blurMaterial.uniforms.uResolution.value.set"),
       },
       excerpt: compact(sourceMainI1.text),
     },

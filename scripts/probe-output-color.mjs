@@ -743,7 +743,21 @@ async function runProbe() {
   }
   if (passMaterials.mediaComposite?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mediaCompositeVertexMode");
   const expectedBloomKernels = [3, 5, 7, 9, 11];
-  for (const key of ["bloomBlur", "mainBloomBlur"]) {
+  const expectedBloomResolutions = (start) => {
+    const out = [];
+    let width = start?.width ?? 0;
+    let height = start?.height ?? 0;
+    for (let index = 0; index < expectedBloomKernels.length; index += 1) {
+      out.push([width, height]);
+      width = Math.max(1, Math.round(width / 2));
+      height = Math.max(1, Math.round(height / 2));
+    }
+    return out;
+  };
+  for (const [key, expectedStart] of [
+    ["bloomBlur", workRenderSizing?.bloomStart],
+    ["mainBloomBlur", mainRenderSizing?.bloomStart],
+  ]) {
     const material = passMaterials[key];
     if (material?.materialCount !== expectedBloomKernels.length) materialSurfaceErrors.push(`${key}MaterialCount`);
     if (JSON.stringify(material?.kernelDefines) !== JSON.stringify(expectedBloomKernels)) materialSurfaceErrors.push(`${key}KernelDefines`);
@@ -751,6 +765,15 @@ async function runProbe() {
     if (material?.runtimeKernelUniforms !== false) materialSurfaceErrors.push(`${key}RuntimeKernelUniforms`);
     if (material?.tMapConstructorMode !== "source-rg-tMap-construct-null-branch-owned-binding") {
       materialSurfaceErrors.push(`${key}TMapConstructorMode`);
+    }
+    if (material?.resolutionResizeMode !== "source-Lu-I1-rg-uResolution-resize-loop") {
+      materialSurfaceErrors.push(`${key}ResolutionResizeMode`);
+    }
+    if (material?.resolutionUpdateMode !== "source-Lu-I1-rg-update-keeps-resize-resolution") {
+      materialSurfaceErrors.push(`${key}ResolutionUpdateMode`);
+    }
+    if (JSON.stringify(material?.resolutions) !== JSON.stringify(expectedBloomResolutions(expectedStart))) {
+      materialSurfaceErrors.push(`${key}Resolutions`);
     }
   }
   for (const key of ["bloomComposite", "mainBloomComposite"]) {

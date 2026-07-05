@@ -142,10 +142,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source-null constructor/default input sampler ownership for the `Lu/I1` helper pass materials and mirrored the optional work FXAA branch.
-- Source `ig`, `sg`, `Na`, `rg`, `cg`, `L1`, and floor-reflection `t1` construct their input samplers with `new I(null)` or `{value:null}`.
-- Source `Lu/I1.initRenderer()` binds `cg.tBlur1..5` and `uBloomFactors` after construction; source `Lu.resize()` / `Lu.update()` owns FXAA target resize, `ig.uResolution`, composite-to-FXAA render, `FxaaMaterial.tMap`, and the screen material swap.
-- The rebuild now initializes those helper pass inputs to `null`, keeps bloom composite target/factor bindings post-construction, mirrors the work `Lu` FXAA branch, and guards the source ownership through output probes plus renderer audit.
+- Aligned source runtime ownership for bloom blur `rg.uResolution` in `Lu/I1`.
+- Source `Lu.resize()` and `I1.resize()` set each bloom mip target size and write `this.blurMaterials[i].uniforms.uResolution.value.set(e,t)` inside the resize loop before halving `e,t`.
+- Source `Lu.update()` and `I1.update()` do not write bloom blur `uResolution`; they only bind `tMap`, switch `uDirection`, swap the screen material, and render the horizontal/vertical blur targets.
+- The rebuild now writes work/main bloom blur resolutions in `resizeBloomMipChain()` alongside mip target sizing, removes per-frame `uResolution` writes from `renderBloomChain()`, and guards the ownership with output probes plus renderer audit.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -157,22 +157,22 @@ git diff --check
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-renderer-audit-pass-null-check.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9471 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-pass-null-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9472 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-pass-null-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9473 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-pass-null-project-media node scripts/probe-project-media.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9474 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-pass-null-thumb node scripts/probe-thumb-spotlight.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-renderer-audit-bloom-resolution.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9571 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-bloom-resolution-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9572 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-bloom-resolution-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9573 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-bloom-resolution-project-media node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9574 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-bloom-resolution-thumb node scripts/probe-thumb-spotlight.mjs
 ```
 
-All passed in the `Lu/I1` helper pass source-null input ownership batch.
+All passed in the `Lu/I1` bloom blur resize-owned resolution batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source `ig/sg/Na/rg/cg/L1/t1` constructor-null input surfaces, rebuild helper-material factory ownership, absence of old constructor prebinds, and source/rebuild `Lu` FXAA branch anchors.
-- Output probes confirm helper pass constructor-null ownership markers, source FXAA resize/screen modes, and floor-reflection `t1` ownership, with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Renderer audit checks source `Lu/I1` bloom resize-loop `rg.uResolution` ownership, absence of update-loop resolution writes, helper pass constructor-null input surfaces, and source/rebuild `Lu` FXAA branch anchors.
+- Output probes confirm work/main bloom blur resolution arrays, `source-Lu-I1-rg-uResolution-resize-loop`, `source-Lu-I1-rg-update-keeps-resize-resolution`, and no browser failures, runtime exceptions, console messages, or WebGL shader errors.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Thumb spotlight probe retained the source thumb strip shape and spotlight map guardrails.
 
