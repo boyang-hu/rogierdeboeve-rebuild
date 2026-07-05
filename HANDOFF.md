@@ -1,6 +1,6 @@
 # Rogier de Boeve Rebuild Handoff
 
-Last updated: 2026-06-07
+Last updated: 2026-07-05
 
 This document records the current rebuild state for continuing work on another machine.
 
@@ -139,14 +139,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Source `N1/F1`, `o1/s1/r1`, `t1/QA/e1`, and shared `cg/nA` shader source surfaces were aligned without changing formulas, constants, or visual tuning.
-- Source `F1` displacement composite now matches the mirrored blank-line, `vec2(0.5, 0.5)`, `uRatio` trailing-space, and `uvOff` trailing-space surface. Runtime source trailing spaces are generated with `SOURCE_TRAILING_SPACE` so the TypeScript file still passes whitespace checks.
-- Source floor reflection blur `QA` now keeps the source declaration order: `blur(...)`, `smootherstep(...)`, uniforms, varyings, then `main()`.
-- Source floor material `s1/r1` now matches the source floor vertex spacing and source floor fragment macro indentation, dither helper comments, and `1.` literal surface. The shared dither helper now also makes `cg-bloom-composite` source-shaped.
-- Shader dump reports `N1-displacement-composite`, `o1-floor-material`, `t1-floor-reflection-blur`, and `cg-bloom-composite` as `source-shaped`, with vertex delta `0` and fragment delta `0`. Existing `M1-thumb-plane` and `x1-thumb-composite` remained `source-shaped`.
-- QA passed for `git diff --check`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, thumb spotlight probe, desktop/mobile output probes with `PROBE_WAIT=30000`, shader dump, project-media probe, full capture, and band analysis. Full capture reported no failures/exceptions. Final band deltas were desktop center `+0.0052` and mobile center `+0.0285`, recorded only as regression evidence.
+- Source `a1/i1` floor reflection uniform ownership was aligned without changing formulas, constants, or visual tuning.
+- Source `a1` assigns `n.uniforms.tReflect=this.reflector.renderTargetUniform` and `n.uniforms.uMatrix=this.reflector.textureMatrixUniform`; source `i1` owns those uniform objects and updates `renderTargetUniform.value` after blur swaps.
+- The rebuild now keeps shared `floorReflectionRenderTargetUniform` and `floorReflectionTextureMatrixUniform` objects, binds `o1-floor-material` directly to them, and updates only the shared render-target uniform value during raw/debug and blur paths.
+- Runtime probes report `reflectionUniformOwnership=source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform`, `tReflectUniformShared:true`, and `uMatrixUniformShared:true`; output probes now fail if those source-shaped shared uniform objects drift.
+- Reflection expected CSS size now uses the unrounded source `window.innerWidth * 0.75` / `window.innerHeight * 0.75` values at the probe layer.
+- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, desktop/mobile output probes with `PROBE_WAIT=30000`, and project-media probe after the code change.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the displacement/floor/blur/shared-dither shader text surface residuals, not the remaining spotlight/thumb projection content and transfer parity, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment distribution parity, or interactive mouse/fluid verification.
+- Phase 1 remains open; this closes the floor-reflection uniform ownership residual, not the remaining spotlight/thumb projection content and transfer parity, `A1/OA/kA/Lu/I1` transfer/composite evidence, floor/environment distribution parity beyond this uniform ownership fix, or interactive mouse/fluid verification.
 
 ## Validation Status
 
@@ -156,15 +156,11 @@ Last verified in the latest session:
 npm run build
 git diff --check
 node scripts/audit-renderer-output.mjs
-node scripts/dump-va-shader.mjs
 node scripts/probe-output-color.mjs
-node scripts/probe-thumb-spotlight.mjs
 node scripts/probe-project-media.mjs
-node scripts/capture.mjs
-node scripts/analyze-home-bands.mjs
 ```
 
-All passed in the `N1/o1/t1/cg` shader source-surface batch.
+All passed in the `a1/i1` floor reflection uniform ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

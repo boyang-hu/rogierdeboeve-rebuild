@@ -885,6 +885,12 @@ async function runProbe() {
   if (floorUniforms?.reflectionWriteTargetSize?.constructionMode !== "source-i1-renderTargetWrite-cloned-before-raw-depthBuffer-toggle") floorErrors.push("floorWriteCloneMode");
   if (floorUniforms?.reflectionReadTargetSize?.depthBuffer !== false) floorErrors.push("floorReadCloneDepthBuffer");
   if (floorUniforms?.reflectionWriteTargetSize?.depthBuffer !== false) floorErrors.push("floorWriteCloneDepthBuffer");
+  if (floorUniforms?.reflectionUniformOwnership !== "source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform") floorErrors.push("floorReflectionUniformOwnership");
+  if (floorUniforms?.tReflectUniformShared !== true) floorErrors.push("floorTReflectUniformShared");
+  if (floorUniforms?.uMatrixUniformShared !== true) floorErrors.push("floorUMatrixUniformShared");
+  if (reflectionTargets?.reflectionUniformOwnership !== "source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform") floorErrors.push("reflectionUniformOwnership");
+  if (reflectionTargets?.tReflectUniformShared !== true) floorErrors.push("reflectionTReflectUniformShared");
+  if (reflectionTargets?.uMatrixUniformShared !== true) floorErrors.push("reflectionUMatrixUniformShared");
   if (reflectionTargets?.rawConstructionDepthBuffer !== false) floorErrors.push("reflectionRawConstructionDepthBuffer");
   if (reflectionTargets?.rawRuntimeDepthBuffer !== true) floorErrors.push("reflectionRawRuntimeDepthBuffer");
   if (floorErrors.length) {

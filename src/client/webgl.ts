@@ -3811,6 +3811,8 @@ export class WebGLBackdrop {
   private floorReflectionWriteTarget = this.floorReflectionTarget.clone();
   private floorReflectionCamera = new PerspectiveCamera();
   private floorReflectionMatrix = new Matrix4();
+  private floorReflectionTextureMatrixUniform = { value: this.floorReflectionMatrix };
+  private floorReflectionRenderTargetUniform = { value: this.floorReflectionReadTarget.texture };
   private floorReflectorPlane = new Plane();
   private floorReflectorNormal = new Vector3(0, 1, 0);
   private floorReflectorWorldPosition = new Vector3();
@@ -5784,6 +5786,7 @@ void main() {
   }
 
   private createFloorMaterial() {
+    this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture);
     dumpShader("o1-floor-material", floorVertex, floorFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
@@ -5792,13 +5795,9 @@ void main() {
         USE_NORMALMAP: "",
       },
       uniforms: {
-        tReflect: {
-          value: this.debugFloorReflection === "raw-sample"
-            ? this.floorReflectionTarget.texture
-            : this.floorReflectionReadTarget.texture,
-        },
+        tReflect: this.floorReflectionRenderTargetUniform,
         uMapTransform: { value: new Matrix3().identity() },
-        uMatrix: { value: this.floorReflectionMatrix },
+        uMatrix: this.floorReflectionTextureMatrixUniform,
         uColor: { value: colorFrom("#4a4a4a") },
         tNormalMap: { value: this.placeholder },
         uReflectivity: { value: 0.97 },
@@ -5810,6 +5809,12 @@ void main() {
       vertexShader: floorVertex,
       fragmentShader: floorFragment,
     });
+  }
+
+  private updateFloorReflectionRenderTargetUniform(texture: Texture) {
+    this.floorReflectionRenderTargetUniform.value = this.debugFloorReflection === "raw-sample"
+      ? this.floorReflectionTarget.texture
+      : texture;
   }
 
   private createEnvironmentMaterial() {
@@ -7041,7 +7046,7 @@ void main() {
         const swap = this.floorReflectionReadTarget;
         this.floorReflectionReadTarget = this.floorReflectionWriteTarget;
         this.floorReflectionWriteTarget = swap;
-        this.floorMaterial.uniforms.tReflect.value = this.floorReflectionReadTarget.texture;
+        this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture);
       } else {
         let readTarget = this.floorReflectionReadTarget;
         let writeTarget = this.floorReflectionWriteTarget;
@@ -7059,7 +7064,7 @@ void main() {
           const swap = readTarget;
           readTarget = writeTarget;
           writeTarget = swap;
-          this.floorMaterial.uniforms.tReflect.value = readTarget.texture;
+          this.updateFloorReflectionRenderTargetUniform(readTarget.texture);
         }
         this.floorReflectionReadTarget = readTarget;
         this.floorReflectionWriteTarget = writeTarget;
@@ -7827,10 +7832,13 @@ void main() {
             constructionMode: "source-i1-renderTargetWrite-cloned-before-raw-depthBuffer-toggle",
             depthBuffer: this.floorReflectionWriteTarget.depthBuffer,
           },
+          reflectionUniformOwnership: "source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform",
+          tReflectUniformShared: this.floorMaterial.uniforms.tReflect === this.floorReflectionRenderTargetUniform,
+          uMatrixUniformShared: this.floorMaterial.uniforms.uMatrix === this.floorReflectionTextureMatrixUniform,
           reflectionSizing: "source-i1-css-viewport-0.75",
           reflectionExpectedCssSize: {
-            width: Math.max(1, Math.round(window.innerWidth * 0.75)),
-            height: Math.max(1, Math.round(window.innerHeight * 0.75)),
+            width: Math.max(1, window.innerWidth * 0.75),
+            height: Math.max(1, window.innerHeight * 0.75),
           },
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
           normalMap: {
@@ -8152,6 +8160,9 @@ void main() {
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
         blurMaterialMode: "source-t1-raw-glsl3",
         blurPassScreenMode: "source-i1-private-screen-camera",
+        reflectionUniformOwnership: "source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform",
+        tReflectUniformShared: this.floorMaterial.uniforms.tReflect === this.floorReflectionRenderTargetUniform,
+        uMatrixUniformShared: this.floorMaterial.uniforms.uMatrix === this.floorReflectionTextureMatrixUniform,
         floorVisibilityMode: "source-a1-onBeforeRender-hide-component-group",
         rawClearMode: "source-i1-conditional-clear-when-autoClear-false",
         cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",
