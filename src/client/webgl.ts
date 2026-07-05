@@ -440,6 +440,8 @@ void main() {
 }
 `;
 
+const SOURCE_TRAILING_SPACE = " ";
+
 const workBlockVertexPars = `
 attribute float instanceIndex;
 attribute float instanceAlpha;
@@ -479,7 +481,7 @@ attribute float instanceIndex;
 attribute float instanceAlpha;
 attribute vec3 instanceOffset;
 attribute vec3 instanceColor;
-varying float vInstanceIndex;
+varying float vInstanceIndex;${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
 varying float vInstanceAlpha;
 varying vec3 vInstanceColor;
 varying vec3 vPosition;
@@ -524,24 +526,24 @@ void main() {
 	#include <begin_vertex>
 
   vec2 screenUv = gl_Position.xy / uCoords.xy;
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec2 newUv = screenUv;
   vec2 newOffset = instanceOffset.xy;
 
-  newUv.x /= uGridSize.x;
+  newUv.x /= uGridSize.x;${SOURCE_TRAILING_SPACE}
   newUv.y /= uGridSize.y;
 
   newUv.x += newOffset.x;
-  newUv.y += newOffset.y;
+  newUv.y += newOffset.y;${SOURCE_TRAILING_SPACE}
 
   vec2 mouseUv = newUv + uUvOffset.xy;
 
   mouseUv /= uUvOffsetScale;
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec4 mouseSim = texture2D(tMouseSim, mouseUv);
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec4 instancePos = instanceMatrix[3];
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec2 perlinUv = newUv * .75;
   vec4 perlin = texture2D(tPerlin, perlinUv - uTime * .05);
 
@@ -567,18 +569,18 @@ void main() {
 
   transformed *= 1. - mouseSim.r * .05;
 
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   // float toCenter = length(instancePos.xy);
   float fadeDiplacementScale = (revealCombined * 4.85) - (toCenter * (revealCombined / 4.85));
   float fadeDiplacement = clamp(fadeDiplacementScale, -1.0, 1.0);
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   transformed = mix(transformed, perlinDisplaced, (1. - fadeDiplacement) * .25);
   transformed *= fade;
   transformed *= uRevealSides;
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   float mouseTransform = mouseSim.r * 15.;
-
-  vec4 displacement = texture2D(tDisplacement, newUv);
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  vec4 displacement = texture2D(tDisplacement, newUv);${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   float displacementF = displacement.r;
 
   // vec2 displacementUv = newUv;
@@ -605,7 +607,7 @@ void main() {
 
   transformed = mix(transformedSpread, transformed, uRevealSpreadSides);
   transformed = mix(transformedSpread, transformed, 1. - uRevealSpread);
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec4 mvPosition = vec4( transformed, 1.0 );
 
   #ifdef USE_INSTANCING
@@ -619,10 +621,10 @@ void main() {
 
   transformed /= 1. - mouseSim.r * .2;
   vec4 worldPosition = vec4( transformed, 1.0 );
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   worldPosition = instanceMatrix * worldPosition;
   worldPosition = modelMatrix * worldPosition;
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
 	#include <shadowmap_vertex>
 	#include <fog_vertex>
   vInstanceIndex = instanceIndex;
@@ -915,12 +917,12 @@ void main() {
   vec2 newUv = vUv;
   vec2 newOffset = vOffset.xy;
 
-  newUv.x /= uGridSize.x;
+  newUv.x /= uGridSize.x;${SOURCE_TRAILING_SPACE}
   newUv.y /= uGridSize.y;
 
   newUv.x += newOffset.x;
-  newUv.y += newOffset.y;
-
+  newUv.y += newOffset.y;${SOURCE_TRAILING_SPACE}
+${SOURCE_TRAILING_SPACE}
   vec2 gridUv = vec2(floor(newUv.x * uGridSize.x), floor(newUv.y * uGridSize.y));
   vec2 gridUv2 = vec2(floor(newUv.y * uGridSize.y), floor(newUv.x * uGridSize.y));
 
@@ -928,7 +930,7 @@ void main() {
   float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.);
 
   // create a vignette
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   // get screen uv
   vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
   vec4 mouseSim = texture2D(tMouseSim2, screenUv);
@@ -936,11 +938,11 @@ void main() {
 
   float revealCombined = uReveal * uRevealProject;
   float mouseF = 1. - mouseSim.r;
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   mixedAlpha =  ((alpha * alpha2) * vInstanceAlpha);
   if(screenUv.y > 0.1) mixedAlpha += clamp(mouseSim.r * (uMouseFactor * 0.5), 0., 1.);
   gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), (1. - uMouseLightness));
-
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   float vignin = 0.01;
   float vignout = 0.2;
   float vignfade = 6.;
@@ -1217,8 +1219,6 @@ void main() {
 #endif
 }
 `;
-
-const SOURCE_TRAILING_SPACE = " ";
 
 const sourceContrastHelper = `
 vec3 contrast(vec3 color, float value) {

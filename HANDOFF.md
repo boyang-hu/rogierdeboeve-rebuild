@@ -134,7 +134,7 @@ Known remaining gaps:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path and the source `yD -> w1` negative-progress thumb wrapping at nonzero progress, but the projected thumb content/transfer feel is still not exact.
-- Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
+- Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The remaining ordinary-work source bridge is raw vertex text `uUvOffset vec3` versus runtime `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
@@ -142,13 +142,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the source `$1/j1/W1/G1` project-media composite shader surface without visual tuning.
-- Source evidence: `G1` expands the shared helper templates, declares `luminance(...)`, orders uniforms as `tScene`, `tBloom`, `tFluid`, `tBlur`, and `tMouseSim`, then uses the inert pass-through body `vec4 mixed = texture(tScene, vUv); FragColor = mixed;`.
-- `src/client/webgl.ts` now mirrors that helper/declaration/body surface in `mediaCompositeFragment`, while leaving project-media target wiring, material ownership, formulas, and visual constants unchanged.
-- QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, and project-media probe.
-- Shader dump reported `j1-media-composite` as `source-shaped` with vertex delta `0`, fragment delta `0`, and no include/uniform residuals; `A1-pre-composite`, `OA-work-composite`, and `ag-advection` stayed source-shaped.
-- Project media remained stable: `gc-2026` 5/5 visible media and `hashgraph-vc` 5/5 visible media, with no failures/exceptions/console messages. Desktop/mobile output probes also had no failures, exceptions, or console messages.
-- Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, floor/environment distribution parity, and any remaining source-proven project-media render-manager target evidence.
+- Aligned the remaining avoidable `VA/HA/zA` ordinary work shader text residuals without visual tuning.
+- Source evidence: raw shader diff showed the `zA` fragment delta was only source trailing spaces, while the `HA` vertex delta was source trailing spaces plus the already documented equal-length `uUvOffset vec3`/`vec2` runtime bridge.
+- `src/client/webgl.ts` now emits those source trailing spaces through `SOURCE_TRAILING_SPACE` in the direct `VA-work` shader templates, while leaving formulas, material ownership, projection, and runtime uniforms unchanged.
+- QA passed for `git diff --check`, `node --check scripts/probe-output-color.mjs`, `node --check scripts/audit-renderer-output.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, project-media probe, and interactive mouse probe.
+- Shader dump reported every focused Phase 1 shader row as `source-shaped`; `VA-work` now has vertex delta `0`, fragment delta `0`, and no include/uniform residuals.
+- Project media remained stable: `gc-2026` 5/5 visible media and `hashgraph-vc` 5/5 visible media, with no failures/exceptions/console messages. Output, thumb, and interactive probes also had no failures, exceptions, or console messages.
+- Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, and floor/environment distribution parity.
 
 ## Validation Status
 
@@ -160,13 +160,15 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9242 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-j1-surface-shader node scripts/dump-va-shader.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9243 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9244 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9245 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9251 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-va-trailing-space-shader node scripts/dump-va-shader.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9252 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9253 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9254 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9255 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9256 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
 ```
 
-All passed in the `$1/j1/W1/G1` media composite shader-surface batch.
+All passed in the `VA/HA/zA` source trailing-space shader-surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -174,7 +176,7 @@ Verified:
 
 - Home loads with `.gl-canvas`.
 - Home can activate `gc-2026`.
-- Shader dump reports `j1-media-composite` as source-shaped with vertex/fragment deltas as `0`; `A1-pre-composite`, `OA-work-composite`, and focused `ag-*` passes stayed source-shaped.
+- Shader dump reports every focused Phase 1 shader row as source-shaped; `VA-work`, `j1-media-composite`, `A1-pre-composite`, `OA-work-composite`, and focused `ag-*` passes all have vertex/fragment deltas as `0` where applicable.
 - Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
 - Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
 - No runtime/console/WebGL shader errors were reported, excluding normal audio autoplay warnings.
