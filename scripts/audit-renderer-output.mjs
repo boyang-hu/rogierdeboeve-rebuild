@@ -75,6 +75,16 @@ function checks(text, needles) {
   return Object.fromEntries(needles.map((needle) => [needle, text.includes(needle)]));
 }
 
+function orderedIncludes(text, needles) {
+  let cursor = -1;
+  return needles.every((needle) => {
+    const index = text.indexOf(needle, cursor + 1);
+    if (index < 0) return false;
+    cursor = index;
+    return true;
+  });
+}
+
 function countMatches(text, pattern) {
   return [...text.matchAll(pattern)].length;
 }
@@ -1976,6 +1986,14 @@ const summary = {
           sourceThumbE1.text.includes("uniforms:{tMap:new I(null),uResolution:new I(new Q),uMapSize:new I(new Q),uProgress:new I(1)")
           && sourceThumbE1.text.includes("this.material.uniforms.tMap.value=n")
           && sourceThumbE1.text.includes("this.material.uniforms.uMapSize.value.set(1,1),this.material.uniforms.uResolution.value.set(1,1)"),
+        sourceM1UniformOrder: orderedIncludes(sourceThumbE1.text, [
+          "tMap:new I(null)",
+          "uResolution:new I(new Q)",
+          "uMapSize:new I(new Q)",
+          "uProgress:new I(1)",
+          "uTransitionCount:new I(150)",
+          "uTransitionSmoothness:new I(.2)",
+        ]),
         rebuildM1ConstructorDefaults:
           Boolean(rebuildCreateThumbPlane)
           && rebuildCreateThumbPlane.includes("tMap: { value: null }")
@@ -1986,6 +2004,17 @@ const summary = {
           && !rebuildCreateThumbPlane.includes("tMap: { value: this.placeholder }")
           && !rebuildCreateThumbPlane.includes("uMapSize: { value: new Vector2(1, 1) }")
           && !rebuildCreateThumbPlane.includes("uResolution: { value: new Vector2(1, 1) }"),
+        rebuildM1UniformOrder:
+          Boolean(rebuildCreateThumbPlane)
+          && orderedIncludes(rebuildCreateThumbPlane, [
+            "tMap: { value: null }",
+            "uResolution: { value: new Vector2() }",
+            "uMapSize: { value: new Vector2() }",
+            "uProgress: { value: 1 }",
+            "uTransitionCount: { value: 150 }",
+            "uTransitionSmoothness: { value: 0.2 }",
+          ])
+          && rebuildCreateThumbPlane.includes("sourceUniformOrder = Object.keys(material.uniforms)"),
         sourceHasNoInitialHiddenState:
           sourceThumbE1.text.includes("this.mesh=new at(this.geometry,this.material),this.mesh.scale.set(2,2,2)")
           && !sourceThumbE1.text.includes("this.mesh.visible=!1")

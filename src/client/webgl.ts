@@ -5033,8 +5033,8 @@ export class WebGLBackdrop {
       depthTest: false,
       uniforms: {
         tMap: { value: null },
-        uMapSize: { value: new Vector2() },
         uResolution: { value: new Vector2() },
+        uMapSize: { value: new Vector2() },
         uProgress: { value: 1 },
         uTransitionCount: { value: 150 },
         uTransitionSmoothness: { value: 0.2 },
@@ -5047,6 +5047,7 @@ export class WebGLBackdrop {
     material.userData.sourceConstructorTMapWasNull = material.uniforms.tMap.value === null;
     material.userData.sourceConstructorMapSize = (material.uniforms.uMapSize.value as Vector2).toArray();
     material.userData.sourceConstructorResolution = (material.uniforms.uResolution.value as Vector2).toArray();
+    material.userData.sourceUniformOrder = Object.keys(material.uniforms);
     material.userData.sourceSetImageBindingMode = "source-E1-setImage-binds-texture-and-1x1-size-after-Xt-thumbsReady";
     mesh.userData.sourceThumbId = id;
     mesh.userData.sourceThumbMode = "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById";
@@ -7327,6 +7328,7 @@ void main() {
           constructorTMapWasNull: first.userData.sourceConstructorTMapWasNull,
           constructorMapSize: first.userData.sourceConstructorMapSize,
           constructorResolution: first.userData.sourceConstructorResolution,
+          uniformOrder: first.userData.sourceUniformOrder,
           setImageBindingMode: first.userData.sourceSetImageBindingMode,
           uProgress: first.uniforms.uProgress.value as number,
           uTransitionCount: first.uniforms.uTransitionCount.value as number,

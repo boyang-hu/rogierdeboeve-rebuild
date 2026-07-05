@@ -360,6 +360,10 @@ async function runProbe() {
     if (JSON.stringify(material.constructorResolution) !== JSON.stringify([0, 0])) {
       sourceShapeErrors.push(`thumbConstructorResolution=${JSON.stringify(material.constructorResolution)}`);
     }
+    const expectedUniformOrder = ["tMap", "uResolution", "uMapSize", "uProgress", "uTransitionCount", "uTransitionSmoothness"];
+    if (JSON.stringify(material.uniformOrder) !== JSON.stringify(expectedUniformOrder)) {
+      sourceShapeErrors.push(`thumbUniformOrder=${JSON.stringify(material.uniformOrder)}`);
+    }
     if (material.setImageBindingMode !== "source-E1-setImage-binds-texture-and-1x1-size-after-Xt-thumbsReady") {
       sourceShapeErrors.push(`thumbSetImageBindingMode=${material.setImageBindingMode}`);
     }
