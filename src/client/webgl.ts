@@ -5215,7 +5215,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tMap: { value: this.compositeTarget.texture },
+        tMap: { value: null },
         uLightPosition: { value: new Vector2(0.5, 0.5) },
         uScale: { value: SOURCE_MAIN_LENSFLARE_SETTINGS.scale.clone() },
         uExposure: { value: SOURCE_MAIN_LENSFLARE_SETTINGS.exposure },
@@ -5261,7 +5261,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tMap: { value: this.compositeTarget.texture },
+        tMap: { value: null },
         uThreshold: { value: luminosity.threshold },
         uSmoothing: { value: luminosity.smoothing },
       },
@@ -5282,7 +5282,7 @@ export class WebGLBackdrop {
         SIGMA: kernelRadius,
       },
       uniforms: {
-        tMap: { value: this.workBloomBrightTarget.texture },
+        tMap: { value: null },
         uResolution: { value: new Vector2(1, 1) },
         uDirection: { value: new Vector2(1, 0) },
       },
@@ -5303,7 +5303,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tMap: { value: this.compositeTarget.texture },
+        tMap: { value: null },
         uBluriness: { value: 0 },
         uDirection: { value: new Vector2(directionX, directionY) },
         uResolution: { value: new Vector2(1, 1) },
@@ -5316,7 +5316,7 @@ export class WebGLBackdrop {
   private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[], settings = this.renderSettings) {
     const factors = sourceBloomFactors(settings.bloom.strength, settings.bloom.radius);
     dumpShader("cg-bloom-composite", sourceFullscreenVertex, homeBloomCompositeFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       defines: {
         NUM_MIPS: 5,
@@ -5326,16 +5326,23 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tBlur1: { value: verticalTargets[0].texture },
-        tBlur2: { value: verticalTargets[1].texture },
-        tBlur3: { value: verticalTargets[2].texture },
-        tBlur4: { value: verticalTargets[3].texture },
-        tBlur5: { value: verticalTargets[4].texture },
-        uBloomFactors: { value: factors },
+        tBlur1: { value: null },
+        tBlur2: { value: null },
+        tBlur3: { value: null },
+        tBlur4: { value: null },
+        tBlur5: { value: null },
+        uBloomFactors: { value: null },
       },
       vertexShader: sourceFullscreenVertex,
       fragmentShader: homeBloomCompositeFragment,
     });
+    material.uniforms.tBlur1.value = verticalTargets[0].texture;
+    material.uniforms.tBlur2.value = verticalTargets[1].texture;
+    material.uniforms.tBlur3.value = verticalTargets[2].texture;
+    material.uniforms.tBlur4.value = verticalTargets[3].texture;
+    material.uniforms.tBlur5.value = verticalTargets[4].texture;
+    material.uniforms.uBloomFactors.value = factors;
+    return material;
   }
 
   private createFloorReflectionBlurMaterial() {
@@ -5346,7 +5353,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tMap: { value: this.floorReflectionTarget.texture },
+        tMap: { value: null },
         uDirection: { value: new Vector2(1, 0) },
         uResolution: { value: new Vector2(1, 1) },
       },
@@ -5363,7 +5370,7 @@ export class WebGLBackdrop {
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tMap: { value: this.compositeTarget.texture },
+        tMap: { value: null },
         uResolution: { value: new Vector2(1, 1) },
       },
       vertexShader: sourceFxaaVertex,
@@ -6498,6 +6505,7 @@ void main() {
     const workRenderHeight = Math.max(1, Math.round(height * workDpr));
     if (this.renderSettings.fxaa.enabled) {
       this.workFxaaTarget.setSize(workRenderWidth, workRenderHeight);
+      this.workFxaaMaterial.uniforms.uResolution.value.set(workRenderWidth, workRenderHeight);
     }
     if (this.sourceMainRenderSettings.fxaa.enabled) {
       this.mainFxaaTarget.setSize(renderWidth, renderHeight);
@@ -7294,6 +7302,7 @@ void main() {
       blending: material.blending,
       materialMode: "source-sg-raw-glsl3",
       glslVersion: (material as RawShaderMaterial).glslVersion ?? null,
+      tMapConstructorMode: "source-sg-tMap-construct-null-branch-owned-binding",
       threshold: material.uniforms.uThreshold.value,
       smoothing: material.uniforms.uSmoothing.value,
     });
@@ -7307,6 +7316,7 @@ void main() {
         blending: horizontalMaterial.blending,
         materialMode: "source-Na-raw-glsl3",
         glslVersion: (horizontalMaterial as RawShaderMaterial).glslVersion ?? null,
+        tMapConstructorMode: "source-Na-tMap-construct-null-branch-owned-binding",
         screenMode,
         resizeMode,
         hasBlurinessUniform: "uBluriness" in horizontalMaterial.uniforms,
@@ -7319,6 +7329,7 @@ void main() {
         blending: verticalMaterial.blending,
         materialMode: "source-Na-raw-glsl3",
         glslVersion: (verticalMaterial as RawShaderMaterial).glslVersion ?? null,
+        tMapConstructorMode: "source-Na-tMap-construct-null-branch-owned-binding",
         screenMode,
         resizeMode,
         hasBlurinessUniform: "uBluriness" in verticalMaterial.uniforms,
@@ -7328,11 +7339,15 @@ void main() {
         bluriness: verticalMaterial.uniforms.uBluriness.value,
       },
     });
-    const fxaaProbe = (material: ShaderMaterial) => ({
+    const fxaaProbe = (material: ShaderMaterial, screenMode: string, resizeMode: string) => ({
       blending: material.blending,
       materialMode: "source-ig-raw-glsl3",
       glslVersion: (material as RawShaderMaterial).glslVersion ?? null,
       vertexMode: "source-FT-neighbor-uv",
+      tMapConstructorMode: "source-ig-tMap-construct-null-branch-owned-binding",
+      screenMode,
+      resizeMode,
+      resolution: (material.uniforms.uResolution.value as Vector2).toArray(),
     });
     const c1Uniforms = this.preCompositeMaterial.uniforms;
     const c1UniformKeys = Object.keys(c1Uniforms);
@@ -7782,6 +7797,7 @@ void main() {
             blending: this.bloomBlurMaterials[0]?.blending ?? null,
             materialMode: "source-rg-raw-glsl3",
             glslVersion: (this.bloomBlurMaterials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
+            tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
             materialCount: this.bloomBlurMaterials.length,
             kernelDefines: this.bloomBlurMaterials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
             sigmaDefines: this.bloomBlurMaterials.map((material) => material.defines?.SIGMA ?? null),
@@ -7791,6 +7807,7 @@ void main() {
             blending: this.bloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
             glslVersion: (this.bloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            samplerConstructorMode: "source-cg-samplers-construct-null-initRenderer-binds-targets",
             uniformMode: "source-cg-tBlur-uBloomFactors",
             numMipsDefine: this.bloomCompositeMaterial.defines?.NUM_MIPS ?? null,
             ditheringDefine: this.bloomCompositeMaterial.defines?.DITHERING ?? null,
@@ -7808,6 +7825,7 @@ void main() {
             blending: this.mainBloomBlurMaterials[0]?.blending ?? null,
             materialMode: "source-rg-raw-glsl3",
             glslVersion: (this.mainBloomBlurMaterials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
+            tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
             materialCount: this.mainBloomBlurMaterials.length,
             kernelDefines: this.mainBloomBlurMaterials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
             sigmaDefines: this.mainBloomBlurMaterials.map((material) => material.defines?.SIGMA ?? null),
@@ -7817,6 +7835,7 @@ void main() {
             blending: this.mainBloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
             glslVersion: (this.mainBloomCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            samplerConstructorMode: "source-cg-samplers-construct-null-initRenderer-binds-targets",
             uniformMode: "source-cg-tBlur-uBloomFactors",
             numMipsDefine: this.mainBloomCompositeMaterial.defines?.NUM_MIPS ?? null,
             ditheringDefine: this.mainBloomCompositeMaterial.defines?.DITHERING ?? null,
@@ -7848,9 +7867,21 @@ void main() {
             "source-I1-mainPostScreen-material-swap",
             "source-I1-Na-resize-css-width-height-when-blur-enabled",
           ),
-          fxaa: fxaaProbe(this.mainFxaaMaterial),
-          workFxaa: fxaaProbe(this.workFxaaMaterial),
-          mainFxaa: fxaaProbe(this.mainFxaaMaterial),
+          fxaa: fxaaProbe(
+            this.mainFxaaMaterial,
+            "source-I1-mainPostScreen-material-swap",
+            "source-I1-ig-resize-render-size-when-fxaa-enabled",
+          ),
+          workFxaa: fxaaProbe(
+            this.workFxaaMaterial,
+            "source-Lu-workPostScreen-material-swap",
+            "source-Lu-ig-resize-work-render-size-when-fxaa-enabled",
+          ),
+          mainFxaa: fxaaProbe(
+            this.mainFxaaMaterial,
+            "source-I1-mainPostScreen-material-swap",
+            "source-I1-ig-resize-render-size-when-fxaa-enabled",
+          ),
           skyComposite: {
             blending: this.skyCompositeMaterial.blending,
             materialMode: "source-z1-raw-glsl3",
@@ -7979,6 +8010,7 @@ void main() {
           },
           materialMode: "source-o1-raw-glsl3",
           reflectionBlurMode: "source-t1-raw-glsl3",
+          reflectionBlurTMapConstructorMode: "source-t1-tMap-construct-null-update-loop-binds",
         },
         environment: {
           visible: this.environmentGroup.visible,
@@ -8286,6 +8318,7 @@ void main() {
         blurInputUsesRead: this.floorReflectionBlurMaterial.uniforms.tMap.value === this.floorReflectionReadTarget.texture,
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
         blurMaterialMode: "source-t1-raw-glsl3",
+        blurTMapConstructorMode: "source-t1-tMap-construct-null-update-loop-binds",
         blurPassScreenMode: "source-i1-private-screen-camera",
         reflectionUniformOwnership: "source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform",
         tReflectUniformShared: this.floorMaterial.uniforms.tReflect === this.floorReflectionRenderTargetUniform,
@@ -8784,6 +8817,12 @@ void main() {
           this.compositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled;
           this.compositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled;
           this.workPostScreen.material = this.compositeMaterial;
+          if (this.renderSettings.fxaa.enabled) {
+            this.renderer.setRenderTarget(this.workFxaaTarget);
+            this.renderer.render(this.workPostScreen, this.backgroundCamera);
+            this.workFxaaMaterial.uniforms.tMap.value = this.workFxaaTarget.texture;
+            this.workPostScreen.material = this.workFxaaMaterial;
+          }
           this.renderer.setRenderTarget(this.workCompositeTarget);
           this.renderer.render(this.workPostScreen, this.backgroundCamera);
         }

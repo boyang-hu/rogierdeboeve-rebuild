@@ -138,6 +138,13 @@ const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
+const rebuildCreateLensflareMaterial = extractBlock(rebuildWebgl, "private createLensflareMaterial()");
+const rebuildCreateLuminosityMaterial = extractBlock(rebuildWebgl, "private createLuminosityMaterial(");
+const rebuildCreateBloomBlurMaterial = extractBlock(rebuildWebgl, "private createBloomBlurMaterial(");
+const rebuildCreateBlurMaterial = extractBlock(rebuildWebgl, "private createBlurMaterial(");
+const rebuildCreateBloomCompositeMaterial = extractBlock(rebuildWebgl, "private createBloomCompositeMaterial(");
+const rebuildCreateFloorReflectionBlurMaterial = extractBlock(rebuildWebgl, "private createFloorReflectionBlurMaterial()");
+const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaaMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
@@ -500,6 +507,18 @@ const summary = {
           "this.workBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);",
           "source-Lu-Na-resize-css-width-height-when-blur-enabled",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceFxaaResizeResolution:
+          sourceLu.text.includes("this.settings.fxaa.enabled&&(this.renderTargetFXAA.setSize(e*n,t*n),this.FxaaMaterial.uniforms.uResolution.value.set(e*n,t*n))"),
+        rebuildFxaaResizeResolution: [
+          "this.workFxaaTarget.setSize(workRenderWidth, workRenderHeight);",
+          "this.workFxaaMaterial.uniforms.uResolution.value.set(workRenderWidth, workRenderHeight);",
+          "source-Lu-ig-resize-work-render-size-when-fxaa-enabled",
+        ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceFxaaBranchRender:
+          sourceLu.text.includes("this.settings.fxaa.enabled&&(o.setRenderTarget(v),o.render(this.screen,this.screenCamera),this.FxaaMaterial.uniforms.tMap.value=v.texture,this.screen.material=this.FxaaMaterial)")
+          && sourceLu.text.includes("o.setRenderTarget(h),o.render(this.screen,this.screenCamera)"),
+        rebuildFxaaBranchRender:
+          rebuildWebgl.includes("if (this.renderSettings.fxaa.enabled) {\n            this.renderer.setRenderTarget(this.workFxaaTarget);\n            this.renderer.render(this.workPostScreen, this.backgroundCamera);\n            this.workFxaaMaterial.uniforms.tMap.value = this.workFxaaTarget.texture;\n            this.workPostScreen.material = this.workFxaaMaterial;\n          }\n          this.renderer.setRenderTarget(this.workCompositeTarget);\n          this.renderer.render(this.workPostScreen, this.backgroundCamera);"),
         sourceBloomBranchBinding: sourceLu.text.includes("this.compositeMaterial.uniforms.tBloom.value=d[0].texture"),
         rebuildBloomBranchBinding:
           rebuildWebgl.includes("if (this.renderSettings.bloom.enabled) {\n            this.renderHomeBloomPass(this.workRawTarget);\n            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;\n          }"),
@@ -732,6 +751,7 @@ const summary = {
         checks: checks(sourceSg.text, [
           "class sg extends mt",
           "glslVersion:lt",
+          "uniforms:{tMap:new I(null),uThreshold:new I(1),uSmoothing:new I(1)}",
           "fragmentShader:NT",
           "blending:ot",
           "depthWrite:!1",
@@ -746,6 +766,7 @@ const summary = {
           "glslVersion:lt",
           "fragmentShader:kT",
           "defines:{KERNEL_RADIUS:e,SIGMA:e}",
+          "uniforms:{tMap:new I(null),tDetail:new I(null),tOverview:new I(null),tOverviewMask:new I(null),uDirection:new I(new Q(.5,.5)),uResolution:new I(new Q)}",
           "blending:ot",
           "depthWrite:!1",
           "depthTest:!1",
@@ -773,6 +794,7 @@ const summary = {
           "class cg extends mt",
           "glslVersion:lt",
           "defines:{NUM_MIPS:5,DITHERING:e}",
+          "uniforms:{tBlur1:new I(null),tBlur2:new I(null),tBlur3:new I(null),tBlur4:new I(null),tBlur5:new I(null),uBloomFactors:new I(null)}",
           "fragmentShader:nA",
           "blending:ot",
           "depthWrite:!1",
@@ -791,6 +813,7 @@ const summary = {
         checks: checks(sourceIg.text, [
           "class ig extends mt",
           "glslVersion:lt",
+          "uniforms:{tMap:new I(null),uResolution:new I(new Q)}",
           "vertexShader:FT",
           "fragmentShader:UT",
           "blending:ot",
@@ -816,6 +839,51 @@ const summary = {
           "depthWrite:!1",
         ]),
         excerpt: compact(sourceL1.text),
+      },
+      rebuildConstructorNullInputSamplers: {
+        lensflareTMapNull: Boolean(rebuildCreateLensflareMaterial?.includes("tMap: { value: null }")),
+        luminosityTMapNull: Boolean(rebuildCreateLuminosityMaterial?.includes("tMap: { value: null }")),
+        bloomBlurTMapNull: Boolean(rebuildCreateBloomBlurMaterial?.includes("tMap: { value: null }")),
+        standardBlurTMapNull: Boolean(rebuildCreateBlurMaterial?.includes("tMap: { value: null }")),
+        fxaaTMapNull: Boolean(rebuildCreateFxaaMaterial?.includes("tMap: { value: null }")),
+        bloomCompositeSamplersNull: Boolean(rebuildCreateBloomCompositeMaterial)
+          && [
+            "tBlur1: { value: null }",
+            "tBlur2: { value: null }",
+            "tBlur3: { value: null }",
+            "tBlur4: { value: null }",
+            "tBlur5: { value: null }",
+            "uBloomFactors: { value: null }",
+          ].every((needle) => rebuildCreateBloomCompositeMaterial.includes(needle)),
+        bloomCompositePostConstructorBinding: Boolean(rebuildCreateBloomCompositeMaterial)
+          && [
+            "const material = new RawShaderMaterial({",
+            "material.uniforms.tBlur1.value = verticalTargets[0].texture;",
+            "material.uniforms.tBlur2.value = verticalTargets[1].texture;",
+            "material.uniforms.tBlur3.value = verticalTargets[2].texture;",
+            "material.uniforms.tBlur4.value = verticalTargets[3].texture;",
+            "material.uniforms.tBlur5.value = verticalTargets[4].texture;",
+            "material.uniforms.uBloomFactors.value = factors;",
+            "return material;",
+          ].every((needle) => rebuildCreateBloomCompositeMaterial.includes(needle)),
+        noOldConstructorPreboundInputs: ![
+          "tMap: { value: this.compositeTarget.texture }",
+          "tMap: { value: this.workBloomBrightTarget.texture }",
+          "tMap: { value: this.floorReflectionTarget.texture }",
+          "tBlur1: { value: verticalTargets[0].texture }",
+          "tBlur2: { value: verticalTargets[1].texture }",
+          "tBlur3: { value: verticalTargets[2].texture }",
+          "tBlur4: { value: verticalTargets[3].texture }",
+          "tBlur5: { value: verticalTargets[4].texture }",
+          "uBloomFactors: { value: factors }",
+        ].some((needle) => rebuildWebgl.includes(needle)),
+        runtimeProbeMarkers: [
+          "tMapConstructorMode: \"source-sg-tMap-construct-null-branch-owned-binding\"",
+          "tMapConstructorMode: \"source-Na-tMap-construct-null-branch-owned-binding\"",
+          "tMapConstructorMode: \"source-rg-tMap-construct-null-branch-owned-binding\"",
+          "tMapConstructorMode: \"source-ig-tMap-construct-null-branch-owned-binding\"",
+          "samplerConstructorMode: \"source-cg-samplers-construct-null-initRenderer-binds-targets\"",
+        ].every((needle) => rebuildWebgl.includes(needle)),
       },
       agFluid: {
         ag: sourceAg && {
@@ -1537,11 +1605,18 @@ const summary = {
       checks: checks(sourceT1FloorBlur.text, [
         "class t1 extends mt",
         "glslVersion:lt",
+        "uniforms:{tMap:new I(null),uDirection:new I(new Q(1,0)),uResolution:new I(new Q)}",
         "fragmentShader:QA",
         "blending:ot",
         "depthWrite:!1",
         "depthTest:!1",
       ]),
+      rebuildChecks: {
+        floorReflectionBlurTMapNull: Boolean(rebuildCreateFloorReflectionBlurMaterial?.includes("tMap: { value: null }")),
+        runtimeProbeMarker:
+          rebuildWebgl.includes("reflectionBlurTMapConstructorMode: \"source-t1-tMap-construct-null-update-loop-binds\"")
+          && rebuildWebgl.includes("blurTMapConstructorMode: \"source-t1-tMap-construct-null-update-loop-binds\""),
+      },
       excerpt: compact(sourceT1FloorBlur.text),
     },
     floorI1Reflector: sourceI1 && {

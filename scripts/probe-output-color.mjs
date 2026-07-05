@@ -736,6 +736,11 @@ async function runProbe() {
     if (passMaterials[key]?.materialMode !== expectedMode) materialSurfaceErrors.push(`${key}MaterialMode`);
     if (passMaterials[key]?.glslVersion !== "300 es") materialSurfaceErrors.push(`${key}GlslVersion`);
   }
+  for (const key of ["luminosity", "workLuminosity", "mainLuminosity"]) {
+    if (passMaterials[key]?.tMapConstructorMode !== "source-sg-tMap-construct-null-branch-owned-binding") {
+      materialSurfaceErrors.push(`${key}TMapConstructorMode`);
+    }
+  }
   if (passMaterials.mediaComposite?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mediaCompositeVertexMode");
   const expectedBloomKernels = [3, 5, 7, 9, 11];
   for (const key of ["bloomBlur", "mainBloomBlur"]) {
@@ -744,9 +749,15 @@ async function runProbe() {
     if (JSON.stringify(material?.kernelDefines) !== JSON.stringify(expectedBloomKernels)) materialSurfaceErrors.push(`${key}KernelDefines`);
     if (JSON.stringify(material?.sigmaDefines) !== JSON.stringify(expectedBloomKernels)) materialSurfaceErrors.push(`${key}SigmaDefines`);
     if (material?.runtimeKernelUniforms !== false) materialSurfaceErrors.push(`${key}RuntimeKernelUniforms`);
+    if (material?.tMapConstructorMode !== "source-rg-tMap-construct-null-branch-owned-binding") {
+      materialSurfaceErrors.push(`${key}TMapConstructorMode`);
+    }
   }
   for (const key of ["bloomComposite", "mainBloomComposite"]) {
     const material = passMaterials[key];
+    if (material?.samplerConstructorMode !== "source-cg-samplers-construct-null-initRenderer-binds-targets") {
+      materialSurfaceErrors.push(`${key}SamplerConstructorMode`);
+    }
     if (material?.uniformMode !== "source-cg-tBlur-uBloomFactors") materialSurfaceErrors.push(`${key}UniformMode`);
     if (material?.numMipsDefine !== 5) materialSurfaceErrors.push(`${key}NumMipsDefine`);
     if (material?.ditheringDefinePresent !== true) materialSurfaceErrors.push(`${key}DitheringDefinePresent`);
@@ -771,6 +782,9 @@ async function runProbe() {
       if (material?.materialMode !== "source-Na-raw-glsl3") materialSurfaceErrors.push(`${group}${key}MaterialMode`);
       if (material?.glslVersion !== "300 es") materialSurfaceErrors.push(`${group}${key}GlslVersion`);
       if (material?.screenMode !== expectedScreenMode) materialSurfaceErrors.push(`${group}${key}ScreenMode`);
+      if (material?.tMapConstructorMode !== "source-Na-tMap-construct-null-branch-owned-binding") {
+        materialSurfaceErrors.push(`${group}${key}TMapConstructorMode`);
+      }
       if (material?.blending !== 0) materialSurfaceErrors.push(`${group}${key}Blending`);
       if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`${group}${key}BlurinessUniform`);
       if (material?.hasKernelDefines !== false) materialSurfaceErrors.push(`${group}${key}KernelDefines`);
@@ -785,9 +799,22 @@ async function runProbe() {
     if (JSON.stringify(blur.horizontal?.direction) !== JSON.stringify([1, 0])) materialSurfaceErrors.push(`${group}HorizontalDirection`);
     if (JSON.stringify(blur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push(`${group}VerticalDirection`);
   }
-  if (passMaterials.fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("fxaaVertexMode");
-  if (passMaterials.workFxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("workFxaaVertexMode");
-  if (passMaterials.mainFxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push("mainFxaaVertexMode");
+  for (const [group, fxaa, expectedScreenMode, expectedResizeMode] of [
+    ["fxaa", passMaterials.fxaa, "source-I1-mainPostScreen-material-swap", "source-I1-ig-resize-render-size-when-fxaa-enabled"],
+    ["workFxaa", passMaterials.workFxaa, "source-Lu-workPostScreen-material-swap", "source-Lu-ig-resize-work-render-size-when-fxaa-enabled"],
+    ["mainFxaa", passMaterials.mainFxaa, "source-I1-mainPostScreen-material-swap", "source-I1-ig-resize-render-size-when-fxaa-enabled"],
+  ]) {
+    if (fxaa?.materialMode !== "source-ig-raw-glsl3") materialSurfaceErrors.push(`${group}MaterialMode`);
+    if (fxaa?.glslVersion !== "300 es") materialSurfaceErrors.push(`${group}GlslVersion`);
+    if (fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push(`${group}VertexMode`);
+    if (fxaa?.tMapConstructorMode !== "source-ig-tMap-construct-null-branch-owned-binding") {
+      materialSurfaceErrors.push(`${group}TMapConstructorMode`);
+    }
+    if (fxaa?.screenMode !== expectedScreenMode) materialSurfaceErrors.push(`${group}ScreenMode`);
+    if (fxaa?.resizeMode !== expectedResizeMode) materialSurfaceErrors.push(`${group}ResizeMode`);
+    if (fxaa?.blending !== 0) materialSurfaceErrors.push(`${group}Blending`);
+    if (!Array.isArray(fxaa?.resolution) || fxaa.resolution.length !== 2) materialSurfaceErrors.push(`${group}ResolutionVector`);
+  }
   const displacement = passMaterials.displacement || {};
   const rendererSize = parsed.probe.renderer?.size || {};
   const expectedDisplacementSize = Math.max(1, Math.round((rendererSize.height || 0) / 10));
@@ -970,6 +997,9 @@ async function runProbe() {
   if (floorUniforms?.reflectionVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("reflectionVisibilityMode");
   if (floorUniforms?.materialMode !== "source-o1-raw-glsl3") floorErrors.push("materialMode");
   if (floorUniforms?.reflectionBlurMode !== "source-t1-raw-glsl3") floorErrors.push("reflectionBlurMode");
+  if (floorUniforms?.reflectionBlurTMapConstructorMode !== "source-t1-tMap-construct-null-update-loop-binds") {
+    floorErrors.push("reflectionBlurTMapConstructorMode");
+  }
   if (floorUniforms?.normalMap?.bindingMode !== "source-a1-Xt-floorNormal-repeat-45-updateMatrix") floorErrors.push("floorNormalBindingMode");
   if (floorUniforms?.normalMap?.isLoadedTexture !== true) floorErrors.push("floorNormalLoaded");
   if (!Array.isArray(floorUniforms?.normalMap?.repeat) || Math.abs((floorUniforms.normalMap.repeat[0] ?? 0) - 45) > 0.0001 || Math.abs((floorUniforms.normalMap.repeat[1] ?? 0) - 45) > 0.0001) floorErrors.push("floorNormalRepeat");
@@ -1020,6 +1050,9 @@ async function runProbe() {
   if (parsed.probe.reflectionState?.floor?.hierarchy?.planeParentIsGroup !== true) floorErrors.push("reflectionFloorPlaneParent");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.groupParentIsSceneWrap !== true) floorErrors.push("reflectionFloorGroupParent");
   if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
+  if (reflectionTargets?.blurTMapConstructorMode !== "source-t1-tMap-construct-null-update-loop-binds") {
+    floorErrors.push("blurTMapConstructorMode");
+  }
   if (reflectionTargets?.blurPassScreenMode !== "source-i1-private-screen-camera") floorErrors.push("blurPassScreenMode");
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
   if (reflectionTargets?.clipBias !== 0) floorErrors.push("clipBias");
