@@ -751,6 +751,21 @@ async function runProbe() {
   if (mainCompositeUniforms?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mainCompositeVertexMode");
   if (mainCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("mainCompositeGlslVersion");
   if (mainCompositeUniforms?.hasSourceUnusedMouseSimUniform !== true) materialSurfaceErrors.push("mainCompositeUnusedMouseSimUniform");
+  const expectedMainCompositeConstructorBools = {
+    boolBloom: false,
+    boolFluid: false,
+    boolLuminosity: false,
+    boolFxaa: false,
+  };
+  if (JSON.stringify(mainCompositeUniforms?.constructorBoolDefaults) !== JSON.stringify(expectedMainCompositeConstructorBools)) {
+    materialSurfaceErrors.push("mainCompositeConstructorBoolDefaults");
+  }
+  if (mainCompositeUniforms?.runtimeBoolOwnership !== "source-Lu-update-writes-lA-bools-from-settings-before-composite-render") {
+    materialSurfaceErrors.push("mainCompositeRuntimeBoolOwnership");
+  }
+  for (const [key, value] of Object.entries(expectedMainCompositeConstructorBools)) {
+    if (mainCompositeUniforms?.[key] !== value) materialSurfaceErrors.push(`mainComposite${key[0].toUpperCase()}${key.slice(1)}`);
+  }
   const mainCompositeSurface = mainCompositeUniforms?.shaderSurface || {};
   if (mainCompositeSurface.formulaMode !== "source-aA-helper-surface-and-vignette-local") materialSurfaceErrors.push("mainCompositeFormulaMode");
   for (const key of [

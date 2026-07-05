@@ -5229,9 +5229,8 @@ export class WebGLBackdrop {
   }
 
   private createMainCompositeMaterial() {
-    const settings = this.sourceMainRenderSettings;
     dumpShader("Lu-main-composite", sourceMatrixFullscreenVertex, mainCompositeFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
       blending: NoBlending,
@@ -5243,14 +5242,22 @@ export class WebGLBackdrop {
         tBlur: { value: null },
         tFluid: { value: null },
         tMouseSim: { value: null },
-        boolBloom: { value: settings.bloom.enabled },
-        boolFluid: { value: settings.fluid.enabled },
-        boolLuminosity: { value: settings.luminosity.enabled },
-        boolFxaa: { value: settings.fxaa.enabled },
+        boolBloom: { value: false },
+        boolFluid: { value: false },
+        boolLuminosity: { value: false },
+        boolFxaa: { value: false },
       },
       vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader: mainCompositeFragment,
     });
+    material.userData.sourceConstructorBoolDefaults = {
+      boolBloom: material.uniforms.boolBloom.value,
+      boolFluid: material.uniforms.boolFluid.value,
+      boolLuminosity: material.uniforms.boolLuminosity.value,
+      boolFxaa: material.uniforms.boolFxaa.value,
+    };
+    material.userData.sourceRuntimeBoolOwnership = "source-Lu-update-writes-lA-bools-from-settings-before-composite-render";
+    return material;
   }
 
   private createLensflareMaterial() {
@@ -7943,6 +7950,12 @@ void main() {
             vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
             hasSourceUnusedMouseSimUniform: "tMouseSim" in this.mainCompositeMaterial.uniforms,
+            constructorBoolDefaults: this.mainCompositeMaterial.userData.sourceConstructorBoolDefaults,
+            runtimeBoolOwnership: this.mainCompositeMaterial.userData.sourceRuntimeBoolOwnership,
+            boolBloom: this.mainCompositeMaterial.uniforms.boolBloom.value,
+            boolFluid: this.mainCompositeMaterial.uniforms.boolFluid.value,
+            boolLuminosity: this.mainCompositeMaterial.uniforms.boolLuminosity.value,
+            boolFxaa: this.mainCompositeMaterial.uniforms.boolFxaa.value,
             shaderSurface: {
               formulaMode: "source-aA-helper-surface-and-vignette-local",
               hasLuminanceHelper: mainCompositeFragment.includes("float luminance(vec3 rgb)"),

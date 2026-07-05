@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `sg` luminosity material constructor/settings ownership without visual tuning.
-- Source `sg` constructs `tMap:null`, `uThreshold:1`, and `uSmoothing:1`.
-- Source `Lu.initRenderer()` and `I1.initRenderer()` create `new sg`, then write threshold/smoothing from each render manager's `settings.luminosity`.
-- The rebuild now constructs luminosity materials with source defaults, records constructor threshold/smoothing plus init-settings ownership, then writes final work/main settings after construction.
-- Output probe asserts constructor defaults, source `Lu/I1.initRenderer()` ownership, and final work/main settings parity; renderer audit checks source/rebuild constructor defaults and post-constructor settings writes.
+- Aligned source `lA` main-composite bool constructor ownership without visual tuning.
+- Source `lA` constructs `boolBloom`, `boolFluid`, `boolLuminosity`, and `boolFxaa` as `false`.
+- Source `Lu.update()` writes those bool uniforms from settings only before rendering the `lA` composite screen.
+- The rebuild now constructs the retained `lA/aA` source-surface material with all four bools `false`, records constructor defaults plus source runtime-write ownership, and no longer copies `sourceMainRenderSettings` into the constructor.
+- Output probe asserts constructor-false defaults and current false bool values for this source-surface artifact; renderer audit checks source/rebuild constructor defaults and source runtime-write ownership.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -160,22 +160,22 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-sg-luminosity-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9441 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-sg-luminosity-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9442 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-sg-luminosity-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9443 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-sg-luminosity-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9444 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-sg-luminosity-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-la-bool-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9451 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-la-bool-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9452 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-la-bool-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9453 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-la-bool-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9454 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-la-bool-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `sg` luminosity constructor settings ownership batch.
+All passed in the `lA` main composite bool constructor ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `sg` constructor defaults and `Lu/I1.initRenderer()` settings writes.
-- Desktop/mobile output probes confirm luminosity constructor defaults `uThreshold=1` / `uSmoothing=1`, source init-settings ownership, and final work/main threshold/smoothing values matching settings.
+- Renderer audit checks source/rebuild `lA` constructor-false bool defaults and source `Lu.update()` runtime bool-write ownership.
+- Desktop/mobile output probes confirm `mainComposite.constructorBoolDefaults={boolBloom:false,boolFluid:false,boolLuminosity:false,boolFxaa:false}` and current false bool values for the retained `lA/aA` source-surface artifact.
 - Thumb spotlight probe retained the existing M1/E1 constructor/order and spotlight-map guardrails.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.

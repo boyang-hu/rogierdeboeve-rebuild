@@ -156,6 +156,7 @@ const rebuildCreateBloomCompositeMaterial = extractBlock(rebuildWebgl, "private 
 const rebuildCreateFloorReflectionBlurMaterial = extractBlock(rebuildWebgl, "private createFloorReflectionBlurMaterial()");
 const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaaMaterial()");
 const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
+const rebuildCreateMainCompositeMaterial = extractBlock(rebuildWebgl, "private createMainCompositeMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
@@ -965,6 +966,7 @@ const summary = {
           "class lA extends mt",
           "glslVersion:lt",
           "tMouseSim:new I(null)",
+          "boolBloom:new I(!1),boolFluid:new I(!1),boolLuminosity:new I(!1),boolFxaa:new I(!1)",
           "vertexShader:el",
           "fragmentShader:aA",
           "blending:ot",
@@ -981,6 +983,34 @@ const summary = {
           "tMouseSim: { value: null }",
           "hasSourceUnusedMouseSimUniform: \"tMouseSim\" in this.mainCompositeMaterial.uniforms",
         ]),
+        ownership: {
+          sourceBoolConstructorDefaults:
+            sourceLA.text.includes("boolBloom:new I(!1),boolFluid:new I(!1),boolLuminosity:new I(!1),boolFxaa:new I(!1)"),
+          sourceLuRuntimeBoolWrites:
+            sourceLu.text.includes("this.compositeMaterial.uniforms.boolBloom.value=this.settings.bloom.enabled")
+            && sourceLu.text.includes("this.compositeMaterial.uniforms.boolFluid.value=this.settings.fluid.enabled")
+            && sourceLu.text.includes("this.compositeMaterial.uniforms.boolLuminosity.value=this.settings.luminosity.enabled")
+            && sourceLu.text.includes("this.compositeMaterial.uniforms.boolFxaa.value=this.settings.fxaa.enabled"),
+          rebuildBoolConstructorDefaults:
+            Boolean(rebuildCreateMainCompositeMaterial)
+            && rebuildCreateMainCompositeMaterial.includes("boolBloom: { value: false }")
+            && rebuildCreateMainCompositeMaterial.includes("boolFluid: { value: false }")
+            && rebuildCreateMainCompositeMaterial.includes("boolLuminosity: { value: false }")
+            && rebuildCreateMainCompositeMaterial.includes("boolFxaa: { value: false }")
+            && rebuildCreateMainCompositeMaterial.includes("sourceConstructorBoolDefaults")
+            && rebuildCreateMainCompositeMaterial.includes("sourceRuntimeBoolOwnership = \"source-Lu-update-writes-lA-bools-from-settings-before-composite-render\"")
+            && !rebuildCreateMainCompositeMaterial.includes("boolBloom: { value: settings.bloom.enabled }")
+            && !rebuildCreateMainCompositeMaterial.includes("boolFluid: { value: settings.fluid.enabled }")
+            && !rebuildCreateMainCompositeMaterial.includes("boolLuminosity: { value: settings.luminosity.enabled }")
+            && !rebuildCreateMainCompositeMaterial.includes("boolFxaa: { value: settings.fxaa.enabled }"),
+          rebuildProbeCoverage:
+            rebuildWebgl.includes("constructorBoolDefaults: this.mainCompositeMaterial.userData.sourceConstructorBoolDefaults")
+            && rebuildWebgl.includes("runtimeBoolOwnership: this.mainCompositeMaterial.userData.sourceRuntimeBoolOwnership")
+            && rebuildWebgl.includes("boolBloom: this.mainCompositeMaterial.uniforms.boolBloom.value")
+            && rebuildWebgl.includes("boolFluid: this.mainCompositeMaterial.uniforms.boolFluid.value")
+            && rebuildWebgl.includes("boolLuminosity: this.mainCompositeMaterial.uniforms.boolLuminosity.value")
+            && rebuildWebgl.includes("boolFxaa: this.mainCompositeMaterial.uniforms.boolFxaa.value"),
+        },
         excerpt: compact(sourceLA.text),
       },
       W1: sourceW1 && {
