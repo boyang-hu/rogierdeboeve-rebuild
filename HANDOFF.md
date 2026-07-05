@@ -142,11 +142,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Se.settings` scalar/media tween ownership without visual tuning.
-- Source `Se.init()` initializes scalar/media state for `darken`, `saturation`, `contrast`, `sceneReveal`, `envRotation`, `revealSpread`, `fluidStrength`, and `media.opacity`.
-- Source setters for those values tween `this.settings` or `this.settings.media` and write uniforms, work-item `uRevealSpread`, or `sceneWrap.rotation.x` from state in `onUpdate`.
-- The rebuild now keeps a `settingsState` mirror, tweens that state in `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setEnvRotation()`, `setRevealSpread()`, `setFluidStrength()`, and `setMediaOpacity()`, and removes the old standalone scalar mirror fields for this chain.
-- Output probes now assert `settingsStateOwnership.mode=source-Se-settings-scalar-media-state-onUpdate`, uniform parity, reveal-spread fan-out parity, and env rotation parity; renderer audit rejects the old scalar fields and `gsap.to(this, ...)` paths.
+- Aligned source `VA/XA` material `uCoords` runtime ownership without visual tuning.
+- Source `VA.update(e,t,n,i)` and about-block `XA.update(e,t,n,i)` write `uCoords` from `Pe.w*i,Pe.h*i`.
+- Source `p1.resize(e,t,n)` caps work DPR through `Math.min(n,1.5)`, so this value is CSS viewport width/height times capped work DPR, not rounded render-target dimensions.
+- The rebuild now applies `sourceWorkViewportCoords()` through `setSourceWorkMaterialUCoords()` for ordinary work items and the about auxiliary material in resize/update paths.
+- The floating auxiliary material keeps its existing resize-owned `uCoords` behavior because source `KA.update()` only writes `uTime`.
+- Output probes now assert `sourceUCoordsMode=source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding` and `uCoordsMatchesSource`; renderer audit rejects the old rounded work-target `uCoords` writes.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,24 +160,23 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-settings-state-audit-final.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9361 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-settings-state-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9363 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-settings-state-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9362 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-settings-state-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9364 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-settings-state-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-ucoords-audit-final.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9371 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-ucoords-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9373 PROBE_WAIT=30000 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-ucoords-output-mobile-dpr125 node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9372 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-ucoords-thumb node scripts/probe-thumb-spotlight.mjs
 ```
 
-All passed in the `Se` settings scalar/media state tween ownership batch.
+All passed in the `VA/XA` material `uCoords` runtime ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `Se.settings` scalar/media ownership for darken, saturation, contrast, scene reveal, env rotation, reveal spread, fluid strength, and media opacity. It also rejects the old scalar mirror fields and direct `this` tween paths for this chain.
-- Desktop/mobile output probes confirm `settingsStateOwnership.mode=source-Se-settings-scalar-media-state-onUpdate`, state/uniform parity, reveal-spread fan-out parity, and env rotation parity with no browser failures, runtime exceptions, console messages, or WebGL shader errors.
+- Renderer audit checks source/rebuild `VA/XA` `uCoords` ownership and rejects the old rounded work-target write paths.
+- Desktop output probe confirms `sourceUCoordsExpected=[1440,900]`, `uCoords=[1440,900]`, `uCoordsMatchesSource=true`, and `uCoordsMatchesWorkTarget=true`.
+- Mobile DPR `1.25` output probe confirms render/work target `488x1055`, `sourceUCoordsExpected=[487.5,1055]`, `uCoords=[487.5,1055]`, `uCoordsMatchesSource=true`, and `uCoordsMatchesWorkTarget=false`.
 - Thumb spotlight probe retained the source thumb/light state guardrails.
-- Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

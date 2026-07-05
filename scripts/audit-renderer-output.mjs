@@ -234,6 +234,8 @@ const sourceT1FloorBlur = extractAround(bundle, "class t1 extends", 800, 900);
 const sourceSkyV1 = extractAround(bundle, "class V1 extends", 1400, 1600);
 const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceSkyB1 = extractTemplate(bundle, "B1", "`,Zs=");
+const sourceVA = extractAround(bundle, "class VA extends", 320, 2200);
+const sourceXA = extractAround(bundle, "class XA extends", 320, 2200);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceSA = bundle.match(/class sA\{[\s\S]*?class Ka\{/)?.[0] ?? null;
 const sourceMouseSimulationFragment = extractTemplate(bundle, "rA", "`,oA=");
@@ -2070,9 +2072,11 @@ const summary = {
         "rotationWrap: Object3D;",
         "const group = new Object3D()",
         "const rotationWrap = new Object3D()",
+        "function sourceWorkViewportCoords()",
+        "private setSourceWorkMaterialUCoords(material: WorkBlockMaterial)",
         "private updateVisibleWorkItems(time: number, delta: number)",
         "item.material.uniforms.uTime.value = time",
-        "item.material.uniforms.uCoords.value.set(this.workRawTarget.width, this.workRawTarget.height)",
+        "this.setSourceWorkMaterialUCoords(item.material)",
         "const meshResult = this.updateMouseBrush(",
         "item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder",
         "item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta)",
@@ -2080,10 +2084,23 @@ const summary = {
         "item.mousePlane.material.uniforms.uTime.value = time",
         "item.material.uniforms.tDisplacement.value = this.displacementTarget.texture",
         "sourceGAUpdateMode: \"source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal\"",
+        "sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\"",
       ]),
+      uCoordsOwnership: {
+        source:
+          sourceVA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true
+          && sourceXA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true,
+        rebuild:
+          rebuildWebgl.includes("function sourceWorkViewportCoords()")
+          && rebuildWebgl.includes("material.uniforms.uCoords.value.set(coords.width, coords.height)")
+          && rebuildWebgl.includes("sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\""),
+      },
       rebuildNoSplitLocalMouseUpdate:
         !rebuildWebgl.includes("private updateWorkMouseSimulation(")
         && !rebuildWebgl.includes("private syncWorkMouseSimulationUniforms("),
+      rebuildNoRoundedTargetCoords:
+        !rebuildWebgl.includes("item.material.uniforms.uCoords.value.set(this.workRawTarget.width, this.workRawTarget.height)")
+        && !rebuildWebgl.includes("item.material.uniforms.uCoords.value.set(workRenderWidth, workRenderHeight)"),
       excerpt: compact(sourceGA.text),
     },
     Ka: (() => {

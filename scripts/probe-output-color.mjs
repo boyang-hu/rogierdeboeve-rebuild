@@ -290,7 +290,10 @@ async function runProbe() {
   if (!visibleP1Items.every((item) => item.tMouseSim2IsScreen === true)) cullingErrors.push("visibleTMouseSim2Screen");
   if (!visibleP1Items.every((item) => item.tMouseSimIsLocal === true)) cullingErrors.push("visibleTMouseSimLocal");
   if (!visibleP1Items.every((item) => item.sourceGAUpdateMode === "source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal")) cullingErrors.push("sourceGAUpdateMode");
-  if (!visibleP1Items.every((item) => item.uCoordsMatchesWorkTarget === true)) cullingErrors.push("uCoordsMatchesWorkTarget");
+  if (!visibleP1Items.every((item) => item.sourceUCoordsMode === "source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding")) {
+    cullingErrors.push("sourceUCoordsMode");
+  }
+  if (!visibleP1Items.every((item) => item.uCoordsMatchesSource === true)) cullingErrors.push("uCoordsMatchesSource");
   if (!visibleP1Items.every((item) => item.mousePlaneTimeMatchesMaterialTime === true)) cullingErrors.push("mousePlaneTime");
   if (!visibleP1Items.every((item) => item.tDisplacementIsWavves === true)) cullingErrors.push("tDisplacement");
   if (!visibleP1Items.every((item) => item.uMouseSpeedMatchesLocal === true)) cullingErrors.push("uMouseSpeed");

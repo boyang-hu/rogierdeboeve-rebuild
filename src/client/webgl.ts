@@ -3694,6 +3694,14 @@ function sourceWorkDpr() {
   return Math.min(sourceDpr(), SOURCE_WORK_MAX_DPR);
 }
 
+function sourceWorkViewportCoords() {
+  const workDpr = sourceWorkDpr();
+  return {
+    width: Math.max(1, window.innerWidth * workDpr),
+    height: Math.max(1, window.innerHeight * workDpr),
+  };
+}
+
 function sourceGpuTier() {
   const nav = navigator as Navigator & {
     connection?: { saveData?: boolean };
@@ -6667,11 +6675,16 @@ void main() {
       plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground);
     });
     this.workItems.forEach((item) => {
-      item.material.uniforms.uCoords.value.set(workRenderWidth, workRenderHeight);
+      this.setSourceWorkMaterialUCoords(item.material);
     });
     this.resizeAuxiliaryBlocks(width, height, dpr);
     this.updateMediaPlanePositions();
   };
+
+  private setSourceWorkMaterialUCoords(material: WorkBlockMaterial) {
+    const coords = sourceWorkViewportCoords();
+    material.uniforms.uCoords.value.set(coords.width, coords.height);
+  }
 
   private resizeBloomMipChain(
     horizontalTargets: WebGLRenderTarget[],
@@ -6750,7 +6763,7 @@ void main() {
   private updateVisibleWorkItems(time: number, delta: number) {
     this.workItems.forEach((item) => {
       item.material.uniforms.uTime.value = time;
-      item.material.uniforms.uCoords.value.set(this.workRawTarget.width, this.workRawTarget.height);
+      this.setSourceWorkMaterialUCoords(item.material);
       const world = new Vector3();
       item.group.getWorldPosition(world);
       const visible = !(world.x > 5.5 || world.x < -5.5 || world.z > 5);
@@ -6792,6 +6805,7 @@ void main() {
   private p1UpdateCullingProbe() {
     const items = this.workItems.map((item) => {
       const world = new Vector3();
+      const sourceCoords = sourceWorkViewportCoords();
       item.group.getWorldPosition(world);
       const culledBySourceBounds = world.x > 5.5 || world.x < -5.5 || world.z > 5;
       return {
@@ -6806,7 +6820,12 @@ void main() {
         revealSpreadSidesInSourceRange:
           item.material.uniforms.uRevealSpreadSides.value >= 0 && item.material.uniforms.uRevealSpreadSides.value <= 1,
         sourceGAUpdateMode: "source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal",
+        sourceUCoordsMode: "source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding",
+        sourceUCoordsExpected: [sourceCoords.width, sourceCoords.height],
         uCoords: item.material.uniforms.uCoords.value.toArray(),
+        uCoordsMatchesSource:
+          Math.abs(item.material.uniforms.uCoords.value.x - sourceCoords.width) < 1e-6
+          && Math.abs(item.material.uniforms.uCoords.value.y - sourceCoords.height) < 1e-6,
         uCoordsMatchesWorkTarget:
           item.material.uniforms.uCoords.value.x === this.workRawTarget.width
           && item.material.uniforms.uCoords.value.y === this.workRawTarget.height,
@@ -6841,7 +6860,8 @@ void main() {
   private resizeAuxiliaryBlocks(width: number, height: number, dpr: number) {
     const updateTracked = (item?: AuxiliaryBlockItem) => {
       if (!item) return;
-      item.material.uniforms.uCoords.value.set(Math.round(width * dpr), Math.round(height * dpr));
+      if (item.kind === "about") this.setSourceWorkMaterialUCoords(item.material);
+      else item.material.uniforms.uCoords.value.set(Math.round(width * dpr), Math.round(height * dpr));
       if (!item.track) return;
       const rect = item.track.getBoundingClientRect();
       item.bounds = rect;
@@ -6859,6 +6879,7 @@ void main() {
     const updateShared = (item?: AuxiliaryBlockItem) => {
       if (!item?.group.visible) return;
       item.material.uniforms.uTime.value = time;
+      if (item.kind === "about") this.setSourceWorkMaterialUCoords(item.material);
       item.material.uniforms.tDisplacement.value = this.displacementTarget.texture;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
       item.group.position.x = item.offset.x + item.translation.x;
