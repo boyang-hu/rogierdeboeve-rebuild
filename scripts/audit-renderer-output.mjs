@@ -155,6 +155,7 @@ const rebuildCreateBlurMaterial = extractBlock(rebuildWebgl, "private createBlur
 const rebuildCreateBloomCompositeMaterial = extractBlock(rebuildWebgl, "private createBloomCompositeMaterial(");
 const rebuildCreateFloorReflectionBlurMaterial = extractBlock(rebuildWebgl, "private createFloorReflectionBlurMaterial()");
 const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaaMaterial()");
+const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
@@ -712,6 +713,35 @@ const summary = {
         "depthWrite:!1",
         "depthTest:!1",
       ]),
+      ownership: {
+        sourceBoolConstructorDefaults:
+          sourceOA.text.includes("boolBloom:new I(!1),boolFluid:new I(!1),boolLuminosity:new I(!1),boolFxaa:new I(!1)"),
+        sourceRuntimeBoolWrites:
+          sourceLu.text.includes("this.compositeMaterial.uniforms.boolBloom.value=this.settings.bloom.enabled")
+          && sourceLu.text.includes("this.compositeMaterial.uniforms.boolFluid.value=this.settings.fluid.enabled")
+          && sourceLu.text.includes("this.compositeMaterial.uniforms.boolLuminosity.value=this.settings.luminosity.enabled")
+          && sourceLu.text.includes("this.compositeMaterial.uniforms.boolFxaa.value=this.settings.fxaa.enabled"),
+        rebuildBoolConstructorDefaults:
+          Boolean(rebuildCreateCompositeMaterial)
+          && rebuildCreateCompositeMaterial.includes("boolBloom: { value: false }")
+          && rebuildCreateCompositeMaterial.includes("boolFluid: { value: false }")
+          && rebuildCreateCompositeMaterial.includes("boolLuminosity: { value: false }")
+          && rebuildCreateCompositeMaterial.includes("boolFxaa: { value: false }")
+          && rebuildCreateCompositeMaterial.includes("sourceConstructorBoolDefaults")
+          && rebuildCreateCompositeMaterial.includes("sourceRuntimeBoolOwnership = \"source-Lu-update-writes-OA-bools-from-settings-before-composite-render\"")
+          && !rebuildCreateCompositeMaterial.includes("boolBloom: { value: settings.bloom.enabled }")
+          && !rebuildCreateCompositeMaterial.includes("boolFluid: { value: settings.fluid.enabled }")
+          && !rebuildCreateCompositeMaterial.includes("boolLuminosity: { value: settings.luminosity.enabled }")
+          && !rebuildCreateCompositeMaterial.includes("boolFxaa: { value: settings.fxaa.enabled }"),
+        rebuildRuntimeBoolWrites:
+          Boolean(rebuildTick)
+          && rebuildTick.includes("this.compositeMaterial.uniforms.boolBloom.value = this.renderSettings.bloom.enabled")
+          && rebuildTick.includes("this.compositeMaterial.uniforms.boolFluid.value = this.renderSettings.fluid.enabled")
+          && rebuildTick.includes("this.compositeMaterial.uniforms.boolLuminosity.value = this.renderSettings.luminosity.enabled")
+          && rebuildTick.includes("this.compositeMaterial.uniforms.boolFxaa.value = this.renderSettings.fxaa.enabled")
+          && rebuildWebgl.includes("runtimeBoolOwnership: this.compositeMaterial.userData.sourceRuntimeBoolOwnership")
+          && rebuildWebgl.includes("runtimeBoolsMatchSettings"),
+      },
       excerpt: compact(sourceOA.text),
     },
     C1: sourceC1 && {
@@ -976,7 +1006,6 @@ const summary = {
           && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n      fragmentShader: homePreCompositeFragment"),
         rebuildOAUsesMatrixVertex:
           rebuildWebgl.includes("dumpShader(\"OA-work-composite\", sourceMatrixFullscreenVertex, homeCompositeFragment)")
-          && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n        fragmentShader")
           && rebuildWebgl.includes("vertexShader: sourceMatrixFullscreenVertex,\n      fragmentShader"),
         rebuildLAUsesMatrixVertex:
           rebuildWebgl.includes("dumpShader(\"Lu-main-composite\", sourceMatrixFullscreenVertex, mainCompositeFragment)")

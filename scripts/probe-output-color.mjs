@@ -695,6 +695,23 @@ async function runProbe() {
   if (workCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("workCompositeGlslVersion");
   if (!debugCompositeProbe && workCompositeUniforms?.debugShaderActive !== false) materialSurfaceErrors.push("workCompositeDebugShaderActive");
   if (!debugCompositeProbe && workCompositeUniforms?.productionShaderIsSourceSurface !== true) materialSurfaceErrors.push("workCompositeProductionShader");
+  const expectedOABoolConstructorDefaults = {
+    boolBloom: false,
+    boolFluid: false,
+    boolLuminosity: false,
+    boolFxaa: false,
+  };
+  if (JSON.stringify(workCompositeUniforms?.constructorBoolDefaults || null) !== JSON.stringify(expectedOABoolConstructorDefaults)) {
+    materialSurfaceErrors.push("workCompositeConstructorBoolDefaults");
+  }
+  if (workCompositeUniforms?.runtimeBoolOwnership !== "source-Lu-update-writes-OA-bools-from-settings-before-composite-render") {
+    materialSurfaceErrors.push("workCompositeRuntimeBoolOwnership");
+  }
+  if (workCompositeUniforms?.runtimeBoolsMatchSettings !== true) materialSurfaceErrors.push("workCompositeRuntimeBools");
+  if (workCompositeUniforms?.boolBloom !== true) materialSurfaceErrors.push("workCompositeBoolBloomRuntime");
+  if (workCompositeUniforms?.boolFluid !== false) materialSurfaceErrors.push("workCompositeBoolFluidRuntime");
+  if (workCompositeUniforms?.boolLuminosity !== true) materialSurfaceErrors.push("workCompositeBoolLuminosityRuntime");
+  if (workCompositeUniforms?.boolFxaa !== false) materialSurfaceErrors.push("workCompositeBoolFxaaRuntime");
   const preCompositeSurface = preCompositeUniforms?.shaderSurface || {};
   for (const key of [
     "hasSourceSaturationHelper",

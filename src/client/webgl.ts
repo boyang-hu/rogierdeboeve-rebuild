@@ -5144,7 +5144,6 @@ export class WebGLBackdrop {
   }
 
   private createCompositeMaterial() {
-    const settings = this.renderSettings;
     dumpShader("OA-work-composite", sourceMatrixFullscreenVertex, homeCompositeFragment);
     const fragmentShader = this.debugCompositeShader ? homeCompositeDebugFragment : homeCompositeFragment;
     const uniforms: Record<string, { value: any }> = {
@@ -5153,10 +5152,10 @@ export class WebGLBackdrop {
       tBlur: { value: null },
       tFluid: { value: null },
       tMouseSim: { value: null },
-      boolBloom: { value: settings.bloom.enabled },
-      boolFluid: { value: settings.fluid.enabled },
-      boolLuminosity: { value: settings.luminosity.enabled },
-      boolFxaa: { value: settings.fxaa.enabled },
+      boolBloom: { value: false },
+      boolFluid: { value: false },
+      boolLuminosity: { value: false },
+      boolFxaa: { value: false },
       uDarken: { value: this.settingsState.darken },
       uSaturation: { value: this.settingsState.saturation },
     };
@@ -5165,19 +5164,8 @@ export class WebGLBackdrop {
       uniforms.uDebugDarkenMode = { value: this.debugCompositeDarkenMode };
       uniforms.uDebugTransferMode = { value: this.debugCompositeTransferMode };
       uniforms.uDebugLightenMode = { value: this.debugCompositeLightenMode };
-      return new RawShaderMaterial({
-        glslVersion: GLSL3,
-        toneMapped: false,
-        transparent: true,
-        blending: NoBlending,
-        depthWrite: false,
-        depthTest: false,
-        uniforms,
-        vertexShader: sourceMatrixFullscreenVertex,
-        fragmentShader,
-      });
     }
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
       transparent: true,
@@ -5188,6 +5176,14 @@ export class WebGLBackdrop {
       vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader,
     });
+    material.userData.sourceConstructorBoolDefaults = {
+      boolBloom: material.uniforms.boolBloom.value,
+      boolFluid: material.uniforms.boolFluid.value,
+      boolLuminosity: material.uniforms.boolLuminosity.value,
+      boolFxaa: material.uniforms.boolFxaa.value,
+    };
+    material.userData.sourceRuntimeBoolOwnership = "source-Lu-update-writes-OA-bools-from-settings-before-composite-render";
+    return material;
   }
 
   private createPreCompositeMaterial() {
@@ -7920,8 +7916,17 @@ void main() {
           estimatedDarkenOpacityFromMouseGrid: darkenValue * 2 + mouseSimRed * 0.25 * darkenValue,
           estimatedDarkenOpacityWithoutMouse: darkenValue * 2,
           estimatedDarkenOpacityMouseOnly: mouseSimRed * 0.25 * darkenValue,
+          constructorBoolDefaults: this.compositeMaterial.userData.sourceConstructorBoolDefaults,
+          runtimeBoolOwnership: this.compositeMaterial.userData.sourceRuntimeBoolOwnership,
+          runtimeBoolsMatchSettings:
+            this.compositeMaterial.uniforms.boolBloom.value === this.renderSettings.bloom.enabled
+            && this.compositeMaterial.uniforms.boolFluid.value === this.renderSettings.fluid.enabled
+            && this.compositeMaterial.uniforms.boolLuminosity.value === this.renderSettings.luminosity.enabled
+            && this.compositeMaterial.uniforms.boolFxaa.value === this.renderSettings.fxaa.enabled,
           boolBloom: this.compositeMaterial.uniforms.boolBloom.value,
+          boolFluid: this.compositeMaterial.uniforms.boolFluid.value,
           boolLuminosity: this.compositeMaterial.uniforms.boolLuminosity.value,
+          boolFxaa: this.compositeMaterial.uniforms.boolFxaa.value,
         },
           mainComposite: {
             blending: this.mainCompositeMaterial.blending,

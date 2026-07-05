@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `M1` thumb material uniform declaration order without visual tuning.
-- Source `M1` constructs uniforms in order `tMap`, `uResolution`, `uMapSize`, `uProgress`, `uTransitionCount`, `uTransitionSmoothness`.
-- The rebuild now declares the same order in `createThumbPlane()` and records `Object.keys(material.uniforms)` for the thumb probe.
-- Thumb probe now asserts exact `M1` uniform order while retaining constructor-null and post-`E1.setImage()` texture/`1x1` binding checks.
-- Renderer audit checks source/rebuild `M1` order and keeps rejecting the old placeholder texture / constructor-time `1,1` bridge.
+- Aligned source `OA/Lu` work composite bool constructor/runtime ownership without visual tuning.
+- Source `OA` constructs `boolBloom`, `boolFluid`, `boolLuminosity`, and `boolFxaa` as `false`, even though source `kA` settings enable work bloom/luminosity.
+- Source `Lu.update()` writes those four `OA` bool uniforms from `this.settings` immediately before the work composite render.
+- The rebuild now constructs all four `OA` bool uniforms as `false`, records constructor defaults, and keeps runtime writes from `renderSettings` before rendering.
+- Output probe asserts constructor-false defaults plus runtime bools matching settings; renderer audit checks source/rebuild constructor defaults and runtime-write ownership.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -160,23 +160,23 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-m1-order-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9411 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-m1-order-probe node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9415 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-m1-order-output-desktop-rerun node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9413 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-m1-order-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9414 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-thumb-m1-order-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-oa-bool-audit.json
+REBUILD_URL=http://localhost:4321 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9435 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-oa-bool-output-desktop-rerun node scripts/probe-output-color.mjs
+REBUILD_URL=http://localhost:4321 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9436 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-oa-bool-output-mobile-rerun node scripts/probe-output-color.mjs
+REBUILD_URL=http://localhost:4321 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9433 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-oa-bool-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://localhost:4321 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9434 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-oa-bool-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `M1` thumb material uniform declaration order batch.
+All passed in the `OA/Lu` work composite bool constructor ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `M1` uniform declaration order and retains the `M1/E1` constructor / set-image ownership checks.
-- Thumb spotlight probe confirms `uniformOrder=["tMap","uResolution","uMapSize","uProgress","uTransitionCount","uTransitionSmoothness"]`, constructor null/zero defaults, and final loaded texture/`1x1` binding.
-- Desktop/mobile output probes retained the existing source render-manager, active reveal, color-state, and spotlight-map guardrails.
+- Renderer audit checks source/rebuild `OA` constructor-false bool defaults and `Lu.update()` runtime bool writes; recursive false/null review remains at the expected `19`.
+- Desktop/mobile output probes confirm `constructorBoolDefaults={boolBloom:false,boolFluid:false,boolLuminosity:false,boolFxaa:false}`, runtime ownership `source-Lu-update-writes-OA-bools-from-settings-before-composite-render`, and runtime bools matching work settings.
+- Thumb spotlight probe retained the existing M1/E1 constructor/order and spotlight-map guardrails.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.
 
