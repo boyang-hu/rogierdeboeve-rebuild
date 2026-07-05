@@ -2333,42 +2333,51 @@ ${SOURCE_TRAILING_SPACE}
 const mainCompositeFragment = `
 precision highp float;
 
+${sourceCompositeColorHelper}
+
+float luminance(vec3 rgb) {
+  const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+  return dot(rgb, W);
+}
+
 uniform sampler2D tScene;
 uniform sampler2D tBloom;
-uniform sampler2D tBlur;
 uniform sampler2D tFluid;
+uniform sampler2D tBlur;
+
 uniform bool boolBloom;
 uniform bool boolFluid;
 uniform bool boolLuminosity;
 uniform bool boolFxaa;
 
+float vignout = .55; // vignetting outer border
+float vignin = 0.1; // vignetting inner border
+float vignfade = 2.0; // f-stops till vignete fades
+
 in vec2 vUv;
 out vec4 FragColor;
 
-vec4 rgbshift(sampler2D tex, vec2 uv, float angle, float amount) {
-  vec2 offset = vec2(cos(angle), sin(angle)) * amount;
-  float r = texture(tex, uv + offset).r;
-  float g = texture(tex, uv).g;
-  float b = texture(tex, uv - offset).b;
-  float a = texture(tex, uv).a;
-  return vec4(r, g, b, a);
-}
-
 void main() {
-  vec2 uv = vUv;
-  vec4 fluid = texture(tFluid, uv);
-  uv = uv + fluid.rg * -0.15;
-  vec4 mixed = rgbshift(tScene, uv, -1.0, 0.001);
-  if (boolBloom) {
-    vec4 bloom = rgbshift(tBloom, uv, -1.5, 0.02);
+  vec4 fluid = texture(tFluid, vUv);
+  vec2 uv = vUv + fluid.rg * -.15;
+  vec4 mixed = rgbshift(tScene, uv, -1., .001);
+
+  if(boolBloom) {
+    vec4 bloom = rgbshift(tBloom, uv, -1.5, .02);
     float angle = length(uv + 0.5);
     float uBloomDistortion = 2.5;
-    float amount = 0.001 * uBloomDistortion;
+    float amount = .001 * uBloomDistortion;
+
     mixed.rgb += bloom.rgb;
-    mixed.rgb += rgbshift(tBloom, uv, angle, amount / 0.5).rgb;
+    mixed.rgb += rgbshift(tBloom, uv, angle, amount / .5).rgb;
   }
-  mixed.rgb += length(fluid.xy) * 0.015;
-  FragColor = vec4(mixed.rgb, 1.0);
+
+
+  mixed.rgb += length(fluid.xy) * .015;
+
+  float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, .25);
+
+  FragColor = vec4(mixed.rgb, 1.);
 }
 `;
 
@@ -5289,6 +5298,7 @@ export class WebGLBackdrop {
         tBloom: { value: this.fluidPlaceholder },
         tBlur: { value: this.fluidPlaceholder },
         tFluid: { value: this.fluidPlaceholder },
+        tMouseSim: { value: this.fluidPlaceholder },
         boolBloom: { value: settings.bloom.enabled },
         boolFluid: { value: settings.fluid.enabled },
         boolLuminosity: { value: settings.luminosity.enabled },
@@ -7742,6 +7752,19 @@ void main() {
             materialMode: "source-lA-raw-glsl3",
             vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            hasSourceUnusedMouseSimUniform: "tMouseSim" in this.mainCompositeMaterial.uniforms,
+            shaderSurface: {
+              formulaMode: "source-aA-helper-surface-and-vignette-local",
+              hasLuminanceHelper: mainCompositeFragment.includes("float luminance(vec3 rgb)"),
+              hasSourceSaturationHelper: mainCompositeFragment.includes("vec3 saturation(vec3 rgb, float adjustment)"),
+              hasSourceVignetteHelper: mainCompositeFragment.includes("float vignette(vec2 coords"),
+              hasSourceCircleHelper: mainCompositeFragment.includes("vec3 circle(vec2 uv"),
+              hasSourceContrastHelper: mainCompositeFragment.includes("vec3 contrast(vec3 color, float value)"),
+              hasSourceHueHelper: mainCompositeFragment.includes("vec3 hue(vec3 color, float hue)"),
+              hasSourceRgbshiftHelper: mainCompositeFragment.includes("vec4 rgbshift(sampler2D image"),
+              hasSourceVignetteLocals: mainCompositeFragment.includes("float vignout = .55") && mainCompositeFragment.includes("float vignetteF = vignette(uv.xy, vignin, vignout, vignfade, .25);"),
+              sourceUniformOrder: mainCompositeFragment.indexOf("uniform sampler2D tFluid;") < mainCompositeFragment.indexOf("uniform sampler2D tBlur;"),
+            },
           },
           lensflare: {
             blending: this.mainLensflareMaterial?.blending ?? null,

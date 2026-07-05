@@ -559,6 +559,22 @@ async function runProbe() {
   if (mainCompositeUniforms?.materialMode !== "source-lA-raw-glsl3") materialSurfaceErrors.push("mainCompositeMaterialMode");
   if (mainCompositeUniforms?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mainCompositeVertexMode");
   if (mainCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("mainCompositeGlslVersion");
+  if (mainCompositeUniforms?.hasSourceUnusedMouseSimUniform !== true) materialSurfaceErrors.push("mainCompositeUnusedMouseSimUniform");
+  const mainCompositeSurface = mainCompositeUniforms?.shaderSurface || {};
+  if (mainCompositeSurface.formulaMode !== "source-aA-helper-surface-and-vignette-local") materialSurfaceErrors.push("mainCompositeFormulaMode");
+  for (const key of [
+    "hasLuminanceHelper",
+    "hasSourceSaturationHelper",
+    "hasSourceVignetteHelper",
+    "hasSourceCircleHelper",
+    "hasSourceContrastHelper",
+    "hasSourceHueHelper",
+    "hasSourceRgbshiftHelper",
+    "hasSourceVignetteLocals",
+    "sourceUniformOrder",
+  ]) {
+    if (mainCompositeSurface[key] !== true) materialSurfaceErrors.push(`mainComposite${key[0].toUpperCase()}${key.slice(1)}`);
+  }
   const lensflareUniforms = parsed.probe.uniforms?.lensflare;
   if (lensflareUniforms?.screenMode !== "source-I1-mainPostScreen-material-swap") materialSurfaceErrors.push("lensflareScreenMode");
   if (lensflareUniforms?.ownership !== "source-I1-lensflareMaterial-created-only-when-enabled") materialSurfaceErrors.push("lensflareOwnership");
