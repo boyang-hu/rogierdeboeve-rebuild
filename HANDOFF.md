@@ -142,11 +142,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `lA` main-composite bool constructor ownership without visual tuning.
-- Source `lA` constructs `boolBloom`, `boolFluid`, `boolLuminosity`, and `boolFxaa` as `false`.
-- Source `Lu.update()` writes those bool uniforms from settings only before rendering the `lA` composite screen.
-- The rebuild now constructs the retained `lA/aA` source-surface material with all four bools `false`, records constructor defaults plus source runtime-write ownership, and no longer copies `sourceMainRenderSettings` into the constructor.
-- Output probe asserts constructor-false defaults and current false bool values for this source-surface artifact; renderer audit checks source/rebuild constructor defaults and source runtime-write ownership.
+- Aligned source `o1` floor material uniform order without visual tuning.
+- Source `o1` constructs base uniforms through `uNormalDistortionStrength`, then appends `tNormalMap` and `uNormalScale` from the normal-map branch.
+- The rebuild now declares `createFloorMaterial()` uniforms in that source order.
+- Output probe exposes/asserts `SOURCE_O1_FLOOR_UNIFORM_KEYS`, runtime `Object.keys(floorMaterial.uniforms)`, and `matchesSourceOrder`; renderer audit checks source `o1`, rebuild factory order, and probe coverage.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -160,22 +159,22 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-la-bool-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9451 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-la-bool-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9452 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-la-bool-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9453 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-la-bool-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9454 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-la-bool-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-floor-uniform-order-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9462 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-floor-uniform-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9463 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-floor-uniform-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9464 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-uniform-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9465 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-uniform-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `lA` main composite bool constructor ownership batch.
+All passed in the `o1` floor material uniform order batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit checks source/rebuild `lA` constructor-false bool defaults and source `Lu.update()` runtime bool-write ownership.
-- Desktop/mobile output probes confirm `mainComposite.constructorBoolDefaults={boolBloom:false,boolFluid:false,boolLuminosity:false,boolFxaa:false}` and current false bool values for the retained `lA/aA` source-surface artifact.
+- Renderer audit reports `sourceUniformOrder=true`, `rebuildUniformOrder=true`, and `rebuildProbeOrder=true` for `o1`.
+- Desktop/mobile output probes confirm floor material `uniformKeys` match source order with `matchesSourceOrder=true`.
 - Thumb spotlight probe retained the existing M1/E1 constructor/order and spotlight-map guardrails.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.

@@ -154,6 +154,7 @@ const rebuildCreateBloomBlurMaterial = extractBlock(rebuildWebgl, "private creat
 const rebuildCreateBlurMaterial = extractBlock(rebuildWebgl, "private createBlurMaterial(");
 const rebuildCreateBloomCompositeMaterial = extractBlock(rebuildWebgl, "private createBloomCompositeMaterial(");
 const rebuildCreateFloorReflectionBlurMaterial = extractBlock(rebuildWebgl, "private createFloorReflectionBlurMaterial()");
+const rebuildCreateFloorMaterial = extractBlock(rebuildWebgl, "private createFloorMaterial()");
 const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaaMaterial()");
 const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
 const rebuildCreateMainCompositeMaterial = extractBlock(rebuildWebgl, "private createMainCompositeMaterial()");
@@ -1938,6 +1939,33 @@ const summary = {
         "USE_NORMALMAP",
         "uFloorMixStrength:new I(a)",
       ]),
+      sourceUniformOrder: orderedIncludes(sourceO1FloorMaterial.text, [
+        "tReflect:new I(null)",
+        "uMapTransform:new I(new Ne)",
+        "uMatrix:new I(new Ce)",
+        "uColor:new I(e instanceof ye?e:new ye(e))",
+        "uReflectivity:new I(r)",
+        "uMirror:new I(o)",
+        "uFloorMixStrength:new I(a)",
+        "uNormalDistortionStrength:new I(2.5)",
+        "tNormalMap:new I(n)",
+        "uNormalScale:new I(i)",
+      ]),
+      rebuildUniformOrder: Boolean(rebuildCreateFloorMaterial) && orderedIncludes(rebuildCreateFloorMaterial, [
+        "tReflect: this.floorReflectionRenderTargetUniform",
+        "uMapTransform: { value: new Matrix3().identity() }",
+        "uMatrix: this.floorReflectionTextureMatrixUniform",
+        "uColor: { value: colorFrom(\"#4a4a4a\") }",
+        "uReflectivity: { value: 0.97 }",
+        "uMirror: { value: 1 }",
+        "uFloorMixStrength: { value: 15 }",
+        "uNormalDistortionStrength: { value: 2.5 }",
+        "tNormalMap: { value: this.placeholder }",
+        "uNormalScale: { value: new Vector2(1, 1) }",
+      ]),
+      rebuildProbeOrder: rebuildWebgl.includes("const SOURCE_O1_FLOOR_UNIFORM_KEYS = [")
+        && rebuildWebgl.includes("sourceUniformKeys: [...SOURCE_O1_FLOOR_UNIFORM_KEYS]")
+        && rebuildWebgl.includes("matchesSourceOrder: SOURCE_O1_FLOOR_UNIFORM_KEYS.length === Object.keys(this.floorMaterial.uniforms).length"),
       sourceShaderChecks: checks(sourceFloorS1, [
         "${lg}",
         "#ifdef DITHERING",

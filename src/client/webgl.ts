@@ -405,6 +405,19 @@ const SOURCE_C1_UNIFORM_KEYS = [
   "uFluidStrength",
 ] as const;
 
+const SOURCE_O1_FLOOR_UNIFORM_KEYS = [
+  "tReflect",
+  "uMapTransform",
+  "uMatrix",
+  "uColor",
+  "uReflectivity",
+  "uMirror",
+  "uFloorMixStrength",
+  "uNormalDistortionStrength",
+  "tNormalMap",
+  "uNormalScale",
+] as const;
+
 const SOURCE_HOME_RENDER_SETTINGS: SourceRenderSettings = {
   renderToScreen: false,
   fxaa: { enabled: false },
@@ -5897,11 +5910,11 @@ void main() {
         uMapTransform: { value: new Matrix3().identity() },
         uMatrix: this.floorReflectionTextureMatrixUniform,
         uColor: { value: colorFrom("#4a4a4a") },
-        tNormalMap: { value: this.placeholder },
         uReflectivity: { value: 0.97 },
         uMirror: { value: 1 },
         uFloorMixStrength: { value: 15 },
         uNormalDistortionStrength: { value: 2.5 },
+        tNormalMap: { value: this.placeholder },
         uNormalScale: { value: new Vector2(1, 1) },
       },
       vertexShader: floorVertex,
@@ -8149,6 +8162,10 @@ void main() {
           uMirror: this.floorMaterial.uniforms.uMirror.value,
           uFloorMixStrength: this.floorMaterial.uniforms.uFloorMixStrength.value,
           uNormalScale: (this.floorMaterial.uniforms.uNormalScale.value as Vector2).toArray(),
+          sourceUniformKeys: [...SOURCE_O1_FLOOR_UNIFORM_KEYS],
+          uniformKeys: Object.keys(this.floorMaterial.uniforms),
+          matchesSourceOrder: SOURCE_O1_FLOOR_UNIFORM_KEYS.length === Object.keys(this.floorMaterial.uniforms).length
+            && SOURCE_O1_FLOOR_UNIFORM_KEYS.every((key, index) => Object.keys(this.floorMaterial.uniforms)[index] === key),
           materialDefaults: {
             transparent: this.floorMaterial.transparent,
             depthWrite: this.floorMaterial.depthWrite,

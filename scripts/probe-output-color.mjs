@@ -1124,12 +1124,31 @@ async function runProbe() {
   }
   const floorUniforms = parsed.probe.uniforms?.floor;
   const floorErrors = [];
+  const expectedFloorUniformKeys = [
+    "tReflect",
+    "uMapTransform",
+    "uMatrix",
+    "uColor",
+    "uReflectivity",
+    "uMirror",
+    "uFloorMixStrength",
+    "uNormalDistortionStrength",
+    "tNormalMap",
+    "uNormalScale",
+  ];
   if (floorUniforms?.reflectionVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("reflectionVisibilityMode");
   if (floorUniforms?.materialMode !== "source-o1-raw-glsl3") floorErrors.push("materialMode");
   if (floorUniforms?.reflectionBlurMode !== "source-t1-raw-glsl3") floorErrors.push("reflectionBlurMode");
   if (floorUniforms?.reflectionBlurTMapConstructorMode !== "source-t1-tMap-construct-null-update-loop-binds") {
     floorErrors.push("reflectionBlurTMapConstructorMode");
   }
+  if (JSON.stringify(floorUniforms?.sourceUniformKeys || null) !== JSON.stringify(expectedFloorUniformKeys)) {
+    floorErrors.push("floorSourceUniformKeys");
+  }
+  if (JSON.stringify(floorUniforms?.uniformKeys || null) !== JSON.stringify(expectedFloorUniformKeys)) {
+    floorErrors.push("floorUniformKeys");
+  }
+  if (floorUniforms?.matchesSourceOrder !== true) floorErrors.push("floorUniformOrder");
   if (floorUniforms?.normalMap?.bindingMode !== "source-a1-Xt-floorNormal-repeat-45-updateMatrix") floorErrors.push("floorNormalBindingMode");
   if (floorUniforms?.normalMap?.isLoadedTexture !== true) floorErrors.push("floorNormalLoaded");
   if (!Array.isArray(floorUniforms?.normalMap?.repeat) || Math.abs((floorUniforms.normalMap.repeat[0] ?? 0) - 45) > 0.0001 || Math.abs((floorUniforms.normalMap.repeat[1] ?? 0) - 45) > 0.0001) floorErrors.push("floorNormalRepeat");
