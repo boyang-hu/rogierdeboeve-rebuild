@@ -8304,6 +8304,12 @@ void main() {
       bounds: pass.bounds.toArray(),
       pointer: pass.pointer.toArray(),
       pointerOld: pass.pointerOld.toArray(),
+      interaction: {
+        source: "source-ag-qT-window-mousemove-force-pass",
+        force: (pass.forceMaterial.uniforms.force.value as Vector2).toArray(),
+        center: (pass.forceMaterial.uniforms.center.value as Vector2).toArray(),
+        scale: (pass.forceMaterial.uniforms.scale.value as Vector2).toArray(),
+      },
       materialSurface: {
         advection: sourceMaterialProbe(pass.advectionMaterial, "source-GT-raw-glsl3"),
         advectionBounds: {

@@ -135,33 +135,38 @@ Known remaining gaps:
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, but the projected thumb content/transfer feel is still not exact.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates. The remaining ordinary-work source bridge is `uUvOffset` as `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
-- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders, but interactive mouse/fluid feel is still not verified 1:1.
+- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 
 Latest Phase 1 batch:
 
-- Source `I1.update()` optional blur target ownership was corrected from current bundle evidence without visual tuning.
-- The source local mapping is `l=renderTargetComposite`, `h=renderTargetBlurA`, and `f=renderTargetBlurB`; optional blur writes `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`.
-- The rebuild now renders `mainBlurHorizontalMaterial` into `mainBlurTargetA`, feeds `mainBlurVerticalMaterial` from `mainBlurTargetA.texture`, and records `renderManagerPassInputs.blurSource=source-I1-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB`.
-- Static audit now confirms the source local mapping and rejects the old `compositeTarget` blur bridge; output probes assert the updated runtime marker.
-- Default source `I1.blur.enabled=false`, so this is optional-path source parity, not a default visual-output change.
-- QA passed for `ASTRO_TELEMETRY_DISABLED=1 npm run build`, `git diff --check`, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
+- Added a source-driven interactive mouse/fluid guardrail without visual tuning.
+- `src/client/webgl.ts` now exposes `mainFluid.interaction` from the source `ag/qT` force pass: `source`, `force`, `center`, and `scale`.
+- New `scripts/probe-interactive-mouse.mjs` drives Chrome CDP mouse moves under `?debug-output-probe=1`.
+- The probe asserts source-shaped `Ka` screen target normalization, active `GA/Ka` immediate raycast pointer and local target movement, active source-shape flags, and main-fluid pointer/center/scale response.
+- Delayed `force` is recorded as transient debug data, not used as a pass/fail condition; source `qT` naturally zeroes it after the responding frame.
+- QA passed for `git diff --check`, `node --check scripts/probe-interactive-mouse.mjs`, `ASTRO_TELEMETRY_DISABLED=1 npm run build`, the interactive mouse probe, renderer audit, shader dump, desktop/mobile output probes with `PROBE_WAIT=30000`, thumb spotlight probe, and project-media probe.
+- The interactive probe reported screen target `[0.5798611111111112,0.54]`, active pointer ray `[0.15972222222222232,0.07999999999999996]`, moved active local target, main-fluid pointer/center at that same normalized coordinate, and no failures/exceptions/console messages.
 - Project media remained stable: `gc-2026` 5/5 visible media, `hashgraph-vc` 5/5 visible media.
-- Phase 1 remains open; this closes the `I1` optional blur target-chain residual, not remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, floor/environment distribution parity, or interactive mouse/fluid verification.
+- Phase 1 remains open for remaining `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb projection content and transfer parity, and floor/environment distribution parity.
 
 ## Validation Status
 
 Last verified in the latest session:
 
 ```sh
-npm run build
 git diff --check
+node --check scripts/probe-interactive-mouse.mjs
+ASTRO_TELEMETRY_DISABLED=1 npm run build
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9241 PROBE_WAIT=12000 PROBE_MOVE_WAIT=900 node scripts/probe-interactive-mouse.mjs
 node scripts/audit-renderer-output.mjs
-node scripts/probe-output-color.mjs
-node scripts/probe-thumb-spotlight.mjs
-node scripts/probe-project-media.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9231 PROBE_WAIT=30000 node scripts/dump-va-shader.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9232 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9233 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9234 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9235 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
 ```
 
-All passed in the `I1` optional blur target-chain batch.
+All passed in the interactive mouse/fluid probe guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -169,6 +174,7 @@ Verified:
 
 - Home loads with `.gl-canvas`.
 - Home can activate `gc-2026`.
+- Interactive mouse moves update source-shaped screen/local `Ka` state and main-fluid pointer/center state.
 - Project page `/gc-2026/?skip-preloader` loads with `.gl-canvas`.
 - Project pages detected 5/5 desktop WebGL media tracks for both `gc-2026` and `hashgraph-vc`.
 - No runtime/console/WebGL shader errors were reported, excluding normal audio autoplay warnings.
@@ -220,9 +226,10 @@ Continue source-driven implementation in this order:
 3. Revisit floor/environment distribution from source evidence.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
-4. Improve original mouse/fluid simulation fidelity.
+4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.
    - Original `GA` uses `Ka` mouse simulation with `tMouseSim`, `tMouseSim2`, and `tDisplacement`.
-   - Rebuild has the source-shaped render-target structure and `rA/oA` shader surface, but still needs interactive 1:1 verification.
+   - Rebuild now has the source-shaped render-target structure, `rA/oA` shader surface, and `scripts/probe-interactive-mouse.mjs` for source-shaped screen/local/main-fluid response.
+   - Future mouse/fluid changes should run the interactive probe, but the current next implementation work should stay on clearer remaining source mismatches unless new mouse/fluid source evidence appears.
 5. Compare against the original mirror only after source behavior changes.
    - Run mirror server if needed:
      ```sh
