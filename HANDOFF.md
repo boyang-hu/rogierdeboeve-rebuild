@@ -142,12 +142,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the source `nD/C1` main cross-scene input bindings without visual tuning.
-- Source `nD.init()` assigns `mainScene.renderManager.compositeMaterial.uniforms.tWork`, `tMedia`, and `tMouseSim` once after the initial resize delay.
-- Source `C1.update()` only writes `uTime`, so those `A1` cross-scene inputs do not chase current target references every frame.
-- The rebuild now calls `bindSourceMainCompositeInputs()` after resize to bind `tWork` to `workCompositeTarget.texture`, `tMedia` to `mediaTarget.texture`, and `tMouseSim` to the initial screen mouse-sim target.
-- Production no longer rebinds `preCompositeMaterial.uniforms.tWork`, `tMedia`, or `tMouseSim` in the frame loop; the raw-work target path remains only as the explicit `debug-pass-order=raw-work-composite` diagnostic.
-- Output probe now exposes source one-time binding markers for `tWork`, `tMedia`, and `tMouseSim`; renderer audit checks the source/rebuild anchors plus absence of the old production rebind bridges.
+- Cleaned the renderer audit scope for the source `nD/C1` cross-scene input bindings without runtime changes.
+- Source `nD.init()` owns one-time `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim` bindings after the initial resize delay, while source `C1.update()` only writes `uTime`.
+- The audit now extracts the rebuild `private tick` frame loop before checking absence of production per-frame `C1` rebinds, so the one-time `bindSourceMainCompositeInputs()` `tMedia` assignment is not misreported as a frame-loop rebind.
+- Recursive audit false/null review now drops the stale `sourceManagers.C1.rebuildChecks.noPerFrameTMediaRebind=false` entry and reports only known source-negative/default evidence.
 - Phase 1 remains open for actual `kA/Lu/I1` transfer/composite interpretation, spotlight/thumb transfer feel, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,14 +157,11 @@ git diff --check
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9352 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-cross-input-output node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9353 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-cross-input-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9354 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-cross-input-media node scripts/probe-project-media.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9355 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-cross-input-interactive node scripts/probe-interactive-mouse.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-renderer-audit-s240-final.json
+node -e 'const fs=require("fs"); const data=JSON.parse(fs.readFileSync("/tmp/rd-renderer-audit-s240-final.json","utf8")); const hits=[]; function walk(v,p){ if(v===false||v===null) hits.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(data,[]); if(hits.some(([p])=>p==="sourceManagers.C1.rebuildChecks.noPerFrameTMediaRebind")) process.exit(2); console.log(`falseOrNull=${hits.length}`);'
 ```
 
-All passed in the `nD/C1` main cross-scene input-binding batch.
+All passed in the renderer audit `C1` rebind-scope cleanup batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -174,10 +169,9 @@ Verified:
 
 - Home loads with `.gl-canvas`.
 - Renderer audit checks source one-time `nD.init()` bindings for `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim`, plus the rebuild one-time binder.
-- Desktop and mobile output probes reported the source binding markers and target identities for `tWork`, `tMedia`, and `tMouseSim`: `/tmp/rd-c1-cross-input-output`, `/tmp/rd-c1-cross-input-mobile`.
-- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-c1-cross-input-media`.
-- Interactive mouse probe passed with source-shaped screen/local mouse response and main-fluid pointer response: `/tmp/rd-c1-cross-input-interactive`.
-- Browser probes reported no failed requests, runtime exceptions, console messages, or WebGL shader errors.
+- The no-per-frame `C1` rebind checks are now scoped to `private tick`, not the full file.
+- Recursive audit false/null review reports `falseOrNull=19` and no stale `sourceManagers.C1.rebuildChecks.noPerFrameTMediaRebind=false`.
+- Browser probes from the prior runtime-changing S1-239 batch passed under `/tmp/rd-c1-cross-input-*`; this S1-240 batch changed only static audit logic.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 

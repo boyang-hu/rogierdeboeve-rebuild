@@ -142,6 +142,7 @@ const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkSce
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
+const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
 const sourceTl = extractTemplate(bundle, "tl", "`;class g1");
@@ -632,9 +633,13 @@ const summary = {
           "bindSourceMainCompositeInputs()",
         ]),
         noRuntimeUDisplacementSizeWrite: !rebuildWebgl.includes("this.preCompositeMaterial.uniforms.uDisplacementSize.value.set("),
-        noPerFrameTWorkCompositeRebind: !rebuildWebgl.includes("this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture"),
-        noPerFrameTMediaRebind: !rebuildWebgl.includes("this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture"),
-        noPerFrameTMouseSimRebind: !rebuildWebgl.includes("this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture"),
+        noPerFrameTWorkCompositeRebind: Boolean(rebuildTick)
+          && !rebuildTick.includes("this.preCompositeMaterial.uniforms.tWork.value = this.workCompositeTarget.texture")
+          && !rebuildTick.includes("this.preCompositeMaterial.uniforms.tWork.value = preCompositeWorkTarget.texture"),
+        noPerFrameTMediaRebind: Boolean(rebuildTick)
+          && !rebuildTick.includes("this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture"),
+        noPerFrameTMouseSimRebind: Boolean(rebuildTick)
+          && !rebuildTick.includes("this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture"),
       },
       excerpt: compact(sourceC1.text),
     },
