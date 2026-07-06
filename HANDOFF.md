@@ -133,7 +133,7 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, work/main pass-material ownership, and source `Lu/kA/I1` settings ownership, but transfer interpretation and exact composite behavior are still not complete.
-- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
 - Source `p1` floor/environment hierarchy is guarded for `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, and source `setLights()` max spotlight scalar ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
@@ -143,13 +143,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `T1/x1` thumb scene surface and render-manager settings without screenshot-led tuning.
-- Source `T1.init()` assigns scene background `#222222` through `convertLinearToSRGB()`; source `T1.setCamera()` owns `OrthographicCamera(-1,1,1,-1,0,1)`; source `x1.initSettings()` defaults `renderToScreen:false`.
-- Source `Lo.update()` false branch renders the thumb composite screen into the composite target and then resets the renderer target to `null`.
-- `src/client/webgl.ts` now centralizes `SOURCE_THUMB_BACKGROUND`, keeps the source camera bounds, stores thumb settings as `{ renderToScreen:false }`, and branches `renderThumbTargets()` through the source `renderToScreen` shape.
-- `__rogierThumbProbe.thumbSceneSurface` exposes expected/actual/matches for thumb background, camera bounds, and `x1` settings.
-- `scripts/probe-thumb-spotlight.mjs` hard-fails on thumb scene-surface or settings drift.
-- `scripts/audit-renderer-output.mjs` checks source `T1/x1/Lo` anchors plus rebuild/probe coverage.
+- Aligned source `yD.updateScene()` gallery roll/zoom dynamics without screenshot-led tuning.
+- Source `yD.updateScene(e)` writes sceneWrap rotation, main composite `uTransformX`, and negative thumb progress first.
+- Source then computes roll target with `bo(this.scroll.velocity*-.015,-4,4)`, updates `sceneRotation=Yi(sceneRotation,target,5,e)`, writes scene rotation z, computes zoom target with `bo(abs(this.scroll.velocity*.0015),0,1)`, updates `zoom=Yi(zoom,target,5,e)`, and writes scene position z as rotation z minus zoom.
+- Source `bo()` clamps and rounds through `Fn(...,4)`; source `Yi()` uses source-rounded exponential lerp through `PT/Fn`.
+- `src/client/webgl.ts` now uses `sourceClampRound()` for roll/zoom targets and `sourceDamp()` for the source-rounded lerp in `setGalleryProgress()`, preserving the existing source order `sceneWrap -> uTransformX -> thumbProgress -> roll -> zoom`.
+- `__rogierThumbProbe.galleryDynamics` and `__rogierOutputProbe.camera.galleryDynamics` expose target modes, lerp mode, velocity/delta, rounded state, and rotation/position parity.
+- `scripts/probe-thumb-spotlight.mjs` and `scripts/probe-output-color.mjs` hard-fail on gallery dynamics drift; `scripts/audit-renderer-output.mjs` checks source `bo/Yi` anchors plus rebuild/probe coverage.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -162,29 +162,29 @@ node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-scene-audit-final.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-gallery-dynamics-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9310 OUT_DIR=/tmp/rd-thumb-scene-desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile CDP_PORT=9311 OUT_DIR=/tmp/rd-thumb-scene-mobile node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-thumb-scene-output-desktop CDP_PORT=9312 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-scene-output-mobile CDP_PORT=9313 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-gallery-dynamics-output-desktop CDP_PORT=9320 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-gallery-dynamics-output-mobile CDP_PORT=9321 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9322 OUT_DIR=/tmp/rd-gallery-dynamics-thumb-desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile CDP_PORT=9323 OUT_DIR=/tmp/rd-gallery-dynamics-thumb-mobile node scripts/probe-thumb-spotlight.mjs
 ```
 
-All relevant checks passed in the `T1/x1` thumb scene surface/settings guardrail batch. Desktop and mobile thumb probes confirmed source `#222222` linear-to-sRGB background parity, source orthographic camera bounds, `x1` `renderToScreen:false` settings, and existing source progress/order, thumb wrapping, image lifecycle, target sizing, project-order, and spotlight projection guardrails. Desktop and mobile output probes passed with no failures/exceptions/console messages.
+All relevant checks passed in the `yD.updateScene()` gallery roll/zoom dynamics batch. Desktop and mobile output/thumb probes confirmed `galleryDynamics.mode=source-yD-updateScene-roll-zoom-bo-targets-Yi-rounded-lerp`, source `bo()` target modes, source `Yi()` lerp mode, rounded state, and rotation/position parity. Browser probes had no failures/exceptions/console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this thumb scene/settings guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this gallery dynamics batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the `T1/x1` thumb scene/settings guardrail: `/tmp/rd-thumb-scene-audit-final.json`.
-- Desktop thumb probe passed with source background/camera/settings parity: `/tmp/rd-thumb-scene-desktop`.
-- Mobile thumb probe passed with the same source background/camera/settings parity: `/tmp/rd-thumb-scene-mobile`.
-- Desktop output probe passed with no browser failures/exceptions/console messages: `/tmp/rd-thumb-scene-output-desktop`.
-- Mobile output probe passed with no browser failures/exceptions/console messages: `/tmp/rd-thumb-scene-output-mobile`.
-- Project media remains a regression gate, not proof of Home parity; it was not touched by this thumb scene/settings guardrail batch.
+- Renderer audit passed after the gallery dynamics guardrail: `/tmp/rd-gallery-dynamics-audit-final.json`.
+- Desktop output probe passed with gallery dynamics parity and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-output-desktop`.
+- Mobile output probe passed with the same gallery dynamics parity and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-output-mobile`.
+- Desktop thumb probe passed with gallery dynamics target/lerp modes, rounded state, source progress order, and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-thumb-desktop`.
+- Mobile thumb probe passed with the same gallery dynamics guardrail and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-thumb-mobile`.
+- Project media remains a regression gate, not proof of Home parity; it was not touched by this gallery dynamics batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -224,7 +224,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.

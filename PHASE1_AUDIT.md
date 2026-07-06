@@ -78,6 +78,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 205 | S1-278 | `yD.updateScene()` gallery roll/zoom dynamics | Source `yD.updateScene(e)` writes scene rotation/progress/negative thumb progress first, then computes roll target with `bo(this.scroll.velocity*-.015,-4,4)`, updates `sceneRotation=Yi(sceneRotation,target,5,e)`, writes `J.workScene.scene.rotation.z`, computes zoom target with `bo(abs(this.scroll.velocity*.0015),0,1)`, updates `zoom=Yi(zoom,target,5,e)`, and writes `J.workScene.scene.position.z=rotation.z-zoom`. Source `bo()` clamps and rounds through `Fn(...,4)`; source `Yi()` uses source-rounded exponential lerp through `PT/Fn`. | The rebuild now uses `sourceClampRound()` for roll/zoom targets and `sourceDamp()` for source-rounded `Yi`-style lerp in `setGalleryProgress()`, preserving the existing source order `sceneWrap -> uTransformX -> thumbProgress -> roll -> zoom`. Runtime probes expose `galleryDynamics` mode, target modes, lerp mode, velocity/delta, roll/zoom targets, rounded state booleans, and rotation/position parity. Thumb and output probes hard-fail on dynamics drift, and renderer audit checks source `bo/Yi` anchors plus rebuild/probe coverage. Build, renderer audit, desktop/mobile output probes, and desktop/mobile thumb probes passed with no browser failures/exceptions/console messages. | Low | Keep this as source gallery dynamics evidence. It narrows a real projection-feel mismatch but does not close Phase 1 visual parity, remaining spotlight/thumb transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 204 | S1-277 | `T1/x1` thumb scene surface/settings guardrail | Source `T1.init()` creates the thumb scene background from `#222222` through `convertLinearToSRGB()` and assigns it to the scene; source `T1.setCamera()` constructs `new OrthographicCamera(-1,1,1,-1,0,1)`; source `T1.setRenderManager()` creates `new x1(renderer, scene, camera)`; source `T1.resize()` calls `renderManager.resize(t,t,1)`; source `x1.initSettings()` defaults `renderToScreen:false`; source `Lo.update()` false branch renders the composite screen into the composite target and then resets the renderer target to `null`. | Intended production visual behavior is unchanged beyond mirroring the source thumb render branch. The rebuild now centralizes `SOURCE_THUMB_BACKGROUND`, uses the source linear-to-sRGB background, keeps the source orthographic bounds, stores thumb render-manager settings as `{ renderToScreen:false }`, branches `renderThumbTargets()` through the source `renderToScreen` shape, and exposes background/camera/settings expected/actual/matches through `__rogierThumbProbe.thumbSceneSurface`. Thumb probe hard-fails on scene-surface or settings drift, and renderer audit checks source `T1/x1/Lo` anchors plus rebuild/probe coverage. Build, renderer audit, desktop/mobile thumb probes, and desktop/mobile output probes passed with no browser failures/exceptions/console messages. | Low | Keep this as thumb scene/settings guardrail evidence only. It does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 203 | S1-276 | `Lu/kA/I1` render-manager init settings guardrail | Source `Lu.initSettings()` owns the base render-manager defaults; source `kA.initSettings()` overrides work settings for mousesim, luminosity, bloom, blur, and fluid; source `I1.initSettings()` owns main settings including `renderToScreen:true`, GPU-tier-gated fluid defaults, and disabled lensflare defaults `scale=(1.5,1.5)`, `exposure=1`, `clamp=1`. | Intended production visual behavior is unchanged. The rebuild now clones source render settings per manager instance, derives runtime main fluid enablement from the source GPU-tier bridge, and exposes work/main expected/actual/matches/instance-owned settings plus main lensflare defaults through `__rogierOutputProbe`. Output probes hard-fail on settings or ownership drift, and renderer audit checks source `Lu/kA/I1` anchors plus rebuild/probe coverage. Build, renderer audit, desktop/mobile output probes, and desktop thumb smoke passed; desktop/mobile probes confirmed exact work/main settings parity, lensflare defaults, and instance-owned settings clones with no browser failures/exceptions/console messages. | Low | Keep this as source settings-ownership evidence only. It does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 202 | S1-275 | `is/p1/w1` active project date-desc order guardrail | Source `is.getProjects()` filters project data with `active !== false` and sorts by `Date.parse(date)` descending. Source `getProjectById()` uses the raw project list, while `getNextProject()` uses the sorted active list from `getProjects()`. | Intended production visual behavior is unchanged except for mirroring source project ordering. `activeProjects` now follows the source active filter plus date-desc sort; output and thumb probes expose/assert the expected source order `hashgraph-vc -> gc-2026 -> following-wildfire -> engaged -> spritexmarvel -> filmsecession -> theroger -> poppr -> demorgen -> thoughtlab`; renderer audit checks mirrored source anchors, rebuild sorting, and probe coverage. Build, renderer audit, desktop/mobile output probes, and desktop/mobile thumb probes passed; probes confirmed `sourceProjectOrder.matchesSource=true` with no browser failures/exceptions/console messages. | Low | Keep this as a source data-order guardrail only. It does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
@@ -5999,6 +6000,45 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-light-state-media`.
 
 Decision: keep light intensity setters owned by source-style `Se.settings` state and update actual Three lights from `onUpdate`. Do not reintroduce separate scalar mirror fields or direct `gsap.to(this, ...)` intensity tweens without mirrored-bundle evidence. Phase 1 remains open because this closes state tween ownership only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution gaps remain unresolved.
+
+### S1-278 `yD.updateScene()` Gallery Roll/Zoom Dynamics
+
+This batch aligns the source gallery roll/zoom dynamics in `yD.updateScene()`. It intentionally avoids screenshot-led tuning and does not change gallery progress order, thumb wrapping formulas, spotlight constants, project data, render-target ownership, shader formulas, or visual constants.
+
+Source evidence:
+
+- Source `yD.updateScene(e)` writes `J.workScene.sceneWrap.rotation.y=_a.degToRad(this.scroll.progress*360+180)`.
+- Source then writes `J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value=this.scroll.progress*1`.
+- Source then calls `J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)`.
+- Source computes roll target with `const t=4,n=bo(this.scroll.velocity*-.015,-t,t)` and updates `this.sceneRotation=Yi(this.sceneRotation,n,5,e)`.
+- Source writes `J.workScene.scene.rotation.z=_a.degToRad(this.sceneRotation)`.
+- Source computes zoom target with `const i=1,r=bo(Math.abs(this.scroll.velocity*.0015),0,i)` and updates `this.zoom=Yi(this.zoom,r,5,e)`.
+- Source writes `J.workScene.scene.position.z=J.workScene.scene.rotation.z-this.zoom`.
+- Source `bo()` clamps and rounds through `Fn(...,4)`, and source `Yi()` uses source-rounded exponential lerp through `PT/Fn`.
+
+Runtime and tooling changes:
+
+- `src/client/webgl.ts` now uses `sourceClampRound()` for gallery roll and zoom targets.
+- `setGalleryProgress()` now updates `sceneRotation` and `zoom` through `sourceDamp()`, preserving source `Yi`-style four-decimal rounded lerp instead of unrounded local interpolation.
+- The existing source order remains `sceneWrap -> uTransformX -> thumbProgress -> roll -> zoom`.
+- `__rogierThumbProbe.galleryDynamics` and `__rogierOutputProbe.camera.galleryDynamics` expose mode, target modes, lerp mode, velocity/delta, roll/zoom targets, rounded-state booleans, and rotation/position parity.
+- `scripts/probe-thumb-spotlight.mjs` and `scripts/probe-output-color.mjs` hard-fail on gallery dynamics mode or parity drift.
+- `scripts/audit-renderer-output.mjs` checks source `bo/Yi` anchors plus rebuild/probe coverage.
+
+Verification:
+
+- `node --check src/client/webgl.ts` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-gallery-dynamics-audit-pre.json` passed; recursive false/null review stayed at the expected `19` source-negative/default entries.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed with `galleryDynamics.mode=source-yD-updateScene-roll-zoom-bo-targets-Yi-rounded-lerp` and no failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-output-desktop`.
+- Mobile output probe passed with the same gallery dynamics guardrail and no failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-output-mobile`.
+- Desktop thumb probe passed with gallery dynamics target/lerp modes, rounded state, source progress order, and no failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-thumb-desktop`.
+- Mobile thumb probe passed with the same gallery dynamics guardrail and no failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-thumb-mobile`.
+
+Decision: keep gallery roll/zoom dynamics source-rounded through `bo/Yi`. Do not reintroduce unrounded local interpolation or clamp-only targets without mirrored-bundle evidence. Phase 1 remains open because this narrows one projection-feel source mismatch only; remaining spotlight/thumb transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution gaps remain unresolved.
 
 ### S1-277 `T1/x1` Thumb Scene Surface/Settings Guardrail
 

@@ -260,6 +260,15 @@ async function runProbe() {
   if ((camera.lastLerp ?? 0) <= 0 || (camera.lastLerp ?? 0) > 0.021) resizeErrors.push("lastLerp");
   if (!Array.isArray(camera.mousePixels) || camera.mousePixels.length !== 2) resizeErrors.push("mousePixels");
   if (!Array.isArray(camera.mouseDeltaPixels) || camera.mouseDeltaPixels.length !== 2) resizeErrors.push("mouseDeltaPixels");
+  const galleryDynamics = camera.galleryDynamics || {};
+  if (galleryDynamics.mode !== "source-yD-updateScene-roll-zoom-bo-targets-Yi-rounded-lerp") resizeErrors.push("galleryDynamicsMode");
+  if (galleryDynamics.rollTargetMode !== "source-bo-clamp-minus4-plus4-Fn4") resizeErrors.push("galleryRollTargetMode");
+  if (galleryDynamics.zoomTargetMode !== "source-bo-clamp-0-1-Fn4") resizeErrors.push("galleryZoomTargetMode");
+  if (galleryDynamics.lerpMode !== "source-Yi-PT-Fn4-exponential-lerp") resizeErrors.push("galleryLerpMode");
+  if (galleryDynamics.sceneRotationRounded !== true) resizeErrors.push("gallerySceneRotationRounded");
+  if (galleryDynamics.zoomRounded !== true) resizeErrors.push("galleryZoomRounded");
+  if (galleryDynamics.rotationMatchesSourceState !== true) resizeErrors.push("galleryRotationMatchesSourceState");
+  if (galleryDynamics.positionMatchesSourceState !== true) resizeErrors.push("galleryPositionMatchesSourceState");
   if (resizeErrors.length) {
     throw new Error(`p1.resize/IT camera source-shape mismatch: ${resizeErrors.join(", ")}`);
   }

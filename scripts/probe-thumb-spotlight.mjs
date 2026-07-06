@@ -183,6 +183,37 @@ async function runProbe() {
   if (!closeTo(probe.galleryProgress, sourceProbeProgress)) {
     sourceShapeErrors.push(`galleryProgress=${probe.galleryProgress},expected=${sourceProbeProgress}`);
   }
+  const galleryDynamics = probe.galleryDynamics || {};
+  if (galleryDynamics.mode !== "source-yD-updateScene-roll-zoom-bo-targets-Yi-rounded-lerp") {
+    sourceShapeErrors.push(`galleryDynamicsMode=${galleryDynamics.mode}`);
+  }
+  if (galleryDynamics.rollTargetMode !== "source-bo-clamp-minus4-plus4-Fn4") {
+    sourceShapeErrors.push(`galleryRollTargetMode=${galleryDynamics.rollTargetMode}`);
+  }
+  if (galleryDynamics.zoomTargetMode !== "source-bo-clamp-0-1-Fn4") {
+    sourceShapeErrors.push(`galleryZoomTargetMode=${galleryDynamics.zoomTargetMode}`);
+  }
+  if (galleryDynamics.lerpMode !== "source-Yi-PT-Fn4-exponential-lerp") {
+    sourceShapeErrors.push(`galleryLerpMode=${galleryDynamics.lerpMode}`);
+  }
+  if (!closeTo(galleryDynamics.rollTarget ?? NaN, 0)) {
+    sourceShapeErrors.push(`galleryRollTarget=${galleryDynamics.rollTarget}`);
+  }
+  if (!closeTo(galleryDynamics.zoomTarget ?? NaN, 0)) {
+    sourceShapeErrors.push(`galleryZoomTarget=${galleryDynamics.zoomTarget}`);
+  }
+  if (galleryDynamics.sceneRotationRounded !== true) {
+    sourceShapeErrors.push(`gallerySceneRotationRounded=${galleryDynamics.sceneRotationRounded}`);
+  }
+  if (galleryDynamics.zoomRounded !== true) {
+    sourceShapeErrors.push(`galleryZoomRounded=${galleryDynamics.zoomRounded}`);
+  }
+  if (galleryDynamics.rotationMatchesSourceState !== true) {
+    sourceShapeErrors.push(`galleryRotationMatchesSourceState=${galleryDynamics.rotationMatchesSourceState}`);
+  }
+  if (galleryDynamics.positionMatchesSourceState !== true) {
+    sourceShapeErrors.push(`galleryPositionMatchesSourceState=${galleryDynamics.positionMatchesSourceState}`);
+  }
   if (probe.thumbHierarchyMode !== "source-T1-w1-scrollWrap-E1-mesh") {
     sourceShapeErrors.push(`thumbHierarchyMode=${probe.thumbHierarchyMode}`);
   }

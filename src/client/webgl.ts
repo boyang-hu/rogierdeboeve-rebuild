@@ -160,6 +160,25 @@ type ThumbProbeWindow = Window & {
     debugProgress: number | null;
     sourceProgressSignMode: string;
     sourceProgressUpdateOrder: string;
+    sourceProgressTransformOrder: string;
+    galleryDynamics: {
+      mode: string;
+      rollTargetMode: string;
+      zoomTargetMode: string;
+      lerpMode: string;
+      velocity: number;
+      delta: number;
+      rollTarget: number;
+      zoomTarget: number;
+      sceneRotation: number;
+      zoom: number;
+      sceneRotationRounded: boolean;
+      zoomRounded: boolean;
+      rotationZ: number;
+      positionZ: number;
+      rotationMatchesSourceState: boolean;
+      positionMatchesSourceState: boolean;
+    };
     thumbPositionMode: string;
     thumbHierarchyMode: string;
     thumbWrapParentIsScene: boolean;
@@ -382,6 +401,10 @@ function sourceRound(value: number, precision = 4) {
 
 function sourceDamp(value: number, target: number, lambda: number, delta: number) {
   return sourceRound(MathUtils.lerp(value, target, 1 - Math.exp(-lambda * delta)));
+}
+
+function sourceClampRound(value: number, min: number, max: number) {
+  return sourceRound(MathUtils.clamp(value, min, max));
 }
 
 type SourceRenderSettings = {
@@ -4008,6 +4031,10 @@ export class WebGLBackdrop {
   private thumbIsTransitioning = false;
   private sceneRotation = 0;
   private zoom = 0;
+  private galleryDynamicsVelocity = 0;
+  private galleryDynamicsDelta = 1 / 60;
+  private galleryRollTarget = 0;
+  private galleryZoomTarget = 0;
   private auxiliaryScrollLast = 0;
   private cameraOrigin = new Vector3(0, 0, 5.5);
   private cameraTarget = new Vector3(0, 0, 5.5);
@@ -4348,14 +4375,40 @@ export class WebGLBackdrop {
   setGalleryProgress(progress: number, velocity = 0, delta = 1 / 60) {
     this.galleryProgress = progress;
     const targetRotation = MathUtils.degToRad(progress * 360 + 180);
-    const lerpFactor = 1 - Math.exp(-5 * Math.max(0.001, delta));
     this.sceneWrap.rotation.y = targetRotation;
     this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     this.updateThumbGallery(-progress);
-    this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * lerpFactor;
-    this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * lerpFactor;
+    this.galleryDynamicsVelocity = velocity;
+    this.galleryDynamicsDelta = delta;
+    this.galleryRollTarget = sourceClampRound(velocity * -0.015, -4, 4);
+    this.galleryZoomTarget = sourceClampRound(Math.abs(velocity * 0.0015), 0, 1);
+    this.sceneRotation = sourceDamp(this.sceneRotation, this.galleryRollTarget, 5, delta);
+    this.zoom = sourceDamp(this.zoom, this.galleryZoomTarget, 5, delta);
     this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation);
     this.homeScene.position.z = this.homeScene.rotation.z - this.zoom;
+  }
+
+  private sourceGalleryDynamicsProbe() {
+    const rotationZ = this.homeScene.rotation.z;
+    const positionZ = this.homeScene.position.z;
+    return {
+      mode: "source-yD-updateScene-roll-zoom-bo-targets-Yi-rounded-lerp",
+      rollTargetMode: "source-bo-clamp-minus4-plus4-Fn4",
+      zoomTargetMode: "source-bo-clamp-0-1-Fn4",
+      lerpMode: "source-Yi-PT-Fn4-exponential-lerp",
+      velocity: this.galleryDynamicsVelocity,
+      delta: this.galleryDynamicsDelta,
+      rollTarget: this.galleryRollTarget,
+      zoomTarget: this.galleryZoomTarget,
+      sceneRotation: this.sceneRotation,
+      zoom: this.zoom,
+      sceneRotationRounded: Math.abs(this.sceneRotation - sourceRound(this.sceneRotation)) < 1e-10,
+      zoomRounded: Math.abs(this.zoom - sourceRound(this.zoom)) < 1e-10,
+      rotationZ,
+      positionZ,
+      rotationMatchesSourceState: Math.abs(rotationZ - MathUtils.degToRad(this.sceneRotation)) < 1e-10,
+      positionMatchesSourceState: Math.abs(positionZ - (rotationZ - this.zoom)) < 1e-10,
+    };
   }
 
   enterWorkGallery(activeSlug = this.activeSlug) {
@@ -7464,6 +7517,7 @@ void main() {
       sourceProgressSignMode: "source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress",
       sourceProgressUpdateOrder: "source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom",
       sourceProgressTransformOrder: "source-yD-sceneWrap-then-uTransformX-then-thumbProgress",
+      galleryDynamics: this.sourceGalleryDynamicsProbe(),
       sourceDefaults: {
         thumbDarknessIntensity: SOURCE_INITIAL_THUMB_DARKNESS,
         homeThumbDarknessFallback: SOURCE_HOME_THUMB_DARKNESS_FALLBACK,
@@ -7800,6 +7854,7 @@ void main() {
         lookAt: this.cameraLookAt.toArray(),
         rotateAngle: MathUtils.radToDeg(this.cameraRotateAngle),
         sceneWrapY: this.sceneWrap.position.y,
+        galleryDynamics: this.sourceGalleryDynamicsProbe(),
       },
       settings: {
         passOrder: this.debugPassOrder === "raw-work-composite" ? "raw-work-composite" : "source-work-composite",
