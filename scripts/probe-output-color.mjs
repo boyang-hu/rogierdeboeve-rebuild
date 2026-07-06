@@ -1406,8 +1406,11 @@ async function runProbe() {
   if (lensflareUniforms?.setLightPositionMode !== "source-I1-setLightPosition-guards-lensflare-enabled") {
     materialSurfaceErrors.push("lensflareSetLightPositionMode");
   }
-  if (lensflareUniforms?.mouseMoveInputMode !== "source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h") {
+  if (lensflareUniforms?.mouseMoveInputMode !== "source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h-direct-viewport-height") {
     materialSurfaceErrors.push("lensflareMouseMoveInputMode");
+  }
+  if (lensflareUniforms?.mouseMoveDenominatorMode !== "source-Pe-h-direct-no-rebuild-Math.max-clamp") {
+    materialSurfaceErrors.push("lensflareMouseMoveDenominatorMode");
   }
   if (lensflareUniforms?.defaultDisabledNoMaterialMutation !== true) {
     materialSurfaceErrors.push("lensflareDefaultDisabledNoMaterialMutation");

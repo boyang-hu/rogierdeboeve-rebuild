@@ -8412,7 +8412,7 @@ void main() {
     this.targetPointer.y = -(event.clientY / sourceHeight - 0.5) * 2;
     this.pointerRay.set(this.targetPointer.x, this.targetPointer.y);
     this.screenMouseSimTargetPos.set(event.clientX / sourceWidth, 1 - event.clientY / sourceHeight);
-    this.setMainLensflareLightPosition(0, 1 - event.clientY / Math.max(1, window.innerHeight));
+    this.setMainLensflareLightPosition(0, 1 - event.clientY / window.innerHeight);
     this.updatePointerProjection();
   };
 
@@ -10467,7 +10467,8 @@ void main() {
             ownership: "source-I1-lensflareMaterial-created-only-when-enabled",
             enabled: SOURCE_MAIN_LENSFLARE_SETTINGS.enabled,
             setLightPositionMode: "source-I1-setLightPosition-guards-lensflare-enabled",
-            mouseMoveInputMode: "source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h",
+            mouseMoveInputMode: "source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h-direct-viewport-height",
+            mouseMoveDenominatorMode: "source-Pe-h-direct-no-rebuild-Math.max-clamp",
             defaultDisabledNoMaterialMutation: !SOURCE_MAIN_LENSFLARE_SETTINGS.enabled && !this.mainLensflareMaterial,
             clearMode: "source-I1-lensflare-explicit-clear",
             targetSize: {

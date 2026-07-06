@@ -70,9 +70,40 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `Ka` mouse-simulation constructor null sampler ownership is now aligned and guarded for the screen/local mouse simulation paths. This corrects a previous over-broad blue-noise binding attribution; Phase 1 remains open.
+Latest accepted batch: source `U1/I1` lensflare mouse input now uses the source `1 - t / Pe.h` direct viewport-height denominator and the renderer audit rejects the old rebuild-only `Math.max(1, window.innerHeight)` guard. This tightens an earlier S1-283 guardrail; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-330 `U1/I1` Lensflare Mouse Input Denominator Guardrail
+
+This batch tightens one existing source guardrail in the main render-manager input chain. It does not change shader text, render targets, visual constants, project data, route behavior, pointer/raycast behavior, or the default disabled lensflare branch.
+
+Source evidence:
+
+- Source `U1.onMouseMove({x:e,y:t})` calls `this.renderManager&&this.renderManager.setLightPosition(0,1-t/Pe.h)`.
+- Source `I1.setLightPosition(e,t)` writes `this.lensflareMaterial.uniforms.uLightPosition.value.set(e,t)` only when `this.settings.lensflare.enabled`.
+- Source `I1.initSettings()` keeps `lensflare.enabled` false by default, so this input path remains a no-op unless the source lensflare branch is enabled.
+
+Runtime and tooling changes:
+
+- The shared rebuild mousemove path now calls `setMainLensflareLightPosition(0, 1 - event.clientY / window.innerHeight)` instead of using the rebuild-only `Math.max(1, window.innerHeight)` denominator.
+- `__rogierOutputProbe.uniforms.lensflare` exposes `mouseMoveInputMode=source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h-direct-viewport-height` and `mouseMoveDenominatorMode=source-Pe-h-direct-no-rebuild-Math.max-clamp`.
+- `scripts/probe-output-color.mjs` asserts both markers, while `scripts/audit-renderer-output.mjs` checks the mirrored source anchor, requires the direct denominator, and rejects restoring the old defensive denominator.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-lensflare-denom-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile output probes passed with no failures/exceptions/console messages and confirmed the direct viewport-height denominator markers: `/tmp/rd-lensflare-denom-output-desktop`, `/tmp/rd-lensflare-denom-output-mobile`.
+- Thumb spotlight probe passed and retained the thumb render-transfer guardrail: `/tmp/rd-lensflare-denom-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-lensflare-denom-media`.
+
+Decision: keep the source direct `Pe.h` denominator for the `U1/I1` lensflare mouse input path. Do not restore the rebuild-only `Math.max(1, window.innerHeight)` guard without mirrored-bundle evidence. Phase 1 remains open because this is input-path guardrail parity only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-329 `Ka` Mouse-Simulation Constructor Null Noise Ownership
 

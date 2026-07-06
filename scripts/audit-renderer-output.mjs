@@ -2167,8 +2167,10 @@ const summary = {
         mainRawRenderCamera: rebuildWebgl.includes("mainRawRenderCamera: \"source-U1-I1-renderTargetA-uses-yg-camera\""),
         c1UpdateOrder: rebuildWebgl.includes("uTimeUpdateOrder: \"source-U1-C1-update-after-I1-render\""),
         lensflareMouseMoveInput:
-          rebuildWebgl.includes("this.setMainLensflareLightPosition(0, 1 - event.clientY / Math.max(1, window.innerHeight));") &&
-          rebuildWebgl.includes("mouseMoveInputMode: \"source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h\""),
+          rebuildWebgl.includes("this.setMainLensflareLightPosition(0, 1 - event.clientY / window.innerHeight);") &&
+          !rebuildWebgl.includes("this.setMainLensflareLightPosition(0, 1 - event.clientY / Math.max(1, window.innerHeight));") &&
+          rebuildWebgl.includes("mouseMoveInputMode: \"source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h-direct-viewport-height\"") &&
+          rebuildWebgl.includes("mouseMoveDenominatorMode: \"source-Pe-h-direct-no-rebuild-Math.max-clamp\""),
       },
       excerpt: compact(sourceMainU1Scene.text),
     },
