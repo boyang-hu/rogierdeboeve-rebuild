@@ -304,6 +304,37 @@ async function runProbe() {
   if (materialErrors.length) {
     throw new Error(`VA material source-state mismatch: ${materialErrors.join(", ")}`);
   }
+  const geometryErrors = [];
+  const assertSourceMgGeometry = (label, geometry) => {
+    const parameters = geometry?.parameters || {};
+    if (!geometry) geometryErrors.push(`${label}GeometryMissing`);
+    if (geometry?.mode !== "source-mg-rounded-box-radius-default-segments") geometryErrors.push(`${label}Mode`);
+    if (geometry?.sourceOrder !== "source-mg-E-C-w-y-U-b-index-order") geometryErrors.push(`${label}SourceOrder`);
+    if (geometry?.type !== "RoundedBoxGeometry") geometryErrors.push(`${label}Type`);
+    if (geometry?.indexed !== true) geometryErrors.push(`${label}Indexed`);
+    if (geometry?.positionCount !== 24) geometryErrors.push(`${label}PositionCount`);
+    if (geometry?.normalCount !== 24) geometryErrors.push(`${label}NormalCount`);
+    if (geometry?.uvCount !== 24) geometryErrors.push(`${label}UvCount`);
+    if (geometry?.indexCount !== 132) geometryErrors.push(`${label}IndexCount`);
+    if (geometry?.expectedVertexCount !== 24) geometryErrors.push(`${label}ExpectedVertexCount`);
+    if (geometry?.expectedIndexCount !== 132) geometryErrors.push(`${label}ExpectedIndexCount`);
+    if (geometry?.uvAllCenter !== true) geometryErrors.push(`${label}UvCenter`);
+    if (Math.abs((parameters.width ?? 0) - 1.25) > 0.001) geometryErrors.push(`${label}Width`);
+    if (Math.abs((parameters.height ?? 0) - 1.25) > 0.001) geometryErrors.push(`${label}Height`);
+    if (Math.abs((parameters.depth ?? 0) - 1.25) > 0.001) geometryErrors.push(`${label}Depth`);
+    if (Math.abs((parameters.radius ?? 0) - 0.05) > 0.001) geometryErrors.push(`${label}Radius`);
+    if (parameters.radiusSegments !== 1) geometryErrors.push(`${label}RadiusSegments`);
+  };
+  assertSourceMgGeometry("active", workSettings.activeGeometry);
+  assertSourceMgGeometry("about", workSettings.aboutGeometry);
+  const floatingGeometry = workSettings.floatingGeometry || {};
+  if (floatingGeometry.mode !== "source-ZA-box-geometry-not-mg") geometryErrors.push("floatingMode");
+  if (floatingGeometry.type !== "BoxGeometry") geometryErrors.push("floatingType");
+  if (floatingGeometry.indexed !== true) geometryErrors.push("floatingIndexed");
+  if (Math.abs((floatingGeometry.parameters?.width ?? 0) - 0.5) > 0.001) geometryErrors.push("floatingWidth");
+  if (geometryErrors.length) {
+    throw new Error(`source block geometry mismatch: ${geometryErrors.join(", ")}`);
+  }
   const p1UpdateCulling = workSettings.p1UpdateCulling || {};
   const activeRevealErrors = [];
   if (workSettings.activeProjectRevealOwnership !== "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out") {

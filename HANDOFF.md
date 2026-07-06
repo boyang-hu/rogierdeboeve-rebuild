@@ -143,12 +143,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned `GA.createPlane()` ray-plane z scale with source.
-- Source sets `rayPlane.scale` to `(35*1.3,23*1.3,1)` and then calls `rayPlane.scale.multiplyScalar(t)` with `t=1.5`, so the source ray plane z scale is also `1.5`.
-- `createWorkRayPlane()` now sets z to `MOUSE_RAY_SCALE` instead of leaving it at `1`.
-- `__rogierOutputProbe.mouseSimulation.active` now exposes `sourceRayPlaneScale=[68.25,44.85,1.5]`; `sourceShape.rayPlaneScaleMatchesSource` checks x/y/z.
-- `scripts/probe-output-color.mjs` hard-fails on ray-plane z drift, and renderer audit checks the mirrored `multiplyScalar(t)` source anchor plus rebuild/probe coverage.
-- The previous QA cleanup batch is committed as `66183eb Clean A1 audit surface checks`.
+- Replaced the Three examples rounded-box helper with a source-shaped local `mg` geometry builder.
+- Source `class mg extends Vt` defaults `radiusSegments` to `1`, clamps `new mg(e,e,e,.05)` to radius `.05`, emits indexed `position/normal/uv`, and writes all UVs to `.5,.5`.
+- Ordinary `GA` work blocks and about `$A` blocks now use `sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)`.
+- Floating `ZA` blocks remain `BoxGeometry(0.5,0.5,0.5)`, matching source `new Cr(e,e,e)`.
+- `__rogierOutputProbe.settings.work` now exposes `activeGeometry`, `aboutGeometry`, and `floatingGeometry`.
+- `scripts/probe-output-color.mjs` hard-fails on source `mg` geometry drift: indexed, `position/normal/uv=24`, `index=132`, radius `.05`, `radiusSegments=1`, centered UVs, and `ZA` box geometry.
+- Renderer audit now checks source `mg/GA/$A/ZA` anchors plus rebuild/probe coverage.
+- The previous ray-plane scale batch is committed as `98f97d0 Align GA ray plane scale`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -159,13 +161,16 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-rayplane-scale-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-mg-geometry-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://127.0.0.1:5175 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-rayplane-output-desktop CDP_PORT=9278 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://127.0.0.1:5175 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-rayplane-output-mobile CDP_PORT=9279 VIEWPORT=mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-mg-geometry-output-desktop CDP_PORT=9280 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-mg-geometry-output-mobile CDP_PORT=9281 VIEWPORT=mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-mg-geometry-thumb-desktop CDP_PORT=9282 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-mg-geometry-thumb-mobile CDP_PORT=9283 VIEWPORT=mobile node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-mg-geometry-project-media CDP_PORT=9284 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `GA.createPlane()` ray-plane scale batch. Desktop and mobile output probes confirmed `rayPlaneScale=[68.25,44.85,1.5]`, matching `sourceRayPlaneScale`, with no browser failures/exceptions/console messages. Renderer-audit recursive false output remains `8`, limited to render-target default/snapshot diagnostics.
+All relevant checks passed in the `mg/GA/$A` rounded block geometry batch. Desktop and mobile output probes confirmed work/about `position/normal/uv=24`, `index=132`, `radius=.05`, `radiusSegments=1`, `uvAllCenter=true`, and floating `BoxGeometry`, with no browser failures/exceptions/console messages. Desktop/mobile thumb spotlight probes passed, and project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks. Renderer-audit recursive false output remains `8`, limited to render-target default/snapshot diagnostics.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky/displacement guardrail batch.
 

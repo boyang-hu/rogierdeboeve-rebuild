@@ -4,6 +4,7 @@ import {
   BackSide,
   Box3,
   BoxGeometry,
+  BufferAttribute,
   BufferGeometry,
   CircleGeometry,
   ClampToEdgeWrapping,
@@ -55,7 +56,6 @@ import {
   RepeatWrapping,
   type Material,
 } from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import gsap from "gsap";
 
@@ -3539,6 +3539,275 @@ const SOURCE_I1_REFLECTION_WIDTH = 512;
 const SOURCE_I1_REFLECTION_HEIGHT = 512;
 const SOURCE_I1_REFLECTION_BLUR_ITERATIONS = 2;
 
+type SourceRoundedBoxGeometry = BufferGeometry & {
+  parameters: {
+    width: number;
+    height: number;
+    depth: number;
+    radius: number;
+    radiusSegments: number;
+  };
+};
+
+function sourceRoundedBoxVertexCount(radiusSegments: number) {
+  const rowVertexCount = (radiusSegments + 1) * radiusSegments + 1;
+  return rowVertexCount << 3;
+}
+
+function sourceRoundedBoxIndexCount(radiusSegments: number) {
+  return 48 * radiusSegments * radiusSegments + 48 * radiusSegments + 36;
+}
+
+function sourceRoundedBoxGeometry(width = 1, height = 1, depth = 1, radius = 0.15, radiusSegments = 1) {
+  const geometry = new BufferGeometry() as SourceRoundedBoxGeometry;
+  geometry.type = "RoundedBoxGeometry";
+  const segments = Number.isNaN(radiusSegments) ? 1 : Math.max(1, Math.floor(radiusSegments));
+  const sourceWidth = Number.isNaN(width) ? 1 : width;
+  const sourceHeight = Number.isNaN(height) ? 1 : height;
+  const sourceDepth = Number.isNaN(depth) ? 1 : depth;
+  const sourceRadius = Math.min(
+    Number.isNaN(radius) ? 0.15 : radius,
+    Math.min(sourceWidth, Math.min(sourceHeight, sourceDepth)) / 2,
+  );
+  geometry.parameters = {
+    width: sourceWidth,
+    height: sourceHeight,
+    depth: sourceDepth,
+    radius: sourceRadius,
+    radiusSegments: segments,
+  };
+
+  const halfWidth = sourceWidth / 2 - sourceRadius;
+  const halfHeight = sourceHeight / 2 - sourceRadius;
+  const halfDepth = sourceDepth / 2 - sourceRadius;
+  const ringSize = segments + 1;
+  const rowSize = ringSize * segments + 1;
+  const topIndex = ringSize * segments;
+  const positionsByCorner: Vector3[][] = [];
+  const normalsByCorner: Vector3[][] = [];
+  const positions: Vector3[] = [];
+  const normals: Vector3[] = [];
+  const indices: number[] = [];
+  const tempNormal = new Vector3();
+
+  function createVertices() {
+    const cornerSigns = [
+      new Vector3(1, 1, 1),
+      new Vector3(1, 1, -1),
+      new Vector3(-1, 1, -1),
+      new Vector3(-1, 1, 1),
+      new Vector3(1, -1, 1),
+      new Vector3(1, -1, -1),
+      new Vector3(-1, -1, -1),
+      new Vector3(-1, -1, 1),
+    ];
+    for (let index = 0; index < 8; index += 1) {
+      positionsByCorner.push([]);
+      normalsByCorner.push([]);
+    }
+
+    const quarterTurn = Math.PI / 2;
+    const cornerOffset = new Vector3(halfWidth, halfHeight, halfDepth);
+    for (let row = 0; row <= segments; row += 1) {
+      const rowRatio = row / segments;
+      const rowAngle = rowRatio * quarterTurn;
+      const rowCos = Math.cos(rowAngle);
+      const rowSin = Math.sin(rowAngle);
+      if (row === segments) {
+        tempNormal.set(0, 1, 0);
+        const position = tempNormal.clone().multiplyScalar(sourceRadius).add(cornerOffset);
+        positionsByCorner[0].push(position);
+        positions.push(position);
+        const normal = tempNormal.clone();
+        normalsByCorner[0].push(normal);
+        normals.push(normal);
+        continue;
+      }
+
+      for (let column = 0; column <= segments; column += 1) {
+        const columnRatio = column / segments;
+        const columnAngle = columnRatio * quarterTurn;
+        tempNormal.x = rowCos * Math.cos(columnAngle);
+        tempNormal.y = rowSin;
+        tempNormal.z = rowCos * Math.sin(columnAngle);
+        const position = tempNormal.clone().multiplyScalar(sourceRadius).add(cornerOffset);
+        positionsByCorner[0].push(position);
+        positions.push(position);
+        const normal = tempNormal.clone().normalize();
+        normalsByCorner[0].push(normal);
+        normals.push(normal);
+      }
+    }
+
+    for (let corner = 1; corner < 8; corner += 1) {
+      for (let vertex = 0; vertex < positionsByCorner[0].length; vertex += 1) {
+        const position = positionsByCorner[0][vertex].clone().multiply(cornerSigns[corner]);
+        positionsByCorner[corner].push(position);
+        positions.push(position);
+        const normal = normalsByCorner[0][vertex].clone().multiply(cornerSigns[corner]);
+        normalsByCorner[corner].push(normal);
+        normals.push(normal);
+      }
+    }
+  }
+
+  function appendCenterFaces() {
+    let a = topIndex;
+    let b = topIndex + rowSize;
+    let c = topIndex + rowSize * 2;
+    let d = topIndex + rowSize * 3;
+    indices.push(a, b, c, a, c, d);
+    a = topIndex + rowSize * 4;
+    b = topIndex + rowSize * 5;
+    c = topIndex + rowSize * 6;
+    d = topIndex + rowSize * 7;
+    indices.push(a, c, b, a, d, c);
+    a = 0;
+    b = rowSize;
+    c = rowSize * 4;
+    d = rowSize * 5;
+    indices.push(a, c, b, b, c, d);
+    a = rowSize * 2;
+    b = rowSize * 3;
+    c = rowSize * 6;
+    d = rowSize * 7;
+    indices.push(a, c, b, b, c, d);
+    a = segments;
+    b = segments + rowSize * 3;
+    c = segments + rowSize * 4;
+    d = segments + rowSize * 7;
+    indices.push(a, b, c, b, d, c);
+    a = segments + rowSize;
+    b = segments + rowSize * 2;
+    c = segments + rowSize * 5;
+    d = segments + rowSize * 6;
+    indices.push(a, c, b, b, c, d);
+  }
+
+  function appendCornerFaces() {
+    const flip = [true, false, true, false, false, true, false, true];
+    const lastRowOffset = ringSize * (segments - 1);
+    for (let corner = 0; corner < 8; corner += 1) {
+      const cornerStart = rowSize * corner;
+      for (let row = 0; row < segments - 1; row += 1) {
+        const rowStart = row * ringSize;
+        const nextRowStart = (row + 1) * ringSize;
+        for (let column = 0; column < segments; column += 1) {
+          const nextColumn = column + 1;
+          const a = cornerStart + rowStart + column;
+          const b = cornerStart + rowStart + nextColumn;
+          const c = cornerStart + nextRowStart + column;
+          const d = cornerStart + nextRowStart + nextColumn;
+          if (flip[corner]) {
+            indices.push(a, c, b, b, c, d);
+          } else {
+            indices.push(a, b, c, b, d, c);
+          }
+        }
+      }
+      for (let column = 0; column < segments; column += 1) {
+        const a = cornerStart + lastRowOffset + column;
+        const b = cornerStart + lastRowOffset + column + 1;
+        const c = cornerStart + topIndex;
+        if (flip[corner]) {
+          indices.push(a, c, b);
+        } else {
+          indices.push(a, b, c);
+        }
+      }
+    }
+  }
+
+  function appendVerticalSideFaces() {
+    for (let side = 0; side < 4; side += 1) {
+      const topStart = side * rowSize;
+      const bottomStart = 4 * rowSize + topStart;
+      const flip = Boolean(side & 1);
+      for (let row = 0; row < segments; row += 1) {
+        const nextRow = row + 1;
+        const a = topStart + row;
+        const b = topStart + nextRow;
+        const c = bottomStart + row;
+        const d = bottomStart + nextRow;
+        if (flip) {
+          indices.push(a, c, b, b, c, d);
+        } else {
+          indices.push(a, b, c, b, d, c);
+        }
+      }
+    }
+  }
+
+  function appendDepthSideFaces() {
+    const lastRow = segments - 1;
+    const frontCorners = [0, 1, 4, 5];
+    const backCorners = [3, 2, 7, 6];
+    const flip = [0, 1, 1, 0];
+    for (let side = 0; side < 4; side += 1) {
+      const frontStart = frontCorners[side] * rowSize;
+      const backStart = backCorners[side] * rowSize;
+      for (let row = 0; row <= lastRow; row += 1) {
+        const a = frontStart + segments + row * ringSize;
+        const b = frontStart + (row !== lastRow ? segments + (row + 1) * ringSize : rowSize - 1);
+        const c = backStart + segments + row * ringSize;
+        const d = backStart + (row !== lastRow ? segments + (row + 1) * ringSize : rowSize - 1);
+        if (flip[side]) {
+          indices.push(a, c, b, b, c, d);
+        } else {
+          indices.push(a, b, c, b, d, c);
+        }
+      }
+    }
+  }
+
+  function appendHorizontalSideFaces() {
+    const leftCorners = [0, 2, 4, 6];
+    const rightCorners = [1, 3, 5, 7];
+    for (let side = 0; side < 4; side += 1) {
+      const leftStart = rowSize * leftCorners[side];
+      const rightStart = rowSize * rightCorners[side];
+      const flip = side <= 1;
+      for (let row = 0; row < segments; row += 1) {
+        const rowStart = row * ringSize;
+        const nextRowStart = (row + 1) * ringSize;
+        const a = leftStart + rowStart;
+        const b = leftStart + nextRowStart;
+        const c = rightStart + rowStart;
+        const d = rightStart + nextRowStart;
+        if (flip) {
+          indices.push(a, c, b, b, c, d);
+        } else {
+          indices.push(a, b, c, b, d, c);
+        }
+      }
+    }
+  }
+
+  createVertices();
+  appendCenterFaces();
+  appendCornerFaces();
+  appendVerticalSideFaces();
+  appendDepthSideFaces();
+  appendHorizontalSideFaces();
+
+  const positionValues: number[] = [];
+  const normalValues: number[] = [];
+  const uvValues: number[] = [];
+  for (let index = 0; index < positions.length; index += 1) {
+    const position = positions[index];
+    const normal = normals[index];
+    positionValues.push(position.x, position.y, position.z);
+    normalValues.push(normal.x, normal.y, normal.z);
+    uvValues.push(0.5, 0.5);
+  }
+
+  geometry.setIndex(new BufferAttribute(new Uint16Array(indices), 1));
+  geometry.setAttribute("position", new Float32BufferAttribute(positionValues, 3));
+  geometry.setAttribute("normal", new Float32BufferAttribute(normalValues, 3));
+  geometry.setAttribute("uv", new Float32BufferAttribute(uvValues, 2));
+  return geometry;
+}
+
 function makeFluidRenderTarget() {
   const target = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false, type: FloatType });
   target.texture.generateMipmaps = false;
@@ -3719,6 +3988,36 @@ function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, s
     stats: renderTargetStats(renderer, target, sampleSize),
     gridStats: renderTargetGridStats(renderer, target),
     bandStats: renderTargetBandStats(renderer, target),
+  };
+}
+
+function sourceRoundedBoxGeometryProbe(geometry?: BufferGeometry) {
+  const sourceGeometry = geometry as SourceRoundedBoxGeometry | undefined;
+  const parameters = sourceGeometry?.parameters ?? null;
+  const radiusSegments = typeof parameters?.radiusSegments === "number" ? parameters.radiusSegments : null;
+  const uv = geometry?.attributes.uv;
+  let uvAllCenter = Boolean(uv && uv.count > 0);
+  if (uv) {
+    for (let index = 0; index < uv.count; index += 1) {
+      if (Math.abs(uv.getX(index) - 0.5) > 1e-6 || Math.abs(uv.getY(index) - 0.5) > 1e-6) {
+        uvAllCenter = false;
+        break;
+      }
+    }
+  }
+  return {
+    mode: "source-mg-rounded-box-radius-default-segments",
+    type: geometry?.type ?? null,
+    indexed: Boolean(geometry?.index),
+    indexCount: geometry?.index?.count ?? null,
+    positionCount: geometry?.attributes.position?.count ?? null,
+    normalCount: geometry?.attributes.normal?.count ?? null,
+    uvCount: geometry?.attributes.uv?.count ?? null,
+    uvAllCenter,
+    parameters,
+    expectedVertexCount: radiusSegments === null ? null : sourceRoundedBoxVertexCount(radiusSegments),
+    expectedIndexCount: radiusSegments === null ? null : sourceRoundedBoxIndexCount(radiusSegments),
+    sourceOrder: "source-mg-E-C-w-y-U-b-index-order",
   };
 }
 
@@ -4926,7 +5225,7 @@ export class WebGLBackdrop {
   }
 
   private createBlockMesh(material: WorkBlockMaterial) {
-    const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 1, 0.05);
+    const geometry = sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05);
     const count = GRID_COLS * GRID_ROWS * this.gridLayers;
     const matrices = new Array<Matrix4>(count);
     const gridOffsets = new Float32Array(count * 3);
@@ -5032,7 +5331,7 @@ export class WebGLBackdrop {
     const zNum = sourceLowRes() ? 4 : 4;
     const material = this.createAuxiliaryBlockMaterial("about");
     material.uniforms.uGridSize.value.set(xNum, yNum, zNum);
-    const geometry = new RoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 1, 0.05);
+    const geometry = sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05);
     const maxCount = xNum * yNum * zNum;
     const mesh = new InstancedMesh(geometry, material, maxCount);
     const rotationWrap = new Object3D();
@@ -8000,6 +8299,18 @@ void main() {
             }),
           },
           p1UpdateCulling: this.p1UpdateCullingProbe(),
+          activeGeometry: activeWorkItem ? sourceRoundedBoxGeometryProbe(activeWorkItem.mesh.geometry) : null,
+          aboutGeometry: this.aboutBlocks ? sourceRoundedBoxGeometryProbe(this.aboutBlocks.mesh.geometry) : null,
+          floatingGeometry: this.floatingBlocks ? {
+            mode: "source-ZA-box-geometry-not-mg",
+            type: this.floatingBlocks.mesh.geometry.type,
+            indexed: Boolean(this.floatingBlocks.mesh.geometry.index),
+            indexCount: this.floatingBlocks.mesh.geometry.index?.count ?? null,
+            positionCount: this.floatingBlocks.mesh.geometry.attributes.position?.count ?? null,
+            normalCount: this.floatingBlocks.mesh.geometry.attributes.normal?.count ?? null,
+            uvCount: this.floatingBlocks.mesh.geometry.attributes.uv?.count ?? null,
+            parameters: (this.floatingBlocks.mesh.geometry as BoxGeometry).parameters ?? null,
+          } : null,
           activeMaterial: activeWorkItem ? {
             color: activeWorkItem.material.color.toArray(),
             emissive: activeWorkItem.material.emissive.toArray(),

@@ -275,7 +275,10 @@ const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceSkyB1 = extractTemplate(bundle, "B1", "`,Zs=");
 const sourceVA = extractAround(bundle, "class VA extends", 320, 2200);
 const sourceXA = extractAround(bundle, "class XA extends", 320, 2200);
+const sourceMG = extractAround(bundle, "class mg extends", 0, 5900);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
+const sourceDollarA = extractAround(bundle, "class $A extends", 200, 5600);
+const sourceZA = extractAround(bundle, "class ZA extends", 200, 2200);
 const sourceSA = bundle.match(/class sA\{[\s\S]*?class Ka\{/)?.[0] ?? null;
 const sourceMouseSimulationFragment = extractTemplate(bundle, "rA", "`,oA=");
 const sourceMouseSimulationVertex = extractTemplate(bundle, "oA", "`;class Ka");
@@ -2612,11 +2615,55 @@ const summary = {
       ]),
       excerpt: compact(sourceSkyZ1.text),
     },
+    mgRoundedBox: sourceMG && {
+      index: sourceMG.index,
+      checks: checks(sourceMG.text, [
+        "class mg extends Vt",
+        "this.type=\"RoundedBoxGeometry\"",
+        "r=isNaN(r)?1:Math.max(1,Math.floor(r))",
+        "i=isNaN(i)?.15:i",
+        "i=Math.min(i,Math.min(e,Math.min(t,Math.min(n)))/2)",
+        "this.parameters={width:e,height:t,depth:n,radius:i,radiusSegments:r}",
+        "var u=r+1,d=u*r+1<<3",
+        "E(),C(),w(),y(),U(),b()",
+        "f.setXY(z,.5,.5)",
+        "this.setIndex(new It(new Uint16Array(_),1))",
+        "this.setAttribute(\"position\",l),this.setAttribute(\"normal\",h),this.setAttribute(\"uv\",f)",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "function sourceRoundedBoxGeometry(",
+        "function sourceRoundedBoxVertexCount(radiusSegments: number)",
+        "function sourceRoundedBoxIndexCount(radiusSegments: number)",
+        "geometry.type = \"RoundedBoxGeometry\"",
+        "sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)",
+        "geometry.setIndex(new BufferAttribute(new Uint16Array(indices), 1))",
+        "uvValues.push(0.5, 0.5)",
+        "sourceOrder: \"source-mg-E-C-w-y-U-b-index-order\"",
+        "activeGeometry: activeWorkItem ? sourceRoundedBoxGeometryProbe(activeWorkItem.mesh.geometry) : null",
+        "aboutGeometry: this.aboutBlocks ? sourceRoundedBoxGeometryProbe(this.aboutBlocks.mesh.geometry) : null",
+        "mode: \"source-ZA-box-geometry-not-mg\"",
+      ]),
+      rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "assertSourceMgGeometry(\"active\", workSettings.activeGeometry)",
+        "assertSourceMgGeometry(\"about\", workSettings.aboutGeometry)",
+        "geometry?.positionCount !== 24",
+        "geometry?.indexCount !== 132",
+        "geometry?.uvAllCenter !== true",
+        "parameters.radiusSegments !== 1",
+        "floatingGeometry.mode !== \"source-ZA-box-geometry-not-mg\"",
+        "floatingGeometry.type !== \"BoxGeometry\"",
+      ]),
+      noExamplesRoundedBox:
+        !rebuildWebgl.includes("three/examples/jsm/geometries/RoundedBoxGeometry")
+        && !rebuildWebgl.includes("new RoundedBoxGeometry"),
+      excerpt: compact(sourceMG.text),
+    },
     GA: sourceGA && {
       index: sourceGA.index,
       checks: checks(sourceGA.text, [
         "class GA extends rt",
         "this.settings={xNum:35,yNum:23,zNum:Le.LOW_RES?4:7,size:1.25,spacing:.1,scale:.09}",
+        "this.geometry=new mg(e,e,e,.05)",
         "this.rotationWrap=new rt",
         "this.mouseSim=new Ka({renderer:e.renderer,camera:e.camera,mesh:this.plane,persistance:.85,thickness:.1,rayCastMesh:this.rayPlane})",
         "this.plane.scale.set(35*e,23*e,1)",
@@ -2664,6 +2711,7 @@ const summary = {
         "sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\"",
         "sourceRayPlaneScale: [sourceRayPlaneSize.x, sourceRayPlaneSize.y, MOUSE_RAY_SCALE]",
         "&& Math.abs(active.rayPlane.scale.z - MOUSE_RAY_SCALE) < 1e-6",
+        "sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)",
       ]),
       uCoordsOwnership: {
         source:
@@ -2700,6 +2748,39 @@ const summary = {
         !rebuildWebgl.includes("item.material.uniforms.uCoords.value.set(this.workRawTarget.width, this.workRawTarget.height)")
         && !rebuildWebgl.includes("item.material.uniforms.uCoords.value.set(workRenderWidth, workRenderHeight)"),
       excerpt: compact(sourceGA.text),
+    },
+    dollarAAboutBlocks: sourceDollarA && {
+      index: sourceDollarA.index,
+      checks: checks(sourceDollarA.text, [
+        "class $A extends rt",
+        "this.settings={xNum:23,yNum:23,zNum:(Le.LOW_RES,4),size:1.25,spacing:.1,scale:.09}",
+        "this.geometry=new mg(e,e,e,.05)",
+        "this.scaleWrap.scale.set(.35,.35,.35)",
+        "_*_+S*S<=u*u&&",
+        "this.geometry.setAttribute(\"instanceOffset\",new un(v,3))",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "const zNum = sourceLowRes() ? 4 : 4",
+        "const geometry = sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)",
+        "if (px * px + py * py > radius * radius) continue",
+        "scaleWrap.scale.setScalar(0.35)",
+        "kind: \"about\"",
+      ]),
+      excerpt: compact(sourceDollarA.text),
+    },
+    ZAFloatingBlocks: sourceZA && {
+      index: sourceZA.index,
+      checks: checks(sourceZA.text, [
+        "class ZA extends rt",
+        "this.settings={xNum:30,yNum:30,zNum:1,size:.5,spacing:.3,scale:.3,speed:1}",
+        "this.geometry=new Cr(e,e,e)",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "private createFloatingBlocks(): AuxiliaryBlockItem",
+        "const geometry = new BoxGeometry(0.5, 0.5, 0.5)",
+        "mode: \"source-ZA-box-geometry-not-mg\"",
+      ]),
+      excerpt: compact(sourceZA.text),
     },
     Ka: (() => {
       const start = bundle.indexOf("class Ka{constructor");
