@@ -302,6 +302,7 @@ const SOURCE_MAX_DPR = 2;
 const SOURCE_LOW_RES_MAX_DPR = 1.5;
 const SOURCE_WORK_MAX_DPR = 1.5;
 const SOURCE_WORK_BG = "#1a1a1a";
+const SOURCE_WORK_FOG_COLOR = "grey";
 const SOURCE_COMPOSITE_BG = "#1f1f1f";
 const DEFAULT_BG = SOURCE_WORK_BG;
 const SOURCE_INITIAL_PRIMARY = "#bcbcbc";
@@ -4122,7 +4123,7 @@ export class WebGLBackdrop {
     this.mainScene.background = sourceLinearToSrgbColor(SOURCE_MAIN_SCENE_BACKGROUND, SOURCE_MAIN_SCENE_BACKGROUND);
     this.skyScene.background = sourceLinearToSrgbColor("#666666", "#666666");
     this.displacementRawScene.background = sourceLinearToSrgbColor("red", "red");
-    this.homeScene.fog = new Fog("grey", 0, 100);
+    this.homeScene.fog = new Fog(SOURCE_WORK_FOG_COLOR, 0, 100);
     this.homeScene.background = sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG);
     this.spotLight.position.set(0, 0, 3.7);
     this.spotLight.target.position.set(0, 0, -8);
@@ -7738,6 +7739,25 @@ void main() {
             bloomSource: "source-Lu-renderTargetBright-if-luminosity-else-renderTargetA",
             oaSceneSource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
             blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
+          },
+          sceneSurface: {
+            mode: "source-p1-scene-background-and-fog-owned-by-init",
+            backgroundMode: "source-p1-BA-BACKGROUND_COLOR-linear-to-srgb",
+            sourceBackgroundColor: SOURCE_WORK_BG,
+            background: this.homeScene.background instanceof Color ? this.homeScene.background.toArray() : null,
+            backgroundMatchesSource: this.homeScene.background instanceof Color
+              && this.homeScene.background.equals(sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG)),
+            fogMode: "source-p1-fog-grey-0-100-scene-fog",
+            fogType: this.homeScene.fog instanceof Fog ? "Fog" : null,
+            fogColor: this.homeScene.fog instanceof Fog ? this.homeScene.fog.color.toArray() : null,
+            fogNear: this.homeScene.fog instanceof Fog ? this.homeScene.fog.near : null,
+            fogFar: this.homeScene.fog instanceof Fog ? this.homeScene.fog.far : null,
+            fogMatchesSource: this.homeScene.fog instanceof Fog
+              && this.homeScene.fog.color.equals(new Color(SOURCE_WORK_FOG_COLOR))
+              && Math.abs(this.homeScene.fog.near) < 1e-6
+              && Math.abs(this.homeScene.fog.far - 100) < 1e-6,
+            floorMaterialFogBranch: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_FOG"),
+            environmentMaterialFog: this.environmentMaterial.fog,
           },
           activeProjectRevealOwnership: "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out",
           activeProjectRevealTweenCount: this.projectRevealTweens.length,

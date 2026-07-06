@@ -143,12 +143,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Strengthened the existing source `nD/C1` mouse-sim binding guardrail without production visual changes.
-- Source `sA` constructs two FBOs with `current=0` / `output=fbos[0]`; each `render()` reads the current target, flips `current`, and writes the new output.
-- Source `nD.init()` binds `C1/A1.tMouseSim` once to `J.workScene.renderManager.mouseSimulation.bufferSim.output.texture` before the render loop, so the main pre-composite sampler must stay on the initial output texture instead of following current ping-pong output every frame.
-- `__rogierOutputProbe.uniforms.preComposite.materialUniformSurface.tMouseSimSourceBinding` now exposes source binding mode, initial output index, source flip mode, target count, bound texture index, current output index, and the expected current-output match rule.
-- `scripts/probe-output-color.mjs` hard-fails if the binding drifts, and renderer audit checks source `sA` ping-pong anchors plus rebuild/probe coverage.
-- Phase 1 remains open for actual floor/environment visual parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
+- Added a source-backed runtime guardrail for the `p1.init()` scene surface without intended production visual behavior change.
+- Source `p1.init()` creates `Fog("grey",0,100)`, assigns it to `scene.fog`, computes `backgroundColor` from `BA.BACKGROUND_COLOR` through `convertLinearToSRGB()`, and assigns it to `scene.background`; source `BA.BACKGROUND_COLOR` is `#1a1a1a`.
+- Source floor/environment materials keep fog disabled: source `a1/o1` is constructed without a `fog` branch, and source `h1/u1` passes `fog:false`.
+- `__rogierOutputProbe.settings.work.sceneSurface` now exposes background/fog/floor-env fog parity, including `backgroundMatchesSource`, explicit `fogType="Fog"`, `fogMatchesSource`, `floorMaterialFogBranch=false`, and `environmentMaterialFog=false`.
+- `scripts/probe-output-color.mjs` hard-fails if the scene surface drifts, and renderer audit checks the mirrored `p1` anchors plus rebuild/probe coverage.
+- Phase 1 remains open for the hard horizon/fog-bed residual, actual floor/environment visual parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
 
 ## Validation Status
 
@@ -157,29 +157,32 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check src/client/webgl.ts
-node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
+node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-p1-scene-surface-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-mousesim-pingpong-audit-postdocs.json
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-mousesim-pingpong-project-media node scripts/probe-project-media.mjs > /tmp/rd-mousesim-pingpong-project-media.json
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-scene-surface-output-desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-p1-scene-surface-output-mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-scene-surface-thumb node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-scene-surface-project-media node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `sA` mouse-sim ping-pong binding guardrail batch. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages.
+All relevant checks passed in the `p1` scene background/fog guardrail batch. Desktop and mobile output probes confirmed `sceneSurface.backgroundMatchesSource=true`, `fogMatchesSource=true`, `floorMaterialFogBranch=false`, and `environmentMaterialFog=false`. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages.
 
-`npm exec tsc -- --noEmit --pretty false` was also attempted, but it is still blocked by the existing TypeScript config deprecation where `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the `sA` mouse-sim ping-pong binding guardrail.
-- Desktop output probe passed with the new `C1.tMouseSim` source binding assertions: `/tmp/rd-mousesim-pingpong-output-desktop`.
-- Mobile output probe passed with the same assertions: `/tmp/rd-mousesim-pingpong-output-mobile`.
-- Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma: `/tmp/rd-mousesim-pingpong-thumb`.
-- Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages: `/tmp/rd-mousesim-pingpong-project-media.json`; project-media remains a regression gate, not proof of Home parity.
+- Renderer audit passed after the `p1` scene background/fog guardrail.
+- Desktop output probe passed with the new scene-surface assertions: `/tmp/rd-p1-scene-surface-output-desktop`.
+- Mobile output probe passed with the same assertions: `/tmp/rd-p1-scene-surface-output-mobile`.
+- Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma: `/tmp/rd-p1-scene-surface-thumb`.
+- Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages: `/tmp/rd-p1-scene-surface-project-media`; project-media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -229,7 +232,7 @@ Continue source-driven implementation in this order:
    - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` child order and `demorgen`-derived environment rotation.
+   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, and `p1.init()` scene background/fog ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

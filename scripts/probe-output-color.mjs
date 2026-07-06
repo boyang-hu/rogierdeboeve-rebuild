@@ -1220,6 +1220,22 @@ async function runProbe() {
   if (diagnostics?.productionDebugClean !== true) {
     throw new Error(`Production debug branch leaked into output probe: ${JSON.stringify(diagnostics || {})}`);
   }
+  const sceneSurface = parsed.probe.settings?.work?.sceneSurface || {};
+  const sceneSurfaceErrors = [];
+  if (sceneSurface.mode !== "source-p1-scene-background-and-fog-owned-by-init") sceneSurfaceErrors.push("mode");
+  if (sceneSurface.backgroundMode !== "source-p1-BA-BACKGROUND_COLOR-linear-to-srgb") sceneSurfaceErrors.push("backgroundMode");
+  if (sceneSurface.sourceBackgroundColor !== "#1a1a1a") sceneSurfaceErrors.push("sourceBackgroundColor");
+  if (sceneSurface.backgroundMatchesSource !== true) sceneSurfaceErrors.push("backgroundMatchesSource");
+  if (sceneSurface.fogMode !== "source-p1-fog-grey-0-100-scene-fog") sceneSurfaceErrors.push("fogMode");
+  if (sceneSurface.fogType !== "Fog") sceneSurfaceErrors.push("fogType");
+  if (Math.abs((sceneSurface.fogNear ?? NaN) - 0) > 0.0001) sceneSurfaceErrors.push("fogNear");
+  if (Math.abs((sceneSurface.fogFar ?? NaN) - 100) > 0.0001) sceneSurfaceErrors.push("fogFar");
+  if (sceneSurface.fogMatchesSource !== true) sceneSurfaceErrors.push("fogMatchesSource");
+  if (sceneSurface.floorMaterialFogBranch !== false) sceneSurfaceErrors.push("floorMaterialFogBranch");
+  if (sceneSurface.environmentMaterialFog !== false) sceneSurfaceErrors.push("environmentMaterialFog");
+  if (sceneSurfaceErrors.length) {
+    throw new Error(`p1 scene background/fog source-shape mismatch: ${sceneSurfaceErrors.join(", ")}`);
+  }
   const environmentUniforms = parsed.probe.uniforms?.environment;
   const environmentHierarchy = parsed.probe.reflectionState?.environment;
   const sceneWrapHierarchy = parsed.probe.reflectionState?.sceneWrap;
