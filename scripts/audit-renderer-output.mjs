@@ -1099,7 +1099,17 @@ const summary = {
         noPerFrameFluidStrengthStateRewrite: Boolean(rebuildTick)
           && !rebuildTick.includes("this.preCompositeMaterial.uniforms.uFluidStrength.value = this.settingsState.fluidStrength"),
         mainFluidUpdateGateUsesC1Uniform: Boolean(rebuildTick)
-          && rebuildTick.includes("const mainFluidTexture = (this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0"),
+          && rebuildTick.includes("if ((this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0) {\n        this.updateMainFluidPass();\n      }")
+          && rebuildTick.includes("this.preCompositeMaterial.uniforms.tFluid.value = this.mainFluidPass.targets.main.texture;"),
+        mainFluidStrengthGateDoesNotGateBinding: Boolean(rebuildTick)
+          && !rebuildTick.includes("const mainFluidTexture =")
+          && !rebuildTick.includes("this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture")
+          && !rebuildTick.includes(": null;\n      this.preCompositeMaterial.uniforms.tFluid.value"),
+        mainFluidBindingProbe: rebuildWebgl.includes("tFluidBindingMode: \"source-I1-fluid-branch-binds-main-fbo-even-when-uFluidStrength-skips-update\"")
+          && rebuildWebgl.includes("tFluidUpdateGateMode: \"source-I1-uFluidStrength-gates-fluidSimulation-update-not-tFluid-binding\"")
+          && rebuildWebgl.includes("tFluidStrengthGateBindsMainTarget")
+          && rebuildOutputProbe.includes("preCompositeC1TFluidUpdateGateMode")
+          && rebuildOutputProbe.includes("preCompositeC1TFluidStrengthGateBinding"),
         noHomeFluidStrengthCompensationSetter: Boolean(rebuildPrepareHomeLighting)
           && !rebuildPrepareHomeLighting.includes("this.setFluidStrength("),
         noGalleryFluidStrengthCompensationSetter: Boolean(rebuildEnterWorkGallery)
@@ -2055,7 +2065,8 @@ const summary = {
           Boolean(rebuildTick)
           && orderedIncludes(rebuildTick, [
             "if (this.sourceMainRenderSettings.fluid.enabled) {",
-            "this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;",
+            "if ((this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0)",
+            "this.preCompositeMaterial.uniforms.tFluid.value = this.mainFluidPass.targets.main.texture;",
             "this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;",
             "this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;",
             "this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;",

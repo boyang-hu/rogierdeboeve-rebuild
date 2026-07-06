@@ -1222,14 +1222,20 @@ async function runProbe() {
     materialSurfaceErrors.push("preCompositeC1TBlurBindingMode");
   }
   if (c1MaterialSurface.tBlurIsSourceNull !== true) materialSurfaceErrors.push("preCompositeC1TBlurSourceNull");
-  if (c1MaterialSurface.tFluidBindingMode !== "source-I1-fluid-branch-when-enabled-else-constructor-null") {
+  if (c1MaterialSurface.tFluidBindingMode !== "source-I1-fluid-branch-binds-main-fbo-even-when-uFluidStrength-skips-update") {
     materialSurfaceErrors.push("preCompositeC1TFluidBindingMode");
+  }
+  if (c1MaterialSurface.tFluidUpdateGateMode !== "source-I1-uFluidStrength-gates-fluidSimulation-update-not-tFluid-binding") {
+    materialSurfaceErrors.push("preCompositeC1TFluidUpdateGateMode");
   }
   if (preCompositeUniforms?.boolFluid === false && c1MaterialSurface.tFluidIsNullWhenDisabled !== true) {
     materialSurfaceErrors.push("preCompositeC1TFluidNullWhenDisabled");
   }
   if (preCompositeUniforms?.boolFluid === true && c1MaterialSurface.tFluidIsMainFluidTargetWhenEnabled !== true) {
     materialSurfaceErrors.push("preCompositeC1TFluidMainTargetWhenEnabled");
+  }
+  if (c1MaterialSurface.tFluidStrengthGateBindsMainTarget !== true) {
+    materialSurfaceErrors.push("preCompositeC1TFluidStrengthGateBinding");
   }
   if (c1MaterialSurface.tWorkBindingMode !== "source-nD-init-one-time-C1-tWork-work-renderTargetComposite") {
     materialSurfaceErrors.push("preCompositeC1TWorkBindingMode");

@@ -10339,11 +10339,15 @@ void main() {
             tPortalIsSourceNull: c1Uniforms.tPortal.value === null,
             tBlurBindingMode: "source-C1-constructor-null-A1-unused",
             tBlurIsSourceNull: c1Uniforms.tBlur.value === null,
-            tFluidBindingMode: "source-I1-fluid-branch-when-enabled-else-constructor-null",
+            tFluidBindingMode: "source-I1-fluid-branch-binds-main-fbo-even-when-uFluidStrength-skips-update",
+            tFluidUpdateGateMode: "source-I1-uFluidStrength-gates-fluidSimulation-update-not-tFluid-binding",
             tFluidIsNullWhenDisabled: !this.sourceMainRenderSettings.fluid.enabled && c1Uniforms.tFluid.value === null,
             tFluidIsMainFluidTargetWhenEnabled:
               this.sourceMainRenderSettings.fluid.enabled
               && c1Uniforms.tFluid.value === this.mainFluidPass.targets.main.texture,
+            tFluidStrengthGateBindsMainTarget:
+              !this.sourceMainRenderSettings.fluid.enabled
+              || c1Uniforms.tFluid.value === this.mainFluidPass.targets.main.texture,
             tWorkBindingMode: "source-nD-init-one-time-C1-tWork-work-renderTargetComposite",
             tWorkIsWorkCompositeTarget: c1Uniforms.tWork.value === this.workCompositeTarget.texture,
             tWorkIsWorkRawTarget: c1Uniforms.tWork.value === this.workRawTarget.texture,
@@ -11976,12 +11980,10 @@ void main() {
       this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     }
     if (this.sourceMainRenderSettings.fluid.enabled) {
-      const mainFluidTexture = (this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0
-        ? this.updateMainFluidPass()
-        : this.mainFluidPass.enabled
-          ? this.mainFluidPass.targets.main.texture
-          : null;
-      this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
+      if ((this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0) {
+        this.updateMainFluidPass();
+      }
+      this.preCompositeMaterial.uniforms.tFluid.value = this.mainFluidPass.targets.main.texture;
     }
     this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;
     this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;

@@ -179,12 +179,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Tightened the source `U1/I1` lensflare mouse input denominator guardrail without changing shader text, render targets, default visual constants, route behavior, project data, pointer/raycast behavior, or the default disabled lensflare branch.
-- Source evidence: `U1.onMouseMove({x:e,y:t})` calls `this.renderManager&&this.renderManager.setLightPosition(0,1-t/Pe.h)`, and `I1.setLightPosition(e,t)` writes the lensflare material uniform only when `settings.lensflare.enabled`.
-- The rebuild now calls `setMainLensflareLightPosition(0, 1 - event.clientY / window.innerHeight)` instead of the rebuild-only `Math.max(1, window.innerHeight)` denominator.
-- Output probes expose/assert `mouseMoveInputMode=source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h-direct-viewport-height` plus `mouseMoveDenominatorMode=source-Pe-h-direct-no-rebuild-Math.max-clamp`.
-- Renderer audit checks the source `U1/I1` anchors, requires the direct viewport-height denominator, and rejects restoring the old defensive denominator.
-- Previous committed batch was `a291de4 Align Ka mouse simulation noise defaults`.
+- Aligned source `I1` fluid strength gate ownership in the main fluid/composite branch without changing shader text, render targets, visual constants, route behavior, project data, pointer/raycast behavior, or the GPU-tier fluid enablement rule.
+- Source evidence: `I1.update()` checks `settings.fluid.enabled`, uses `C1.uFluidStrength > 0` only to decide whether to call `fluidSimulation.update()`, and then still binds `C1.tFluid` from `fluidSimulation.fbos.main.texture` when `fbos.main` exists.
+- The rebuild now gates only `updateMainFluidPass()` with `preCompositeMaterial.uniforms.uFluidStrength > 0` and always binds `preCompositeMaterial.uniforms.tFluid` to `mainFluidPass.targets.main.texture` inside the source fluid-enabled branch.
+- Output probes expose/assert `tFluidBindingMode=source-I1-fluid-branch-binds-main-fbo-even-when-uFluidStrength-skips-update`, `tFluidUpdateGateMode=source-I1-uFluidStrength-gates-fluidSimulation-update-not-tFluid-binding`, and `tFluidStrengthGateBindsMainTarget`.
+- Renderer audit checks the source `I1.update()` fluid anchor, requires the direct main-FBO binding, and rejects restoring the old local `mainFluidTexture` null-fallback path.
+- Previous committed batch was `793e762 Align U1 lensflare mouse denominator`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -197,28 +197,28 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-lensflare-denom-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-lensflare-denom-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-fluid-strength-binding-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-fluid-strength-binding-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lensflare-denom-output-desktop VIEWPORT=desktop CDP_PORT=9381 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lensflare-denom-output-mobile VIEWPORT=mobile CDP_PORT=9382 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lensflare-denom-thumb VIEWPORT=desktop CDP_PORT=9384 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lensflare-denom-media CDP_PORT=9385 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-fluid-strength-binding-output-desktop VIEWPORT=desktop CDP_PORT=9381 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-fluid-strength-binding-output-mobile VIEWPORT=mobile CDP_PORT=9382 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-fluid-strength-binding-thumb VIEWPORT=desktop CDP_PORT=9384 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-fluid-strength-binding-media CDP_PORT=9385 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `U1/I1` lensflare mouse input denominator batch. Renderer audit wrote `/tmp/rd-lensflare-denom-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the direct source viewport-height denominator markers while lensflare remains default-disabled. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `I1` fluid strength gate binding batch. Renderer audit wrote `/tmp/rd-fluid-strength-binding-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the source fluid binding markers. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this lensflare input-denominator batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this fluid strength gate binding batch.
 
-Runtime QA was run because the batch touched Home WebGL mouse input and probe/audit ownership.
+Runtime QA was run because the batch touched Home WebGL main fluid/composite branch ownership and probe/audit coverage.
 
 Verified:
 
-- Renderer audit passed for the lensflare input-denominator batch: `/tmp/rd-lensflare-denom-audit.json`.
+- Renderer audit passed for the fluid strength gate binding batch: `/tmp/rd-fluid-strength-binding-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-lensflare-denom-output-desktop`, `/tmp/rd-lensflare-denom-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-lensflare-denom-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-lensflare-denom-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-fluid-strength-binding-output-desktop`, `/tmp/rd-fluid-strength-binding-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-fluid-strength-binding-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-fluid-strength-binding-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

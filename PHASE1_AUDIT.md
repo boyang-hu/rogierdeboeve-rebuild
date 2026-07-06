@@ -70,9 +70,41 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `U1/I1` lensflare mouse input now uses the source `1 - t / Pe.h` direct viewport-height denominator and the renderer audit rejects the old rebuild-only `Math.max(1, window.innerHeight)` guard. This tightens an earlier S1-283 guardrail; Phase 1 remains open.
+Latest accepted batch: source `I1` fluid strength ownership now gates only `fluidSimulation.update()` and not the `C1.tFluid` main-FBO binding. This closes one main fluid/composite branch ownership drift; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-331 `I1` Fluid Strength Gate Binding Ownership
+
+This batch aligns one source update-order edge in the main `I1/C1/ag` fluid branch. It does not change shader text, render targets, visual constants, project data, route behavior, pointer normalization, or the source GPU-tier fluid enablement rule.
+
+Source evidence:
+
+- Source `I1.update()` runs the fluid branch only when `this.settings.fluid.enabled`.
+- Inside that branch, source `this.compositeMaterial.uniforms.uFluidStrength.value>0` gates only `this.fluidSimulation.update()`.
+- Source then checks `this.fluidSimulation.fbos.main` and binds `this.compositeMaterial.uniforms.tFluid.value=this.fluidSimulation.fbos.main.texture` even when `uFluidStrength` skipped the update.
+
+Runtime and tooling changes:
+
+- The rebuild now gates only `updateMainFluidPass()` with `preCompositeMaterial.uniforms.uFluidStrength > 0`.
+- When source main fluid is enabled, `preCompositeMaterial.uniforms.tFluid.value` is always assigned `mainFluidPass.targets.main.texture`; the old rebuild-owned `mainFluidTexture` local plus `pass.enabled ? target : null` fallback is gone.
+- `__rogierOutputProbe.uniforms.preComposite.materialUniformSurface` exposes `tFluidBindingMode=source-I1-fluid-branch-binds-main-fbo-even-when-uFluidStrength-skips-update`, `tFluidUpdateGateMode=source-I1-uFluidStrength-gates-fluidSimulation-update-not-tFluid-binding`, and `tFluidStrengthGateBindsMainTarget`.
+- `scripts/probe-output-color.mjs` asserts those markers, while `scripts/audit-renderer-output.mjs` checks the source `I1.update()` anchor, requires the direct main-FBO binding, and rejects restoring the local null-fallback path.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-fluid-strength-binding-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile output probes passed with no failures/exceptions/console messages and confirmed the source fluid binding markers: `/tmp/rd-fluid-strength-binding-output-desktop`, `/tmp/rd-fluid-strength-binding-output-mobile`.
+- Thumb spotlight probe passed and retained the thumb render-transfer guardrail: `/tmp/rd-fluid-strength-binding-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-fluid-strength-binding-media`.
+
+Decision: keep `uFluidStrength` as an update gate only. Do not restore a local `mainFluidTexture` null fallback that lets fluid strength or rebuild debug state gate the source `C1.tFluid` main-FBO binding. Phase 1 remains open because this is one main-fluid branch ownership edge only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-330 `U1/I1` Lensflare Mouse Input Denominator Guardrail
 
