@@ -144,7 +144,7 @@ Known remaining gaps:
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
 - Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
-- Source `VA/XA/KA` `uMouseSpeed` ownership is now guarded: all three material constructors start with `uMouseSpeed=null`, while source `GA.update()` owns the later numeric runtime speed write.
+- Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement`; floating `ZA/KA` sampler uniforms stay constructor-null because source `ZA.update()` does not write them.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
@@ -169,11 +169,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `VA/XA/KA` `uMouseSpeed` constructor ownership without changing shader text, render targets, project data, route behavior, or visual constants.
-- Source `VA`, `XA`, and `KA` construct `uMouseSpeed` as `new I(null)`; source `GA.update()` later writes `this.mouseSpeed` as the runtime numeric value.
-- Rebuild ordinary work, about auxiliary, and floating auxiliary materials now construct `uMouseSpeed` with `null` and record constructor-null evidence in `userData`.
-- Output probe and renderer audit now assert constructor-null evidence plus the existing source `GA.update()` runtime write path.
-- Previous committed batch was `0785124 Normalize renderer audit target diagnostics`.
+- Extended source `VA/XA/KA` block material constructor/default ownership without changing shader text, render targets, project data, route copy, or visual constants.
+- Source `VA/XA/KA` construct `uReveal=0`, `uMouseLightness=1`, `uMouseSpeed=null`, and the sampler uniforms `tMouseSim/tMouseSim2/tDisplacement=null` where present; runtime writes belong to source `yD`, `Se`, `GA`, `p1`, and `$A`.
+- Rebuild ordinary work and auxiliary materials now construct with those source defaults and record constructor evidence in material `userData`.
+- About blocks now have source-shaped local `Ka` state and `$A.update()`-style runtime writeback for `tMouseSim`, `uMouseSpeed`, and `tDisplacement`; about `tMouseSim2` stays on the source `p1.update()` writer.
+- Floating `ZA/KA` no longer receives rebuild-owned sampler writes from the shared auxiliary update path, so `tMouseSim`, `tMouseSim2`, and `tDisplacement` remain constructor-null unless mirrored-source evidence identifies a writer.
+- Output probe and renderer audit now assert constructor defaults, about runtime binding ownership, and floating no-sampler-write ownership.
+- Previous committed batch was `34fe848 Align block mouse speed constructor ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -184,28 +186,32 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-umousespeed-null-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-umousespeed-null-audit.json","utf8")); function walk(v,p=[]){ if(v===false||v===null) console.log(p.join("."),"=",v); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-constructor-defaults-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-constructor-defaults-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-output-desktop VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-thumb node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-media node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-output-desktop VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-thumb node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-media node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-interactive node scripts/probe-interactive-mouse.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 ORIGINAL_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-about-smoke CDP_PORT=9280 CAPTURE_WAIT=5200 CAPTURE_SET=full node scripts/capture.mjs
 ```
 
-All relevant checks passed in the `uMouseSpeed` constructor-ownership batch. Renderer audit wrote `/tmp/rd-umousespeed-null-audit.json`; recursive false/null extraction printed no entries. Desktop/mobile output probes, thumb spotlight probe, and project-media probe passed with no failures/exceptions/console messages.
+All relevant checks passed in the block material constructor-default/runtime-ownership batch. Renderer audit wrote `/tmp/rd-constructor-defaults-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes, thumb spotlight probe, project-media probe, interactive mouse probe, and the about/full-route smoke passed with no failures/exceptions/console messages in the relevant checks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `uMouseSpeed` constructor-ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this block material constructor-default/runtime-ownership batch.
 
-Runtime QA was run because the batch touched WebGL material construction.
+Runtime QA was run because the batch touched WebGL material construction and mouse-simulation runtime ownership.
 
 Verified:
 
-- Renderer audit passed for the `uMouseSpeed` constructor-ownership batch: `/tmp/rd-umousespeed-null-audit.json`.
+- Renderer audit passed for the block material constructor-default/runtime-ownership batch: `/tmp/rd-constructor-defaults-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-umousespeed-null-output-desktop`, `/tmp/rd-umousespeed-null-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-umousespeed-null-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-umousespeed-null-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-constructor-defaults-output-desktop`, `/tmp/rd-constructor-defaults-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-constructor-defaults-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-constructor-defaults-media`.
+- Interactive mouse probe passed: `/tmp/rd-constructor-defaults-interactive`.
+- About/full-route smoke passed; `rebuild-about-desktop` had no failures or exceptions: `/tmp/rd-constructor-defaults-about-smoke`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

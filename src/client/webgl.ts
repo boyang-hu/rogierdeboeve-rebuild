@@ -357,6 +357,10 @@ type AuxiliaryBlockItem = {
   mouseOld: Vector2;
   mouseNew: Vector2;
   mouseSpeed: number;
+  mouseMaterial?: ShaderMaterial;
+  mouseScene?: Scene;
+  mouseTargets?: WebGLRenderTarget[];
+  mouseIndex?: number;
 };
 
 type MediaPlane = {
@@ -6062,6 +6066,8 @@ export class WebGLBackdrop {
       item?.material.dispose();
       item?.rayPlane?.geometry.dispose();
       item?.rayPlane?.material.dispose();
+      item?.mouseTargets?.forEach((target) => target.dispose());
+      item?.mouseMaterial?.dispose();
     });
     this.backgroundMaterial.dispose();
     this.workRawTarget.dispose();
@@ -6152,7 +6158,7 @@ export class WebGLBackdrop {
 
     cards.forEach((card, index) => {
       const payload = this.payloadFromElement(card);
-      const material = this.createWorkBlockMaterial(payload, card.classList.contains("is-active") ? 1 : 0);
+      const material = this.createWorkBlockMaterial(payload);
       const mesh = this.createBlockMesh(material);
       const slug = card.dataset.slug ?? String(index);
       const thumb = this.createThumbPlane(slug);
@@ -6211,25 +6217,25 @@ export class WebGLBackdrop {
     };
   }
 
-  private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
+  private createWorkBlockMaterial(payload: ProjectPayload) {
     const uniforms = {
       uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
       uGridOffset: { value: new Vector3(0, 0, 0) },
-      uReveal: { value: reveal },
+      uReveal: { value: 0 },
       uRevealProject: { value: 1 },
       uRevealSides: { value: 0 },
       uRevealSpread: { value: 0 },
       uRevealSpreadSides: { value: 0 },
       uMouseSpeed: { value: null },
-      uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
+      uMouseLightness: { value: 1 },
       uMouseFactor: { value: this.mouseFactor },
       uAuxiliaryMaterial: { value: 0 },
       uScrollOpacity: { value: 1 },
       uUvOffset: { value: sourceMouseUvOffset() },
       uUvOffsetScale: { value: MOUSE_RAY_SCALE },
-      tMouseSim: { value: this.placeholder },
-      tMouseSim2: { value: this.screenMouseSimulationTexture },
-      tDisplacement: { value: this.displacementTarget.texture },
+      tMouseSim: { value: null },
+      tMouseSim2: { value: null },
+      tDisplacement: { value: null },
       tPerlin: { value: this.workPerlinTexture },
       uCoords: { value: new Vector2(1, 1) },
       uTime: { value: 0 },
@@ -6247,6 +6253,12 @@ export class WebGLBackdrop {
     }) as WorkBlockMaterial;
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
     material.uniforms = uniforms;
+    material.userData.sourceBlockMaterialConstructorMode = "source-VA-XA-KA-default-uniform-constructors";
+    material.userData.sourceURevealConstructorWasZero = uniforms.uReveal.value === 0;
+    material.userData.sourceUMouseLightnessConstructorWasOne = uniforms.uMouseLightness.value === 1;
+    material.userData.sourceTMouseSimConstructorWasNull = uniforms.tMouseSim.value === null;
+    material.userData.sourceTMouseSim2ConstructorWasNull = uniforms.tMouseSim2.value === null;
+    material.userData.sourceTDisplacementConstructorWasNull = uniforms.tDisplacement.value === null;
     material.userData.sourceUMouseSpeedConstructorMode = "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime";
     material.userData.sourceUMouseSpeedConstructorWasNull = uniforms.uMouseSpeed.value === null;
     material.onBeforeCompile = (shader) => {
@@ -6317,9 +6329,9 @@ export class WebGLBackdrop {
       uUvOffset: { value: new Vector2(0, 0) },
       uUvOffsetScale: { value: 1 },
       uScrollOpacity: { value: 1 },
-      tMouseSim: { value: this.placeholder },
-      tMouseSim2: { value: this.screenMouseSimulationTexture },
-      tDisplacement: { value: this.displacementTarget.texture },
+      tMouseSim: { value: null },
+      tMouseSim2: { value: null },
+      tDisplacement: { value: null },
       tPerlin: { value: this.workPerlinTexture },
       uCoords: { value: new Vector2(1, 1) },
       uTime: { value: 0 },
@@ -6340,6 +6352,12 @@ export class WebGLBackdrop {
     material.userData.sourceShaderMode = kind === "about"
       ? "source-XA-jA-WA-direct-shader"
       : "source-KA-YA-qA-direct-shader";
+    material.userData.sourceBlockMaterialConstructorMode = "source-VA-XA-KA-default-uniform-constructors";
+    material.userData.sourceURevealConstructorWasZero = uniforms.uReveal.value === 0;
+    material.userData.sourceUMouseLightnessConstructorWasOne = uniforms.uMouseLightness.value === 1;
+    material.userData.sourceTMouseSimConstructorWasNull = uniforms.tMouseSim.value === null;
+    material.userData.sourceTMouseSim2ConstructorWasNull = uniforms.tMouseSim2.value === null;
+    material.userData.sourceTDisplacementConstructorWasNull = uniforms.tDisplacement.value === null;
     material.userData.sourceUMouseSpeedConstructorMode = "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime";
     material.userData.sourceUMouseSpeedConstructorWasNull = uniforms.uMouseSpeed.value === null;
     material.onBeforeCompile = (shader) => {
@@ -6372,7 +6390,16 @@ export class WebGLBackdrop {
     const rotationWrap = new Object3D();
     const scaleWrap = new Object3D();
     const group = new Object3D();
-    const rayPlane = new Mesh(new PlaneGeometry(xNum, yNum), new MeshBasicMaterial({ visible: false }));
+    const rayPlane = new Mesh(
+      new PlaneGeometry(1, 1),
+      new MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        depthTest: false,
+      }),
+    );
+    const mouseSimulation = this.createAuxiliaryMouseSimulation(1);
     const colors = new Float32Array(maxCount * 3);
     const alphas = new Float32Array(maxCount);
     const offsets = new Float32Array(maxCount * 3);
@@ -6412,6 +6439,8 @@ export class WebGLBackdrop {
     geometry.setAttribute("instanceColor", new InstancedBufferAttribute(colors, 3));
     mesh.instanceMatrix.needsUpdate = true;
     rotationWrap.add(mesh);
+    rayPlane.scale.set(xNum * MOUSE_RAY_SCALE, yNum * MOUSE_RAY_SCALE, MOUSE_RAY_SCALE);
+    rayPlane.position.set(0, 0, zNum / 2 + 0.01);
     rotationWrap.add(rayPlane);
     rotationWrap.scale.setScalar(AUX_BLOCK_SCALE);
     scaleWrap.add(rotationWrap);
@@ -6435,6 +6464,10 @@ export class WebGLBackdrop {
       mouseOld: new Vector2(0.5, 0.5),
       mouseNew: new Vector2(0.5, 0.5),
       mouseSpeed: 0,
+      mouseMaterial: mouseSimulation.material,
+      mouseScene: mouseSimulation.scene,
+      mouseTargets: mouseSimulation.targets,
+      mouseIndex: 0,
     };
   }
 
@@ -7098,6 +7131,17 @@ export class WebGLBackdrop {
 
   private createWorkMouseSimulation() {
     const material = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
+    const scene = new Scene();
+    scene.add(makeFullscreenTriangle(material));
+    return {
+      material,
+      scene,
+      targets: Array.from({ length: 2 }, makeSimulationTarget),
+    };
+  }
+
+  private createAuxiliaryMouseSimulation(ratio: number) {
+    const material = this.createMouseSimulationMaterial(ratio, 0.1, 0.85);
     const scene = new Scene();
     scene.add(makeFullscreenTriangle(material));
     return {
@@ -8264,6 +8308,12 @@ void main() {
         item.mouseTargets.forEach((target) => target.setSize(planeWidth, planeHeight));
         item.mouseMaterial.uniforms.uCoords.value.set(planeWidth, planeHeight);
       });
+      if (this.aboutBlocks?.mouseTargets && this.aboutBlocks.mouseMaterial) {
+        const planeWidth = this.aboutBlocks.gridSize.x;
+        const planeHeight = this.aboutBlocks.gridSize.y;
+        this.aboutBlocks.mouseTargets.forEach((target) => target.setSize(planeWidth, planeHeight));
+        this.aboutBlocks.mouseMaterial.uniforms.uCoords.value.set(planeWidth, planeHeight);
+      }
     }
     const thumbSize = Math.max(1, Math.round(height));
     this.thumbTarget.setSize(thumbSize, thumbSize);
@@ -8364,17 +8414,20 @@ void main() {
   }
 
   private updatePointerProjection() {
-    if (!this.sceneWrap.visible) return;
+    const aboutVisible = this.aboutBlocks?.group.visible === true;
+    if (!this.sceneWrap.visible && !aboutVisible) return;
     this.raycaster.setFromCamera(this.pointerRay, this.homeCamera);
-    this.workItems.forEach((item) => {
-      if (!item.group.visible) return;
+    const updateTarget = (item: { group: Object3D; rayPlane?: Mesh<PlaneGeometry, MeshBasicMaterial>; mouseTarget: Vector2 }) => {
+      if (!item.group.visible || !item.rayPlane) return;
       const hit = this.raycaster.intersectObject(item.rayPlane, false)[0];
       if (!hit?.uv) return;
       item.mouseTarget.set(
         MathUtils.clamp(hit.uv.x, 0, 1),
         MathUtils.clamp(hit.uv.y, 0, 1),
       );
-    });
+    };
+    this.workItems.forEach((item) => updateTarget(item));
+    if (aboutVisible && this.aboutBlocks) updateTarget(this.aboutBlocks);
   }
 
   private updateVisibleWorkItems(time: number, delta: number) {
@@ -8556,9 +8609,37 @@ void main() {
     const updateShared = (item?: AuxiliaryBlockItem) => {
       if (!item?.group.visible) return;
       item.material.uniforms.uTime.value = time;
-      if (item.kind === "about") this.setSourceWorkMaterialUCoords(item.material);
-      item.material.uniforms.tDisplacement.value = this.displacementTarget.texture;
-      item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
+      if (item.kind === "about") {
+        this.setSourceWorkMaterialUCoords(item.material);
+        if (
+          this.renderSettings.mousesim.enabled
+          && item.mouseMaterial
+          && item.mouseScene
+          && item.mouseTargets
+          && item.mouseIndex !== undefined
+        ) {
+          const meshResult = this.updateMouseBrush(
+            item.mouseMaterial,
+            item.mouseScene,
+            item.mouseTargets,
+            item.mouseIndex,
+            item.mouseOld,
+            item.mouseNew,
+            item.mouseTarget,
+            time,
+            delta,
+            1,
+            0.85,
+            0.1,
+          );
+          item.mouseIndex = meshResult.index;
+          item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
+          item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta);
+          item.material.uniforms.uMouseSpeed.value = item.mouseSpeed;
+        }
+        item.material.uniforms.tDisplacement.value = this.displacementTarget.texture;
+        item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
+      }
       item.group.position.x = item.offset.x + item.translation.x;
       item.group.position.y = item.offset.y + item.translation.y + (window.innerWidth >= BREAKPOINT_LG ? pageScroll : 0) * item.trackScaleF;
     };
@@ -9604,8 +9685,21 @@ void main() {
               : false,
             hasPhysicalDefine: Object.hasOwn(activeWorkItem.material.defines ?? {}, "PHYSICAL"),
             physicalBranchMode: "source-VA-standard-material-PHYSICAL-inactive",
+            constructorDefaultsMode: activeWorkItem.material.userData.sourceBlockMaterialConstructorMode,
+            uRevealConstructorWasZero: activeWorkItem.material.userData.sourceURevealConstructorWasZero,
+            uMouseLightnessConstructorWasOne: activeWorkItem.material.userData.sourceUMouseLightnessConstructorWasOne,
             uMouseSpeedConstructorMode: activeWorkItem.material.userData.sourceUMouseSpeedConstructorMode,
             uMouseSpeedConstructorWasNull: activeWorkItem.material.userData.sourceUMouseSpeedConstructorWasNull,
+            tMouseSimConstructorWasNull: activeWorkItem.material.userData.sourceTMouseSimConstructorWasNull,
+            tMouseSim2ConstructorWasNull: activeWorkItem.material.userData.sourceTMouseSim2ConstructorWasNull,
+            tDisplacementConstructorWasNull: activeWorkItem.material.userData.sourceTDisplacementConstructorWasNull,
+            tMouseSimRuntimeIsLocal:
+              activeWorkItem.material.uniforms.tMouseSim.value
+              === (activeWorkItem.mouseTargets[activeWorkItem.mouseIndex]?.texture ?? this.placeholder),
+            tMouseSim2RuntimeIsScreen: activeWorkItem.material.uniforms.tMouseSim2.value === this.screenMouseSimulationTexture,
+            tDisplacementRuntimeIsWavves: activeWorkItem.material.uniforms.tDisplacement.value === this.displacementTarget.texture,
+            uMouseLightnessRuntimeMatchesThumbState:
+              Math.abs((activeWorkItem.material.uniforms.uMouseLightness.value as number) - this.thumbState.mouseLightness) < 1e-6,
             uMouseSpeedRuntimeValue: activeWorkItem.material.uniforms.uMouseSpeed.value,
           } : null,
           materialStateMode: "source-VA-meshstandard-default-toneMapped",
@@ -9660,8 +9754,27 @@ void main() {
             uMouseType: this.aboutBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
             uMouse: this.aboutBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.aboutBlocks.material.uniforms.uUvOffsetScale.value,
+            constructorDefaultsMode: this.aboutBlocks.material.userData.sourceBlockMaterialConstructorMode,
+            uRevealConstructorWasZero: this.aboutBlocks.material.userData.sourceURevealConstructorWasZero,
+            uMouseLightnessConstructorWasOne: this.aboutBlocks.material.userData.sourceUMouseLightnessConstructorWasOne,
             uMouseSpeedConstructorMode: this.aboutBlocks.material.userData.sourceUMouseSpeedConstructorMode,
             uMouseSpeedConstructorWasNull: this.aboutBlocks.material.userData.sourceUMouseSpeedConstructorWasNull,
+            tMouseSimConstructorWasNull: this.aboutBlocks.material.userData.sourceTMouseSimConstructorWasNull,
+            tMouseSim2ConstructorWasNull: this.aboutBlocks.material.userData.sourceTMouseSim2ConstructorWasNull,
+            tDisplacementConstructorWasNull: this.aboutBlocks.material.userData.sourceTDisplacementConstructorWasNull,
+            runtimeBindingMode: "source-XA-$A-update-local-tMouseSim-uMouseSpeed-tDisplacement-p1-update-tMouseSim2",
+            tMouseSimRuntimeIsLocal: this.aboutBlocks.group.visible && this.aboutBlocks.mouseTargets && this.aboutBlocks.mouseIndex !== undefined
+              ? this.aboutBlocks.material.uniforms.tMouseSim.value === (this.aboutBlocks.mouseTargets[this.aboutBlocks.mouseIndex]?.texture ?? this.placeholder)
+              : null,
+            tMouseSim2RuntimeIsScreen: this.aboutBlocks.group.visible
+              ? this.aboutBlocks.material.uniforms.tMouseSim2.value === this.screenMouseSimulationTexture
+              : null,
+            tDisplacementRuntimeIsWavves: this.aboutBlocks.group.visible
+              ? this.aboutBlocks.material.uniforms.tDisplacement.value === this.displacementTarget.texture
+              : null,
+            uMouseSpeedRuntimeMatchesLocal: this.aboutBlocks.group.visible
+              ? this.aboutBlocks.material.uniforms.uMouseSpeed.value === this.aboutBlocks.mouseSpeed
+              : null,
             uMouseSpeed: this.aboutBlocks.material.uniforms.uMouseSpeed.value,
           } : null,
           floatingAuxiliaryMaterial: this.floatingBlocks ? {
@@ -9679,8 +9792,18 @@ void main() {
             uMouseType: this.floatingBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
             uMouse: this.floatingBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.floatingBlocks.material.uniforms.uUvOffsetScale.value,
+            constructorDefaultsMode: this.floatingBlocks.material.userData.sourceBlockMaterialConstructorMode,
+            uRevealConstructorWasZero: this.floatingBlocks.material.userData.sourceURevealConstructorWasZero,
+            uMouseLightnessConstructorWasOne: this.floatingBlocks.material.userData.sourceUMouseLightnessConstructorWasOne,
             uMouseSpeedConstructorMode: this.floatingBlocks.material.userData.sourceUMouseSpeedConstructorMode,
             uMouseSpeedConstructorWasNull: this.floatingBlocks.material.userData.sourceUMouseSpeedConstructorWasNull,
+            tMouseSimConstructorWasNull: this.floatingBlocks.material.userData.sourceTMouseSimConstructorWasNull,
+            tMouseSim2ConstructorWasNull: this.floatingBlocks.material.userData.sourceTMouseSim2ConstructorWasNull,
+            tDisplacementConstructorWasNull: this.floatingBlocks.material.userData.sourceTDisplacementConstructorWasNull,
+            runtimeBindingMode: "source-ZA-update-material-time-position-no-sampler-writes",
+            tMouseSimRuntimeStaysConstructorNull: this.floatingBlocks.material.uniforms.tMouseSim.value === null,
+            tMouseSim2RuntimeStaysConstructorNull: this.floatingBlocks.material.uniforms.tMouseSim2.value === null,
+            tDisplacementRuntimeStaysConstructorNull: this.floatingBlocks.material.uniforms.tDisplacement.value === null,
             uMouseSpeed: this.floatingBlocks.material.uniforms.uMouseSpeed.value,
           } : null,
         },

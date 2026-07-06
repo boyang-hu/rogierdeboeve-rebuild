@@ -335,10 +335,22 @@ async function runProbe() {
   if (activeMaterial?.isMeshPhysicalMaterial !== false) materialErrors.push("activeIsMeshPhysicalMaterial");
   if (activeMaterial?.hasPhysicalDefine !== false) materialErrors.push("activePhysicalDefine");
   if (activeMaterial?.physicalBranchMode !== "source-VA-standard-material-PHYSICAL-inactive") materialErrors.push("activePhysicalBranchMode");
+  if (activeMaterial?.constructorDefaultsMode !== "source-VA-XA-KA-default-uniform-constructors") {
+    materialErrors.push("activeConstructorDefaultsMode");
+  }
+  if (activeMaterial?.uRevealConstructorWasZero !== true) materialErrors.push("activeURevealConstructorWasZero");
+  if (activeMaterial?.uMouseLightnessConstructorWasOne !== true) materialErrors.push("activeUMouseLightnessConstructorWasOne");
   if (activeMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
     materialErrors.push("activeUMouseSpeedConstructorMode");
   }
   if (activeMaterial?.uMouseSpeedConstructorWasNull !== true) materialErrors.push("activeUMouseSpeedConstructorWasNull");
+  if (activeMaterial?.tMouseSimConstructorWasNull !== true) materialErrors.push("activeTMouseSimConstructorWasNull");
+  if (activeMaterial?.tMouseSim2ConstructorWasNull !== true) materialErrors.push("activeTMouseSim2ConstructorWasNull");
+  if (activeMaterial?.tDisplacementConstructorWasNull !== true) materialErrors.push("activeTDisplacementConstructorWasNull");
+  if (activeMaterial?.tMouseSimRuntimeIsLocal !== true) materialErrors.push("activeTMouseSimRuntimeLocal");
+  if (activeMaterial?.tMouseSim2RuntimeIsScreen !== true) materialErrors.push("activeTMouseSim2RuntimeScreen");
+  if (activeMaterial?.tDisplacementRuntimeIsWavves !== true) materialErrors.push("activeTDisplacementRuntimeWavves");
+  if (activeMaterial?.uMouseLightnessRuntimeMatchesThumbState !== true) materialErrors.push("activeUMouseLightnessRuntimeThumbState");
   if (activeMaterial?.toneMapped !== true) materialErrors.push("activeToneMapped");
   if (activeMaterial?.transparent !== true) materialErrors.push("activeTransparent");
   if (activeMaterial?.depthWrite !== false) materialErrors.push("activeDepthWrite");
@@ -432,10 +444,28 @@ async function runProbe() {
   if (auxiliaryMaterial?.renderOrder !== 10) materialErrors.push("auxRenderOrder");
   if (auxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("auxMouseUniform");
   if (Math.abs((auxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("auxUvOffsetScale");
+  if (auxiliaryMaterial?.constructorDefaultsMode !== "source-VA-XA-KA-default-uniform-constructors") {
+    materialErrors.push("auxConstructorDefaultsMode");
+  }
+  if (auxiliaryMaterial?.uRevealConstructorWasZero !== true) materialErrors.push("auxURevealConstructorWasZero");
+  if (auxiliaryMaterial?.uMouseLightnessConstructorWasOne !== true) materialErrors.push("auxUMouseLightnessConstructorWasOne");
   if (auxiliaryMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
     materialErrors.push("auxUMouseSpeedConstructorMode");
   }
   if (auxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true) materialErrors.push("auxUMouseSpeedConstructorWasNull");
+  if (auxiliaryMaterial?.tMouseSimConstructorWasNull !== true) materialErrors.push("auxTMouseSimConstructorWasNull");
+  if (auxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true) materialErrors.push("auxTMouseSim2ConstructorWasNull");
+  if (auxiliaryMaterial?.tDisplacementConstructorWasNull !== true) materialErrors.push("auxTDisplacementConstructorWasNull");
+  if (
+    auxiliaryMaterial?.runtimeBindingMode
+    !== "source-XA-$A-update-local-tMouseSim-uMouseSpeed-tDisplacement-p1-update-tMouseSim2"
+  ) {
+    materialErrors.push("auxRuntimeBindingMode");
+  }
+  if (auxiliaryMaterial?.tMouseSimRuntimeIsLocal === false) materialErrors.push("auxTMouseSimRuntimeLocal");
+  if (auxiliaryMaterial?.tMouseSim2RuntimeIsScreen === false) materialErrors.push("auxTMouseSim2RuntimeScreen");
+  if (auxiliaryMaterial?.tDisplacementRuntimeIsWavves === false) materialErrors.push("auxTDisplacementRuntimeWavves");
+  if (auxiliaryMaterial?.uMouseSpeedRuntimeMatchesLocal === false) materialErrors.push("auxUMouseSpeedRuntimeLocal");
   if (!floatingAuxiliaryMaterial) materialErrors.push("floatingAuxiliaryMaterialMissing");
   if (floatingAuxiliaryMaterial?.mode !== "source-KA-floating-material-state") materialErrors.push("floatingAuxMode");
   if (floatingAuxiliaryMaterial?.shaderMode !== "source-KA-YA-qA-direct-shader") materialErrors.push("floatingAuxShaderMode");
@@ -450,10 +480,38 @@ async function runProbe() {
   if ((floatingAuxiliaryMaterial?.renderOrder ?? null) !== null) materialErrors.push("floatingAuxRenderOrder");
   if (floatingAuxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("floatingAuxMouseUniform");
   if (Math.abs((floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("floatingAuxUvOffsetScale");
+  if (floatingAuxiliaryMaterial?.constructorDefaultsMode !== "source-VA-XA-KA-default-uniform-constructors") {
+    materialErrors.push("floatingAuxConstructorDefaultsMode");
+  }
+  if (floatingAuxiliaryMaterial?.uRevealConstructorWasZero !== true) materialErrors.push("floatingAuxURevealConstructorWasZero");
+  if (floatingAuxiliaryMaterial?.uMouseLightnessConstructorWasOne !== true) {
+    materialErrors.push("floatingAuxUMouseLightnessConstructorWasOne");
+  }
   if (floatingAuxiliaryMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
     materialErrors.push("floatingAuxUMouseSpeedConstructorMode");
   }
   if (floatingAuxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true) materialErrors.push("floatingAuxUMouseSpeedConstructorWasNull");
+  if (floatingAuxiliaryMaterial?.tMouseSimConstructorWasNull !== true) {
+    materialErrors.push("floatingAuxTMouseSimConstructorWasNull");
+  }
+  if (floatingAuxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true) {
+    materialErrors.push("floatingAuxTMouseSim2ConstructorWasNull");
+  }
+  if (floatingAuxiliaryMaterial?.tDisplacementConstructorWasNull !== true) {
+    materialErrors.push("floatingAuxTDisplacementConstructorWasNull");
+  }
+  if (floatingAuxiliaryMaterial?.runtimeBindingMode !== "source-ZA-update-material-time-position-no-sampler-writes") {
+    materialErrors.push("floatingAuxRuntimeBindingMode");
+  }
+  if (floatingAuxiliaryMaterial?.tMouseSimRuntimeStaysConstructorNull !== true) {
+    materialErrors.push("floatingAuxTMouseSimRuntimeConstructorNull");
+  }
+  if (floatingAuxiliaryMaterial?.tMouseSim2RuntimeStaysConstructorNull !== true) {
+    materialErrors.push("floatingAuxTMouseSim2RuntimeConstructorNull");
+  }
+  if (floatingAuxiliaryMaterial?.tDisplacementRuntimeStaysConstructorNull !== true) {
+    materialErrors.push("floatingAuxTDisplacementRuntimeConstructorNull");
+  }
   if (materialErrors.length) {
     throw new Error(`VA material source-state mismatch: ${materialErrors.join(", ")}`);
   }

@@ -328,7 +328,7 @@ const sourceAuxiliaryYA = extractTemplate(bundle, "YA", "`;class KA extends");
 const sourceMG = extractAround(bundle, "class mg extends", 0, 5900);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceDollarA = extractAround(bundle, "class $A extends", 200, 5600);
-const sourceZA = extractAround(bundle, "class ZA extends", 200, 2200);
+const sourceZA = extractAround(bundle, "class ZA extends", 200, 3000);
 const sourceSA = bundle.match(/class sA\{[\s\S]*?class Ka\{/)?.[0] ?? null;
 const sourceMouseSimulationFragment = extractTemplate(bundle, "rA", "`,oA=");
 const sourceMouseSimulationVertex = extractTemplate(bundle, "oA", "`;class Ka");
@@ -394,6 +394,7 @@ const sourceA1FlowSignature = sourceA1Signature.filter((anchor) => anchor !== "n
 const rebuildA1FlowSignature = rebuildA1Signature.filter((anchor) => anchor !== "noise sample");
 const sourceXABody = sourceXA?.text.slice(sourceXA.text.indexOf("class XA extends"), sourceXA.text.indexOf("class $A extends")) ?? "";
 const sourceKABody = sourceKA?.text.slice(sourceKA.text.indexOf("class KA extends"), sourceKA.text.indexOf("class ZA extends")) ?? "";
+const sourceZABody = sourceZA?.text.slice(sourceZA.text.indexOf("class ZA extends")) ?? "";
 
 const localDefaultTarget = new WebGLRenderTarget(1, 1);
 const localSourceTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
@@ -3617,6 +3618,51 @@ const summary = {
           && rebuildOutputProbe.includes("auxUMouseSpeedConstructorWasNull")
           && rebuildOutputProbe.includes("floatingAuxUMouseSpeedConstructorWasNull"),
       },
+      blockMaterialConstructorOwnership: {
+        sourceDefaults:
+          sourceVA?.text.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)") === true
+          && sourceVA?.text.includes("uMouseLightness:new I(1)") === true
+          && sourceVA?.text.includes("uReveal:new I(0),uRevealProject:new I(1)") === true
+          && sourceVA?.text.includes("tDisplacement:new I(null)") === true
+          && sourceXABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
+          && sourceXABody.includes("uMouseLightness:new I(1)")
+          && sourceXABody.includes("uReveal:new I(0),uRevealSpread:new I(1)")
+          && sourceXABody.includes("tDisplacement:new I(null)")
+          && sourceKABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
+          && sourceKABody.includes("uMouseLightness:new I(1)")
+          && sourceKABody.includes("uReveal:new I(0),uRevealSpread:new I(10)")
+          && sourceKABody.includes("tDisplacement:new I(null)"),
+        sourceRuntimeWrites:
+          sourceGA.text.includes("this.material.customUniforms.tMouseSim.value=this.mouseSim.bufferSim.output.texture")
+          && sourceGA.text.includes("this.material.customUniforms.tDisplacement.value=J.wavvesScene.renderManager.renderTargetComposite.texture")
+          && sourceP1Update?.text.includes("o.instance.material.customUniforms.tMouseSim2.value=this.renderManager.mouseSimulation.bufferSim.output.texture") === true
+          && sourceSe.text.includes("setThumbMouseLightness=(e,t=1.6)=>{t===0?J.workScene.blocks.forEach"),
+        rebuildConstructorDefaults:
+          rebuildWebgl.includes("sourceBlockMaterialConstructorMode = \"source-VA-XA-KA-default-uniform-constructors\"")
+          && rebuildWebgl.includes("uReveal: { value: 0 }")
+          && rebuildWebgl.includes("uMouseLightness: { value: 1 }")
+          && rebuildWebgl.includes("tMouseSim: { value: null }")
+          && rebuildWebgl.includes("tMouseSim2: { value: null }")
+          && rebuildWebgl.includes("tDisplacement: { value: null }")
+          && !rebuildWebgl.includes("uReveal: { value: reveal }")
+          && !rebuildWebgl.includes("uMouseLightness: { value: numeric(payload.mouseLightness, 1) }")
+          && !rebuildWebgl.includes("tMouseSim: { value: this.placeholder }")
+          && !rebuildWebgl.includes("tMouseSim2: { value: this.screenMouseSimulationTexture }")
+          && !rebuildWebgl.includes("tDisplacement: { value: this.displacementTarget.texture }"),
+        rebuildRuntimeWrites:
+          rebuildWebgl.includes("item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder")
+          && rebuildWebgl.includes("item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture")
+          && rebuildWebgl.includes("item.material.uniforms.tDisplacement.value = this.displacementTarget.texture")
+          && rebuildWebgl.includes("item.material.uniforms.uMouseLightness.value = this.thumbState.mouseLightness")
+          && rebuildWebgl.includes("const material = this.createWorkBlockMaterial(payload)"),
+        probeCoverage:
+          rebuildWebgl.includes("constructorDefaultsMode: activeWorkItem.material.userData.sourceBlockMaterialConstructorMode")
+          && rebuildWebgl.includes("tMouseSimRuntimeIsLocal:")
+          && rebuildOutputProbe.includes("activeConstructorDefaultsMode")
+          && rebuildOutputProbe.includes("activeTMouseSimConstructorWasNull")
+          && rebuildOutputProbe.includes("activeTMouseSimRuntimeLocal")
+          && rebuildOutputProbe.includes("activeUMouseLightnessRuntimeThumbState"),
+      },
       mouseFactorOwnership: {
         sourceConstructorDefault:
           sourceVA?.text.includes("uMouseFactor:new I(0)") === true,
@@ -3657,11 +3703,13 @@ const summary = {
           "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
           "this.depthTest=!1,this.renderOrder=10,this.depthWrite=!1",
           "uMouse:new I(new Q)",
+          "tMouseSim:new I(null),tMouseSim2:new I(null)",
           "uMouseSpeed:new I(null)",
           "uMouseFactor:new I(1)",
           "uMouseLightness:new I(1)",
           "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
           "uReveal:new I(0),uRevealSpread:new I(1)",
+          "tDisplacement:new I(null)",
           "uScrollOpacity:new I(1)",
           "t.vertexShader=jA,t.fragmentShader=WA",
         ]),
@@ -3677,12 +3725,14 @@ const summary = {
           "class KA extends Vn",
           "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
           "uMouse:new I(new Q)",
+          "tMouseSim:new I(null),tMouseSim2:new I(null)",
           "uMouseSpeed:new I(null)",
           "uMouseFactor:new I(1)",
           "uMouseLightness:new I(1)",
           "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
           "uReveal:new I(0),uRevealSpread:new I(10)",
           "uRevealProject:new I(1),uRevealSides:new I(1)",
+          "tDisplacement:new I(null)",
           "uScrollOpacity:new I(1)",
           "t.vertexShader=YA,t.fragmentShader=qA",
         ]),
@@ -3696,12 +3746,21 @@ const summary = {
       rebuildChecks: checks(rebuildWebgl, [
         "uMouse: { value: new Vector2(0, 0) }",
         "uMouseSpeed: { value: null }",
+        "tMouseSim: { value: null }",
+        "tMouseSim2: { value: null }",
+        "tDisplacement: { value: null }",
+        "sourceBlockMaterialConstructorMode = \"source-VA-XA-KA-default-uniform-constructors\"",
+        "sourceTMouseSimConstructorWasNull",
+        "sourceTMouseSim2ConstructorWasNull",
+        "sourceTDisplacementConstructorWasNull",
         "uUvOffsetScale: { value: 1 }",
         "...(kind === \"about\" ? { depthWrite: false, depthTest: false } : {})",
         "if (kind === \"about\") material.renderOrder = 10",
         "mode: \"source-XA-about-material-state\"",
         "mode: \"source-KA-floating-material-state\"",
         "floatingAuxiliaryMaterial: this.floatingBlocks ?",
+        "runtimeBindingMode: \"source-XA-$A-update-local-tMouseSim-uMouseSpeed-tDisplacement-p1-update-tMouseSim2\"",
+        "runtimeBindingMode: \"source-ZA-update-material-time-position-no-sampler-writes\"",
         "source-XA-jA-WA-direct-shader",
         "source-KA-YA-qA-direct-shader",
         "patchWorkBlockShader(shader, uniforms, kind === \"about\" ? \"aboutAuxiliary\" : \"floatingAuxiliary\")",
@@ -3712,6 +3771,11 @@ const summary = {
         "auxiliaryMaterial?.renderOrder !== 10",
         "auxiliaryMaterial?.uMouseType !== \"Vector2\"",
         "auxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true",
+        "auxiliaryMaterial?.tMouseSimConstructorWasNull !== true",
+        "auxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true",
+        "auxiliaryMaterial?.tDisplacementConstructorWasNull !== true",
+        "auxiliaryMaterial?.runtimeBindingMode",
+        "auxiliaryMaterial?.tMouseSimRuntimeIsLocal === false",
         "auxiliaryMaterial?.uUvOffsetScale ?? 0",
         "floatingAuxiliaryMaterial?.mode !== \"source-KA-floating-material-state\"",
         "floatingAuxiliaryMaterial?.shaderMode !== \"source-KA-YA-qA-direct-shader\"",
@@ -3720,6 +3784,11 @@ const summary = {
         "floatingAuxiliaryMaterial?.renderOrder ?? null",
         "floatingAuxiliaryMaterial?.uMouseType !== \"Vector2\"",
         "floatingAuxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true",
+        "floatingAuxiliaryMaterial?.tMouseSimConstructorWasNull !== true",
+        "floatingAuxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true",
+        "floatingAuxiliaryMaterial?.tDisplacementConstructorWasNull !== true",
+        "floatingAuxiliaryMaterial?.runtimeBindingMode !== \"source-ZA-update-material-time-position-no-sampler-writes\"",
+        "floatingAuxiliaryMaterial?.tMouseSimRuntimeStaysConstructorNull !== true",
         "floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0",
         "auxiliaryLifecycle.floatingEntryVisibilityMode !== \"source-Fg-animateIn-onStart-visible-not-enter-state\"",
         "auxiliaryLifecycle.floatingScrollVelocityMode !== \"source-Fg-onRaf-page-scroll-velocity\"",
@@ -3792,6 +3861,10 @@ const summary = {
         "this.settings={xNum:23,yNum:23,zNum:(Le.LOW_RES,4),size:1.25,spacing:.1,scale:.09}",
         "this.geometry=new mg(e,e,e,.05)",
         "this.scaleWrap.scale.set(.35,.35,.35)",
+        "this.mouseSim=new Ka({renderer:e.renderer,camera:e.camera,mesh:this.plane,persistance:.85,thickness:.1,rayCastMesh:this.rayPlane})",
+        "this.material.customUniforms.tMouseSim.value=this.mouseSim.bufferSim.output.texture",
+        "this.material.customUniforms.uMouseSpeed.value=this.mouseSpeed",
+        "this.material.customUniforms.tDisplacement.value=J.wavvesScene.renderManager.renderTargetComposite.texture",
         "_*_+S*S<=u*u&&",
         "this.geometry.setAttribute(\"instanceOffset\",new un(v,3))",
       ]),
@@ -3799,6 +3872,12 @@ const summary = {
         "const zNum = sourceLowRes() ? 4 : 4",
         "const geometry = sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)",
         "if (px * px + py * py > radius * radius) continue",
+        "const mouseSimulation = this.createAuxiliaryMouseSimulation(1)",
+        "rayPlane.scale.set(xNum * MOUSE_RAY_SCALE, yNum * MOUSE_RAY_SCALE, MOUSE_RAY_SCALE)",
+        "rayPlane.position.set(0, 0, zNum / 2 + 0.01)",
+        "item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder",
+        "item.material.uniforms.uMouseSpeed.value = item.mouseSpeed",
+        "runtimeBindingMode: \"source-XA-$A-update-local-tMouseSim-uMouseSpeed-tDisplacement-p1-update-tMouseSim2\"",
         "scaleWrap.scale.setScalar(0.35)",
         "kind: \"about\"",
       ]),
@@ -3810,11 +3889,25 @@ const summary = {
         "class ZA extends rt",
         "this.settings={xNum:30,yNum:30,zNum:1,size:.5,spacing:.3,scale:.3,speed:1}",
         "this.geometry=new Cr(e,e,e)",
+        "update({time:e,delta:t,frame:n}){this.material.update(e,t,n),this.positionOnUpdate(e),this.mesh.instanceMatrix.needsUpdate=!0}",
       ]),
+      samplerRuntimeOwnership: {
+        sourceNoLocalMouseSim:
+          !sourceZABody.includes("new Ka({")
+          && !sourceZABody.includes("tMouseSim.value")
+          && !sourceZABody.includes("tDisplacement.value"),
+        rebuildNoFloatingSamplerWrites:
+          rebuildWebgl.includes("runtimeBindingMode: \"source-ZA-update-material-time-position-no-sampler-writes\"")
+          && rebuildWebgl.includes("tMouseSimRuntimeStaysConstructorNull")
+          && rebuildWebgl.includes("tMouseSim2RuntimeStaysConstructorNull")
+          && rebuildWebgl.includes("tDisplacementRuntimeStaysConstructorNull")
+          && !rebuildWebgl.includes("if (item.kind === \"floating\")"),
+      },
       rebuildChecks: checks(rebuildWebgl, [
         "private createFloatingBlocks(): AuxiliaryBlockItem",
         "const geometry = new BoxGeometry(0.5, 0.5, 0.5)",
         "mode: \"source-ZA-box-geometry-not-mg\"",
+        "runtimeBindingMode: \"source-ZA-update-material-time-position-no-sampler-writes\"",
       ]),
       excerpt: compact(sourceZA.text),
     },
