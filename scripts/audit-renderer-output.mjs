@@ -404,8 +404,8 @@ const summary = {
         "uniform float uMediaReveal",
         "uniform float uContrast",
         "FragColor",
-        "#include <tonemapping_fragment>",
       ]),
+      tonemappingFragmentAbsent: !sourceA1.includes("#include <tonemapping_fragment>"),
       order: sourceA1Order,
     },
     floorS1: {
@@ -438,13 +438,14 @@ const summary = {
         "uniform sampler2D tMedia",
         "uniform float uMediaReveal",
         "uniform float uContrast",
-        "gl_FragColor",
-        "sourceBlend(1",
-        "sourceBlend(11",
-        "color *= uContrast",
-        "mix(color * noise.rgb, color, 0.75)",
-        "mix(color * noise.rgb, color, 1.5)",
+        "FragColor",
+        "blend(1",
+        "blend(11",
+        "mixed.rgb *= uContrast",
+        "mix(mixed.rgb * noise.rgb, mixed.rgb, .75)",
+        "mix(mixed.rgb * noise.rgb, mixed.rgb, 1.5)",
       ]),
+      tonemappingFragmentAbsent: !rebuildA1.includes("#include <tonemapping_fragment>"),
       order: rebuildA1Order,
       orderMatchesSource: JSON.stringify(sourceA1Signature) === JSON.stringify(rebuildA1Signature),
       flowOrderMatchesSource: JSON.stringify(sourceA1FlowSignature) === JSON.stringify(rebuildA1FlowSignature),
@@ -452,10 +453,10 @@ const summary = {
       flowOrderMismatches: compareSignatures(sourceA1FlowSignature, rebuildA1FlowSignature),
       onlySourceOrderAnchors: sourceA1Signature.filter((anchor) => !rebuildA1Signature.includes(anchor)),
       onlyRebuildOrderAnchors: rebuildA1Signature.filter((anchor) => !sourceA1Signature.includes(anchor)),
-      inertSourceComputations: {
-        displacementUv: /vec2\s+displacementUv\s*=/.test(sourceA1) && !/displacementUv/.test(rebuildA1),
-        vignetteF: /float\s+vignetteF\s*=/.test(sourceA1) && !/vignetteF/.test(rebuildA1),
-        noiseSampleRelocated: JSON.stringify(sourceA1Signature) !== JSON.stringify(rebuildA1Signature)
+      sourceSurfaceChecks: {
+        displacementUvMatchesSource: /vec2\s+displacementUv\s*=/.test(sourceA1) && /vec2\s+displacementUv\s*=/.test(rebuildA1),
+        vignetteFMatchesSource: /float\s+vignetteF\s*=/.test(sourceA1) && /float\s+vignetteF\s*=/.test(rebuildA1),
+        noiseSampleOrderMatchesSource: JSON.stringify(sourceA1Signature) === JSON.stringify(rebuildA1Signature)
           && sourceA1Signature.includes("noise sample")
           && rebuildA1Signature.includes("noise sample"),
       },

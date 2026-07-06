@@ -143,14 +143,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added source-backed runtime/audit guardrails for `V1/k1` sky/displacement post-render state and raw background ownership without screenshot-led tuning.
-- Source `V1.update(e,t,n,i)` calls `super.update(Le.LOW_RES?0:e,t,n,i)` before writing `z1.uTime=Le.LOW_RES?0:e`.
-- Source `k1.update(e,t,n,i)` calls `super.update(e,t,n,i)` before writing `N1.uTime=e`.
-- Source `k1.init()` assigns the raw wavves background as `new Color("red").convertLinearToSRGB()`; source `V1.init()` similarly owns `#666666` as the sky raw-scene background.
-- `src/client/webgl.ts` now centralizes `SOURCE_SKY_BACKGROUND` and `SOURCE_DISPLACEMENT_BACKGROUND`.
-- `__rogierOutputProbe.textures.skyComposite` exposes source sky background parity and `uTimeUpdateOrder=source-V1-super-update-before-z1-uTime-write`.
-- `__rogierOutputProbe.passMaterials.displacement` exposes source red raw-background parity and `uTimeUpdateOrder=source-k1-super-update-before-N1-uTime-write`.
-- `scripts/probe-output-color.mjs` hard-fails on sky/displacement background or post-render `uTime` order drift; `scripts/audit-renderer-output.mjs` checks source anchors plus rebuild function order `render -> setRenderTarget(null) -> uTime write`.
+- Cleaned renderer-audit attribution for the already source-shaped `A1/C1` pre-composite surface without production WebGL changes.
+- Source `A1` uses GLSL3 `FragColor`, source `blend(1,...)` / `blend(11,...)`, `mixed.rgb *= uContrast`, source noise mixes on `mixed.rgb`, source `displacementUv` / `vignetteF` locals, and no `#include <tonemapping_fragment>`.
+- `scripts/audit-renderer-output.mjs` now checks those current source strings instead of stale bridge-era `gl_FragColor`, `sourceBlend(...)`, and `color` markers.
+- The audit records source/rebuild `tonemappingFragmentAbsent` and positive `sourceSurfaceChecks` for `displacementUv`, `vignetteF`, and noise-sample order.
+- Renderer-audit recursive false output dropped from `18` to `8`; the remaining false entries are render-target default/snapshot diagnostics, not `A1` shader-surface residuals.
+- The previous runtime batch is committed as `7f721ec Guard sky displacement state order`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -159,18 +157,12 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check src/client/webgl.ts
-node --check scripts/probe-output-color.mjs
-node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-sky-displacement-order-audit-final.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-a1-audit-cleanup-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-sky-displacement-order-output-desktop CDP_PORT=9330 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-sky-displacement-order-output-mobile CDP_PORT=9331 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9332 OUT_DIR=/tmp/rd-sky-displacement-order-thumb-desktop node scripts/probe-thumb-spotlight.mjs
 ```
 
-All relevant checks passed in the `V1/k1` sky/displacement post-render state guardrail batch. Desktop and mobile output probes confirmed source sky/displacement `uTimeUpdateOrder` markers, source sky background parity, and source red displacement raw-background parity. Browser probes had no failures/exceptions/console messages.
+All relevant checks passed in the `A1/C1` renderer-audit cleanup batch. Production runtime code did not change, so browser probes were not rerun for this QA-only cleanup. The latest runtime browser probes remain the previous `V1/k1` sky/displacement batch, where desktop/mobile output probes and desktop thumb smoke had no failures/exceptions/console messages.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky/displacement guardrail batch.
 
@@ -179,11 +171,10 @@ Runtime QA was done with local Chrome CDP scripts.
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the sky/displacement guardrail: `/tmp/rd-sky-displacement-order-audit-final.json`.
-- Desktop output probe passed with sky/displacement post-render state and background parity, with no browser failures/exceptions/console messages: `/tmp/rd-sky-displacement-order-output-desktop`.
-- Mobile output probe passed with the same guardrail and no browser failures/exceptions/console messages: `/tmp/rd-sky-displacement-order-output-mobile`.
-- Desktop thumb smoke passed with no browser failures/exceptions/console messages: `/tmp/rd-sky-displacement-order-thumb-desktop`.
-- Project media remains a regression gate, not proof of Home parity; it was not touched by this sky/displacement guardrail batch.
+- Renderer audit passed after the `A1/C1` audit cleanup: `/tmp/rd-a1-audit-cleanup-final.json`.
+- Recursive audit false output is now `8`, limited to render-target default/snapshot diagnostics.
+- Desktop/mobile output probes and desktop thumb smoke from the prior runtime batch passed with sky/displacement post-render state/background parity and no browser failures/exceptions/console messages.
+- Project media remains a regression gate, not proof of Home parity; it was not touched by this audit cleanup batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
