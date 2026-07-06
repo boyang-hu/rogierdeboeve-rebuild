@@ -150,7 +150,7 @@ Known remaining gaps:
 - Source `i1` floor reflection renderer-state ownership is now guarded: `i1.update()` captures previous render target/XR/shadow state, disables XR and shadow auto-update during raw/blur reflection, conditionally clears the raw target under `autoClear=false`, and restores XR/shadow/previous target afterward.
 - Source `i1` floor reflection camera/texture-matrix/clip-plane update order is now guarded: the reflector update records the source `lookAt -> far -> updateMatrixWorld -> projection copy` order, texture matrix bias/projection/camera-inverse/reflector-matrix multiplication order, and oblique projection-row writes `[2,6,10,14]`.
 - Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
-- Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement`; floating `ZA/KA` sampler uniforms stay constructor-null because source `ZA.update()` does not write them.
+- Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. Ordinary `GA/VA` work material emissive construction is now also source-owned as the default black `MeshStandardMaterial` emissive from `new VA({color:new ye("#808080")})`, with `Se.setBlocksColor()` owning the later all-work emissive fan-out. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement`; floating `ZA/KA` sampler uniforms stay constructor-null because source `ZA.update()` does not write them.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
@@ -181,12 +181,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `V1` low-res sky ticking lifecycle without changing shader text, visual constants, render-target sizing, route data, or non-low-res sky rendering.
-- Source evidence: `V1.resize(e,t,n)` runs `Le.LOW_RES&&(this.ticking=!0)`, resizes `H1/Lo` to `t*.75`, then `Le.LOW_RES&&(await fn(100),this.ticking=!1)`; `V1.update(e,t,n,i)` wraps `super.update(Le.LOW_RES?0:e,...)` and the later `z1.uTime` write in `this.ticking&&(...)`.
-- The rebuild now sets `skyTicking=true` on low-res resize, schedules source-style 100ms stop timers, skips sky raw/composite rendering when low-res ticking is false, and keeps non-low-res rendering unchanged.
-- Output probes expose/assert `skyTickingLifecycle`, `renderGateMode=source-V1-update-this.ticking-guards-super-update`, `lowResRenderMode`, timer state, and low-res stop delay.
-- Renderer audit checks the mirrored `V1` resize/update anchors and rejects rebuilding sky as an unconditional per-frame render in low-res mode.
-- Previous committed batch was `fbd7ba1 Align Ka uPos reference ownership`.
+- Aligned source `VA` ordinary work material emissive constructor ownership without changing shader text, render targets, visual constants, route data, auxiliary block materials, or `Se.setBlocksColor()` runtime fan-out.
+- Source evidence: `GA.createCube()` constructs `this.material=new VA({color:new ye("#808080")})`; source does not pass `emissive` into `VA`, so `MeshStandardMaterial` owns the constructor emissive default as black. Source `Se.setBlocksColor(e,t=1.6)` later owns block color by tweening every `J.workScene.blocks[*].instance.material.emissive`.
+- The rebuild now constructs ordinary work material with source black emissive, removes constructor-time `payload.blocks ?? DEFAULT_BG` binding, and keeps active project block color on the existing source-shaped `Se.setBlocksColor()` runtime path.
+- Output probes expose/assert `emissiveConstructorMode=source-VA-new-VA-color-only-emissive-default-black` and `emissiveConstructorWasBlack=true` for the active ordinary work material.
+- Renderer audit checks the mirrored `GA.createCube()` constructor anchor and rejects restoring `payload.blocks` or `DEFAULT_BG` inside the ordinary work material constructor.
+- Previous committed batch was `ae0a1f4 Align V1 low-res sky ticking`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -200,28 +200,28 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-v1-ticking-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-v1-ticking-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-emissive-constructor-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-emissive-constructor-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-output-desktop VIEWPORT=desktop CDP_PORT=9341 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-output-mobile VIEWPORT=mobile CDP_PORT=9342 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-thumb VIEWPORT=desktop CDP_PORT=9343 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-media CDP_PORT=9344 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-output-desktop VIEWPORT=desktop CDP_PORT=9341 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-output-mobile VIEWPORT=mobile CDP_PORT=9342 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-thumb VIEWPORT=desktop CDP_PORT=9343 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-media CDP_PORT=9344 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `V1` low-res sky ticking batch. Renderer audit wrote `/tmp/rd-v1-ticking-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and, on this headless Chrome, exercised `LOW_RES=true` through SwiftShader tier `1`, confirming the new sky ticking gate. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `VA` ordinary work emissive constructor batch. Renderer audit wrote `/tmp/rd-emissive-constructor-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the source black emissive constructor markers. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky ticking batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this emissive constructor batch.
 
-Runtime QA was run because the batch touched Home WebGL sky render-loop ownership and probe/audit coverage.
+Runtime QA was run because the batch touched Home WebGL ordinary work material construction and probe/audit coverage.
 
 Verified:
 
-- Renderer audit passed for the sky ticking batch: `/tmp/rd-v1-ticking-audit.json`.
+- Renderer audit passed for the emissive constructor batch: `/tmp/rd-emissive-constructor-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-v1-ticking-output-desktop`, `/tmp/rd-v1-ticking-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-v1-ticking-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-v1-ticking-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-emissive-constructor-output-desktop`, `/tmp/rd-emissive-constructor-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-emissive-constructor-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-emissive-constructor-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

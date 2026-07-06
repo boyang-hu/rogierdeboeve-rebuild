@@ -375,6 +375,10 @@ async function runProbe() {
   if (activeMaterial?.constructorDefaultsMode !== "source-VA-XA-KA-default-uniform-constructors") {
     materialErrors.push("activeConstructorDefaultsMode");
   }
+  if (activeMaterial?.emissiveConstructorMode !== "source-VA-new-VA-color-only-emissive-default-black") {
+    materialErrors.push("activeEmissiveConstructorMode");
+  }
+  if (activeMaterial?.emissiveConstructorWasBlack !== true) materialErrors.push("activeEmissiveConstructorWasBlack");
   if (activeMaterial?.uRevealConstructorWasZero !== true) materialErrors.push("activeURevealConstructorWasZero");
   if (activeMaterial?.uMouseLightnessConstructorWasOne !== true) materialErrors.push("activeUMouseLightnessConstructorWasOne");
   if (activeMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {

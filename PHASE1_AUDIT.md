@@ -70,9 +70,44 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `V1` low-res sky ticking now gates sky raw/composite rendering after the source resize-triggered `100ms` ticking window. This closes one sky render-loop lifecycle drift; Phase 1 remains open.
+Latest accepted batch: source `VA` ordinary work material construction now preserves the MeshStandardMaterial emissive constructor default as black, with `Se.setBlocksColor()` owning the later all-work emissive tween. This closes one constructor/runtime ownership drift; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-334 `VA` Ordinary Work Emissive Constructor Ownership
+
+This batch aligns one source constructor/runtime ownership edge in the ordinary `GA/VA/Se` work-material chain. It does not change shader text, render targets, visual constants, route behavior, project data, auxiliary `XA/KA` material behavior, or the source `Se.setBlocksColor()` runtime fan-out.
+
+Source evidence:
+
+- Source `GA.createCube()` constructs ordinary work material with `this.material=new VA({color:new ye("#808080")})`.
+- Source `VA` receives no constructor `emissive` parameter on this path, so Three `MeshStandardMaterial` owns the constructor emissive default as black.
+- Source `Se.setBlocksColor(e,t=1.6)` later parses the active color and iterates `J.workScene.blocks.forEach(...)`, tweening each `i.instance.material.emissive` channel.
+
+Runtime and tooling changes:
+
+- `createWorkBlockMaterial()` no longer accepts a project payload because source `GA.createCube()` does not pass block color into `VA`.
+- Ordinary work `MeshStandardMaterial` now constructs `emissive` as source black instead of binding `payload.blocks ?? DEFAULT_BG` at material construction time.
+- Material `userData` records `sourceEmissiveConstructorMode=source-VA-new-VA-color-only-emissive-default-black` and whether the constructor emissive is black.
+- `__rogierOutputProbe.mouseSimulation.active.material` exposes the emissive constructor marker alongside the existing source constructor-default probes.
+- `scripts/probe-output-color.mjs` hard-fails if the active ordinary work material does not report the source black emissive constructor marker.
+- `scripts/audit-renderer-output.mjs` checks the mirrored `GA.createCube()` `new VA({color:new ye("#808080")})` anchor, requires the rebuild black-emissive constructor marker, and rejects restoring `payload.blocks` or `DEFAULT_BG` inside the ordinary work material constructor.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-emissive-constructor-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile output probes passed with the source emissive constructor markers and no failures/exceptions/console messages: `/tmp/rd-emissive-constructor-output-desktop`, `/tmp/rd-emissive-constructor-output-mobile`.
+- Thumb spotlight probe passed and retained the thumb render-transfer guardrail: `/tmp/rd-emissive-constructor-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-emissive-constructor-media`.
+
+Decision: keep ordinary work `VA` material emissive constructor-owned by Three's source black default, and leave active project block color ownership to source `Se.setBlocksColor()` runtime fan-out. Do not restore constructor-time `payload.blocks` or `DEFAULT_BG` emissive binding without mirrored-bundle evidence. Phase 1 remains open because this closes one material constructor/runtime ownership edge only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-333 `V1` Low-Res Sky Ticking Lifecycle
 

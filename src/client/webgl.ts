@@ -6387,7 +6387,7 @@ export class WebGLBackdrop {
 
     cards.forEach((card, index) => {
       const payload = this.payloadFromElement(card);
-      const material = this.createWorkBlockMaterial(payload);
+      const material = this.createWorkBlockMaterial();
       const mesh = this.createBlockMesh(material);
       const slug = card.dataset.slug ?? String(index);
       const thumb = this.createThumbPlane(slug);
@@ -6446,7 +6446,7 @@ export class WebGLBackdrop {
     };
   }
 
-  private createWorkBlockMaterial(payload: ProjectPayload) {
+  private createWorkBlockMaterial() {
     const uniforms = {
       uGridSize: { value: new Vector3(GRID_COLS, GRID_ROWS, this.gridLayers) },
       uGridOffset: { value: new Vector3(0, 0, 0) },
@@ -6471,7 +6471,7 @@ export class WebGLBackdrop {
     };
     const material = new MeshStandardMaterial({
       color: colorFrom(SOURCE_WORK_DIFFUSE, SOURCE_WORK_DIFFUSE),
-      emissive: sourceRgbColor(payload.blocks ?? DEFAULT_BG, DEFAULT_BG),
+      emissive: sourceRgbColor("#000000", "#000000"),
       emissiveIntensity: SOURCE_WORK_EMISSIVE_INTENSITY,
       roughness: SOURCE_WORK_ROUGHNESS,
       metalness: SOURCE_WORK_METALNESS,
@@ -6483,6 +6483,8 @@ export class WebGLBackdrop {
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
     material.uniforms = uniforms;
     material.userData.sourceBlockMaterialConstructorMode = "source-VA-XA-KA-default-uniform-constructors";
+    material.userData.sourceEmissiveConstructorMode = "source-VA-new-VA-color-only-emissive-default-black";
+    material.userData.sourceEmissiveConstructorWasBlack = material.emissive.equals(new Color(0, 0, 0));
     material.userData.sourceURevealConstructorWasZero = uniforms.uReveal.value === 0;
     material.userData.sourceUMouseLightnessConstructorWasOne = uniforms.uMouseLightness.value === 1;
     material.userData.sourceTMouseSimConstructorWasNull = uniforms.tMouseSim.value === null;
@@ -10071,6 +10073,8 @@ void main() {
             hasPhysicalDefine: Object.hasOwn(activeWorkItem.material.defines ?? {}, "PHYSICAL"),
             physicalBranchMode: "source-VA-standard-material-PHYSICAL-inactive",
             constructorDefaultsMode: activeWorkItem.material.userData.sourceBlockMaterialConstructorMode,
+            emissiveConstructorMode: activeWorkItem.material.userData.sourceEmissiveConstructorMode,
+            emissiveConstructorWasBlack: activeWorkItem.material.userData.sourceEmissiveConstructorWasBlack,
             uRevealConstructorWasZero: activeWorkItem.material.userData.sourceURevealConstructorWasZero,
             uMouseLightnessConstructorWasOne: activeWorkItem.material.userData.sourceUMouseLightnessConstructorWasOne,
             uMouseSpeedConstructorMode: activeWorkItem.material.userData.sourceUMouseSpeedConstructorMode,

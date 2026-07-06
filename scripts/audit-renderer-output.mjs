@@ -198,6 +198,7 @@ const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaa
 const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
 const rebuildCreateMainCompositeMaterial = extractBlock(rebuildWebgl, "private createMainCompositeMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
+const rebuildCreateWorkBlockMaterial = extractBlock(rebuildWebgl, "private createWorkBlockMaterial()");
 const rebuildWorkBlockSourceHaVertexShader = extractConstTemplate(rebuildWebgl, "workBlockSourceHaVertexShader");
 const rebuildWorkBlockVertexPars = extractConstTemplate(rebuildWebgl, "workBlockVertexPars");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
@@ -4069,6 +4070,7 @@ const summary = {
           && sourceVA?.text.includes("uMouseLightness:new I(1)") === true
           && sourceVA?.text.includes("uReveal:new I(0),uRevealProject:new I(1)") === true
           && sourceVA?.text.includes("tDisplacement:new I(null)") === true
+          && sourceGA.text.includes("this.material=new VA({color:new ye(\"#808080\")})")
           && sourceXABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
           && sourceXABody.includes("uMouseLightness:new I(1)")
           && sourceXABody.includes("uReveal:new I(0),uRevealSpread:new I(1)")
@@ -4083,27 +4085,36 @@ const summary = {
           && sourceP1Update?.text.includes("o.instance.material.customUniforms.tMouseSim2.value=this.renderManager.mouseSimulation.bufferSim.output.texture") === true
           && sourceSe.text.includes("setThumbMouseLightness=(e,t=1.6)=>{t===0?J.workScene.blocks.forEach"),
         rebuildConstructorDefaults:
-          rebuildWebgl.includes("sourceBlockMaterialConstructorMode = \"source-VA-XA-KA-default-uniform-constructors\"")
-          && rebuildWebgl.includes("uReveal: { value: 0 }")
-          && rebuildWebgl.includes("uMouseLightness: { value: 1 }")
-          && rebuildWebgl.includes("tMouseSim: { value: null }")
-          && rebuildWebgl.includes("tMouseSim2: { value: null }")
-          && rebuildWebgl.includes("tDisplacement: { value: null }")
+          Boolean(rebuildCreateWorkBlockMaterial)
+          && rebuildWebgl.includes("sourceBlockMaterialConstructorMode = \"source-VA-XA-KA-default-uniform-constructors\"")
+          && rebuildCreateWorkBlockMaterial.includes("uReveal: { value: 0 }")
+          && rebuildCreateWorkBlockMaterial.includes("uMouseLightness: { value: 1 }")
+          && rebuildCreateWorkBlockMaterial.includes("tMouseSim: { value: null }")
+          && rebuildCreateWorkBlockMaterial.includes("tMouseSim2: { value: null }")
+          && rebuildCreateWorkBlockMaterial.includes("tDisplacement: { value: null }")
+          && rebuildCreateWorkBlockMaterial.includes("emissive: sourceRgbColor(\"#000000\", \"#000000\")")
+          && rebuildCreateWorkBlockMaterial.includes("sourceEmissiveConstructorMode = \"source-VA-new-VA-color-only-emissive-default-black\"")
+          && rebuildCreateWorkBlockMaterial.includes("sourceEmissiveConstructorWasBlack = material.emissive.equals(new Color(0, 0, 0))")
           && !rebuildWebgl.includes("uReveal: { value: reveal }")
           && !rebuildWebgl.includes("uMouseLightness: { value: numeric(payload.mouseLightness, 1) }")
           && !rebuildWebgl.includes("tMouseSim: { value: this.placeholder }")
           && !rebuildWebgl.includes("tMouseSim2: { value: this.screenMouseSimulationTexture }")
-          && !rebuildWebgl.includes("tDisplacement: { value: this.displacementTarget.texture }"),
+          && !rebuildWebgl.includes("tDisplacement: { value: this.displacementTarget.texture }")
+          && !rebuildCreateWorkBlockMaterial.includes("payload.blocks")
+          && !rebuildCreateWorkBlockMaterial.includes("DEFAULT_BG"),
         rebuildRuntimeWrites:
           rebuildWebgl.includes("item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder")
           && rebuildWebgl.includes("item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture")
           && rebuildWebgl.includes("item.material.uniforms.tDisplacement.value = this.displacementTarget.texture")
           && rebuildWebgl.includes("item.material.uniforms.uMouseLightness.value = this.thumbState.mouseLightness")
-          && rebuildWebgl.includes("const material = this.createWorkBlockMaterial(payload)"),
+          && rebuildWebgl.includes("const material = this.createWorkBlockMaterial()"),
         probeCoverage:
           rebuildWebgl.includes("constructorDefaultsMode: activeWorkItem.material.userData.sourceBlockMaterialConstructorMode")
+          && rebuildWebgl.includes("emissiveConstructorMode: activeWorkItem.material.userData.sourceEmissiveConstructorMode")
+          && rebuildWebgl.includes("emissiveConstructorWasBlack: activeWorkItem.material.userData.sourceEmissiveConstructorWasBlack")
           && rebuildWebgl.includes("tMouseSimRuntimeIsLocal:")
           && rebuildOutputProbe.includes("activeConstructorDefaultsMode")
+          && rebuildOutputProbe.includes("activeEmissiveConstructorWasBlack")
           && rebuildOutputProbe.includes("activeTMouseSimConstructorWasNull")
           && rebuildOutputProbe.includes("activeTMouseSimRuntimeLocal")
           && rebuildOutputProbe.includes("activeUMouseLightnessRuntimeThumbState"),
