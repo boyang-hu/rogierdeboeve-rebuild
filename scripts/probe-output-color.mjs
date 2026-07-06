@@ -651,7 +651,7 @@ async function runProbe() {
     throw new Error(`Ka simulation uniform source-shape mismatch: ${uniformSurfaceErrors.join(", ")}`);
   }
   const screenSizingErrors = [];
-  if (screenMouse?.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding") {
+  if (screenMouse?.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding-no-clamp") {
     screenSizingErrors.push("targetSizingMode");
   }
   if (screenMouse?.targetSizeMatchesSource !== true) screenSizingErrors.push("targetSize");
@@ -676,7 +676,8 @@ async function runProbe() {
       .map(([key]) => key);
     if (activeMouse?.uvOffsetShaderDeclaration !== "source-HA-vec3-uUvOffset") shapeErrors.push("uvOffsetShaderDeclaration");
     if (activeMouse?.uvOffsetRuntimeBridgeMode !== "source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy") shapeErrors.push("uvOffsetRuntimeBridgeMode");
-    if (gaShape.targetSizingMode !== "source-GA-resize-plane-scale-no-pre-rounding") shapeErrors.push("targetSizingMode");
+    if (gaShape.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-pre-rounding-no-clamp") shapeErrors.push("targetSizingMode");
+    if (activeMouse?.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-clamp") shapeErrors.push("activeTargetSizingMode");
     if (gaShape.updateLerpMode !== "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp") shapeErrors.push("updateLerpMode");
     if (gaShape.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") shapeErrors.push("raycastMode");
     if (gaShape.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") shapeErrors.push("raycastEventMode");

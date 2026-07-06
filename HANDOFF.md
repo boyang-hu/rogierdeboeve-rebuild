@@ -147,7 +147,7 @@ Known remaining gaps:
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
-- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
+- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`. The `rg/Na/ig` helper constructor surface is also guarded: source zero-vector `uResolution` defaults are preserved, and `rg` keeps source unused null samplers plus constructor direction `[0.5,0.5]`. Source `Lu/I1` runtime ownership of `rg.uDirection` is guarded as shared direction-vector assignment, while standard blur `Na.uDirection` remains constructor-owned.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
 - Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, ambient intensity tweens `J.workScene.ambientLight.intensity`, and rebuild-only background material uniforms are not source `Se` ambient targets.
@@ -165,12 +165,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Lu/I1` runtime direction ownership for bloom blur `rg` materials.
-- Source `Lu` assigns `this.blurMaterials[p].uniforms.uDirection.value=bf` for the horizontal pass and `=Mf` for the vertical pass; source `I1` assigns `=wf` and `=Tf`.
-- `src/client/webgl.ts` now owns source work/main horizontal and vertical `Vector2` direction objects and assigns `uniforms.uDirection.value` to those shared vectors inside `renderBloomChain()`.
-- Removed redundant post-constructor `.set(1,0)` / `.set(0,1)` writes from standard blur `Na` setup; those directions remain constructor-owned.
-- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, and `scripts/audit-renderer-output.mjs` now guard enabled bloom ending on shared vertical `[0,1]`, disabled bloom retaining constructor `[0.5,0.5]`, source shared-vector identity, and standard blur constructor direction ownership.
-- Previous committed batch was `fc157fc Align helper pass constructor surface`.
+- Aligned active source `Lu/GA/Ka` mouse-simulation resize ownership.
+- Source `Lu.resize()` passes render size divided by `10` to `mouseSimulation.onResize(...)` after render-size rounding, source `GA.resize()` passes `this.plane.scale.x/y` to local `mouseSim.onResize(...)`, and source `Ka.onResize()` forwards those values to its buffer simulation and `uCoords`.
+- `src/client/webgl.ts` now removes the rebuild-only `Math.max(1, ...)` clamp from screen and local mouse-simulation target sizing, preserving source no-clamp/no-post-rounding ownership.
+- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, `scripts/probe-interactive-mouse.mjs`, and `scripts/audit-renderer-output.mjs` now guard the new source no-clamp sizing modes and reject restoring the old clamp or rounding.
+- Previous committed batch was `e56bdb5 Align bloom direction ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -183,27 +182,28 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-bloom-direction-audit-final.json
+node --check scripts/probe-interactive-mouse.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-mousesim-resize-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5180 node scripts/serve.mjs
 CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-output-color.mjs
 CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-interactive-mouse.mjs
 ```
 
-All relevant checks passed in the `Lu/I1 rg` bloom direction runtime ownership batch. Renderer audit wrote `/tmp/rd-bloom-direction-audit-final.json`; source `Lu/I1` direction assignment anchors, rebuild shared-vector assignment, no bloom-loop `.set()` fallback, and standard blur constructor direction ownership were true. Desktop output probe passed and asserted enabled bloom ending on shared vertical `[0,1]`, disabled bloom retaining constructor `[0.5,0.5]`, and `Na` constructor directions. Desktop thumb spotlight probe passed. Project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+All relevant checks passed in the `Lu/GA/Ka` mouse-simulation resize ownership batch. Renderer audit wrote `/tmp/rd-mousesim-resize-audit-final.json`; source/rebuild `Lu` screen resize no-clamp anchors plus source/rebuild `GA` local mouse-simulation no-clamp ownership were true. Desktop output probe passed. Desktop thumb spotlight probe passed. Project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`. Interactive mouse probe passed and asserted the screen/local no-clamp sizing modes plus source-shaped mouse response.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this bloom direction runtime ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this mouse-simulation resize ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the `Lu/I1 rg` bloom direction runtime ownership batch: `/tmp/rd-bloom-direction-audit-final.json`.
-- Desktop output, desktop thumb spotlight, and project-media probes remain the browser regression gates for this batch.
+- Renderer audit passed for the `Lu/GA/Ka` mouse-simulation resize ownership batch: `/tmp/rd-mousesim-resize-audit-final.json`.
+- Desktop output, desktop thumb spotlight, project-media, and interactive mouse probes passed as the browser regression gates for this batch.
 - Project media remains a regression gate, not proof of Home parity.
-- Interactive mouse browser probe was not rerun for this bloom direction runtime ownership batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

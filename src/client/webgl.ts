@@ -8247,16 +8247,16 @@ void main() {
     this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(width, height);
-    const screenSimWidth = Math.max(1, workRenderWidth / SCREEN_MOUSE_SIM_SCALE);
-    const screenSimHeight = Math.max(1, workRenderHeight / SCREEN_MOUSE_SIM_SCALE);
+    const screenSimWidth = workRenderWidth / SCREEN_MOUSE_SIM_SCALE;
+    const screenSimHeight = workRenderHeight / SCREEN_MOUSE_SIM_SCALE;
     if (this.renderSettings.mousesim.enabled) {
       this.screenMouseSimulationTargets.forEach((target) => target.setSize(screenSimWidth, screenSimHeight));
       this.screenMouseSimulationMaterial.uniforms.uCoords.value.set(screenSimWidth, screenSimHeight);
     }
     if (this.renderSettings.mousesim.enabled) {
       this.workItems.forEach((item) => {
-        const planeWidth = Math.max(1, item.mousePlane.scale.x);
-        const planeHeight = Math.max(1, item.mousePlane.scale.y);
+        const planeWidth = item.mousePlane.scale.x;
+        const planeHeight = item.mousePlane.scale.y;
         item.mouseTargets.forEach((target) => target.setSize(planeWidth, planeHeight));
         item.mouseMaterial.uniforms.uCoords.value.set(planeWidth, planeHeight);
       });
@@ -10765,12 +10765,12 @@ void main() {
     const sourceRayPlaneSize = sourceWorkRayPlaneSize();
     const visibleWorkItems = this.workItems.filter((item) => item.group.visible);
     const expectedTargetSize = {
-      width: Math.max(1, sourcePlaneSize.x),
-      height: Math.max(1, sourcePlaneSize.y),
+      width: sourcePlaneSize.x,
+      height: sourcePlaneSize.y,
     };
     const expectedScreenTargetSize = {
-      width: Math.max(1, this.workRawTarget.width / SCREEN_MOUSE_SIM_SCALE),
-      height: Math.max(1, this.workRawTarget.height / SCREEN_MOUSE_SIM_SCALE),
+      width: this.workRawTarget.width / SCREEN_MOUSE_SIM_SCALE,
+      height: this.workRawTarget.height / SCREEN_MOUSE_SIM_SCALE,
     };
     const expectedUvOffset = sourceMouseUvOffset();
     return {
@@ -10795,7 +10795,7 @@ void main() {
         index: this.screenMouseSimulationIndex,
         targetSize: screenTarget ? { width: screenTarget.width, height: screenTarget.height } : null,
         expectedTargetSize: expectedScreenTargetSize,
-        targetSizingMode: "source-Lu-mousesim-render-size-div-10-no-post-rounding",
+        targetSizingMode: "source-Lu-mousesim-render-size-div-10-no-post-rounding-no-clamp",
         targetSizeMatchesSource: Boolean(
           screenTarget
             && Math.abs(screenTarget.width - expectedScreenTargetSize.width) < 1e-6
@@ -10887,6 +10887,7 @@ void main() {
         sourceRayPlaneSize: sourceRayPlaneSize.toArray(),
         sourceRayPlaneScale: [sourceRayPlaneSize.x, sourceRayPlaneSize.y, MOUSE_RAY_SCALE],
         expectedTargetSize,
+        targetSizingMode: "source-GA-mouseSim-onResize-plane-scale-no-clamp",
         sourceShape: {
           planeScale: MOUSE_PLANE_SCALE,
           rayScale: MOUSE_RAY_SCALE,
@@ -10947,7 +10948,7 @@ void main() {
               && workBlockSourceHaVertexShader.includes("mouseUv /= uUvOffsetScale"),
           ),
           uvOffsetScaleMatchesSource: uvOffsetScale === MOUSE_RAY_SCALE,
-          targetSizingMode: "source-GA-resize-plane-scale-no-pre-rounding",
+          targetSizingMode: "source-GA-mouseSim-onResize-plane-scale-no-pre-rounding-no-clamp",
           rayPlaneScaleMatchesSource:
             Math.abs(active.rayPlane.scale.x - sourceRayPlaneSize.x) < 1e-6
             && Math.abs(active.rayPlane.scale.y - sourceRayPlaneSize.y) < 1e-6

@@ -758,10 +758,12 @@ const summary = {
           && !sourceLu.text.includes("Math.round(e/10)")
           && !sourceLu.text.includes("Math.round(t/10)"),
         rebuildScreenMouseSimResizeNoPostRound: [
-          "const screenSimWidth = Math.max(1, workRenderWidth / SCREEN_MOUSE_SIM_SCALE);",
-          "const screenSimHeight = Math.max(1, workRenderHeight / SCREEN_MOUSE_SIM_SCALE);",
-          "targetSizingMode: \"source-Lu-mousesim-render-size-div-10-no-post-rounding\"",
+          "const screenSimWidth = workRenderWidth / SCREEN_MOUSE_SIM_SCALE;",
+          "const screenSimHeight = workRenderHeight / SCREEN_MOUSE_SIM_SCALE;",
+          "targetSizingMode: \"source-Lu-mousesim-render-size-div-10-no-post-rounding-no-clamp\"",
         ].every((needle) => rebuildWebgl.includes(needle))
+          && !rebuildWebgl.includes("Math.max(1, workRenderWidth / SCREEN_MOUSE_SIM_SCALE)")
+          && !rebuildWebgl.includes("Math.max(1, workRenderHeight / SCREEN_MOUSE_SIM_SCALE)")
           && !rebuildWebgl.includes("Math.round(workRenderWidth / SCREEN_MOUSE_SIM_SCALE)")
           && !rebuildWebgl.includes("Math.round(workRenderHeight / SCREEN_MOUSE_SIM_SCALE)"),
         sourceBlurBranchRender:
@@ -3493,8 +3495,25 @@ const summary = {
         "sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\"",
         "sourceRayPlaneScale: [sourceRayPlaneSize.x, sourceRayPlaneSize.y, MOUSE_RAY_SCALE]",
         "&& Math.abs(active.rayPlane.scale.z - MOUSE_RAY_SCALE) < 1e-6",
+        "targetSizingMode: \"source-GA-mouseSim-onResize-plane-scale-no-clamp\"",
+        "targetSizingMode: \"source-GA-mouseSim-onResize-plane-scale-no-pre-rounding-no-clamp\"",
         "sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)",
       ]),
+      localMouseSimResizeOwnership: {
+        source:
+          sourceGA.text.includes("resize(e,t,n){this.mouseSim.onResize(this.plane.scale.x,this.plane.scale.y)}")
+          && !sourceGA.text.includes("Math.max(1,this.plane.scale.x)")
+          && !sourceGA.text.includes("Math.round(this.plane.scale.x)"),
+        rebuild:
+          rebuildWebgl.includes("const planeWidth = item.mousePlane.scale.x;")
+          && rebuildWebgl.includes("const planeHeight = item.mousePlane.scale.y;")
+          && rebuildWebgl.includes("targetSizingMode: \"source-GA-mouseSim-onResize-plane-scale-no-clamp\"")
+          && rebuildWebgl.includes("targetSizingMode: \"source-GA-mouseSim-onResize-plane-scale-no-pre-rounding-no-clamp\"")
+          && !rebuildWebgl.includes("Math.max(1, item.mousePlane.scale.x)")
+          && !rebuildWebgl.includes("Math.max(1, item.mousePlane.scale.y)")
+          && !rebuildWebgl.includes("Math.round(item.mousePlane.scale.x)")
+          && !rebuildWebgl.includes("Math.round(item.mousePlane.scale.y)"),
+      },
       uCoordsOwnership: {
         source:
           sourceVA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true

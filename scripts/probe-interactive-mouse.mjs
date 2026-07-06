@@ -163,7 +163,7 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (!screen.target) errors.push("missing-screen-mouse-probe");
   if (screen.uniformSurfaceMode !== "source-Ka-simulationMaterial-uniform-surface") errors.push("screen-uniform-surface");
   if (screen.targetState?.depthBuffer !== false || screen.targetState?.stencilBuffer !== false) errors.push("screen-target-state");
-  if (screen.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding") errors.push("screen-target-sizing-mode");
+  if (screen.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding-no-clamp") errors.push("screen-target-sizing-mode");
   if (screen.targetSizeMatchesSource !== true) errors.push("screen-target-size");
   if (screen.uCoordsMatchesSource !== true) errors.push("screen-ucoords");
   if (distance2(screen.target, expectedScreenTarget) > 0.015) errors.push(`screen-target=${JSON.stringify(screen.target)}`);
@@ -185,7 +185,8 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (active.sourceShape?.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") sourceShapeErrors.push("raycastMode");
   if (active.sourceShape?.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") sourceShapeErrors.push("raycastEventMode");
   if (active.sourceShape?.raycastNormalizationMode !== "source-Pe-width-height") sourceShapeErrors.push("raycastNormalizationMode");
-  if (active.sourceShape?.targetSizingMode !== "source-GA-resize-plane-scale-no-pre-rounding") sourceShapeErrors.push("targetSizingMode");
+  if (active.sourceShape?.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-pre-rounding-no-clamp") sourceShapeErrors.push("targetSizingMode");
+  if (active.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-clamp") sourceShapeErrors.push("activeTargetSizingMode");
   if (sourceShapeErrors.length) errors.push(`active-source-shape=${sourceShapeErrors.join("|")}`);
 
   if (mainFluid.enabled) {
