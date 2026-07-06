@@ -1717,6 +1717,32 @@ async function runProbe() {
   if (textures.sourceWebpDetectionMode !== "source-Qe-k0-lossy-before-Xt-preloadTextures") textureWrappingErrors.push("sourceWebpDetectionMode");
   if (textures.sourceWebpSupport !== updateOrder?.sourceWebpSupport) textureWrappingErrors.push("sourceWebpSupport");
   if (textures.sourceAssetExt !== updateOrder?.sourceAssetExt) textureWrappingErrors.push("sourceAssetExt");
+  const immediateBindings = textures.sourceImmediateTextureBindings || {};
+  if (immediateBindings.mode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") {
+    textureWrappingErrors.push("immediateBindingMode");
+  }
+  const immediateBindingErrors = [];
+  const blueNoiseImmediate = immediateBindings.blueNoise || {};
+  const perlin2Immediate = immediateBindings.perlin2 || {};
+  const perlin1Immediate = immediateBindings.perlin1 || {};
+  if (blueNoiseImmediate.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") immediateBindingErrors.push("blueNoiseObjectMode");
+  if (blueNoiseImmediate.stateIsImmediateTexture !== true) immediateBindingErrors.push("blueNoiseStateImmediate");
+  if (blueNoiseImmediate.c1TNoiseIsImmediateTexture !== true) immediateBindingErrors.push("blueNoiseC1TNoiseImmediate");
+  if (blueNoiseImmediate.screenMouseNoiseIsImmediateTexture !== true) immediateBindingErrors.push("blueNoiseScreenMouseImmediate");
+  if (blueNoiseImmediate.allWorkMouseNoiseUniformsImmediate !== true) immediateBindingErrors.push("blueNoiseWorkMouseImmediate");
+  if (blueNoiseImmediate.loadedSameImmediateTexture !== true) immediateBindingErrors.push("blueNoiseLoadedSame");
+  if (perlin2Immediate.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") immediateBindingErrors.push("perlin2ObjectMode");
+  if (perlin2Immediate.stateIsImmediateTexture !== true) immediateBindingErrors.push("perlin2StateImmediate");
+  if (perlin2Immediate.c1TPerlinIsImmediateTexture !== true) immediateBindingErrors.push("perlin2C1Immediate");
+  if (perlin2Immediate.loadedSameImmediateTexture !== true) immediateBindingErrors.push("perlin2LoadedSame");
+  if (perlin1Immediate.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") immediateBindingErrors.push("perlin1ObjectMode");
+  if (perlin1Immediate.stateIsImmediateTexture !== true) immediateBindingErrors.push("perlin1StateImmediate");
+  if (perlin1Immediate.allWorkUniformsImmediate !== true) immediateBindingErrors.push("perlin1WorkImmediate");
+  if (perlin1Immediate.auxiliaryUniformsImmediate !== true) immediateBindingErrors.push("perlin1AuxImmediate");
+  if (perlin1Immediate.loadedSameImmediateTexture !== true) immediateBindingErrors.push("perlin1LoadedSame");
+  if (immediateBindingErrors.length) {
+    textureWrappingErrors.push(`immediate:${immediateBindingErrors.join("|")}`);
+  }
   if (textures.noise?.wrapS !== RepeatWrapping || textures.noise?.wrapT !== RepeatWrapping) textureWrappingErrors.push("blueNoise");
   if (textures.floorNormal?.wrapS !== RepeatWrapping || textures.floorNormal?.wrapT !== RepeatWrapping) textureWrappingErrors.push("floorNormal");
   if (textures.perlin?.wrapS !== RepeatWrapping || textures.perlin?.wrapT !== RepeatWrapping) textureWrappingErrors.push("perlin2");

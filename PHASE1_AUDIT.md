@@ -31,7 +31,7 @@ Estimated status:
 - Final home visual parity: 55-65%
 - Runtime stability: currently good based on build, marker checks, and Chrome CDP smoke across home, about, and two project pages
 
-The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with source-style shader patching, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, per-work-item local mouse simulation, source-shaped floor/environment bridges, source WebP-selected texture/cubemap extension ownership, and about/floating auxiliary blocks. That is implementation progress, not completion.
+The rebuild now has the correct broad shape: `sceneWrap -> blocksWrap -> GA`, source-sized grids, MeshStandardMaterial with source-style shader patching, real `SpotLight.map`, thumb render target, A1/OA split composite passes, bloom mip chains, Ka-style ping-pong mouse simulation, per-work-item local mouse simulation, source-shaped floor/environment bridges, source WebP-selected texture/cubemap extension ownership, source `Xt.loadTexture()` immediate texture-object binding for blue-noise/perlin/floor-normal, and about/floating auxiliary blocks. That is implementation progress, not completion.
 
 Current visible blockers for Phase 1:
 
@@ -68,9 +68,43 @@ Recommended cadence:
 - Prioritize source-structure, source-value, and source-behavior parity over any visual-payoff scoring. Visual improvement is not an implementation goal by itself; production changes need mirrored-bundle evidence even when they look better. Low perceived visual payoff is not a reason to stop while a source mismatch remains open.
 - The latest accepted priority criteria are: clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Expected visual payoff is rejected as a priority criterion for Phase 1 planning.
 
-Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; and source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
+Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; and source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-292 `Xt.loadTexture()` Immediate Blue-Noise/Perlin Binding Guardrail
+
+This batch narrows source texture-object ownership for the composite/noise textures. It changes texture binding timing but does not change shader text, render targets, pass order, route behavior, or visual constants.
+
+Source evidence:
+
+- Source `Xt.loadTexture=e=>this.textureLoader.load(e)` returns a `Texture` object immediately.
+- Source `Xt.preloadTextures()` immediately assigns `blueNoise`, `floorNormal`, `perlin1`, and `perlin2`, then sets wrapping on those same objects.
+- Source `I1` constructor binds `this.compositeMaterial.uniforms.tNoise.value=Xt.blueNoise`.
+- Source `C1` constructor uses `tPerlin:new I(Xt.perlin2)`.
+- Source `VA` work materials use `tPerlin` from `Xt.perlin1`, while `Ka` mouse simulation uses the shared blue-noise texture.
+
+Runtime and tooling changes:
+
+- `blue-noise`, `perlin-2`, and `perlin-1` now use `loadTextureImmediate()` so uniforms receive the source-shaped immediate `Texture` object before image onload.
+- The onload promises now only mark preload completion and prove that the loaded texture object is the same object that was bound immediately.
+- `__rogierOutputProbe.textures.sourceImmediateTextureBindings` exposes object-binding modes and same-object checks for `C1.tNoise`, `C1.tPerlin`, screen/local mouse simulation noise uniforms, all ordinary work `tPerlin` uniforms, and auxiliary `tPerlin` uniforms.
+- `scripts/probe-output-color.mjs` hard-fails if the blue-noise/perlin immediate object binding drifts or if onload replaces the object.
+- `scripts/audit-renderer-output.mjs` checks source `Xt.preloadTextures()` plus the rebuild immediate binding and probe assertions.
+
+Verification:
+
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-immediate-textures-audit.json` passed; `sourceManagers.textures.rebuildImmediateTextureBindings` reports `blueNoise`, `perlin2`, `perlin1`, and `runtimeProbe` as true.
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed with immediate binding hard checks: `/tmp/rd-immediate-textures-output-desktop`.
+- Mobile output probe passed with the same hard checks: `/tmp/rd-immediate-textures-output-mobile`.
+- Desktop thumb spotlight probe passed: `/tmp/rd-immediate-textures-thumb-desktop`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-immediate-textures-project-media`.
+
+Decision: keep source texture preloading shaped as immediate `TextureLoader.load()` object binding for blue-noise, perlin-1, perlin-2, and floor-normal. Phase 1 remains open because this is texture-object ownership guardrail work only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-290 `p1/Ya` Home Camera Surface Guardrail
 

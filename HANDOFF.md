@@ -107,6 +107,7 @@ Implemented:
   - virtual gallery progress controls carousel rotation and thumb gallery
   - lightweight floor/env layers corresponding to source `p1.floor` and `p1.env`
   - source WebP-selected texture/cubemap extension ownership from `Qe`, `Xt`, and `p1.addEnvironment()`
+  - source `Xt.loadTexture()` immediate texture-object binding for blue-noise, perlin-1, perlin-2, and floor-normal
   - support for `ambient < 0 && colors.invert`
 - Project media system
   - desktop `[data-media][data-media-src]` empty tracks mapped to WebGL planes
@@ -148,14 +149,16 @@ Known remaining gaps:
 - Source `Se.settings` scalar/media setter ownership is now guarded for the source no-kill boundary: `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` do not keep rebuild-owned tween registries or pre-emptive kills, while source kill-owned `setRevealSpread()` and `setEnvRotation()` retain their kill behavior.
 - Source `p1/Ya` home camera construction and resize projection ownership is now guarded: home camera stays `Ya(55, innerWidth / innerHeight, 1, 2e3)`, initial z `5.5`, and resize projection stays on the `Ya.resize()` plus `Iu.resize()` aspect/update path.
 - Source `yg/U1/I1` main raw camera construction and resize projection ownership is now guarded: main raw camera stays `Ya(Ef(...), Pe.aspect, 1, distance*2)` with distance `1000`, and resize projection stays on the source `yg.resize()` `Ef(...)` FOV/aspect/update path.
+- Source `Xt.loadTexture()` immediate texture-object binding is now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: uniforms receive the immediate `Texture` object before image onload, and probes verify onload does not replace that object.
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `yg/U1/I1` main raw camera constructor and resize projection surface without changing shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
-- Source `yg` owns `distance=1e3`, computes `fov=Ef(innerWidth,innerWidth/innerHeight,distance)`, constructs `new Ya(fov,Pe.aspect,1,distance*2)`, positions the camera at z `distance`, keeps `setCameraController(){}` empty, and on resize recomputes `fov=Ef(e,e/t,distance)`, writes `aspect=e/t`, and updates the projection matrix.
-- `__rogierOutputProbe.settings.main.mainRawCamera` exposes `surfaceMode=source-yg-Ya-perspective-Ef-inner-aspect-near1-distance1000-far2000`, `resizeProjectionMode=source-yg-resize-super-then-Ef-fov-aspect-updateProjectionMatrix`, expected/actual `fov/near/far`, distance, position, aspect, and `fovMatchesSource`.
-- `scripts/probe-output-color.mjs` hard-fails on main raw camera surface drift; `scripts/audit-renderer-output.mjs` extracts source `yg`, `Ef(...)`, and `U1/I1` raw-camera anchors under `sourceManagers.mainYgCameraSurface`.
-- Previous committed batch was `4b6d3e6 Guard home camera surface ownership`.
+- Added a source-backed runtime/audit guardrail for `Xt.loadTexture()` immediate texture-object binding without changing shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
+- Source `Xt.loadTexture=e=>this.textureLoader.load(e)` returns an immediate `Texture` object; source `Xt.preloadTextures()` assigns `blueNoise`, `floorNormal`, `perlin1`, and `perlin2` immediately and sets wrapping on those same objects.
+- Source `I1` binds `C1.tNoise` to `Xt.blueNoise`, source `C1` constructs `tPerlin` from `Xt.perlin2`, ordinary work materials use `Xt.perlin1`, and `Ka` mouse simulation uses the shared blue-noise texture.
+- The rebuild now uses `loadTextureImmediate()` for blue-noise, perlin-2, and perlin-1, binds those immediate objects to `C1`, work/aux materials, and screen/local mouse simulation uniforms before image onload, then uses onload promises only to mark completion and prove same-object loading.
+- `__rogierOutputProbe.textures.sourceImmediateTextureBindings` exposes object-binding and loaded-same-object checks; `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on drift.
+- Previous committed batch was `b685bf9 Guard main raw camera Ef surface`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -166,17 +169,17 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-main-yg-camera-audit-rerun.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-immediate-textures-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-main-yg-camera-output-desktop-rerun CDP_PORT=9382 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-main-yg-camera-output-mobile-rerun CDP_PORT=9383 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-main-yg-camera-thumb-desktop-rerun CDP_PORT=9384 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-main-yg-camera-project-media-rerun CDP_PORT=9385 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-immediate-textures-output-desktop CDP_PORT=9392 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-immediate-textures-output-mobile CDP_PORT=9393 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-immediate-textures-thumb-desktop CDP_PORT=9394 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-immediate-textures-project-media CDP_PORT=9395 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `yg/U1/I1` main raw camera `Ef(...)` surface guardrail batch. Renderer audit wrote `/tmp/rd-main-yg-camera-audit-rerun.json`; `sourceManagers.mainYgCameraSurface` reports source, rebuild, and probe checks as true. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed the source main raw camera surface, `Ef(...)` FOV parity, `near=1`, `far=2000`, distance `1000`, and source resize projection markers. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the `Xt.loadTexture()` immediate texture-object binding guardrail batch. Renderer audit wrote `/tmp/rd-immediate-textures-audit.json`; `sourceManagers.textures.rebuildImmediateTextureBindings` reports `blueNoise`, `perlin2`, `perlin1`, and `runtimeProbe` as true. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed the source immediate binding checks for `C1.tNoise`, `C1.tPerlin`, screen/local mouse simulation blue-noise uniforms, and work/aux `tPerlin` uniforms. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this camera guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this texture guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

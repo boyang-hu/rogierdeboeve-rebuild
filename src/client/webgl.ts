@@ -4454,6 +4454,15 @@ export class WebGLBackdrop {
     perlin1: false,
     perlin2: false,
   };
+  private sourceBlueNoiseTexture: Texture | null = null;
+  private sourceBlueNoiseLoadedTexture: Texture | null = null;
+  private sourceBlueNoiseObjectBindingMode = "pending-source-Xt-blueNoise";
+  private sourcePerlin1Texture: Texture | null = null;
+  private sourcePerlin1LoadedTexture: Texture | null = null;
+  private sourcePerlin1ObjectBindingMode = "pending-source-Xt-perlin1";
+  private sourcePerlin2Texture: Texture | null = null;
+  private sourcePerlin2LoadedTexture: Texture | null = null;
+  private sourcePerlin2ObjectBindingMode = "pending-source-Xt-perlin2";
   private sourceFloorNormalTexture: Texture | null = null;
   private sourceFloorNormalLoadedTexture: Texture | null = null;
   private sourceFloorNormalObjectBindingMode = "pending-source-Xt-floorNormal";
@@ -5903,33 +5912,50 @@ export class WebGLBackdrop {
     this.sourceWebpSupport = await detectSourceWebpSupport();
     const sourceExt: "webp" | "jpg" = this.sourceWebpSupport ? "webp" : "jpg";
     this.sourceAssetExt = sourceExt;
-    const blueNoise = this.loadTextureAsync("/images/textures/blue-noise.png").then((texture) => {
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-      this.noiseTexture = texture;
-      this.preCompositeMaterial.uniforms.tNoise.value = texture;
-      this.workItems.forEach((item) => {
-        item.mouseMaterial.uniforms.uNoiseTexture.value = texture;
-      });
-      this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = texture;
+    const blueNoiseLoad = this.loadTextureImmediate("/images/textures/blue-noise.png");
+    const blueNoiseTexture = blueNoiseLoad.texture;
+    blueNoiseTexture.wrapS = RepeatWrapping;
+    blueNoiseTexture.wrapT = RepeatWrapping;
+    this.sourceBlueNoiseTexture = blueNoiseTexture;
+    this.sourceBlueNoiseObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
+    this.noiseTexture = blueNoiseTexture;
+    this.preCompositeMaterial.uniforms.tNoise.value = blueNoiseTexture;
+    this.workItems.forEach((item) => {
+      item.mouseMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture;
+    });
+    this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture;
+    const blueNoise = blueNoiseLoad.loaded.then((texture) => {
+      this.sourceBlueNoiseLoadedTexture = texture;
       this.sourceTexturePreloadState.blueNoise = true;
     });
-    const perlin2 = this.loadTextureAsync(`/images/textures/perlin-2.${sourceExt}`).then((texture) => {
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-      this.perlinTexture = texture;
-      this.preCompositeMaterial.uniforms.tPerlin.value = texture;
+
+    const perlin2Load = this.loadTextureImmediate(`/images/textures/perlin-2.${sourceExt}`);
+    const perlin2Texture = perlin2Load.texture;
+    perlin2Texture.wrapS = RepeatWrapping;
+    perlin2Texture.wrapT = RepeatWrapping;
+    this.sourcePerlin2Texture = perlin2Texture;
+    this.sourcePerlin2ObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
+    this.perlinTexture = perlin2Texture;
+    this.preCompositeMaterial.uniforms.tPerlin.value = perlin2Texture;
+    const perlin2 = perlin2Load.loaded.then((texture) => {
+      this.sourcePerlin2LoadedTexture = texture;
       this.sourceTexturePreloadState.perlin2 = true;
     });
-    const perlin1 = this.loadTextureAsync(`/images/textures/perlin-1.${sourceExt}`).then((texture) => {
-      texture.wrapS = MirroredRepeatWrapping;
-      texture.wrapT = MirroredRepeatWrapping;
-      this.workPerlinTexture = texture;
-      this.workItems.forEach((item) => {
-        item.material.uniforms.tPerlin.value = texture;
-      });
-      if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = texture;
-      if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = texture;
+
+    const perlin1Load = this.loadTextureImmediate(`/images/textures/perlin-1.${sourceExt}`);
+    const perlin1Texture = perlin1Load.texture;
+    perlin1Texture.wrapS = MirroredRepeatWrapping;
+    perlin1Texture.wrapT = MirroredRepeatWrapping;
+    this.sourcePerlin1Texture = perlin1Texture;
+    this.sourcePerlin1ObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
+    this.workPerlinTexture = perlin1Texture;
+    this.workItems.forEach((item) => {
+      item.material.uniforms.tPerlin.value = perlin1Texture;
+    });
+    if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = perlin1Texture;
+    if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = perlin1Texture;
+    const perlin1 = perlin1Load.loaded.then((texture) => {
+      this.sourcePerlin1LoadedTexture = texture;
       this.sourceTexturePreloadState.perlin1 = true;
     });
     const floorNormalLoad = this.loadTextureImmediate(`/images/textures/floor-normal.${sourceExt}`, NoColorSpace);
@@ -8090,6 +8116,15 @@ void main() {
     const c1MouseSimTexture = c1Uniforms.tMouseSim.value as Texture | null;
     const c1MouseSimBoundIndex = this.screenMouseSimulationTargets.findIndex((target) => target.texture === c1MouseSimTexture);
     const c1MouseSimMatchesCurrentOutput = c1MouseSimTexture === this.screenMouseSimulationTexture;
+    const allWorkPerlinUniformsImmediate = this.workItems.every(
+      (item) => item.material.uniforms.tPerlin.value === this.sourcePerlin1Texture,
+    );
+    const auxiliaryPerlinUniformsImmediate =
+      (!this.aboutBlocks || this.aboutBlocks.material.uniforms.tPerlin.value === this.sourcePerlin1Texture)
+      && (!this.floatingBlocks || this.floatingBlocks.material.uniforms.tPerlin.value === this.sourcePerlin1Texture);
+    const allWorkMouseNoiseUniformsImmediate = this.workItems.every(
+      (item) => item.mouseMaterial.uniforms.uNoiseTexture.value === this.sourceBlueNoiseTexture,
+    );
     const environmentDarkenColor = this.environmentMaterial.customUniforms.uDarkenColor.value as Color;
     const backgroundAmbientColor = this.backgroundMaterial.uniforms.uAmbientColor.value as Color;
     const activeWorkEmissive = activeWorkItem?.material.emissive ?? null;
@@ -9084,6 +9119,37 @@ void main() {
         sourceWebpDetectionMode: "source-Qe-k0-lossy-before-Xt-preloadTextures",
         sourceWebpSupport: this.sourceWebpSupport,
         sourceAssetExt: this.sourceAssetExt,
+        sourceImmediateTextureBindings: {
+          mode: "source-Xt-loadTexture-immediate-texture-object-bound-before-onload",
+          blueNoise: {
+            objectBindingMode: this.sourceBlueNoiseObjectBindingMode,
+            stateIsImmediateTexture: this.noiseTexture === this.sourceBlueNoiseTexture,
+            c1TNoiseIsImmediateTexture: this.preCompositeMaterial.uniforms.tNoise.value === this.sourceBlueNoiseTexture,
+            screenMouseNoiseIsImmediateTexture:
+              this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === this.sourceBlueNoiseTexture,
+            allWorkMouseNoiseUniformsImmediate,
+            loadedSameImmediateTexture: this.sourceTexturePreloadState.blueNoise
+              ? this.sourceBlueNoiseLoadedTexture === this.sourceBlueNoiseTexture
+              : null,
+          },
+          perlin2: {
+            objectBindingMode: this.sourcePerlin2ObjectBindingMode,
+            stateIsImmediateTexture: this.perlinTexture === this.sourcePerlin2Texture,
+            c1TPerlinIsImmediateTexture: this.preCompositeMaterial.uniforms.tPerlin.value === this.sourcePerlin2Texture,
+            loadedSameImmediateTexture: this.sourceTexturePreloadState.perlin2
+              ? this.sourcePerlin2LoadedTexture === this.sourcePerlin2Texture
+              : null,
+          },
+          perlin1: {
+            objectBindingMode: this.sourcePerlin1ObjectBindingMode,
+            stateIsImmediateTexture: this.workPerlinTexture === this.sourcePerlin1Texture,
+            allWorkUniformsImmediate: allWorkPerlinUniformsImmediate,
+            auxiliaryUniformsImmediate: auxiliaryPerlinUniformsImmediate,
+            loadedSameImmediateTexture: this.sourceTexturePreloadState.perlin1
+              ? this.sourcePerlin1LoadedTexture === this.sourcePerlin1Texture
+              : null,
+          },
+        },
         noise: sourceTextureProbe(this.noiseTexture),
         skyComposite: {
           materialMode: "source-z1-raw-glsl3",

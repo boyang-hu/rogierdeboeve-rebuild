@@ -1905,6 +1905,55 @@ const summary = {
           && !sourceLoadedTextureHelperBody.includes("texture.anisotropy"),
         runtimeGuard: rebuildWebgl.includes("sourceLoadedTextureMode: \"source-Xt-TextureLoader-default-sampling-wrap-only-overrides\""),
       },
+      rebuildImmediateTextureBindings: {
+        blueNoise: orderedIncludes(rebuildWebgl, [
+          "const blueNoiseLoad = this.loadTextureImmediate(\"/images/textures/blue-noise.png\")",
+          "const blueNoiseTexture = blueNoiseLoad.texture",
+          "blueNoiseTexture.wrapS = RepeatWrapping",
+          "this.sourceBlueNoiseTexture = blueNoiseTexture",
+          "this.sourceBlueNoiseObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
+          "this.noiseTexture = blueNoiseTexture",
+          "this.preCompositeMaterial.uniforms.tNoise.value = blueNoiseTexture",
+          "this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture",
+          "const blueNoise = blueNoiseLoad.loaded.then((texture) =>",
+          "this.sourceBlueNoiseLoadedTexture = texture",
+          "this.sourceTexturePreloadState.blueNoise = true",
+        ]),
+        perlin2: orderedIncludes(rebuildWebgl, [
+          "const perlin2Load = this.loadTextureImmediate(`/images/textures/perlin-2.${sourceExt}`)",
+          "const perlin2Texture = perlin2Load.texture",
+          "perlin2Texture.wrapS = RepeatWrapping",
+          "this.sourcePerlin2Texture = perlin2Texture",
+          "this.sourcePerlin2ObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
+          "this.perlinTexture = perlin2Texture",
+          "this.preCompositeMaterial.uniforms.tPerlin.value = perlin2Texture",
+          "const perlin2 = perlin2Load.loaded.then((texture) =>",
+          "this.sourcePerlin2LoadedTexture = texture",
+          "this.sourceTexturePreloadState.perlin2 = true",
+        ]),
+        perlin1: orderedIncludes(rebuildWebgl, [
+          "const perlin1Load = this.loadTextureImmediate(`/images/textures/perlin-1.${sourceExt}`)",
+          "const perlin1Texture = perlin1Load.texture",
+          "perlin1Texture.wrapS = MirroredRepeatWrapping",
+          "this.sourcePerlin1Texture = perlin1Texture",
+          "this.sourcePerlin1ObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
+          "this.workPerlinTexture = perlin1Texture",
+          "item.material.uniforms.tPerlin.value = perlin1Texture",
+          "if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = perlin1Texture",
+          "if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = perlin1Texture",
+          "const perlin1 = perlin1Load.loaded.then((texture) =>",
+          "this.sourcePerlin1LoadedTexture = texture",
+          "this.sourceTexturePreloadState.perlin1 = true",
+        ]),
+        runtimeProbe: rebuildWebgl.includes("sourceImmediateTextureBindings")
+          && rebuildWebgl.includes("c1TNoiseIsImmediateTexture")
+          && rebuildWebgl.includes("c1TPerlinIsImmediateTexture")
+          && rebuildWebgl.includes("allWorkUniformsImmediate")
+          && rebuildOutputProbe.includes("immediateBindingMode")
+          && rebuildOutputProbe.includes("blueNoiseC1TNoiseImmediate")
+          && rebuildOutputProbe.includes("perlin2C1Immediate")
+          && rebuildOutputProbe.includes("perlin1WorkImmediate"),
+      },
       webpDetection: sourceWebpDetection && {
         index: sourceWebpDetection.index,
         checks: checks(sourceWebpDetection.text, [
