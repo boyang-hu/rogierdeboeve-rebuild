@@ -1772,6 +1772,28 @@ async function runProbe() {
   if (updateOrder?.environmentUpdateOrder !== "source-p1-component-post-render") {
     throw new Error(`Environment update-order source-shape mismatch: ${updateOrder?.environmentUpdateOrder || "missing"}`);
   }
+  const skyTickingLifecycle = updateOrder?.skyTickingLifecycle || {};
+  const isLowRes = parsed.probe.renderer?.dprPolicy?.lowRes === true;
+  const skyLifecycleErrors = [];
+  if (updateOrder?.skyUpdateMode !== "source-V1-ticking-gated-low-res-resize-starts-then-100ms-stops") skyLifecycleErrors.push("skyUpdateMode");
+  if (skyTickingLifecycle.mode !== "source-V1-ticking-gates-render-low-res-resize-starts-then-100ms-stops") skyLifecycleErrors.push("mode");
+  if (skyTickingLifecycle.renderGateMode !== "source-V1-update-this.ticking-guards-super-update") skyLifecycleErrors.push("renderGateMode");
+  if (skyTickingLifecycle.initTicking !== true) skyLifecycleErrors.push("initTicking");
+  if (skyTickingLifecycle.stopDelayMs !== 100) skyLifecycleErrors.push("stopDelayMs");
+  if (skyTickingLifecycle.lowRes !== isLowRes) skyLifecycleErrors.push("lowRes");
+  if (typeof skyTickingLifecycle.pendingStopTimers !== "number") skyLifecycleErrors.push("pendingStopTimers");
+  if (isLowRes) {
+    if (skyTickingLifecycle.resizeSetsTicking !== true) skyLifecycleErrors.push("resizeSetsTicking");
+  } else {
+    if (skyTickingLifecycle.ticking !== true) skyLifecycleErrors.push("nonLowResTicking");
+    if (skyTickingLifecycle.renderedThisFrame !== true) skyLifecycleErrors.push("nonLowResRendered");
+    if (skyTickingLifecycle.skippedThisFrame !== false) skyLifecycleErrors.push("nonLowResSkipped");
+    if (skyTickingLifecycle.resizeSetsTicking !== false) skyLifecycleErrors.push("nonLowResResizeSetsTicking");
+    if (skyTickingLifecycle.stopApplied !== false) skyLifecycleErrors.push("nonLowResStopApplied");
+  }
+  if (skyLifecycleErrors.length) {
+    throw new Error(`Sky V1 ticking lifecycle source-shape mismatch: ${skyLifecycleErrors.join(", ")}`);
+  }
   const expectedSourceSceneOrder = ["sky", "media", "work", "main", "workthumb", "wavves", "character"];
   if (JSON.stringify(updateOrder?.sourceSceneOrder) !== JSON.stringify(expectedSourceSceneOrder)) {
     throw new Error(`Source scene order probe mismatch: ${JSON.stringify(updateOrder?.sourceSceneOrder || null)}`);
@@ -2287,6 +2309,19 @@ async function runProbe() {
   if (!Array.isArray(skyComposite?.background) || skyComposite.background.length !== 3) skyUniformErrors.push("backgroundValue");
   if (skyComposite?.backgroundMatchesSource !== true) skyUniformErrors.push("backgroundMatchesSource");
   if (skyComposite?.timeMode !== (parsed.probe.renderer?.dprPolicy?.lowRes ? "source-V1-low-res-time-0" : "source-V1-live-time")) skyUniformErrors.push("timeMode");
+  if (skyComposite?.renderGateMode !== "source-V1-update-this.ticking-guards-super-update") skyUniformErrors.push("renderGateMode");
+  if (skyComposite?.lowResRenderMode !== (isLowRes ? "source-V1-low-res-render-only-while-ticking" : "source-V1-non-low-res-ticking-stays-true")) skyUniformErrors.push("lowResRenderMode");
+  if (skyComposite?.lowResStopDelayMs !== 100) skyUniformErrors.push("lowResStopDelayMs");
+  if (typeof skyComposite?.pendingLowResStopTimers !== "number") skyUniformErrors.push("pendingLowResStopTimers");
+  if (isLowRes) {
+    if (skyComposite?.lowResResizeSetsTicking !== true) skyUniformErrors.push("lowResResizeSetsTicking");
+  } else {
+    if (skyComposite?.ticking !== true) skyUniformErrors.push("nonLowResTicking");
+    if (skyComposite?.renderedThisFrame !== true) skyUniformErrors.push("nonLowResRendered");
+    if (skyComposite?.skippedThisFrame !== false) skyUniformErrors.push("nonLowResSkipped");
+    if (skyComposite?.lowResResizeSetsTicking !== false) skyUniformErrors.push("nonLowResResizeSetsTicking");
+    if (skyComposite?.lowResStopApplied !== false) skyUniformErrors.push("nonLowResStopApplied");
+  }
   if (skyComposite?.uTimeUpdateOrder !== "source-V1-super-update-before-z1-uTime-write") skyUniformErrors.push("uTimeUpdateOrder");
   if (skyTarget && skyComposite && (skyTarget.width !== skyComposite.expectedSize || skyTarget.height !== skyComposite.expectedSize)) skyUniformErrors.push("targetSize");
   const skyRawTarget = parsed.probe.targets?.skyRaw;

@@ -174,18 +174,19 @@ Known remaining gaps:
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
 - Source `yD.onProjectActive()` active-project spotlight, application-order, and woosh ownership are now guarded: `SD.init()` keeps the fixed Home entry `220` baseline, then active-project order runs spotlight payload-or-max, reveal spread, source-owned woosh, active `uReveal` tweens, project look setters, and final directional light `1.5`; current local project data has no spotlight payloads, so the expected runtime spotlight value remains `220`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
+- Source `V1` low-res sky ticking lifecycle is now aligned and guarded: source `V1.resize()` sets `this.ticking=true` when `Le.LOW_RES`, waits `100ms`, then sets `this.ticking=false`; source `V1.update()` renders sky only while `this.ticking` is true and writes `z1.uTime` after that render. The rebuild now gates sky raw/composite rendering the same way and exposes `skyTickingLifecycle` through the output probe.
 - Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
 - Source `I1/ag` raw main-fluid resize ownership is now guarded: source `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`, and source `ag.calcSizes(e,t)` preserves raw incoming `e,t` for `fboSize`, `cellScale`, and target `setSize(...)` while rounding only internal simulation fields through `resolution`.
 - Source `a1/i1` floor-reflection draw-state and `i1` renderer-state are now guarded: floor `onBeforeRender` hides only the floor component group while reflecting the full Home scene, `sceneWrap`/blocks/environment remain visible in the reflected scene, the reflector raw/blur pass disables source-owned renderer state, and visibility plus renderer state restore after the reflector update.
 
 Latest Phase 1 batch:
 
-- Aligned source `Ka.update()` `uPosOld/uPosNew` uniform reference ownership in the screen, work-item, and about auxiliary mouse-simulation paths without changing shader text, render targets, constants, pointer/raycast behavior, project data, or route behavior.
-- Source evidence: `Ka.update(e,t,n)` lerps `this.newPos`, assigns `this.simulationMaterial.uniforms.uPosNew.value=this.newPos` and `uPosOld.value=this.oldPos`, renders the ping-pong simulation, and only then replaces `this.oldPos=this.newPos.clone()`.
-- The rebuild now assigns the same direct vector references inside `updateMouseBrush()` and returns `newPos.clone()` so screen/local/about state replaces `mouseOld` after the render instead of mutating the previous old-position object with `.copy(...)`.
-- Output and interactive probes expose/assert `uPosUniformWriteMode=source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment`, `oldPosCloneMode=source-Ka-update-oldPos-newPos-clone-after-render`, direct `uPosNew` state-reference ownership, and post-render `uPosOld` clone detachment.
-- Renderer audit checks the source `Ka.update()` anchors, requires the rebuild direct reference/clone path, and rejects restoring `uPos*.value.copy(...)` or `oldPos.copy(newPos)`.
-- Previous committed batch was `ed5ed63 Align I1 fluid strength binding`.
+- Aligned source `V1` low-res sky ticking lifecycle without changing shader text, visual constants, render-target sizing, route data, or non-low-res sky rendering.
+- Source evidence: `V1.resize(e,t,n)` runs `Le.LOW_RES&&(this.ticking=!0)`, resizes `H1/Lo` to `t*.75`, then `Le.LOW_RES&&(await fn(100),this.ticking=!1)`; `V1.update(e,t,n,i)` wraps `super.update(Le.LOW_RES?0:e,...)` and the later `z1.uTime` write in `this.ticking&&(...)`.
+- The rebuild now sets `skyTicking=true` on low-res resize, schedules source-style 100ms stop timers, skips sky raw/composite rendering when low-res ticking is false, and keeps non-low-res rendering unchanged.
+- Output probes expose/assert `skyTickingLifecycle`, `renderGateMode=source-V1-update-this.ticking-guards-super-update`, `lowResRenderMode`, timer state, and low-res stop delay.
+- Renderer audit checks the mirrored `V1` resize/update anchors and rejects rebuilding sky as an unconditional per-frame render in low-res mode.
+- Previous committed batch was `fbd7ba1 Align Ka uPos reference ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -199,30 +200,28 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-ka-upos-ref-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-ka-upos-ref-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-v1-ticking-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-v1-ticking-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-upos-ref-output-desktop VIEWPORT=desktop CDP_PORT=9391 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-upos-ref-output-mobile VIEWPORT=mobile CDP_PORT=9392 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-upos-ref-interactive CDP_PORT=9393 node scripts/probe-interactive-mouse.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-upos-ref-thumb VIEWPORT=desktop CDP_PORT=9394 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-upos-ref-media CDP_PORT=9395 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-output-desktop VIEWPORT=desktop CDP_PORT=9341 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-output-mobile VIEWPORT=mobile CDP_PORT=9342 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-thumb VIEWPORT=desktop CDP_PORT=9343 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-v1-ticking-media CDP_PORT=9344 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `Ka.update()` uPos reference ownership batch. Renderer audit wrote `/tmp/rd-ka-upos-ref-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the source uPos reference/clone markers. Interactive mouse probe passed and retained screen/local mouse response plus main-fluid pointer guardrails. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `V1` low-res sky ticking batch. Renderer audit wrote `/tmp/rd-v1-ticking-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and, on this headless Chrome, exercised `LOW_RES=true` through SwiftShader tier `1`, confirming the new sky ticking gate. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this uPos reference ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky ticking batch.
 
-Runtime QA was run because the batch touched Home WebGL mouse-simulation runtime ownership and probe/audit coverage.
+Runtime QA was run because the batch touched Home WebGL sky render-loop ownership and probe/audit coverage.
 
 Verified:
 
-- Renderer audit passed for the uPos reference ownership batch: `/tmp/rd-ka-upos-ref-audit.json`.
+- Renderer audit passed for the sky ticking batch: `/tmp/rd-v1-ticking-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-ka-upos-ref-output-desktop`, `/tmp/rd-ka-upos-ref-output-mobile`.
-- Interactive mouse probe passed: `/tmp/rd-ka-upos-ref-interactive`.
-- Thumb spotlight probe passed: `/tmp/rd-ka-upos-ref-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-ka-upos-ref-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-v1-ticking-output-desktop`, `/tmp/rd-v1-ticking-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-v1-ticking-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-v1-ticking-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

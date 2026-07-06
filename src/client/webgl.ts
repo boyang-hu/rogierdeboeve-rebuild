@@ -5468,6 +5468,20 @@ export class WebGLBackdrop {
   private canvasAnimateInPromise?: Promise<void>;
   private canvasAnimateInStarted = false;
   private canvasFadeCompleted = false;
+  private skyTicking = true;
+  private skyLowResStopTimers: ReturnType<typeof window.setTimeout>[] = [];
+  private sourceSkyTickingState = {
+    mode: "source-V1-ticking-gates-render-low-res-resize-starts-then-100ms-stops",
+    initTicking: true,
+    resizeSetsTicking: false,
+    stopDelayMs: 100,
+    stopApplied: false,
+    renderGateMode: "source-V1-update-this.ticking-guards-super-update",
+    renderedThisFrame: false,
+    skippedThisFrame: false,
+    lastRenderFrame: 0,
+    renderCount: 0,
+  };
   private sourceInitLifecycle = {
     mode: "source-nD-resize-delay-bind-composite-inputs-sky-repeat-then-start",
     firstResizeDone: false,
@@ -6245,6 +6259,8 @@ export class WebGLBackdrop {
       window.clearTimeout(this.sourceInitLifecycleTimer);
       this.sourceInitLifecycleTimer = null;
     }
+    this.skyLowResStopTimers.forEach((timer) => window.clearTimeout(timer));
+    this.skyLowResStopTimers = [];
     this.clearAboutVisualLifecycleTimers();
     this.sourceRemoveCharacterRotatableEvents();
     cancelAnimationFrame(this.raf);
@@ -8398,6 +8414,19 @@ void main() {
     this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTargets[0]?.texture ?? this.placeholder;
   }
 
+  private markSourceSkyResizeTicking() {
+    if (!sourceLowRes()) return;
+    this.skyTicking = true;
+    this.sourceSkyTickingState.resizeSetsTicking = true;
+    const timer = window.setTimeout(() => {
+      this.skyLowResStopTimers = this.skyLowResStopTimers.filter((item) => item !== timer);
+      if (this.destroyed) return;
+      this.skyTicking = false;
+      this.sourceSkyTickingState.stopApplied = true;
+    }, this.sourceSkyTickingState.stopDelayMs);
+    this.skyLowResStopTimers.push(timer);
+  }
+
   private bind() {
     window.addEventListener("resize", this.resize);
     window.addEventListener("mousemove", this.onMouseMove, { passive: true });
@@ -8430,6 +8459,7 @@ void main() {
     const height = window.innerHeight;
     const dpr = sourceDpr();
     const workDpr = sourceWorkDpr();
+    this.markSourceSkyResizeTicking();
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(width, height, false);
     const renderWidth = Math.max(1, Math.round(width * dpr));
@@ -9278,6 +9308,12 @@ void main() {
   }
 
   private renderSkyTarget(time: number) {
+    this.sourceSkyTickingState.renderedThisFrame = false;
+    this.sourceSkyTickingState.skippedThisFrame = false;
+    if (sourceLowRes() && !this.skyTicking) {
+      this.sourceSkyTickingState.skippedThisFrame = true;
+      return false;
+    }
     this.renderer.setRenderTarget(this.skyRawTarget);
     this.renderer.render(this.skyScene, this.backgroundCamera);
     this.skyCompositeMaterial.uniforms.tScene.value = this.skyRawTarget.texture;
@@ -9286,6 +9322,10 @@ void main() {
     this.renderer.render(this.skyPostScreen, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
     this.skyCompositeMaterial.uniforms.uTime.value = sourceLowRes() ? 0 : time;
+    this.sourceSkyTickingState.renderedThisFrame = true;
+    this.sourceSkyTickingState.lastRenderFrame = this.sourcePostRenderFrame;
+    this.sourceSkyTickingState.renderCount += 1;
+    return true;
   }
 
   private renderDisplacementTarget(time: number) {
@@ -10274,7 +10314,13 @@ void main() {
           postRenderFrame: this.sourcePostRenderFrame,
           environmentUpdateOrder: "source-p1-component-post-render",
           skyPassClearing: "source-Lo-no-explicit-clear",
-          skyUpdateMode: "source-V1-low-res-freezes-time",
+          skyUpdateMode: "source-V1-ticking-gated-low-res-resize-starts-then-100ms-stops",
+          skyTickingLifecycle: {
+            ...this.sourceSkyTickingState,
+            ticking: this.skyTicking,
+            lowRes: sourceLowRes(),
+            pendingStopTimers: this.skyLowResStopTimers.length,
+          },
           skyEnvironmentBinding: "source-nD-resize-delay-then-repeat-composite-bind",
           sourceInitLifecycleMode: this.sourceInitLifecycle.mode,
           firstResizeBeforeDelayedBindings: this.sourceInitLifecycle.firstResizeDone,
@@ -10902,6 +10948,19 @@ void main() {
           expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           expectedRawSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",
+          renderGateMode: "source-V1-update-this.ticking-guards-super-update",
+          lowResRenderMode: sourceLowRes()
+            ? "source-V1-low-res-render-only-while-ticking"
+            : "source-V1-non-low-res-ticking-stays-true",
+          ticking: this.skyTicking,
+          renderedThisFrame: this.sourceSkyTickingState.renderedThisFrame,
+          skippedThisFrame: this.sourceSkyTickingState.skippedThisFrame,
+          renderCount: this.sourceSkyTickingState.renderCount,
+          lastRenderFrame: this.sourceSkyTickingState.lastRenderFrame,
+          pendingLowResStopTimers: this.skyLowResStopTimers.length,
+          lowResStopApplied: this.sourceSkyTickingState.stopApplied,
+          lowResResizeSetsTicking: this.sourceSkyTickingState.resizeSetsTicking,
+          lowResStopDelayMs: this.sourceSkyTickingState.stopDelayMs,
           uTimeUpdateOrder: "source-V1-super-update-before-z1-uTime-write",
           glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           wrapS: this.skyCompositeTarget.texture.wrapS,
