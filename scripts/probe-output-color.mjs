@@ -904,6 +904,13 @@ async function runProbe() {
   if (mainOwnership?.optionalBlurScreenMode !== "source-I1-mainPostScreen-material-swap") ownershipErrors.push("mainOptionalBlurScreenMode");
   if (mainOwnership?.lensflareScreenMode !== "source-I1-mainPostScreen-material-swap") ownershipErrors.push("mainLensflareScreenMode");
   if (mainOwnership?.defaultScreenMaterialMode !== "source-I1-default-direct-C1-screen-render-fxaa-tail-only") ownershipErrors.push("mainDefaultScreenMaterialMode");
+  if (mainOwnership?.retainedMainCompositeSurfaceRole !== "retained-source-Lu-lA-surface-not-active-I1-screen-material") {
+    ownershipErrors.push("mainRetainedCompositeSurfaceRole");
+  }
+  if (mainOwnership?.retainedMainCompositeConstructionChain !== "source-Lu-initRenderer-creates-lA-kA-replaces-with-OA-I1-initRenderer-creates-C1") {
+    ownershipErrors.push("mainRetainedCompositeConstructionChain");
+  }
+  if (mainOwnership?.activeMainScreenMaterial !== "source-I1-C1") ownershipErrors.push("mainActiveScreenMaterial");
   if (mainOwnership?.preCompositeTargetRole !== "source-I1-renderTargetComposite-unused-in-default-renderToScreen") {
     ownershipErrors.push("mainPreCompositeTargetRole");
   }
@@ -1287,6 +1294,15 @@ async function runProbe() {
   if (mainCompositeUniforms?.materialMode !== "source-lA-raw-glsl3") materialSurfaceErrors.push("mainCompositeMaterialMode");
   if (mainCompositeUniforms?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mainCompositeVertexMode");
   if (mainCompositeUniforms?.glslVersion !== "300 es") materialSurfaceErrors.push("mainCompositeGlslVersion");
+  if (mainCompositeUniforms?.surfaceRole !== "retained-source-Lu-lA-surface-not-active-I1-screen-material") {
+    materialSurfaceErrors.push("mainCompositeSurfaceRole");
+  }
+  if (mainCompositeUniforms?.constructionChain !== "source-Lu-initRenderer-creates-lA-kA-replaces-with-OA-I1-initRenderer-creates-C1") {
+    materialSurfaceErrors.push("mainCompositeConstructionChain");
+  }
+  if (mainCompositeUniforms?.activeMainScreenMaterial !== "source-I1-C1") {
+    materialSurfaceErrors.push("mainCompositeActiveMainScreenMaterial");
+  }
   if (mainCompositeUniforms?.hasSourceUnusedMouseSimUniform !== true) materialSurfaceErrors.push("mainCompositeUnusedMouseSimUniform");
   const expectedMainCompositeConstructorBools = {
     boolBloom: false,

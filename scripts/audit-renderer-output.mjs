@@ -258,6 +258,7 @@ const sourceBlendMultiply = extractTemplate(bundle, "hg", "`,dg=");
 const sourceLu = extractAround(bundle, "class Lu", 200, 7200);
 const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
+const sourceWorkRenderManagerKA = extractAround(bundle, "class kA extends Lu", 320, 900);
 const sourceLA = extractAround(bundle, "class lA extends", 320, 1100);
 const sourceW1 = extractAround(bundle, "class W1 extends", 320, 1100);
 const sourceSg = extractAround(bundle, "class sg extends", 320, 900);
@@ -1412,6 +1413,14 @@ const summary = {
           "hasSourceUnusedMouseSimUniform: \"tMouseSim\" in this.mainCompositeMaterial.uniforms",
         ]),
         ownership: {
+          sourceLuInitCreatesLA:
+            sourceLu.text.includes("this.compositeMaterial=new lA"),
+          sourceKAReplacesLAWithOA:
+            Boolean(sourceWorkRenderManagerKA?.text)
+            && sourceWorkRenderManagerKA.text.includes("class kA extends Lu")
+            && sourceWorkRenderManagerKA.text.includes("super(e,t,n),this.compositeMaterial=new OA"),
+          sourceI1CreatesC1Directly:
+            sourceMainI1.text.includes("this.compositeMaterial=new C1"),
           sourceBoolConstructorDefaults:
             sourceLA.text.includes("boolBloom:new I(!1),boolFluid:new I(!1),boolLuminosity:new I(!1),boolFxaa:new I(!1)"),
           sourceLuRuntimeBoolWrites:
@@ -1431,9 +1440,25 @@ const summary = {
             && !rebuildCreateMainCompositeMaterial.includes("boolFluid: { value: settings.fluid.enabled }")
             && !rebuildCreateMainCompositeMaterial.includes("boolLuminosity: { value: settings.luminosity.enabled }")
             && !rebuildCreateMainCompositeMaterial.includes("boolFxaa: { value: settings.fxaa.enabled }"),
+          rebuildRetainedSourceSurfaceRole:
+            Boolean(rebuildCreateMainCompositeMaterial)
+            && rebuildCreateMainCompositeMaterial.includes("sourceSurfaceRole = \"retained-source-Lu-lA-surface-not-active-I1-screen-material\"")
+            && rebuildCreateMainCompositeMaterial.includes("sourceConstructionChain = \"source-Lu-initRenderer-creates-lA-kA-replaces-with-OA-I1-initRenderer-creates-C1\"")
+            && rebuildCreateMainCompositeMaterial.includes("sourceActiveMainScreenMaterial = \"source-I1-C1\"")
+            && rebuildWebgl.includes("retainedMainCompositeSurfaceRole: this.mainCompositeMaterial.userData.sourceSurfaceRole")
+            && rebuildWebgl.includes("retainedMainCompositeConstructionChain: this.mainCompositeMaterial.userData.sourceConstructionChain")
+            && rebuildWebgl.includes("activeMainScreenMaterial: this.mainCompositeMaterial.userData.sourceActiveMainScreenMaterial"),
+          rebuildNoActiveLAInI1ScreenPath:
+            rebuildWebgl.includes("defaultScreenMaterialMode: \"source-I1-default-direct-C1-screen-render-fxaa-tail-only\"")
+            && rebuildWebgl.includes("this.mainPostScreen.material = this.preCompositeMaterial;")
+            && !rebuildTick.includes("this.mainPostScreen.material = this.mainCompositeMaterial")
+            && !rebuildWebgl.includes("this.renderer.render(this.mainCompositeScene"),
           rebuildProbeCoverage:
             rebuildWebgl.includes("constructorBoolDefaults: this.mainCompositeMaterial.userData.sourceConstructorBoolDefaults")
             && rebuildWebgl.includes("runtimeBoolOwnership: this.mainCompositeMaterial.userData.sourceRuntimeBoolOwnership")
+            && rebuildWebgl.includes("surfaceRole: this.mainCompositeMaterial.userData.sourceSurfaceRole")
+            && rebuildWebgl.includes("constructionChain: this.mainCompositeMaterial.userData.sourceConstructionChain")
+            && rebuildWebgl.includes("activeMainScreenMaterial: this.mainCompositeMaterial.userData.sourceActiveMainScreenMaterial")
             && rebuildWebgl.includes("boolBloom: this.mainCompositeMaterial.uniforms.boolBloom.value")
             && rebuildWebgl.includes("boolFluid: this.mainCompositeMaterial.uniforms.boolFluid.value")
             && rebuildWebgl.includes("boolLuminosity: this.mainCompositeMaterial.uniforms.boolLuminosity.value")

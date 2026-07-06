@@ -72,6 +72,40 @@ Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work b
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 
+### S1-319 `Lu/kA/I1` Composite Material Construction Chain Guardrail
+
+This batch strengthens the source attribution around the retained `lA/aA` source-surface material. It does not change shader text, render-target sizing, render pass order, route behavior, visual constants, or the active default `I1/C1` screen path.
+
+Source evidence:
+
+- Source `Lu.initRenderer()` creates `this.compositeMaterial=new lA` after the default `Lu` render-manager targets and helper materials are initialized.
+- Source `kA extends Lu` calls `super(e,t,n)`, then immediately replaces the inherited `lA` instance with `this.compositeMaterial=new OA`.
+- Source `I1` is not a `Lu` subclass; `I1.initRenderer()` constructs `this.compositeMaterial=new C1` directly.
+- Therefore the retained rebuild `mainCompositeMaterial` / `lA/aA` surface is a source-surface audit artifact, not the active default Home main-screen material. The active default main screen material remains `C1/A1`.
+
+Runtime and tooling changes:
+
+- `createMainCompositeMaterial()` now records `sourceSurfaceRole=retained-source-Lu-lA-surface-not-active-I1-screen-material`, `sourceConstructionChain=source-Lu-initRenderer-creates-lA-kA-replaces-with-OA-I1-initRenderer-creates-C1`, and `sourceActiveMainScreenMaterial=source-I1-C1`.
+- `__rogierOutputProbe.settings.main.renderManagerOwnership` exposes the retained `lA` surface role, construction chain, and active `I1/C1` material attribution.
+- `__rogierOutputProbe.uniforms.mainComposite` exposes the same role/chain metadata alongside the existing `lA/aA` shader-surface and constructor-bool fields.
+- `scripts/probe-output-color.mjs` hard-fails if the retained `lA` surface is misclassified as the active `I1` screen material.
+- `scripts/audit-renderer-output.mjs` now extracts source `kA`, checks `Lu -> lA`, `kA -> OA`, and `I1 -> C1`, rejects active `mainCompositeMaterial` use in the default `I1` screen path, and verifies probe coverage.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-lu-ka-i1-chain-audit.json` passed.
+- Recursive false/null extraction from `/tmp/rd-lu-ka-i1-chain-audit.json` printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed: `/tmp/rd-lu-ka-i1-chain-output-desktop`.
+- Mobile output probe passed: `/tmp/rd-lu-ka-i1-chain-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-lu-ka-i1-chain-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages: `/tmp/rd-lu-ka-i1-chain-media`.
+
+Decision: keep `lA/aA` as a retained source-surface guardrail, but do not treat it as the active default Home main-screen path. The source chain is `Lu` creates `lA`, `kA` replaces it with `OA`, and `I1` directly owns `C1`; Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+
 ### S1-318 `I1/C1` Main Composite Runtime Uniform Order
 
 This batch aligns one source update-order edge in the main render-manager chain. It does not change shader text, render-target sizing, floor/environment constants, project data, route behavior, or visual tuning.
@@ -1240,6 +1274,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 227 | S1-319 | `Lu/kA/I1` composite material construction chain guardrail | Source `Lu.initRenderer()` creates `this.compositeMaterial=new lA`; source `kA extends Lu` calls `super(e,t,n)` and immediately replaces that inherited material with `this.compositeMaterial=new OA`; source `I1` is separate from `Lu` and constructs `this.compositeMaterial=new C1` directly. | The rebuild now records and probes `mainCompositeMaterial` as `retained-source-Lu-lA-surface-not-active-I1-screen-material`, exposes the `Lu -> lA`, `kA -> OA`, and `I1 -> C1` chain through output probes, and statically rejects using `mainCompositeMaterial` in the default `I1/C1` screen path. Full syntax/build/audit/browser probes passed for `/tmp/rd-lu-ka-i1-chain-*`; project media retained `5/5` visible tracks on `/gc-2026/` and `/hashgraph-vc/`. | Low | Keep `lA/aA` as retained source-surface evidence only. Continue Phase 1 from source-backed spotlight/thumb projection transfer, broader `kA/Lu/I1` target/composite interpretation, and floor/environment residuals. |
 | 226 | S1-318 | `I1/C1` main composite runtime uniform order | Source `I1.update()` runs optional fluid, then writes `C1.tScene`, `boolBloom`, `boolFluid`, `boolLuminosity`, `boolFxaa`, and `tLensflare`, assigns `this.screen.material=this.compositeMaterial`, and only then renders the screen path. Source `U1.update()` still writes `C1.uTime` after `super.update(...)`. | Rebuild now removes the frame-head `preCompositeMaterial` bool writes and the pre-optional-pass `tLensflare` write. `tick()` writes `tScene`, the four bools, and `tLensflare` after the main fluid branch and immediately before `renderHomeCompositePass()`, while keeping `uTime` after that render. Output probes expose `c1RuntimeUniformOrder` and the `main-C1-runtime-uniforms` / `I1.C1-runtime-uniforms` order markers; renderer audit checks source/rebuild ordering and rejects restoring early frame-head bindings. Full syntax/build/audit/browser probes passed for `/tmp/rd-main-c1-runtime-*`; project media retained `5/5` visible tracks on `/gc-2026/` and `/hashgraph-vc/`. | Low | Keep as an `I1/C1` runtime update-order guardrail only. This does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 225 | S1-300 | `nD/u1` sky composite binding lifecycle | Source `u1` constructs `customUniforms.tSky` with `new I(null)`. Source `nD.init()` performs the initial resize, waits `100ms`, then binds `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim`, sets `skyScene.renderManager.renderTargetComposite.texture.wrapS/wrapT=RepeatWrapping`, assigns that texture to `workScene.env.material.customUniforms.tSky.value`, resizes again, and only then starts the render loop. The rebuild still had constructor-time `tSky` binding and sky repeat wrapping, plus immediate `bindSourceMainCompositeInputs()`/`tick()`. | Rebuild now initializes environment `tSky` to `null`, records `source-u1-constructor-tSky-null`, removes constructor-time sky composite repeat wrapping and main composite input binding, runs `bindSourceDelayedCompositeInputsAndSky()` after the first resize plus 100ms delay, applies the source `tWork/tMedia/tMouseSim` bindings, sets sky composite repeat wrapping, binds environment `tSky`, performs the second resize, and starts RAF only after delayed bindings. `animateIn()` now awaits both the init lifecycle and the four source-preloaded textures. Output probes expose `sourceInitLifecycleMode`, first/second resize flags, delayed binding, started-after-binding, constructor-null, and delayed `tSky` binding markers; `scripts/probe-output-color.mjs` and renderer audit hard-fail on drift or constructor-time regressions. `git diff --check`, syntax checks, renderer audit, build, desktop/mobile output probes, desktop/mobile thumb probes, and project-media probe passed for `/tmp/rd-nd-sky-lifecycle-*`. | Low-medium | Keep `u1.tSky` constructor-null and source `nD.init()` delayed sky/main binding lifecycle guarded. This does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 224 | S1-299 | `Qm/Iw` spotlight defaults and shadow projection ownership | Source `Qm` constructs spotlights with default `distance=0`, `angle=Math.PI/3`, `penumbra=0`, `decay=2`, `map=null`, and `shadow=new Iw`. Source `Iw` constructs `PerspectiveCamera(50,1,.5,500)`, sets `focus=1`, derives projection FOV from spotlight angle/focus, derives aspect from shadow map size, and keeps far as `distance || camera.far`. Source `p1.setLights()` leaves distance, decay, shadow, and castShadow at defaults while setting `angle=Math.PI/4` and `penumbra=.95`. | Production light tuning, shader text, pass order, render targets, route data, and visual constants are unchanged. `sourceSpotLightDefaultsProbe()` now surfaces source default/shadow camera fields through both output and thumb projection probes. Output probe, thumb spotlight probe, and renderer audit hard-fail on drift; full syntax/build/audit/browser probes passed for `/tmp/rd-spot-defaults-*`. | Low | Keep as spotlight default/projection attribution only. This does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |

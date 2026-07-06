@@ -138,6 +138,7 @@ Known remaining gaps:
 - Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, source `setLights()` max spotlight scalar ownership, and source `SD.init()` Home spotlight intensity ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
+- Source `Lu/kA/I1` composite material construction attribution is now guarded: `Lu.initRenderer()` creates `lA`, `kA` immediately replaces it with `OA`, and `I1` directly constructs `C1`, so the rebuild `mainCompositeMaterial` is retained `lA/aA` source-surface evidence and not the active default Home `I1/C1` screen material.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, viscosity, divergence, poisson, and pressure. The source seven-FBO topology including default-disabled `eA` viscosity is now guarded, but this is pass/topology parity, not proof that the whole Home fluid/composite feel is complete.
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
@@ -173,11 +174,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `I1/C1` main composite runtime uniform order without changing shader text, render-target sizing, floor/environment constants, project data, route behavior, or visual tuning.
-- Source `I1.update()` runs optional fluid, then writes `this.compositeMaterial.uniforms.tScene`, `boolBloom`, `boolFluid`, `boolLuminosity`, `boolFxaa`, and `tLensflare`, assigns `this.screen.material=this.compositeMaterial`, and renders the screen path.
-- The rebuild now removes frame-head `preCompositeMaterial` bool writes and the pre-optional-pass `tLensflare` binding, then writes `tScene`, the four bools, and `tLensflare` after the main fluid branch and immediately before `renderHomeCompositePass()`.
-- Output probe and renderer audit now assert `c1RuntimeUniformOrder=source-I1-update-writes-C1-tScene-bools-tLensflare-after-fluid-before-screen-render`, include `main-C1-runtime-uniforms` / `I1.C1-runtime-uniforms` in order probes, and reject restoring early frame-head bindings.
-- Previous committed batch was `122905e Align floor reflection blur target swap ownership`.
+- Strengthened source attribution for the retained `lA/aA` source-surface material without changing shader text, render-target sizing, pass order, route behavior, visual constants, or the active default `I1/C1` screen path.
+- Source evidence: `Lu.initRenderer()` creates `this.compositeMaterial=new lA`; `kA extends Lu` calls `super(e,t,n)` and immediately replaces that material with `this.compositeMaterial=new OA`; `I1` is separate from `Lu` and constructs `this.compositeMaterial=new C1` directly.
+- The rebuild now records/probes `mainCompositeMaterial` as `retained-source-Lu-lA-surface-not-active-I1-screen-material`, exposes the `Lu -> lA`, `kA -> OA`, and `I1 -> C1` construction chain, and audit/probe checks reject misclassifying `lA` as the default `I1` screen material.
+- Previous committed batch was `d1caa49 Align main composite runtime uniform order`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -188,28 +188,28 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-main-c1-runtime-uniform-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-main-c1-runtime-uniform-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-lu-ka-i1-chain-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-lu-ka-i1-chain-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-output-desktop VIEWPORT=desktop CDP_PORT=9278 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-thumb CDP_PORT=9280 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-media CDP_PORT=9281 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-output-desktop VIEWPORT=desktop CDP_PORT=9292 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-output-mobile VIEWPORT=mobile CDP_PORT=9293 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-thumb CDP_PORT=9294 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-media CDP_PORT=9295 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `I1/C1` main composite runtime uniform order batch. Renderer audit wrote `/tmp/rd-main-c1-runtime-uniform-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes recorded the new `c1RuntimeUniformOrder` and `main-C1-runtime-uniforms` order marker. Thumb spotlight probe and project-media probe passed with no failures/exceptions/console messages in the relevant checks, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `Lu/kA/I1` composite material construction chain guardrail batch. Renderer audit wrote `/tmp/rd-lu-ka-i1-chain-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes recorded the retained `lA/aA` source-surface role and active `source-I1-C1` screen material marker. Thumb spotlight probe and project-media probe passed with no failures/exceptions/console messages in the relevant checks, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this main composite runtime uniform order batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this composite construction chain guardrail batch.
 
-Runtime QA was run because the batch touched WebGL main render-manager update order and output probe coverage.
+Runtime QA was run because the batch touched WebGL main render-manager attribution and output probe coverage.
 
 Verified:
 
-- Renderer audit passed for the `I1/C1` main composite runtime uniform order batch: `/tmp/rd-main-c1-runtime-uniform-audit.json`.
+- Renderer audit passed for the `Lu/kA/I1` composite construction chain batch: `/tmp/rd-lu-ka-i1-chain-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-main-c1-runtime-output-desktop`, `/tmp/rd-main-c1-runtime-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-main-c1-runtime-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-main-c1-runtime-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-lu-ka-i1-chain-output-desktop`, `/tmp/rd-lu-ka-i1-chain-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-lu-ka-i1-chain-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-lu-ka-i1-chain-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

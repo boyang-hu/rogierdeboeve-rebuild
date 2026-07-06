@@ -6781,6 +6781,9 @@ export class WebGLBackdrop {
       boolFxaa: material.uniforms.boolFxaa.value,
     };
     material.userData.sourceRuntimeBoolOwnership = "source-Lu-update-writes-lA-bools-from-settings-before-composite-render";
+    material.userData.sourceSurfaceRole = "retained-source-Lu-lA-surface-not-active-I1-screen-material";
+    material.userData.sourceConstructionChain = "source-Lu-initRenderer-creates-lA-kA-replaces-with-OA-I1-initRenderer-creates-C1";
+    material.userData.sourceActiveMainScreenMaterial = "source-I1-C1";
     return material;
   }
 
@@ -9882,6 +9885,9 @@ void main() {
             lensflareScreenMode: "source-I1-mainPostScreen-material-swap",
             sourceFinalRender: "settings.renderToScreen -> setRenderTarget(null), render(this.screen,this.screenCamera)",
             defaultScreenMaterialMode: "source-I1-default-direct-C1-screen-render-fxaa-tail-only",
+            retainedMainCompositeSurfaceRole: this.mainCompositeMaterial.userData.sourceSurfaceRole,
+            retainedMainCompositeConstructionChain: this.mainCompositeMaterial.userData.sourceConstructionChain,
+            activeMainScreenMaterial: this.mainCompositeMaterial.userData.sourceActiveMainScreenMaterial,
             preCompositeTargetRole: "source-I1-renderTargetComposite-unused-in-default-renderToScreen",
             defaultRenderToScreenWritesCompositeTarget: false,
             productionOutputChanged: false,
@@ -10091,6 +10097,9 @@ void main() {
             materialMode: "source-lA-raw-glsl3",
             vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mainCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            surfaceRole: this.mainCompositeMaterial.userData.sourceSurfaceRole,
+            constructionChain: this.mainCompositeMaterial.userData.sourceConstructionChain,
+            activeMainScreenMaterial: this.mainCompositeMaterial.userData.sourceActiveMainScreenMaterial,
             hasSourceUnusedMouseSimUniform: "tMouseSim" in this.mainCompositeMaterial.uniforms,
             constructorBoolDefaults: this.mainCompositeMaterial.userData.sourceConstructorBoolDefaults,
             runtimeBoolOwnership: this.mainCompositeMaterial.userData.sourceRuntimeBoolOwnership,
