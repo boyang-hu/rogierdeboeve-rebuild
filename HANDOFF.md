@@ -141,6 +141,7 @@ Known remaining gaps:
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
+- Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
@@ -155,12 +156,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `$1/j1/Lo` project-media clear ownership without changing production shader formulas, visual constants, route data, pass order, render targets, or render-target topology.
-- Source `Lo.initSettings()` sets `clear:false`, source `j1.initSettings()` sets `clear:true`, but source `Lo.update(...)` does not inspect `this.settings.clear`.
-- Source `$1.update(e,t,n,i)` owns the active media clear branch by temporarily setting `renderer.autoClear=true`, calling `super.update(...)`, then restoring `renderer.autoClear=false`.
-- `__rogierOutputProbe.passMaterials.mediaComposite` exposes `renderManagerOwnership`, `settingsClearMode`, `autoClearMode`, and `rendererAutoClearRestored`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if media clear ownership drifts from source `$1.update()` or if `renderer.autoClear` is not restored.
-- Previous committed batch was `4a7b652 Guard environment shader constants`.
+- Aligned source `k1/O1/Lo` displacement target DPR sizing without changing shader formulas, visual constants, route data, pass order, project media, or render-target topology.
+- Source `k1.resize(e,t,n)` calls `this.renderManager.resize(t/10,t/10,n)`, source `O1` extends `Lo`, and source `Lo.resize(e,t,n)` rounds after multiplying by DPR.
+- The rebuild now sizes `displacementRawTarget` and `displacementTarget` as `round((height / 10) * dpr)` instead of CSS-only `round(height / 10)`.
+- `__rogierOutputProbe.uniforms.passMaterials.displacement` exposes `sizingMode=source-k1-resize-height-div-10-then-Lo-round-times-dpr`, `expectedTargetSize`, and `sourceDpr`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if displacement target sizing drifts back to CSS-only sizing.
+- Previous committed batch was `4b18f85 Guard media clear ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the source-equivalent GPU/LOW_RES bridge.
 
 ## Validation Status
@@ -171,26 +172,27 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-media-clear-final-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-displacement-size-final-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-media-clear-output-desktop CDP_PORT=9501 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-media-clear-output-mobile CDP_PORT=9502 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-media-clear-thumb-desktop CDP_PORT=9503 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-media-clear-project-media CDP_PORT=9504 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-displacement-size-output-desktop CDP_PORT=9512 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-displacement-size-output-mobile CDP_PORT=9513 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 OUT_DIR=/tmp/rd-displacement-size-output-mobile-dpr125 CDP_PORT=9514 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-displacement-size-thumb-desktop CDP_PORT=9515 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-displacement-size-project-media CDP_PORT=9516 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `$1/j1/Lo` media clear ownership guardrail batch. Renderer audit wrote `/tmp/rd-media-clear-final-audit.json`; `sourceManagers.helperMaterialSurfaces.mediaClearOwnership` confirms source `Lo` settings clear is unused by `Lo.update()`, source `j1` still sets `clear:true`, source `$1.update()` owns the temporary `autoClear` branch, the rebuild scopes/restores `autoClear`, and runtime probe coverage is present. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed the media composite ownership markers. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
+All relevant checks passed in the `k1/O1/Lo` displacement target DPR sizing batch. Renderer audit wrote `/tmp/rd-displacement-size-final-audit.json`; `sourceManagers.Lo.rebuildDisplacementSizing` confirms source `k1` height-div-10 plus `Lo.resize()` DPR multiplication, rebuild DPR usage, old CSS-only formula rejection, and runtime probe coverage. Desktop/mobile output probes passed with no browser failures/exceptions/console messages. The mobile DPR `1.25` probe confirmed displacement raw/composite targets at `106x106`, matching `round((844 / 10) * 1.25)`. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this media clear ownership guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this displacement target sizing batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the media clear ownership guardrail batch: `/tmp/rd-media-clear-final-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-media-clear-output-desktop` and `/tmp/rd-media-clear-output-mobile`.
-- Desktop thumb spotlight probe passed for `/tmp/rd-media-clear-thumb-desktop`.
+- Renderer audit passed for the displacement target sizing batch: `/tmp/rd-displacement-size-final-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-displacement-size-output-desktop` and `/tmp/rd-displacement-size-output-mobile`; the mobile DPR `1.25` probe passed for `/tmp/rd-displacement-size-output-mobile-dpr125`.
+- Desktop thumb spotlight probe passed for `/tmp/rd-displacement-size-thumb-desktop`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

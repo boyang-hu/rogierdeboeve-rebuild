@@ -1325,11 +1325,18 @@ async function runProbe() {
   }
   const displacement = passMaterials.displacement || {};
   const rendererSize = parsed.probe.renderer?.size || {};
-  const expectedDisplacementSize = Math.max(1, Math.round((rendererSize.height || 0) / 10));
+  const expectedDisplacementSize = Math.max(
+    1,
+    Math.round(((rendererSize.height || 0) / 10) * (parsed.probe.renderer?.dprPolicy?.globalDpr || 1)),
+  );
   if (displacement.materialMode !== "source-N1-raw-glsl3") materialSurfaceErrors.push("displacementMaterialMode");
   if (displacement.glslVersion !== "300 es") materialSurfaceErrors.push("displacementGlslVersion");
   if (displacement.blending !== 0) materialSurfaceErrors.push("displacementBlending");
   if (displacement.vertexMode !== "source-tl-matrix-fullscreen") materialSurfaceErrors.push("displacementVertexMode");
+  if (displacement.sizingMode !== "source-k1-resize-height-div-10-then-Lo-round-times-dpr") {
+    materialSurfaceErrors.push("displacementSizingMode");
+  }
+  if (displacement.expectedTargetSize !== expectedDisplacementSize) materialSurfaceErrors.push("displacementExpectedTargetSize");
   if (displacement.clearMode !== "source-Lo-no-explicit-clear") materialSurfaceErrors.push("displacementClearMode");
   if (displacement.renderManagerOwnership !== "source-O1-Lo-single-screen-material-swap") materialSurfaceErrors.push("displacementOwnership");
   if (displacement.screenMode !== "source-Lo-screen-material-composite") materialSurfaceErrors.push("displacementScreenMode");

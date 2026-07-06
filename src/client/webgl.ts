@@ -7169,7 +7169,7 @@ void main() {
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uContainerSize.value.set(width, height);
     this.displacementMaterial.uniforms.uRatio.value = width / height;
-    const displacementSize = Math.max(1, Math.round(height / 10));
+    const displacementSize = Math.max(1, Math.round((height / 10) * dpr));
     this.displacementRawTarget.setSize(displacementSize, displacementSize);
     this.displacementTarget.setSize(displacementSize, displacementSize);
     const floorReflectionWidth = Math.max(1, width * 0.75);
@@ -8924,6 +8924,9 @@ void main() {
             materialMode: "source-N1-raw-glsl3",
             glslVersion: (this.displacementMaterial as RawShaderMaterial).glslVersion ?? null,
             vertexMode: "source-tl-matrix-fullscreen",
+            sizingMode: "source-k1-resize-height-div-10-then-Lo-round-times-dpr",
+            expectedTargetSize: Math.max(1, Math.round((window.innerHeight / 10) * sourceDpr())),
+            sourceDpr: sourceDpr(),
             clearMode: "source-Lo-no-explicit-clear",
             renderManagerOwnership: "source-O1-Lo-single-screen-material-swap",
             screenMode: this.displacementPostScreen.material === this.displacementMaterial ? "source-Lo-screen-material-composite" : "non-source",

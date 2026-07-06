@@ -730,6 +730,7 @@ const summary = {
         "this.renderTargetComposite=this.renderTargetA.clone(),this.compositeMaterial=new g1",
         "uniforms:{tScene:new I(null)}",
         "this.settings.renderToScreen&&(this.renderer.setPixelRatio(n),this.renderer.setSize(e,t))",
+        "e=Math.round(e*n),t=Math.round(t*n)",
         "o.setRenderTarget(c),o.render(a,r)",
         "this.compositeMaterial.uniforms.tScene.value=c.texture",
         "this.screen.material=this.compositeMaterial",
@@ -787,10 +788,25 @@ const summary = {
         "renderManagerOwnership: \"source-H1-Lo-single-screen-material-swap\"",
         "renderManagerOwnership: \"source-O1-Lo-single-screen-material-swap\"",
         "renderManagerOwnership: \"source-x1-Lo-single-screen-material-swap\"",
+        "sizingMode: \"source-k1-resize-height-div-10-then-Lo-round-times-dpr\"",
+        "expectedTargetSize: Math.max(1, Math.round((window.innerHeight / 10) * sourceDpr()))",
         "uTimeUpdateOrder: \"source-V1-super-update-before-z1-uTime-write\"",
         "uTimeUpdateOrder: \"source-k1-super-update-before-N1-uTime-write\"",
         "backgroundMatchesSource: this.displacementRawScene.background instanceof Color",
       ]),
+      rebuildDisplacementSizing: {
+        sourceK1HeightDivTenDpr:
+          sourceLo.text.includes("e=Math.round(e*n),t=Math.round(t*n)")
+          && sourceDisplacementO1.text.includes("this.renderManager.resize(t/10,t/10,n)"),
+        rebuildUsesDpr:
+          rebuildWebgl.includes("const displacementSize = Math.max(1, Math.round((height / 10) * dpr));")
+          && rebuildWebgl.includes("sizingMode: \"source-k1-resize-height-div-10-then-Lo-round-times-dpr\""),
+        rejectsOldCssOnlySize: !rebuildWebgl.includes("const displacementSize = Math.max(1, Math.round(height / 10));"),
+        runtimeProbe:
+          rebuildOutputProbe.includes("displacementSizingMode")
+          && rebuildOutputProbe.includes("displacementExpectedTargetSize")
+          && rebuildOutputProbe.includes("parsed.probe.renderer?.dprPolicy?.globalDpr"),
+      },
       rebuildPostRenderUTimeOrder: {
         sky: Boolean(rebuildRenderSkyTarget) && orderedIncludes(rebuildRenderSkyTarget, [
           "this.renderer.render(this.skyPostScreen, this.backgroundCamera)",
