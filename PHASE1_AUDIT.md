@@ -68,9 +68,48 @@ Recommended cadence:
 - Prioritize source-structure, source-value, and source-behavior parity over any visual-payoff scoring. Visual improvement is not an implementation goal by itself; production changes need mirrored-bundle evidence even when they look better. Low perceived visual payoff is not a reason to stop while a source mismatch remains open.
 - The latest accepted priority criteria are: clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Expected visual payoff is rejected as a priority criterion for Phase 1 planning.
 
-Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; and source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
+Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; and source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-301 `I1/ag/eA` Main-Fluid Viscosity Topology
+
+This batch aligns a concrete source topology mismatch in the main fluid simulation. It does not tune visual constants, route data, final transfer, or enabled runtime behavior.
+
+Source evidence:
+
+- Source `ag` constructs seven FBO entries: `main`, `velocity_1`, `viscosity_0`, `viscosity_1`, `divergence`, `pressure_0`, and `pressure_1`.
+- Source `createFbos()` creates each FBO as `new Dn(...,{depthBuffer:!1,stencilBuffer:!1,type:kn})`.
+- Source defaults include `viscosityIntensity:30`, `viscosityIterations:5`, and `viscosity:!1`.
+- Source `createForces()` always constructs `this.viscosity=new eA(...)`, while source `update()` only calls `this.viscosity.update()` when `viscosity.enabled` is true.
+- Source `eA` owns `velocity`, `velocity_new`, `v`, `px`, and `dt` uniforms, alternates `output0/output1` for `viscosityIterations`, writes `velocity_new`, and returns the final velocity target.
+
+Runtime and tooling changes:
+
+- `MainFluidPass` now includes `viscosityMaterial`, `viscosityScene`, `viscosityA`, and `viscosityB`.
+- Added source defaults `enabled:false`, `intensity:30`, and `iterations:5`, with the viscosity branch constructed but default-disabled.
+- Added the source `QT` viscosity fragment as `fluidViscosityFragment` and shader dump `ag-viscosity`.
+- `updateMainFluidPass()` now uses the constructed `eA`-shaped loop only if the source default flag is enabled; default production behavior remains on the old active velocity path.
+- `mainFluidProbe()` exposes topology mode, seven target keys, viscosity defaults, disabled runtime mode, constructor `v` state, `source-eA-raw-glsl3` material metadata, and `viscosityA/B` render-target probes.
+- `scripts/probe-output-color.mjs` hard-fails if the topology drops back to five targets, if defaults drift, if `eA` material flags drift, or if any of the seven targets stop being FloatType/depthless/stencilless.
+- `scripts/audit-renderer-output.mjs` now extracts source `eA`, checks source/rebuild viscosity anchors, and records the output-probe guardrails.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-ag-viscosity-audit.json` passed; the new `agFluid` audit subtree has no false/null values.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile output probes passed for `/tmp/rd-ag-viscosity-output-desktop` and `/tmp/rd-ag-viscosity-output-mobile`; both asserted the seven-target topology, disabled viscosity defaults, `source-eA-raw-glsl3`, and FloatType/depthless/stencilless targets.
+- Desktop and mobile thumb spotlight probes passed for `/tmp/rd-ag-viscosity-thumb-desktop` and `/tmp/rd-ag-viscosity-thumb-mobile`.
+- Project media probe passed for `/tmp/rd-ag-viscosity-project-media-json` and retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+- Static interactive mouse probe passed for `/tmp/rd-ag-viscosity-interactive-static` with zero failures, exceptions, or console messages. The probe confirmed screen/local mouse response and kept main-fluid interaction default-disabled with `scale=[6,6]`.
+
+Decision: keep the source `ag/eA` viscosity topology constructed and guarded, with the source default-disabled runtime branch. This closes one main-fluid topology mismatch only; Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ### S1-300 `nD/u1` Sky Composite Binding Lifecycle
 

@@ -224,6 +224,9 @@ const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomC
 const rebuildRenderWorkBlurPass = extractBlock(rebuildWebgl, "private renderWorkBlurPass()");
 const rebuildRenderHomeBlurPass = extractBlock(rebuildWebgl, "private renderHomeBlurPass()");
 const rebuildRenderHomeBloomPass = extractBlock(rebuildWebgl, "private renderHomeBloomPass(");
+const rebuildCreateMainFluidPass = extractBlock(rebuildWebgl, "private createMainFluidPass()");
+const rebuildUpdateMainFluidPass = extractBlock(rebuildWebgl, "private updateMainFluidPass()");
+const rebuildMainFluidProbe = extractBlock(rebuildWebgl, "private mainFluidProbe()");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
 const sourceA1 = extractTemplate(bundle, "A1", "`;class C1");
 const sourceTl = extractTemplate(bundle, "tl", "`;class g1");
@@ -248,6 +251,7 @@ const sourceNa = extractAround(bundle, "class Na extends", 420, 900);
 const sourceCg = extractAround(bundle, "class cg extends", 320, 1000);
 const sourceIg = extractAround(bundle, "class ig extends", 320, 900);
 const sourceL1 = extractAround(bundle, "class L1 extends", 320, 1000);
+const sourceEA = extractAround(bundle, "class eA extends", 320, 1200);
 const sourceAg = extractAround(bundle, "class ag", 260, 3200);
 const sourceGT = extractAround(bundle, "class GT extends", 320, 1500);
 const sourceQT = extractAround(bundle, "class qT extends", 320, 1500);
@@ -1630,6 +1634,7 @@ const summary = {
             "new Dn(this.fboSize.x,this.fboSize.y,{depthBuffer:!1,stencilBuffer:!1,type:kn})",
             "this.advection=new GT",
             "this.force=new qT",
+            "this.viscosity=new eA",
             "this.divergence=new jT",
             "this.poisson=new KT",
             "this.pressure=new JT",
@@ -1662,6 +1667,25 @@ const summary = {
             "this.mouse={coords:new Q,coordsOld:new Q,diff:new Q}",
           ]),
           excerpt: compact(sourceQT.text),
+        },
+        eA: sourceEA && {
+          index: sourceEA.index,
+          checks: checks(sourceEA.text, [
+            "class eA extends Ir",
+            "glslVersion:lt",
+            "blending:ot",
+            "vertexShader:Co",
+            "fragmentShader:QT",
+            "velocity:{value:e.src.texture}",
+            "velocity_new:{value:e.dst_.texture}",
+            "v:{value:e.viscosity.intensity}",
+            "this.output0=e.dst_",
+            "this.output1=e.dst",
+            "for(let r=0;r<t;r++)",
+            "this.material.uniforms.velocity_new.value=n.texture",
+            "return i",
+          ]),
+          excerpt: compact(sourceEA.text),
         },
         jT: sourceJT && {
           index: sourceJT.index,
@@ -1698,6 +1722,58 @@ const summary = {
             "pressure:{value:e.pressure.texture}",
           ]),
           excerpt: compact(sourcePressureJT.text),
+        },
+        rebuildViscosityTopology: {
+          sourceShapedCreate: checks(rebuildCreateMainFluidPass || "", [
+            "const viscosityMaterial = new RawShaderMaterial({",
+            "fragmentShader: fluidViscosityFragment",
+            "dumpShader(\"ag-viscosity\", fluidBoundedVertex, fluidViscosityFragment)",
+            "velocity_new: { value: this.fluidPlaceholder }",
+            "v: { value: undefined as number | undefined }",
+            "viscosityMaterial",
+            "viscosityScene: makeBoundedScene(viscosityMaterial)",
+            "viscosityA: makeFluidRenderTarget()",
+            "viscosityB: makeFluidRenderTarget()",
+          ]),
+          sourceShapedUpdate: checks(rebuildUpdateMainFluidPass || "", [
+            "if (SOURCE_AG_VISCOSITY_DEFAULTS.enabled) {",
+            "pass.viscosityMaterial.uniforms.velocity.value = pass.targets.velocity.texture",
+            "pass.viscosityMaterial.uniforms.v.value = SOURCE_AG_VISCOSITY_DEFAULTS.intensity",
+            "for (let index = 0; index < SOURCE_AG_VISCOSITY_DEFAULTS.iterations; index += 1)",
+            "pass.viscosityMaterial.uniforms.velocity_new.value = readTarget.texture",
+            "this.renderer.render(pass.viscosityScene, this.backgroundCamera)",
+            "velocityTarget = writeTarget",
+            "pass.divergenceMaterial.uniforms.velocity.value = velocityTarget.texture",
+            "pass.pressureMaterial.uniforms.velocity.value = velocityTarget.texture",
+          ]),
+          sourceShapedProbe: checks(rebuildMainFluidProbe || "", [
+            "mode: \"source-ag-createFbos-seven-targets-including-disabled-viscosity\"",
+            "targetKeys: Object.keys(pass.targets)",
+            "viscosityRuntimeMode: SOURCE_AG_VISCOSITY_DEFAULTS.enabled",
+            "\"source-ag-eA-viscosity-pass-constructed-default-disabled\"",
+            "viscosityConstructorV: pass.viscosityMaterial.uniforms.v.value ?? null",
+            "viscosity: sourceMaterialProbe(pass.viscosityMaterial, \"source-eA-raw-glsl3\")",
+            "viscosityA: renderTargetProbe(this.renderer, pass.targets.viscosityA)",
+            "viscosityB: renderTargetProbe(this.renderer, pass.targets.viscosityB)",
+          ]),
+          rebuildDefaults: checks(rebuildWebgl, [
+            "const SOURCE_AG_VISCOSITY_DEFAULTS = {",
+            "enabled: false",
+            "intensity: 30",
+            "iterations: 5",
+            "const fluidViscosityFragment = `precision mediump float;",
+          ]),
+          outputProbeGuards: checks(rebuildOutputProbe, [
+            "source-ag-createFbos-seven-targets-including-disabled-viscosity",
+            "source-ag-eA-viscosity-pass-constructed-default-disabled",
+            "source-eA-raw-glsl3",
+            "\"main\", \"velocity\", \"viscosityA\", \"viscosityB\", \"divergence\", \"pressureA\", \"pressureB\"",
+            "mainFluidViscosityDefaultIntensity",
+            "for (const key of [\"advection\", \"viscosity\", \"divergence\", \"poisson\", \"pressure\"])",
+            "for (const uniformKey of [\"bounds\", \"velocity\", \"velocity_new\", \"v\", \"px\", \"dt\"])",
+            "materialSurfaceErrors.push(`mainFluidViscosity${uniformKey}Uniform`)",
+            "for (const key of expectedMainFluidTargetKeys)",
+          ]),
         },
       },
     },

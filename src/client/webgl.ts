@@ -380,6 +380,8 @@ type MainFluidPass = {
   advectionScene: Scene;
   forceMaterial: ShaderMaterial;
   forceScene: Scene;
+  viscosityMaterial: ShaderMaterial;
+  viscosityScene: Scene;
   divergenceMaterial: ShaderMaterial;
   divergenceScene: Scene;
   poissonMaterial: ShaderMaterial;
@@ -389,6 +391,8 @@ type MainFluidPass = {
   targets: {
     main: WebGLRenderTarget;
     velocity: WebGLRenderTarget;
+    viscosityA: WebGLRenderTarget;
+    viscosityB: WebGLRenderTarget;
     divergence: WebGLRenderTarget;
     pressureA: WebGLRenderTarget;
     pressureB: WebGLRenderTarget;
@@ -549,6 +553,11 @@ const SOURCE_C1_UNIFORM_KEYS = [
   "uFluidStrength",
 ] as const;
 const SOURCE_C1_FLUID_STRENGTH_DEFAULT = 0.5;
+const SOURCE_AG_VISCOSITY_DEFAULTS = {
+  enabled: false,
+  intensity: 30,
+  iterations: 5,
+} as const;
 
 const SOURCE_O1_FLOOR_UNIFORM_KEYS = [
   "tReflect",
@@ -3312,6 +3321,10 @@ uniform vec2 force;uniform vec2 center;uniform vec2 scale;uniform vec2 px;in vec
 const fluidDivergenceFragment = `precision mediump float;
 #define GLSLIFY 1
 uniform sampler2D velocity;uniform float dt;uniform vec2 px;in vec2 vUv;out vec4 FragColor;void main(){float x0=texture(velocity,vUv-vec2(px.x,0)).x;float x1=texture(velocity,vUv+vec2(px.x,0)).x;float y0=texture(velocity,vUv-vec2(0,px.y)).y;float y1=texture(velocity,vUv+vec2(0,px.y)).y;float divergence=(x1-x0+y1-y0)/2.0;FragColor=vec4(divergence/dt);}`;
+
+const fluidViscosityFragment = `precision mediump float;
+#define GLSLIFY 1
+uniform sampler2D velocity;uniform sampler2D velocity_new;uniform float v;uniform vec2 px;uniform float dt;in vec2 vUv;out vec4 FragColor;void main(){vec2 old=texture(velocity,vUv).xy;vec2 new0=texture(velocity_new,vUv+vec2(px.x*2.0,0)).xy;vec2 new1=texture(velocity_new,vUv-vec2(px.x*2.0,0)).xy;vec2 new2=texture(velocity_new,vUv+vec2(0,px.y*2.0)).xy;vec2 new3=texture(velocity_new,vUv-vec2(0,px.y*2.0)).xy;vec2 new=4.0*old+v*dt*(new0+new1+new2+new3);new/=4.0*(1.0+v*dt);gl_FragColor=vec4(new,0.0,0.0);}`;
 
 const fluidPoissonFragment = `precision mediump float;
 #define GLSLIFY 1
@@ -6295,6 +6308,7 @@ void main() {
     dumpShader("ag-advection", fluidBoundedVertex, fluidAdvectionFragment);
     dumpShader("ag-advection-bounds", fluidBoundsVertex, fluidAdvectionFragment);
     dumpShader("ag-force", fluidForceVertex, fluidForceFragment);
+    dumpShader("ag-viscosity", fluidBoundedVertex, fluidViscosityFragment);
     dumpShader("ag-divergence", fluidBoundedVertex, fluidDivergenceFragment);
     dumpShader("ag-poisson", fluidBoundedVertex, fluidPoissonFragment);
     dumpShader("ag-pressure", fluidBoundedVertex, fluidPressureFragment);
@@ -6339,6 +6353,22 @@ void main() {
     });
     const forceScene = new Scene();
     forceScene.add(new Mesh(new PlaneGeometry(2, 2), forceMaterial));
+    const viscosityMaterial = new RawShaderMaterial({
+      glslVersion: GLSL3,
+      blending: NoBlending,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        bounds: { value: bounds },
+        velocity: { value: this.fluidPlaceholder },
+        velocity_new: { value: this.fluidPlaceholder },
+        v: { value: undefined as number | undefined },
+        px: { value: cellScale },
+        dt: { value: settings.delta },
+      },
+      vertexShader: fluidBoundedVertex,
+      fragmentShader: fluidViscosityFragment,
+    });
     const divergenceMaterial = new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
@@ -6388,6 +6418,8 @@ void main() {
       advectionScene: makeAdvectionScene(advectionMaterial, advectionBoundsMaterial),
       forceMaterial,
       forceScene,
+      viscosityMaterial,
+      viscosityScene: makeBoundedScene(viscosityMaterial),
       divergenceMaterial,
       divergenceScene: makeBoundedScene(divergenceMaterial),
       poissonMaterial,
@@ -6397,6 +6429,8 @@ void main() {
       targets: {
         main: makeFluidRenderTarget(),
         velocity: makeFluidRenderTarget(),
+        viscosityA: makeFluidRenderTarget(),
+        viscosityB: makeFluidRenderTarget(),
         divergence: makeFluidRenderTarget(),
         pressureA: makeFluidRenderTarget(),
         pressureB: makeFluidRenderTarget(),
@@ -6415,6 +6449,7 @@ void main() {
     pass.advectionMaterial.dispose();
     pass.advectionBoundsMaterial.dispose();
     pass.forceMaterial.dispose();
+    pass.viscosityMaterial.dispose();
     pass.divergenceMaterial.dispose();
     pass.poissonMaterial.dispose();
     pass.pressureMaterial.dispose();
@@ -7797,7 +7832,24 @@ void main() {
     this.renderer.setRenderTarget(pass.targets.velocity);
     this.renderer.render(pass.forceScene, this.backgroundCamera);
 
-    pass.divergenceMaterial.uniforms.velocity.value = pass.targets.velocity.texture;
+    let velocityTarget = pass.targets.velocity;
+    if (SOURCE_AG_VISCOSITY_DEFAULTS.enabled) {
+      pass.viscosityMaterial.uniforms.velocity.value = pass.targets.velocity.texture;
+      pass.viscosityMaterial.uniforms.v.value = SOURCE_AG_VISCOSITY_DEFAULTS.intensity;
+      let readTarget = pass.targets.viscosityA;
+      let writeTarget = pass.targets.viscosityB;
+      for (let index = 0; index < SOURCE_AG_VISCOSITY_DEFAULTS.iterations; index += 1) {
+        pass.viscosityMaterial.uniforms.velocity_new.value = readTarget.texture;
+        this.renderer.setRenderTarget(writeTarget);
+        this.renderer.render(pass.viscosityScene, this.backgroundCamera);
+        velocityTarget = writeTarget;
+        const swap = readTarget;
+        readTarget = writeTarget;
+        writeTarget = swap;
+      }
+    }
+
+    pass.divergenceMaterial.uniforms.velocity.value = velocityTarget.texture;
     pass.divergenceMaterial.uniforms.dt.value = settings.delta;
     this.renderer.setRenderTarget(pass.targets.divergence);
     this.renderer.render(pass.divergenceScene, this.backgroundCamera);
@@ -7814,7 +7866,7 @@ void main() {
     }
 
     pass.pressureMaterial.uniforms.pressure.value = pressureNext.texture;
-    pass.pressureMaterial.uniforms.velocity.value = pass.targets.velocity.texture;
+    pass.pressureMaterial.uniforms.velocity.value = velocityTarget.texture;
     pass.pressureMaterial.uniforms.dt.value = settings.delta;
     this.renderer.setRenderTarget(pass.targets.main);
     this.renderer.render(pass.pressureScene, this.backgroundCamera);
@@ -9645,6 +9697,19 @@ void main() {
       fboSize: pass.fboSize.toArray(),
       cellScale: pass.cellScale.toArray(),
       bounds: pass.bounds.toArray(),
+      topology: {
+        mode: "source-ag-createFbos-seven-targets-including-disabled-viscosity",
+        targetKeys: Object.keys(pass.targets),
+        viscosityDefaults: {
+          enabled: SOURCE_AG_VISCOSITY_DEFAULTS.enabled,
+          intensity: SOURCE_AG_VISCOSITY_DEFAULTS.intensity,
+          iterations: SOURCE_AG_VISCOSITY_DEFAULTS.iterations,
+        },
+        viscosityRuntimeMode: SOURCE_AG_VISCOSITY_DEFAULTS.enabled
+          ? "source-ag-eA-viscosity-branch-enabled"
+          : "source-ag-eA-viscosity-pass-constructed-default-disabled",
+        viscosityConstructorV: pass.viscosityMaterial.uniforms.v.value ?? null,
+      },
       pointer: pass.pointer.toArray(),
       pointerOld: pass.pointerOld.toArray(),
       interaction: {
@@ -9661,6 +9726,7 @@ void main() {
           sceneChildren: pass.advectionScene.children.length,
         },
         force: sourceMaterialProbe(pass.forceMaterial, "source-qT-raw-glsl3"),
+        viscosity: sourceMaterialProbe(pass.viscosityMaterial, "source-eA-raw-glsl3"),
         divergence: sourceMaterialProbe(pass.divergenceMaterial, "source-jT-raw-glsl3"),
         poisson: sourceMaterialProbe(pass.poissonMaterial, "source-KT-raw-glsl3"),
         pressure: sourceMaterialProbe(pass.pressureMaterial, "source-JT-raw-glsl3"),
@@ -9668,6 +9734,8 @@ void main() {
       targets: {
         main: renderTargetProbe(this.renderer, pass.targets.main),
         velocity: renderTargetProbe(this.renderer, pass.targets.velocity),
+        viscosityA: renderTargetProbe(this.renderer, pass.targets.viscosityA),
+        viscosityB: renderTargetProbe(this.renderer, pass.targets.viscosityB),
         divergence: renderTargetProbe(this.renderer, pass.targets.divergence),
         pressureA: renderTargetProbe(this.renderer, pass.targets.pressureA),
         pressureB: renderTargetProbe(this.renderer, pass.targets.pressureB),

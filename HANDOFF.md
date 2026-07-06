@@ -138,7 +138,7 @@ Known remaining gaps:
 - Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, and source `setLights()` max spotlight scalar ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
-- Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
+- Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, viscosity, divergence, poisson, and pressure. The source seven-FBO topology including default-disabled `eA` viscosity is now guarded, but this is pass/topology parity, not proof that the whole Home fluid/composite feel is complete.
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
@@ -157,16 +157,17 @@ Known remaining gaps:
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
+- Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
 
 Latest Phase 1 batch:
 
-- Aligned `nD/u1` sky composite binding lifecycle.
-- Environment `tSky` now starts as source `u1` constructor-null instead of binding the sky composite texture in `createEnvironmentMaterial()`.
-- Constructor-time sky composite `RepeatWrapping`, `bindSourceMainCompositeInputs()`, and immediate `tick()` are gone.
-- After the first resize, the rebuild waits 100ms, applies `C1.tWork/tMedia/tMouseSim` bindings, sets sky composite `wrapS/wrapT=RepeatWrapping`, binds env `tSky`, performs a second resize, and starts RAF.
-- `animateIn()` now awaits both the init lifecycle and the four source-preloaded textures before scheduling the canvas fade.
-- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, and `scripts/audit-renderer-output.mjs` hard-fail on constructor-null, delayed-binding, second-resize, and started-after-binding drift.
-- Previous committed batch was `3205cd3 Guard spotlight default projection state`.
+- Aligned `I1/ag/eA` main-fluid viscosity topology.
+- `MainFluidPass` now constructs `viscosityMaterial`, `viscosityScene`, `viscosityA`, and `viscosityB`.
+- Source viscosity defaults are explicit: `enabled:false`, `intensity:30`, and `iterations:5`.
+- `updateMainFluidPass()` keeps the `eA` branch constructed but default-disabled, so active production behavior remains unchanged unless the source flag is enabled.
+- `mainFluidProbe()` exposes seven target keys, viscosity defaults/runtime mode, constructor `v`, `source-eA-raw-glsl3`, and `viscosityA/B` target probes.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on dropping the seven-target topology or losing `eA` source material/target evidence.
+- Previous committed batch was `f34358b Align nD sky binding lifecycle`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -178,28 +179,35 @@ git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-nd-sky-lifecycle-audit.json
+node --check scripts/probe-project-media.mjs
+node --check scripts/probe-interactive-mouse.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-ag-viscosity-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-nd-sky-lifecycle-output-desktop CDP_PORT=9661 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-nd-sky-lifecycle-output-mobile CDP_PORT=9662 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-nd-sky-lifecycle-thumb-desktop CDP_PORT=9663 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-nd-sky-lifecycle-thumb-mobile CDP_PORT=9664 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-nd-sky-lifecycle-project-media CDP_PORT=9665 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-ag-viscosity-output-desktop CDP_PORT=9661 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-ag-viscosity-output-mobile CDP_PORT=9662 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-ag-viscosity-thumb-desktop CDP_PORT=9663 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-ag-viscosity-thumb-mobile CDP_PORT=9664 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-ag-viscosity-project-media-json CDP_PORT=9667 node scripts/probe-project-media.mjs > /tmp/rd-ag-viscosity-project-media.json
+# In a separate shell for the static interactive rerun:
+PORT=5180 HOST=127.0.0.1 node scripts/serve.mjs
+# Then run:
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5180 OUT_DIR=/tmp/rd-ag-viscosity-interactive-static CDP_PORT=9668 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs > /tmp/rd-ag-viscosity-interactive-static.json
 ```
 
-All relevant checks passed in the `nD/u1` sky composite binding lifecycle batch. Renderer audit wrote `/tmp/rd-nd-sky-lifecycle-audit.json`; recursive false/null review only showed the known Three render-target default diagnostics plus the local renderer default probe null. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and asserted `sourceInitLifecycleMode=source-nD-resize-delay-bind-composite-inputs-sky-repeat-then-start`, constructor-null `tSky`, delayed sky binding, repeat wrapping, second resize, and started-after-binding. Desktop/mobile thumb spotlight probes passed and retained nonzero projected map luma. Project-media probe retained visible media tracks on the probed project pages.
+All relevant checks passed in the `I1/ag/eA` main-fluid viscosity topology batch. Renderer audit wrote `/tmp/rd-ag-viscosity-audit.json`; the new `agFluid` audit subtree has no false/null values. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and asserted the seven-target topology, disabled viscosity defaults, `source-eA-raw-glsl3`, and FloatType/depthless/stencilless targets. Desktop/mobile thumb spotlight probes passed. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`. Static interactive mouse probe passed with zero failures, exceptions, or console messages, confirming screen/local mouse response while main-fluid interaction stayed default-disabled.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky lifecycle batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this viscosity topology batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the sky lifecycle batch: `/tmp/rd-nd-sky-lifecycle-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-nd-sky-lifecycle-output-desktop` and `/tmp/rd-nd-sky-lifecycle-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-nd-sky-lifecycle-thumb-desktop` and `/tmp/rd-nd-sky-lifecycle-thumb-mobile`.
+- Renderer audit passed for the viscosity topology batch: `/tmp/rd-ag-viscosity-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-ag-viscosity-output-desktop` and `/tmp/rd-ag-viscosity-output-mobile`.
+- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-ag-viscosity-thumb-desktop` and `/tmp/rd-ag-viscosity-thumb-mobile`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
+- Static interactive mouse probe passed for `/tmp/rd-ag-viscosity-interactive-static`.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -243,7 +251,7 @@ Continue source-driven implementation in this order:
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
-   - `ag` main-fluid pass shaders are now source-shaped; do not reformat them away from the source literal surface.
+   - `ag/eA` main-fluid pass shaders and seven-target topology are now source-shaped; do not reformat them away from the source literal surface or drop the default-disabled viscosity branch.
    - `$1/j1/W1/G1` media composite shader text is now source-shaped; do not remove its inert helper/luminance surface just because the active body is pass-through.
    - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
    - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, or camera-surface ownership.

@@ -1406,11 +1406,28 @@ async function runProbe() {
     materialSurfaceErrors.push("skyTSceneConstructorMode");
   }
   if (skyPassMaterial.tSceneIsRawTarget !== true) materialSurfaceErrors.push("skyRawSceneBinding");
-  const mainFluidMaterials = parsed.probe.mainFluid?.materialSurface || {};
+  const mainFluid = parsed.probe.mainFluid || {};
+  const mainFluidTopology = mainFluid.topology || {};
+  const expectedMainFluidTargetKeys = ["main", "velocity", "viscosityA", "viscosityB", "divergence", "pressureA", "pressureB"];
+  if (mainFluidTopology.mode !== "source-ag-createFbos-seven-targets-including-disabled-viscosity") {
+    materialSurfaceErrors.push("mainFluidTopologyMode");
+  }
+  if (JSON.stringify(mainFluidTopology.targetKeys || []) !== JSON.stringify(expectedMainFluidTargetKeys)) {
+    materialSurfaceErrors.push(`mainFluidTargetKeys=${JSON.stringify(mainFluidTopology.targetKeys || null)}`);
+  }
+  if (mainFluidTopology.viscosityDefaults?.enabled !== false) materialSurfaceErrors.push("mainFluidViscosityDefaultEnabled");
+  if (mainFluidTopology.viscosityDefaults?.intensity !== 30) materialSurfaceErrors.push("mainFluidViscosityDefaultIntensity");
+  if (mainFluidTopology.viscosityDefaults?.iterations !== 5) materialSurfaceErrors.push("mainFluidViscosityDefaultIterations");
+  if (mainFluidTopology.viscosityRuntimeMode !== "source-ag-eA-viscosity-pass-constructed-default-disabled") {
+    materialSurfaceErrors.push("mainFluidViscosityRuntimeMode");
+  }
+  if (mainFluidTopology.viscosityConstructorV !== null) materialSurfaceErrors.push("mainFluidViscosityConstructorV");
+  const mainFluidMaterials = mainFluid.materialSurface || {};
   for (const [key, expectedMode] of Object.entries({
     advection: "source-GT-raw-glsl3",
     advectionBounds: "source-GT-bounds-raw-glsl3",
     force: "source-qT-raw-glsl3",
+    viscosity: "source-eA-raw-glsl3",
     divergence: "source-jT-raw-glsl3",
     poisson: "source-KT-raw-glsl3",
     pressure: "source-JT-raw-glsl3",
@@ -1420,7 +1437,7 @@ async function runProbe() {
     if (mainFluidMaterials[key]?.depthWrite !== false) materialSurfaceErrors.push(`mainFluid${key}DepthWrite`);
     if (mainFluidMaterials[key]?.depthTest !== false) materialSurfaceErrors.push(`mainFluid${key}DepthTest`);
   }
-  for (const key of ["advection", "divergence", "poisson", "pressure"]) {
+  for (const key of ["advection", "viscosity", "divergence", "poisson", "pressure"]) {
     if (mainFluidMaterials[key]?.blending !== 0) materialSurfaceErrors.push(`mainFluid${key}Blending`);
   }
   if (mainFluidMaterials.advectionBounds?.blending !== 0) materialSurfaceErrors.push("mainFluidAdvectionBoundsBlending");
@@ -1428,9 +1445,14 @@ async function runProbe() {
   if (mainFluidMaterials.advectionBounds?.sceneChildren !== 2) materialSurfaceErrors.push("mainFluidAdvectionBoundsSceneChildren");
   if (!mainFluidMaterials.advection?.uniformKeys?.includes("px")) materialSurfaceErrors.push("mainFluidAdvectionPxUniform");
   if (!mainFluidMaterials.advection?.uniformKeys?.includes("bounds")) materialSurfaceErrors.push("mainFluidAdvectionBoundsUniform");
+  for (const uniformKey of ["bounds", "velocity", "velocity_new", "v", "px", "dt"]) {
+    if (!mainFluidMaterials.viscosity?.uniformKeys?.includes(uniformKey)) {
+      materialSurfaceErrors.push(`mainFluidViscosity${uniformKey}Uniform`);
+    }
+  }
   if (mainFluidMaterials.force?.blending !== 2) materialSurfaceErrors.push("mainFluidForceBlending");
-  const mainFluidTargets = parsed.probe.mainFluid?.targets || {};
-  for (const key of ["main", "velocity", "divergence", "pressureA", "pressureB"]) {
+  const mainFluidTargets = mainFluid.targets || {};
+  for (const key of expectedMainFluidTargetKeys) {
     if (mainFluidTargets[key]?.texture?.type !== 1015) materialSurfaceErrors.push(`mainFluid${key}FloatType`);
     if (mainFluidTargets[key]?.depthBuffer !== false) materialSurfaceErrors.push(`mainFluid${key}DepthBuffer`);
     if (mainFluidTargets[key]?.stencilBuffer !== false) materialSurfaceErrors.push(`mainFluid${key}StencilBuffer`);
