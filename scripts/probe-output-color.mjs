@@ -301,10 +301,49 @@ async function runProbe() {
   if (p1UpdateCulling.source !== "p1.update-world-position-cull-then-visible-block-update") cullingErrors.push("source");
   if (JSON.stringify(p1UpdateCulling.bounds) !== JSON.stringify({ minX: -5.5, maxX: 5.5, maxZ: 5 })) cullingErrors.push("bounds");
   if (p1UpdateCulling.total !== 10) cullingErrors.push("total");
+  const carousel = p1UpdateCulling.sourceCarouselDistribution || {};
+  const expectedTheta = p1UpdateCulling.total > 0 ? 360 / p1UpdateCulling.total : 0;
+  const expectedRadius = p1UpdateCulling.total > 0 ? Math.round(6.5 / 2 / Math.tan(Math.PI / p1UpdateCulling.total)) : 0;
+  if (carousel.mode !== "source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation") cullingErrors.push("carouselMode");
+  if (Math.abs((carousel.itemWidth ?? NaN) - 6.5) > 0.0001) cullingErrors.push("carouselItemWidth");
+  if (carousel.count !== p1UpdateCulling.total) cullingErrors.push("carouselCount");
+  if (Math.abs((carousel.thetaDegrees ?? NaN) - expectedTheta) > 0.0001) cullingErrors.push("carouselTheta");
+  if (Math.abs((carousel.expectedRadius ?? NaN) - expectedRadius) > 0.0001) cullingErrors.push("carouselExpectedRadius");
+  if (carousel.radiusMatchesSource !== true) cullingErrors.push("carouselRadius");
+  if (Math.abs((carousel.expectedSceneWrapZ ?? NaN) - (expectedRadius - 0.3)) > 0.0001) cullingErrors.push("carouselExpectedSceneWrapZ");
+  if (carousel.sceneWrapZMatchesSource !== true) cullingErrors.push("carouselSceneWrapZ");
+  if (!Number.isFinite(carousel.demorgenIndex) || carousel.demorgenIndex < 0 || carousel.demorgenIndex >= p1UpdateCulling.total) {
+    cullingErrors.push("carouselDemorgenIndex");
+  }
+  if (Math.abs((carousel.expectedRotationAdjustmentDegrees ?? NaN) - (-expectedTheta * carousel.demorgenIndex)) > 0.0001) {
+    cullingErrors.push("carouselExpectedRotationAdjustment");
+  }
+  if (carousel.demorgenRotationAdjustmentMatchesSource !== true) cullingErrors.push("carouselDemorgenRotationAdjustment");
+  if (carousel.itemPositionsAllMatch !== true) cullingErrors.push("carouselItemPositions");
+  if (carousel.itemLookAtAllMatch !== true) cullingErrors.push("carouselItemLookAt");
   if (p1UpdateCulling.sourceVisibilityAllMatch !== true) cullingErrors.push("sourceVisibilityAllMatch");
   if (p1UpdateCulling.visibleUpdateShapeAllMatch !== true) cullingErrors.push("visibleUpdateShapeAllMatch");
   if (!Array.isArray(p1UpdateCulling.items) || p1UpdateCulling.items.length !== p1UpdateCulling.total) cullingErrors.push("items");
   if ((p1UpdateCulling.visibleCount ?? 0) < 1) cullingErrors.push("visibleCount");
+  if (Array.isArray(p1UpdateCulling.items)) {
+    for (const item of p1UpdateCulling.items) {
+      const index = item.sourceIndex ?? -1;
+      const expectedPosition = [
+        -Math.sin((expectedTheta * index) * Math.PI / 180) * expectedRadius,
+        0,
+        Math.cos((expectedTheta * index) * Math.PI / 180) * expectedRadius,
+      ];
+      if (Math.abs((item.sourceRotationDegrees ?? NaN) - (-expectedTheta * index)) > 0.0001) cullingErrors.push(`${item.slug}:sourceRotation`);
+      if (item.sourcePositionMatches !== true) cullingErrors.push(`${item.slug}:sourcePosition`);
+      if (item.sourceLookAtBlocksWrapMatches !== true) cullingErrors.push(`${item.slug}:sourceLookAt`);
+      if (
+        !Array.isArray(item.expectedSourcePosition)
+        || item.expectedSourcePosition.some((value, positionIndex) => Math.abs(value - expectedPosition[positionIndex]) > 0.0001)
+      ) {
+        cullingErrors.push(`${item.slug}:expectedSourcePosition`);
+      }
+    }
+  }
   const visibleP1Items = Array.isArray(p1UpdateCulling.items) ? p1UpdateCulling.items.filter((item) => item.visible) : [];
   if (!visibleP1Items.every((item) => item.tMouseSim2IsScreen === true)) cullingErrors.push("visibleTMouseSim2Screen");
   if (!visibleP1Items.every((item) => item.tMouseSimIsLocal === true)) cullingErrors.push("visibleTMouseSimLocal");

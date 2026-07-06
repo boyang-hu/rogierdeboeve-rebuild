@@ -78,6 +78,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 196 | S1-269 | `p1.setBlocks()` carousel distribution guardrail | Source `p1.setBlocks()` creates one block per work item with `itemWidth=6.5`, `theta=360/count`, `radius=Math.round(itemWidth/2/Math.tan(Math.PI/count))`, block local position `x=-sin(theta*i)*radius`, `z=cos(theta*i)*radius`, per-block rotation `-theta*i`, `lookAt(blocksWrap.position)`, `rotationAdjustment` captured from the `demorgen` item, and `sceneWrap.position.z=radius-.3`. | Production rendering is unchanged. `p1UpdateCullingProbe()` now derives the same source carousel distribution at runtime, exposes `sourceCarouselDistribution`, expected/actual radius, expected/actual `sceneWrap.z`, demorgen rotation adjustment, per-item expected positions, and per-item lookAt parity. `scripts/probe-output-color.mjs` hard-fails on source carousel distribution drift, and renderer audit now extracts `p1.setBlocks()` plus checks source/rebuild/probe anchors. The stale renderer-audit check for `i1` reflection target construction was also corrected to the source `512x512` constructor target. `git diff --check`, syntax checks, build, renderer audit, desktop/mobile output probes, desktop thumb probe, and project-media probe passed; project media retained `5/5` visible tracks for both checked project pages. | Low | Keep this as source distribution evidence/guardrail only. It proves carousel radius/position/lookAt/rotation-adjustment ownership, not final floor/environment visual parity. Continue Phase 1 from actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and remaining floor/environment distribution or fog-bed source residuals. |
 | 195 | S1-268 | `i1` floor reflector constructor defaults | Source `i1` constructor defaults to `width=512`, `height=512`, `clipBias=0`, and `blurIterations=2`; constructs `renderTarget` with those dimensions and `{depthBuffer:false}` before cloning read/write targets; initializes `renderTargetUniform` from `blurIterations > 0 ? renderTargetRead.texture : renderTarget.texture`; sets `t1.uResolution` to constructor width/height; and computes blur directions from `(blurIterations - u - 1) * 15`. | The rebuild now constructs the floor reflection raw target at source `512x512`, stores `floorReflectionBlurIterations=2`, initializes the shared reflection target uniform through the source positive-blur conditional, sets the floor-reflection blur material constructor resolution to `512,512`, and drives the blur loop from the source iteration field. Output probes assert constructor mode, default size, positive-blur initial read texture, constructor blur resolution, and expected blur directions `[[15,0],[0,0]]`; renderer audit checks the source constructor/default anchors plus rebuild/probe coverage. Desktop/mobile output probes passed and confirmed the new constructor defaults with no failures/exceptions/console messages; desktop thumb probe and project-media probe stayed clean. | Low | Keep this as source constructor/default parity for `i1`, not a floor visual closeout. Continue Phase 1 from actual floor/environment distribution parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation. |
 | 194 | S1-267 | `p1` floor/environment hierarchy rotation guardrail | Source `p1.init()` creates `blocksWrap` and `sceneWrap`, adds `blocksWrap` into `sceneWrap`, creates `floor=this.add(a1)` at `y=-1.65`, creates `env=this.add(h1)` at `y=-12.65`, sets `env.rotation.y=-Xc(this.rotationAdjustment)`, then adds floor/env to `sceneWrap` before adding `sceneWrap` to the scene. Source `setBlocks()` derives `rotationAdjustment` from the `demorgen` work index. | Production rendering is unchanged. The rebuild now records source-derived environment rotation metadata (`demorgenIndex`, count, theta, rotation adjustment, expected rotation Y), exposes source `sceneWrap` child order `["blocksWrap","floor","env"]`, and asserts `rotationMatchesSource` in output probes. Renderer audit checks source `p1` hierarchy anchors and rebuild/probe coverage. Desktop/mobile output probes confirmed `demorgenIndex=8`, `count=10`, `thetaDegrees=36`, `rotationAdjustmentDegrees=-288`, `expectedRotationY=5.026548245743669`, and `rotationMatchesSource=true`; desktop/mobile thumb probes and project-media probes stayed clean. | Low | Keep this as a source hierarchy/rotation guardrail, not floor/environment visual parity. Continue Phase 1 from actual floor/environment distribution parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation. |
 | 193 | S1-266 | `T1/w1/SD/p1` thumb spotlight projection sampling guardrail | Source `SD.init()` assigns `J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture`, sets spotlight position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`; source `p1.update()` owns desktop/mobile spotlight parallax. Three r164 projects `SpotLight.map` through the spotlight shadow matrix even without source `castShadow` ownership. | Production rendering is unchanged. `__rogierThumbProbe` now includes `spotlightProjectionProbe()` so `scripts/probe-thumb-spotlight.mjs` validates the source map path through the spotlight projection matrix/chunk path at nonzero gallery progress. The probe asserts source `SpotLight.map` ownership, no-shadow-cast projection mode, source parallax branch, the 3x3 active-bounds sample grid, nonzero in-map coverage, and nonzero map luma. Renderer audit checks that the thumb probe consumes and asserts this projection sampling surface. Desktop and mobile thumb projection probes passed at `THUMB_PROGRESS=0.27`; both had `3/9` in-map samples with nonzero map luma, and mobile confirmed `mobileYOffset=0.3`. | Low | Keep this as a source projection-content guardrail, not a visual closeout. Continue Phase 1 from actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity. |
@@ -5990,6 +5991,45 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-light-state-media`.
 
 Decision: keep light intensity setters owned by source-style `Se.settings` state and update actual Three lights from `onUpdate`. Do not reintroduce separate scalar mirror fields or direct `gsap.to(this, ...)` intensity tweens without mirrored-bundle evidence. Phase 1 remains open because this closes state tween ownership only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution gaps remain unresolved.
+
+### S1-269 `p1.setBlocks()` Carousel Distribution Guardrail
+
+This batch strengthened source `p1.setBlocks()` carousel distribution evidence. It does not change production rendering, shader formulas, visual constants, render targets, or route data.
+
+Source evidence:
+
+- Source `p1.setBlocks()` starts with `itemWidth=6.5` and `count=this.works.length`.
+- Source `theta` is `360 / count`.
+- Source `radius` is `Math.round(itemWidth / 2 / Math.tan(Math.PI / count))`.
+- Source positions each block on the circular x/z ring with `x=-sin(theta*i)*radius` and `z=cos(theta*i)*radius`.
+- Source stores each block rotation as `-theta*i`.
+- Source records `rotationAdjustment` from the item whose id is `demorgen`.
+- Source calls `instance.lookAt(this.blocksWrap.position)`.
+- Source sets `sceneWrap.position` to `(0, 0, radius - .3)`.
+
+Runtime and tooling changes:
+
+- `p1UpdateCullingProbe()` now derives the source item width, count, theta, radius, `sceneWrap.z`, demorgen index, and demorgen rotation adjustment at runtime.
+- Each probed work item now includes `sourceIndex`, `sourceRotationDegrees`, local position, expected source position, source-position parity, and `lookAt(blocksWrap.position)` parity.
+- `p1UpdateCulling.sourceCarouselDistribution` exposes the source distribution mode plus all aggregate parity flags.
+- `scripts/probe-output-color.mjs` now hard-fails if carousel item width/count/theta/radius/`sceneWrap.z`, demorgen rotation adjustment, per-item position, or per-item lookAt drift from source.
+- `scripts/audit-renderer-output.mjs` now extracts source `p1.setBlocks()` and checks source, rebuild, and probe coverage for the carousel distribution.
+- The stale renderer-audit check for the `i1` floor-reflection target constructor was corrected from the old `1x1` target to the current source `512x512` constructor target.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-p1-carousel-audit.json` passed; recursive false/null review stayed at the expected `19` entries.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed: `/tmp/rd-p1-carousel-output-desktop`.
+- Mobile output probe passed: `/tmp/rd-p1-carousel-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-p1-carousel-thumb`.
+- Project media probe passed: `/tmp/rd-p1-carousel-media`; `gc-2026` and `hashgraph-vc` both retained `5/5` visible media.
+- `npm exec tsc -- --noEmit --pretty false` was attempted but is still blocked by the existing TypeScript config deprecation where `baseUrl` needs `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this batch.
+
+Decision: keep the source `p1.setBlocks()` distribution guardrail. This proves carousel radius, block positions, block lookAt, `sceneWrap.z`, and demorgen rotation-adjustment ownership; it does not close final floor/environment or spotlight/thumb visual parity. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and remaining floor/environment distribution or fog-bed source residuals.
 
 ### S1-268 `i1` Floor Reflector Constructor Defaults
 

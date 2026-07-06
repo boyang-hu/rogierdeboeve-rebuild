@@ -237,6 +237,7 @@ const sourceMainI1 = extractAround(bundle, "class I1", 200, 9600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
 const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 700, 900);
+const sourceP1SetBlocks = extractAround(bundle, "setBlocks(){this.blocks=[]", 120, 1300);
 const sourceP1SetLights = extractAround(bundle, "setLights(){this.ambientLight=new", 240, 1000);
 const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSettings(e=new L(0,0,0),t=new Q(.25,.25),n=10)", 240, 520);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
@@ -1934,6 +1935,47 @@ const summary = {
       ]),
       excerpt: compact(sourceP1InitEnv.text),
     },
+    p1CarouselDistribution: sourceP1SetBlocks && {
+      index: sourceP1SetBlocks.index,
+      checks: checks(sourceP1SetBlocks.text, [
+        "setBlocks(){this.blocks=[]",
+        "rotation:-this.theta*i",
+        "this.radius=Math.round(e/2/Math.tan(Math.PI/t))",
+        "this.lightRadius=this.radius-3.5",
+        "n.instance.position.x=-Math.sin(this.theta*i*Math.PI/180)*this.radius",
+        "n.instance.position.z=Math.cos(this.theta*i*Math.PI/180)*this.radius",
+        "n.id===\"demorgen\"&&(this.rotationAdjustment=n.rotation)",
+        "n.instance.lookAt(this.blocksWrap.position)",
+        "this.sceneWrap.position.set(0,0,this.radius-.3)",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "const sourceItemWidth = 6.5",
+        "const sourceTheta = sourceCount > 0 ? 360 / sourceCount : 0",
+        "const sourceRadius = sourceCount > 0 ? Math.round(sourceItemWidth / 2 / Math.tan(Math.PI / sourceCount)) : 0",
+        "const sourceSceneWrapZ = sourceRadius - 0.3",
+        "const sourceRotationAdjustment = demorgenIndex >= 0 ? -sourceTheta * demorgenIndex : 0",
+        "group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius",
+        "group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius",
+        "group.lookAt(0, 0, 0)",
+        "this.sceneWrap.position.set(0, 0, this.radius - 0.3)",
+        "sourceCarouselDistribution: {",
+        "mode: \"source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation\"",
+        "itemPositionsAllMatch: items.every((item) => item.sourcePositionMatches)",
+        "itemLookAtAllMatch: items.every((item) => item.sourceLookAtBlocksWrapMatches)",
+      ]),
+      rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "sourceCarouselDistribution",
+        "carouselMode",
+        "carouselItemWidth",
+        "carouselTheta",
+        "carouselExpectedRadius",
+        "carouselSceneWrapZ",
+        "carouselDemorgenRotationAdjustment",
+        "carouselItemPositions",
+        "carouselItemLookAt",
+      ]),
+      excerpt: compact(sourceP1SetBlocks.text),
+    },
     environmentH1: sourceH1 && {
       index: sourceH1.index,
       checks: checks(sourceH1.text, [
@@ -2125,7 +2167,7 @@ const summary = {
         "this.renderTargetWrite=this.renderTarget.clone()",
       ]),
       rebuildChecks: checks(rebuildWebgl, [
-        "private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false })",
+        "new WebGLRenderTarget(SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT, { depthBuffer: false })",
         "private floorReflectionReadTarget = this.floorReflectionTarget.clone()",
         "private floorReflectionWriteTarget = this.floorReflectionTarget.clone()",
         "private floorReflector = new Object3D()",

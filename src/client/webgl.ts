@@ -6882,13 +6882,37 @@ void main() {
   }
 
   private p1UpdateCullingProbe() {
-    const items = this.workItems.map((item) => {
+    const sourceItemWidth = 6.5;
+    const sourceCount = this.workItems.length;
+    const sourceTheta = sourceCount > 0 ? 360 / sourceCount : 0;
+    const sourceRadius = sourceCount > 0 ? Math.round(sourceItemWidth / 2 / Math.tan(Math.PI / sourceCount)) : 0;
+    const sourceSceneWrapZ = sourceRadius - 0.3;
+    const demorgenIndex = this.workItems.findIndex((item) => item.slug === "demorgen");
+    const sourceRotationAdjustment = demorgenIndex >= 0 ? -sourceTheta * demorgenIndex : 0;
+    const items = this.workItems.map((item, index) => {
       const world = new Vector3();
       const sourceCoords = sourceWorkViewportCoords();
+      const expectedPosition = new Vector3(
+        -Math.sin(MathUtils.degToRad(sourceTheta * index)) * sourceRadius,
+        0,
+        Math.cos(MathUtils.degToRad(sourceTheta * index)) * sourceRadius,
+      );
+      const expectedLookAt = new Object3D();
+      expectedLookAt.position.copy(expectedPosition);
+      expectedLookAt.lookAt(this.blocksWrap.position);
       item.group.getWorldPosition(world);
       const culledBySourceBounds = world.x > 5.5 || world.x < -5.5 || world.z > 5;
       return {
         slug: item.slug,
+        sourceIndex: index,
+        sourceRotationDegrees: -sourceTheta * index,
+        localPosition: item.group.position.toArray(),
+        expectedSourcePosition: expectedPosition.toArray(),
+        sourcePositionMatches:
+          Math.abs(item.group.position.x - expectedPosition.x) < 1e-6
+          && Math.abs(item.group.position.y - expectedPosition.y) < 1e-6
+          && Math.abs(item.group.position.z - expectedPosition.z) < 1e-6,
+        sourceLookAtBlocksWrapMatches: item.group.quaternion.angleTo(expectedLookAt.quaternion) < 1e-6,
         world: world.toArray(),
         visible: item.group.visible,
         culledBySourceBounds,
@@ -6927,6 +6951,25 @@ void main() {
       total: items.length,
       visibleCount: visible.length,
       culledCount: items.length - visible.length,
+      sourceCarouselDistribution: {
+        mode: "source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation",
+        itemWidth: sourceItemWidth,
+        count: sourceCount,
+        thetaDegrees: sourceTheta,
+        expectedRadius: sourceRadius,
+        actualRadius: this.radius,
+        radiusMatchesSource: Math.abs(this.radius - sourceRadius) < 1e-6,
+        expectedSceneWrapZ: sourceSceneWrapZ,
+        actualSceneWrapZ: this.sceneWrap.position.z,
+        sceneWrapZMatchesSource: Math.abs(this.sceneWrap.position.z - sourceSceneWrapZ) < 1e-6,
+        demorgenIndex,
+        expectedRotationAdjustmentDegrees: sourceRotationAdjustment,
+        actualRotationAdjustmentDegrees: this.environmentRotationSource.rotationAdjustmentDegrees,
+        demorgenRotationAdjustmentMatchesSource:
+          Math.abs(this.environmentRotationSource.rotationAdjustmentDegrees - sourceRotationAdjustment) < 1e-6,
+        itemPositionsAllMatch: items.every((item) => item.sourcePositionMatches),
+        itemLookAtAllMatch: items.every((item) => item.sourceLookAtBlocksWrapMatches),
+      },
       sourceVisibilityAllMatch: items.every((item) => item.sourceVisibilityMatches),
       visibleUpdateShapeAllMatch: visible.every((item) =>
         item.revealSidesInSourceRange

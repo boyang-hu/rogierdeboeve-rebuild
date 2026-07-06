@@ -134,7 +134,7 @@ Known remaining gaps:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
-- Source `p1` floor/environment hierarchy is guarded for `sceneWrap -> blocksWrap/floor/env` child order and `demorgen`-derived environment rotation, but floor/environment distribution and the visible fog-bed/horizon still are not 1:1.
+- Source `p1` floor/environment hierarchy is guarded for `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, and the source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z` distribution, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
@@ -143,13 +143,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `i1` floor-reflector constructor defaults without screenshot-led tuning.
-- Floor reflection raw/read/write targets now start from source `512x512` constructor dimensions before the existing source resize path.
-- `floorReflectionBlurIterations` now owns source default `2`, and the blur loop derives directions from `(blurIterations - iteration - 1) * 15`.
-- `floorReflectionRenderTargetUniform` now initializes through the source positive-blur conditional, using the read texture when `blurIterations > 0`.
-- `floorReflectionBlurMaterial.uResolution` now follows source `t1` / `i1` construction: empty vector from `t1`, then `512,512` set by `i1` constructor ownership before later resize writes CSS viewport dimensions.
-- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, and renderer audit now guard constructor mode, default size, blur iteration count, constructor resolution, and expected blur directions `[[15,0],[0,0]]`.
-- Phase 1 remains open for actual floor/environment distribution parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
+- Strengthened source `p1.setBlocks()` carousel distribution guardrails without screenshot-led tuning or production visual changes.
+- Source `setBlocks()` evidence now covers `itemWidth=6.5`, `theta=360/count`, `radius=Math.round(itemWidth/2/Math.tan(Math.PI/count))`, circular block x/z positions, per-block `lookAt(blocksWrap.position)`, `demorgen` rotation adjustment, and `sceneWrap.z=radius-.3`.
+- `__rogierOutputProbe.p1UpdateCulling.sourceCarouselDistribution` now exposes item width, count, theta, expected/actual radius, expected/actual `sceneWrap.z`, demorgen rotation adjustment, per-item expected positions, and per-item lookAt parity.
+- `scripts/probe-output-color.mjs` now asserts the runtime carousel distribution fields.
+- `scripts/audit-renderer-output.mjs` now extracts source `p1.setBlocks()` and checks source/rebuild/probe anchors for carousel distribution.
+- The stale renderer-audit check for `i1` floor-reflection target construction was corrected to the current source `512x512` constructor target.
+- Phase 1 remains open for actual floor/environment visual parity beyond this distribution guardrail, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
 
 ## Validation Status
 
@@ -162,22 +162,24 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-i1-constructor-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-p1-carousel-audit.json
 ```
 
-All passed in the `i1` floor-reflector constructor defaults batch.
+All passed in the `p1.setBlocks()` carousel distribution guardrail batch.
+
+`npm exec tsc -- --noEmit --pretty false` was also attempted, but it is still blocked by the existing TypeScript config deprecation where `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by the carousel batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports `sourceManagers.i1` source checks, rebuild checks, and rebuild probe checks as true.
-- Desktop output probe passed with `constructorWidth=512`, `constructorHeight=512`, `blurIterations=2`, `renderTargetUniformConstructorMode=source-i1-positive-blurIterations-initial-read-texture`, `blurConstructorResolution=[512,512]`, and `blurExpectedDirections=[[15,0],[0,0]]`.
-- Mobile output probe passed with the same source constructor/default reflection fields.
+- Renderer audit reports source `p1.setBlocks()` source checks, rebuild checks, and rebuild probe checks as true.
+- Desktop output probe passed with source carousel distribution fields intact: `/tmp/rd-p1-carousel-output-desktop`.
+- Mobile output probe passed with the same source carousel distribution fields intact: `/tmp/rd-p1-carousel-output-mobile`.
 - Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma.
 - Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages; project-media remains a regression gate, not proof of Home parity.
-- Existing source render-manager, active reveal, spotlight map, color-state, environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
+- Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 
