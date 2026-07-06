@@ -134,7 +134,7 @@ Known remaining gaps:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path and the source `yD -> w1` negative-progress thumb wrapping at nonzero progress, but the projected thumb content/transfer feel is still not exact.
-- Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The remaining ordinary-work source bridge is raw vertex text `uUvOffset vec3` versus runtime `vec2`, because the mirrored runtime constructs it from `Vector2` and `GA` writes only `.x/.y`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
+- Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
@@ -142,10 +142,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Xt/a1/o1` floor-normal texture object binding without visual tuning.
-- Source `Xt.loadTexture=e=>this.textureLoader.load(e)` returns a `Texture` object immediately; `Xt.preloadTextures()` stores that object on `Xt.floorNormal`, and `a1.init()` applies repeat `[45,45]` before passing the same object to `o1`.
-- The rebuild now uses `loadTextureImmediate()` after source WebP extension selection, binds `floorMaterial.uniforms.tNormalMap` and `uMapTransform` to the immediate floor-normal object, and uses the image-load promise only for the texture preload gate.
-- Output probe exposes/asserts `objectBindingMode=source-Xt-loadTexture-immediate-texture-object-bound-before-onload`, `uniformIsImmediateTexture=true`, `loadedSameImmediateTexture=true`, repeat `[45,45]`, and empty color space; renderer audit checks source/rebuild anchors.
+- Aligned ordinary work `VA/GA` `uUvOffset` shader declaration without visual tuning.
+- Source `HA` declares `uniform vec3 uUvOffset;` and reads only `uUvOffset.xy`; source `VA.customUniforms` constructs the uniform from `Vector2`, and source `GA.createPlane()` writes only `.x`/`.y` plus `uUvOffsetScale`.
+- The rebuild now declares `uniform vec3 uUvOffset;` in `workBlockSourceHaVertexShader` and shared `workBlockVertexPars`, while keeping runtime `uUvOffset: { value: sourceMouseUvOffset() }` as the source `Vector2`/XY bridge.
+- Output probe exposes/asserts `uvOffsetShaderDeclaration=source-HA-vec3-uUvOffset`, `uvOffsetRuntimeBridgeMode=source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy`, and matching source-shape booleans; renderer audit checks source/rebuild anchors.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -155,27 +155,30 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
+node --check scripts/dump-va-shader.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-floor-normal-object-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9472 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-floor-normal-object-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9473 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-floor-normal-object-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9474 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-normal-object-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9475 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-normal-object-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-uvoffset-vec3-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9472 OUT_DIR=/tmp/rd-uvoffset-vec3-shader node scripts/dump-va-shader.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9473 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-uvoffset-vec3-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9474 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-uvoffset-vec3-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9475 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-uvoffset-vec3-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9476 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-uvoffset-vec3-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `Xt/a1/o1` floor-normal texture object binding batch.
+All passed in the `VA/GA` `uUvOffset` shader declaration batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports `sourceUniformOrder=true`, `rebuildUniformOrder=true`, and `rebuildProbeOrder=true` for `o1`.
-- Desktop/mobile output probes confirm floor material `uniformKeys` match source order with `matchesSourceOrder=true`.
-- Thumb spotlight probe retained the existing M1/E1 constructor/order and spotlight-map guardrails.
+- Renderer audit reports all `sourceManagers.GA.uUvOffsetOwnership` checks true: source shader `vec3`, source runtime `Vector2`, rebuild work/shared shader `vec3`, and rebuild runtime `Vector2`.
+- Shader dump reports `VA-work` vertex/fragment deltas `0` and matching `sourceUvOffsetBeforeRevealUniforms`.
+- Desktop/mobile output probes confirm `uvOffsetShaderDeclaration=source-HA-vec3-uUvOffset`, `uvOffsetRuntimeBridgeMode=source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy`, and matching source-shape booleans.
+- Thumb spotlight probe retained the existing spotlight/thumb guardrails.
 - Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
 - Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.
 

@@ -159,6 +159,8 @@ const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaa
 const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
 const rebuildCreateMainCompositeMaterial = extractBlock(rebuildWebgl, "private createMainCompositeMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
+const rebuildWorkBlockSourceHaVertexShader = extractConstTemplate(rebuildWebgl, "workBlockSourceHaVertexShader");
+const rebuildWorkBlockVertexPars = extractConstTemplate(rebuildWebgl, "workBlockVertexPars");
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
@@ -2306,6 +2308,25 @@ const summary = {
           rebuildWebgl.includes("function sourceWorkViewportCoords()")
           && rebuildWebgl.includes("material.uniforms.uCoords.value.set(coords.width, coords.height)")
           && rebuildWebgl.includes("sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\""),
+      },
+      uUvOffsetOwnership: {
+        sourceShaderVec3:
+          bundle.includes("uniform vec3 uUvOffset;\nuniform float uUvOffsetScale;")
+          && bundle.includes("vec2 mouseUv = newUv + uUvOffset.xy"),
+        sourceRuntimeVector2:
+          sourceVA?.text.includes("uUvOffset:new I(new Q),uUvOffsetScale:new I(1)") === true
+          && sourceGA.text.includes("this.material.customUniforms.uUvOffset.value.x=")
+          && sourceGA.text.includes("this.material.customUniforms.uUvOffset.value.y="),
+        rebuildWorkShaderVec3:
+          rebuildWorkBlockSourceHaVertexShader.includes("uniform vec3 uUvOffset;")
+          && !rebuildWorkBlockSourceHaVertexShader.includes("uniform vec2 uUvOffset;"),
+        rebuildAuxShaderVec3:
+          rebuildWorkBlockVertexPars.includes("uniform vec3 uUvOffset;")
+          && !rebuildWorkBlockVertexPars.includes("uniform vec2 uUvOffset;"),
+        rebuildRuntimeVector2:
+          rebuildWebgl.includes("uUvOffset: { value: sourceMouseUvOffset() }")
+          && rebuildWebgl.includes("uvOffsetType: uvOffset?.isVector2 ? \"Vector2\"")
+          && rebuildWebgl.includes("uvOffsetRuntimeBridgeMode: \"source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy\""),
       },
       rebuildNoSplitLocalMouseUpdate:
         !rebuildWebgl.includes("private updateWorkMouseSimulation(")

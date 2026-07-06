@@ -930,7 +930,7 @@ function analyzeVertexCore(sourceShader, rebuildShader) {
     }],
     ["sourceUvOffsetBeforeRevealUniforms", {
       source: orderedBefore(sourceShader, "uniform vec3 uUvOffset", "uniform float uReveal"),
-      rebuild: orderedBefore(rebuildShader, "uniform vec2 uUvOffset", "uniform float uReveal"),
+      rebuild: orderedBefore(rebuildShader, "uniform vec3 uUvOffset", "uniform float uReveal"),
     }],
     ["sourceVNoiseAfterViewPosition", {
       source: orderedBefore(sourceShader, "varying vec3 vViewPosition", "varying float vNoise"),
@@ -963,8 +963,8 @@ function analyzeWorkUvOffsetSourceEvidence(bundle, rebuildShader) {
       bundle.includes("this.material.customUniforms.uUvOffset.value.x=(this.rayPlane.scale.x-this.plane.scale.x)/2/this.plane.scale.x")
       && bundle.includes("this.material.customUniforms.uUvOffset.value.y=(this.rayPlane.scale.y-this.plane.scale.y)/2/this.plane.scale.y")
       && bundle.includes("this.material.customUniforms.uUvOffsetScale.value=t"),
-    rebuildRuntimeShaderUsesVec2: rebuild.includes("uniformvec2uUvOffset"),
-    rebuildRuntimeShaderAvoidsVec3: !rebuild.includes("uniformvec3uUvOffset"),
+    rebuildRuntimeShaderUsesVec3: rebuild.includes("uniformvec3uUvOffset"),
+    rebuildShaderReadsUvOffsetXy: rebuild.includes("uUvOffset.xy"),
   };
 }
 

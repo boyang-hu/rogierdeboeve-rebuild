@@ -360,6 +360,8 @@ async function runProbe() {
     const shapeErrors = Object.entries(gaShape)
       .filter(([, value]) => typeof value === "boolean" && value !== true)
       .map(([key]) => key);
+    if (activeMouse?.uvOffsetShaderDeclaration !== "source-HA-vec3-uUvOffset") shapeErrors.push("uvOffsetShaderDeclaration");
+    if (activeMouse?.uvOffsetRuntimeBridgeMode !== "source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy") shapeErrors.push("uvOffsetRuntimeBridgeMode");
     if (gaShape.targetSizingMode !== "source-GA-resize-plane-scale-no-pre-rounding") shapeErrors.push("targetSizingMode");
     if (gaShape.updateLerpMode !== "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp") shapeErrors.push("updateLerpMode");
     if (gaShape.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") shapeErrors.push("raycastMode");

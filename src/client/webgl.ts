@@ -522,7 +522,7 @@ uniform sampler2D tMouseSim;
 uniform sampler2D tPerlin;
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
-uniform vec2 uUvOffset;
+uniform vec3 uUvOffset;
 uniform float uUvOffsetScale;
 uniform float uReveal;
 uniform float uRevealProject;
@@ -554,7 +554,7 @@ uniform sampler2D tMouseSim;
 uniform sampler2D tPerlin;
 uniform vec3 uGridSize;
 uniform vec3 uGridOffset;
-uniform vec2 uUvOffset;
+uniform vec3 uUvOffset;
 uniform float uUvOffsetScale;
 uniform float uReveal;
 uniform float uRevealProject;
@@ -8727,6 +8727,10 @@ void main() {
         thickness: active.mouseMaterial.uniforms.uThickness.value,
         uvOffset: uvOffset?.toArray() ?? null,
         uvOffsetType: uvOffset?.isVector2 ? "Vector2" : uvOffset ? "non-source" : null,
+        uvOffsetShaderDeclaration: workBlockSourceHaVertexShader.includes("uniform vec3 uUvOffset")
+          ? "source-HA-vec3-uUvOffset"
+          : "non-source",
+        uvOffsetRuntimeBridgeMode: "source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy",
         uvOffsetScale: uvOffsetScale ?? null,
         mousePlaneScale: active.mousePlane.scale.toArray(),
         mousePlanePosition: active.mousePlane.position.toArray(),
@@ -8805,6 +8809,13 @@ void main() {
               && Math.abs(uvOffset.y - expectedUvOffset.y) < 1e-6,
           ),
           uvOffsetTypeMatchesSource: Boolean(uvOffset?.isVector2),
+          uvOffsetShaderDeclarationMatchesSource: workBlockSourceHaVertexShader.includes("uniform vec3 uUvOffset")
+            && !workBlockSourceHaVertexShader.includes("uniform vec2 uUvOffset"),
+          uvOffsetRuntimeBridgeMatchesSource: Boolean(
+            uvOffset?.isVector2
+              && workBlockSourceHaVertexShader.includes("vec2 mouseUv = newUv + uUvOffset.xy")
+              && workBlockSourceHaVertexShader.includes("mouseUv /= uUvOffsetScale"),
+          ),
           uvOffsetScaleMatchesSource: uvOffsetScale === MOUSE_RAY_SCALE,
           targetSizingMode: "source-GA-resize-plane-scale-no-pre-rounding",
           rayPlaneScaleMatchesSource:
