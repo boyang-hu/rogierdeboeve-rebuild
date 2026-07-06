@@ -149,6 +149,7 @@ Known remaining gaps:
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Exact final Home visual/feel parity is still open.
 - Source `yD` gallery scroll runtime rounding is now guarded: source `onRaf()` uses `Yi(...)` for `scroll.diff` and `scroll.animated`, and source `updateScene()` persists roll `sceneRotation` through `bo(...)` plus `Yi(...)`; the rebuild uses source-rounded helpers for those paths instead of an unrounded local `lerp`.
+- Source `yD/Qe.workState` gallery scroll persistence is now guarded: the session-backed rebuild state carries source runtime scroll fields including `diff`, `velocity`, and `targetPlusDiff`, plus index/hooks/active project/scene rotation.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`. The `rg/Na/ig` helper constructor surface is also guarded: source zero-vector `uResolution` defaults are preserved, and `rg` keeps source unused null samplers plus constructor direction `[0.5,0.5]`. Source `Lu/I1` runtime ownership of `rg.uDirection` is guarded as shared direction-vector assignment, while standard blur `Na.uDirection` remains constructor-owned.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
 - Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, ambient intensity tweens `J.workScene.ambientLight.intensity`, and rebuild-only background material uniforms are not source `Se` ambient targets.
@@ -166,12 +167,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `yD` Home work-gallery scroll runtime rounding ownership.
-- Source `yD.onRaf()` damps `scroll.diff` and `scroll.animated` through `Yi(...)`, then feeds `current`, `progress`, active project state, and `updateScene(delta)`.
-- Source `yD.updateScene()` computes the roll target with `bo(scroll.velocity*-.015,-4,4)` and persists `sceneRotation` through `Yi(...)`.
-- `src/client/main.ts` now uses source-rounded `sourceRound()`, `sourceDamp()`, and `sourceClampRound()` for `scroll.diff`, `scroll.animated`, roll target, and route-level `sceneRotation`, removing the old unrounded local `lerp` path.
-- `scripts/audit-renderer-output.mjs` now extracts `class yD extends Ht` and guards `sourceManagers.homeGalleryUpdateScene.scrollRuntime` on both source and rebuild sides.
-- Previous committed batch was `6753871 Align mouse simulation resize ownership`.
+- Aligned source `yD/Qe.workState` Home work-gallery scroll persistence ownership.
+- Source `yD.destroy()` stores the full `this.scroll` object with index, active project, hooks, and `sceneRotation`; source `yD.init()` restores those fields from `Qe.workState`.
+- Source `yD.onRaf()` adds `scroll.targetPlusDiff` before damping `scroll.animated`, so that field is part of the runtime scroll object after RAF has run.
+- `src/client/main.ts` now persists `diff`, `targetPlusDiff`, `velocity`, and `active` in the session-backed scroll snapshot, and uses `scroll.targetPlusDiff` in the tick path.
+- `scripts/audit-renderer-output.mjs` now guards both `scrollRuntime` and `workStatePersistence` under `sourceManagers.homeGalleryUpdateScene`.
+- Previous committed batch was `80fff05 Align gallery scroll rounding ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -184,7 +185,7 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-gallery-scroll-audit-final.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-workstate-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5180 node scripts/serve.mjs
 CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-output-color.mjs
@@ -192,16 +193,16 @@ CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 VIEW
 CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `yD` gallery scroll runtime rounding ownership batch. Renderer audit wrote `/tmp/rd-gallery-scroll-audit-final.json`; `sourceManagers.homeGalleryUpdateScene.scrollRuntime` reported `{ "source": true, "rebuild": true }`. Desktop output probe passed. Desktop thumb spotlight probe passed. Project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+All relevant checks passed in the `yD/Qe.workState` gallery scroll persistence ownership batch. Renderer audit wrote `/tmp/rd-workstate-audit-final.json`; `sourceManagers.homeGalleryUpdateScene.scrollRuntime` and `.workStatePersistence` both reported `{ "source": true, "rebuild": true }`. Desktop output probe passed. Desktop thumb spotlight probe passed. Project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this gallery scroll runtime rounding ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this gallery scroll persistence ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the `yD` gallery scroll runtime rounding ownership batch: `/tmp/rd-gallery-scroll-audit-final.json`.
+- Renderer audit passed for the `yD/Qe.workState` gallery scroll persistence ownership batch: `/tmp/rd-workstate-audit-final.json`.
 - Desktop output, desktop thumb spotlight, and project-media probes passed as the browser regression gates for this batch.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

@@ -2471,12 +2471,27 @@ const summary = {
           && rebuildMain.includes("const sourceDamp = (current: number, target: number, factor: number, delta: number)")
           && rebuildMain.includes("const sourceClampRound = (value: number, min: number, max: number)")
           && rebuildMain.includes("if (snap) scroll.diff = sourceDamp(scroll.diff, 0, 5, delta);")
-          && rebuildMain.includes("scroll.animated = sourceDamp(scroll.animated, targetPlusDiff, 5, delta);")
+          && rebuildMain.includes("scroll.targetPlusDiff = scroll.target + scroll.diff;")
+          && rebuildMain.includes("scroll.animated = sourceDamp(scroll.animated, scroll.targetPlusDiff, 5, delta);")
           && rebuildMain.includes("const rollTarget = sourceClampRound(scroll.velocity * -0.015, -4, 4);")
           && rebuildMain.includes("sceneRotation = sourceDamp(sceneRotation, rollTarget, 5, delta);")
           && !rebuildMain.includes("if (snap) scroll.diff = lerp(scroll.diff, 0, 5, delta);")
           && !rebuildMain.includes("scroll.animated = lerp(scroll.animated, targetPlusDiff, 5, delta);")
           && !rebuildMain.includes("sceneRotation = lerp(sceneRotation, rollTarget, 5, delta);"),
+      },
+      workStatePersistence: {
+        source:
+          sourceYDClass?.text.includes("Qe.workState&&(this.scroll=Qe.workState.scroll") === true
+          && sourceYDClass.text.includes("destroy(){super.destroy(),Qe.workState={scroll:this.scroll,index:this.index,activeProject:this.activeProject,activeHook:this.activeHook,targetHook:this.targetHook,sceneRotation:this.sceneRotation}")
+          && sourceYDClass.text.includes("this.scroll.targetPlusDiff=this.scroll.target+this.scroll.diff"),
+        rebuild:
+          rebuildMain.includes("targetPlusDiff?: number;")
+          && rebuildMain.includes("Object.assign(scroll, restored.scroll);")
+          && rebuildMain.includes("diff: scroll.diff,")
+          && rebuildMain.includes("targetPlusDiff: scroll.targetPlusDiff,")
+          && rebuildMain.includes("velocity: scroll.velocity,")
+          && rebuildMain.includes("active: scroll.active,")
+          && rebuildMain.includes("sceneRotation,"),
       },
       sourceOrder: {
         sceneWrapBeforeTransform:

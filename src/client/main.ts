@@ -368,6 +368,21 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   const totalItems = cardsArray.length - 1;
   const step = 1000;
   const limit = cardsArray.length * step;
+  type WorkGalleryScrollState = {
+    virtual: number;
+    target: number;
+    animated: number;
+    diff: number;
+    current: number;
+    progress: number;
+    limit: number;
+    remainder: number;
+    step: number;
+    offset: number;
+    velocity: number;
+    active: boolean;
+    targetPlusDiff?: number;
+  };
   const indexState = {
     current: activeIndex,
     prev: activeIndex === 0 ? totalItems : activeIndex - 1,
@@ -377,7 +392,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   let targetHook = activeHook;
   let sceneRotation = 0;
   let activeProjectId = cardsArray[activeIndex]?.dataset.slug ?? "";
-  const scroll = {
+  const scroll: WorkGalleryScrollState = {
     virtual: cardsArray.length * 100000,
     target: cardsArray.length * 100000,
     animated: cardsArray.length * 100000,
@@ -608,12 +623,16 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
           virtual: scroll.virtual,
           target: scroll.target,
           animated: scroll.animated,
+          diff: scroll.diff,
           current: scroll.current,
           progress: scroll.progress,
+          targetPlusDiff: scroll.targetPlusDiff,
           remainder: scroll.remainder,
           limit: scroll.limit,
           step: scroll.step,
           offset: scroll.offset,
+          velocity: scroll.velocity,
+          active: scroll.active,
         },
         activeHook,
         targetHook,
@@ -841,9 +860,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     scroll.velocity = scroll.target - scroll.animated;
     checkSpeed();
     if (snap) scroll.diff = sourceDamp(scroll.diff, 0, 5, delta);
-    const targetPlusDiff = scroll.target + scroll.diff;
+    scroll.targetPlusDiff = scroll.target + scroll.diff;
     scroll.remainder = scroll.target - (scroll.target % scroll.limit);
-    scroll.animated = sourceDamp(scroll.animated, targetPlusDiff, 5, delta);
+    scroll.animated = sourceDamp(scroll.animated, scroll.targetPlusDiff, 5, delta);
     scroll.current = wrap(scroll.animated, scroll.limit);
     scroll.progress = scroll.current / scroll.limit;
 
