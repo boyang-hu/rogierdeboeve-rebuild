@@ -9893,6 +9893,7 @@ void main() {
             bloomSource: "source-I1-renderTargetBright-if-luminosity-else-renderTargetA",
             c1SceneSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
             c1BloomSource: "source-I1-renderTargetsHorizontal0",
+            c1RuntimeUniformOrder: "source-I1-update-writes-C1-tScene-bools-tLensflare-after-fluid-before-screen-render",
             noPostC1Bloom: true,
           },
           mainRawSceneMode: "source-U1-empty-main-scene-background-D9D9D9-linear-to-srgb",
@@ -9918,9 +9919,9 @@ void main() {
           source: this.sourceUpdateOrder,
           sourceSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
           rebuildSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
-          rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"],
+          rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1-runtime-uniforms", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"],
           workUpdateOrder: ["Lu.renderManager.raw", "Lu.renderManager.bloom", "Ka.mouseSimulation", "Lu.renderManager.composite", "IT.cameraController", "p1.components"],
-          mainUpdateOrder: ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"],
+          mainUpdateOrder: ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-runtime-uniforms", "I1.C1-screen"],
           mainCompositeUpdateOrder: "source-U1-super-update-renders-I1-before-C1-update",
           frameTail: "source-work-renderManager-then-p1-update-before-main",
           mouseSimulationOrder: "source-Lu-mousesim-after-raw-bloom-before-composite",
@@ -11365,10 +11366,6 @@ void main() {
     this.applyDebugThumbProgress();
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
-    this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;
-    this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;
-    this.preCompositeMaterial.uniforms.boolLuminosity.value = this.sourceMainRenderSettings.luminosity.enabled;
-    this.preCompositeMaterial.uniforms.boolFxaa.value = this.sourceMainRenderSettings.fxaa.enabled;
     this.updateMediaPlanePositions();
 
     const isProjectView = document.body.classList.contains("is-project");
@@ -11429,7 +11426,6 @@ void main() {
     }
     this.renderer.setRenderTarget(this.mainRawTarget);
     this.renderer.render(this.mainScene, this.mainCamera);
-    this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
     if (this.sourceMainRenderSettings.blur.enabled) {
       this.renderHomeBlurPass();
     }
@@ -11439,7 +11435,6 @@ void main() {
       this.renderMainBloomPass(this.mainRawTarget);
       this.preCompositeMaterial.uniforms.tBloom.value = this.mainBloomHorizontalTargets[0].texture;
     }
-    this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;
     if (this.sourceMainRenderSettings.fluid.enabled) {
       const mainFluidTexture = (this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0
         ? this.updateMainFluidPass()
@@ -11448,6 +11443,12 @@ void main() {
           : null;
       this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;
     }
+    this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;
+    this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;
+    this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;
+    this.preCompositeMaterial.uniforms.boolLuminosity.value = this.sourceMainRenderSettings.luminosity.enabled;
+    this.preCompositeMaterial.uniforms.boolFxaa.value = this.sourceMainRenderSettings.fxaa.enabled;
+    this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
     this.renderHomeCompositePass();
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.renderThumbTargets();

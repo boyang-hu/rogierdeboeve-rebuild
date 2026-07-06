@@ -958,6 +958,7 @@ async function runProbe() {
     bloomSource: "source-I1-renderTargetBright-if-luminosity-else-renderTargetA",
     c1SceneSource: "source-I1-renderTargetBlurB-if-blur-else-renderTargetA",
     c1BloomSource: "source-I1-renderTargetsHorizontal0",
+    c1RuntimeUniformOrder: "source-I1-update-writes-C1-tScene-bools-tLensflare-after-fluid-before-screen-render",
   })) {
     if (mainPassInputs[key] !== expected) ownershipErrors.push(`mainPassInput-${key}`);
   }
@@ -1669,7 +1670,7 @@ async function runProbe() {
   if (JSON.stringify(updateOrder?.rebuildSceneOrder) !== JSON.stringify(expectedSourceSceneOrder)) {
     throw new Error(`Rebuild scene order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildSceneOrder || null)}`);
   }
-  const expectedRebuildFrameOrder = ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"];
+  const expectedRebuildFrameOrder = ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1-runtime-uniforms", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"];
   if (JSON.stringify(updateOrder?.rebuildFrameOrder) !== JSON.stringify(expectedRebuildFrameOrder)) {
     throw new Error(`Rebuild frame order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildFrameOrder || null)}`);
   }
@@ -1677,7 +1678,7 @@ async function runProbe() {
   if (JSON.stringify(updateOrder?.workUpdateOrder) !== JSON.stringify(expectedWorkUpdateOrder)) {
     throw new Error(`Work update order source-shape mismatch: ${JSON.stringify(updateOrder?.workUpdateOrder || null)}`);
   }
-  const expectedMainUpdateOrder = ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-screen"];
+  const expectedMainUpdateOrder = ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-runtime-uniforms", "I1.C1-screen"];
   if (JSON.stringify(updateOrder?.mainUpdateOrder) !== JSON.stringify(expectedMainUpdateOrder)) {
     throw new Error(`Main update order source-shape mismatch: ${JSON.stringify(updateOrder?.mainUpdateOrder || null)}`);
   }

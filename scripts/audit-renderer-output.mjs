@@ -231,6 +231,9 @@ const rebuildSetSpotLightIntensity = extractBlock(rebuildWebgl, "private setSpot
 const rebuildSetDirectionalLightIntensity = extractBlock(rebuildWebgl, "private setDirectionalLightIntensity(");
 const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private setDirectionalLight2Intensity(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
+const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
+  ? rebuildTick.slice(0, rebuildTick.indexOf("this.renderer.setRenderTarget(this.mainRawTarget);"))
+  : "";
 const rebuildResizeBloomMipChain = extractBlock(rebuildWebgl, "private resizeBloomMipChain(");
 const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomChain(");
 const rebuildRenderWorkBlurPass = extractBlock(rebuildWebgl, "private renderWorkBlurPass()");
@@ -1978,6 +1981,38 @@ const summary = {
           "this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture",
           "this.sourceMainRenderSettings.luminosity.enabled ? this.mainBloomBrightTarget : undefined",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceC1RuntimeUniformOrder:
+          orderedIncludes(sourceMainI1.text, [
+            "this.settings.fluid.enabled&&(this.compositeMaterial.uniforms.uFluidStrength.value>0&&this.fluidSimulation.update()",
+            "this.compositeMaterial.uniforms.tScene.value=this.settings.blur.enabled?f.texture:a.texture",
+            "this.compositeMaterial.uniforms.boolBloom.value=this.settings.bloom.enabled",
+            "this.compositeMaterial.uniforms.boolFluid.value=this.settings.fluid.enabled",
+            "this.compositeMaterial.uniforms.boolLuminosity.value=this.settings.luminosity.enabled",
+            "this.compositeMaterial.uniforms.boolFxaa.value=this.settings.fxaa.enabled",
+            "this.compositeMaterial.uniforms.tLensflare.value=v.texture",
+            "this.screen.material=this.compositeMaterial",
+            "this.settings.renderToScreen?(r.setRenderTarget(null)",
+          ]),
+        rebuildC1RuntimeUniformOrder:
+          Boolean(rebuildTick)
+          && orderedIncludes(rebuildTick, [
+            "if (this.sourceMainRenderSettings.fluid.enabled) {",
+            "this.preCompositeMaterial.uniforms.tFluid.value = mainFluidTexture;",
+            "this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;",
+            "this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;",
+            "this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;",
+            "this.preCompositeMaterial.uniforms.boolLuminosity.value = this.sourceMainRenderSettings.luminosity.enabled;",
+            "this.preCompositeMaterial.uniforms.boolFxaa.value = this.sourceMainRenderSettings.fxaa.enabled;",
+            "this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;",
+            "this.renderHomeCompositePass();",
+          ])
+          && rebuildWebgl.includes("c1RuntimeUniformOrder: \"source-I1-update-writes-C1-tScene-bools-tLensflare-after-fluid-before-screen-render\""),
+        rebuildNoEarlyC1RuntimeUniformBinding:
+          !rebuildTickBeforeMainRaw.includes("this.preCompositeMaterial.uniforms.boolBloom.value")
+          && !rebuildTickBeforeMainRaw.includes("this.preCompositeMaterial.uniforms.boolFluid.value")
+          && !rebuildTickBeforeMainRaw.includes("this.preCompositeMaterial.uniforms.boolLuminosity.value")
+          && !rebuildTickBeforeMainRaw.includes("this.preCompositeMaterial.uniforms.boolFxaa.value")
+          && !rebuildTickBeforeMainRaw.includes("this.preCompositeMaterial.uniforms.tLensflare.value"),
         sourceTargetCloneGraph: [
           "this.renderTargetB=this.renderTargetA.clone()",
           "this.renderTargetLensflare=this.renderTargetA.clone()",
@@ -2153,9 +2188,9 @@ const summary = {
       })),
       rebuildOrderChecks: checks(rebuildWebgl, [
         "rebuildSceneOrder: [\"sky\", \"media\", \"work\", \"main\", \"workthumb\", \"wavves\", \"character\"]",
-        "rebuildFrameOrder: [\"media-position\", \"sky\", \"media\", \"work-raw\", \"work-bloom\", \"work-mousesim\", \"work-composite\", \"p1-post-render\", \"main-raw\", \"main-blur\", \"main-lensflare\", \"main-luminosity\", \"main-bloom\", \"main-fluid\", \"main-C1\", \"main-final-screen\", \"workthumb\", \"wavves\", \"character-when-about\"]",
+        "rebuildFrameOrder: [\"media-position\", \"sky\", \"media\", \"work-raw\", \"work-bloom\", \"work-mousesim\", \"work-composite\", \"p1-post-render\", \"main-raw\", \"main-blur\", \"main-lensflare\", \"main-luminosity\", \"main-bloom\", \"main-fluid\", \"main-C1-runtime-uniforms\", \"main-C1\", \"main-final-screen\", \"workthumb\", \"wavves\", \"character-when-about\"]",
         "workUpdateOrder: [\"Lu.renderManager.raw\", \"Lu.renderManager.bloom\", \"Ka.mouseSimulation\", \"Lu.renderManager.composite\", \"IT.cameraController\", \"p1.components\"]",
-        "mainUpdateOrder: [\"I1.raw\", \"I1.optional-blur\", \"I1.optional-lensflare\", \"I1.optional-luminosity\", \"I1.optional-bloom\", \"I1.fluid\", \"I1.C1-screen\"]",
+        "mainUpdateOrder: [\"I1.raw\", \"I1.optional-blur\", \"I1.optional-lensflare\", \"I1.optional-luminosity\", \"I1.optional-bloom\", \"I1.fluid\", \"I1.C1-runtime-uniforms\", \"I1.C1-screen\"]",
         "mouseSimulationOrder: \"source-Lu-mousesim-after-raw-bloom-before-composite\"",
         "tWorkBindingMode: \"source-nD-init-one-time-C1-tWork-work-renderTargetComposite\"",
         "tMediaBindingMode: \"source-nD-init-one-time-C1-tMedia-media-renderTargetComposite\"",

@@ -163,6 +163,7 @@ Known remaining gaps:
 - Source `Se.settings` scalar/media setter ownership is now guarded for the source no-kill boundary: `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` do not keep rebuild-owned tween registries or pre-emptive kills, while source kill-owned `setRevealSpread()` and `setEnvRotation()` retain their kill behavior.
 - Source `p1/Ya` home camera construction and resize projection ownership is now guarded: home camera stays `Ya(55, innerWidth / innerHeight, 1, 2e3)`, initial z `5.5`, and resize projection stays on the `Ya.resize()` plus `Iu.resize()` aspect/update path.
 - Source `yg/U1/I1` main raw camera construction and resize projection ownership is now guarded: main raw camera stays `Ya(Ef(...), Pe.aspect, 1, distance*2)` with distance `1000`, and resize projection stays on the source `yg.resize()` `Ef(...)` FOV/aspect/update path.
+- Source `I1/C1` main composite runtime uniform order is now guarded: source `I1.update()` runs optional fluid, then writes `C1.tScene`, the four bool uniforms, and `tLensflare` immediately before assigning/rendering the `C1` screen path, while `U1.update()` still owns the later `C1.uTime` write.
 - Source `Xt.loadTexture()` immediate texture-object binding is now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: uniforms receive the immediate `Texture` object before image onload, and probes verify onload does not replace that object.
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
@@ -172,11 +173,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `i1/a1` floor reflection blur target field-swap ownership without changing shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
-- Source `i1.update()` reads `this.renderTargetRead.texture` after the first blur pass, renders into `this.renderTargetWrite`, swaps `this.renderTargetRead/this.renderTargetWrite` fields directly, and updates `this.renderTargetUniform.value` from the swapped read target after each pass.
-- The rebuild now removes the local `readTarget/writeTarget` alias path in the normal floor reflection blur loop, swaps `floorReflectionReadTarget/floorReflectionWriteTarget` fields directly, and updates the reflection uniform from the swapped field.
-- Output probe and renderer audit now assert `blurSwapOwnershipMode=source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop`, and audit rejects restoring local read/write target aliases in `renderFloorReflection()`.
-- Previous committed batch was `411dfd1 Align floor reflection screen triangle ownership`.
+- Aligned source `I1/C1` main composite runtime uniform order without changing shader text, render-target sizing, floor/environment constants, project data, route behavior, or visual tuning.
+- Source `I1.update()` runs optional fluid, then writes `this.compositeMaterial.uniforms.tScene`, `boolBloom`, `boolFluid`, `boolLuminosity`, `boolFxaa`, and `tLensflare`, assigns `this.screen.material=this.compositeMaterial`, and renders the screen path.
+- The rebuild now removes frame-head `preCompositeMaterial` bool writes and the pre-optional-pass `tLensflare` binding, then writes `tScene`, the four bools, and `tLensflare` after the main fluid branch and immediately before `renderHomeCompositePass()`.
+- Output probe and renderer audit now assert `c1RuntimeUniformOrder=source-I1-update-writes-C1-tScene-bools-tLensflare-after-fluid-before-screen-render`, include `main-C1-runtime-uniforms` / `I1.C1-runtime-uniforms` in order probes, and reject restoring early frame-head bindings.
+- Previous committed batch was `122905e Align floor reflection blur target swap ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -187,28 +188,28 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-floor-direct-swap-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-floor-direct-swap-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-main-c1-runtime-uniform-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-main-c1-runtime-uniform-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-output-desktop VIEWPORT=desktop CDP_PORT=9281 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-output-mobile VIEWPORT=mobile CDP_PORT=9282 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-thumb CDP_PORT=9283 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-media CDP_PORT=9284 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-output-desktop VIEWPORT=desktop CDP_PORT=9278 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-thumb CDP_PORT=9280 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-c1-runtime-media CDP_PORT=9281 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the floor reflection blur target field-swap ownership batch. Renderer audit wrote `/tmp/rd-floor-direct-swap-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes, thumb spotlight probe, and project-media probe passed with no failures/exceptions/console messages in the relevant checks.
+All relevant checks passed in the `I1/C1` main composite runtime uniform order batch. Renderer audit wrote `/tmp/rd-main-c1-runtime-uniform-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes recorded the new `c1RuntimeUniformOrder` and `main-C1-runtime-uniforms` order marker. Thumb spotlight probe and project-media probe passed with no failures/exceptions/console messages in the relevant checks, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this floor reflection blur target field-swap ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this main composite runtime uniform order batch.
 
-Runtime QA was run because the batch touched WebGL floor reflection state and output probe coverage.
+Runtime QA was run because the batch touched WebGL main render-manager update order and output probe coverage.
 
 Verified:
 
-- Renderer audit passed for the floor reflection blur target field-swap ownership batch: `/tmp/rd-floor-direct-swap-audit.json`.
+- Renderer audit passed for the `I1/C1` main composite runtime uniform order batch: `/tmp/rd-main-c1-runtime-uniform-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-floor-direct-swap-output-desktop`, `/tmp/rd-floor-direct-swap-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-floor-direct-swap-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-floor-direct-swap-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-main-c1-runtime-output-desktop`, `/tmp/rd-main-c1-runtime-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-main-c1-runtime-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-main-c1-runtime-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
