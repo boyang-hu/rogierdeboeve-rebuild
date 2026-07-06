@@ -341,12 +341,21 @@ async function runProbe() {
   const carousel = p1UpdateCulling.sourceCarouselDistribution || {};
   const expectedTheta = p1UpdateCulling.total > 0 ? 360 / p1UpdateCulling.total : 0;
   const expectedRadius = p1UpdateCulling.total > 0 ? Math.round(6.5 / 2 / Math.tan(Math.PI / p1UpdateCulling.total)) : 0;
-  if (carousel.mode !== "source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation") cullingErrors.push("carouselMode");
+  if (carousel.mode !== "source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation-lightRadius") cullingErrors.push("carouselMode");
   if (Math.abs((carousel.itemWidth ?? NaN) - 6.5) > 0.0001) cullingErrors.push("carouselItemWidth");
+  if (Math.abs((carousel.actualItemWidth ?? NaN) - 6.5) > 0.0001) cullingErrors.push("carouselActualItemWidth");
+  if (carousel.itemWidthMatchesSource !== true) cullingErrors.push("carouselItemWidthMatchesSource");
   if (carousel.count !== p1UpdateCulling.total) cullingErrors.push("carouselCount");
+  if (carousel.actualCount !== p1UpdateCulling.total) cullingErrors.push("carouselActualCount");
+  if (carousel.countMatchesSource !== true) cullingErrors.push("carouselCountMatchesSource");
   if (Math.abs((carousel.thetaDegrees ?? NaN) - expectedTheta) > 0.0001) cullingErrors.push("carouselTheta");
+  if (Math.abs((carousel.actualThetaDegrees ?? NaN) - expectedTheta) > 0.0001) cullingErrors.push("carouselActualTheta");
+  if (carousel.thetaMatchesSource !== true) cullingErrors.push("carouselThetaMatchesSource");
   if (Math.abs((carousel.expectedRadius ?? NaN) - expectedRadius) > 0.0001) cullingErrors.push("carouselExpectedRadius");
   if (carousel.radiusMatchesSource !== true) cullingErrors.push("carouselRadius");
+  if (Math.abs((carousel.expectedLightRadius ?? NaN) - (expectedRadius - 3.5)) > 0.0001) cullingErrors.push("carouselExpectedLightRadius");
+  if (Math.abs((carousel.actualLightRadius ?? NaN) - (expectedRadius - 3.5)) > 0.0001) cullingErrors.push("carouselActualLightRadius");
+  if (carousel.lightRadiusMatchesSource !== true) cullingErrors.push("carouselLightRadius");
   if (Math.abs((carousel.expectedSceneWrapZ ?? NaN) - (expectedRadius - 0.3)) > 0.0001) cullingErrors.push("carouselExpectedSceneWrapZ");
   if (carousel.sceneWrapZMatchesSource !== true) cullingErrors.push("carouselSceneWrapZ");
   if (!Number.isFinite(carousel.demorgenIndex) || carousel.demorgenIndex < 0 || carousel.demorgenIndex >= p1UpdateCulling.total) {
@@ -1305,6 +1314,8 @@ async function runProbe() {
   if (lights?.directionalLight2InScene !== false) lightErrors.push("directionalLight2InScene");
   if (!Array.isArray(lights?.directionalLight1Position) || Math.abs((lights.directionalLight1Position[0] ?? 0) - 10.5) > 0.0001 || Math.abs((lights.directionalLight1Position[1] ?? 0) - 10) > 0.0001 || Math.abs((lights.directionalLight1Position[2] ?? 0) - 1) > 0.0001) lightErrors.push("directionalLight1Position");
   if (!Array.isArray(lights?.directionalLight2Position) || Math.abs((lights.directionalLight2Position[0] ?? 0) + 10.5) > 0.0001 || Math.abs((lights.directionalLight2Position[1] ?? 0) - 5) > 0.0001 || Math.abs((lights.directionalLight2Position[2] ?? 0) + 1) > 0.0001) lightErrors.push("directionalLight2Position");
+  if (Math.abs((lights?.maxSpotLightIntensity ?? NaN) - 220) > 0.0001) lightErrors.push("maxSpotLightIntensity");
+  if (lights?.maxSpotLightIntensityMatchesSource !== true) lightErrors.push("maxSpotLightIntensityMatchesSource");
   if (lightErrors.length) {
     throw new Error(`p1 light ownership source-shape mismatch: ${lightErrors.join(", ")}`);
   }

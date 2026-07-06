@@ -134,7 +134,7 @@ Known remaining gaps:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
-- Source `p1` floor/environment hierarchy is guarded for `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, and the source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z` distribution, but the visible fog-bed/horizon still is not 1:1.
+- Source `p1` floor/environment hierarchy is guarded for `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, and source `setLights()` max spotlight scalar ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
@@ -143,11 +143,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned the rebuild runtime order with source `yD.updateScene()` without intended production visual behavior change.
-- Source `yD.updateScene()` writes `J.workScene.sceneWrap.rotation.y`, then `J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value`, then calls `J.workThumbScene.thumbs.updateGalleryProgress(-scroll.progress)`, before roll/zoom updates.
-- `setGalleryProgress()` now mirrors that `sceneWrap -> uTransformX -> thumbProgress -> roll/zoom` order.
-- `__rogierThumbProbe` exposes `sourceProgressTransformOrder=source-yD-sceneWrap-then-uTransformX-then-thumbProgress`.
-- `scripts/probe-thumb-spotlight.mjs` hard-fails if the order marker drifts, and renderer audit checks the source/rebuild order anchors.
+- Added a source-backed runtime/audit guardrail for `p1` carousel/light scalar ownership without intended production visual behavior change.
+- Source `p1.init()` owns `count`, `theta`, and `itemWidth`; source `p1.setBlocks()` computes `radius` and `lightRadius=radius-3.5`; source `p1.setLights()` sets `maxSpotLightIntensity=220`.
+- `createWorkScene()` now stores the source scalar state on `WebGLBackdrop` (`count`, `theta`, `itemWidth`, `radius`, `lightRadius`) and uses `this.theta` for carousel placement.
+- `__rogierOutputProbe.p1UpdateCulling.sourceCarouselDistribution` exposes actual/expected item width, count, theta, radius, and lightRadius parity; the lights probe exposes `maxSpotLightIntensity` and `maxSpotLightIntensityMatchesSource`.
+- `scripts/probe-output-color.mjs` hard-fails on drift for the new carousel/light fields, and renderer audit checks mirrored source anchors plus rebuild/probe coverage.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -159,18 +159,16 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node --check scripts/probe-thumb-spotlight.mjs
-node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-yd-progress-order-audit-final.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-p1-source-state-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-yd-progress-order-thumb-desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-yd-progress-order-thumb-mobile node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-yd-progress-order-output-desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-yd-progress-order-output-mobile node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-yd-progress-order-project-media node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-source-state-output-desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-p1-source-state-output-mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9290 OUT_DIR=/tmp/rd-p1-source-state-thumb-desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9291 VIEWPORT=mobile OUT_DIR=/tmp/rd-p1-source-state-thumb-mobile node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-source-state-project-media node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `yD` gallery progress order guardrail batch. Desktop and mobile thumb probes confirmed `sourceProgressTransformOrder=source-yD-sceneWrap-then-uTransformX-then-thumbProgress`, retained `3/9` in-map spotlight samples with nonzero map luma, and had no failures/exceptions/console messages. Desktop and mobile output probes passed with no failures. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages.
+All relevant checks passed in the `p1` carousel/light scalar state guardrail batch. Desktop and mobile output probes confirmed `actualItemWidth=6.5`, `actualCount=10`, `actualThetaDegrees=36`, `actualRadius=10`, `actualLightRadius=6.5`, `lightRadiusMatchesSource=true`, `maxSpotLightIntensity=220`, and `maxSpotLightIntensityMatchesSource=true`, with no failures/exceptions/console messages. Desktop and mobile thumb probes retained the existing source progress/order and spotlight projection guardrails, with `3/9` in-map spotlight samples and nonzero map luma. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this guardrail batch.
 
@@ -179,12 +177,12 @@ Runtime QA was done with local Chrome CDP scripts.
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the `yD` gallery progress order guardrail.
-- Desktop thumb projection probe passed with the new order marker, `3/9` in-map spotlight samples, and nonzero map luma: `/tmp/rd-yd-progress-order-thumb-desktop`.
-- Mobile thumb projection probe passed with the same order marker and source mobile `0.3` spotlight Y branch: `/tmp/rd-yd-progress-order-thumb-mobile`.
-- Desktop output probe passed with no failures: `/tmp/rd-yd-progress-order-output-desktop`.
-- Mobile output probe passed with no failures: `/tmp/rd-yd-progress-order-output-mobile`.
-- Project media probe confirms `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages: `/tmp/rd-yd-progress-order-project-media`; project-media remains a regression gate, not proof of Home parity.
+- Renderer audit passed after the `p1` source scalar state guardrail.
+- Desktop output probe passed with source item/count/theta/radius/lightRadius and max spotlight scalar parity: `/tmp/rd-p1-source-state-output-desktop`.
+- Mobile output probe passed with the same source scalar parity: `/tmp/rd-p1-source-state-output-mobile`.
+- Desktop thumb projection probe passed with existing order/projection guardrails intact: `/tmp/rd-p1-source-state-thumb-desktop`.
+- Mobile thumb projection probe passed with existing order/projection guardrails intact and the source mobile `0.3` spotlight Y branch: `/tmp/rd-p1-source-state-thumb-mobile`.
+- Project media probe confirms `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages: `/tmp/rd-p1-source-state-project-media`; project-media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -234,7 +232,7 @@ Continue source-driven implementation in this order:
    - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, and `p1.init()` scene background/fog ownership.
+   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, and `p1.setLights()` max spotlight scalar ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

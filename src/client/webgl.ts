@@ -4050,7 +4050,11 @@ export class WebGLBackdrop {
   private currentAmbientIntensity = SOURCE_INITIAL_AMBIENT;
   private mediaBackground = this.settingsState.media.background.clone();
   private gridLayers = SOURCE_GRID_LAYERS;
+  private count = 0;
+  private theta = 0;
+  private itemWidth = 6.5;
   private radius = 8;
+  private lightRadius = 0;
   private ambientLight = new AmbientLight(colorFrom(SOURCE_INITIAL_SECONDARY), SOURCE_INITIAL_AMBIENT);
   private spotLight = new SpotLight(colorFrom("white"), 220);
   private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
@@ -4692,18 +4696,23 @@ export class WebGLBackdrop {
   private createWorkScene() {
     const cards = Array.from(document.querySelectorAll<HTMLElement>("[data-project-card]"));
     if (!cards.length) {
+      this.count = 0;
+      this.theta = 0;
+      this.radius = 0;
+      this.lightRadius = 0;
       this.sceneWrap.visible = false;
       return;
     }
 
     this.preloadSourceThumbs(cards);
 
-    const count = cards.length;
-    const theta = 360 / count;
-    const itemWidth = 6.5;
+    this.count = cards.length;
+    this.theta = 360 / this.count;
+    this.itemWidth = 6.5;
     let rotationAdjustment = 0;
     let demorgenIndex = -1;
-    this.radius = Math.round(itemWidth / 2 / Math.tan(Math.PI / count));
+    this.radius = Math.round(this.itemWidth / 2 / Math.tan(Math.PI / this.count));
+    this.lightRadius = this.radius - 3.5;
     this.sceneWrap.position.set(0, 0, this.radius - 0.3);
     this.sceneWrap.rotation.y = Math.PI;
 
@@ -4723,11 +4732,11 @@ export class WebGLBackdrop {
       rotationWrap.add(rayPlane);
       group.add(rotationWrap);
       if (payload.slug === "demorgen") {
-        rotationAdjustment = -theta * index;
+        rotationAdjustment = -this.theta * index;
         demorgenIndex = index;
       }
-      group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius;
-      group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
+      group.position.x = -Math.sin(MathUtils.degToRad(this.theta * index)) * this.radius;
+      group.position.z = Math.cos(MathUtils.degToRad(this.theta * index)) * this.radius;
       group.lookAt(0, 0, 0);
       this.blocksWrap.add(group);
       this.thumbScrollWrap.add(thumb);
@@ -4761,8 +4770,8 @@ export class WebGLBackdrop {
     this.environmentRotationSource = {
       mode: "source-p1-env-rotation-y-negative-rotationAdjustment-from-demorgen",
       demorgenIndex,
-      count,
-      thetaDegrees: theta,
+      count: this.count,
+      thetaDegrees: this.theta,
       rotationAdjustmentDegrees: rotationAdjustment,
       expectedRotationY: -MathUtils.degToRad(rotationAdjustment),
     };
@@ -6953,13 +6962,22 @@ void main() {
       visibleCount: visible.length,
       culledCount: items.length - visible.length,
       sourceCarouselDistribution: {
-        mode: "source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation",
+        mode: "source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation-lightRadius",
         itemWidth: sourceItemWidth,
+        actualItemWidth: this.itemWidth,
+        itemWidthMatchesSource: Math.abs(this.itemWidth - sourceItemWidth) < 1e-6,
         count: sourceCount,
+        actualCount: this.count,
+        countMatchesSource: this.count === sourceCount,
         thetaDegrees: sourceTheta,
+        actualThetaDegrees: this.theta,
+        thetaMatchesSource: Math.abs(this.theta - sourceTheta) < 1e-6,
         expectedRadius: sourceRadius,
         actualRadius: this.radius,
         radiusMatchesSource: Math.abs(this.radius - sourceRadius) < 1e-6,
+        expectedLightRadius: sourceRadius - 3.5,
+        actualLightRadius: this.lightRadius,
+        lightRadiusMatchesSource: Math.abs(this.lightRadius - (sourceRadius - 3.5)) < 1e-6,
         expectedSceneWrapZ: sourceSceneWrapZ,
         actualSceneWrapZ: this.sceneWrap.position.z,
         sceneWrapZMatchesSource: Math.abs(this.sceneWrap.position.z - sourceSceneWrapZ) < 1e-6,
@@ -8586,6 +8604,8 @@ void main() {
         directionalLight2InScene: this.directionalLight2.parent === this.homeScene,
         directionalLight1Position: this.directionalLight.position.toArray(),
         directionalLight2Position: this.directionalLight2.position.toArray(),
+        maxSpotLightIntensity: this.maxSpotLightIntensity,
+        maxSpotLightIntensityMatchesSource: this.maxSpotLightIntensity === 220,
       },
       auxiliary: {
         aboutVisible: this.aboutBlocks?.group.visible ?? null,
