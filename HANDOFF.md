@@ -143,16 +143,16 @@ Known remaining gaps:
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
 - Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, ambient intensity tweens `J.workScene.ambientLight.intensity`, and rebuild-only background material uniforms are not source `Se` ambient targets.
+- Source `Se.setBlocksColor()` ownership is now guarded as a no-kill fan-out setter for every ordinary work material emissive color. It no longer keeps rebuild-only block-color tween registry state, retargets only the active block, or writes custom uniforms from this setter.
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `Se.setAmbientLight()` ownership without changing shader text, render targets, pass order, route behavior, or visual constants.
-- Source `Se.setAmbientColor(e,t=1.6)` parses through `formatColor()`, tweens `J.workScene.ambientLight.color`, and writes env `uDarkenColor` from the current ambient light color on update.
-- Source `Se.setAmbientIntensity(e,t=1.6)` tweens `J.workScene.ambientLight.intensity`; source `Se.setAmbientLight(e,t=.5,n=1.6)` only delegates to the color and intensity setters.
-- Rebuild removed the old `ambientTweens`/`currentAmbientIntensity` path and stopped writing rebuild-only `backgroundMaterial.uAmbientColor/uAmbientIntensity` from the source ambient setter path.
-- `__rogierOutputProbe.settings.work.ambientOwnership` exposes source delegate/color/intensity/no-kill markers, ambient/env color parity, current ambient intensity, and background non-ownership.
-- `scripts/probe-output-color.mjs` hard-fails on ambient ownership drift; `scripts/audit-renderer-output.mjs` checks source/rebuild/probe anchors and rejects old background setter retargeting.
-- Previous committed batch was `3105cc3 Guard work mouse factor ownership`.
+- Added a source-backed runtime/audit guardrail for `Se.setBlocksColor()` ownership without changing shader text, render targets, pass order, route behavior, or visual constants.
+- Source `Se.setBlocksColor(e,t=1.6)` parses through `formatColor(e)`, iterates `J.workScene.blocks.forEach(...)`, and tweens each `i.instance.material.emissive` `r/g/b` channel with `ease:"expo.out"` and the supplied duration.
+- Rebuild removed the old `blockColorTweens` registry, old kill/storage behavior, active-only retargeting, and direct custom-uniform writes from this setter path.
+- `__rogierOutputProbe.settings.work.blocksColorOwnership` exposes source fan-out mode, target mode, no-kill mode, work-item count, active emissive, and all-work emissive parity.
+- `scripts/probe-output-color.mjs` hard-fails on block-color ownership drift; `scripts/audit-renderer-output.mjs` checks source/rebuild/probe anchors and rejects old tween registry, kill, active-only, and custom-uniform paths.
+- Previous committed batch was `a23931b Guard ambient setter ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -165,26 +165,26 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-ambient-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-blocks-color-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-ambient-output-desktop CDP_PORT=9322 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-ambient-output-mobile CDP_PORT=9323 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-ambient-thumb-desktop CDP_PORT=9324 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-ambient-project-media CDP_PORT=9325 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-blocks-color-output-desktop CDP_PORT=9332 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-blocks-color-output-mobile CDP_PORT=9333 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-blocks-color-thumb-desktop CDP_PORT=9334 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-blocks-color-project-media CDP_PORT=9335 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the ambient setter ownership guardrail batch. Renderer audit wrote `/tmp/rd-ambient-audit.json`; `sourceManagers.Se.ambientOwnership` reports `source=true`, `rebuild=true`, and all probe anchors true. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed `ambientOwnership.mode=source-Se-setAmbientLight-delegates-color-intensity`, ambient light color matching environment darken color, and active `hashgraph-vc` ambient intensity `0.75`. Desktop thumb spotlight probe passed, and project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the block-color ownership guardrail batch. Renderer audit wrote `/tmp/rd-blocks-color-audit.json`; `sourceManagers.Se.blocksColorOwnership` reports source/rebuild/probe coverage. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed `blocksColorOwnership.mode=source-Se-setBlocksColor-tweens-all-work-material-emissive`, target mode `source-VA-MeshStandardMaterial-emissive`, no-kill mode, `workItemCount=10`, and `allWorkEmissiveMatchesActive=true`. Desktop thumb spotlight probe passed, and project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this ambient guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this block-color guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the ambient guardrail batch: `/tmp/rd-ambient-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-ambient-output-desktop` and `/tmp/rd-ambient-output-mobile`.
-- Desktop thumb spotlight probe passed for `/tmp/rd-ambient-thumb-desktop`.
+- Renderer audit passed for the block-color guardrail batch: `/tmp/rd-blocks-color-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-blocks-color-output-desktop` and `/tmp/rd-blocks-color-output-mobile`.
+- Desktop thumb spotlight probe passed for `/tmp/rd-blocks-color-thumb-desktop`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
@@ -235,7 +235,7 @@ Continue source-driven implementation in this order:
    - Source `Lu/kA/I1` init settings and `I1` lensflare defaults are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, and `Se.setAmbientLight()` ambient/env color ownership.
+   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, and `Se.setBlocksColor()` all-work emissive fan-out ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

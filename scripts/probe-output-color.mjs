@@ -123,6 +123,7 @@ function outputProbeSettled(parsed) {
   const settingsState = workSettings.settingsStateOwnership || {};
   const mouseFactor = workSettings.mouseFactorOwnership || {};
   const ambient = workSettings.ambientOwnership || {};
+  const blocksColor = workSettings.blocksColorOwnership || {};
   return Boolean(
     parsed.probe
     && parsed.body?.includes("has-entered")
@@ -143,6 +144,9 @@ function outputProbeSettled(parsed) {
     && ambient.intensityMode === "source-Se-setAmbientIntensity-tweens-ambientLight-intensity"
     && ambient.killMode === "source-no-kill-for-setAmbientColor-setAmbientIntensity"
     && ambient.environmentDarkenMatchesAmbientColor === true
+    && blocksColor.mode === "source-Se-setBlocksColor-tweens-all-work-material-emissive"
+    && blocksColor.killMode === "source-no-kill-for-setBlocksColor"
+    && blocksColor.allWorkEmissiveMatchesActive === true
   );
 }
 
@@ -314,6 +318,13 @@ async function runProbe() {
   if (Math.abs((mouseFactor.state ?? NaN) - 1) > 0.001) materialErrors.push("mouseFactorState");
   if (Math.abs((mouseFactor.activeUniform ?? NaN) - (mouseFactor.state ?? NaN)) > 0.001) materialErrors.push("mouseFactorActiveUniform");
   if (mouseFactor.allWorkUniformsMatchState !== true) materialErrors.push("mouseFactorUniformsMatchState");
+  const blocksColor = workSettings.blocksColorOwnership || {};
+  if (blocksColor.mode !== "source-Se-setBlocksColor-tweens-all-work-material-emissive") materialErrors.push("blocksColorMode");
+  if (blocksColor.targetMode !== "source-VA-MeshStandardMaterial-emissive") materialErrors.push("blocksColorTargetMode");
+  if (blocksColor.killMode !== "source-no-kill-for-setBlocksColor") materialErrors.push("blocksColorKillMode");
+  if ((blocksColor.workItemCount ?? 0) !== 10) materialErrors.push("blocksColorWorkItemCount");
+  if (!Array.isArray(blocksColor.activeEmissive) || blocksColor.activeEmissive.length !== 3) materialErrors.push("blocksColorActiveEmissive");
+  if (blocksColor.allWorkEmissiveMatchesActive !== true) materialErrors.push("blocksColorFanout");
   if (!auxiliaryMaterial) materialErrors.push("auxiliaryMaterialMissing");
   if (auxiliaryMaterial?.toneMapped !== true) materialErrors.push("auxToneMapped");
   if (auxiliaryMaterial?.transparent !== true) materialErrors.push("auxTransparent");

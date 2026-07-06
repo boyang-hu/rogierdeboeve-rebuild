@@ -194,6 +194,7 @@ const rebuildUpdateAmbientDarkenColor = extractBlock(rebuildWebgl, "private upda
 const rebuildSetAmbientColor = extractBlock(rebuildWebgl, "private setAmbientColor(");
 const rebuildSetAmbientIntensity = extractBlock(rebuildWebgl, "private setAmbientIntensity(");
 const rebuildSetAmbientLight = extractBlock(rebuildWebgl, "private setAmbientLight(");
+const rebuildSetBlocksColor = extractBlock(rebuildWebgl, "private setBlocksColor(");
 const rebuildShowScene = extractBlock(rebuildWebgl, "showScene()");
 const rebuildCreateThumbPlane = extractBlock(rebuildWebgl, "private createThumbPlane(");
 const rebuildRenderThumbTargets = extractBlock(rebuildWebgl, "private renderThumbTargets()");
@@ -1005,6 +1006,34 @@ const summary = {
           "ambientOwnership.intensityMode !== \"source-Se-setAmbientIntensity-tweens-ambientLight-intensity\"",
           "ambientOwnership.backgroundUniformMode !== \"rebuild-background-material-not-source-Se-ambient-target\"",
           "ambientOwnership.environmentDarkenMatchesAmbientColor !== true",
+        ]),
+      },
+      blocksColorOwnership: {
+        source:
+          sourceSe.text.includes("static setBlocksColor(e,t=1.6){const n=this.formatColor(e);J.workScene.blocks.forEach(i=>{oe.to(i.instance.material.emissive,{r:n.r,g:n.g,b:n.b,ease:\"expo.out\",duration:t})})}"),
+        rebuild:
+          Boolean(rebuildSetBlocksColor)
+          && rebuildSetBlocksColor.includes("const next = sourceRgbColor(value, DEFAULT_BG)")
+          && rebuildSetBlocksColor.includes("this.workItems.forEach((item) => {")
+          && rebuildSetBlocksColor.includes("gsap.to(item.material.emissive, { r: next.r, g: next.g, b: next.b, duration, ease: \"expo.out\" })")
+          && rebuildWebgl.includes("blocksColorOwnership: {")
+          && rebuildWebgl.includes("mode: \"source-Se-setBlocksColor-tweens-all-work-material-emissive\"")
+          && rebuildWebgl.includes("targetMode: \"source-VA-MeshStandardMaterial-emissive\"")
+          && rebuildWebgl.includes("killMode: \"source-no-kill-for-setBlocksColor\"")
+          && rebuildWebgl.includes("allWorkEmissiveMatchesActive")
+          && !rebuildWebgl.includes("private blockColorTweens")
+          && !rebuildSetBlocksColor.includes(".kill()")
+          && !rebuildSetBlocksColor.includes("blockColorTweens")
+          && !rebuildSetBlocksColor.includes("item.material.uniforms")
+          && !rebuildSetBlocksColor.includes("activeWorkItem"),
+        rebuildProbeChecks: checks(rebuildOutputProbe, [
+          "blocksColor.mode === \"source-Se-setBlocksColor-tweens-all-work-material-emissive\"",
+          "blocksColor.killMode === \"source-no-kill-for-setBlocksColor\"",
+          "blocksColor.allWorkEmissiveMatchesActive === true",
+          "blocksColor.mode !== \"source-Se-setBlocksColor-tweens-all-work-material-emissive\"",
+          "blocksColor.targetMode !== \"source-VA-MeshStandardMaterial-emissive\"",
+          "blocksColor.killMode !== \"source-no-kill-for-setBlocksColor\"",
+          "blocksColor.allWorkEmissiveMatchesActive !== true",
         ]),
       },
       thumbStateOwnership: {

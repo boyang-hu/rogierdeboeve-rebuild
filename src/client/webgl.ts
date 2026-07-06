@@ -4374,7 +4374,6 @@ export class WebGLBackdrop {
   private mouseFactorTween?: gsap.core.Tween;
   private saturationTween?: gsap.core.Tween;
   private contrastTween?: gsap.core.Tween;
-  private blockColorTweens: gsap.core.Tween[] = [];
   private thumbDarknessTweens: gsap.core.Tween[] = [];
   private thumbDarknessColorTweens: gsap.core.Tween[] = [];
   private thumbSaturationTweens: gsap.core.Tween[] = [];
@@ -6836,15 +6835,9 @@ void main() {
   }
 
   private setBlocksColor(value?: string, duration = 1.6) {
-    this.blockColorTweens.forEach((tween) => tween.kill());
-    this.blockColorTweens = [];
-    const next = sourceRgbColor(value ?? DEFAULT_BG, DEFAULT_BG);
+    const next = sourceRgbColor(value, DEFAULT_BG);
     this.workItems.forEach((item) => {
-      if (duration <= 0) {
-        item.material.emissive.copy(next);
-        return;
-      }
-      this.blockColorTweens.push(gsap.to(item.material.emissive, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
+      gsap.to(item.material.emissive, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" });
     });
   }
 
@@ -8121,6 +8114,7 @@ void main() {
     const c1MouseSimMatchesCurrentOutput = c1MouseSimTexture === this.screenMouseSimulationTexture;
     const environmentDarkenColor = this.environmentMaterial.customUniforms.uDarkenColor.value as Color;
     const backgroundAmbientColor = this.backgroundMaterial.uniforms.uAmbientColor.value as Color;
+    const activeWorkEmissive = activeWorkItem?.material.emissive ?? null;
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -8314,6 +8308,20 @@ void main() {
             environmentDarkenMatchesAmbientColor: environmentDarkenColor.equals(this.ambientLight.color),
             backgroundAmbientColor: backgroundAmbientColor.toArray(),
             backgroundAmbientIntensity: this.backgroundMaterial.uniforms.uAmbientIntensity.value,
+          },
+          blocksColorOwnership: {
+            mode: "source-Se-setBlocksColor-tweens-all-work-material-emissive",
+            targetMode: "source-VA-MeshStandardMaterial-emissive",
+            killMode: "source-no-kill-for-setBlocksColor",
+            workItemCount: this.workItems.length,
+            activeEmissive: activeWorkEmissive ? activeWorkEmissive.toArray() : null,
+            allWorkEmissiveMatchesActive: activeWorkEmissive
+              ? this.workItems.every((item) => (
+                Math.abs(item.material.emissive.r - activeWorkEmissive.r) < 1e-6
+                && Math.abs(item.material.emissive.g - activeWorkEmissive.g) < 1e-6
+                && Math.abs(item.material.emissive.b - activeWorkEmissive.b) < 1e-6
+              ))
+              : this.workItems.length === 0,
           },
           lightStateOwnership: {
             mode: "source-Se-settings-light-state-onUpdate-intensities",
