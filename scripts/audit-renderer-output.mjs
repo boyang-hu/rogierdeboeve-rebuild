@@ -2648,6 +2648,7 @@ const summary = {
         "rotationWrap: Object3D;",
         "const group = new Object3D()",
         "const rotationWrap = new Object3D()",
+        "mesh.scale.set(raySize.x, raySize.y, MOUSE_RAY_SCALE);",
         "function sourceWorkViewportCoords()",
         "private setSourceWorkMaterialUCoords(material: WorkBlockMaterial)",
         "private updateVisibleWorkItems(time: number, delta: number)",
@@ -2661,6 +2662,8 @@ const summary = {
         "item.material.uniforms.tDisplacement.value = this.displacementTarget.texture",
         "sourceGAUpdateMode: \"source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal\"",
         "sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\"",
+        "sourceRayPlaneScale: [sourceRayPlaneSize.x, sourceRayPlaneSize.y, MOUSE_RAY_SCALE]",
+        "&& Math.abs(active.rayPlane.scale.z - MOUSE_RAY_SCALE) < 1e-6",
       ]),
       uCoordsOwnership: {
         source:

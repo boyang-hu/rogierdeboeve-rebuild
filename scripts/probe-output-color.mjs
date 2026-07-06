@@ -483,6 +483,12 @@ async function runProbe() {
     if (gaShape.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") shapeErrors.push("raycastMode");
     if (gaShape.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") shapeErrors.push("raycastEventMode");
     if (gaShape.raycastNormalizationMode !== "source-Pe-width-height") shapeErrors.push("raycastNormalizationMode");
+    if (!Array.isArray(activeMouse?.sourceRayPlaneScale) || Math.abs((activeMouse.sourceRayPlaneScale[2] ?? NaN) - 1.5) > 0.0001) {
+      shapeErrors.push("sourceRayPlaneScaleZ");
+    }
+    if (!Array.isArray(activeMouse?.rayPlaneScale) || Math.abs((activeMouse.rayPlaneScale[2] ?? NaN) - 1.5) > 0.0001) {
+      shapeErrors.push("rayPlaneScaleZ");
+    }
     if (shapeErrors.length) {
       throw new Error(`GA mouse/ray source-shape mismatch: ${shapeErrors.join(", ")}`);
     }

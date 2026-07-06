@@ -6124,7 +6124,7 @@ void main() {
       depthTest: false,
     });
     const mesh = new Mesh(new PlaneGeometry(1, 1), material);
-    mesh.scale.set(raySize.x, raySize.y, 1);
+    mesh.scale.set(raySize.x, raySize.y, MOUSE_RAY_SCALE);
     mesh.position.set(0, 0, sourceWorkMousePlaneSize().y / 2 + 0.01);
     return mesh;
   }
@@ -9116,6 +9116,7 @@ void main() {
         },
         sourcePlaneSize: sourcePlaneSize.toArray(),
         sourceRayPlaneSize: sourceRayPlaneSize.toArray(),
+        sourceRayPlaneScale: [sourceRayPlaneSize.x, sourceRayPlaneSize.y, MOUSE_RAY_SCALE],
         expectedTargetSize,
         sourceShape: {
           planeScale: MOUSE_PLANE_SCALE,
@@ -9180,7 +9181,8 @@ void main() {
           targetSizingMode: "source-GA-resize-plane-scale-no-pre-rounding",
           rayPlaneScaleMatchesSource:
             Math.abs(active.rayPlane.scale.x - sourceRayPlaneSize.x) < 1e-6
-            && Math.abs(active.rayPlane.scale.y - sourceRayPlaneSize.y) < 1e-6,
+            && Math.abs(active.rayPlane.scale.y - sourceRayPlaneSize.y) < 1e-6
+            && Math.abs(active.rayPlane.scale.z - MOUSE_RAY_SCALE) < 1e-6,
           rayPlaneGeometryMatchesSource:
             Math.abs(active.rayPlane.geometry.parameters.width - 1) < 1e-6
             && Math.abs(active.rayPlane.geometry.parameters.height - 1) < 1e-6,

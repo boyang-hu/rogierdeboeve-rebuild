@@ -143,12 +143,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Cleaned renderer-audit attribution for the already source-shaped `A1/C1` pre-composite surface without production WebGL changes.
-- Source `A1` uses GLSL3 `FragColor`, source `blend(1,...)` / `blend(11,...)`, `mixed.rgb *= uContrast`, source noise mixes on `mixed.rgb`, source `displacementUv` / `vignetteF` locals, and no `#include <tonemapping_fragment>`.
-- `scripts/audit-renderer-output.mjs` now checks those current source strings instead of stale bridge-era `gl_FragColor`, `sourceBlend(...)`, and `color` markers.
-- The audit records source/rebuild `tonemappingFragmentAbsent` and positive `sourceSurfaceChecks` for `displacementUv`, `vignetteF`, and noise-sample order.
-- Renderer-audit recursive false output dropped from `18` to `8`; the remaining false entries are render-target default/snapshot diagnostics, not `A1` shader-surface residuals.
-- The previous runtime batch is committed as `7f721ec Guard sky displacement state order`.
+- Aligned `GA.createPlane()` ray-plane z scale with source.
+- Source sets `rayPlane.scale` to `(35*1.3,23*1.3,1)` and then calls `rayPlane.scale.multiplyScalar(t)` with `t=1.5`, so the source ray plane z scale is also `1.5`.
+- `createWorkRayPlane()` now sets z to `MOUSE_RAY_SCALE` instead of leaving it at `1`.
+- `__rogierOutputProbe.mouseSimulation.active` now exposes `sourceRayPlaneScale=[68.25,44.85,1.5]`; `sourceShape.rayPlaneScaleMatchesSource` checks x/y/z.
+- `scripts/probe-output-color.mjs` hard-fails on ray-plane z drift, and renderer audit checks the mirrored `multiplyScalar(t)` source anchor plus rebuild/probe coverage.
+- The previous QA cleanup batch is committed as `66183eb Clean A1 audit surface checks`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -158,11 +158,14 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-a1-audit-cleanup-final.json
+node --check scripts/probe-output-color.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-rayplane-scale-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://127.0.0.1:5175 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-rayplane-output-desktop CDP_PORT=9278 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://127.0.0.1:5175 SKIP_SCREENSHOT=1 OUT_DIR=/tmp/rd-rayplane-output-mobile CDP_PORT=9279 VIEWPORT=mobile node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed in the `A1/C1` renderer-audit cleanup batch. Production runtime code did not change, so browser probes were not rerun for this QA-only cleanup. The latest runtime browser probes remain the previous `V1/k1` sky/displacement batch, where desktop/mobile output probes and desktop thumb smoke had no failures/exceptions/console messages.
+All relevant checks passed in the `GA.createPlane()` ray-plane scale batch. Desktop and mobile output probes confirmed `rayPlaneScale=[68.25,44.85,1.5]`, matching `sourceRayPlaneScale`, with no browser failures/exceptions/console messages. Renderer-audit recursive false output remains `8`, limited to render-target default/snapshot diagnostics.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky/displacement guardrail batch.
 
@@ -171,10 +174,10 @@ Runtime QA was done with local Chrome CDP scripts.
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the `A1/C1` audit cleanup: `/tmp/rd-a1-audit-cleanup-final.json`.
+- Renderer audit passed after the ray-plane scale batch: `/tmp/rd-rayplane-scale-audit.json`.
 - Recursive audit false output is now `8`, limited to render-target default/snapshot diagnostics.
-- Desktop/mobile output probes and desktop thumb smoke from the prior runtime batch passed with sky/displacement post-render state/background parity and no browser failures/exceptions/console messages.
-- Project media remains a regression gate, not proof of Home parity; it was not touched by this audit cleanup batch.
+- Desktop/mobile output probes passed with `rayPlaneScale` and `sourceRayPlaneScale` both `[68.25,44.85,1.5]`, and no browser failures/exceptions/console messages.
+- Project media remains a regression gate, not proof of Home parity; it was not touched by this ray-plane scale batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
