@@ -372,6 +372,29 @@ async function runProbe() {
   if (auxiliaryLifecycle.aboutInitialScrollMode !== "source-TD-await-200ms-after-map-then-onScroll") {
     materialErrors.push("auxiliaryAboutInitialScrollMode");
   }
+  if (auxiliaryLifecycle.aboutCharacterRotatableMode !== "source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy") {
+    materialErrors.push("auxiliaryAboutCharacterRotatableMode");
+  }
+  if (auxiliaryLifecycle.aboutCharacterRotatableWrapperMode !== "source-eD-cameraPanGroup-rotatableMesh-character") {
+    materialErrors.push("auxiliaryAboutCharacterRotatableWrapperMode");
+  }
+  if (auxiliaryLifecycle.aboutCharacterRotatableEventMode !== "source-Q1-window-mouse-touch-passive-events") {
+    materialErrors.push("auxiliaryAboutCharacterRotatableEventMode");
+  }
+  if (auxiliaryLifecycle.aboutCharacterRotatableUpdateMode !== "source-eD-Q1-update-horizontal-damped-rotation-and-auto-rotate") {
+    materialErrors.push("auxiliaryAboutCharacterRotatableUpdateMode");
+  }
+  if (auxiliaryLifecycle.aboutCharacterRotatableHorizontal !== true) materialErrors.push("auxiliaryAboutCharacterRotatableHorizontal");
+  if (auxiliaryLifecycle.aboutCharacterRotatableVertical !== false) materialErrors.push("auxiliaryAboutCharacterRotatableVertical");
+  if (auxiliaryLifecycle.aboutCharacterRotatableDamping !== 5) materialErrors.push("auxiliaryAboutCharacterRotatableDamping");
+  if (auxiliaryLifecycle.aboutCharacterAutoRotateSpeed !== 1) materialErrors.push("auxiliaryAboutCharacterAutoRotateSpeed");
+  if (
+    !Array.isArray(auxiliaryLifecycle.aboutCharacterCameraPanClamp)
+    || auxiliaryLifecycle.aboutCharacterCameraPanClamp[0] !== -0.15
+    || auxiliaryLifecycle.aboutCharacterCameraPanClamp[1] !== 0.3
+  ) {
+    materialErrors.push("auxiliaryAboutCharacterCameraPanClamp");
+  }
   if (auxiliaryLifecycle.floatingEntryVisibilityMode !== "source-Fg-animateIn-onStart-visible-not-enter-state") {
     materialErrors.push("auxiliaryFloatingEntryVisibility");
   }

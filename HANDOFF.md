@@ -146,6 +146,7 @@ Known remaining gaps:
 - Source `XA/KA` auxiliary material constructor state is now guarded: about keeps `XA` depth-disabled `renderOrder=10` state, floating keeps `KA` default depth state and no material `renderOrder`, and both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults. The auxiliary shader bridge is still open.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
+- Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
@@ -164,13 +165,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `TD.addEvents()` about visual lifecycle timing.
-- Source `TD.addEvents()` hides spotlight intensity, marks about blocks visible, disables spotlight parallax, waits `100ms`, registers `aboutVisual`, binds `J.workScene.spotLight.map` to the character scene composite texture, emits force resize, waits `200ms`, then calls `this.onScroll()`.
-- `src/client/webgl.ts` now schedules that source timing instead of immediately binding the character spotlight map, forcing resize, or applying about scroll state during setup.
-- About scroll opacity and about spotlight updates are now gated until the delayed about visual RAF point; about out/destroy paths clear both lifecycle timers.
-- `__rogierOutputProbe` exposes `source-TD-addEvents-100ms-map-resize-200ms-initial-scroll` lifecycle markers, including delay values, map binding, force-resize, RAF activation, and initial-scroll completion.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` now hard-fail on TD about visual lifecycle drift.
-- Previous committed batch was `f5f06b0 Align SD spotlight entry intensity`.
+- Aligned source `Q1/eD/TD` about character rotatable lifecycle.
+- Source `TD.addEvents()` waits `100ms`, registers `aboutVisual`, binds `J.workScene.spotLight.map` to the character scene composite texture, then calls `J.characterScene.character.rotatableMesh.addEvents()` before force resize; source `TD.destroy()` calls `rotatableMesh.removeEvents()`.
+- Source `eD` wraps the character as `cameraPanGroup -> rotatableMesh -> character`; source `Q1` owns passive mouse/touch window events, horizontal-only damped rotation with `dampingFactor=5`, camera pan lerp/clamp, and `rotation.y += delta * 1`.
+- `src/client/webgl.ts` now mirrors that wrapper, adds/removes rotatable events at the source TD lifecycle points, and updates rotatable/camera-pan/auto-rotation before rendering the character target while about is visible.
+- `__rogierOutputProbe` exposes rotatable mode, wrapper mode, event mode, update mode, active-event state, hierarchy counts, rotation, and source constants.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` now hard-fail on character rotatable lifecycle drift.
+- Previous committed batch was `8cd8ee9 Align TD about visual lifecycle`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the auxiliary shader bridge.
 
 ## Validation Status
@@ -183,29 +184,29 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-td-about-lifecycle-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-character-rotatable-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5180 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
-# custom static /about/ CDP smoke against http://127.0.0.1:5180/about/
+# custom static /about/ CDP drag smoke against http://127.0.0.1:5180/about/
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 PROBE_WAIT=30000 CDP_PORT=9278 node scripts/probe-output-color.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9283 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `TD` about visual lifecycle batch. Renderer audit wrote `/tmp/rd-td-about-lifecycle-audit.json`; `sourceManagers.TDAboutVisualLifecycle` source, rebuild, and output-probe checks were true. The static `/about/` smoke passed with lifecycle mode `source-TD-addEvents-100ms-map-resize-200ms-initial-scroll`, `aboutVisible=true`, `floatingVisible=true`, map binding after the source delay, force resize after map binding, and initial scroll after the nested delay. Desktop output and thumb probes passed, and the project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+All relevant checks passed in the `Q1/eD/TD` character rotatable lifecycle batch. Renderer audit wrote `/tmp/rd-character-rotatable-audit.json`; `sourceManagers.TDCharacterRotatableLifecycle` source, rebuild, and output-probe checks were true. The static `/about/` CDP drag smoke passed with rotatable mode `source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy`, events active after the delayed map bind, source wrapper hierarchy present, and dragged rotation changing from `0` to `1.4511`. Desktop output and thumb probes should remain regression gates for this batch; project-media should remain a regression gate and retain `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `TD` about visual lifecycle batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `Q1/eD/TD` character rotatable lifecycle batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`; `/about/` enters `is-about is-ready has-entered has-webgl`.
-- Renderer audit passed for the `TD` about visual lifecycle batch: `/tmp/rd-td-about-lifecycle-audit.json`.
-- Desktop output probe passed and asserted the TD about lifecycle delay/mode markers.
-- Desktop thumb spotlight probe passed with existing spotlight/default guardrails intact.
-- Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
-- Interactive mouse browser probe was not rerun for this about-lifecycle batch.
+- Renderer audit passed for the `Q1/eD/TD` character rotatable lifecycle batch: `/tmp/rd-character-rotatable-audit.json`.
+- Static `/about/` drag smoke passed and asserted rotatable event activation plus wrapper/rotation behavior.
+- Desktop output, desktop thumb spotlight, and project-media probes remain the browser regression gates for this batch.
+- Project media remains a regression gate, not proof of Home parity.
+- Interactive mouse browser probe was not rerun for this character-lifecycle batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

@@ -445,6 +445,12 @@ const SOURCE_HOME_SPOTLIGHT_INTENSITY = 220;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS = 100;
 const SOURCE_TD_INITIAL_SCROLL_DELAY_MS = 200;
+const SOURCE_CHARACTER_ROTATABLE_DAMPING = 5;
+const SOURCE_CHARACTER_AUTO_ROTATE_SPEED = 1;
+const SOURCE_CHARACTER_CAMERA_PAN_LERP = 0.1;
+const SOURCE_CHARACTER_CAMERA_PAN_DAMPING_MULTIPLIER = 2;
+const SOURCE_CHARACTER_CAMERA_PAN_MIN = -0.15;
+const SOURCE_CHARACTER_CAMERA_PAN_MAX = 0.3;
 const SOURCE_ACTIVE_PROJECT_ORDER = [
   "hashgraph-vc",
   "gc-2026",
@@ -4429,9 +4435,20 @@ export class WebGLBackdrop {
   private thumbCompositeMaterial: ShaderMaterial;
   private characterMaterial: ShaderMaterial;
   private characterScene = new Scene();
+  private characterCameraPanGroup = new Object3D();
+  private characterRotatableMesh = new Object3D();
+  private characterBodyGroup = new Group();
   private characterModelRoot = new Group();
   private characterFallbackMesh: Mesh<PlaneGeometry, ShaderMaterial>;
   private characterTarget = makeSourceRenderTarget(false);
+  private characterRotatableEventsActive = false;
+  private characterRotatablePointerDown = false;
+  private characterRotatablePointer = new Vector2();
+  private characterTargetRotation = new Vector2();
+  private characterTargetRotationOnPointerDown = new Vector2();
+  private characterCurrentMove = new Vector2();
+  private characterMouseOnPointerDown = new Vector2();
+  private characterMouse = new Vector2(0.5, 0.5);
   private floorMaterial: ShaderMaterial;
   private floorGroup = new Object3D();
   private floorReflector = new Object3D();
@@ -4538,6 +4555,12 @@ export class WebGLBackdrop {
     mapBoundAfterDelay: false,
     forceResizeAfterMapBind: false,
     initialScrollAfterDelay: false,
+    characterRotatableMode: "source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy",
+    characterRotatableWrapperMode: "source-eD-cameraPanGroup-rotatableMesh-character",
+    characterRotatableEventMode: "source-Q1-window-mouse-touch-passive-events",
+    characterRotatableUpdateMode: "source-eD-Q1-update-horizontal-damped-rotation-and-auto-rotate",
+    characterRotatableAddAfterMapDelay: false,
+    characterRotatableRemoveOnDestroy: false,
   };
   private maxSpotLightIntensity = SOURCE_HOME_SPOTLIGHT_INTENSITY;
   private spotLightParallax = true;
@@ -4727,8 +4750,11 @@ export class WebGLBackdrop {
     this.characterMaterial = this.createCharacterMaterial();
     this.characterFallbackMesh = new Mesh(new PlaneGeometry(2, 2), this.characterMaterial);
     this.characterDirectionalLight.position.set(2, 3, 5);
-    this.characterScene.add(this.characterFallbackMesh);
-    this.characterScene.add(this.characterModelRoot);
+    this.characterBodyGroup.add(this.characterFallbackMesh);
+    this.characterBodyGroup.add(this.characterModelRoot);
+    this.characterRotatableMesh.add(this.characterBodyGroup);
+    this.characterCameraPanGroup.add(this.characterRotatableMesh);
+    this.characterScene.add(this.characterCameraPanGroup);
     this.characterScene.add(this.characterAmbientLight);
     this.characterScene.add(this.characterDirectionalLight);
     this.floorMaterial = this.createFloorMaterial();
@@ -5051,6 +5077,8 @@ export class WebGLBackdrop {
     this.aboutVisualLifecycle.mapBoundAfterDelay = false;
     this.aboutVisualLifecycle.forceResizeAfterMapBind = false;
     this.aboutVisualLifecycle.initialScrollAfterDelay = false;
+    this.aboutVisualLifecycle.characterRotatableAddAfterMapDelay = false;
+    this.aboutVisualLifecycle.characterRotatableRemoveOnDestroy = false;
     this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap = this.spotLight.map !== this.characterTarget.texture;
   }
 
@@ -5063,6 +5091,90 @@ export class WebGLBackdrop {
     }
   }
 
+  private characterEventPosition(event: MouseEvent | TouchEvent) {
+    const touch = "touches" in event ? event.touches[0] : null;
+    return {
+      x: touch ? touch.clientX : (event as MouseEvent).clientX,
+      y: touch ? touch.clientY : (event as MouseEvent).clientY,
+    };
+  }
+
+  private characterOnPointerDown = (event: MouseEvent | TouchEvent) => {
+    if (this.characterRotatablePointerDown) return;
+    const pointer = this.characterEventPosition(event);
+    this.characterRotatablePointerDown = true;
+    this.characterRotatablePointer.set(pointer.x, pointer.y);
+    this.characterTargetRotationOnPointerDown.copy(this.characterTargetRotation);
+  };
+
+  private characterOnPointerMove = (event: MouseEvent | TouchEvent) => {
+    if (!this.characterRotatablePointerDown) return;
+    const pointer = this.characterEventPosition(event);
+    this.characterCurrentMove.set(pointer.x - this.characterRotatablePointer.x, pointer.y - this.characterRotatablePointer.y);
+    this.characterTargetRotation.y =
+      this.characterTargetRotationOnPointerDown.y + (this.characterCurrentMove.y - this.characterMouseOnPointerDown.y) * 0.01;
+    this.characterTargetRotation.x =
+      this.characterTargetRotationOnPointerDown.x + (this.characterCurrentMove.x + this.characterMouseOnPointerDown.x) * 0.01;
+  };
+
+  private characterOnPointerUp = () => {
+    this.characterRotatablePointerDown = false;
+  };
+
+  private sourceAddCharacterRotatableEvents() {
+    if (this.characterRotatableEventsActive) return;
+    const options = { passive: true };
+    const hasTouch = "ontouchmove" in window;
+    window.addEventListener(hasTouch ? "touchstart" : "mousedown", this.characterOnPointerDown, options);
+    window.addEventListener(hasTouch ? "touchmove" : "mousemove", this.characterOnPointerMove, options);
+    window.addEventListener(hasTouch ? "touchend" : "mouseup", this.characterOnPointerUp, options);
+    this.characterRotatableEventsActive = true;
+    this.aboutVisualLifecycle.characterRotatableAddAfterMapDelay = true;
+  }
+
+  private sourceRemoveCharacterRotatableEvents() {
+    if (!this.characterRotatableEventsActive) {
+      this.aboutVisualLifecycle.characterRotatableRemoveOnDestroy = true;
+      return;
+    }
+    const hasTouch = "ontouchmove" in window;
+    window.removeEventListener(hasTouch ? "touchstart" : "mousedown", this.characterOnPointerDown);
+    window.removeEventListener(hasTouch ? "touchmove" : "mousemove", this.characterOnPointerMove);
+    window.removeEventListener(hasTouch ? "touchend" : "mouseup", this.characterOnPointerUp);
+    this.characterRotatableEventsActive = false;
+    this.characterRotatablePointerDown = false;
+    this.aboutVisualLifecycle.characterRotatableRemoveOnDestroy = true;
+  }
+
+  private updateSourceCharacterScene(delta: number) {
+    this.characterRotatableMesh.rotation.y = sourceDamp(
+      this.characterRotatableMesh.rotation.y,
+      this.characterTargetRotation.x,
+      SOURCE_CHARACTER_ROTATABLE_DAMPING,
+      delta,
+    );
+    this.characterMouse.x = MathUtils.lerp(
+      this.characterMouse.x,
+      MathUtils.clamp(this.pointerPixels.x / Math.max(1, window.innerWidth), 0, 1),
+      SOURCE_CHARACTER_CAMERA_PAN_LERP,
+    );
+    this.characterMouse.y = MathUtils.lerp(
+      this.characterMouse.y,
+      MathUtils.clamp(this.pointerPixels.y / Math.max(1, window.innerHeight), 0, 1),
+      SOURCE_CHARACTER_CAMERA_PAN_LERP,
+    );
+    this.characterCameraPanGroup.rotation.x = sourceClampRound(
+      MathUtils.lerp(
+        this.characterCameraPanGroup.rotation.x,
+        -this.characterMouse.y + 0.5,
+        SOURCE_CHARACTER_CAMERA_PAN_DAMPING_MULTIPLIER * delta,
+      ),
+      SOURCE_CHARACTER_CAMERA_PAN_MIN,
+      SOURCE_CHARACTER_CAMERA_PAN_MAX,
+    );
+    this.characterBodyGroup.rotation.y += delta * SOURCE_CHARACTER_AUTO_ROTATE_SPEED;
+  }
+
   private scheduleAboutVisualLifecycle() {
     this.clearAboutVisualLifecycleTimers();
     this.resetAboutVisualLifecycleState();
@@ -5073,6 +5185,7 @@ export class WebGLBackdrop {
       this.aboutVisualLifecycle.rafActiveAfterMapDelay = true;
       this.spotLight.map = this.characterTarget.texture;
       this.aboutVisualLifecycle.mapBoundAfterDelay = true;
+      this.sourceAddCharacterRotatableEvents();
       this.aboutVisualLifecycle.forceResizeAfterMapBind = true;
       this.resize();
       this.aboutInitialScrollTimer = window.setTimeout(() => {
@@ -5154,6 +5267,7 @@ export class WebGLBackdrop {
   animateAboutVisualOut() {
     this.clearAboutVisualLifecycleTimers();
     this.aboutVisualRafActive = false;
+    this.sourceRemoveCharacterRotatableEvents();
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     if (this.aboutBlocks) {
@@ -5192,6 +5306,7 @@ export class WebGLBackdrop {
   destroyAboutVisualState() {
     this.clearAboutVisualLifecycleTimers();
     this.aboutVisualRafActive = false;
+    this.sourceRemoveCharacterRotatableEvents();
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     if (this.aboutBlocks) {
@@ -5271,6 +5386,7 @@ export class WebGLBackdrop {
       this.sourceInitLifecycleTimer = null;
     }
     this.clearAboutVisualLifecycleTimers();
+    this.sourceRemoveCharacterRotatableEvents();
     cancelAnimationFrame(this.raf);
     window.removeEventListener("resize", this.resize);
     window.removeEventListener("mousemove", this.onMouseMove);
@@ -8807,6 +8923,18 @@ void main() {
             aboutSpotlightMapMode: this.spotLight.map === this.characterTarget.texture
               ? "source-TD-character-composite-after-delay"
               : "source-TD-not-bound-during-initial-100ms",
+            aboutCharacterRotatableMode: this.aboutVisualLifecycle.characterRotatableMode,
+            aboutCharacterRotatableWrapperMode: this.aboutVisualLifecycle.characterRotatableWrapperMode,
+            aboutCharacterRotatableEventMode: this.aboutVisualLifecycle.characterRotatableEventMode,
+            aboutCharacterRotatableUpdateMode: this.aboutVisualLifecycle.characterRotatableUpdateMode,
+            aboutCharacterRotatableAddAfterMapDelay: this.aboutVisualLifecycle.characterRotatableAddAfterMapDelay,
+            aboutCharacterRotatableRemoveOnDestroy: this.aboutVisualLifecycle.characterRotatableRemoveOnDestroy,
+            aboutCharacterRotatableEventsActive: this.characterRotatableEventsActive,
+            aboutCharacterRotatableHorizontal: true,
+            aboutCharacterRotatableVertical: false,
+            aboutCharacterRotatableDamping: SOURCE_CHARACTER_ROTATABLE_DAMPING,
+            aboutCharacterAutoRotateSpeed: SOURCE_CHARACTER_AUTO_ROTATE_SPEED,
+            aboutCharacterCameraPanClamp: [SOURCE_CHARACTER_CAMERA_PAN_MIN, SOURCE_CHARACTER_CAMERA_PAN_MAX],
             floatingEntryVisibilityMode: "source-Fg-animateIn-onStart-visible-not-enter-state",
             floatingExitVisibilityMode: "source-Fg-animateOut-onComplete-hidden",
             floatingScrollVelocityMode: "source-Fg-onRaf-page-scroll-velocity",
@@ -9706,6 +9834,17 @@ void main() {
         aboutSpotlightMapMode: this.spotLight.map === this.characterTarget.texture
           ? "source-TD-character-composite-after-delay"
           : "source-TD-not-bound-during-initial-100ms",
+        aboutCharacterRotatableMode: this.aboutVisualLifecycle.characterRotatableMode,
+        aboutCharacterRotatableAddAfterMapDelay: this.aboutVisualLifecycle.characterRotatableAddAfterMapDelay,
+        aboutCharacterRotatableRemoveOnDestroy: this.aboutVisualLifecycle.characterRotatableRemoveOnDestroy,
+        aboutCharacterRotatableEventsActive: this.characterRotatableEventsActive,
+        characterWrapperMode: this.aboutVisualLifecycle.characterRotatableWrapperMode,
+        characterCameraPanGroupChildren: this.characterCameraPanGroup.children.length,
+        characterRotatableMeshChildren: this.characterRotatableMesh.children.length,
+        characterBodyChildren: this.characterBodyGroup.children.length,
+        characterRotatableRotationY: this.characterRotatableMesh.rotation.y,
+        characterBodyRotationY: this.characterBodyGroup.rotation.y,
+        characterCameraPanRotationX: this.characterCameraPanGroup.rotation.x,
         floatingVisibilityMode: "source-Fg-animateIn-onStart-visible-animateOut-onComplete-hidden",
         floatingScrollVelocityMode: "source-Fg-onRaf-page-scroll-velocity",
         floatingTranslation: SOURCE_FLOATING_SCROLL_TRANSLATION,
@@ -10447,7 +10586,10 @@ void main() {
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.renderThumbTargets();
     this.renderDisplacementTarget(time);
-    if (this.aboutBlocks?.group.visible) this.renderCharacterTarget();
+    if (this.aboutBlocks?.group.visible) {
+      this.updateSourceCharacterScene(delta);
+      this.renderCharacterTarget();
+    }
     this.updateThumbProbe(time);
     this.updateOutputProbe(time);
     this.raf = requestAnimationFrame(this.tick);

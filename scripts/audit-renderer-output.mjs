@@ -278,6 +278,8 @@ const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager
 const sourceIT = extractAround(bundle, "class IT{constructor", 120, 3200);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceTDSpotlight = extractAround(bundle, "updateSpotLight(){J.workScene.spotLight.position.set", 520, 900);
+const sourceCharacterRotatable = extractAround(bundle, "class Q1 extends rt", 0, 2500);
+const sourceCharacterScene = extractAround(bundle, "class eD extends rt", 0, 1600);
 const sourceFg = extractAround(bundle, "class Fg extends", 200, 1200);
 const sourceWebpDetection = extractAround(bundle, "await k0(\"lossy\").then(()=>{Le.WEBP=!0}).catch(()=>{Le.WEBP=!1})", 240, 420);
 const sourceLeSettings = extractAround(bundle, "class Le{static DEBUG", 0, 560);
@@ -3604,10 +3606,12 @@ const summary = {
         "await fn(100)",
         "Bt.add(this.onRaf,\"aboutVisual\")",
         "J.workScene.spotLight.map=J.characterScene.renderManager.renderTargetComposite.texture",
+        "J.characterScene.character.rotatableMesh.addEvents()",
         "pe.emit(xe.FORCE_RESIZE)",
         "await fn(200)",
         "this.onScroll()",
         "Bt.remove(\"aboutVisual\")",
+        "J.characterScene.character.rotatableMesh.removeEvents()",
       ]),
       rebuildChecks: checks(rebuildWebgl, [
         "const SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS = 100",
@@ -3619,12 +3623,14 @@ const summary = {
         "private scheduleAboutVisualLifecycle()",
         "this.aboutSpotlightMapTimer = window.setTimeout(() => {",
         "this.spotLight.map = this.characterTarget.texture",
+        "this.sourceAddCharacterRotatableEvents();",
         "this.resize();",
         "this.aboutInitialScrollTimer = window.setTimeout(() => {",
         "this.applySourceAboutScrollState();",
         "}, SOURCE_TD_INITIAL_SCROLL_DELAY_MS);",
         "}, SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS);",
         "this.clearAboutVisualLifecycleTimers();",
+        "this.sourceRemoveCharacterRotatableEvents();",
       ]),
       outputProbeChecks: checks(rebuildOutputProbe, [
         "auxiliaryLifecycle.aboutSpotlightLifecycleMode !== \"source-TD-addEvents-100ms-map-resize-200ms-initial-scroll\"",
@@ -3633,8 +3639,60 @@ const summary = {
         "auxiliaryLifecycle.aboutMapBindingMode !== \"source-TD-after-100ms-character-composite-not-enter-state\"",
         "auxiliaryLifecycle.aboutResizeMode !== \"source-TD-pe-FORCE_RESIZE-after-character-map\"",
         "auxiliaryLifecycle.aboutInitialScrollMode !== \"source-TD-await-200ms-after-map-then-onScroll\"",
+        "auxiliaryLifecycle.aboutCharacterRotatableMode !== \"source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy\"",
       ]),
       excerpt: compact(sourceTDSpotlight.text),
+    },
+    TDCharacterRotatableLifecycle: sourceCharacterRotatable && sourceCharacterScene && {
+      index: sourceCharacterRotatable.index,
+      checks: {
+        Q1: checks(sourceCharacterRotatable.text, [
+          "class Q1 extends rt",
+          "this.params={horizontal:!0,vertical:!1,dampingFactor:5}",
+          "window.addEventListener(t,this.onMouseDown,e)",
+          "window.addEventListener(n,this.onMouseMove,e)",
+          "window.addEventListener(i,this.onMouseUp)",
+          "window.removeEventListener(e,this.onMouseDown)",
+          "window.removeEventListener(t,this.onMouseMove)",
+          "window.removeEventListener(n,this.onMouseUp)",
+          "this.targetRotation.x=this.targetRotationOnMouseDown.x+(this.currentMove.x+this.mouseOnMouseDown.x)*.01",
+          "this.rotation.y=Yi(this.rotation.y,i,this.params.dampingFactor,e)",
+        ]),
+        eD: checks(sourceCharacterScene.text, [
+          "this.cameraPanGroup=new rt",
+          "this.rotatableMesh=new Q1({horizontal:!0,vertical:!1})",
+          "this.rotatableMesh.add(this)",
+          "this.cameraPanGroup.add(this.rotatableMesh)",
+          "e.scene.add(this.cameraPanGroup)",
+          "this.rotatingActive||this.rotatableMesh.update(t)",
+          "this.mouse.x=zn(this.mouse.x,Pe.mouse.normalized.x,.1)",
+          "this.cameraPanGroup.rotation.x=bo(zn(this.cameraPanGroup.rotation.x,-this.mouse.y+.5,2*t),-.15,.3)",
+          "this.rotation.y+=t*1",
+        ]),
+      },
+      rebuildChecks: checks(rebuildWebgl, [
+        "const SOURCE_CHARACTER_ROTATABLE_DAMPING = 5",
+        "const SOURCE_CHARACTER_AUTO_ROTATE_SPEED = 1",
+        "private characterCameraPanGroup = new Object3D();",
+        "private characterRotatableMesh = new Object3D();",
+        "private characterBodyGroup = new Group();",
+        "this.characterBodyGroup.add(this.characterFallbackMesh);",
+        "this.characterRotatableMesh.add(this.characterBodyGroup);",
+        "this.characterCameraPanGroup.add(this.characterRotatableMesh);",
+        "private sourceAddCharacterRotatableEvents()",
+        "private sourceRemoveCharacterRotatableEvents()",
+        "private updateSourceCharacterScene(delta: number)",
+        "this.characterRotatableMesh.rotation.y = sourceDamp(",
+        "this.characterBodyGroup.rotation.y += delta * SOURCE_CHARACTER_AUTO_ROTATE_SPEED;",
+      ]),
+      outputProbeChecks: checks(rebuildOutputProbe, [
+        "auxiliaryLifecycle.aboutCharacterRotatableMode !== \"source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy\"",
+        "auxiliaryLifecycle.aboutCharacterRotatableWrapperMode !== \"source-eD-cameraPanGroup-rotatableMesh-character\"",
+        "auxiliaryLifecycle.aboutCharacterRotatableEventMode !== \"source-Q1-window-mouse-touch-passive-events\"",
+        "auxiliaryLifecycle.aboutCharacterRotatableUpdateMode !== \"source-eD-Q1-update-horizontal-damped-rotation-and-auto-rotate\"",
+        "auxiliaryLifecycle.aboutCharacterRotatableDamping !== 5",
+      ]),
+      excerpt: compact(`${sourceCharacterRotatable.text} ${sourceCharacterScene.text}`),
     },
     FgFloatingBlocksLifecycle: sourceFg && {
       index: sourceFg.index,
