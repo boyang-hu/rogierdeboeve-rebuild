@@ -199,6 +199,9 @@ const rebuildWorkBlockVertexPars = extractConstTemplate(rebuildWebgl, "workBlock
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
+const rebuildSetProject = extractBlock(rebuildWebgl, "setProject(payload: ProjectPayload)");
+const rebuildApplyActiveProjectSourceOrder = extractBlock(rebuildWebgl, "private applyActiveProjectSourceOrder(");
+const rebuildApplyProjectLook = extractBlock(rebuildWebgl, "private applyProjectLook(");
 const rebuildSetProjectBlockReveal = extractBlock(rebuildWebgl, "private setProjectBlockReveal(");
 const rebuildPrepareHomeLighting = extractBlock(rebuildWebgl, "private prepareHomeLighting(");
 const rebuildEnterWorkGallery = extractBlock(rebuildWebgl, "enterWorkGallery(");
@@ -2658,6 +2661,77 @@ const summary = {
           && !rebuildSetProjectBlockReveal.includes("projectRevealProjectTweens")
           && !rebuildSetProjectBlockReveal.includes("uRevealProject"),
       },
+      activeProjectApplicationOrder: {
+        source:
+          orderedIncludes(sourceYDOnProjectActive.text, [
+            "this.activeProject=e",
+            "Se.setSpotLightIntensity(t.data.spotlight||J.workScene.maxSpotLightIntensity,1)",
+            "Se.setRevealSpread(0)",
+            "J.workScene.blocks.forEach((a,c)=>{c!==n&&this.inAnimation.to",
+            "this.inAnimation.to(J.workScene.blocks[n].instance.material.customUniforms.uReveal,{value:1,delay:.2,ease:\"power4.out\",duration:4},0)",
+            "Se.setAmbientLight(r,i)",
+            "Se.setMainColor(o)",
+            "Se.setDarken(t.data.darkenOverview||.1)",
+            "Se.setSaturation(t.data.saturation||1)",
+            "Se.setContrast(t.data.contrast||1.15)",
+            "Se.setThumbDarknessIntensity(t.data.thumbnail.darkness||0)",
+            "Se.setThumbDarknessColor(t.data.thumbnail.darknessColor||\"#000000\")",
+            "Se.setThumbSaturation(t.data.thumbnail.saturation||1)",
+            "Se.setThumbMouseLightness(t.data.thumbnail.mouseLightness||1)",
+            "Se.setBlocksColor(t.data.colors.blocks||\"#000000\")",
+            "Se.setDirectionalLightIntensity(1.5)",
+          ]),
+        rebuildSetProject:
+          Boolean(rebuildSetProject)
+          && orderedIncludes(rebuildSetProject, [
+            "this.prepareHomeLighting()",
+            "this.applyActiveProjectSourceOrder(payload, active)",
+            "this.setDirectionalLight2Intensity(1)",
+          ]),
+        rebuildHelper:
+          Boolean(rebuildApplyActiveProjectSourceOrder)
+          && orderedIncludes(rebuildApplyActiveProjectSourceOrder, [
+            "this.activeSlug = payload.slug ?? this.activeSlug",
+            "this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1)",
+            "this.setRevealSpread(0)",
+            "this.setProjectBlockReveal(active)",
+            "this.applyProjectLook(payload)",
+            "this.setDirectionalLightIntensity(1.5)",
+          ]),
+        rebuildProjectLook:
+          Boolean(rebuildApplyProjectLook)
+          && orderedIncludes(rebuildApplyProjectLook, [
+            "this.setAmbientLight(ambientColor, ambientIntensity)",
+            "this.setMainColor(payload.color)",
+            "this.setDarken(",
+            "this.setSaturation(",
+            "this.setContrast(",
+            "this.setThumbDarknessIntensity(",
+            "this.setThumbDarknessColor(",
+            "this.setThumbSaturation(",
+            "this.setThumbMouseLightness(",
+            "this.setBlocksColor(",
+          ]),
+        rebuildEnterWorkGallery:
+          Boolean(rebuildEnterWorkGallery)
+          && orderedIncludes(rebuildEnterWorkGallery, [
+            "this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20)",
+            "this.setMouseFactor(1, 3)",
+            "const active = this.workItems.find((item) => item.slug === activeSlug) ?? this.workItems[0]",
+            "this.workItems.forEach((item) =>",
+            "this.applyActiveProjectSourceOrder(active.payload, active)",
+            "this.setDirectionalLight2Intensity(1)",
+          ])
+          && !rebuildEnterWorkGallery.includes("this.setRevealSpread(0)"),
+        rebuildProbeCoverage:
+          rebuildWebgl.includes("SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE = \"source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional\"")
+          && rebuildWebgl.includes("private sourceActiveProjectApplicationOrderProbe()")
+          && rebuildWebgl.includes("activeProjectApplicationOrder: this.sourceActiveProjectApplicationOrderProbe()")
+          && rebuildOutputProbe.includes("sourceActiveProjectApplicationOrderMode")
+          && rebuildOutputProbe.includes("activeProjectApplicationOrder")
+          && rebuildThumbProbe.includes("sourceActiveProjectApplicationOrderMode")
+          && rebuildThumbProbe.includes("activeProjectApplicationOrder"),
+      },
       excerpt: compact(sourceYDOnProjectActive.text),
     },
     homeSpotlightMap: sourceSDInitSpotlight && {
@@ -2792,14 +2866,17 @@ const summary = {
         sourceYDOnProjectActive?.text.includes("Se.setSpotLightIntensity(t.data.spotlight||J.workScene.maxSpotLightIntensity,1)"),
       rebuildActiveProjectSpotlightOwnership:
         Boolean(rebuildPrepareHomeLighting)
+        && Boolean(rebuildApplyActiveProjectSourceOrder)
         && Boolean(rebuildEnterWorkGallery)
         && rebuildWebgl.includes("SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE = \"source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity\"")
         && rebuildWebgl.includes("function sourceProjectSpotlightIntensity(")
         && rebuildWebgl.includes("function sourceProjectSpotlightUsesPayload(")
         && rebuildPrepareHomeLighting.includes("this.initHomeSpotlight()")
-        && rebuildPrepareHomeLighting.includes("this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1)")
+        && !rebuildPrepareHomeLighting.includes("sourceProjectSpotlightIntensity(")
+        && rebuildApplyActiveProjectSourceOrder.includes("this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1)")
+        && rebuildApplyActiveProjectSourceOrder.includes("this.setDirectionalLightIntensity(1.5)")
         && rebuildEnterWorkGallery.includes("const active = this.workItems.find((item) => item.slug === activeSlug) ?? this.workItems[0]")
-        && rebuildEnterWorkGallery.includes("this.setSpotLightIntensity(sourceProjectSpotlightIntensity(active?.payload.spotlight, this.maxSpotLightIntensity), 1)")
+        && rebuildEnterWorkGallery.includes("this.applyActiveProjectSourceOrder(active.payload, active)")
         && !rebuildEnterWorkGallery.includes("this.setSpotLightIntensity(this.maxSpotLightIntensity, 1.6)")
         && rebuildWebgl.includes("activeProjectIntensityMode: SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE")
         && rebuildWebgl.includes("activeProjectFallbackMode: \"source-js-or-falsy-zero-empty-missing-to-maxSpotLightIntensity\"")

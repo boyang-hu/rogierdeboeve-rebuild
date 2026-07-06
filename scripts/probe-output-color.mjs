@@ -30,6 +30,24 @@ const viewports = {
 const viewport = viewports[viewportName] || viewports.desktop;
 const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const sourceActiveProjectSpotlightIntensityMode = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
+const sourceActiveProjectApplicationOrderMode = "source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional";
+const sourceActiveProjectApplicationOrder = [
+  "activeProject",
+  "spotLightIntensity",
+  "revealSpread",
+  "uRevealTweens",
+  "ambientLight",
+  "mainColor",
+  "darken",
+  "saturation",
+  "contrast",
+  "thumbDarknessIntensity",
+  "thumbDarknessColor",
+  "thumbSaturation",
+  "thumbMouseLightness",
+  "blocksColor",
+  "directionalLightIntensity",
+];
 const rebuildSearchParams = new URL(rebuildUrl).searchParams;
 const debugCompositeProbe = rebuildSearchParams.has("debug-composite-stage")
   || rebuildSearchParams.has("debug-composite-darken")
@@ -567,6 +585,20 @@ async function runProbe() {
   const activeRevealErrors = [];
   if (workSettings.activeProjectRevealOwnership !== "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out") {
     activeRevealErrors.push("ownership");
+  }
+  const activeProjectApplicationOrder = workSettings.activeProjectApplicationOrder || {};
+  if (activeProjectApplicationOrder.mode !== sourceActiveProjectApplicationOrderMode) activeRevealErrors.push("activeProjectApplicationOrderMode");
+  if (JSON.stringify(activeProjectApplicationOrder.expected) !== JSON.stringify(sourceActiveProjectApplicationOrder)) {
+    activeRevealErrors.push("activeProjectApplicationOrderExpected");
+  }
+  for (const key of [
+    "activeProjectBeforeSpotlight",
+    "spotlightBeforeRevealSpread",
+    "revealSpreadBeforeUReveal",
+    "uRevealBeforeLook",
+    "lookBeforeDirectionalLight",
+  ]) {
+    if (activeProjectApplicationOrder[key] !== true) activeRevealErrors.push(key);
   }
   if ((workSettings.activeProjectRevealTweenCount ?? 0) !== p1UpdateCulling?.total) activeRevealErrors.push("uRevealTweenCount");
   const lightStateOwnership = workSettings.lightStateOwnership || {};

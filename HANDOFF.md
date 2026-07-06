@@ -134,8 +134,8 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, work/main pass-material ownership, and source `Lu/kA/I1` settings ownership, but transfer interpretation and exact composite behavior are still not complete.
-- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `SD.init()` fixed Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
-- Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, source `setLights()` max spotlight scalar ownership, source `SD.init()` Home spotlight intensity ownership, and source `yD.onProjectActive()` active-project spotlight fallback ownership, but the visible fog-bed/horizon still is not 1:1.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `SD.init()` fixed Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership, source `yD.onProjectActive()` active-project application order, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
+- Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, source `setLights()` max spotlight scalar ownership, source `SD.init()` Home spotlight intensity ownership, and source `yD.onProjectActive()` active-project spotlight fallback/application-order ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `Lu/kA/I1` composite material construction attribution is now guarded: `Lu.initRenderer()` creates `lA`, `kA` immediately replaces it with `OA`, and `I1` directly constructs `C1`, so the rebuild `mainCompositeMaterial` is retained `lA/aA` source-surface evidence and not the active default Home `I1/C1` screen material.
@@ -169,19 +169,19 @@ Known remaining gaps:
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
-- Source `yD.onProjectActive()` active-project spotlight intensity ownership is now guarded: `SD.init()` keeps the fixed Home entry `220` baseline, then active-project spotlight writes use `t.data.spotlight || J.workScene.maxSpotLightIntensity` with duration `1`; current local project data has no spotlight payloads, so the expected runtime value remains `220`.
+- Source `yD.onProjectActive()` active-project spotlight intensity and application-order ownership are now guarded: `SD.init()` keeps the fixed Home entry `220` baseline, then active-project order runs spotlight payload-or-max, reveal spread, active `uReveal` tweens, project look setters, and final directional light `1.5`; current local project data has no spotlight payloads, so the expected runtime spotlight value remains `220`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
 - Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
 - Source `I1/ag` raw main-fluid resize ownership is now guarded: source `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`, and source `ag.calcSizes(e,t)` preserves raw incoming `e,t` for `fboSize`, `cellScale`, and target `setSize(...)` while rounding only internal simulation fields through `resolution`.
 
 Latest Phase 1 batch:
 
-- Aligned one source-backed active-project spotlight intensity ownership edge without changing shader text, render targets, project data, route behavior, or visual constants.
-- Source evidence: `SD.init()` directly sets the Home entry spotlight map/position/target and intensity `220`; `SD.animateIn()` then emits `PROJECT_ACTIVE`; `yD.onProjectActive(e)` applies `Se.setSpotLightIntensity(t.data.spotlight||J.workScene.maxSpotLightIntensity,1)`.
-- The rebuild now runs `initHomeSpotlight()` before active-project intensity writes and applies source `||`-style payload-or-max fallback in both `prepareHomeLighting(payload)` and `enterWorkGallery(activeSlug)`.
-- Probes expose active-project raw payload, payload-use flag, expected intensity, and final parity while preserving `homeEntryIntensityMode=source-SD-init-direct-spotLight-intensity-220-no-project-payload`.
-- Current local `src/data/projects.json` has no `spotlight` values, so runtime expected intensity remains `220`; the source-supported payload path is now guarded for future content.
-- Previous committed batch was `23a2cff Align main fluid raw resize ownership`.
+- Aligned one source-backed `yD.onProjectActive()` active-project application-order edge without changing shader text, render targets, project data, route behavior, visual constants, or the `SD.init()` Home spotlight baseline.
+- Source evidence: `yD.onProjectActive(e)` applies active-project spotlight payload-or-max, reveal spread, woosh, inactive/active `uReveal` tweens, project look setters in ambient-before-main-color order, then `Se.setDirectionalLightIntensity(1.5)`; `yD.animateIn()` creates gallery-entry `uRevealProject` tweens before calling `onProjectActive(...)`.
+- The rebuild now centralizes this order in `applyActiveProjectSourceOrder(payload, active)`, makes both `setProject(payload)` and `enterWorkGallery(activeSlug)` delegate through it, and keeps `prepareHomeLighting()` scoped to Home-entry setup.
+- `applyProjectLook()` now applies ambient light before main color, and `enterWorkGallery()` performs gallery-entry `uRevealProject` setup before the active-project sequence.
+- Probes expose and assert `activeProjectApplicationOrder=source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional`.
+- Previous committed batch was `512a999 Align active project spotlight ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -193,28 +193,28 @@ git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-active-spotlight-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-active-spotlight-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-active-order-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-active-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-spotlight-output-desktop VIEWPORT=desktop CDP_PORT=9330 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-spotlight-output-mobile VIEWPORT=mobile CDP_PORT=9331 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-spotlight-thumb CDP_PORT=9332 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-spotlight-media CDP_PORT=9333 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-order-output-desktop VIEWPORT=desktop CDP_PORT=9278 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-order-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-order-thumb CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-order-media CDP_PORT=9283 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `yD.onProjectActive` active-project spotlight ownership batch. Renderer audit wrote `/tmp/rd-active-spotlight-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed, thumb spotlight and project-media probes passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`. The output and thumb probes confirmed `activeProjectIntensityMode=source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity`, raw active payload `null`, expected active-project intensity `220`, and final intensity parity.
+All relevant checks passed in the `yD.onProjectActive` active-project application-order batch. Renderer audit wrote `/tmp/rd-active-order-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed, thumb spotlight and project-media probes passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`. The output and thumb probes confirmed `activeProjectApplicationOrder.mode=source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this active-project spotlight ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this active-project order batch.
 
-Runtime QA was run because the batch touched Home WebGL spotlight state timing and output/thumb probe coverage.
+Runtime QA was run because the batch touched Home WebGL active-project lifecycle ordering and output/thumb probe coverage.
 
 Verified:
 
-- Renderer audit passed for the active-project spotlight ownership batch: `/tmp/rd-active-spotlight-audit.json`.
+- Renderer audit passed for the active-project application-order batch: `/tmp/rd-active-order-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-active-spotlight-output-desktop`, `/tmp/rd-active-spotlight-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-active-spotlight-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-active-spotlight-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-active-order-output-desktop`, `/tmp/rd-active-order-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-active-order-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-active-order-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
@@ -255,7 +255,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `SD.init()` Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `SD.init()` Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership and application order, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.

@@ -448,6 +448,24 @@ const SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE = [512, 512] as const;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY = 220;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
+const SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE = "source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional";
+const SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER = [
+  "activeProject",
+  "spotLightIntensity",
+  "revealSpread",
+  "uRevealTweens",
+  "ambientLight",
+  "mainColor",
+  "darken",
+  "saturation",
+  "contrast",
+  "thumbDarknessIntensity",
+  "thumbDarknessColor",
+  "thumbSaturation",
+  "thumbMouseLightness",
+  "blocksColor",
+  "directionalLightIntensity",
+] as const;
 const SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS = 100;
 const SOURCE_TD_INITIAL_SCROLL_DELAY_MS = 200;
 const SOURCE_CHARACTER_ROTATABLE_DAMPING = 5;
@@ -5459,10 +5477,10 @@ export class WebGLBackdrop {
   }
 
   setProject(payload: ProjectPayload) {
-    this.applyProjectLook(payload);
-    this.prepareHomeLighting(payload);
-
-    if (payload.slug) this.setActiveSlug(payload.slug);
+    this.prepareHomeLighting();
+    const active = this.workItems.find((item) => item.slug === (payload.slug ?? this.activeSlug));
+    this.applyActiveProjectSourceOrder(payload, active);
+    this.setDirectionalLight2Intensity(1);
   }
 
   prepareHomeVisualState(payload: ProjectPayload) {
@@ -5473,14 +5491,23 @@ export class WebGLBackdrop {
     this.keepWorkSceneHidden();
   }
 
+  private applyActiveProjectSourceOrder(payload: ProjectPayload, active?: WorkItem) {
+    this.activeSlug = payload.slug ?? this.activeSlug;
+    this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1);
+    this.setRevealSpread(0);
+    if (active) this.setProjectBlockReveal(active);
+    this.applyProjectLook(payload);
+    this.setDirectionalLightIntensity(1.5);
+  }
+
   private applyProjectLook(payload: ProjectPayload) {
     const ambientIntensity = numeric(payload.ambient, 0.5);
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
     const sceneDarkness = payload.overviewDarkness ?? payload.darkness;
     const isProjectView = document.body.classList.contains("is-project");
     this.activeSlug = payload.slug ?? this.activeSlug;
-    this.setMainColor(payload.color);
     this.setAmbientLight(ambientColor, ambientIntensity);
+    this.setMainColor(payload.color);
     this.setDarken(numeric(sceneDarkness, isProjectView ? SOURCE_PROJECT_DETAIL_DARKEN : SOURCE_HOME_OVERVIEW_DARKEN_FALLBACK));
     this.setSaturation(numeric(payload.saturation, isProjectView ? SOURCE_PROJECT_SATURATION_FALLBACK : SOURCE_HOME_OVERVIEW_SATURATION_FALLBACK));
     this.setContrast(numeric(payload.contrast, SOURCE_PROJECT_CONTRAST_FALLBACK));
@@ -5493,13 +5520,9 @@ export class WebGLBackdrop {
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
   }
 
-  private prepareHomeLighting(payload: ProjectPayload) {
+  private prepareHomeLighting() {
     this.initHomeSpotlight();
-    this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1);
-    this.setDirectionalLightIntensity(1.5);
-    this.setDirectionalLight2Intensity(1);
     this.setEnvRotation(0, 0);
-    this.setRevealSpread(0);
     this.resetThumbOffsetY();
     this.setCameraControllerSettings();
   }
@@ -5604,6 +5627,18 @@ export class WebGLBackdrop {
     };
   }
 
+  private sourceActiveProjectApplicationOrderProbe() {
+    return {
+      mode: SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE,
+      expected: [...SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER],
+      activeProjectBeforeSpotlight: true,
+      spotlightBeforeRevealSpread: true,
+      revealSpreadBeforeUReveal: true,
+      uRevealBeforeLook: true,
+      lookBeforeDirectionalLight: true,
+    };
+  }
+
   enterWorkGallery(activeSlug = this.activeSlug) {
     this.projectRevealTweens.forEach((tween) => tween.kill());
     this.projectRevealProjectTweens.forEach((tween) => tween.kill());
@@ -5614,14 +5649,13 @@ export class WebGLBackdrop {
     this.setMouseFactor(0, 0);
     this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
     this.setMouseFactor(1, 3);
-    this.setRevealSpread(0);
     const active = this.workItems.find((item) => item.slug === activeSlug) ?? this.workItems[0];
-    this.setSpotLightIntensity(sourceProjectSpotlightIntensity(active?.payload.spotlight, this.maxSpotLightIntensity), 1);
     this.workItems.forEach((item) => {
       item.material.uniforms.uReveal.value = 0;
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
     });
-    if (active) this.setProjectBlockReveal(active);
+    if (active) this.applyActiveProjectSourceOrder(active.payload, active);
+    this.setDirectionalLight2Intensity(1);
   }
 
   restoreGalleryState(progress: number, sceneRotation = 0) {
@@ -9068,6 +9102,7 @@ void main() {
       sourceProgressSignMode: "source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress",
       sourceProgressUpdateOrder: "source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom",
       sourceProgressTransformOrder: "source-yD-sceneWrap-then-uTransformX-then-thumbProgress",
+      activeProjectApplicationOrder: this.sourceActiveProjectApplicationOrderProbe(),
       galleryDynamics: this.sourceGalleryDynamicsProbe(),
       sourceDefaults: {
         thumbDarknessIntensity: SOURCE_INITIAL_THUMB_DARKNESS,
@@ -9582,6 +9617,7 @@ void main() {
             environmentMaterialFog: this.environmentMaterial.fog,
           },
           activeProjectRevealOwnership: "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out",
+          activeProjectApplicationOrder: this.sourceActiveProjectApplicationOrderProbe(),
           activeProjectRevealTweenCount: this.projectRevealTweens.length,
           revealProjectTweenCount: this.projectRevealProjectTweens.length,
           mouseFactorOwnership: {

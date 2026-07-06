@@ -31,6 +31,24 @@ const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3;
 const expectedTargetSize = Math.max(1, Math.round(viewport.height));
 const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const sourceActiveProjectSpotlightIntensityMode = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
+const sourceActiveProjectApplicationOrderMode = "source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional";
+const sourceActiveProjectApplicationOrder = [
+  "activeProject",
+  "spotLightIntensity",
+  "revealSpread",
+  "uRevealTweens",
+  "ambientLight",
+  "mainColor",
+  "darken",
+  "saturation",
+  "contrast",
+  "thumbDarknessIntensity",
+  "thumbDarknessColor",
+  "thumbSaturation",
+  "thumbMouseLightness",
+  "blocksColor",
+  "directionalLightIntensity",
+];
 
 if (!Number.isFinite(sourceProbeProgress)) {
   throw new Error(`Invalid THUMB_PROGRESS: ${process.env.THUMB_PROGRESS}`);
@@ -235,6 +253,24 @@ async function runProbe() {
   }
   if (probe.sourceProgressTransformOrder !== "source-yD-sceneWrap-then-uTransformX-then-thumbProgress") {
     sourceShapeErrors.push(`sourceProgressTransformOrder=${probe.sourceProgressTransformOrder}`);
+  }
+  const activeProjectApplicationOrder = probe.activeProjectApplicationOrder || {};
+  if (activeProjectApplicationOrder.mode !== sourceActiveProjectApplicationOrderMode) {
+    sourceShapeErrors.push(`activeProjectApplicationOrderMode=${activeProjectApplicationOrder.mode}`);
+  }
+  if (JSON.stringify(activeProjectApplicationOrder.expected) !== JSON.stringify(sourceActiveProjectApplicationOrder)) {
+    sourceShapeErrors.push(`activeProjectApplicationOrder=${JSON.stringify(activeProjectApplicationOrder.expected)}`);
+  }
+  for (const key of [
+    "activeProjectBeforeSpotlight",
+    "spotlightBeforeRevealSpread",
+    "revealSpreadBeforeUReveal",
+    "uRevealBeforeLook",
+    "lookBeforeDirectionalLight",
+  ]) {
+    if (activeProjectApplicationOrder[key] !== true) {
+      sourceShapeErrors.push(`${key}=${activeProjectApplicationOrder[key]}`);
+    }
   }
   if (probe.debugProgress !== sourceProbeProgress) {
     sourceShapeErrors.push(`debugProgress=${probe.debugProgress}`);
