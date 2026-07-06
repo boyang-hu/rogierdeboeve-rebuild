@@ -8270,6 +8270,20 @@ void main() {
           activeProjectRevealOwnership: "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out",
           activeProjectRevealTweenCount: this.projectRevealTweens.length,
           revealProjectTweenCount: this.projectRevealProjectTweens.length,
+          mouseFactorOwnership: {
+            mode: "source-p1-setMouseFactor-updates-VA-uMouseFactor",
+            constructorDefault: 0,
+            galleryEntryMode: "source-yD-gallery-entry-set-0-then-tween-1",
+            previewMode: "source-work-preview-enter-0_25-leave-1",
+            steadyGalleryTarget: 1,
+            previewEnterTarget: 0.25,
+            previewLeaveTarget: 1,
+            state: this.mouseFactor,
+            activeUniform: activeWorkItem?.material.uniforms.uMouseFactor.value ?? null,
+            allWorkUniformsMatchState: this.workItems.every((item) => (
+              Math.abs((item.material.uniforms.uMouseFactor.value as number) - this.mouseFactor) < 1e-6
+            )),
+          },
           lightStateOwnership: {
             mode: "source-Se-settings-light-state-onUpdate-intensities",
             state: {

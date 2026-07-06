@@ -141,15 +141,16 @@ Known remaining gaps:
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
+- Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
 
 Latest Phase 1 batch:
 
-- Aligned low-risk helper shader text surfaces to the mirrored source bundle without changing render-target topology, pass order, or visual constants.
-- `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dump source-shaped.
-- The rebuild now splits fullscreen vertex constants only where the source bundle has distinct helper vertex text.
-- Ka source whitespace is generated through interpolation helpers, so generated GLSL matches source without adding trailing whitespace to TypeScript.
-- `mouseSimulationProbe()` and `scripts/audit-renderer-output.mjs` now check the source compact Ka literals.
-- Latest committed batch before this work is `3edefd3 Guard main lensflare mouse input`.
+- Added a source-backed runtime/audit guardrail for `p1.setMouseFactor(e)` fan-out to ordinary work `VA.uMouseFactor` without changing production rendering formulas, shader text, render targets, pass order, visual constants, or route behavior.
+- Source `VA` constructs `uMouseFactor` at `0`; source `p1.setMouseFactor(e)` owns `this.mouseF=e` and writes every work material uniform.
+- Source `yD.animateIn()` sets mouse factor to `0` and tweens to `1`; source preview hover tweens `.25` on enter and `1` on leave.
+- `__rogierOutputProbe.settings.work.mouseFactorOwnership` exposes the source mode, constructor/default/preview targets, current state, active uniform, and all-work fan-out parity.
+- `scripts/probe-output-color.mjs` now waits for the gallery-entry mouse-factor tween to settle and hard-fails on mouse-factor ownership drift; `scripts/audit-renderer-output.mjs` checks the source/rebuild/probe anchors.
+- Previous committed batch was `9f15c59 Align helper shader surfaces`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -162,28 +163,26 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-helper-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-mouse-factor-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-helper-shader-dump CDP_PORT=9291 node scripts/dump-va-shader.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-helper-output-desktop CDP_PORT=9301 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-helper-output-mobile CDP_PORT=9302 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-helper-thumb-desktop CDP_PORT=9303 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-helper-thumb-mobile CDP_PORT=9305 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-helper-project-media CDP_PORT=9304 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-mouse-factor-output-desktop CDP_PORT=9312 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-mouse-factor-output-mobile CDP_PORT=9313 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-mouse-factor-thumb-desktop CDP_PORT=9314 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-mouse-factor-project-media CDP_PORT=9315 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the helper shader surface batch. Shader dump `/tmp/rd-helper-shader-dump` reports vertex and fragment deltas `0` for `ig-fxaa`, `sg-luminosity`, `rg-bloom-blur`, `Na-standard-blur`, `cg-bloom-composite`, and `Ka-mouse-simulation`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages. Desktop/mobile thumb spotlight probes passed, and project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the mouse-factor ownership guardrail batch. Renderer audit wrote `/tmp/rd-mouse-factor-audit.json`; the only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed `mouseFactorOwnership.mode=source-p1-setMouseFactor-updates-VA-uMouseFactor`, `state=1`, `activeUniform=1`, and `allWorkUniformsMatchState=true`. Desktop thumb spotlight probe passed, and project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky/displacement guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this mouse-factor guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the helper shader batch: `/tmp/rd-helper-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-helper-output-desktop` and `/tmp/rd-helper-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-helper-thumb-desktop` and `/tmp/rd-helper-thumb-mobile`.
+- Renderer audit passed for the mouse-factor guardrail batch: `/tmp/rd-mouse-factor-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-mouse-factor-output-desktop` and `/tmp/rd-mouse-factor-output-mobile`.
+- Desktop thumb spotlight probe passed for `/tmp/rd-mouse-factor-thumb-desktop`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

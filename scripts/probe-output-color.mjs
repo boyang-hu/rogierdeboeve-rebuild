@@ -121,6 +121,7 @@ function outputProbeSettled(parsed) {
   const workSettings = parsed.probe?.settings?.work || {};
   const lightState = workSettings.lightStateOwnership || {};
   const settingsState = workSettings.settingsStateOwnership || {};
+  const mouseFactor = workSettings.mouseFactorOwnership || {};
   return Boolean(
     parsed.probe
     && parsed.body?.includes("has-entered")
@@ -132,6 +133,10 @@ function outputProbeSettled(parsed) {
     && settingsState.mode === "source-Se-settings-scalar-media-state-onUpdate"
     && settingsState.matchesUniforms === true
     && closeTo(settingsState.state?.sceneReveal, 1)
+    && mouseFactor.mode === "source-p1-setMouseFactor-updates-VA-uMouseFactor"
+    && closeTo(mouseFactor.state, 1)
+    && closeTo(mouseFactor.activeUniform, mouseFactor.state)
+    && mouseFactor.allWorkUniformsMatchState === true
   );
 }
 
@@ -292,6 +297,17 @@ async function runProbe() {
   if (Math.abs((activeMaterial?.envMapIntensity ?? 0) - 0.75) > 0.001) materialErrors.push("activeEnvMapIntensity");
   if (Math.abs((activeMaterial?.roughness ?? 0) - 1) > 0.001) materialErrors.push("activeRoughness");
   if (Math.abs((activeMaterial?.metalness ?? 0) - 0) > 0.001) materialErrors.push("activeMetalness");
+  const mouseFactor = workSettings.mouseFactorOwnership || {};
+  if (mouseFactor.mode !== "source-p1-setMouseFactor-updates-VA-uMouseFactor") materialErrors.push("mouseFactorMode");
+  if (mouseFactor.constructorDefault !== 0) materialErrors.push("mouseFactorConstructorDefault");
+  if (mouseFactor.galleryEntryMode !== "source-yD-gallery-entry-set-0-then-tween-1") materialErrors.push("mouseFactorGalleryEntryMode");
+  if (mouseFactor.previewMode !== "source-work-preview-enter-0_25-leave-1") materialErrors.push("mouseFactorPreviewMode");
+  if (mouseFactor.steadyGalleryTarget !== 1) materialErrors.push("mouseFactorSteadyGalleryTarget");
+  if (mouseFactor.previewEnterTarget !== 0.25) materialErrors.push("mouseFactorPreviewEnterTarget");
+  if (mouseFactor.previewLeaveTarget !== 1) materialErrors.push("mouseFactorPreviewLeaveTarget");
+  if (Math.abs((mouseFactor.state ?? NaN) - 1) > 0.001) materialErrors.push("mouseFactorState");
+  if (Math.abs((mouseFactor.activeUniform ?? NaN) - (mouseFactor.state ?? NaN)) > 0.001) materialErrors.push("mouseFactorActiveUniform");
+  if (mouseFactor.allWorkUniformsMatchState !== true) materialErrors.push("mouseFactorUniformsMatchState");
   if (!auxiliaryMaterial) materialErrors.push("auxiliaryMaterialMissing");
   if (auxiliaryMaterial?.toneMapped !== true) materialErrors.push("auxToneMapped");
   if (auxiliaryMaterial?.transparent !== true) materialErrors.push("auxTransparent");

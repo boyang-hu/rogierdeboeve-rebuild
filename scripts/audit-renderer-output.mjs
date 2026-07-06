@@ -2753,6 +2753,31 @@ const summary = {
           && rebuildWebgl.includes("uvOffsetType: uvOffset?.isVector2 ? \"Vector2\"")
           && rebuildWebgl.includes("uvOffsetRuntimeBridgeMode: \"source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy\""),
       },
+      mouseFactorOwnership: {
+        sourceConstructorDefault:
+          sourceVA?.text.includes("uMouseFactor:new I(0)") === true,
+        sourceP1SetMouseFactor:
+          sourceP1SetBlocks?.text.includes("setMouseFactor(e){this.mouseF=e,this.blocks.forEach") === true
+          && sourceP1SetBlocks?.text.includes("t.instance.material.customUniforms.uMouseFactor.value=e") === true,
+        sourceGalleryEntry:
+          sourceYDAnimateIn?.text.includes("J.workScene.setMouseFactor(0)") === true
+          && sourceYDAnimateIn?.text.includes("mouseF:1,duration:3,ease:\"none\"") === true
+          && sourceYDAnimateIn?.text.includes("J.workScene.setMouseFactor(this.mouseF)") === true,
+        sourcePreviewEnterLeave:
+          bundle.includes("mouseF:.25,duration:3,ease:\"none\",onUpdate:()=>J.workScene.setMouseFactor(this.mouseF)")
+          && bundle.includes("mouseF:1,duration:3,ease:\"none\",onUpdate:()=>J.workScene.setMouseFactor(this.mouseF)"),
+        rebuild:
+          rebuildWebgl.includes("private mouseFactor = 0;")
+          && rebuildWebgl.includes("uMouseFactor: { value: this.mouseFactor }")
+          && rebuildWebgl.includes("this.setMouseFactor(0, 0);")
+          && rebuildWebgl.includes("this.setMouseFactor(1, 3);")
+          && rebuildWebgl.includes("this.setMouseFactor(enabled ? 0.25 : 1, 3);")
+          && rebuildWebgl.includes("mouseFactorOwnership: {")
+          && rebuildWebgl.includes("allWorkUniformsMatchState"),
+        probe:
+          rebuildOutputProbe.includes("mouseFactor.mode !== \"source-p1-setMouseFactor-updates-VA-uMouseFactor\"")
+          && rebuildOutputProbe.includes("mouseFactor.allWorkUniformsMatchState !== true"),
+      },
       rebuildNoSplitLocalMouseUpdate:
         !rebuildWebgl.includes("private updateWorkMouseSimulation(")
         && !rebuildWebgl.includes("private syncWorkMouseSimulationUniforms("),
