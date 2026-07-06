@@ -143,11 +143,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Hardened `scripts/probe-output-color.mjs` against false early failures without production runtime changes.
-- A default fixed 5.2s probe can sample `__rogierOutputProbe` before source `Se.settings` light/scalar tweens have settled on cold starts, causing transient `lightStateDirectional` / `lightStateDirectional2` failures.
-- The output probe now uses `readProbeSummary()` and, after the base `PROBE_WAIT`, polls until source state has settled or `PROBE_STABLE_TIMEOUT` expires.
-- The settle condition checks entered body state, source light-state ownership, light-object/state parity, `spotLight=220`, `directionalLight=1.5`, `directionalLight2=1`, source scalar settings ownership, uniform parity, and `sceneReveal=1`.
-- Existing hard assertions remain unchanged, so real source-state drift still fails.
+- Strengthened the existing source `nD/C1` mouse-sim binding guardrail without production visual changes.
+- Source `sA` constructs two FBOs with `current=0` / `output=fbos[0]`; each `render()` reads the current target, flips `current`, and writes the new output.
+- Source `nD.init()` binds `C1/A1.tMouseSim` once to `J.workScene.renderManager.mouseSimulation.bufferSim.output.texture` before the render loop, so the main pre-composite sampler must stay on the initial output texture instead of following current ping-pong output every frame.
+- `__rogierOutputProbe.uniforms.preComposite.materialUniformSurface.tMouseSimSourceBinding` now exposes source binding mode, initial output index, source flip mode, target count, bound texture index, current output index, and the expected current-output match rule.
+- `scripts/probe-output-color.mjs` hard-fails if the binding drifts, and renderer audit checks source `sA` ping-pong anchors plus rebuild/probe coverage.
 - Phase 1 remains open for actual floor/environment visual parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
 
 ## Validation Status
@@ -156,28 +156,30 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
+node --check src/client/webgl.ts
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-probe-stable-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-mousesim-pingpong-audit-postdocs.json
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-mousesim-pingpong-project-media node scripts/probe-project-media.mjs > /tmp/rd-mousesim-pingpong-project-media.json
 ```
 
-All relevant checks passed in the output-probe stable-wait batch. `node --check scripts/probe-project-media.mjs` and `ASTRO_TELEMETRY_DISABLED=1 npm run build` last passed in the preceding carousel batch; this batch changed only `scripts/probe-output-color.mjs` plus docs.
+All relevant checks passed in the `sA` mouse-sim ping-pong binding guardrail batch. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages.
 
-`npm exec tsc -- --noEmit --pretty false` was also attempted, but it is still blocked by the existing TypeScript config deprecation where `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by the carousel batch.
+`npm exec tsc -- --noEmit --pretty false` was also attempted, but it is still blocked by the existing TypeScript config deprecation where `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the output-probe stable-wait change.
-- Desktop output probe passed with default wait plus stable polling: `/tmp/rd-probe-stable-output-desktop`.
-- Mobile output probe passed with default wait plus stable polling: `/tmp/rd-probe-stable-output-mobile`.
-- Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma.
-- Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages; project-media remains a regression gate, not proof of Home parity.
+- Renderer audit passed after the `sA` mouse-sim ping-pong binding guardrail.
+- Desktop output probe passed with the new `C1.tMouseSim` source binding assertions: `/tmp/rd-mousesim-pingpong-output-desktop`.
+- Mobile output probe passed with the same assertions: `/tmp/rd-mousesim-pingpong-output-mobile`.
+- Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma: `/tmp/rd-mousesim-pingpong-thumb`.
+- Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages: `/tmp/rd-mousesim-pingpong-project-media.json`; project-media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

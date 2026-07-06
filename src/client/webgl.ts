@@ -7599,6 +7599,9 @@ void main() {
     });
     const c1Uniforms = this.preCompositeMaterial.uniforms;
     const c1UniformKeys = Object.keys(c1Uniforms);
+    const c1MouseSimTexture = c1Uniforms.tMouseSim.value as Texture | null;
+    const c1MouseSimBoundIndex = this.screenMouseSimulationTargets.findIndex((target) => target.texture === c1MouseSimTexture);
+    const c1MouseSimMatchesCurrentOutput = c1MouseSimTexture === this.screenMouseSimulationTexture;
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -7989,6 +7992,17 @@ void main() {
             tMouseSimIsInitialScreenMouseTarget: c1Uniforms.tMouseSim.value === this.screenMouseSimulationTargets[0]?.texture,
             tMouseSimIsCurrentScreenMouseTarget: c1Uniforms.tMouseSim.value === this.screenMouseSimulationTexture,
             screenMouseSimulationIndex: this.screenMouseSimulationIndex,
+            tMouseSimSourceBinding: {
+              mode: "source-nD-samples-sA-output-texture-once-before-render-loop",
+              sourceSAInitialOutputIndex: 0,
+              sourceSAOutputFlipMode: "source-sA-render-uses-current-as-input-then-flips-output",
+              targetCount: this.screenMouseSimulationTargets.length,
+              boundTextureIndex: c1MouseSimBoundIndex,
+              currentOutputIndex: this.screenMouseSimulationIndex,
+              remainsInitialOutputTexture: c1MouseSimTexture === this.screenMouseSimulationTargets[0]?.texture,
+              matchesCurrentOutputTexture: c1MouseSimMatchesCurrentOutput,
+              matchesCurrentOnlyWhenOutputIndexZero: c1MouseSimMatchesCurrentOutput === (this.screenMouseSimulationIndex === 0),
+            },
             tPerlinIsLoadedTexture: c1Uniforms.tPerlin.value === this.perlinTexture,
             uDisplacementSizeMode: "source-C1-constructor-default-new-Vector2-no-runtime-write",
             uDisplacement: c1Uniforms.uDisplacement.value,

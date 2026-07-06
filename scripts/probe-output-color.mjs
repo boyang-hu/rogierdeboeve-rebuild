@@ -788,6 +788,34 @@ async function runProbe() {
   if (c1MaterialSurface.tMouseSimIsInitialScreenMouseTarget !== true) {
     materialSurfaceErrors.push("preCompositeC1TMouseSimInitialTarget");
   }
+  const c1MouseSimBinding = c1MaterialSurface.tMouseSimSourceBinding || {};
+  if (c1MouseSimBinding.mode !== "source-nD-samples-sA-output-texture-once-before-render-loop") {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimSourceBindingMode");
+  }
+  if (c1MouseSimBinding.sourceSAInitialOutputIndex !== 0) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimSourceInitialIndex");
+  }
+  if (c1MouseSimBinding.sourceSAOutputFlipMode !== "source-sA-render-uses-current-as-input-then-flips-output") {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimSourceFlipMode");
+  }
+  if (c1MouseSimBinding.targetCount !== 2) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimTargetCount");
+  }
+  if (c1MouseSimBinding.boundTextureIndex !== 0) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimBoundIndex");
+  }
+  if (c1MouseSimBinding.currentOutputIndex !== screenMouse?.index) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimCurrentOutputIndex");
+  }
+  if (c1MouseSimBinding.remainsInitialOutputTexture !== true) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimRemainsInitial");
+  }
+  if (c1MouseSimBinding.matchesCurrentOutputTexture !== (screenMouse?.index === 0)) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimCurrentOutputTexture");
+  }
+  if (c1MouseSimBinding.matchesCurrentOnlyWhenOutputIndexZero !== true) {
+    materialSurfaceErrors.push("preCompositeC1TMouseSimCurrentOnlyWhenIndexZero");
+  }
   if (c1MaterialSurface.tPerlinIsLoadedTexture !== true) materialSurfaceErrors.push("preCompositeC1TPerlinBinding");
   if (c1MaterialSurface.uDisplacementSizeMode !== "source-C1-constructor-default-new-Vector2-no-runtime-write") {
     materialSurfaceErrors.push("preCompositeC1UDisplacementSizeMode");
