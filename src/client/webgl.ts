@@ -196,6 +196,26 @@ type FloorReflectionRendererSnapshot = {
   targetIsMainRaw: boolean;
 };
 
+type ThumbRenderTransferState = {
+  mode: "source-Lo-update-renderTargetA-to-renderTargetComposite";
+  renderToScreen: boolean;
+  renderToScreenMatchesSource: boolean;
+  expectedSteps: string[];
+  steps: string[];
+  stepsMatchExpected: boolean;
+  rawTargetRole: string;
+  compositeTargetRole: string;
+  tSceneRole: string;
+  tSceneIsRawTarget: boolean;
+  screenMaterialRole: string;
+  screenMaterialIsComposite: boolean;
+  compositeTargetReceivesScreenRender: boolean;
+  finalRenderTargetRole: string;
+  finalTargetResetToCanvas: boolean;
+  spotlightMapRole: string;
+  spotlightMapReceivesCompositeTexture: boolean;
+};
+
 type ThumbProbeWindow = Window & {
   __rogierThumbProbe?: {
     activeSlug: string;
@@ -292,6 +312,7 @@ type ThumbProbeWindow = Window & {
       stateUniformsMatch: boolean;
       mouseLightnessUniformsMatchState: boolean;
     };
+    thumbRenderTransfer: ThumbRenderTransferState;
     spotlight: {
       hasMap: boolean;
       positionOwnershipMode: string;
@@ -466,6 +487,15 @@ const SOURCE_INITIAL_THUMB_DARKNESS_COLOR = "#000000";
 const SOURCE_INITIAL_THUMB_SATURATION = 1;
 const SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS = 1;
 const SOURCE_THUMB_BACKGROUND = "#222222";
+const SOURCE_THUMB_TRANSFER_STEPS = [
+  "setRenderTarget(renderTargetA)",
+  "render(scene,camera)",
+  "bindCompositeTScene(renderTargetA.texture)",
+  "assignScreenCompositeMaterial",
+  "setRenderTarget(renderTargetComposite)",
+  "render(screen,screenCamera)",
+  "setRenderTarget(null)",
+];
 const SOURCE_SPOTLIGHT_COLOR_HEX = 0xffffff;
 const SOURCE_SPOTLIGHT_DISTANCE = 0;
 const SOURCE_SPOTLIGHT_DECAY = 2;
@@ -5083,6 +5113,25 @@ export class WebGLBackdrop {
   private renderSettings = cloneSourceRenderSettings(SOURCE_HOME_RENDER_SETTINGS);
   private sourceMainRenderSettings: SourceRenderSettings = sourceRuntimeMainRenderSettings();
   private thumbRenderSettings = { renderToScreen: false };
+  private thumbRenderTransferState: ThumbRenderTransferState = {
+    mode: "source-Lo-update-renderTargetA-to-renderTargetComposite",
+    renderToScreen: false,
+    renderToScreenMatchesSource: true,
+    expectedSteps: [...SOURCE_THUMB_TRANSFER_STEPS],
+    steps: [],
+    stepsMatchExpected: false,
+    rawTargetRole: "thumbRaw",
+    compositeTargetRole: "thumbComposite",
+    tSceneRole: "unbound",
+    tSceneIsRawTarget: false,
+    screenMaterialRole: "unbound",
+    screenMaterialIsComposite: false,
+    compositeTargetReceivesScreenRender: false,
+    finalRenderTargetRole: "unrendered",
+    finalTargetResetToCanvas: false,
+    spotlightMapRole: "unbound",
+    spotlightMapReceivesCompositeTexture: false,
+  };
   private readonly sourceWorkBloomHorizontalDirection = new Vector2(1, 0);
   private readonly sourceWorkBloomVerticalDirection = new Vector2(0, 1);
   private readonly sourceMainBloomHorizontalDirection = new Vector2(1, 0);
@@ -9243,18 +9292,57 @@ void main() {
   }
 
   private renderThumbTargets() {
+    const steps: string[] = [];
+    const mark = (step: string) => steps.push(step);
     this.renderer.setRenderTarget(this.thumbTarget);
+    mark("setRenderTarget(renderTargetA)");
     this.renderer.render(this.thumbScene, this.thumbCamera);
+    mark("render(scene,camera)");
     this.thumbCompositeMaterial.uniforms.tScene.value = this.thumbTarget.texture;
+    mark("bindCompositeTScene(renderTargetA.texture)");
     this.thumbPostScreen.material = this.thumbCompositeMaterial;
+    mark("assignScreenCompositeMaterial");
     if (this.thumbRenderSettings.renderToScreen) {
       this.renderer.setRenderTarget(null);
+      mark("setRenderTarget(null)");
       this.renderer.render(this.thumbPostScreen, this.backgroundCamera);
+      mark("render(screen,screenCamera)");
     } else {
       this.renderer.setRenderTarget(this.thumbCompositeTarget);
+      mark("setRenderTarget(renderTargetComposite)");
       this.renderer.render(this.thumbPostScreen, this.backgroundCamera);
+      mark("render(screen,screenCamera)");
       this.renderer.setRenderTarget(null);
+      mark("setRenderTarget(null)");
     }
+    this.thumbRenderTransferState = {
+      mode: "source-Lo-update-renderTargetA-to-renderTargetComposite",
+      renderToScreen: this.thumbRenderSettings.renderToScreen,
+      renderToScreenMatchesSource: this.thumbRenderSettings.renderToScreen === false,
+      expectedSteps: [...SOURCE_THUMB_TRANSFER_STEPS],
+      steps,
+      stepsMatchExpected: JSON.stringify(steps) === JSON.stringify(SOURCE_THUMB_TRANSFER_STEPS),
+      rawTargetRole: this.floorReflectionRenderTargetRole(this.thumbTarget),
+      compositeTargetRole: this.floorReflectionRenderTargetRole(this.thumbCompositeTarget),
+      tSceneRole: this.thumbCompositeMaterial.uniforms.tScene.value === this.thumbTarget.texture
+        ? "renderTargetA.texture"
+        : "non-source",
+      tSceneIsRawTarget: this.thumbCompositeMaterial.uniforms.tScene.value === this.thumbTarget.texture,
+      screenMaterialRole: this.thumbPostScreen.material === this.thumbCompositeMaterial
+        ? "compositeMaterial"
+        : "non-source",
+      screenMaterialIsComposite: this.thumbPostScreen.material === this.thumbCompositeMaterial,
+      compositeTargetReceivesScreenRender:
+        !this.thumbRenderSettings.renderToScreen
+        && steps.includes("setRenderTarget(renderTargetComposite)")
+        && steps.includes("render(screen,screenCamera)"),
+      finalRenderTargetRole: this.floorReflectionRenderTargetRole(this.renderer.getRenderTarget()),
+      finalTargetResetToCanvas: this.renderer.getRenderTarget() === null,
+      spotlightMapRole: this.spotLight.map === this.thumbCompositeTarget.texture
+        ? "renderTargetComposite.texture"
+        : "non-source",
+      spotlightMapReceivesCompositeTexture: this.spotLight.map === this.thumbCompositeTarget.texture,
+    };
   }
 
   private updateThumbProbe(time: number) {
@@ -9420,6 +9508,7 @@ void main() {
           Math.abs((item.material.uniforms.uMouseLightness.value as number) - this.thumbState.mouseLightness) < 1e-6
         )),
       },
+      thumbRenderTransfer: this.thumbRenderTransferState,
       spotlight: {
         ...this.sourceSpotLightDefaultsProbe(),
         ...this.sourceActiveProjectSpotlightProbe(activeWorkItem?.payload),

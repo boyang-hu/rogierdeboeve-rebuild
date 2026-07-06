@@ -3753,9 +3753,34 @@ const summary = {
         && rebuildRenderThumbTargets.includes("if (this.thumbRenderSettings.renderToScreen)")
         && rebuildRenderThumbTargets.includes("this.renderer.setRenderTarget(this.thumbCompositeTarget)")
         && rebuildRenderThumbTargets.includes("this.renderer.setRenderTarget(null)"),
+      sourceLoTransferOrder:
+        Boolean(sourceLo)
+        && orderedIncludes(sourceLo.text, [
+          "o.setRenderTarget(c),o.render(a,r)",
+          "this.compositeMaterial.uniforms.tScene.value=c.texture",
+          "this.screen.material=this.compositeMaterial",
+          "o.setRenderTarget(u),o.render(this.screen,this.screenCamera),o.setRenderTarget(null)",
+        ]),
+      rebuildTransferOrderProbe:
+        Boolean(rebuildRenderThumbTargets)
+        && rebuildRenderThumbTargets.includes("mark(\"setRenderTarget(renderTargetA)\")")
+        && rebuildRenderThumbTargets.includes("mark(\"render(scene,camera)\")")
+        && rebuildRenderThumbTargets.includes("mark(\"bindCompositeTScene(renderTargetA.texture)\")")
+        && rebuildRenderThumbTargets.includes("mark(\"assignScreenCompositeMaterial\")")
+        && rebuildRenderThumbTargets.includes("mark(\"setRenderTarget(renderTargetComposite)\")")
+        && rebuildRenderThumbTargets.includes("mark(\"render(screen,screenCamera)\")")
+        && rebuildRenderThumbTargets.includes("mark(\"setRenderTarget(null)\")")
+        && rebuildRenderThumbTargets.includes("stepsMatchExpected: JSON.stringify(steps) === JSON.stringify(SOURCE_THUMB_TRANSFER_STEPS)")
+        && rebuildWebgl.includes("thumbRenderTransfer: this.thumbRenderTransferState")
+        && rebuildWebgl.includes("spotlightMapReceivesCompositeTexture: this.spotLight.map === this.thumbCompositeTarget.texture"),
       rebuildProbeChecks: checks(rebuildThumbProbe, [
         "thumbRenderManagerSettings.mode !== \"source-x1-initSettings-renderToScreen-false\"",
         "thumbRenderManagerSettings.matchesSource !== true",
+        "const expectedThumbTransferSteps = [",
+        "thumbTransferMode",
+        "thumbTransferSteps",
+        "thumbTransferTScene",
+        "thumbTransferSpotlightMap",
       ]),
       excerpt: compact(sourceThumbX1.text),
     },

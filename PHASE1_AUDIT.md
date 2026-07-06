@@ -70,9 +70,44 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `i1.update()` floor-reflection camera/texture-matrix/clip-plane update order is now guarded for reflected camera lookAt/far/projection-copy order, texture matrix multiply order, and oblique clip-plane projection row writes. This is runtime attribution only; Phase 1 remains open.
+Latest accepted batch: source `Lo/x1/T1` thumb render-target transfer order is now guarded for `renderTargetA -> tScene -> screen.material -> renderTargetComposite -> null`, and the spotlight map is verified to consume `renderTargetComposite.texture`. This is runtime attribution only; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-327 `Lo/x1/T1` Thumb Render Transfer Guardrail
+
+This batch adds source-backed runtime attribution for the thumb scene raw-to-composite transfer consumed by the Home spotlight map. It does not change shader text, render targets, pass behavior, route behavior, project data, visual constants, or projection math.
+
+Source evidence:
+
+- Source `T1.resize(e,t,n)` calls `this.renderManager.resize(t,t,1)`, so the thumb render-manager targets remain square CSS-height targets.
+- Source `x1.initSettings()` sets `renderToScreen:false`.
+- Source `Lo.update()` renders the thumb scene into `renderTargetA`, binds `compositeMaterial.uniforms.tScene.value = renderTargetA.texture`, assigns the single screen mesh to the composite material, renders that screen to `renderTargetComposite`, and then resets the renderer target to `null`.
+- Source `SD.init()` binds `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
+
+Runtime and tooling changes:
+
+- `renderThumbTargets()` now records `thumbRenderTransferState` around the existing thumb pass.
+- `__rogierThumbProbe.thumbRenderTransfer` exposes expected/actual step order, `renderToScreen=false`, raw/composite target roles, `tScene` raw-target binding, screen material ownership, final target reset, and spotlight-map composite-texture ownership.
+- `scripts/probe-thumb-spotlight.mjs` asserts the complete transfer chain on desktop and mobile.
+- `scripts/audit-renderer-output.mjs` checks the source `Lo.update()` ordering anchors plus rebuild/probe coverage.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-transfer-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed with no failures/exceptions/console messages and retained the prior floor-reflection camera guardrail: `/tmp/rd-thumb-transfer-output-desktop`.
+- Mobile output probe passed with no failures/exceptions/console messages and retained the prior floor-reflection camera guardrail: `/tmp/rd-thumb-transfer-output-mobile`.
+- Desktop thumb spotlight probe passed with `thumbRenderTransfer.stepsMatchExpected=true`, `renderToScreen=false`, `tSceneRole=renderTargetA.texture`, `finalRenderTargetRole=canvas`, `spotlightMapRole=renderTargetComposite.texture`, and a `900x900` thumb target: `/tmp/rd-thumb-transfer-thumb-desktop`.
+- Mobile thumb spotlight probe passed with the same transfer markers and an `844x844` thumb target: `/tmp/rd-thumb-transfer-thumb-mobile`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-thumb-transfer-media`.
+
+Decision: keep this as source thumb raw/composite transfer attribution for the spotlight-map input. It proves the rebuild preserves source `Lo/x1/T1` render-target ownership at runtime, but it does not close the projected thumb visual/feel gap. Continue from remaining spotlight/thumb projection content, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ### S1-326 `i1` Floor Reflection Camera/Texture Matrix/Clip-Plane Guardrail
 

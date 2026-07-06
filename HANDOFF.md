@@ -134,7 +134,7 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, work/main pass-material ownership, and source `Lu/kA/I1` settings ownership, but transfer interpretation and exact composite behavior are still not complete.
-- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `SD.init()` fixed Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership, source `yD.onProjectActive()` active-project application order, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `SD.init()` fixed Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership, source `yD.onProjectActive()` active-project application order, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, source `Lo/x1` raw-to-composite target transfer order, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
 - Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, source `setLights()` max spotlight scalar ownership, source `SD.init()` Home spotlight intensity ownership, and source `yD.onProjectActive()` active-project spotlight fallback/application-order ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
@@ -179,12 +179,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added source-backed `i1` floor-reflection camera/texture-matrix/clip-plane update-order attribution without changing shader text, render targets, pass behavior, project data, route behavior, visual constants, or reflection math.
-- Source evidence: `i1.update()` reflects view/target/up from `this.matrixWorld`, then calls `virtualCamera.lookAt(this.target)`, copies `far=n.far`, calls `virtualCamera.updateMatrixWorld()`, copies `n.projectionMatrix`, sets the `.5` bias texture matrix, multiplies projection/camera-inverse/reflector `matrixWorld`, builds/applies the reflector plane, scales `clipPlane`, and writes projection elements `[2,6,10,14]` with `clipBias`.
-- The rebuild now records `floorReflectionCameraState` steps around the existing reflection update path.
-- Output probes expose and assert `floorReflectionCameraState`: expected/actual step order, camera core order, texture-matrix order, clip-plane order, far/projection copy parity, texture-matrix uniform sharing, projection row indices, and projection-row/clip-plane parity.
-- Renderer audit checks the source `i1.update()` camera/texture-matrix/clip-plane anchors plus rebuild/probe coverage.
-- Previous committed batch was `ee17eb6 Guard floor reflection renderer state`.
+- Added source-backed `Lo/x1/T1` thumb raw-to-composite transfer attribution without changing shader text, render targets, pass behavior, project data, route behavior, visual constants, or projection math.
+- Source evidence: `x1.initSettings()` keeps `renderToScreen:false`; source `Lo.update()` renders the thumb scene to `renderTargetA`, binds `compositeMaterial.uniforms.tScene.value = renderTargetA.texture`, assigns the single screen mesh to the composite material, renders that screen to `renderTargetComposite`, and then resets the renderer target to `null`; source `SD.init()` binds `J.workScene.spotLight.map` to that composite texture.
+- The rebuild now records `thumbRenderTransferState` around the existing thumb pass.
+- Thumb probes expose and assert `thumbRenderTransfer`: expected/actual steps, `renderToScreen=false`, raw/composite target roles, `tScene` raw-target binding, screen-material ownership, final target reset, and spotlight-map composite-texture ownership.
+- Renderer audit checks the source `Lo.update()` transfer anchors plus rebuild/probe coverage.
+- Previous committed batch was `3048899 Guard floor reflection camera order`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -197,28 +197,29 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-reflection-camera-order-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-reflection-camera-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-transfer-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-thumb-transfer-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-camera-order-output-desktop VIEWPORT=desktop CDP_PORT=9330 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-camera-order-output-mobile VIEWPORT=mobile CDP_PORT=9331 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-camera-order-thumb CDP_PORT=9332 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-camera-order-media CDP_PORT=9333 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-output-desktop VIEWPORT=desktop CDP_PORT=9360 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-output-mobile VIEWPORT=mobile CDP_PORT=9361 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-thumb-desktop VIEWPORT=desktop CDP_PORT=9362 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-thumb-mobile VIEWPORT=mobile CDP_PORT=9363 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-media CDP_PORT=9364 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `i1` floor-reflection camera/texture-matrix/clip-plane guardrail batch. Renderer audit wrote `/tmp/rd-reflection-camera-order-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed and confirmed populated `floorReflectionCameraState` with `runtimeChecksPass=true`, source-shaped step order, projection row indices `[2,6,10,14]`, texture-matrix uniform sharing, and the prior renderer-state guardrails still intact. Thumb spotlight and project-media probes passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `Lo/x1/T1` thumb render-transfer guardrail batch. Renderer audit wrote `/tmp/rd-thumb-transfer-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile thumb spotlight probes passed and confirmed `thumbRenderTransfer.stepsMatchExpected=true`, `renderToScreen=false`, `tSceneRole=renderTargetA.texture`, `finalRenderTargetRole=canvas`, and `spotlightMapRole=renderTargetComposite.texture`. Desktop/mobile output probes passed with no failures/exceptions/console messages and retained the prior floor-reflection camera guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this floor-reflection camera-order batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this thumb render-transfer batch.
 
-Runtime QA was run because the batch touched Home WebGL reflector probe instrumentation and output probe coverage.
+Runtime QA was run because the batch touched Home WebGL thumb render-transfer probe instrumentation and spotlight-map input attribution.
 
 Verified:
 
-- Renderer audit passed for the floor-reflection camera/texture-matrix/clip-plane batch: `/tmp/rd-reflection-camera-order-audit.json`.
+- Renderer audit passed for the thumb render-transfer batch: `/tmp/rd-thumb-transfer-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-reflection-camera-order-output-desktop`, `/tmp/rd-reflection-camera-order-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-reflection-camera-order-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-reflection-camera-order-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-thumb-transfer-output-desktop`, `/tmp/rd-thumb-transfer-output-mobile`.
+- Desktop and mobile thumb spotlight probes passed: `/tmp/rd-thumb-transfer-thumb-desktop`, `/tmp/rd-thumb-transfer-thumb-mobile`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-thumb-transfer-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

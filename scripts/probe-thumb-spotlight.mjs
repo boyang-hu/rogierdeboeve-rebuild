@@ -29,6 +29,15 @@ const expectedSpotlightParallaxYOffsetMode = viewport.width >= 800
   : "source-p1-mobile-0_3-plus-camera-y-parallax";
 const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3;
 const expectedTargetSize = Math.max(1, Math.round(viewport.height));
+const expectedThumbTransferSteps = [
+  "setRenderTarget(renderTargetA)",
+  "render(scene,camera)",
+  "bindCompositeTScene(renderTargetA.texture)",
+  "assignScreenCompositeMaterial",
+  "setRenderTarget(renderTargetComposite)",
+  "render(screen,screenCamera)",
+  "setRenderTarget(null)",
+];
 const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const sourceActiveProjectSpotlightIntensityMode = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
 const sourceActiveProjectApplicationOrderMode = "source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional";
@@ -708,6 +717,39 @@ async function runProbe() {
   }
   if (Math.abs((composite.state?.saturation ?? -1) - composite.saturation) > 1e-6) {
     sourceShapeErrors.push(`thumbStateSaturation=${composite.state?.saturation},uniform=${composite.saturation}`);
+  }
+  const transfer = probe.thumbRenderTransfer || {};
+  if (transfer.mode !== "source-Lo-update-renderTargetA-to-renderTargetComposite") {
+    sourceShapeErrors.push(`thumbTransferMode=${transfer.mode}`);
+  }
+  if (transfer.renderToScreen !== false || transfer.renderToScreenMatchesSource !== true) {
+    sourceShapeErrors.push(`thumbTransferRenderToScreen=${transfer.renderToScreen}`);
+  }
+  if (JSON.stringify(transfer.expectedSteps || null) !== JSON.stringify(expectedThumbTransferSteps)) {
+    sourceShapeErrors.push(`thumbTransferExpectedSteps=${JSON.stringify(transfer.expectedSteps || null)}`);
+  }
+  if (JSON.stringify(transfer.steps || null) !== JSON.stringify(expectedThumbTransferSteps)) {
+    sourceShapeErrors.push(`thumbTransferSteps=${JSON.stringify(transfer.steps || null)}`);
+  }
+  if (transfer.stepsMatchExpected !== true) sourceShapeErrors.push(`thumbTransferStepsMatch=${transfer.stepsMatchExpected}`);
+  if (transfer.rawTargetRole !== "thumbRaw") sourceShapeErrors.push(`thumbTransferRawRole=${transfer.rawTargetRole}`);
+  if (transfer.compositeTargetRole !== "thumbComposite") {
+    sourceShapeErrors.push(`thumbTransferCompositeRole=${transfer.compositeTargetRole}`);
+  }
+  if (transfer.tSceneRole !== "renderTargetA.texture" || transfer.tSceneIsRawTarget !== true) {
+    sourceShapeErrors.push(`thumbTransferTScene=${transfer.tSceneRole}/${transfer.tSceneIsRawTarget}`);
+  }
+  if (transfer.screenMaterialRole !== "compositeMaterial" || transfer.screenMaterialIsComposite !== true) {
+    sourceShapeErrors.push(`thumbTransferScreenMaterial=${transfer.screenMaterialRole}/${transfer.screenMaterialIsComposite}`);
+  }
+  if (transfer.compositeTargetReceivesScreenRender !== true) {
+    sourceShapeErrors.push(`thumbTransferCompositeRender=${transfer.compositeTargetReceivesScreenRender}`);
+  }
+  if (transfer.finalRenderTargetRole !== "canvas" || transfer.finalTargetResetToCanvas !== true) {
+    sourceShapeErrors.push(`thumbTransferFinalTarget=${transfer.finalRenderTargetRole}/${transfer.finalTargetResetToCanvas}`);
+  }
+  if (transfer.spotlightMapRole !== "renderTargetComposite.texture" || transfer.spotlightMapReceivesCompositeTexture !== true) {
+    sourceShapeErrors.push(`thumbTransferSpotlightMap=${transfer.spotlightMapRole}/${transfer.spotlightMapReceivesCompositeTexture}`);
   }
   for (const [label, target] of Object.entries({
     thumb: probe.targets?.thumbState,
