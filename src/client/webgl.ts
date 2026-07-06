@@ -4617,7 +4617,6 @@ export class WebGLBackdrop {
     this.environmentPlane = new Mesh(new IcosahedronGeometry(300, 10), this.environmentMaterial);
     this.environmentGroup.position.y = -12.65;
     this.environmentGroup.add(this.environmentPlane);
-    this.homeScene.add(this.sceneWrap);
     this.sceneWrap.add(this.blocksWrap);
     this.sceneWrap.add(this.floorGroup);
     this.sceneWrap.add(this.environmentGroup);
@@ -4628,6 +4627,7 @@ export class WebGLBackdrop {
 
     this.createWorkScene();
     this.createAuxiliaryBlocks();
+    this.homeScene.add(this.sceneWrap);
     this.createMediaPlanes();
     this.loadCompositeTextures();
 
@@ -9262,9 +9262,31 @@ void main() {
         format: target.texture.format,
       },
     });
+    const sourceRootChildOrder = this.homeScene.children.map((child) => {
+      if (child === this.ambientLight) return "ambientLight";
+      if (child === this.spotLight) return "spotLight";
+      if (child === this.spotLight.target) return "spotLight.target";
+      if (child === this.directionalLight) return "directionalLight";
+      if (child === this.aboutBlocks?.group) return "aboutBlocks";
+      if (child === this.floatingBlocks?.group) return "floatingBlocks";
+      if (child === this.sceneWrap) return "sceneWrap";
+      return child.type;
+    });
+    const expectedRootChildOrder = [
+      "ambientLight",
+      "spotLight",
+      "spotLight.target",
+      "directionalLight",
+      "aboutBlocks",
+      "floatingBlocks",
+      "sceneWrap",
+    ];
     return {
       scene: {
         children: this.homeScene.children.map(objectSummary),
+        sourceRootChildOrderMode: "source-p1-scene-lights-about-floating-sceneWrap",
+        sourceRootChildOrder,
+        sourceRootChildOrderMatches: JSON.stringify(sourceRootChildOrder) === JSON.stringify(expectedRootChildOrder),
         background: this.homeScene.background instanceof Color ? this.homeScene.background.toArray() : null,
         fog: this.homeScene.fog ? {
           type: this.homeScene.fog.type,

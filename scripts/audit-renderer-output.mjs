@@ -2367,12 +2367,14 @@ const summary = {
         "this.fog=new bu(\"grey\",0,100),this.scene.fog=this.fog",
         "this.backgroundColor=new ye(BA.BACKGROUND_COLOR).convertLinearToSRGB()",
         "this.scene.background=this.backgroundColor",
+        "this.setAboutBlocks(),this.setFloatingBlocks(),this.sceneWrap.add(this.blocksWrap)",
         "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)",
         "this.env.position.y=-12.65",
         "this.env.rotation.y=-Xc(this.rotationAdjustment)",
         "this.sceneWrap.add(this.blocksWrap)",
         "this.sceneWrap.add(this.floor)",
         "this.sceneWrap.add(this.env)",
+        "this.scene.add(this.sceneWrap)",
       ]),
       rebuildChecks: checks(rebuildWebgl, [
         "private sceneWrap = new Object3D()",
@@ -2389,11 +2391,17 @@ const summary = {
         "this.environmentGroup.rotation.y = -MathUtils.degToRad(rotationAdjustment)",
         "sourceChildOrderMode: \"source-p1-sceneWrap-blocksWrap-floor-env\"",
         "sourceChildOrder: this.sceneWrap.children.map",
+        "sourceRootChildOrderMode: \"source-p1-scene-lights-about-floating-sceneWrap\"",
+        "const sourceRootChildOrder = this.homeScene.children.map",
+        "sourceRootChildOrderMatches: JSON.stringify(sourceRootChildOrder) === JSON.stringify(expectedRootChildOrder)",
         "rotationMatchesSource: Math.abs(this.environmentGroup.rotation.y - this.environmentRotationSource.expectedRotationY) < 1e-6",
         "mode: \"source-a1-i1-rt-object3d-floorPlane-reflector\"",
         "hierarchyMode: \"source-h1-rt-object3d-owns-transform\"",
       ]),
       rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "sceneRootChildOrderMode",
+        "sceneRootChildOrder",
+        "sceneRootChildOrderMatches",
         "sceneWrapChildOrderMode",
         "sceneWrapChildOrder",
         "rotationSource.mode",
@@ -2406,6 +2414,33 @@ const summary = {
         "sceneSurface.floorMaterialFogBranch !== false",
         "sceneSurface.environmentMaterialFog !== false",
       ]),
+      rootSceneDirectChildOrder: {
+        source:
+          orderedIncludes(sourceP1InitEnv.text, [
+            "this.setAboutBlocks(),this.setFloatingBlocks(),this.sceneWrap.add(this.blocksWrap)",
+            "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)",
+            "this.sceneWrap.add(this.floor),this.sceneWrap.add(this.env),this.scene.add(this.sceneWrap)",
+          ]),
+        rebuild:
+          orderedIncludes(rebuildWebgl, [
+            "this.homeScene.add(this.directionalLight);",
+            "this.sceneWrap.add(this.blocksWrap);",
+            "this.sceneWrap.add(this.floorGroup);",
+            "this.sceneWrap.add(this.environmentGroup);",
+            "this.createWorkScene();",
+            "this.createAuxiliaryBlocks();",
+            "this.homeScene.add(this.sceneWrap);",
+          ]),
+        rejectsOldEarlySceneWrapAdd:
+          !orderedIncludes(rebuildWebgl, [
+            "this.homeScene.add(this.directionalLight);",
+            "this.homeScene.add(this.sceneWrap);",
+            "this.createAuxiliaryBlocks();",
+          ]),
+        runtimeProbe:
+          rebuildWebgl.includes("sourceRootChildOrderMode: \"source-p1-scene-lights-about-floating-sceneWrap\"")
+          && rebuildOutputProbe.includes("sceneRootChildOrderMatches"),
+      },
       excerpt: compact(sourceP1InitEnv.text),
     },
     projectDataOrder: sourceProjectDataManager && {

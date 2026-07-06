@@ -1479,7 +1479,24 @@ async function runProbe() {
   const environmentUniforms = parsed.probe.uniforms?.environment;
   const environmentHierarchy = parsed.probe.reflectionState?.environment;
   const sceneWrapHierarchy = parsed.probe.reflectionState?.sceneWrap;
+  const sceneRootHierarchy = parsed.probe.reflectionState?.scene;
   const environmentErrors = [];
+  const expectedRootChildOrder = [
+    "ambientLight",
+    "spotLight",
+    "spotLight.target",
+    "directionalLight",
+    "aboutBlocks",
+    "floatingBlocks",
+    "sceneWrap",
+  ];
+  if (sceneRootHierarchy?.sourceRootChildOrderMode !== "source-p1-scene-lights-about-floating-sceneWrap") {
+    environmentErrors.push("sceneRootChildOrderMode");
+  }
+  if (JSON.stringify(sceneRootHierarchy?.sourceRootChildOrder) !== JSON.stringify(expectedRootChildOrder)) {
+    environmentErrors.push(`sceneRootChildOrder=${JSON.stringify(sceneRootHierarchy?.sourceRootChildOrder || null)}`);
+  }
+  if (sceneRootHierarchy?.sourceRootChildOrderMatches !== true) environmentErrors.push("sceneRootChildOrderMatches");
   if (sceneWrapHierarchy?.sourceChildOrderMode !== "source-p1-sceneWrap-blocksWrap-floor-env") environmentErrors.push("sceneWrapChildOrderMode");
   if (JSON.stringify(sceneWrapHierarchy?.sourceChildOrder) !== JSON.stringify(["blocksWrap", "floor", "env"])) {
     environmentErrors.push(`sceneWrapChildOrder=${JSON.stringify(sceneWrapHierarchy?.sourceChildOrder || null)}`);
