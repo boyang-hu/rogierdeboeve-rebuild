@@ -147,6 +147,7 @@ Known remaining gaps:
 - Source `i1/a1` floor reflection normal constructor/runtime ownership is now guarded: `i1` constructs the reflection normal as a zero vector, while `i1.update()` owns the later `(0,0,1)` write and reflector-rotation application.
 - Source `i1/a1` floor reflection screen-triangle ownership is now guarded: `i1` constructs `screenTriangle` with `n1()`, creates the blur screen from that owned geometry and blur material, disables frustum culling on the screen, and disposes `screenTriangle` directly in `destroy()`.
 - Source `i1/a1` floor reflection blur target field-swap ownership is now guarded: the normal blur loop reads/writes `renderTargetRead/renderTargetWrite` fields directly, swaps those fields inside the loop, and updates the reflection uniform from the swapped read field after each pass.
+- Source `i1` floor reflection renderer-state ownership is now guarded: `i1.update()` captures previous render target/XR/shadow state, disables XR and shadow auto-update during raw/blur reflection, conditionally clears the raw target under `autoClear=false`, and restores XR/shadow/previous target afterward.
 - Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
 - Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement`; floating `ZA/KA` sampler uniforms stay constructor-null because source `ZA.update()` does not write them.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
@@ -173,16 +174,16 @@ Known remaining gaps:
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
 - Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
 - Source `I1/ag` raw main-fluid resize ownership is now guarded: source `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`, and source `ag.calcSizes(e,t)` preserves raw incoming `e,t` for `fboSize`, `cellScale`, and target `setSize(...)` while rounding only internal simulation fields through `resolution`.
-- Source `a1/i1` floor-reflection draw-state is now guarded: floor `onBeforeRender` hides only the floor component group while reflecting the full Home scene, `sceneWrap`/blocks/environment remain visible in the reflected scene, and visibility restores after the reflector update.
+- Source `a1/i1` floor-reflection draw-state and `i1` renderer-state are now guarded: floor `onBeforeRender` hides only the floor component group while reflecting the full Home scene, `sceneWrap`/blocks/environment remain visible in the reflected scene, the reflector raw/blur pass disables source-owned renderer state, and visibility plus renderer state restore after the reflector update.
 
 Latest Phase 1 batch:
 
-- Added source-backed `a1/i1` floor-reflection draw-state attribution without changing shader text, render targets, pass behavior, project data, route behavior, or visual constants.
-- Source evidence: `a1.onBeforeRender` hides the whole floor component group, calls `this.reflector.update(this.renderer,this.scene,this.camera)`, then restores visibility; source `i1` therefore reflects the full scene with only the floor component hidden.
-- The rebuild now records before/during/after snapshots around the existing `floorGroup.visible=false -> renderFloorReflection() -> true` sequence.
-- Output probes expose and assert `floorReflectionDrawState`: floor group hidden during reflection, floor mesh/reflector locally visible, `sceneWrap`/blocks/environment still reflected, and after-state restored.
-- Renderer audit checks the source `a1` anchor plus rebuild snapshot/probe order.
-- Previous committed batch was `464aac4 Align active project woosh ownership`.
+- Added source-backed `i1` floor-reflection renderer-state attribution without changing shader text, render targets, pass behavior, project data, route behavior, or visual constants.
+- Source evidence: `i1.update()` saves `getRenderTarget()`, `xr.enabled`, and `shadowMap.autoUpdate`, disables XR/shadow auto-update during raw reflection, targets `renderTarget`, forces depth mask writable, conditionally clears under `autoClear=false`, writes blur passes to `renderTargetWrite`, then restores XR/shadow and the previous render target.
+- The rebuild now records previous/raw/blur/restored renderer-state snapshots around the existing reflection pass.
+- Output probes expose and assert `floorReflectionRendererState`: raw target active, write target active during blur, conditional clear executed under `autoClear=false`, depth-mask command recorded, and XR/shadow/autoClear/render target restored.
+- Renderer audit checks the source `i1.update()` save/disable/raw/blur/restore anchors plus rebuild snapshot/probe order.
+- Previous committed batch was `e3264dc Guard floor reflection draw state`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -195,28 +196,28 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-reflection-drawstate-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-reflection-drawstate-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-reflection-renderer-state-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-reflection-renderer-state-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-output-desktop VIEWPORT=desktop CDP_PORT=9299 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-output-mobile VIEWPORT=mobile CDP_PORT=9300 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-thumb CDP_PORT=9301 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-media CDP_PORT=9302 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-renderer-state-output-desktop VIEWPORT=desktop CDP_PORT=9310 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-renderer-state-output-mobile VIEWPORT=mobile CDP_PORT=9311 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-renderer-state-thumb CDP_PORT=9312 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-renderer-state-media CDP_PORT=9313 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `a1/i1` floor-reflection draw-state guardrail batch. Renderer audit wrote `/tmp/rd-reflection-drawstate-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed and confirmed populated `floorReflectionDrawState` snapshots with floor hidden, blocks/environment reflected, and state restored. Thumb spotlight and project-media probes passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `i1` floor-reflection renderer-state guardrail batch. Renderer audit wrote `/tmp/rd-reflection-renderer-state-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed and confirmed populated `floorReflectionRendererState` snapshots with previous/restored target role `workRaw`, raw-pass target `floorReflectionRaw`, blur target `floorReflectionWrite`, `shadowAutoUpdate=false` during reflection, conditional clear executed, and restore parity. Thumb spotlight and project-media probes passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this floor-reflection draw-state batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this floor-reflection renderer-state batch.
 
 Runtime QA was run because the batch touched Home WebGL reflector probe instrumentation and output probe coverage.
 
 Verified:
 
-- Renderer audit passed for the floor-reflection draw-state batch: `/tmp/rd-reflection-drawstate-audit.json`.
+- Renderer audit passed for the floor-reflection renderer-state batch: `/tmp/rd-reflection-renderer-state-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-reflection-drawstate-output-desktop`, `/tmp/rd-reflection-drawstate-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-reflection-drawstate-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-reflection-drawstate-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-reflection-renderer-state-output-desktop`, `/tmp/rd-reflection-renderer-state-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-reflection-renderer-state-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-reflection-renderer-state-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
@@ -267,7 +268,7 @@ Continue source-driven implementation in this order:
    - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, or camera-surface ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` root scene direct-child order, `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, and `Se.settings` scalar/media no-kill versus kill-owned setter ownership.
+   - Current rebuild now guards source `p1` root scene direct-child order, `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

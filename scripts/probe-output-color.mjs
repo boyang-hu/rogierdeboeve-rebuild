@@ -2060,6 +2060,46 @@ async function runProbe() {
   if (floorDrawState?.floorRestoredAfterReflection !== true) floorErrors.push("reflectionFloorRestored");
   if (floorDrawState?.restoreMatchesBefore !== true) floorErrors.push("reflectionRestoreMatchesBefore");
   if (!Number.isFinite(floorDrawState?.lastRenderFrame) || floorDrawState.lastRenderFrame < 0) floorErrors.push("reflectionLastRenderFrame");
+  const floorRendererState = parsed.probe.reflectionState?.floorReflectionRendererState;
+  if (floorRendererState?.mode !== "source-i1-save-renderer-state-disable-xr-shadow-restore-target") {
+    floorErrors.push("reflectionRendererStateMode");
+  }
+  if (floorRendererState?.rawPassMode !== "source-i1-set-raw-target-depth-mask-conditional-clear-render-scene") {
+    floorErrors.push("reflectionRendererRawPassMode");
+  }
+  if (floorRendererState?.blurPassMode !== "source-i1-write-target-loop-then-restore-previous-target") {
+    floorErrors.push("reflectionRendererBlurPassMode");
+  }
+  if (floorRendererState?.restoreMode !== "source-i1-restore-xr-shadow-and-previous-render-target") {
+    floorErrors.push("reflectionRendererRestoreMode");
+  }
+  if (!floorRendererState?.previous || !floorRendererState?.duringRaw || !floorRendererState?.duringBlur || !floorRendererState?.restored) {
+    floorErrors.push("reflectionRendererSnapshots");
+  }
+  if (floorRendererState?.previous?.autoClear !== false) floorErrors.push("reflectionPreviousAutoClear");
+  if (floorRendererState?.duringRaw?.xrEnabled !== false) floorErrors.push("reflectionDuringRawXrDisabled");
+  if (floorRendererState?.duringRaw?.shadowAutoUpdate !== false) floorErrors.push("reflectionDuringRawShadowDisabled");
+  if (floorRendererState?.duringRaw?.targetIsFloorReflectionRaw !== true) floorErrors.push("reflectionDuringRawTarget");
+  if (floorRendererState?.duringRaw?.autoClear !== false) floorErrors.push("reflectionDuringRawAutoClear");
+  if (floorRendererState?.duringBlur?.targetIsFloorReflectionWrite !== true) floorErrors.push("reflectionDuringBlurWriteTarget");
+  if (floorRendererState?.depthMaskWritableCommanded !== true) floorErrors.push("reflectionDepthMaskWritable");
+  if (floorRendererState?.conditionalClearExecuted !== true) floorErrors.push("reflectionConditionalClearExecuted");
+  if (floorRendererState?.conditionalClearMatchesAutoClear !== true) floorErrors.push("reflectionConditionalClearMatchesAutoClear");
+  if (floorRendererState?.xrDisabledDuringReflection !== true) floorErrors.push("reflectionXrDisabledDuring");
+  if (floorRendererState?.shadowAutoUpdateDisabledDuringReflection !== true) floorErrors.push("reflectionShadowDisabledDuring");
+  if (floorRendererState?.rawTargetActiveDuringReflection !== true) floorErrors.push("reflectionRawTargetActive");
+  if (floorRendererState?.writeTargetActiveDuringBlur !== true) floorErrors.push("reflectionWriteTargetActive");
+  if (floorRendererState?.xrRestored !== true) floorErrors.push("reflectionXrRestored");
+  if (floorRendererState?.shadowAutoUpdateRestored !== true) floorErrors.push("reflectionShadowRestored");
+  if (floorRendererState?.autoClearPreserved !== true) floorErrors.push("reflectionAutoClearPreserved");
+  if (floorRendererState?.renderTargetRestored !== true) floorErrors.push("reflectionRenderTargetRestored");
+  if (floorRendererState?.restoreMatchesBefore !== true) floorErrors.push("reflectionRendererRestoreMatchesBefore");
+  if (!Number.isFinite(floorRendererState?.lastRenderFrame) || floorRendererState.lastRenderFrame < 0) {
+    floorErrors.push("reflectionRendererLastRenderFrame");
+  }
+  if (reflectionTargets?.blurIterations > 0 && floorRendererState?.lastBlurIteration !== reflectionTargets.blurIterations - 1) {
+    floorErrors.push(`reflectionLastBlurIteration=${floorRendererState?.lastBlurIteration}`);
+  }
   if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
   if (reflectionTargets?.blurTMapConstructorMode !== "source-t1-tMap-construct-null-update-loop-binds") {
     floorErrors.push("blurTMapConstructorMode");

@@ -183,6 +183,19 @@ type FloorReflectionVisibilitySnapshot = {
   blocksParentIsSceneWrap: boolean;
 };
 
+type FloorReflectionRendererSnapshot = {
+  xrEnabled: boolean;
+  shadowAutoUpdate: boolean;
+  autoClear: boolean;
+  renderTargetRole: string;
+  targetIsCanvas: boolean;
+  targetIsFloorReflectionRaw: boolean;
+  targetIsFloorReflectionRead: boolean;
+  targetIsFloorReflectionWrite: boolean;
+  targetIsWorkRaw: boolean;
+  targetIsMainRaw: boolean;
+};
+
 type ThumbProbeWindow = Window & {
   __rogierThumbProbe?: {
     activeSlug: string;
@@ -5139,6 +5152,21 @@ export class WebGLBackdrop {
     after: null as FloorReflectionVisibilitySnapshot | null,
     lastRenderFrame: 0,
   };
+  private floorReflectionRendererState = {
+    mode: "source-i1-save-renderer-state-disable-xr-shadow-restore-target",
+    rawPassMode: "source-i1-set-raw-target-depth-mask-conditional-clear-render-scene",
+    blurPassMode: "source-i1-write-target-loop-then-restore-previous-target",
+    restoreMode: "source-i1-restore-xr-shadow-and-previous-render-target",
+    previous: null as FloorReflectionRendererSnapshot | null,
+    duringRaw: null as FloorReflectionRendererSnapshot | null,
+    duringBlur: null as FloorReflectionRendererSnapshot | null,
+    restored: null as FloorReflectionRendererSnapshot | null,
+    depthMaskWritableCommanded: false,
+    conditionalClearExecuted: false,
+    lastBlurIteration: -1,
+    lastRenderFrame: 0,
+    previousTargetRestored: null as boolean | null,
+  };
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
   private screenMouseSimulationIndex = 0;
@@ -8974,6 +9002,15 @@ void main() {
     const previousTarget = this.renderer.getRenderTarget();
     const previousXrEnabled = this.renderer.xr.enabled;
     const previousShadowAutoUpdate = this.renderer.shadowMap.autoUpdate;
+    this.floorReflectionRendererState.previous = this.floorReflectionRendererSnapshot(previousTarget);
+    this.floorReflectionRendererState.duringRaw = null;
+    this.floorReflectionRendererState.duringBlur = null;
+    this.floorReflectionRendererState.restored = null;
+    this.floorReflectionRendererState.depthMaskWritableCommanded = false;
+    this.floorReflectionRendererState.conditionalClearExecuted = false;
+    this.floorReflectionRendererState.lastBlurIteration = -1;
+    this.floorReflectionRendererState.lastRenderFrame = this.sourcePostRenderFrame;
+    this.floorReflectionRendererState.previousTargetRestored = null;
     this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorReflector.matrixWorld);
     this.floorReflectionCameraWorldPosition.setFromMatrixPosition(this.homeCamera.matrixWorld);
     this.floorReflectionRotationMatrix.extractRotation(this.floorReflector.matrixWorld);
@@ -9034,13 +9071,20 @@ void main() {
       this.renderer.shadowMap.autoUpdate = false;
       this.renderer.setRenderTarget(this.floorReflectionTarget);
       this.renderer.state.buffers.depth.setMask(true);
-      if (!this.renderer.autoClear) this.renderer.clear();
+      this.floorReflectionRendererState.depthMaskWritableCommanded = true;
+      this.floorReflectionRendererState.duringRaw = this.floorReflectionRendererSnapshot();
+      if (!this.renderer.autoClear) {
+        this.floorReflectionRendererState.conditionalClearExecuted = true;
+        this.renderer.clear();
+      }
       this.renderer.render(this.homeScene, this.floorReflectionCamera);
 
       if (this.debugFloorReflection === "no-blur") {
         this.floorReflectionBlurMaterial.uniforms.tMap.value = this.floorReflectionTarget.texture;
         this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(0, 0);
         this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
+        this.floorReflectionRendererState.duringBlur = this.floorReflectionRendererSnapshot();
+        this.floorReflectionRendererState.lastBlurIteration = 0;
         this.renderer.render(this.floorReflectionScreen, this.floorReflectionScreenCamera);
         const swap = this.floorReflectionReadTarget;
         this.floorReflectionReadTarget = this.floorReflectionWriteTarget;
@@ -9058,6 +9102,8 @@ void main() {
             iteration % 2 === 0 ? 0 : direction,
           );
           this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
+          this.floorReflectionRendererState.duringBlur = this.floorReflectionRendererSnapshot();
+          this.floorReflectionRendererState.lastBlurIteration = iteration;
           this.renderer.render(this.floorReflectionScreen, this.floorReflectionScreenCamera);
           const swap = this.floorReflectionReadTarget;
           this.floorReflectionReadTarget = this.floorReflectionWriteTarget;
@@ -9069,6 +9115,8 @@ void main() {
       this.renderer.xr.enabled = previousXrEnabled;
       this.renderer.shadowMap.autoUpdate = previousShadowAutoUpdate;
       this.renderer.setRenderTarget(previousTarget);
+      this.floorReflectionRendererState.restored = this.floorReflectionRendererSnapshot();
+      this.floorReflectionRendererState.previousTargetRestored = this.renderer.getRenderTarget() === previousTarget;
     }
   }
 
@@ -10688,6 +10736,37 @@ void main() {
     };
   }
 
+  private floorReflectionRenderTargetRole(target: WebGLRenderTarget | null) {
+    if (target === null) return "canvas";
+    if (target === this.floorReflectionTarget) return "floorReflectionRaw";
+    if (target === this.floorReflectionReadTarget) return "floorReflectionRead";
+    if (target === this.floorReflectionWriteTarget) return "floorReflectionWrite";
+    if (target === this.workRawTarget) return "workRaw";
+    if (target === this.workCompositeTarget) return "workComposite";
+    if (target === this.mainRawTarget) return "mainRaw";
+    if (target === this.mainFxaaTarget) return "mainFxaa";
+    if (target === this.thumbTarget) return "thumbRaw";
+    if (target === this.thumbCompositeTarget) return "thumbComposite";
+    return "other";
+  }
+
+  private floorReflectionRendererSnapshot(
+    target: WebGLRenderTarget | null = this.renderer.getRenderTarget(),
+  ): FloorReflectionRendererSnapshot {
+    return {
+      xrEnabled: this.renderer.xr.enabled,
+      shadowAutoUpdate: this.renderer.shadowMap.autoUpdate,
+      autoClear: this.renderer.autoClear,
+      renderTargetRole: this.floorReflectionRenderTargetRole(target),
+      targetIsCanvas: target === null,
+      targetIsFloorReflectionRaw: target === this.floorReflectionTarget,
+      targetIsFloorReflectionRead: target === this.floorReflectionReadTarget,
+      targetIsFloorReflectionWrite: target === this.floorReflectionWriteTarget,
+      targetIsWorkRaw: target === this.workRawTarget,
+      targetIsMainRaw: target === this.mainRawTarget,
+    };
+  }
+
   private floorReflectionVisibilitySnapshot(): FloorReflectionVisibilitySnapshot {
     return {
       sceneWrapVisible: this.sceneWrap.visible,
@@ -10737,6 +10816,33 @@ void main() {
           && before.environmentPlaneVisible === after.environmentPlaneVisible
           && before.aboutVisible === after.aboutVisible
           && before.floatingVisible === after.floatingVisible
+        : null,
+    };
+  }
+
+  private floorReflectionRendererStateProbe() {
+    const previous = this.floorReflectionRendererState.previous;
+    const duringRaw = this.floorReflectionRendererState.duringRaw;
+    const duringBlur = this.floorReflectionRendererState.duringBlur;
+    const restored = this.floorReflectionRendererState.restored;
+    return {
+      ...this.floorReflectionRendererState,
+      xrDisabledDuringReflection: duringRaw ? duringRaw.xrEnabled === false : null,
+      shadowAutoUpdateDisabledDuringReflection: duringRaw ? duringRaw.shadowAutoUpdate === false : null,
+      rawTargetActiveDuringReflection: duringRaw ? duringRaw.targetIsFloorReflectionRaw === true : null,
+      writeTargetActiveDuringBlur: duringBlur ? duringBlur.targetIsFloorReflectionWrite === true : null,
+      conditionalClearMatchesAutoClear: previous
+        ? this.floorReflectionRendererState.conditionalClearExecuted === (previous.autoClear === false)
+        : null,
+      xrRestored: previous && restored ? previous.xrEnabled === restored.xrEnabled : null,
+      shadowAutoUpdateRestored: previous && restored ? previous.shadowAutoUpdate === restored.shadowAutoUpdate : null,
+      autoClearPreserved: previous && restored ? previous.autoClear === restored.autoClear : null,
+      renderTargetRestored: this.floorReflectionRendererState.previousTargetRestored,
+      restoreMatchesBefore: previous && restored
+        ? previous.xrEnabled === restored.xrEnabled
+          && previous.shadowAutoUpdate === restored.shadowAutoUpdate
+          && previous.autoClear === restored.autoClear
+          && this.floorReflectionRendererState.previousTargetRestored === true
         : null,
     };
   }
@@ -10858,6 +10964,7 @@ void main() {
         pageScrollVelocity: this.auxiliaryPageScrollActive ? this.auxiliaryPageScrollVelocity : window.scrollY - this.auxiliaryScrollLast,
       },
       floorReflectionDrawState: this.floorReflectionDrawStateProbe(),
+      floorReflectionRendererState: this.floorReflectionRendererStateProbe(),
       floor: {
         group: objectSummary(this.floorGroup),
         plane: objectSummary(this.floorPlane),
