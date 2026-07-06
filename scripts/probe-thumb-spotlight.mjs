@@ -564,6 +564,9 @@ async function runProbe() {
   if (composite.stateOwnership !== "source-Se-settings-thumb-state-onUpdate-uniforms") {
     sourceShapeErrors.push(`thumbStateOwnership=${composite.stateOwnership}`);
   }
+  if (composite.killMode !== "source-no-kill-for-thumb-state-setters") {
+    sourceShapeErrors.push(`thumbStateKillMode=${composite.killMode}`);
+  }
   if (composite.stateUniformsMatch !== true) sourceShapeErrors.push(`thumbStateUniformsMatch=${composite.stateUniformsMatch}`);
   if (composite.mouseLightnessUniformsMatchState !== true) {
     sourceShapeErrors.push(`thumbMouseLightnessUniformsMatch=${composite.mouseLightnessUniformsMatchState}`);

@@ -238,6 +238,7 @@ type ThumbProbeWindow = Window & {
       darkenColor: [number, number, number];
       saturation: number;
       stateOwnership: string;
+      killMode: string;
       state: {
         darknessIntensity: number;
         darknessColor: number[];
@@ -4374,10 +4375,6 @@ export class WebGLBackdrop {
   private mouseFactorTween?: gsap.core.Tween;
   private saturationTween?: gsap.core.Tween;
   private contrastTween?: gsap.core.Tween;
-  private thumbDarknessTweens: gsap.core.Tween[] = [];
-  private thumbDarknessColorTweens: gsap.core.Tween[] = [];
-  private thumbSaturationTweens: gsap.core.Tween[] = [];
-  private thumbMouseLightnessTweens: gsap.core.Tween[] = [];
   private thumbState = {
     darknessIntensity: 0,
     darknessColor: sourceRgbColor("#000000", "#000000"),
@@ -6675,8 +6672,6 @@ void main() {
   }
 
   private setThumbDarknessIntensity(value: number, duration = 1.6) {
-    this.thumbDarknessTweens.forEach((tween) => tween.kill());
-    this.thumbDarknessTweens = [];
     const update = () => {
       this.thumbCompositeMaterial.uniforms.uDarkenIntensity.value = this.thumbState.darknessIntensity;
     };
@@ -6685,12 +6680,12 @@ void main() {
       update();
       return;
     }
-    this.thumbDarknessTweens.push(gsap.to(this.thumbState, {
+    gsap.to(this.thumbState, {
       darknessIntensity: value,
       duration,
       ease: "expo.out",
       onUpdate: update,
-    }));
+    });
   }
 
   private setSaturation(value: number, duration = 1.6) {
@@ -6712,8 +6707,6 @@ void main() {
   }
 
   private setThumbSaturation(value: number, duration = 1.6) {
-    this.thumbSaturationTweens.forEach((tween) => tween.kill());
-    this.thumbSaturationTweens = [];
     const update = () => {
       this.thumbCompositeMaterial.uniforms.uSaturation.value = this.thumbState.saturation;
     };
@@ -6722,12 +6715,12 @@ void main() {
       update();
       return;
     }
-    this.thumbSaturationTweens.push(gsap.to(this.thumbState, {
+    gsap.to(this.thumbState, {
       saturation: value,
       duration,
       ease: "expo.out",
       onUpdate: update,
-    }));
+    });
   }
 
   private setContrast(value: number, duration = 1.6) {
@@ -6749,8 +6742,6 @@ void main() {
   }
 
   private setThumbDarknessColor(value?: string, duration = 1.6) {
-    this.thumbDarknessColorTweens.forEach((tween) => tween.kill());
-    this.thumbDarknessColorTweens = [];
     const next = sourceRgbColor(value ?? "#000000", "#000000");
     const update = () => {
       (this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color).copy(this.thumbState.darknessColor);
@@ -6760,19 +6751,17 @@ void main() {
       update();
       return;
     }
-    this.thumbDarknessColorTweens.push(gsap.to(this.thumbState.darknessColor, {
+    gsap.to(this.thumbState.darknessColor, {
       r: next.r,
       g: next.g,
       b: next.b,
       duration,
       ease: "expo.out",
       onUpdate: update,
-    }));
+    });
   }
 
   private setThumbMouseLightness(value: number, duration = 1.6) {
-    this.thumbMouseLightnessTweens.forEach((tween) => tween.kill());
-    this.thumbMouseLightnessTweens = [];
     const update = () => {
       this.workItems.forEach((item) => {
         item.material.uniforms.uMouseLightness.value = this.thumbState.mouseLightness;
@@ -6783,12 +6772,12 @@ void main() {
       update();
       return;
     }
-    this.thumbMouseLightnessTweens.push(gsap.to(this.thumbState, {
+    gsap.to(this.thumbState, {
       mouseLightness: value,
       duration,
       ease: "expo.out",
       onUpdate: update,
-    }));
+    });
   }
 
   private setMouseFactor(value: number, duration = 0, ease = "none") {
@@ -7973,6 +7962,7 @@ void main() {
         darkenColor: [color.r, color.g, color.b],
         saturation: this.thumbCompositeMaterial.uniforms.uSaturation.value as number,
         stateOwnership: "source-Se-settings-thumb-state-onUpdate-uniforms",
+        killMode: "source-no-kill-for-thumb-state-setters",
         state: {
           darknessIntensity: this.thumbState.darknessIntensity,
           darknessColor: this.thumbState.darknessColor.toArray(),
