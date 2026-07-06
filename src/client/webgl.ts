@@ -4376,6 +4376,27 @@ function makeSourceRenderTarget(depthBuffer = false) {
 const SOURCE_I1_REFLECTION_WIDTH = 512;
 const SOURCE_I1_REFLECTION_HEIGHT = 512;
 const SOURCE_I1_REFLECTION_BLUR_ITERATIONS = 2;
+const FLOOR_REFLECTION_CAMERA_EXPECTED_STEPS = [
+  "normalFromReflectorMatrixWorld",
+  "viewReflectedAcrossNormal",
+  "targetReflectedAcrossNormal",
+  "cameraPositionCopiedFromReflectedView",
+  "cameraUpReflectedAcrossNormal",
+  "lookAtTarget",
+  "farCopy",
+  "updateMatrixWorld",
+  "projectionCopy",
+  "textureMatrixBias",
+  "textureMatrixProjection",
+  "textureMatrixCameraInverse",
+  "textureMatrixReflectorMatrixWorld",
+  "reflectorPlaneFromNormalAndWorldPosition",
+  "clipPlaneAppliedToCameraInverse",
+  "clipPlaneVectorSet",
+  "clipPlaneScaledByQ",
+  "projectionRowWrite",
+] as const;
+type FloorReflectionCameraStep = typeof FLOOR_REFLECTION_CAMERA_EXPECTED_STEPS[number];
 
 type SourceRoundedBoxGeometry = BufferGeometry & {
   parameters: {
@@ -5166,6 +5187,24 @@ export class WebGLBackdrop {
     lastBlurIteration: -1,
     lastRenderFrame: 0,
     previousTargetRestored: null as boolean | null,
+  };
+  private floorReflectionCameraState = {
+    mode: "source-i1-camera-textureMatrix-clipPlane-update-order",
+    cameraOrderMode: "source-i1-lookAt-target-far-updateMatrixWorld-copy-projection",
+    textureMatrixOrderMode: "source-i1-bias-multiply-projection-cameraInverse-reflectorMatrixWorld",
+    clipPlaneOrderMode: "source-i1-plane-normal-worldPosition-cameraInverse-oblique-row-write",
+    expectedSteps: [...FLOOR_REFLECTION_CAMERA_EXPECTED_STEPS],
+    steps: [] as FloorReflectionCameraStep[],
+    lastRenderFrame: 0,
+    sourceOrderMatched: null as boolean | null,
+    farMatchesHomeCamera: null as boolean | null,
+    projectionCopiedAfterMatrixWorldUpdate: null as boolean | null,
+    projectionCopyMatchesHomeCamera: null as boolean | null,
+    textureMatrixUniformShared: null as boolean | null,
+    textureMatrixUniformUsesMatrix: null as boolean | null,
+    projectionRowIndices: [2, 6, 10, 14] as [number, number, number, number],
+    projectionRowWriteMatchesClipPlane: null as boolean | null,
+    clipBias: this.floorReflectionClipBias,
   };
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
@@ -8997,6 +9036,32 @@ void main() {
     );
   }
 
+  private resetFloorReflectionCameraState() {
+    this.floorReflectionCameraState.steps = [];
+    this.floorReflectionCameraState.lastRenderFrame = this.sourcePostRenderFrame;
+    this.floorReflectionCameraState.sourceOrderMatched = null;
+    this.floorReflectionCameraState.farMatchesHomeCamera = null;
+    this.floorReflectionCameraState.projectionCopiedAfterMatrixWorldUpdate = null;
+    this.floorReflectionCameraState.projectionCopyMatchesHomeCamera = null;
+    this.floorReflectionCameraState.textureMatrixUniformShared = null;
+    this.floorReflectionCameraState.textureMatrixUniformUsesMatrix = null;
+    this.floorReflectionCameraState.projectionRowWriteMatchesClipPlane = null;
+    this.floorReflectionCameraState.clipBias = this.floorReflectionClipBias;
+  }
+
+  private markFloorReflectionCameraStep(step: FloorReflectionCameraStep) {
+    this.floorReflectionCameraState.steps.push(step);
+  }
+
+  private floorReflectionCameraStepOrderMatches() {
+    return this.floorReflectionCameraState.steps.length === FLOOR_REFLECTION_CAMERA_EXPECTED_STEPS.length
+      && FLOOR_REFLECTION_CAMERA_EXPECTED_STEPS.every((step, index) => this.floorReflectionCameraState.steps[index] === step);
+  }
+
+  private matrixElementsClose(left: Matrix4, right: Matrix4) {
+    return left.elements.every((value, index) => Math.abs(value - right.elements[index]) < 1e-6);
+  }
+
   private renderFloorReflection() {
     if (!this.sceneWrap.visible) return;
     const previousTarget = this.renderer.getRenderTarget();
@@ -9011,15 +9076,18 @@ void main() {
     this.floorReflectionRendererState.lastBlurIteration = -1;
     this.floorReflectionRendererState.lastRenderFrame = this.sourcePostRenderFrame;
     this.floorReflectionRendererState.previousTargetRestored = null;
+    this.resetFloorReflectionCameraState();
     this.floorReflectorWorldPosition.setFromMatrixPosition(this.floorReflector.matrixWorld);
     this.floorReflectionCameraWorldPosition.setFromMatrixPosition(this.homeCamera.matrixWorld);
     this.floorReflectionRotationMatrix.extractRotation(this.floorReflector.matrixWorld);
     this.floorReflectorNormal.set(0, 0, 1);
     this.floorReflectorNormal.applyMatrix4(this.floorReflectionRotationMatrix);
+    this.markFloorReflectionCameraStep("normalFromReflectorMatrixWorld");
     this.floorReflectionView.subVectors(this.floorReflectorWorldPosition, this.floorReflectionCameraWorldPosition);
     if (this.floorReflectionView.dot(this.floorReflectorNormal) > 0) return;
     this.floorReflectionView.reflect(this.floorReflectorNormal).negate();
     this.floorReflectionView.add(this.floorReflectorWorldPosition);
+    this.markFloorReflectionCameraStep("viewReflectedAcrossNormal");
     this.floorReflectionRotationMatrix.extractRotation(this.homeCamera.matrixWorld);
     this.floorReflectionLookAtPosition.set(0, 0, -1);
     this.floorReflectionLookAtPosition.applyMatrix4(this.floorReflectionRotationMatrix);
@@ -9027,31 +9095,55 @@ void main() {
     this.floorReflectionTargetPosition.subVectors(this.floorReflectorWorldPosition, this.floorReflectionLookAtPosition);
     this.floorReflectionTargetPosition.reflect(this.floorReflectorNormal).negate();
     this.floorReflectionTargetPosition.add(this.floorReflectorWorldPosition);
+    this.markFloorReflectionCameraStep("targetReflectedAcrossNormal");
     this.floorReflectionCamera.position.copy(this.floorReflectionView);
+    this.markFloorReflectionCameraStep("cameraPositionCopiedFromReflectedView");
     this.floorReflectionCamera.up.set(0, 1, 0);
     this.floorReflectionCamera.up.applyMatrix4(this.floorReflectionRotationMatrix);
     this.floorReflectionCamera.up.reflect(this.floorReflectorNormal);
+    this.markFloorReflectionCameraStep("cameraUpReflectedAcrossNormal");
     this.floorReflectionCamera.lookAt(this.floorReflectionTargetPosition);
+    this.markFloorReflectionCameraStep("lookAtTarget");
     this.floorReflectionCamera.far = this.homeCamera.far;
+    this.floorReflectionCameraState.farMatchesHomeCamera = Math.abs(this.floorReflectionCamera.far - this.homeCamera.far) < 1e-6;
+    this.markFloorReflectionCameraStep("farCopy");
     this.floorReflectionCamera.updateMatrixWorld();
+    this.markFloorReflectionCameraStep("updateMatrixWorld");
     this.floorReflectionCamera.projectionMatrix.copy(this.homeCamera.projectionMatrix);
+    this.floorReflectionCameraState.projectionCopyMatchesHomeCamera =
+      this.matrixElementsClose(this.floorReflectionCamera.projectionMatrix, this.homeCamera.projectionMatrix);
+    this.markFloorReflectionCameraStep("projectionCopy");
+    this.floorReflectionCameraState.projectionCopiedAfterMatrixWorldUpdate =
+      this.floorReflectionCameraState.steps.indexOf("updateMatrixWorld")
+      < this.floorReflectionCameraState.steps.indexOf("projectionCopy");
     this.floorReflectionMatrix.set(
       0.5, 0, 0, 0.5,
       0, 0.5, 0, 0.5,
       0, 0, 0.5, 0.5,
       0, 0, 0, 1,
     );
+    this.markFloorReflectionCameraStep("textureMatrixBias");
     this.floorReflectionMatrix.multiply(this.floorReflectionCamera.projectionMatrix);
+    this.markFloorReflectionCameraStep("textureMatrixProjection");
     this.floorReflectionMatrix.multiply(this.floorReflectionCamera.matrixWorldInverse);
+    this.markFloorReflectionCameraStep("textureMatrixCameraInverse");
     this.floorReflectionMatrix.multiply(this.floorReflector.matrixWorld);
+    this.floorReflectionCameraState.textureMatrixUniformShared =
+      this.floorMaterial.uniforms.uMatrix === this.floorReflectionTextureMatrixUniform;
+    this.floorReflectionCameraState.textureMatrixUniformUsesMatrix =
+      this.floorReflectionTextureMatrixUniform.value === this.floorReflectionMatrix;
+    this.markFloorReflectionCameraStep("textureMatrixReflectorMatrixWorld");
     this.floorReflectorPlane.setFromNormalAndCoplanarPoint(this.floorReflectorNormal, this.floorReflectorWorldPosition);
+    this.markFloorReflectionCameraStep("reflectorPlaneFromNormalAndWorldPosition");
     this.floorReflectorPlane.applyMatrix4(this.floorReflectionCamera.matrixWorldInverse);
+    this.markFloorReflectionCameraStep("clipPlaneAppliedToCameraInverse");
     this.floorReflectionClipPlane.set(
       this.floorReflectorPlane.normal.x,
       this.floorReflectorPlane.normal.y,
       this.floorReflectorPlane.normal.z,
       this.floorReflectorPlane.constant,
     );
+    this.markFloorReflectionCameraStep("clipPlaneVectorSet");
     const projection = this.floorReflectionCamera.projectionMatrix;
     const projectionElements = projection.elements;
     this.floorReflectionQ.x = (Math.sign(this.floorReflectionClipPlane.x) + projectionElements[8]) / projectionElements[0];
@@ -9060,11 +9152,19 @@ void main() {
     this.floorReflectionQ.w = (1 + projectionElements[10]) / projectionElements[14];
     if (this.debugFloorReflection !== "no-clip") {
       this.floorReflectionClipPlane.multiplyScalar(2 / this.floorReflectionClipPlane.dot(this.floorReflectionQ));
+      this.markFloorReflectionCameraStep("clipPlaneScaledByQ");
       projectionElements[2] = this.floorReflectionClipPlane.x;
       projectionElements[6] = this.floorReflectionClipPlane.y;
       projectionElements[10] = this.floorReflectionClipPlane.z + 1 - this.floorReflectionClipBias;
       projectionElements[14] = this.floorReflectionClipPlane.w;
+      this.floorReflectionCameraState.projectionRowWriteMatchesClipPlane =
+        Math.abs(projectionElements[2] - this.floorReflectionClipPlane.x) < 1e-6
+        && Math.abs(projectionElements[6] - this.floorReflectionClipPlane.y) < 1e-6
+        && Math.abs(projectionElements[10] - (this.floorReflectionClipPlane.z + 1 - this.floorReflectionClipBias)) < 1e-6
+        && Math.abs(projectionElements[14] - this.floorReflectionClipPlane.w) < 1e-6;
+      this.markFloorReflectionCameraStep("projectionRowWrite");
     }
+    this.floorReflectionCameraState.sourceOrderMatched = this.floorReflectionCameraStepOrderMatches();
 
     try {
       this.renderer.xr.enabled = false;
@@ -10847,6 +10947,49 @@ void main() {
     };
   }
 
+  private floorReflectionCameraStateProbe() {
+    const steps = this.floorReflectionCameraState.steps;
+    const ordered = (...orderedSteps: FloorReflectionCameraStep[]) => orderedSteps.every((step, index) => {
+      const stepIndex = steps.indexOf(step);
+      if (stepIndex < 0) return false;
+      if (index === 0) return true;
+      const previousStep = orderedSteps[index - 1];
+      return previousStep ? stepIndex > steps.indexOf(previousStep) : true;
+    });
+    return {
+      ...this.floorReflectionCameraState,
+      expectedSteps: [...FLOOR_REFLECTION_CAMERA_EXPECTED_STEPS],
+      stepsMatchExpected: this.floorReflectionCameraState.sourceOrderMatched,
+      cameraCoreOrderMatchesSource: ordered(
+        "lookAtTarget",
+        "farCopy",
+        "updateMatrixWorld",
+        "projectionCopy",
+      ),
+      textureMatrixOrderMatchesSource: ordered(
+        "textureMatrixBias",
+        "textureMatrixProjection",
+        "textureMatrixCameraInverse",
+        "textureMatrixReflectorMatrixWorld",
+      ),
+      clipPlaneOrderMatchesSource: ordered(
+        "reflectorPlaneFromNormalAndWorldPosition",
+        "clipPlaneAppliedToCameraInverse",
+        "clipPlaneVectorSet",
+        "clipPlaneScaledByQ",
+        "projectionRowWrite",
+      ),
+      runtimeChecksPass:
+        this.floorReflectionCameraState.sourceOrderMatched === true
+        && this.floorReflectionCameraState.farMatchesHomeCamera === true
+        && this.floorReflectionCameraState.projectionCopiedAfterMatrixWorldUpdate === true
+        && this.floorReflectionCameraState.projectionCopyMatchesHomeCamera === true
+        && this.floorReflectionCameraState.textureMatrixUniformShared === true
+        && this.floorReflectionCameraState.textureMatrixUniformUsesMatrix === true
+        && this.floorReflectionCameraState.projectionRowWriteMatchesClipPlane === true,
+    };
+  }
+
   private reflectionStateProbe() {
     const objectSummary = (object: Object3D) => ({
       name: object.name || object.type,
@@ -10965,6 +11108,7 @@ void main() {
       },
       floorReflectionDrawState: this.floorReflectionDrawStateProbe(),
       floorReflectionRendererState: this.floorReflectionRendererStateProbe(),
+      floorReflectionCameraState: this.floorReflectionCameraStateProbe(),
       floor: {
         group: objectSummary(this.floorGroup),
         plane: objectSummary(this.floorPlane),

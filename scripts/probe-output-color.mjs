@@ -2100,6 +2100,64 @@ async function runProbe() {
   if (reflectionTargets?.blurIterations > 0 && floorRendererState?.lastBlurIteration !== reflectionTargets.blurIterations - 1) {
     floorErrors.push(`reflectionLastBlurIteration=${floorRendererState?.lastBlurIteration}`);
   }
+  const floorCameraState = parsed.probe.reflectionState?.floorReflectionCameraState;
+  const expectedFloorCameraSteps = [
+    "normalFromReflectorMatrixWorld",
+    "viewReflectedAcrossNormal",
+    "targetReflectedAcrossNormal",
+    "cameraPositionCopiedFromReflectedView",
+    "cameraUpReflectedAcrossNormal",
+    "lookAtTarget",
+    "farCopy",
+    "updateMatrixWorld",
+    "projectionCopy",
+    "textureMatrixBias",
+    "textureMatrixProjection",
+    "textureMatrixCameraInverse",
+    "textureMatrixReflectorMatrixWorld",
+    "reflectorPlaneFromNormalAndWorldPosition",
+    "clipPlaneAppliedToCameraInverse",
+    "clipPlaneVectorSet",
+    "clipPlaneScaledByQ",
+    "projectionRowWrite",
+  ];
+  if (floorCameraState?.mode !== "source-i1-camera-textureMatrix-clipPlane-update-order") {
+    floorErrors.push("reflectionCameraStateMode");
+  }
+  if (floorCameraState?.cameraOrderMode !== "source-i1-lookAt-target-far-updateMatrixWorld-copy-projection") {
+    floorErrors.push("reflectionCameraOrderMode");
+  }
+  if (floorCameraState?.textureMatrixOrderMode !== "source-i1-bias-multiply-projection-cameraInverse-reflectorMatrixWorld") {
+    floorErrors.push("reflectionTextureMatrixOrderMode");
+  }
+  if (floorCameraState?.clipPlaneOrderMode !== "source-i1-plane-normal-worldPosition-cameraInverse-oblique-row-write") {
+    floorErrors.push("reflectionClipPlaneOrderMode");
+  }
+  if (JSON.stringify(floorCameraState?.expectedSteps) !== JSON.stringify(expectedFloorCameraSteps)) {
+    floorErrors.push(`reflectionExpectedCameraSteps=${JSON.stringify(floorCameraState?.expectedSteps || null)}`);
+  }
+  if (JSON.stringify(floorCameraState?.steps) !== JSON.stringify(expectedFloorCameraSteps)) {
+    floorErrors.push(`reflectionCameraSteps=${JSON.stringify(floorCameraState?.steps || null)}`);
+  }
+  if (floorCameraState?.stepsMatchExpected !== true) floorErrors.push("reflectionCameraStepsMatchExpected");
+  if (floorCameraState?.sourceOrderMatched !== true) floorErrors.push("reflectionCameraSourceOrderMatched");
+  if (floorCameraState?.cameraCoreOrderMatchesSource !== true) floorErrors.push("reflectionCameraCoreOrder");
+  if (floorCameraState?.textureMatrixOrderMatchesSource !== true) floorErrors.push("reflectionTextureMatrixOrder");
+  if (floorCameraState?.clipPlaneOrderMatchesSource !== true) floorErrors.push("reflectionClipPlaneOrder");
+  if (floorCameraState?.farMatchesHomeCamera !== true) floorErrors.push("reflectionCameraFarCopy");
+  if (floorCameraState?.projectionCopiedAfterMatrixWorldUpdate !== true) floorErrors.push("reflectionProjectionAfterUpdateMatrixWorld");
+  if (floorCameraState?.projectionCopyMatchesHomeCamera !== true) floorErrors.push("reflectionProjectionCopyMatchesHome");
+  if (floorCameraState?.textureMatrixUniformShared !== true) floorErrors.push("reflectionTextureMatrixUniformShared");
+  if (floorCameraState?.textureMatrixUniformUsesMatrix !== true) floorErrors.push("reflectionTextureMatrixUniformUsesMatrix");
+  if (JSON.stringify(floorCameraState?.projectionRowIndices) !== JSON.stringify([2, 6, 10, 14])) {
+    floorErrors.push(`reflectionProjectionRowIndices=${JSON.stringify(floorCameraState?.projectionRowIndices || null)}`);
+  }
+  if (floorCameraState?.projectionRowWriteMatchesClipPlane !== true) floorErrors.push("reflectionProjectionRowWriteMatchesClipPlane");
+  if (floorCameraState?.clipBias !== 0) floorErrors.push("reflectionCameraClipBias");
+  if (floorCameraState?.runtimeChecksPass !== true) floorErrors.push("reflectionCameraRuntimeChecksPass");
+  if (!Number.isFinite(floorCameraState?.lastRenderFrame) || floorCameraState.lastRenderFrame < 0) {
+    floorErrors.push("reflectionCameraLastRenderFrame");
+  }
   if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
   if (reflectionTargets?.blurTMapConstructorMode !== "source-t1-tMap-construct-null-update-loop-binds") {
     floorErrors.push("blurTMapConstructorMode");
