@@ -1,6 +1,6 @@
 # Phase 1 Audit: Home WebGL Source Parity
 
-Last updated: 2026-07-05
+Last updated: 2026-07-06
 
 ## Scope
 
@@ -38,7 +38,7 @@ Current visible blockers for Phase 1:
 - Home background/floor/environment still has a hard horizontal horizon instead of the source's softer fog/floor blend.
 - Home work cubes and thumb projection still do not match the source's brightness, depth, and projection feel. The thumb/spotlight chain now has a nonzero-progress guardrail for source `yD -> w1` wrapping and map binding, but that is not a final transfer/feel closeout.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is now source-aligned as `vec3`; the remaining documented bridge is the mirrored runtime shape where source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so the `PHYSICAL` branch is inactive. Auxiliary block shaders remain on the safer r164 bridge because they are not ordinary source `VA-work`.
-- `A1/OA/kA/Lu/I1` are source-shaped in pieces and now have source-shaped `A1/OA/lA` composite shader fragments, source-shaped `u1/z1` sky/environment shader fragments, source-shaped `nD/Iu/Lu/I1/Lo` update sequencing, `Lo/Lu/I1` render-target clone ownership, source-shaped `I1` optional blur target chaining, `a1/i1` floor-reflection uniform ownership, and pass-material ownership, but transfer interpretation and composite behavior across the whole chain are still not byte-for-byte source-isomorphic.
+- `A1/OA/kA/Lu/I1` are source-shaped in pieces and now have source-shaped `A1/OA/lA` composite shader fragments, source-shaped `u1/z1` sky/environment shader fragments, source-shaped `nD/Iu/Lu/I1/Lo` update sequencing, `Lo/Lu/I1` render-target clone ownership, source-shaped `I1` optional blur target chaining, `a1/i1` floor-reflection uniform ownership, pass-material ownership, and source `Lu/kA/I1` render-manager settings ownership, but transfer interpretation and composite behavior across the whole chain are still not byte-for-byte source-isomorphic.
 - Mouse/fluid simulation now has a source-shaped interactive guardrail for window mousemove -> `Ka` screen/local simulation and `ag/qT` fluid pointer/center response, but final Home visual/feel parity is still open.
 - Project pages are regression gates; they are stable but not proof that Home WebGL Phase 1 is complete.
 
@@ -78,6 +78,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 203 | S1-276 | `Lu/kA/I1` render-manager init settings guardrail | Source `Lu.initSettings()` owns the base render-manager defaults; source `kA.initSettings()` overrides work settings for mousesim, luminosity, bloom, blur, and fluid; source `I1.initSettings()` owns main settings including `renderToScreen:true`, GPU-tier-gated fluid defaults, and disabled lensflare defaults `scale=(1.5,1.5)`, `exposure=1`, `clamp=1`. | Intended production visual behavior is unchanged. The rebuild now clones source render settings per manager instance, derives runtime main fluid enablement from the source GPU-tier bridge, and exposes work/main expected/actual/matches/instance-owned settings plus main lensflare defaults through `__rogierOutputProbe`. Output probes hard-fail on settings or ownership drift, and renderer audit checks source `Lu/kA/I1` anchors plus rebuild/probe coverage. Build, renderer audit, desktop/mobile output probes, and desktop thumb smoke passed; desktop/mobile probes confirmed exact work/main settings parity, lensflare defaults, and instance-owned settings clones with no browser failures/exceptions/console messages. | Low | Keep this as source settings-ownership evidence only. It does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 202 | S1-275 | `is/p1/w1` active project date-desc order guardrail | Source `is.getProjects()` filters project data with `active !== false` and sorts by `Date.parse(date)` descending. Source `getProjectById()` uses the raw project list, while `getNextProject()` uses the sorted active list from `getProjects()`. | Intended production visual behavior is unchanged except for mirroring source project ordering. `activeProjects` now follows the source active filter plus date-desc sort; output and thumb probes expose/assert the expected source order `hashgraph-vc -> gc-2026 -> following-wildfire -> engaged -> spritexmarvel -> filmsecession -> theroger -> poppr -> demorgen -> thoughtlab`; renderer audit checks mirrored source anchors, rebuild sorting, and probe coverage. Build, renderer audit, desktop/mobile output probes, and desktop/mobile thumb probes passed; probes confirmed `sourceProjectOrder.matchesSource=true` with no browser failures/exceptions/console messages. | Low | Keep this as a source data-order guardrail only. It does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 201 | S1-274 | `p1` carousel/light scalar state guardrail | Source `p1.init()` owns `count`, `theta`, and `itemWidth`; source `p1.setBlocks()` computes `radius=Math.round(itemWidth/2/Math.tan(Math.PI/count))` and `lightRadius=radius-3.5`; source `p1.setLights()` sets `maxSpotLightIntensity=220`. | Intended production visual behavior is unchanged. `WebGLBackdrop` now stores source-shaped `count`, `theta`, `itemWidth`, `radius`, and `lightRadius`, uses `this.theta` for carousel placement, resets scalar state on the empty-card path, and exposes actual/expected item width, count, theta, radius, and lightRadius parity through `p1UpdateCulling.sourceCarouselDistribution`. The lights probe exposes `maxSpotLightIntensity` and `maxSpotLightIntensityMatchesSource`; output probes and renderer audit hard-fail on drift. Build, renderer audit, desktop/mobile output probes, desktop/mobile thumb probes, and project-media probe passed; output probes confirmed `actualCount=10`, `actualThetaDegrees=36`, `actualRadius=10`, `actualLightRadius=6.5`, and `maxSpotLightIntensity=220`. | Low | Keep this as source scalar-state evidence only. It does not close Phase 1 visual parity, the spotlight/thumb projection transfer feel, the broader `kA/Lu/I1` transfer/composite interpretation, or the floor/environment residuals. |
 | 200 | S1-273 | `yD/w1` gallery progress transform order guardrail | Source `yD.updateScene()` applies gallery-progress writes in this order: `J.workScene.sceneWrap.rotation.y = degToRad(scroll.progress*360+180)`, then `J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value = scroll.progress*1`, then `J.workThumbScene.thumbs.updateGalleryProgress(-scroll.progress)`, then scene roll and zoom. This preserves the source relationship between work-scene rotation, `C1/A1.uTransformX`, and negative thumb progress. | Intended production formulas, constants, render targets, and visual tuning are unchanged. `setGalleryProgress()` now writes `sceneWrap.rotation.y` before `preCompositeMaterial.uniforms.uTransformX.value`, then calls `updateThumbGallery(-progress)` before roll/zoom updates. `__rogierThumbProbe` exposes `sourceProgressTransformOrder=source-yD-sceneWrap-then-uTransformX-then-thumbProgress`, `scripts/probe-thumb-spotlight.mjs` hard-fails on drift, and renderer audit now checks source/rebuild order for `sceneWrap -> uTransformX -> thumbProgress -> roll/zoom`. `git diff --check`, syntax checks, renderer audit, build, desktop/mobile thumb probes, desktop/mobile output probes, and project-media probe passed; desktop/mobile thumb probes confirmed the new order marker with no failures/exceptions/console messages, and project media retained visible tracks. | Low | Keep this as a source update-order guardrail only. It does not close Phase 1 visual parity, the spotlight/thumb projection transfer feel, the broader `kA/Lu/I1` transfer/composite interpretation, or the floor/environment residuals. |
@@ -5997,6 +5998,41 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-light-state-media`.
 
 Decision: keep light intensity setters owned by source-style `Se.settings` state and update actual Three lights from `onUpdate`. Do not reintroduce separate scalar mirror fields or direct `gsap.to(this, ...)` intensity tweens without mirrored-bundle evidence. Phase 1 remains open because this closes state tween ownership only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution gaps remain unresolved.
+
+### S1-276 `Lu/kA/I1` Render-Manager Init Settings Guardrail
+
+This batch adds a source-backed runtime/audit guardrail for render-manager init settings ownership. It intentionally avoids screenshot-led tuning and does not change shader formulas, transfer functions, render-target topology, route media behavior, spotlight constants, or visual brightness settings.
+
+Source evidence:
+
+- Source `Lu.initSettings()` owns the render-manager base defaults: `renderToScreen=false`, FXAA disabled, mousesim disabled, luminosity threshold `.1` / smoothing `1` disabled, bloom strength `.05` / radius `.01` disabled, blur scale `1` / strength `8` disabled, and fluid disabled with `mouseForce=25`, `cursorSize=15`, `delta=.019`, `poissonIterations=1`, `bounce=false`.
+- Source `kA.initSettings()` overrides work settings: mousesim enabled, luminosity threshold `.1` / smoothing `.95` enabled, bloom strength `.15` / radius `1.5` enabled, blur disabled at scale `1` / strength `8`, and fluid disabled with `mouseForce=25`, `cursorSize=20`, `delta=.019`, `poissonIterations=1`, `bounce=false`.
+- Source `I1.initSettings()` owns main settings: `renderToScreen=true`, FXAA/mousesim/luminosity/bloom/blur disabled, fluid `enabled=Le.GPU_TIER>=3` with `mouseForce=5`, `cursorSize=6`, `delta=.125`, `poissonIterations=1`, `bounce=false`, and disabled lensflare defaults `scale=new Q(1.5,1.5)`, `exposure=1`, `clamp=1`.
+
+Runtime and tooling changes:
+
+- `src/client/webgl.ts` now clones source render settings per render-manager instance with `cloneSourceRenderSettings(...)` instead of sharing the source template object.
+- `sourceRuntimeMainRenderSettings()` derives main fluid enablement from the local source GPU-tier bridge, preserving the source `Le.GPU_TIER>=3` branch.
+- `__rogierOutputProbe.settings.work.renderManagerSettings` exposes source mode, expected settings, actual settings, source-match boolean, and instance-owned clone status for the work `kA` settings.
+- `__rogierOutputProbe.settings.main.renderManagerSettings` exposes the same source-match surface for main `I1` settings plus expected fluid enablement.
+- `__rogierOutputProbe.settings.main.lensflareSettings` exposes expected/actual `scale`, `exposure`, `clamp`, and `enabled` defaults for source `I1` lensflare settings.
+- `scripts/probe-output-color.mjs` hard-fails on settings mode drift, expected/actual settings drift, instance-owned clone drift, main fluid branch drift, or lensflare default drift.
+- `scripts/audit-renderer-output.mjs` now checks source `Lu/kA/I1` settings anchors plus rebuild helper, field, and probe coverage.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check src/client/webgl.ts` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-settings-audit-final.json` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed with exact source work settings, exact source main settings, source GPU-tier fluid expectation, disabled lensflare defaults, and instance-owned work/main settings clones: `/tmp/rd-settings-output-desktop`.
+- Mobile output probe passed with the same settings and lensflare parity: `/tmp/rd-settings-output-mobile`.
+- Desktop thumb spotlight smoke passed with existing progress/order, thumb wrapping, image lifecycle, target sizing, source project order, and spotlight projection guardrails intact: `/tmp/rd-settings-thumb-desktop`.
+
+Decision: keep this as source `Lu/kA/I1` render-manager settings ownership evidence/guardrail only. It proves settings templates, runtime main fluid branch, lensflare defaults, and per-instance clones, but it does not close any remaining visual residual. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and remaining floor/environment distribution evidence.
 
 ### S1-275 `is/p1/w1` Active Project Date-Desc Order Guardrail
 

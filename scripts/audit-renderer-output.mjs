@@ -476,6 +476,53 @@ const summary = {
       rebuildWebgl.includes("private homeSpotlightMap() {\n    return this.thumbCompositeTarget.texture;\n  }"),
   },
   sourceManagers: {
+    renderManagerSettings: {
+      sourceLuBaseSettings: checks(sourceLu.text, [
+        "initSettings(){this.settings={renderToScreen:!1,fxaa:{enabled:!1},mousesim:{enabled:!1}",
+        "luminosity:{threshold:.1,smoothing:1,enabled:!1}",
+        "bloom:{strength:.05,radius:.01,enabled:!1}",
+        "blur:{scale:1,strength:8,enabled:!1}",
+        "fluid:{enabled:!1,mouseForce:25,cursorSize:15,delta:.019,poissonIterations:1,bounce:!1}",
+      ]),
+      sourceKAWorkSettings: checks(sourceOA.text, [
+        "class kA extends Lu",
+        "initSettings(){this.settings={renderToScreen:!1,fxaa:{enabled:!1},mousesim:{enabled:!0}",
+        "luminosity:{threshold:.1,smoothing:.95,enabled:!0}",
+        "bloom:{strength:.15,radius:1.5,enabled:!0}",
+        "blur:{scale:1,strength:8,enabled:!1}",
+        "fluid:{enabled:!1,mouseForce:25,cursorSize:20,delta:.019,poissonIterations:1,bounce:!1}",
+      ]),
+      sourceI1MainSettings: checks(sourceMainI1.text, [
+        "initSettings(){this.settings={renderToScreen:!0,fxaa:{enabled:!1},mousesim:{enabled:!1}",
+        "luminosity:{threshold:.1,smoothing:1,enabled:!1}",
+        "bloom:{strength:.05,radius:.01,enabled:!1}",
+        "blur:{scale:1,strength:8,enabled:!1}",
+        "fluid:{enabled:Le.GPU_TIER>=3,mouseForce:5,cursorSize:6,delta:.125,poissonIterations:1,bounce:!1}",
+        "lensflare:{scale:new Q(1.5,1.5),exposure:1,clamp:1,enabled:!1}",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "const SOURCE_HOME_RENDER_SETTINGS: SourceRenderSettings = {",
+        "const SOURCE_MAIN_RENDER_SETTINGS: SourceRenderSettings = {",
+        "function cloneSourceRenderSettings(settings: SourceRenderSettings): SourceRenderSettings",
+        "function sourceRuntimeMainRenderSettings(): SourceRenderSettings",
+        "settings.fluid.enabled = sourceGpuTier() >= 3",
+        "private renderSettings = cloneSourceRenderSettings(SOURCE_HOME_RENDER_SETTINGS);",
+        "private sourceMainRenderSettings: SourceRenderSettings = sourceRuntimeMainRenderSettings();",
+        "mode: \"source-kA-initSettings-overrides-Lu-work-render-manager-settings\"",
+        "mode: \"source-I1-initSettings-main-render-manager-settings-gpu-tier-fluid-branch\"",
+        "mode: \"source-I1-initSettings-lensflare-disabled-scale-1_5-exposure-1-clamp-1\"",
+      ]),
+      rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "workRenderManagerSettings.mode !== \"source-kA-initSettings-overrides-Lu-work-render-manager-settings\"",
+        "mainRenderManagerSettings.mode !== \"source-I1-initSettings-main-render-manager-settings-gpu-tier-fluid-branch\"",
+        "expectedWorkRenderSettings",
+        "expectedMainRenderSettings",
+        "expectedMainFluidEnabled",
+        "workRenderManagerSettings.instanceOwned !== true",
+        "mainRenderManagerSettings.instanceOwned !== true",
+        "lensflareSettings.mode !== \"source-I1-initSettings-lensflare-disabled-scale-1_5-exposure-1-clamp-1\"",
+      ]),
+    },
     Lu: sourceLu && {
       index: sourceLu.index,
       checks: checks(sourceLu.text, [

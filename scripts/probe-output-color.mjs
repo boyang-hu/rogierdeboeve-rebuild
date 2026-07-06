@@ -531,7 +531,66 @@ async function runProbe() {
   const workOwnership = parsed.probe.settings?.work?.renderManagerOwnership;
   const mainOwnership = parsed.probe.settings?.main?.renderManagerOwnership;
   const mainSettings = parsed.probe.settings?.main || {};
+  const expectedWorkRenderSettings = {
+    renderToScreen: false,
+    fxaa: { enabled: false },
+    mousesim: { enabled: true },
+    luminosity: { threshold: 0.1, smoothing: 0.95, enabled: true },
+    bloom: { strength: 0.15, radius: 1.5, enabled: true },
+    blur: { scale: 1, strength: 8, enabled: false },
+    fluid: { enabled: false, mouseForce: 25, cursorSize: 20, delta: 0.019, poissonIterations: 1, bounce: false },
+  };
+  const expectedMainFluidEnabled = (mainSettings.gpuTier ?? 0) >= 3;
+  const expectedMainRenderSettings = {
+    renderToScreen: true,
+    fxaa: { enabled: false },
+    mousesim: { enabled: false },
+    luminosity: { threshold: 0.1, smoothing: 1, enabled: false },
+    bloom: { strength: 0.05, radius: 0.01, enabled: false },
+    blur: { scale: 1, strength: 8, enabled: false },
+    fluid: { enabled: expectedMainFluidEnabled, mouseForce: 5, cursorSize: 6, delta: 0.125, poissonIterations: 1, bounce: false },
+  };
   const ownershipErrors = [];
+  const workRenderManagerSettings = parsed.probe.settings?.work?.renderManagerSettings || {};
+  const mainRenderManagerSettings = mainSettings?.renderManagerSettings || {};
+  if (workRenderManagerSettings.mode !== "source-kA-initSettings-overrides-Lu-work-render-manager-settings") {
+    ownershipErrors.push("workRenderManagerSettingsMode");
+  }
+  if (JSON.stringify(workRenderManagerSettings.expected) !== JSON.stringify(expectedWorkRenderSettings)) {
+    ownershipErrors.push("workRenderManagerSettingsExpected");
+  }
+  if (JSON.stringify(workRenderManagerSettings.actual) !== JSON.stringify(expectedWorkRenderSettings)) {
+    ownershipErrors.push("workRenderManagerSettingsActual");
+  }
+  if (workRenderManagerSettings.matchesSource !== true) ownershipErrors.push("workRenderManagerSettingsMatch");
+  if (workRenderManagerSettings.instanceOwned !== true) ownershipErrors.push("workRenderManagerSettingsInstanceOwned");
+  if (mainRenderManagerSettings.mode !== "source-I1-initSettings-main-render-manager-settings-gpu-tier-fluid-branch") {
+    ownershipErrors.push("mainRenderManagerSettingsMode");
+  }
+  if (mainRenderManagerSettings.expectedFluidEnabled !== expectedMainFluidEnabled) {
+    ownershipErrors.push("mainRenderManagerSettingsExpectedFluidEnabled");
+  }
+  if (JSON.stringify(mainRenderManagerSettings.expected) !== JSON.stringify(expectedMainRenderSettings)) {
+    ownershipErrors.push("mainRenderManagerSettingsExpected");
+  }
+  if (JSON.stringify(mainRenderManagerSettings.actual) !== JSON.stringify(expectedMainRenderSettings)) {
+    ownershipErrors.push("mainRenderManagerSettingsActual");
+  }
+  if (mainRenderManagerSettings.matchesSource !== true) ownershipErrors.push("mainRenderManagerSettingsMatch");
+  if (mainRenderManagerSettings.instanceOwned !== true) ownershipErrors.push("mainRenderManagerSettingsInstanceOwned");
+  const lensflareSettings = mainSettings?.lensflareSettings || {};
+  const expectedLensflareSettings = {
+    scale: [1.5, 1.5],
+    exposure: 1,
+    clamp: 1,
+    enabled: false,
+  };
+  if (lensflareSettings.mode !== "source-I1-initSettings-lensflare-disabled-scale-1_5-exposure-1-clamp-1") {
+    ownershipErrors.push("lensflareSettingsMode");
+  }
+  if (JSON.stringify(lensflareSettings.expected) !== JSON.stringify(expectedLensflareSettings)) ownershipErrors.push("lensflareSettingsExpected");
+  if (JSON.stringify(lensflareSettings.actual) !== JSON.stringify(expectedLensflareSettings)) ownershipErrors.push("lensflareSettingsActual");
+  if (lensflareSettings.matchesSource !== true) ownershipErrors.push("lensflareSettingsMatch");
   if (workOwnership?.source !== "Lu-single-screen-mesh-material-swap") ownershipErrors.push("workSourceOwnership");
   if (workOwnership?.bridge !== "source-single-screen-material-swap") ownershipErrors.push("workBridgeOwnership");
   if (workOwnership?.compositeScreenMode !== "source-work-post-screen") ownershipErrors.push("workCompositeScreenMode");

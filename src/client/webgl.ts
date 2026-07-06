@@ -453,6 +453,32 @@ const SOURCE_MAIN_RENDER_SETTINGS: SourceRenderSettings = {
   fluid: { enabled: false, mouseForce: 5, cursorSize: 6, delta: 0.125, poissonIterations: 1, bounce: false },
 };
 
+function cloneSourceRenderSettings(settings: SourceRenderSettings): SourceRenderSettings {
+  return {
+    renderToScreen: settings.renderToScreen,
+    fxaa: { ...settings.fxaa },
+    mousesim: { ...settings.mousesim },
+    luminosity: { ...settings.luminosity },
+    bloom: { ...settings.bloom },
+    blur: { ...settings.blur },
+    fluid: { ...settings.fluid },
+  };
+}
+
+function sourceRuntimeMainRenderSettings(): SourceRenderSettings {
+  const settings = cloneSourceRenderSettings(SOURCE_MAIN_RENDER_SETTINGS);
+  settings.fluid.enabled = sourceGpuTier() >= 3;
+  return settings;
+}
+
+function sourceRenderSettingsSnapshot(settings: SourceRenderSettings) {
+  return cloneSourceRenderSettings(settings);
+}
+
+function sourceRenderSettingsMatch(actual: SourceRenderSettings, expected: SourceRenderSettings) {
+  return JSON.stringify(sourceRenderSettingsSnapshot(actual)) === JSON.stringify(sourceRenderSettingsSnapshot(expected));
+}
+
 function sourceBloomFactors(strength: number, radius: number) {
   return [1, 0.8, 0.6, 0.4, 0.2].map((factor) => strength * MathUtils.lerp(factor, 1.2 - factor, radius));
 }
@@ -3837,16 +3863,8 @@ export class WebGLBackdrop {
   private sourceThumbsReadyResolved = false;
   private placeholder = makePlaceholderTexture();
   private fluidPlaceholder = makePlaceholderTexture([0, 0, 0, 255]);
-  private renderSettings = SOURCE_HOME_RENDER_SETTINGS;
-  private sourceMainRenderSettings: SourceRenderSettings = {
-    ...SOURCE_MAIN_RENDER_SETTINGS,
-    fxaa: { ...SOURCE_MAIN_RENDER_SETTINGS.fxaa },
-    mousesim: { ...SOURCE_MAIN_RENDER_SETTINGS.mousesim },
-    luminosity: { ...SOURCE_MAIN_RENDER_SETTINGS.luminosity },
-    bloom: { ...SOURCE_MAIN_RENDER_SETTINGS.bloom },
-    blur: { ...SOURCE_MAIN_RENDER_SETTINGS.blur },
-    fluid: { ...SOURCE_MAIN_RENDER_SETTINGS.fluid, enabled: sourceGpuTier() >= 3 },
-  };
+  private renderSettings = cloneSourceRenderSettings(SOURCE_HOME_RENDER_SETTINGS);
+  private sourceMainRenderSettings: SourceRenderSettings = sourceRuntimeMainRenderSettings();
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private workPerlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
@@ -7738,6 +7756,13 @@ void main() {
           productionDebugClean: !this.debugFloor && !this.debugFloorReflection && !this.debugEnvironment,
         },
         work: {
+          renderManagerSettings: {
+            mode: "source-kA-initSettings-overrides-Lu-work-render-manager-settings",
+            expected: sourceRenderSettingsSnapshot(SOURCE_HOME_RENDER_SETTINGS),
+            actual: sourceRenderSettingsSnapshot(this.renderSettings),
+            matchesSource: sourceRenderSettingsMatch(this.renderSettings, SOURCE_HOME_RENDER_SETTINGS),
+            instanceOwned: this.renderSettings !== SOURCE_HOME_RENDER_SETTINGS,
+          },
           bloom: this.renderSettings.bloom,
           luminosity: this.renderSettings.luminosity,
           blur: this.renderSettings.blur,
@@ -7899,6 +7924,34 @@ void main() {
         },
         main: {
           gpuTier: sourceGpuTier(),
+          renderManagerSettings: {
+            mode: "source-I1-initSettings-main-render-manager-settings-gpu-tier-fluid-branch",
+            expected: sourceRenderSettingsSnapshot(sourceRuntimeMainRenderSettings()),
+            actual: sourceRenderSettingsSnapshot(this.sourceMainRenderSettings),
+            matchesSource: sourceRenderSettingsMatch(this.sourceMainRenderSettings, sourceRuntimeMainRenderSettings()),
+            expectedFluidEnabled: sourceGpuTier() >= 3,
+            instanceOwned: this.sourceMainRenderSettings !== SOURCE_MAIN_RENDER_SETTINGS,
+          },
+          lensflareSettings: {
+            mode: "source-I1-initSettings-lensflare-disabled-scale-1_5-exposure-1-clamp-1",
+            expected: {
+              scale: [1.5, 1.5],
+              exposure: 1,
+              clamp: 1,
+              enabled: false,
+            },
+            actual: {
+              scale: SOURCE_MAIN_LENSFLARE_SETTINGS.scale.toArray(),
+              exposure: SOURCE_MAIN_LENSFLARE_SETTINGS.exposure,
+              clamp: SOURCE_MAIN_LENSFLARE_SETTINGS.clamp,
+              enabled: SOURCE_MAIN_LENSFLARE_SETTINGS.enabled,
+            },
+            matchesSource:
+              SOURCE_MAIN_LENSFLARE_SETTINGS.scale.equals(new Vector2(1.5, 1.5))
+              && SOURCE_MAIN_LENSFLARE_SETTINGS.exposure === 1
+              && SOURCE_MAIN_LENSFLARE_SETTINGS.clamp === 1
+              && SOURCE_MAIN_LENSFLARE_SETTINGS.enabled === false,
+          },
           bloom: this.sourceMainRenderSettings.bloom,
           luminosity: this.sourceMainRenderSettings.luminosity,
           blur: this.sourceMainRenderSettings.blur,
