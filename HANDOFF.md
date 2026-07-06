@@ -147,14 +147,15 @@ Known remaining gaps:
 - Source thumb state setter ownership is now guarded as no-kill state tween ownership: `Se.setThumbDarknessIntensity()`, `setThumbDarknessColor()`, `setThumbSaturation()`, and `setThumbMouseLightness()` keep their source `t===0` direct branches, otherwise tween `settings.thumb` state and fan out to thumb composite uniforms or work material `uMouseLightness` on update, without rebuild-owned tween registries.
 - Source `Se.settings` scalar/media setter ownership is now guarded for the source no-kill boundary: `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` do not keep rebuild-owned tween registries or pre-emptive kills, while source kill-owned `setRevealSpread()` and `setEnvRotation()` retain their kill behavior.
 - Source `p1/Ya` home camera construction and resize projection ownership is now guarded: home camera stays `Ya(55, innerWidth / innerHeight, 1, 2e3)`, initial z `5.5`, and resize projection stays on the `Ya.resize()` plus `Iu.resize()` aspect/update path.
+- Source `yg/U1/I1` main raw camera construction and resize projection ownership is now guarded: main raw camera stays `Ya(Ef(...), Pe.aspect, 1, distance*2)` with distance `1000`, and resize projection stays on the source `yg.resize()` `Ef(...)` FOV/aspect/update path.
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `p1/Ya` home camera constructor and resize projection surface without changing shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
-- Source `p1.setCamera()` constructs `new Ya(55, innerWidth/innerHeight, 1, 2e3)` and sets position `(0,0,5.5)`; source `Ya.resize()` only calls `updateProjectionMatrix()`, and source `Iu.resize()` owns the `camera.aspect=e/t` plus second projection update.
-- `__rogierOutputProbe.camera` exposes `surfaceMode=source-p1-Ya-perspective-55-inner-aspect-near1-far2000-position-5_5`, `resizeProjectionMode=source-Ya-resize-updateProjectionMatrix-plus-Iu-aspect-update`, expected/actual `fov/aspect/near/far`, viewport aspect parity, and the source initial-position marker.
-- `scripts/probe-output-color.mjs` hard-fails on home camera surface drift; `scripts/audit-renderer-output.mjs` extracts source `p1.setCamera()`, `Ya`, and `Iu.resize()` anchors under `sourceManagers.p1HomeCamera`.
-- Previous committed batch was `f1c165a Guard settings state setter ownership`.
+- Added a source-backed runtime/audit guardrail for `yg/U1/I1` main raw camera constructor and resize projection surface without changing shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
+- Source `yg` owns `distance=1e3`, computes `fov=Ef(innerWidth,innerWidth/innerHeight,distance)`, constructs `new Ya(fov,Pe.aspect,1,distance*2)`, positions the camera at z `distance`, keeps `setCameraController(){}` empty, and on resize recomputes `fov=Ef(e,e/t,distance)`, writes `aspect=e/t`, and updates the projection matrix.
+- `__rogierOutputProbe.settings.main.mainRawCamera` exposes `surfaceMode=source-yg-Ya-perspective-Ef-inner-aspect-near1-distance1000-far2000`, `resizeProjectionMode=source-yg-resize-super-then-Ef-fov-aspect-updateProjectionMatrix`, expected/actual `fov/near/far`, distance, position, aspect, and `fovMatchesSource`.
+- `scripts/probe-output-color.mjs` hard-fails on main raw camera surface drift; `scripts/audit-renderer-output.mjs` extracts source `yg`, `Ef(...)`, and `U1/I1` raw-camera anchors under `sourceManagers.mainYgCameraSurface`.
+- Previous committed batch was `4b6d3e6 Guard home camera surface ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -165,15 +166,15 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-home-camera-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-main-yg-camera-audit-rerun.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-home-camera-output-desktop CDP_PORT=9362 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-home-camera-output-mobile CDP_PORT=9363 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-home-camera-thumb-desktop CDP_PORT=9364 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-home-camera-project-media CDP_PORT=9365 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-main-yg-camera-output-desktop-rerun CDP_PORT=9382 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-main-yg-camera-output-mobile-rerun CDP_PORT=9383 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-main-yg-camera-thumb-desktop-rerun CDP_PORT=9384 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-main-yg-camera-project-media-rerun CDP_PORT=9385 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `p1/Ya` home camera surface guardrail batch. Renderer audit wrote `/tmp/rd-home-camera-audit.json`; `sourceManagers.p1HomeCamera` reports source, rebuild, and probe checks as true. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed camera `fov=55`, `near=1`, `far=2000`, viewport aspect parity, and the source camera mode markers. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the `yg/U1/I1` main raw camera `Ef(...)` surface guardrail batch. Renderer audit wrote `/tmp/rd-main-yg-camera-audit-rerun.json`; `sourceManagers.mainYgCameraSurface` reports source, rebuild, and probe checks as true. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed the source main raw camera surface, `Ef(...)` FOV parity, `near=1`, `far=2000`, distance `1000`, and source resize projection markers. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this camera guardrail batch.
 
@@ -232,10 +233,10 @@ Continue source-driven implementation in this order:
    - `ag` main-fluid pass shaders are now source-shaped; do not reformat them away from the source literal surface.
    - `$1/j1/W1/G1` media composite shader text is now source-shaped; do not remove its inert helper/luminance surface just because the active body is pass-through.
    - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
-   - Source `Lu/kA/I1` init settings and `I1` lensflare defaults are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings ownership.
+   - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings or camera-surface ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` child order, `p1/Ya` home camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, and `Se.settings` scalar/media no-kill versus kill-owned setter ownership.
+   - Current rebuild now guards source `p1` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, and `Se.settings` scalar/media no-kill versus kill-owned setter ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

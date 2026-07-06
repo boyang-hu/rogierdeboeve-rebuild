@@ -742,7 +742,20 @@ async function runProbe() {
     ownershipErrors.push("mainRawRenderCamera");
   }
   const mainRawCamera = mainSettings?.mainRawCamera || {};
+  const expectedMainRawFov = (2 * Math.atan(viewport.width / (viewport.width / viewport.height) / (2 * 1000))) * (180 / Math.PI);
+  if (mainRawCamera.surfaceMode !== "source-yg-Ya-perspective-Ef-inner-aspect-near1-distance1000-far2000") {
+    ownershipErrors.push("mainRawCameraSurfaceMode");
+  }
+  if (mainRawCamera.resizeProjectionMode !== "source-yg-resize-super-then-Ef-fov-aspect-updateProjectionMatrix") {
+    ownershipErrors.push("mainRawCameraResizeProjectionMode");
+  }
+  if (Math.abs((mainRawCamera.expectedFov ?? 0) - expectedMainRawFov) > 0.001) ownershipErrors.push("mainRawCameraExpectedFov");
+  if (Math.abs((mainRawCamera.fov ?? 0) - expectedMainRawFov) > 0.001) ownershipErrors.push("mainRawCameraFov");
+  if (mainRawCamera.fovMatchesSource !== true) ownershipErrors.push("mainRawCameraFovMatchesSource");
   if (Math.abs((mainRawCamera.distance ?? 0) - 1000) > 0.001) ownershipErrors.push("mainRawCameraDistance");
+  if (Math.abs((mainRawCamera.expectedNear ?? 0) - 1) > 0.001) ownershipErrors.push("mainRawCameraExpectedNear");
+  if (Math.abs((mainRawCamera.near ?? 0) - 1) > 0.001) ownershipErrors.push("mainRawCameraNear");
+  if (Math.abs((mainRawCamera.expectedFar ?? 0) - 2000) > 0.001) ownershipErrors.push("mainRawCameraExpectedFar");
   if (Math.abs((mainRawCamera.far ?? 0) - 2000) > 0.001) ownershipErrors.push("mainRawCameraFar");
   if (Math.abs((mainRawCamera.aspect ?? 0) - (viewport.width / viewport.height)) > 0.001) ownershipErrors.push("mainRawCameraAspect");
   if (JSON.stringify(mainRawCamera.position || null) !== JSON.stringify([0, 0, 1000])) {
