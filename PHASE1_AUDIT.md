@@ -68,9 +68,42 @@ Recommended cadence:
 - Prioritize source-structure, source-value, and source-behavior parity over any visual-payoff scoring. Visual improvement is not an implementation goal by itself; production changes need mirrored-bundle evidence even when they look better. Low perceived visual payoff is not a reason to stop while a source mismatch remains open.
 - The latest accepted priority criteria are: clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Expected visual payoff is rejected as a priority criterion for Phase 1 planning.
 
-Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; and source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
+Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; and source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-290 `p1/Ya` Home Camera Surface Guardrail
+
+This batch adds a source-backed runtime and audit guardrail for the home work camera constructor and resize projection surface. It does not change shader text, pass order, render targets, route data, visual constants, or production camera formulas.
+
+Source evidence:
+
+- Source `p1.setCamera()` constructs `this.camera = new Ya(55, innerWidth / innerHeight, 1, 2e3)`.
+- Source `p1.setCamera()` sets the home camera position to `(0, 0, 5.5)`.
+- Source `class Ya extends Wt` only defines `constructor(e){ super(e) }` and `resize(){ this.updateProjectionMatrix() }`.
+- Source `Iu.resize(e,t,n)` calls `renderManager.resize(e,t,n)`, `camera.resize(e,t)`, then writes `camera.aspect=e/t` and calls `camera.updateProjectionMatrix()`.
+- Source `p1.resize()` still delegates to `super.resize(e,t,Math.min(n,1.5))`, then owns only the desktop/mobile camera-controller origin and `sceneWrap.y` branch.
+
+Runtime and tooling changes:
+
+- `__rogierOutputProbe.camera` now exposes `surfaceMode=source-p1-Ya-perspective-55-inner-aspect-near1-far2000-position-5_5`.
+- The same probe exposes `resizeProjectionMode=source-Ya-resize-updateProjectionMatrix-plus-Iu-aspect-update`, `initialPositionMode=source-p1-setCamera-position-0-0-5_5`, expected/actual `fov/aspect/near/far`, viewport aspect, and `aspectMatchesViewport`.
+- `scripts/probe-output-color.mjs` now hard-fails if the home camera drifts from `fov=55`, `near=1`, `far=2000`, viewport aspect parity, source initial-position marker, or the source resize projection marker.
+- `scripts/audit-renderer-output.mjs` now extracts source `p1.setCamera()`, `Ya`, and `Iu.resize()` anchors and checks rebuild/probe coverage through `sourceManagers.p1HomeCamera`.
+
+Verification:
+
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-home-camera-audit.json` passed; `sourceManagers.p1HomeCamera` reports source, rebuild, and probe checks as true.
+- `git diff --check` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed and confirmed `camera.fov=55`, `aspect=1.6`, `near=1`, `far=2000`, and `aspectMatchesViewport=true`: `/tmp/rd-home-camera-output-desktop`.
+- Mobile output probe passed and confirmed `camera.fov=55`, `aspect=0.46208530805687204`, `near=1`, `far=2000`, and `aspectMatchesViewport=true`: `/tmp/rd-home-camera-output-mobile`.
+- Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails: `/tmp/rd-home-camera-thumb-desktop`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-home-camera-project-media`.
+
+Decision: keep the home work camera source-shaped as `p1 -> Ya(55, innerWidth/innerHeight, 1, 2e3)` with initial z `5.5`, and keep resize projection ownership on the source `Ya + Iu.resize` path. Phase 1 remains open because this is camera-surface guardrail work only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-289 `Se.settings` Scalar/Media No-Kill Ownership
 

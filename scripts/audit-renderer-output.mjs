@@ -247,6 +247,9 @@ const sourceProjectDataManager = extractAround(bundle, "class is{static getProje
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 9600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
+const sourceP1SetCamera = extractAround(bundle, "setCamera(){this.camera=new Ya(55,innerWidth/innerHeight,1,2e3),this.camera.position.set(0,0,5.5)", 200, 360);
+const sourceYa = extractAround(bundle, "class Ya extends Wt{constructor(e){super(e)}resize(){this.updateProjectionMatrix()}}", 80, 180);
+const sourceIuResize = extractAround(bundle, "resize(e,t,n){this.renderManager.resize(e,t,n),this.camera.resize(e,t),this.camera.aspect=e/t,this.camera.updateProjectionMatrix()", 320, 480);
 const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 700, 900);
 const sourceP1SetBlocks = extractAround(bundle, "setBlocks(){this.blocks=[]", 120, 1300);
 const sourceP1SetLights = extractAround(bundle, "setLights(){this.ambientLight=new", 240, 1000);
@@ -1913,6 +1916,55 @@ const summary = {
         "this.screenMouseSimTargetPos.set(event.clientX / sourceWidth, 1 - event.clientY / sourceHeight)",
       ]),
       excerpt: compact(sourcePe.text),
+    },
+    p1HomeCamera: sourceP1SetCamera && {
+      index: sourceP1SetCamera.index,
+      checks: checks(sourceP1SetCamera.text, [
+        "setCamera(){this.camera=new Ya(55,innerWidth/innerHeight,1,2e3)",
+        "this.camera.position.set(0,0,5.5)",
+      ]),
+      Ya: sourceYa && {
+        index: sourceYa.index,
+        checks: checks(sourceYa.text, [
+          "class Ya extends Wt",
+          "constructor(e){super(e)}",
+          "resize(){this.updateProjectionMatrix()}",
+        ]),
+        excerpt: compact(sourceYa.text),
+      },
+      IuResize: sourceIuResize && {
+        index: sourceIuResize.index,
+        checks: checks(sourceIuResize.text, [
+          "this.renderManager.resize(e,t,n)",
+          "this.camera.resize(e,t)",
+          "this.camera.aspect=e/t",
+          "this.camera.updateProjectionMatrix()",
+        ]),
+        excerpt: compact(sourceIuResize.text),
+      },
+      rebuildChecks: checks(rebuildWebgl, [
+        "private homeCamera = new PerspectiveCamera(55, 1, 1, 2000)",
+        "this.homeCamera.position.set(0, 0, 5.5)",
+        "this.homeCamera.aspect = width / height",
+        "this.homeCamera.updateProjectionMatrix()",
+        "surfaceMode: \"source-p1-Ya-perspective-55-inner-aspect-near1-far2000-position-5_5\"",
+        "resizeProjectionMode: \"source-Ya-resize-updateProjectionMatrix-plus-Iu-aspect-update\"",
+        "initialPositionMode: \"source-p1-setCamera-position-0-0-5_5\"",
+        "expectedFov: 55",
+        "expectedNear: 1",
+        "expectedFar: 2000",
+        "aspectMatchesViewport: Math.abs(this.homeCamera.aspect - window.innerWidth / window.innerHeight) < 0.0001",
+      ]),
+      rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "camera.surfaceMode !== \"source-p1-Ya-perspective-55-inner-aspect-near1-far2000-position-5_5\"",
+        "camera.resizeProjectionMode !== \"source-Ya-resize-updateProjectionMatrix-plus-Iu-aspect-update\"",
+        "camera.initialPositionMode !== \"source-p1-setCamera-position-0-0-5_5\"",
+        "camera.expectedFov !== 55",
+        "camera.expectedNear !== 1",
+        "camera.expectedFar !== 2000",
+        "camera.aspectMatchesViewport !== true",
+      ]),
+      excerpt: compact(sourceP1SetCamera.text),
     },
     p1Resize: sourceP1Resize && {
       index: sourceP1Resize.index,

@@ -146,15 +146,15 @@ Known remaining gaps:
 - Source `Se.setBlocksColor()` ownership is now guarded as a no-kill fan-out setter for every ordinary work material emissive color. It no longer keeps rebuild-only block-color tween registry state, retargets only the active block, or writes custom uniforms from this setter.
 - Source thumb state setter ownership is now guarded as no-kill state tween ownership: `Se.setThumbDarknessIntensity()`, `setThumbDarknessColor()`, `setThumbSaturation()`, and `setThumbMouseLightness()` keep their source `t===0` direct branches, otherwise tween `settings.thumb` state and fan out to thumb composite uniforms or work material `uMouseLightness` on update, without rebuild-owned tween registries.
 - Source `Se.settings` scalar/media setter ownership is now guarded for the source no-kill boundary: `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` do not keep rebuild-owned tween registries or pre-emptive kills, while source kill-owned `setRevealSpread()` and `setEnvRotation()` retain their kill behavior.
+- Source `p1/Ya` home camera construction and resize projection ownership is now guarded: home camera stays `Ya(55, innerWidth / innerHeight, 1, 2e3)`, initial z `5.5`, and resize projection stays on the `Ya.resize()` plus `Iu.resize()` aspect/update path.
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `Se.settings` scalar/media no-kill ownership without changing shader text, render targets, pass order, route behavior, or visual constants.
-- Source `Se.setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` tween `this.settings` / `this.settings.media` and update uniforms from state without stored tween registries or pre-emptive kills.
-- Source `Se.setRevealSpread()` and `Se.setEnvRotation()` explicitly kill their existing anim fields; the rebuild keeps those two kill-owned while removing no-kill scalar/media tween fields.
-- `__rogierOutputProbe.settings.work.settingsStateOwnership` exposes `scalarNoKillMode=source-no-kill-for-darken-saturation-contrast-showScene-fluidStrength-mediaOpacity` and `killOwnedMode=source-kill-owned-revealSpread-envRotation`.
-- `scripts/probe-output-color.mjs` hard-fails on the new markers; `scripts/audit-renderer-output.mjs` checks source/rebuild/probe anchors, rejects removed no-kill tween fields, and requires reveal-spread/env-rotation kill ownership.
-- Previous committed batch was `78d7430 Guard thumb state setter ownership`.
+- Added a source-backed runtime/audit guardrail for `p1/Ya` home camera constructor and resize projection surface without changing shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
+- Source `p1.setCamera()` constructs `new Ya(55, innerWidth/innerHeight, 1, 2e3)` and sets position `(0,0,5.5)`; source `Ya.resize()` only calls `updateProjectionMatrix()`, and source `Iu.resize()` owns the `camera.aspect=e/t` plus second projection update.
+- `__rogierOutputProbe.camera` exposes `surfaceMode=source-p1-Ya-perspective-55-inner-aspect-near1-far2000-position-5_5`, `resizeProjectionMode=source-Ya-resize-updateProjectionMatrix-plus-Iu-aspect-update`, expected/actual `fov/aspect/near/far`, viewport aspect parity, and the source initial-position marker.
+- `scripts/probe-output-color.mjs` hard-fails on home camera surface drift; `scripts/audit-renderer-output.mjs` extracts source `p1.setCamera()`, `Ya`, and `Iu.resize()` anchors under `sourceManagers.p1HomeCamera`.
+- Previous committed batch was `f1c165a Guard settings state setter ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -165,17 +165,17 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-settings-nokill-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-home-camera-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-settings-nokill-output-desktop CDP_PORT=9352 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-settings-nokill-output-mobile CDP_PORT=9353 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-settings-nokill-thumb-desktop CDP_PORT=9354 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-settings-nokill-project-media CDP_PORT=9355 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-home-camera-output-desktop CDP_PORT=9362 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-home-camera-output-mobile CDP_PORT=9363 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-home-camera-thumb-desktop CDP_PORT=9364 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-home-camera-project-media CDP_PORT=9365 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `Se.settings` scalar/media no-kill ownership guardrail batch. Renderer audit wrote `/tmp/rd-settings-nokill-audit.json`; `sourceManagers.Se.settingsStateOwnership` reports `source=true` and `rebuild=true`. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed `settingsStateOwnership.scalarNoKillMode` plus `killOwnedMode`. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the `p1/Ya` home camera surface guardrail batch. Renderer audit wrote `/tmp/rd-home-camera-audit.json`; `sourceManagers.p1HomeCamera` reports source, rebuild, and probe checks as true. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed camera `fov=55`, `near=1`, `far=2000`, viewport aspect parity, and the source camera mode markers. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this settings ownership guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this camera guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
@@ -235,7 +235,7 @@ Continue source-driven implementation in this order:
    - Source `Lu/kA/I1` init settings and `I1` lensflare defaults are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, and `Se.settings` scalar/media no-kill versus kill-owned setter ownership.
+   - Current rebuild now guards source `p1` child order, `p1/Ya` home camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, and `Se.settings` scalar/media no-kill versus kill-owned setter ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.
