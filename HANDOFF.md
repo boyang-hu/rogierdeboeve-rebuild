@@ -143,6 +143,7 @@ Known remaining gaps:
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
+- Source `i1/a1` floor reflection normal constructor/runtime ownership is now guarded: `i1` constructs the reflection normal as a zero vector, while `i1.update()` owns the later `(0,0,1)` write and reflector-rotation application.
 - Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
 - Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement`; floating `ZA/KA` sampler uniforms stay constructor-null because source `ZA.update()` does not write them.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
@@ -169,13 +170,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Extended source `VA/XA/KA` block material constructor/default ownership without changing shader text, render targets, project data, route copy, or visual constants.
-- Source `VA/XA/KA` construct `uReveal=0`, `uMouseLightness=1`, `uMouseSpeed=null`, and the sampler uniforms `tMouseSim/tMouseSim2/tDisplacement=null` where present; runtime writes belong to source `yD`, `Se`, `GA`, `p1`, and `$A`.
-- Rebuild ordinary work and auxiliary materials now construct with those source defaults and record constructor evidence in material `userData`.
-- About blocks now have source-shaped local `Ka` state and `$A.update()`-style runtime writeback for `tMouseSim`, `uMouseSpeed`, and `tDisplacement`; about `tMouseSim2` stays on the source `p1.update()` writer.
-- Floating `ZA/KA` no longer receives rebuild-owned sampler writes from the shared auxiliary update path, so `tMouseSim`, `tMouseSim2`, and `tDisplacement` remain constructor-null unless mirrored-source evidence identifies a writer.
-- Output probe and renderer audit now assert constructor defaults, about runtime binding ownership, and floating no-sampler-write ownership.
-- Previous committed batch was `34fe848 Align block mouse speed constructor ownership`.
+- Aligned source `i1/a1` floor reflection normal constructor/runtime ownership without changing shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
+- Source `i1` constructs `this.normal=new L`; source `i1.update()` later writes `this.normal.set(0,0,1)` and applies the reflector rotation before reflection view, target, texture-matrix, and clip-plane calculations.
+- The rebuild now constructs `floorReflectorNormal` as a zero `Vector3`, records constructor-zero evidence, and keeps the runtime `(0,0,1)` update path as the owner of active reflection normal state.
+- Output probe and renderer audit now assert `reflectorNormalConstructorMode`, `reflectorNormalConstructorWasZero`, and `reflectorNormalRuntimeMode`, and audit rejects restoring the old rebuild-owned `(0,1,0)` constructor.
+- Previous committed batch was `d2c1c3c Align block material constructor defaults`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -186,32 +185,28 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-constructor-defaults-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-constructor-defaults-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-floor-normal-audit-rerun.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-floor-normal-audit-rerun.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-output-desktop VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-thumb node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-media node scripts/probe-project-media.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-interactive node scripts/probe-interactive-mouse.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 ORIGINAL_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-constructor-defaults-about-smoke CDP_PORT=9280 CAPTURE_WAIT=5200 CAPTURE_SET=full node scripts/capture.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-normal-output-desktop VIEWPORT=desktop CDP_PORT=9271 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-normal-output-mobile VIEWPORT=mobile CDP_PORT=9272 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-normal-thumb CDP_PORT=9273 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-normal-media CDP_PORT=9274 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the block material constructor-default/runtime-ownership batch. Renderer audit wrote `/tmp/rd-constructor-defaults-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes, thumb spotlight probe, project-media probe, interactive mouse probe, and the about/full-route smoke passed with no failures/exceptions/console messages in the relevant checks.
+All relevant checks passed in the floor reflection normal constructor/runtime-ownership batch. Renderer audit wrote `/tmp/rd-floor-normal-audit-rerun.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes, thumb spotlight probe, and project-media probe passed with no failures/exceptions/console messages in the relevant checks.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this block material constructor-default/runtime-ownership batch.
 
-Runtime QA was run because the batch touched WebGL material construction and mouse-simulation runtime ownership.
+Runtime QA was run because the batch touched WebGL floor reflection state and output probe coverage.
 
 Verified:
 
-- Renderer audit passed for the block material constructor-default/runtime-ownership batch: `/tmp/rd-constructor-defaults-audit.json`.
+- Renderer audit passed for the floor reflection normal constructor/runtime-ownership batch: `/tmp/rd-floor-normal-audit-rerun.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-constructor-defaults-output-desktop`, `/tmp/rd-constructor-defaults-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-constructor-defaults-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-constructor-defaults-media`.
-- Interactive mouse probe passed: `/tmp/rd-constructor-defaults-interactive`.
-- About/full-route smoke passed; `rebuild-about-desktop` had no failures or exceptions: `/tmp/rd-constructor-defaults-about-smoke`.
+- Desktop and mobile output probes passed: `/tmp/rd-floor-normal-output-desktop`, `/tmp/rd-floor-normal-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-floor-normal-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-floor-normal-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

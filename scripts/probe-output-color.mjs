@@ -1972,6 +1972,19 @@ async function runProbe() {
     floorErrors.push(`reflectionBlurExpectedDirections=${JSON.stringify(reflectionTargets?.blurExpectedDirections || null)}`);
   }
   if (reflectionTargets?.blurPassScreenMode !== "source-i1-private-screen-camera") floorErrors.push("blurPassScreenMode");
+  if (reflectionTargets?.reflectorNormalConstructorMode !== "source-i1-normal-new-Vector3-zero-runtime-update-sets-0-0-1") {
+    floorErrors.push("reflectorNormalConstructorMode");
+  }
+  if (reflectionTargets?.reflectorNormalConstructorWasZero !== true) floorErrors.push("reflectorNormalConstructorWasZero");
+  if (reflectionTargets?.reflectorNormalRuntimeMode !== "source-i1-update-normal-set-0-0-1-then-apply-reflector-rotation") {
+    floorErrors.push("reflectorNormalRuntimeMode");
+  }
+  if (parsed.probe.reflectionState?.camera?.reflectorNormalConstructorMode !== "source-i1-normal-new-Vector3-zero-runtime-update-sets-0-0-1") {
+    floorErrors.push("cameraReflectorNormalConstructorMode");
+  }
+  if (parsed.probe.reflectionState?.camera?.reflectorNormalConstructorWasZero !== true) {
+    floorErrors.push("cameraReflectorNormalConstructorWasZero");
+  }
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
   if (reflectionTargets?.clipBias !== 0) floorErrors.push("clipBias");
   if (reflectionTargets?.blurSwapMode !== "source-i1-write-target-loop-swap") floorErrors.push("blurSwapMode");

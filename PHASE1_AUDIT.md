@@ -72,6 +72,39 @@ Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work b
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 
+### S1-315 `i1/a1` Floor Reflection Normal Constructor Ownership
+
+This batch aligns a narrow source constructor/runtime ownership edge in the floor reflection chain. It does not change shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
+
+Source evidence:
+
+- Source `i1` constructs `this.normal=new L`, so the reflection normal starts as a zero vector.
+- Source `i1.update()` later owns the runtime normal write with `this.normal.set(0,0,1)` followed by `this.normal.applyMatrix4(this.rotationMatrix)`.
+- Source `a1` still owns the floor plane/reflector hierarchy and calls `this.reflector.update(this.renderer,this.scene,this.camera)` from the floor plane `onBeforeRender` visibility toggle.
+
+Runtime and tooling changes:
+
+- `src/client/webgl.ts` now constructs `floorReflectorNormal` as `new Vector3()` instead of pre-setting a rebuild-owned `(0,1,0)`.
+- Runtime reflection update still writes `(0,0,1)` and applies the reflector rotation before computing the view, target, clip plane, and reflection texture matrix.
+- Output probes expose `reflectorNormalConstructorMode`, `reflectorNormalConstructorWasZero`, and `reflectorNormalRuntimeMode` in both the floor reflection target surface and reflection camera surface.
+- `scripts/probe-output-color.mjs` hard-fails if the constructor-zero/runtime-update boundary drifts.
+- `scripts/audit-renderer-output.mjs` checks the source `i1` constructor/update anchors, rebuild coverage, and rejects restoring the old preset `(0,1,0)` constructor.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-floor-normal-audit-rerun.json` passed.
+- Recursive false/null extraction from `/tmp/rd-floor-normal-audit-rerun.json` printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed: `/tmp/rd-floor-normal-output-desktop`.
+- Mobile output probe passed: `/tmp/rd-floor-normal-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-floor-normal-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages: `/tmp/rd-floor-normal-media`.
+
+Decision: keep the floor reflection normal constructor source-zero and leave the `(0,0,1)` normal write to the source `i1.update()` runtime path. Phase 1 remains open because this closes one floor reflection constructor/runtime ownership edge only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
+
 ### S1-314 `VA/XA/KA` Block Material Constructor Defaults and Auxiliary Runtime Ownership
 
 This batch extends the previous `uMouseSpeed` constructor ownership work to the adjacent source-owned constructor/runtime split for work and auxiliary block materials. It does not change shader text, render targets, project data, route copy, or visual constants.

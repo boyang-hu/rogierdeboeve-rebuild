@@ -5066,7 +5066,8 @@ export class WebGLBackdrop {
       : this.floorReflectionTarget.texture,
   };
   private floorReflectorPlane = new Plane();
-  private floorReflectorNormal = new Vector3(0, 1, 0);
+  private floorReflectorNormal = new Vector3();
+  private readonly floorReflectorNormalConstructorWasZero = this.floorReflectorNormal.equals(new Vector3());
   private floorReflectorWorldPosition = new Vector3();
   private floorReflectionCameraWorldPosition = new Vector3();
   private floorReflectionRotationMatrix = new Matrix4();
@@ -10778,6 +10779,9 @@ void main() {
         matrixWorldPosition: this.floorReflectionCameraWorldPosition.toArray(),
         reflectorWorldPosition: this.floorReflectorWorldPosition.toArray(),
         reflectorNormal: this.floorReflectorNormal.toArray(),
+        reflectorNormalConstructorMode: "source-i1-normal-new-Vector3-zero-runtime-update-sets-0-0-1",
+        reflectorNormalConstructorWasZero: this.floorReflectorNormalConstructorWasZero,
+        reflectorNormalRuntimeMode: "source-i1-update-normal-set-0-0-1-then-apply-reflector-rotation",
         clipPlane: this.floorReflectionClipPlane.toArray(),
         projectionRow3: [
           this.floorReflectionCamera.projectionMatrix.elements[2],
@@ -10818,6 +10822,9 @@ void main() {
           const direction = (this.floorReflectionBlurIterations - iteration - 1) * 15;
           return [iteration % 2 === 0 ? direction : 0, iteration % 2 === 0 ? 0 : direction];
         }),
+        reflectorNormalConstructorMode: "source-i1-normal-new-Vector3-zero-runtime-update-sets-0-0-1",
+        reflectorNormalConstructorWasZero: this.floorReflectorNormalConstructorWasZero,
+        reflectorNormalRuntimeMode: "source-i1-update-normal-set-0-0-1-then-apply-reflector-rotation",
         reflectionUniformOwnership: "source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform",
         tReflectUniformShared: this.floorMaterial.uniforms.tReflect === this.floorReflectionRenderTargetUniform,
         uMatrixUniformShared: this.floorMaterial.uniforms.uMatrix === this.floorReflectionTextureMatrixUniform,
