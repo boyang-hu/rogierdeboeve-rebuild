@@ -453,8 +453,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   let lastTouchSelect = 0;
   let webglGalleryEntered = false;
 
-  const lerp = (current: number, target: number, factor: number, delta: number) =>
-    current + (target - current) * (1 - Math.exp(-factor * delta));
+  const sourceRound = (value: number, precision = 4) => {
+    const scale = 10 ** precision;
+    return Math.round(value * scale) / scale;
+  };
+  const sourceDamp = (current: number, target: number, factor: number, delta: number) =>
+    sourceRound(current + (target - current) * (1 - Math.exp(-factor * delta)));
+  const sourceClampRound = (value: number, min: number, max: number) =>
+    sourceRound(Math.min(Math.max(min, value), max));
 
   const setIndexState = (index: number) => {
     activeIndex = index < 0 ? totalItems : index > totalItems ? 0 : index;
@@ -834,10 +840,10 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     lastFrame = now;
     scroll.velocity = scroll.target - scroll.animated;
     checkSpeed();
-    if (snap) scroll.diff = lerp(scroll.diff, 0, 5, delta);
+    if (snap) scroll.diff = sourceDamp(scroll.diff, 0, 5, delta);
     const targetPlusDiff = scroll.target + scroll.diff;
     scroll.remainder = scroll.target - (scroll.target % scroll.limit);
-    scroll.animated = lerp(scroll.animated, targetPlusDiff, 5, delta);
+    scroll.animated = sourceDamp(scroll.animated, targetPlusDiff, 5, delta);
     scroll.current = wrap(scroll.animated, scroll.limit);
     scroll.progress = scroll.current / scroll.limit;
 
@@ -851,8 +857,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
       }
     }
     if (scroll.active) getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta);
-    const rollTarget = Math.max(-4, Math.min(4, scroll.velocity * -0.015));
-    sceneRotation = lerp(sceneRotation, rollTarget, 5, delta);
+    const rollTarget = sourceClampRound(scroll.velocity * -0.015, -4, 4);
+    sceneRotation = sourceDamp(sceneRotation, rollTarget, 5, delta);
     raf = requestAnimationFrame(tick);
   };
 

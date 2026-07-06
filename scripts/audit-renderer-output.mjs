@@ -287,6 +287,7 @@ const sourceDetectGpu = extractAround(bundle, "const XD=({mobileTiers", 220, 520
 const sourceQeGpuCheck = extractAround(bundle, "await this.gpuCheck().catch(()=>{Le.GPU_TIER=3})", 160, 1700);
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
+const sourceYDClass = extractAround(bundle, "class yD extends Ht", 0, 7600);
 const sourceYDUpdateScene = extractAround(bundle, "J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)", 360, 760);
 const sourceYDOnProjectActive = extractAround(bundle, "async onProjectActive(e){", 240, 1600);
 const sourceSDInitSpotlight = extractAround(bundle, "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture", 260, 520);
@@ -2459,6 +2460,24 @@ const summary = {
         "source-bo-clamp-0-1-Fn4",
         "source-Yi-PT-Fn4-exponential-lerp",
       ]),
+      scrollRuntime: {
+        source:
+          sourceYDClass?.text.includes("this.scroll.diff=Yi(this.scroll.diff,0,5,t)") === true
+          && sourceYDClass.text.includes("this.scroll.animated=Yi(this.scroll.animated,this.scroll.targetPlusDiff,5,t)")
+          && sourceYDUpdateScene.text.includes("const t=4,n=bo(this.scroll.velocity*-.015,-t,t)")
+          && sourceYDUpdateScene.text.includes("this.sceneRotation=Yi(this.sceneRotation,n,5,e)"),
+        rebuild:
+          rebuildMain.includes("const sourceRound = (value: number, precision = 4)")
+          && rebuildMain.includes("const sourceDamp = (current: number, target: number, factor: number, delta: number)")
+          && rebuildMain.includes("const sourceClampRound = (value: number, min: number, max: number)")
+          && rebuildMain.includes("if (snap) scroll.diff = sourceDamp(scroll.diff, 0, 5, delta);")
+          && rebuildMain.includes("scroll.animated = sourceDamp(scroll.animated, targetPlusDiff, 5, delta);")
+          && rebuildMain.includes("const rollTarget = sourceClampRound(scroll.velocity * -0.015, -4, 4);")
+          && rebuildMain.includes("sceneRotation = sourceDamp(sceneRotation, rollTarget, 5, delta);")
+          && !rebuildMain.includes("if (snap) scroll.diff = lerp(scroll.diff, 0, 5, delta);")
+          && !rebuildMain.includes("scroll.animated = lerp(scroll.animated, targetPlusDiff, 5, delta);")
+          && !rebuildMain.includes("sceneRotation = lerp(sceneRotation, rollTarget, 5, delta);"),
+      },
       sourceOrder: {
         sceneWrapBeforeTransform:
           sourceYDUpdateScene.text.indexOf("J.workScene.sceneWrap.rotation.y=_a.degToRad(this.scroll.progress*360+180)")
