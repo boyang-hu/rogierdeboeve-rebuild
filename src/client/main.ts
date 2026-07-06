@@ -509,7 +509,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
     if (emitEvents) window.dispatchEvent(new CustomEvent("rd:project-active", { detail: nextProjectId }));
-    if (changedProject && emitEvents) window.dispatchEvent(new CustomEvent("rd:woosh"));
     if (emitScene) getWebgl()?.setProject(payload);
   };
 

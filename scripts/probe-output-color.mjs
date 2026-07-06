@@ -30,11 +30,13 @@ const viewports = {
 const viewport = viewports[viewportName] || viewports.desktop;
 const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const sourceActiveProjectSpotlightIntensityMode = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
-const sourceActiveProjectApplicationOrderMode = "source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional";
+const sourceActiveProjectApplicationOrderMode = "source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional";
+const sourceActiveProjectWooshMode = "source-yD-onProjectActive-ln-playWoosh-after-revealSpread-before-uReveal";
 const sourceActiveProjectApplicationOrder = [
   "activeProject",
   "spotLightIntensity",
   "revealSpread",
+  "woosh",
   "uRevealTweens",
   "ambientLight",
   "mainColor",
@@ -588,13 +590,16 @@ async function runProbe() {
   }
   const activeProjectApplicationOrder = workSettings.activeProjectApplicationOrder || {};
   if (activeProjectApplicationOrder.mode !== sourceActiveProjectApplicationOrderMode) activeRevealErrors.push("activeProjectApplicationOrderMode");
+  if (activeProjectApplicationOrder.wooshMode !== sourceActiveProjectWooshMode) activeRevealErrors.push("activeProjectWooshMode");
+  if (activeProjectApplicationOrder.mainDoesNotOwnActiveProjectWoosh !== true) activeRevealErrors.push("activeProjectWooshMainOwnership");
   if (JSON.stringify(activeProjectApplicationOrder.expected) !== JSON.stringify(sourceActiveProjectApplicationOrder)) {
     activeRevealErrors.push("activeProjectApplicationOrderExpected");
   }
   for (const key of [
     "activeProjectBeforeSpotlight",
     "spotlightBeforeRevealSpread",
-    "revealSpreadBeforeUReveal",
+    "revealSpreadBeforeWoosh",
+    "wooshBeforeUReveal",
     "uRevealBeforeLook",
     "lookBeforeDirectionalLight",
   ]) {

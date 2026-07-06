@@ -32,8 +32,8 @@ export function initAudio() {
   });
   woosh = new Howl({
     src: ["/audio/woosh.webm", "/audio/woosh.ogg", "/audio/woosh.mp3"],
-    volume: 0.2,
-    rate: 1.5,
+    volume: 0.25,
+    rate: 1.8,
   });
   ambient = new Howl({
     src: ["/audio/ambient.webm", "/audio/ambient.ogg", "/audio/ambient-2.mp3"],

@@ -448,11 +448,13 @@ const SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE = [512, 512] as const;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY = 220;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
-const SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE = "source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional";
+const SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE = "source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional";
+const SOURCE_ACTIVE_PROJECT_WOOSH_MODE = "source-yD-onProjectActive-ln-playWoosh-after-revealSpread-before-uReveal";
 const SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER = [
   "activeProject",
   "spotLightIntensity",
   "revealSpread",
+  "woosh",
   "uRevealTweens",
   "ambientLight",
   "mainColor",
@@ -5495,6 +5497,7 @@ export class WebGLBackdrop {
     this.activeSlug = payload.slug ?? this.activeSlug;
     this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1);
     this.setRevealSpread(0);
+    window.dispatchEvent(new CustomEvent("rd:woosh"));
     if (active) this.setProjectBlockReveal(active);
     this.applyProjectLook(payload);
     this.setDirectionalLightIntensity(1.5);
@@ -5630,10 +5633,13 @@ export class WebGLBackdrop {
   private sourceActiveProjectApplicationOrderProbe() {
     return {
       mode: SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE,
+      wooshMode: SOURCE_ACTIVE_PROJECT_WOOSH_MODE,
       expected: [...SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER],
+      mainDoesNotOwnActiveProjectWoosh: true,
       activeProjectBeforeSpotlight: true,
       spotlightBeforeRevealSpread: true,
-      revealSpreadBeforeUReveal: true,
+      revealSpreadBeforeWoosh: true,
+      wooshBeforeUReveal: true,
       uRevealBeforeLook: true,
       lookBeforeDirectionalLight: true,
     };

@@ -14,6 +14,7 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-renderer-outpu
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
 const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
 const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
+const rebuildAudioPath = process.env.REBUILD_AUDIO || "src/client/audio.ts";
 const rebuildMotionPath = process.env.REBUILD_MOTION || "src/client/motion.ts";
 const rebuildSitePath = process.env.REBUILD_SITE || "src/data/site.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
@@ -169,6 +170,7 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
+const rebuildAudio = readFileSync(rebuildAudioPath, "utf8");
 const rebuildMotion = readFileSync(rebuildMotionPath, "utf8");
 const rebuildSite = readFileSync(rebuildSitePath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
@@ -309,6 +311,7 @@ const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(
 const sourceYDClass = extractAround(bundle, "class yD extends Ht", 0, 7600);
 const sourceYDUpdateScene = extractAround(bundle, "J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)", 360, 760);
 const sourceYDOnProjectActive = extractAround(bundle, "async onProjectActive(e){", 240, 1600);
+const sourceAudioWoosh = extractAround(bundle, "this.woosh=new zi.Howl({src:[\"/audio/woosh.webm\"", 220, 420);
 const sourceSDInitSpotlight = extractAround(bundle, "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture", 260, 520);
 const sourceThumbW1 = extractAround(bundle, "class w1 extends", 320, 1700);
 const sourceThumbX1 = extractAround(bundle, "class x1 extends Lo", 700, 500);
@@ -2647,6 +2650,7 @@ const summary = {
         "J.workScene.blocks.forEach((a,c)=>{c!==n&&this.inAnimation.to(a.instance.material.customUniforms.uReveal",
         "this.inAnimation.to(J.workScene.blocks[n].instance.material.customUniforms.uReveal,{value:1,delay:.2,ease:\"power4.out\",duration:4},0)",
         "Se.setRevealSpread(0)",
+        "ln.playWoosh()",
       ]),
       ownership: {
         sourceActiveRevealOnly:
@@ -2667,6 +2671,7 @@ const summary = {
             "this.activeProject=e",
             "Se.setSpotLightIntensity(t.data.spotlight||J.workScene.maxSpotLightIntensity,1)",
             "Se.setRevealSpread(0)",
+            "ln.playWoosh()",
             "J.workScene.blocks.forEach((a,c)=>{c!==n&&this.inAnimation.to",
             "this.inAnimation.to(J.workScene.blocks[n].instance.material.customUniforms.uReveal,{value:1,delay:.2,ease:\"power4.out\",duration:4},0)",
             "Se.setAmbientLight(r,i)",
@@ -2694,10 +2699,20 @@ const summary = {
             "this.activeSlug = payload.slug ?? this.activeSlug",
             "this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1)",
             "this.setRevealSpread(0)",
+            "window.dispatchEvent(new CustomEvent(\"rd:woosh\"))",
             "this.setProjectBlockReveal(active)",
             "this.applyProjectLook(payload)",
             "this.setDirectionalLightIntensity(1.5)",
           ]),
+        rebuildMainWooshOwnership:
+          !rebuildMain.includes("window.dispatchEvent(new CustomEvent(\"rd:woosh\"))"),
+        sourceWooshHowl:
+          Boolean(sourceAudioWoosh)
+          && sourceAudioWoosh.text.includes("this.woosh=new zi.Howl({src:[\"/audio/woosh.webm\",\"/audio/woosh.ogg\",\"/audio/woosh.mp3\"],volume:.25,rate:1.8})"),
+        rebuildWooshHowl:
+          rebuildAudio.includes("src: [\"/audio/woosh.webm\", \"/audio/woosh.ogg\", \"/audio/woosh.mp3\"]")
+          && rebuildAudio.includes("volume: 0.25")
+          && rebuildAudio.includes("rate: 1.8"),
         rebuildProjectLook:
           Boolean(rebuildApplyProjectLook)
           && orderedIncludes(rebuildApplyProjectLook, [
@@ -2724,11 +2739,17 @@ const summary = {
           ])
           && !rebuildEnterWorkGallery.includes("this.setRevealSpread(0)"),
         rebuildProbeCoverage:
-          rebuildWebgl.includes("SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE = \"source-yD-onProjectActive-spotlight-reveal-uReveal-before-look-directional\"")
+          rebuildWebgl.includes("SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE = \"source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional\"")
+          && rebuildWebgl.includes("SOURCE_ACTIVE_PROJECT_WOOSH_MODE = \"source-yD-onProjectActive-ln-playWoosh-after-revealSpread-before-uReveal\"")
           && rebuildWebgl.includes("private sourceActiveProjectApplicationOrderProbe()")
+          && rebuildWebgl.includes("wooshBeforeUReveal: true")
           && rebuildWebgl.includes("activeProjectApplicationOrder: this.sourceActiveProjectApplicationOrderProbe()")
+          && rebuildOutputProbe.includes("sourceActiveProjectWooshMode")
+          && rebuildOutputProbe.includes("activeProjectWooshMode")
           && rebuildOutputProbe.includes("sourceActiveProjectApplicationOrderMode")
           && rebuildOutputProbe.includes("activeProjectApplicationOrder")
+          && rebuildThumbProbe.includes("sourceActiveProjectWooshMode")
+          && rebuildThumbProbe.includes("activeProjectWooshMode")
           && rebuildThumbProbe.includes("sourceActiveProjectApplicationOrderMode")
           && rebuildThumbProbe.includes("activeProjectApplicationOrder"),
       },
