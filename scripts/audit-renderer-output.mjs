@@ -305,6 +305,7 @@ const sourceSkyZ1 = extractAround(bundle, "class z1 extends", 500, 1000);
 const sourceSkyB1 = extractTemplate(bundle, "B1", "`,Zs=");
 const sourceVA = extractAround(bundle, "class VA extends", 320, 2200);
 const sourceXA = extractAround(bundle, "class XA extends", 320, 2200);
+const sourceKA = extractAround(bundle, "class KA extends", 320, 2200);
 const sourceMG = extractAround(bundle, "class mg extends", 0, 5900);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceDollarA = extractAround(bundle, "class $A extends", 200, 5600);
@@ -372,6 +373,8 @@ const sourceA1Signature = orderSignature(sourceA1Order);
 const rebuildA1Signature = orderSignature(rebuildA1Order);
 const sourceA1FlowSignature = sourceA1Signature.filter((anchor) => anchor !== "noise sample");
 const rebuildA1FlowSignature = rebuildA1Signature.filter((anchor) => anchor !== "noise sample");
+const sourceXABody = sourceXA?.text.slice(sourceXA.text.indexOf("class XA extends"), sourceXA.text.indexOf("class $A extends")) ?? "";
+const sourceKABody = sourceKA?.text.slice(sourceKA.text.indexOf("class KA extends"), sourceKA.text.indexOf("class ZA extends")) ?? "";
 
 const localDefaultTarget = new WebGLRenderTarget(1, 1);
 const localSourceTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
@@ -3476,6 +3479,67 @@ const summary = {
         !rebuildWebgl.includes("item.material.uniforms.uCoords.value.set(this.workRawTarget.width, this.workRawTarget.height)")
         && !rebuildWebgl.includes("item.material.uniforms.uCoords.value.set(workRenderWidth, workRenderHeight)"),
       excerpt: compact(sourceGA.text),
+    },
+    auxiliaryBlockMaterials: {
+      sourceXA: {
+        checks: checks(sourceXABody, [
+          "class XA extends Vn",
+          "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
+          "this.depthTest=!1,this.renderOrder=10,this.depthWrite=!1",
+          "uMouse:new I(new Q)",
+          "uMouseFactor:new I(1)",
+          "uMouseLightness:new I(1)",
+          "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
+          "uReveal:new I(0),uRevealSpread:new I(1)",
+          "uScrollOpacity:new I(1)",
+        ]),
+        defaultDepthState: {
+          depthTestFalse: sourceXABody.includes("this.depthTest=!1"),
+          depthWriteFalse: sourceXABody.includes("this.depthWrite=!1"),
+          renderOrder10: sourceXABody.includes("this.renderOrder=10"),
+        },
+      },
+      sourceKA: sourceKA && {
+        index: sourceKA.index,
+        checks: checks(sourceKABody, [
+          "class KA extends Vn",
+          "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
+          "uMouse:new I(new Q)",
+          "uMouseFactor:new I(1)",
+          "uMouseLightness:new I(1)",
+          "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
+          "uReveal:new I(0),uRevealSpread:new I(10)",
+          "uRevealProject:new I(1),uRevealSides:new I(1)",
+          "uScrollOpacity:new I(1)",
+        ]),
+        defaultDepthState: {
+          keepsDepthTestDefault: !sourceKABody.includes("this.depthTest=!1"),
+          keepsDepthWriteDefault: !sourceKABody.includes("this.depthWrite=!1"),
+          keepsRenderOrderDefault: !sourceKABody.includes("this.renderOrder=10"),
+        },
+        excerpt: compact(sourceKABody),
+      },
+      rebuildChecks: checks(rebuildWebgl, [
+        "uMouse: { value: new Vector2(0, 0) }",
+        "uUvOffsetScale: { value: 1 }",
+        "...(kind === \"about\" ? { depthWrite: false, depthTest: false } : {})",
+        "if (kind === \"about\") material.renderOrder = 10",
+        "mode: \"source-XA-about-material-state\"",
+        "mode: \"source-KA-floating-material-state\"",
+        "floatingAuxiliaryMaterial: this.floatingBlocks ?",
+      ]),
+      probeChecks: checks(rebuildOutputProbe, [
+        "auxiliaryMaterial?.mode !== \"source-XA-about-material-state\"",
+        "auxiliaryMaterial?.renderOrder !== 10",
+        "auxiliaryMaterial?.uMouseType !== \"Vector2\"",
+        "auxiliaryMaterial?.uUvOffsetScale ?? 0",
+        "floatingAuxiliaryMaterial?.mode !== \"source-KA-floating-material-state\"",
+        "floatingAuxiliaryMaterial?.depthWrite !== true",
+        "floatingAuxiliaryMaterial?.depthTest !== true",
+        "floatingAuxiliaryMaterial?.renderOrder ?? null",
+        "floatingAuxiliaryMaterial?.uMouseType !== \"Vector2\"",
+        "floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0",
+      ]),
     },
     dollarAAboutBlocks: sourceDollarA && {
       index: sourceDollarA.index,

@@ -5455,9 +5455,10 @@ export class WebGLBackdrop {
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: 1 },
       uMouseFactor: { value: 1 },
+      uMouse: { value: new Vector2(0, 0) },
       uAuxiliaryMaterial: { value: 1 },
       uUvOffset: { value: new Vector2(0, 0) },
-      uUvOffsetScale: { value: 1.5 },
+      uUvOffsetScale: { value: 1 },
       uScrollOpacity: { value: 1 },
       tMouseSim: { value: this.placeholder },
       tMouseSim2: { value: this.screenMouseSimulationTexture },
@@ -5474,11 +5475,10 @@ export class WebGLBackdrop {
       metalness: SOURCE_WORK_METALNESS,
       dithering: true,
       transparent: true,
-      depthWrite: false,
-      depthTest: false,
+      ...(kind === "about" ? { depthWrite: false, depthTest: false } : {}),
     }) as WorkBlockMaterial;
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
-    material.renderOrder = 10;
+    if (kind === "about") material.renderOrder = 10;
     material.uniforms = uniforms;
     material.onBeforeCompile = (shader) => {
       patchWorkBlockShader(shader, uniforms, "auxiliary");
@@ -8691,6 +8691,7 @@ void main() {
           materialStateMode: "source-VA-meshstandard-default-toneMapped",
           vertexWorldPositionMode: "source-HA-unconditional-instance-world",
           auxiliaryMaterial: this.aboutBlocks ? {
+            mode: "source-XA-about-material-state",
             toneMapped: this.aboutBlocks.material.toneMapped,
             transparent: this.aboutBlocks.material.transparent,
             depthWrite: this.aboutBlocks.material.depthWrite,
@@ -8699,6 +8700,27 @@ void main() {
             envMapIntensity: this.aboutBlocks.material.envMapIntensity,
             roughness: this.aboutBlocks.material.roughness,
             metalness: this.aboutBlocks.material.metalness,
+            renderOrder: this.aboutBlocks.material.renderOrder,
+            uMouseType: this.aboutBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
+            uMouse: this.aboutBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
+            uUvOffsetScale: this.aboutBlocks.material.uniforms.uUvOffsetScale.value,
+            uMouseSpeed: this.aboutBlocks.material.uniforms.uMouseSpeed.value,
+          } : null,
+          floatingAuxiliaryMaterial: this.floatingBlocks ? {
+            mode: "source-KA-floating-material-state",
+            toneMapped: this.floatingBlocks.material.toneMapped,
+            transparent: this.floatingBlocks.material.transparent,
+            depthWrite: this.floatingBlocks.material.depthWrite,
+            depthTest: this.floatingBlocks.material.depthTest,
+            dithering: this.floatingBlocks.material.dithering,
+            envMapIntensity: this.floatingBlocks.material.envMapIntensity,
+            roughness: this.floatingBlocks.material.roughness,
+            metalness: this.floatingBlocks.material.metalness,
+            renderOrder: this.floatingBlocks.material.renderOrder ?? null,
+            uMouseType: this.floatingBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
+            uMouse: this.floatingBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
+            uUvOffsetScale: this.floatingBlocks.material.uniforms.uUvOffsetScale.value,
+            uMouseSpeed: this.floatingBlocks.material.uniforms.uMouseSpeed.value,
           } : null,
         },
         main: {

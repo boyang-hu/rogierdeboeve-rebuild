@@ -143,6 +143,7 @@ Known remaining gaps:
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
+- Source `XA/KA` auxiliary material constructor state is now guarded: about keeps `XA` depth-disabled `renderOrder=10` state, floating keeps `KA` default depth state and no material `renderOrder`, and both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults. The auxiliary shader bridge is still open.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
@@ -161,14 +162,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned `I1/ag/eA` main-fluid viscosity topology.
-- `MainFluidPass` now constructs `viscosityMaterial`, `viscosityScene`, `viscosityA`, and `viscosityB`.
-- Source viscosity defaults are explicit: `enabled:false`, `intensity:30`, and `iterations:5`.
-- `updateMainFluidPass()` keeps the `eA` branch constructed but default-disabled, so active production behavior remains unchanged unless the source flag is enabled.
-- `mainFluidProbe()` exposes seven target keys, viscosity defaults/runtime mode, constructor `v`, `source-eA-raw-glsl3`, and `viscosityA/B` target probes.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on dropping the seven-target topology or losing `eA` source material/target evidence.
-- Previous committed batch was `f34358b Align nD sky binding lifecycle`.
-- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `XA/KA` auxiliary block material constructor state.
+- `createAuxiliaryBlockMaterial()` now gives auxiliary materials source `uMouse:Vector2(0,0)` and `uUvOffsetScale=1`.
+- About `XA` keeps `depthWrite=false`, `depthTest=false`, and material `renderOrder=10`.
+- Floating `KA` no longer inherits about's depth overrides or material `renderOrder`; probe reports `depthWrite=true`, `depthTest=true`, and `renderOrder=null`.
+- `__rogierOutputProbe.settings.work` now exposes separate `auxiliaryMaterial` and `floatingAuxiliaryMaterial` records.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on `XA/KA` constructor-state drift.
+- Previous committed batch was `5945774 Align ag viscosity topology`.
+- Phase 1 remains open for the auxiliary shader bridge, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -181,33 +182,34 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 node --check scripts/probe-interactive-mouse.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-ag-viscosity-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-aux-material-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-ag-viscosity-output-desktop CDP_PORT=9661 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-ag-viscosity-output-mobile CDP_PORT=9662 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-ag-viscosity-thumb-desktop CDP_PORT=9663 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-ag-viscosity-thumb-mobile CDP_PORT=9664 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-ag-viscosity-project-media-json CDP_PORT=9667 node scripts/probe-project-media.mjs > /tmp/rd-ag-viscosity-project-media.json
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 SKIP_SCREENSHOT=1 CDP_PORT=9278 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 SKIP_SCREENSHOT=1 VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile CDP_PORT=9234 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 CDP_PORT=9283 node scripts/probe-project-media.mjs
 # In a separate shell for the static interactive rerun:
-PORT=5180 HOST=127.0.0.1 node scripts/serve.mjs
+PORT=5180 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
 # Then run:
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5180 OUT_DIR=/tmp/rd-ag-viscosity-interactive-static CDP_PORT=9668 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs > /tmp/rd-ag-viscosity-interactive-static.json
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9241 node scripts/probe-interactive-mouse.mjs
 ```
 
-All relevant checks passed in the `I1/ag/eA` main-fluid viscosity topology batch. Renderer audit wrote `/tmp/rd-ag-viscosity-audit.json`; the new `agFluid` audit subtree has no false/null values. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and asserted the seven-target topology, disabled viscosity defaults, `source-eA-raw-glsl3`, and FloatType/depthless/stencilless targets. Desktop/mobile thumb spotlight probes passed. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`. Static interactive mouse probe passed with zero failures, exceptions, or console messages, confirming screen/local mouse response while main-fluid interaction stayed default-disabled.
+All relevant checks passed in the `XA/KA` auxiliary material constructor-state batch. Renderer audit wrote `/tmp/rd-aux-material-audit.json`; the new `sourceManagers.auxiliaryBlockMaterials` audit subtree has no false/null values. Desktop/mobile output probes passed and asserted separate about/floating material state. Desktop/mobile thumb spotlight probes passed. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`. Static interactive mouse probe passed with zero failures, exceptions, or console messages. A static `/about/` smoke against `http://127.0.0.1:5180/about/` confirmed `aboutVisible=true`, `floatingVisible=true`, source `XA`/`KA` material modes, and no failures/exceptions/console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this viscosity topology batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this auxiliary material batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the viscosity topology batch: `/tmp/rd-ag-viscosity-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-ag-viscosity-output-desktop` and `/tmp/rd-ag-viscosity-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-ag-viscosity-thumb-desktop` and `/tmp/rd-ag-viscosity-thumb-mobile`.
+- Renderer audit passed for the auxiliary material batch: `/tmp/rd-aux-material-audit.json`.
+- Desktop/mobile output probes passed and asserted `source-XA-about-material-state` plus `source-KA-floating-material-state`.
+- Desktop/mobile thumb spotlight probes passed.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
-- Static interactive mouse probe passed for `/tmp/rd-ag-viscosity-interactive-static`.
+- Static interactive mouse probe passed with zero failures/exceptions/console messages.
+- Static `/about/` smoke passed with about/floating blocks visible and source material modes present.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

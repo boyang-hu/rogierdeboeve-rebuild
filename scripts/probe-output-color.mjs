@@ -320,6 +320,7 @@ async function runProbe() {
   const workSettings = parsed.probe.settings?.work || {};
   const activeMaterial = workSettings.activeMaterial;
   const auxiliaryMaterial = workSettings.auxiliaryMaterial;
+  const floatingAuxiliaryMaterial = workSettings.floatingAuxiliaryMaterial;
   const materialErrors = [];
   if (workSettings.materialStateMode !== "source-VA-meshstandard-default-toneMapped") materialErrors.push("materialStateMode");
   if (workSettings.vertexWorldPositionMode !== "source-HA-unconditional-instance-world") materialErrors.push("vertexWorldPositionMode");
@@ -356,6 +357,7 @@ async function runProbe() {
   if (!Array.isArray(blocksColor.activeEmissive) || blocksColor.activeEmissive.length !== 3) materialErrors.push("blocksColorActiveEmissive");
   if (blocksColor.allWorkEmissiveMatchesActive !== true) materialErrors.push("blocksColorFanout");
   if (!auxiliaryMaterial) materialErrors.push("auxiliaryMaterialMissing");
+  if (auxiliaryMaterial?.mode !== "source-XA-about-material-state") materialErrors.push("auxMode");
   if (auxiliaryMaterial?.toneMapped !== true) materialErrors.push("auxToneMapped");
   if (auxiliaryMaterial?.transparent !== true) materialErrors.push("auxTransparent");
   if (auxiliaryMaterial?.depthWrite !== false) materialErrors.push("auxDepthWrite");
@@ -364,6 +366,22 @@ async function runProbe() {
   if (Math.abs((auxiliaryMaterial?.envMapIntensity ?? 0) - 0.75) > 0.001) materialErrors.push("auxEnvMapIntensity");
   if (Math.abs((auxiliaryMaterial?.roughness ?? 0) - 1) > 0.001) materialErrors.push("auxRoughness");
   if (Math.abs((auxiliaryMaterial?.metalness ?? 0) - 0) > 0.001) materialErrors.push("auxMetalness");
+  if (auxiliaryMaterial?.renderOrder !== 10) materialErrors.push("auxRenderOrder");
+  if (auxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("auxMouseUniform");
+  if (Math.abs((auxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("auxUvOffsetScale");
+  if (!floatingAuxiliaryMaterial) materialErrors.push("floatingAuxiliaryMaterialMissing");
+  if (floatingAuxiliaryMaterial?.mode !== "source-KA-floating-material-state") materialErrors.push("floatingAuxMode");
+  if (floatingAuxiliaryMaterial?.toneMapped !== true) materialErrors.push("floatingAuxToneMapped");
+  if (floatingAuxiliaryMaterial?.transparent !== true) materialErrors.push("floatingAuxTransparent");
+  if (floatingAuxiliaryMaterial?.depthWrite !== true) materialErrors.push("floatingAuxDepthWrite");
+  if (floatingAuxiliaryMaterial?.depthTest !== true) materialErrors.push("floatingAuxDepthTest");
+  if (floatingAuxiliaryMaterial?.dithering !== true) materialErrors.push("floatingAuxDithering");
+  if (Math.abs((floatingAuxiliaryMaterial?.envMapIntensity ?? 0) - 0.75) > 0.001) materialErrors.push("floatingAuxEnvMapIntensity");
+  if (Math.abs((floatingAuxiliaryMaterial?.roughness ?? 0) - 1) > 0.001) materialErrors.push("floatingAuxRoughness");
+  if (Math.abs((floatingAuxiliaryMaterial?.metalness ?? 0) - 0) > 0.001) materialErrors.push("floatingAuxMetalness");
+  if ((floatingAuxiliaryMaterial?.renderOrder ?? null) !== null) materialErrors.push("floatingAuxRenderOrder");
+  if (floatingAuxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("floatingAuxMouseUniform");
+  if (Math.abs((floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("floatingAuxUvOffsetScale");
   if (materialErrors.length) {
     throw new Error(`VA material source-state mismatch: ${materialErrors.join(", ")}`);
   }
