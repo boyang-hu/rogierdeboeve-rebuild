@@ -358,6 +358,20 @@ async function runProbe() {
   if (auxiliaryLifecycle.aboutEntryVisibilityMode !== "source-TD-addEvents-visible-before-animateIn") {
     materialErrors.push("auxiliaryAboutEntryVisibility");
   }
+  if (auxiliaryLifecycle.aboutSpotlightLifecycleMode !== "source-TD-addEvents-100ms-map-resize-200ms-initial-scroll") {
+    materialErrors.push("auxiliaryAboutSpotlightLifecycleMode");
+  }
+  if (auxiliaryLifecycle.aboutMapDelayMs !== 100) materialErrors.push("auxiliaryAboutMapDelay");
+  if (auxiliaryLifecycle.aboutInitialScrollDelayMs !== 200) materialErrors.push("auxiliaryAboutInitialScrollDelay");
+  if (auxiliaryLifecycle.aboutMapBindingMode !== "source-TD-after-100ms-character-composite-not-enter-state") {
+    materialErrors.push("auxiliaryAboutMapBindingMode");
+  }
+  if (auxiliaryLifecycle.aboutResizeMode !== "source-TD-pe-FORCE_RESIZE-after-character-map") {
+    materialErrors.push("auxiliaryAboutResizeMode");
+  }
+  if (auxiliaryLifecycle.aboutInitialScrollMode !== "source-TD-await-200ms-after-map-then-onScroll") {
+    materialErrors.push("auxiliaryAboutInitialScrollMode");
+  }
   if (auxiliaryLifecycle.floatingEntryVisibilityMode !== "source-Fg-animateIn-onStart-visible-not-enter-state") {
     materialErrors.push("auxiliaryFloatingEntryVisibility");
   }

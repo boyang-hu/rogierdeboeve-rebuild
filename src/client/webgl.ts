@@ -443,6 +443,8 @@ const SOURCE_SPOTLIGHT_SHADOW_CAMERA_FAR = 500;
 const SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE = [512, 512] as const;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY = 220;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
+const SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS = 100;
+const SOURCE_TD_INITIAL_SCROLL_DELAY_MS = 200;
 const SOURCE_ACTIVE_PROJECT_ORDER = [
   "hashgraph-vc",
   "gc-2026",
@@ -4521,6 +4523,22 @@ export class WebGLBackdrop {
   private envRotationTween?: gsap.core.Tween;
   private auxiliaryRevealTweens: gsap.core.Tween[] = [];
   private mediaTranslationTweens: gsap.core.Tween[] = [];
+  private aboutSpotlightMapTimer: ReturnType<typeof window.setTimeout> | null = null;
+  private aboutInitialScrollTimer: ReturnType<typeof window.setTimeout> | null = null;
+  private aboutVisualRafActive = false;
+  private aboutVisualLifecycle = {
+    mode: "source-TD-addEvents-100ms-map-resize-200ms-initial-scroll",
+    mapDelayMs: SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS,
+    initialScrollDelayMs: SOURCE_TD_INITIAL_SCROLL_DELAY_MS,
+    mapBindingMode: "source-TD-after-100ms-character-composite-not-enter-state",
+    resizeMode: "source-TD-pe-FORCE_RESIZE-after-character-map",
+    initialScrollMode: "source-TD-await-200ms-after-map-then-onScroll",
+    setupKeepsPreviousSpotlightMap: true,
+    rafActiveAfterMapDelay: false,
+    mapBoundAfterDelay: false,
+    forceResizeAfterMapBind: false,
+    initialScrollAfterDelay: false,
+  };
   private maxSpotLightIntensity = SOURCE_HOME_SPOTLIGHT_INTENSITY;
   private spotLightParallax = true;
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
@@ -5016,7 +5034,58 @@ export class WebGLBackdrop {
     this.setFluidStrength(1);
   }
 
+  private clearAboutVisualLifecycleTimers() {
+    if (this.aboutSpotlightMapTimer !== null) {
+      window.clearTimeout(this.aboutSpotlightMapTimer);
+      this.aboutSpotlightMapTimer = null;
+    }
+    if (this.aboutInitialScrollTimer !== null) {
+      window.clearTimeout(this.aboutInitialScrollTimer);
+      this.aboutInitialScrollTimer = null;
+    }
+  }
+
+  private resetAboutVisualLifecycleState() {
+    this.aboutVisualRafActive = false;
+    this.aboutVisualLifecycle.rafActiveAfterMapDelay = false;
+    this.aboutVisualLifecycle.mapBoundAfterDelay = false;
+    this.aboutVisualLifecycle.forceResizeAfterMapBind = false;
+    this.aboutVisualLifecycle.initialScrollAfterDelay = false;
+    this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap = this.spotLight.map !== this.characterTarget.texture;
+  }
+
+  private applySourceAboutScrollState() {
+    const pageScroll = this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY;
+    this.updateAboutSpotlight();
+    if (this.aboutBlocks) {
+      this.aboutBlocks.material.uniforms.uScrollOpacity.value =
+        window.innerWidth >= BREAKPOINT_LG ? 1 : MathUtils.clamp(1 - pageScroll / Math.max(1, window.innerHeight * 0.25), 0, 1);
+    }
+  }
+
+  private scheduleAboutVisualLifecycle() {
+    this.clearAboutVisualLifecycleTimers();
+    this.resetAboutVisualLifecycleState();
+    this.aboutSpotlightMapTimer = window.setTimeout(() => {
+      this.aboutSpotlightMapTimer = null;
+      if (this.destroyed || !this.aboutBlocks?.group.visible) return;
+      this.aboutVisualRafActive = true;
+      this.aboutVisualLifecycle.rafActiveAfterMapDelay = true;
+      this.spotLight.map = this.characterTarget.texture;
+      this.aboutVisualLifecycle.mapBoundAfterDelay = true;
+      this.aboutVisualLifecycle.forceResizeAfterMapBind = true;
+      this.resize();
+      this.aboutInitialScrollTimer = window.setTimeout(() => {
+        this.aboutInitialScrollTimer = null;
+        if (this.destroyed || !this.aboutBlocks?.group.visible) return;
+        this.applySourceAboutScrollState();
+        this.aboutVisualLifecycle.initialScrollAfterDelay = true;
+      }, SOURCE_TD_INITIAL_SCROLL_DELAY_MS);
+    }, SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS);
+  }
+
   enterAboutVisualState(visual?: HTMLElement | null, floating?: HTMLElement | null) {
+    this.clearAboutVisualLifecycleTimers();
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     this.setMainColor(DEFAULT_COLOR, 0);
@@ -5027,7 +5096,6 @@ export class WebGLBackdrop {
     this.setAmbientLight("#000000", 1);
     this.setDirectionalLightIntensity(5);
     this.spotLightParallax = false;
-    this.spotLight.map = this.characterTarget.texture;
     this.setSpotLightIntensity(0, 0);
     if (this.aboutBlocks) {
       this.aboutBlocks.track = visual ?? null;
@@ -5047,8 +5115,7 @@ export class WebGLBackdrop {
     this.auxiliaryPageScroll = window.scrollY;
     this.auxiliaryPageScrollVelocity = 0;
     this.auxiliaryScrollLast = window.scrollY;
-    this.resize();
-    this.updateAboutSpotlight();
+    this.scheduleAboutVisualLifecycle();
   }
 
   setAboutScrollState(scroll = window.scrollY, velocity = 0) {
@@ -5085,6 +5152,8 @@ export class WebGLBackdrop {
   }
 
   animateAboutVisualOut() {
+    this.clearAboutVisualLifecycleTimers();
+    this.aboutVisualRafActive = false;
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     if (this.aboutBlocks) {
@@ -5121,6 +5190,8 @@ export class WebGLBackdrop {
   }
 
   destroyAboutVisualState() {
+    this.clearAboutVisualLifecycleTimers();
+    this.aboutVisualRafActive = false;
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     if (this.aboutBlocks) {
@@ -5199,6 +5270,7 @@ export class WebGLBackdrop {
       window.clearTimeout(this.sourceInitLifecycleTimer);
       this.sourceInitLifecycleTimer = null;
     }
+    this.clearAboutVisualLifecycleTimers();
     cancelAnimationFrame(this.raf);
     window.removeEventListener("resize", this.resize);
     window.removeEventListener("mousemove", this.onMouseMove);
@@ -7715,10 +7787,8 @@ void main() {
       item.group.position.y = item.offset.y + item.translation.y + (window.innerWidth >= BREAKPOINT_LG ? pageScroll : 0) * item.trackScaleF;
     };
     updateShared(this.aboutBlocks);
-    if (this.aboutBlocks?.group.visible) {
-      this.aboutBlocks.material.uniforms.uScrollOpacity.value =
-        window.innerWidth >= BREAKPOINT_LG ? 1 : MathUtils.clamp(1 - pageScroll / Math.max(1, window.innerHeight * 0.25), 0, 1);
-      this.updateAboutSpotlight();
+    if (this.aboutBlocks?.group.visible && this.aboutVisualRafActive) {
+      this.applySourceAboutScrollState();
     }
     const item = this.floatingBlocks;
     if (!item?.group.visible) return;
@@ -7813,7 +7883,7 @@ void main() {
     if (this.spotLightParallax) {
       this.spotLight.position.x = this.homeCamera.position.x * 0.175;
       this.spotLight.position.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
-    } else {
+    } else if (this.aboutVisualRafActive) {
       this.updateAboutSpotlight();
     }
     this.updateVisibleWorkItems(time, delta);
@@ -8723,6 +8793,20 @@ void main() {
           auxiliaryLifecycle: {
             mode: "source-TD-Fg-split-about-floating-lifecycle",
             aboutEntryVisibilityMode: "source-TD-addEvents-visible-before-animateIn",
+            aboutSpotlightLifecycleMode: this.aboutVisualLifecycle.mode,
+            aboutMapDelayMs: this.aboutVisualLifecycle.mapDelayMs,
+            aboutInitialScrollDelayMs: this.aboutVisualLifecycle.initialScrollDelayMs,
+            aboutMapBindingMode: this.aboutVisualLifecycle.mapBindingMode,
+            aboutResizeMode: this.aboutVisualLifecycle.resizeMode,
+            aboutInitialScrollMode: this.aboutVisualLifecycle.initialScrollMode,
+            aboutSetupKeepsPreviousSpotlightMap: this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap,
+            aboutRafActiveAfterMapDelay: this.aboutVisualLifecycle.rafActiveAfterMapDelay,
+            aboutMapBoundAfterDelay: this.aboutVisualLifecycle.mapBoundAfterDelay,
+            aboutForceResizeAfterMapBind: this.aboutVisualLifecycle.forceResizeAfterMapBind,
+            aboutInitialScrollAfterDelay: this.aboutVisualLifecycle.initialScrollAfterDelay,
+            aboutSpotlightMapMode: this.spotLight.map === this.characterTarget.texture
+              ? "source-TD-character-composite-after-delay"
+              : "source-TD-not-bound-during-initial-100ms",
             floatingEntryVisibilityMode: "source-Fg-animateIn-onStart-visible-not-enter-state",
             floatingExitVisibilityMode: "source-Fg-animateOut-onComplete-hidden",
             floatingScrollVelocityMode: "source-Fg-onRaf-page-scroll-velocity",
@@ -9614,6 +9698,14 @@ void main() {
       auxiliary: {
         aboutVisible: this.aboutBlocks?.group.visible ?? null,
         floatingVisible: this.floatingBlocks?.group.visible ?? null,
+        aboutSpotlightLifecycleMode: this.aboutVisualLifecycle.mode,
+        aboutMapDelayMs: this.aboutVisualLifecycle.mapDelayMs,
+        aboutInitialScrollDelayMs: this.aboutVisualLifecycle.initialScrollDelayMs,
+        aboutMapBoundAfterDelay: this.aboutVisualLifecycle.mapBoundAfterDelay,
+        aboutInitialScrollAfterDelay: this.aboutVisualLifecycle.initialScrollAfterDelay,
+        aboutSpotlightMapMode: this.spotLight.map === this.characterTarget.texture
+          ? "source-TD-character-composite-after-delay"
+          : "source-TD-not-bound-during-initial-100ms",
         floatingVisibilityMode: "source-Fg-animateIn-onStart-visible-animateOut-onComplete-hidden",
         floatingScrollVelocityMode: "source-Fg-onRaf-page-scroll-velocity",
         floatingTranslation: SOURCE_FLOATING_SCROLL_TRANSLATION,

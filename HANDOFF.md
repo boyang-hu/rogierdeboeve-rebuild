@@ -145,6 +145,7 @@ Known remaining gaps:
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
 - Source `XA/KA` auxiliary material constructor state is now guarded: about keeps `XA` depth-disabled `renderOrder=10` state, floating keeps `KA` default depth state and no material `renderOrder`, and both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults. The auxiliary shader bridge is still open.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
+- Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
@@ -163,12 +164,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `SD.init()` Home spotlight intensity ownership.
-- Source `SD.init()` binds the thumb composite texture to `J.workScene.spotLight.map`, sets position `(0,0,3.7)`, target `(0,0,-8)`, then writes `J.workScene.spotLight.intensity=220` directly.
-- `src/client/webgl.ts` now centralizes `SOURCE_HOME_SPOTLIGHT_INTENSITY=220`, constructs the spotlight from `maxSpotLightIntensity`, and makes `prepareHomeLighting()` call `setSpotLightIntensity(this.maxSpotLightIntensity, 1)` without reading `payload.spotlight`.
-- `__rogierOutputProbe` and `__rogierThumbProbe` expose `homeEntryIntensityMode=source-SD-init-direct-spotLight-intensity-220-no-project-payload`, `homeEntryIntensityIgnoresPayload=true`, and expected intensity `220`.
-- `scripts/probe-output-color.mjs`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` now hard-fail on Home spotlight entry intensity ownership drift.
-- Previous committed batch was `09ede8f Align Fg floating lifecycle`.
+- Aligned source `TD.addEvents()` about visual lifecycle timing.
+- Source `TD.addEvents()` hides spotlight intensity, marks about blocks visible, disables spotlight parallax, waits `100ms`, registers `aboutVisual`, binds `J.workScene.spotLight.map` to the character scene composite texture, emits force resize, waits `200ms`, then calls `this.onScroll()`.
+- `src/client/webgl.ts` now schedules that source timing instead of immediately binding the character spotlight map, forcing resize, or applying about scroll state during setup.
+- About scroll opacity and about spotlight updates are now gated until the delayed about visual RAF point; about out/destroy paths clear both lifecycle timers.
+- `__rogierOutputProbe` exposes `source-TD-addEvents-100ms-map-resize-200ms-initial-scroll` lifecycle markers, including delay values, map binding, force-resize, RAF activation, and initial-scroll completion.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` now hard-fail on TD about visual lifecycle drift.
+- Previous committed batch was `f5f06b0 Align SD spotlight entry intensity`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the auxiliary shader bridge.
 
 ## Validation Status
@@ -181,31 +183,29 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node --check scripts/probe-interactive-mouse.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-home-spotlight-intensity-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-td-about-lifecycle-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5180 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
+# custom static /about/ CDP smoke against http://127.0.0.1:5180/about/
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 PROBE_WAIT=30000 CDP_PORT=9278 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 VIEWPORT=mobile PROBE_WAIT=30000 CDP_PORT=9279 node scripts/probe-output-color.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 VIEWPORT=mobile CDP_PORT=9234 node scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9283 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `SD` Home spotlight intensity ownership batch. Renderer audit wrote `/tmp/rd-home-spotlight-intensity-audit.json`; `sourceManagers.homeSpotlightMap.rebuildHomeEntryIntensityOwnership=true`, the source `SD` intensity anchors were true, and recursive false/null review stayed at the known render-target default diagnostics only. Desktop/mobile output probes passed and asserted `homeEntryIntensityMode=source-SD-init-direct-spotLight-intensity-220-no-project-payload`, `homeEntryIntensityIgnoresPayload=true`, and expected intensity `220`. Desktop/mobile thumb spotlight probes passed with the same ownership markers plus source spotlight/default guardrails and nonzero projection coverage. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+All relevant checks passed in the `TD` about visual lifecycle batch. Renderer audit wrote `/tmp/rd-td-about-lifecycle-audit.json`; `sourceManagers.TDAboutVisualLifecycle` source, rebuild, and output-probe checks were true. The static `/about/` smoke passed with lifecycle mode `source-TD-addEvents-100ms-map-resize-200ms-initial-scroll`, `aboutVisible=true`, `floatingVisible=true`, map binding after the source delay, force resize after map binding, and initial scroll after the nested delay. Desktop output and thumb probes passed, and the project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `SD` spotlight intensity batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `TD` about visual lifecycle batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
-- Home loads with `.gl-canvas`.
-- Renderer audit passed for the `SD` Home spotlight intensity batch: `/tmp/rd-home-spotlight-intensity-audit.json`.
-- Desktop/mobile output probes passed and asserted Home spotlight entry intensity is source `SD.init()` / `220`, not project payload owned.
-- Desktop/mobile thumb spotlight probes passed and asserted the same intensity ownership markers.
+- Home loads with `.gl-canvas`; `/about/` enters `is-about is-ready has-entered has-webgl`.
+- Renderer audit passed for the `TD` about visual lifecycle batch: `/tmp/rd-td-about-lifecycle-audit.json`.
+- Desktop output probe passed and asserted the TD about lifecycle delay/mode markers.
+- Desktop thumb spotlight probe passed with existing spotlight/default guardrails intact.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
-- Interactive mouse browser probe was not rerun for this spotlight-only batch; its script syntax check passed.
+- Interactive mouse browser probe was not rerun for this about-lifecycle batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
