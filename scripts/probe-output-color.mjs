@@ -28,6 +28,7 @@ const viewports = {
   mobile: { width: 390, height: 844, mobile: true },
 };
 const viewport = viewports[viewportName] || viewports.desktop;
+const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const rebuildSearchParams = new URL(rebuildUrl).searchParams;
 const debugCompositeProbe = rebuildSearchParams.has("debug-composite-stage")
   || rebuildSearchParams.has("debug-composite-darken")
@@ -228,6 +229,9 @@ async function runProbe() {
   if (light.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") spotlightErrors.push("positionOwnershipMode");
   if (light.stateOwnership !== "source-Se-settings-light-state-onUpdate-intensities") spotlightErrors.push("stateOwnership");
   if (light.stateIntensityMatchesLight !== true) spotlightErrors.push("stateIntensityMatchesLight");
+  if (light.homeEntryIntensityMode !== sourceHomeSpotlightIntensityMode) spotlightErrors.push("homeEntryIntensityMode");
+  if (light.homeEntryIntensityIgnoresPayload !== true) spotlightErrors.push("homeEntryIntensityIgnoresPayload");
+  if (Math.abs((light.expectedHomeEntryIntensity ?? 0) - 220) > 0.001) spotlightErrors.push("expectedHomeEntryIntensity");
   if (Math.abs((light.intensity ?? 0) - 220) > 0.001) spotlightErrors.push("intensity");
   if (Math.abs((light.stateIntensity ?? 0) - 220) > 0.001) spotlightErrors.push("stateIntensity");
   if (light.defaultMode !== "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow") spotlightErrors.push("defaultMode");
@@ -1697,6 +1701,9 @@ async function runProbe() {
   if (lights?.directionalLight2InScene !== false) lightErrors.push("directionalLight2InScene");
   if (!Array.isArray(lights?.directionalLight1Position) || Math.abs((lights.directionalLight1Position[0] ?? 0) - 10.5) > 0.0001 || Math.abs((lights.directionalLight1Position[1] ?? 0) - 10) > 0.0001 || Math.abs((lights.directionalLight1Position[2] ?? 0) - 1) > 0.0001) lightErrors.push("directionalLight1Position");
   if (!Array.isArray(lights?.directionalLight2Position) || Math.abs((lights.directionalLight2Position[0] ?? 0) + 10.5) > 0.0001 || Math.abs((lights.directionalLight2Position[1] ?? 0) - 5) > 0.0001 || Math.abs((lights.directionalLight2Position[2] ?? 0) + 1) > 0.0001) lightErrors.push("directionalLight2Position");
+  if (lights?.homeEntryIntensityMode !== sourceHomeSpotlightIntensityMode) lightErrors.push("homeEntryIntensityMode");
+  if (lights?.homeEntryIntensityIgnoresPayload !== true) lightErrors.push("homeEntryIntensityIgnoresPayload");
+  if (Math.abs((lights?.expectedHomeEntryIntensity ?? NaN) - 220) > 0.0001) lightErrors.push("expectedHomeEntryIntensity");
   if (Math.abs((lights?.maxSpotLightIntensity ?? NaN) - 220) > 0.0001) lightErrors.push("maxSpotLightIntensity");
   if (lights?.maxSpotLightIntensityMatchesSource !== true) lightErrors.push("maxSpotLightIntensityMatchesSource");
   if (lightErrors.length) {

@@ -441,6 +441,8 @@ const SOURCE_SPOTLIGHT_SHADOW_FOCUS = 1;
 const SOURCE_SPOTLIGHT_SHADOW_CAMERA_NEAR = 0.5;
 const SOURCE_SPOTLIGHT_SHADOW_CAMERA_FAR = 500;
 const SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE = [512, 512] as const;
+const SOURCE_HOME_SPOTLIGHT_INTENSITY = 220;
+const SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const SOURCE_ACTIVE_PROJECT_ORDER = [
   "hashgraph-vc",
   "gc-2026",
@@ -4519,7 +4521,7 @@ export class WebGLBackdrop {
   private envRotationTween?: gsap.core.Tween;
   private auxiliaryRevealTweens: gsap.core.Tween[] = [];
   private mediaTranslationTweens: gsap.core.Tween[] = [];
-  private maxSpotLightIntensity = 220;
+  private maxSpotLightIntensity = SOURCE_HOME_SPOTLIGHT_INTENSITY;
   private spotLightParallax = true;
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
   private debugTextureColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-texture-colorspace") : null;
@@ -4558,7 +4560,7 @@ export class WebGLBackdrop {
   private radius = 8;
   private lightRadius = 0;
   private ambientLight = new AmbientLight(colorFrom(SOURCE_INITIAL_SECONDARY), SOURCE_INITIAL_AMBIENT);
-  private spotLight = new SpotLight(colorFrom("white"), 220);
+  private spotLight = new SpotLight(colorFrom("white"), this.maxSpotLightIntensity);
   private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
   private directionalLight2 = new DirectionalLight(colorFrom("white"), 1);
   private sourceTexturePreloadPromise: Promise<void> = Promise.resolve();
@@ -4783,8 +4785,8 @@ export class WebGLBackdrop {
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
   }
 
-  private prepareHomeLighting(payload: ProjectPayload) {
-    this.setSpotLightIntensity(numeric(payload.spotlight, this.maxSpotLightIntensity), 1);
+  private prepareHomeLighting(_payload: ProjectPayload) {
+    this.setSpotLightIntensity(this.maxSpotLightIntensity, 1);
     this.setDirectionalLightIntensity(1.5);
     this.setDirectionalLight2Intensity(1);
     this.setEnvRotation(0, 0);
@@ -8248,6 +8250,9 @@ void main() {
       spotlight: {
         ...this.sourceSpotLightDefaultsProbe(),
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
+        homeEntryIntensityMode: SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE,
+        homeEntryIntensityIgnoresPayload: true,
+        expectedHomeEntryIntensity: this.maxSpotLightIntensity,
         positionOwnershipMode: "source-direct-SpotLight-position-target-no-local-mirror",
         parallaxMode: "source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile",
         parallaxYOffsetMode: window.innerWidth >= BREAKPOINT_MD
@@ -9600,8 +9605,11 @@ void main() {
         directionalLight2InScene: this.directionalLight2.parent === this.homeScene,
         directionalLight1Position: this.directionalLight.position.toArray(),
         directionalLight2Position: this.directionalLight2.position.toArray(),
+        homeEntryIntensityMode: SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE,
+        homeEntryIntensityIgnoresPayload: true,
+        expectedHomeEntryIntensity: SOURCE_HOME_SPOTLIGHT_INTENSITY,
         maxSpotLightIntensity: this.maxSpotLightIntensity,
-        maxSpotLightIntensityMatchesSource: this.maxSpotLightIntensity === 220,
+        maxSpotLightIntensityMatchesSource: this.maxSpotLightIntensity === SOURCE_HOME_SPOTLIGHT_INTENSITY,
       },
       auxiliary: {
         aboutVisible: this.aboutBlocks?.group.visible ?? null,
@@ -10074,6 +10082,9 @@ void main() {
         stateOwnership: "source-Se-settings-light-state-onUpdate-intensities",
         stateIntensity: this.lightState.spotLight.intensity,
         stateIntensityMatchesLight: Math.abs(this.spotLight.intensity - this.lightState.spotLight.intensity) < 1e-6,
+        homeEntryIntensityMode: SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE,
+        homeEntryIntensityIgnoresPayload: true,
+        expectedHomeEntryIntensity: this.maxSpotLightIntensity,
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
         mapMode: this.spotLight.map === this.thumbCompositeTarget.texture ? "source-thumb-composite-target" : "missing-or-debug-disabled",
         mapProjectionMode: "three-r164-spotLightMap-vSpotLightCoord",

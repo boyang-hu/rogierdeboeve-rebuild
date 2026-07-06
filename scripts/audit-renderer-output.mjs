@@ -2477,11 +2477,21 @@ const summary = {
           "this.scene.add(this.directionalLight)}",
         ]),
         rebuildChecks: checks(rebuildWebgl, [
-          "private maxSpotLightIntensity = 220",
+          "SOURCE_HOME_SPOTLIGHT_INTENSITY = 220",
+          "SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = \"source-SD-init-direct-spotLight-intensity-220-no-project-payload\"",
+          "private maxSpotLightIntensity = SOURCE_HOME_SPOTLIGHT_INTENSITY",
+          "private spotLight = new SpotLight(colorFrom(\"white\"), this.maxSpotLightIntensity)",
           "maxSpotLightIntensity: this.maxSpotLightIntensity",
-          "maxSpotLightIntensityMatchesSource: this.maxSpotLightIntensity === 220",
+          "homeEntryIntensityMode: SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE",
+          "homeEntryIntensityIgnoresPayload: true",
+          "expectedHomeEntryIntensity: SOURCE_HOME_SPOTLIGHT_INTENSITY",
+          "maxSpotLightIntensityMatchesSource: this.maxSpotLightIntensity === SOURCE_HOME_SPOTLIGHT_INTENSITY",
         ]),
         rebuildProbeChecks: checks(rebuildOutputProbe, [
+          "sourceHomeSpotlightIntensityMode",
+          "homeEntryIntensityMode",
+          "homeEntryIntensityIgnoresPayload",
+          "expectedHomeEntryIntensity",
           "maxSpotLightIntensity",
           "maxSpotLightIntensityMatchesSource",
         ]),
@@ -2572,6 +2582,11 @@ const summary = {
         "J.workScene.spotLight.target.position.set(0,0,-8)",
         "J.workScene.spotLight.intensity=220",
       ]),
+      rebuildHomeEntryIntensityOwnership:
+        Boolean(rebuildPrepareHomeLighting)
+        && rebuildPrepareHomeLighting.includes("this.setSpotLightIntensity(this.maxSpotLightIntensity, 1)")
+        && !rebuildPrepareHomeLighting.includes("payload.spotlight")
+        && !rebuildPrepareHomeLighting.includes("numeric("),
       threeR164MapPath: {
         webglLights: checks(threeWebglLights, [
           "if ( light.map )",
@@ -2634,6 +2649,8 @@ const summary = {
         rebuildWebgl.includes("const spotlightProjection = this.spotlightProjectionProbe();")
         && rebuildWebgl.includes("spotlightProjection,")
         && rebuildThumbProbe.includes("const projection = probe.spotlightProjection;")
+        && rebuildThumbProbe.includes("sourceHomeSpotlightIntensityMode")
+        && rebuildThumbProbe.includes("projection.spotlight?.homeEntryIntensityIgnoresPayload")
         && rebuildThumbProbe.includes("projection.projectionMatrixMode !== \"source-SD-SpotLight-map-through-three-shadow-matrix\"")
         && rebuildThumbProbe.includes("projection.sampleGridMode !== \"source-spotlight-map-3x3-active-bounds\"")
         && rebuildThumbProbe.includes("projection.inMapCoverage <= 0")

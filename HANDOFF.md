@@ -134,8 +134,8 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, work/main pass-material ownership, and source `Lu/kA/I1` settings ownership, but transfer interpretation and exact composite behavior are still not complete.
-- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
-- Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, and source `setLights()` max spotlight scalar ownership, but the visible fog-bed/horizon still is not 1:1.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `SD.init()` fixed Home entry intensity `220`, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
+- Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, source `setLights()` max spotlight scalar ownership, and source `SD.init()` Home spotlight intensity ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, viscosity, divergence, poisson, and pressure. The source seven-FBO topology including default-disabled `eA` viscosity is now guarded, but this is pass/topology parity, not proof that the whole Home fluid/composite feel is complete.
@@ -163,14 +163,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Fg` about floating-block lifecycle and scroll velocity ownership.
-- `enterAboutVisualState()` now keeps floating blocks hidden after setup; `animateAboutVisualIn()` makes them visible in the floating `uReveal` tween `onStart`, matching source `Fg.animateIn()`.
-- `motion.ts` broadcasts Lenis `scroll` and `velocity` through `rd:page-scroll`; the about route forwards that state into WebGL through `setAboutScrollState()`.
-- `updateAuxiliaryBlocks()` now uses the page-scroll velocity feed for `.005 * abs(scroll.velocity)` `translationZ`, with a window-delta fallback only when no page-scroll state is available.
-- `__rogierOutputProbe` exposes `auxiliaryLifecycle`, floating visibility/scroll mode, `floatingTranslation`, and active `scrollVelocitySource`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on `Fg` lifecycle/velocity drift; renderer audit now extracts source `Fg`.
-- Previous committed batch was `b38bb64 Align auxiliary material constructors`.
-- Phase 1 remains open for the auxiliary shader bridge, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `SD.init()` Home spotlight intensity ownership.
+- Source `SD.init()` binds the thumb composite texture to `J.workScene.spotLight.map`, sets position `(0,0,3.7)`, target `(0,0,-8)`, then writes `J.workScene.spotLight.intensity=220` directly.
+- `src/client/webgl.ts` now centralizes `SOURCE_HOME_SPOTLIGHT_INTENSITY=220`, constructs the spotlight from `maxSpotLightIntensity`, and makes `prepareHomeLighting()` call `setSpotLightIntensity(this.maxSpotLightIntensity, 1)` without reading `payload.spotlight`.
+- `__rogierOutputProbe` and `__rogierThumbProbe` expose `homeEntryIntensityMode=source-SD-init-direct-spotLight-intensity-220-no-project-payload`, `homeEntryIntensityIgnoresPayload=true`, and expected intensity `220`.
+- `scripts/probe-output-color.mjs`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` now hard-fail on Home spotlight entry intensity ownership drift.
+- Previous committed batch was `09ede8f Align Fg floating lifecycle`.
+- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the auxiliary shader bridge.
 
 ## Validation Status
 
@@ -183,7 +182,7 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 node --check scripts/probe-interactive-mouse.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-fg-lifecycle-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-home-spotlight-intensity-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5180 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 PROBE_WAIT=30000 CDP_PORT=9278 node scripts/probe-output-color.mjs
@@ -191,25 +190,22 @@ CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 VIEWPORT
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 VIEWPORT=mobile CDP_PORT=9234 node scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9283 node scripts/probe-project-media.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9241 node scripts/probe-interactive-mouse.mjs
-# A narrow custom CDP smoke against /about/ also passed.
 ```
 
-All relevant checks passed in the `Fg` floating lifecycle and page-scroll velocity batch. Renderer audit wrote `/tmp/rd-fg-lifecycle-audit.json`; the new `sourceManagers.FgFloatingBlocksLifecycle` audit subtree is all true. Desktop/mobile output probes passed and asserted auxiliary lifecycle modes. Desktop/mobile thumb spotlight probes passed. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`. Static interactive mouse probe passed with zero failures, exceptions, or console messages. A narrow static `/about/` smoke against `http://127.0.0.1:5180/about/` confirmed `aboutVisible=true`, `floatingVisible=true`, `floatingEntryVisibilityMode=source-Fg-animateIn-onStart-visible-not-enter-state`, `scrollVelocitySource=page-scroll-velocity`, `pageScroll=520` after scroll, and no failures/exceptions/console messages.
+All relevant checks passed in the `SD` Home spotlight intensity ownership batch. Renderer audit wrote `/tmp/rd-home-spotlight-intensity-audit.json`; `sourceManagers.homeSpotlightMap.rebuildHomeEntryIntensityOwnership=true`, the source `SD` intensity anchors were true, and recursive false/null review stayed at the known render-target default diagnostics only. Desktop/mobile output probes passed and asserted `homeEntryIntensityMode=source-SD-init-direct-spotLight-intensity-220-no-project-payload`, `homeEntryIntensityIgnoresPayload=true`, and expected intensity `220`. Desktop/mobile thumb spotlight probes passed with the same ownership markers plus source spotlight/default guardrails and nonzero projection coverage. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `Fg` lifecycle batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `SD` spotlight intensity batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the `Fg` lifecycle batch: `/tmp/rd-fg-lifecycle-audit.json`.
-- Desktop/mobile output probes passed and asserted `source-TD-Fg-split-about-floating-lifecycle`.
-- Desktop/mobile thumb spotlight probes passed.
+- Renderer audit passed for the `SD` Home spotlight intensity batch: `/tmp/rd-home-spotlight-intensity-audit.json`.
+- Desktop/mobile output probes passed and asserted Home spotlight entry intensity is source `SD.init()` / `220`, not project payload owned.
+- Desktop/mobile thumb spotlight probes passed and asserted the same intensity ownership markers.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
-- Static interactive mouse probe passed with zero failures/exceptions/console messages.
-- Static `/about/` smoke passed with about/floating blocks visible and page-scroll velocity active.
+- Interactive mouse browser probe was not rerun for this spotlight-only batch; its script syntax check passed.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -249,7 +245,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `SD.init()` Home entry intensity `220`, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.

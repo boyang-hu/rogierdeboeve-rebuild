@@ -7078,6 +7078,41 @@ Verification:
 
 Decision: keep source `i1` constructor defaults and blur-iteration ownership. Phase 1 remains open because this closes a constructor/default mismatch only; actual floor/environment distribution parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation remain unresolved.
 
+### S1-268 `SD` Home Spotlight Intensity Ownership
+
+This batch aligns one source `SD.init()` spotlight ownership edge. It does not change shader formulas, render targets, thumb content, project data, route transitions, or visual tuning.
+
+Source evidence:
+
+- Source `SD.init()` assigns `J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture`.
+- Source `SD.init()` sets `J.workScene.spotLight.position.set(0,0,3.7)`.
+- Source `SD.init()` sets `J.workScene.spotLight.target.position.set(0,0,-8)`.
+- Source `SD.init()` then writes `J.workScene.spotLight.intensity=220` directly.
+- The source path does not read a project spotlight payload field for Home entry intensity.
+
+Runtime and tooling changes:
+
+- `SOURCE_HOME_SPOTLIGHT_INTENSITY` now centralizes the source `220` scalar.
+- The spotlight constructor now uses `this.maxSpotLightIntensity`, matching source `p1.setLights()` where `maxSpotLightIntensity` owns the constructor intensity.
+- `prepareHomeLighting()` now calls `setSpotLightIntensity(this.maxSpotLightIntensity, 1)` and no longer reads `payload.spotlight` or a numeric payload fallback.
+- `__rogierOutputProbe.reflectionState.lights`, `__rogierOutputProbe.spotlightProjection.spotlight`, and `__rogierThumbProbe.spotlight` now expose `homeEntryIntensityMode=source-SD-init-direct-spotLight-intensity-220-no-project-payload`, `homeEntryIntensityIgnoresPayload=true`, and expected intensity `220`.
+- `scripts/probe-output-color.mjs` and `scripts/probe-thumb-spotlight.mjs` assert the Home-entry intensity ownership marker in addition to the existing runtime `220` state/light checks.
+- `scripts/audit-renderer-output.mjs` checks the source `SD` intensity anchor, rebuild no-payload ownership in `prepareHomeLighting()`, and output/thumb probe coverage.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node scripts/audit-renderer-output.mjs` passed and wrote `/tmp/rd-home-spotlight-intensity-audit.json`; `sourceManagers.homeSpotlightMap.rebuildHomeEntryIntensityOwnership=true`, source `SD` checks were true, and recursive false/null review stayed at the known render-target default diagnostics only.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile `scripts/probe-output-color.mjs` passed with `homeEntryIntensityMode=source-SD-init-direct-spotLight-intensity-220-no-project-payload`, `homeEntryIntensityIgnoresPayload=true`, and no browser failures/exceptions/console messages.
+- Desktop and mobile `scripts/probe-thumb-spotlight.mjs` passed with the same intensity ownership markers, source spotlight/default guardrails, nonzero in-map projection coverage, and no browser failures/exceptions/console messages.
+- `scripts/probe-project-media.mjs` passed with `gc-2026` and `hashgraph-vc` retaining `5/5` visible media tracks and no browser failures/exceptions/console messages.
+
+Decision: keep Home spotlight entry intensity owned by source `SD.init()` / `maxSpotLightIntensity=220`, not by project payload data. Phase 1 remains open because this closes one spotlight state-ownership edge only; actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment distribution parity, and the auxiliary shader bridge remain unresolved.
+
 ### S1-267 `p1` Environment Hierarchy Rotation Guardrail
 
 This batch strengthens the source `p1` floor/environment hierarchy and rotation guardrail. It does not change production rendering, shader formulas, visual constants, project data, or transfer/color behavior.

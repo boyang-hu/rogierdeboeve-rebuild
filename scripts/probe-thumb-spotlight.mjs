@@ -29,6 +29,7 @@ const expectedSpotlightParallaxYOffsetMode = viewport.width >= 800
   : "source-p1-mobile-0_3-plus-camera-y-parallax";
 const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3;
 const expectedTargetSize = Math.max(1, Math.round(viewport.height));
+const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 
 if (!Number.isFinite(sourceProbeProgress)) {
   throw new Error(`Invalid THUMB_PROGRESS: ${process.env.THUMB_PROGRESS}`);
@@ -272,6 +273,15 @@ async function runProbe() {
   if (probe.spotlight?.stateIntensityMatchesLight !== true) {
     sourceShapeErrors.push(`spotlightStateIntensityMatchesLight=${probe.spotlight?.stateIntensityMatchesLight}`);
   }
+  if (probe.spotlight?.homeEntryIntensityMode !== sourceHomeSpotlightIntensityMode) {
+    sourceShapeErrors.push(`spotlightHomeEntryIntensityMode=${probe.spotlight?.homeEntryIntensityMode}`);
+  }
+  if (probe.spotlight?.homeEntryIntensityIgnoresPayload !== true) {
+    sourceShapeErrors.push(`spotlightHomeEntryIntensityIgnoresPayload=${probe.spotlight?.homeEntryIntensityIgnoresPayload}`);
+  }
+  if (probe.spotlight?.expectedHomeEntryIntensity !== 220) {
+    sourceShapeErrors.push(`spotlightExpectedHomeEntryIntensity=${probe.spotlight?.expectedHomeEntryIntensity}`);
+  }
   if (probe.spotlight?.stateIntensity !== 220) {
     sourceShapeErrors.push(`spotlightStateIntensity=${probe.spotlight?.stateIntensity}`);
   }
@@ -299,6 +309,15 @@ async function runProbe() {
     if (projection.spotlight?.castShadow !== false) sourceShapeErrors.push(`projectionCastShadow=${projection.spotlight?.castShadow}`);
     if (projection.spotlight?.mapColorSpace !== "") sourceShapeErrors.push(`projectionMapColorSpace=${projection.spotlight?.mapColorSpace}`);
     assertSourceSpotlightDefaults(projection.spotlight, "projection", sourceShapeErrors);
+    if (projection.spotlight?.homeEntryIntensityMode !== sourceHomeSpotlightIntensityMode) {
+      sourceShapeErrors.push(`projectionHomeEntryIntensityMode=${projection.spotlight?.homeEntryIntensityMode}`);
+    }
+    if (projection.spotlight?.homeEntryIntensityIgnoresPayload !== true) {
+      sourceShapeErrors.push(`projectionHomeEntryIntensityIgnoresPayload=${projection.spotlight?.homeEntryIntensityIgnoresPayload}`);
+    }
+    if (projection.spotlight?.expectedHomeEntryIntensity !== 220) {
+      sourceShapeErrors.push(`projectionExpectedHomeEntryIntensity=${projection.spotlight?.expectedHomeEntryIntensity}`);
+    }
     if (projection.spotlight?.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") {
       sourceShapeErrors.push(`projectionPositionOwnership=${projection.spotlight?.positionOwnershipMode}`);
     }
