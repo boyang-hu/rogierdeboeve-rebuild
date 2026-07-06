@@ -156,15 +156,17 @@ Known remaining gaps:
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
+- Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
 
 Latest Phase 1 batch:
 
-- Added `Qm/Iw` spotlight default and shadow projection ownership guardrails.
-- Source `Qm` constructs spotlights with default `distance=0`, `angle=Math.PI/3`, `penumbra=0`, `decay=2`, `map=null`, and `shadow=new Iw`.
-- Source `Iw` constructs `PerspectiveCamera(50,1,.5,500)`, keeps `focus=1`, and updates the shadow projection from spotlight angle/focus, map-size aspect, and `distance || camera.far`.
-- Source `p1.setLights()` constructs `new Qm(16777215,this.maxSpotLightIntensity)`, sets position, `angle=Math.PI/4`, and `penumbra=.95`, but does not set distance, decay, shadow, or castShadow.
-- `__rogierOutputProbe` and `__rogierThumbProbe.spotlightProjection` expose the source default/shadow camera fields; `scripts/probe-output-color.mjs`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` hard-fail on drift.
-- Previous committed batch was `7f830f8 Align environment dithering ownership`.
+- Aligned `nD/u1` sky composite binding lifecycle.
+- Environment `tSky` now starts as source `u1` constructor-null instead of binding the sky composite texture in `createEnvironmentMaterial()`.
+- Constructor-time sky composite `RepeatWrapping`, `bindSourceMainCompositeInputs()`, and immediate `tick()` are gone.
+- After the first resize, the rebuild waits 100ms, applies `C1.tWork/tMedia/tMouseSim` bindings, sets sky composite `wrapS/wrapT=RepeatWrapping`, binds env `tSky`, performs a second resize, and starts RAF.
+- `animateIn()` now awaits both the init lifecycle and the four source-preloaded textures before scheduling the canvas fade.
+- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, and `scripts/audit-renderer-output.mjs` hard-fail on constructor-null, delayed-binding, second-resize, and started-after-binding drift.
+- Previous committed batch was `3205cd3 Guard spotlight default projection state`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -176,27 +178,27 @@ git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-spot-defaults-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-nd-sky-lifecycle-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-spot-defaults-output-desktop CDP_PORT=9651 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-spot-defaults-output-mobile CDP_PORT=9652 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-spot-defaults-thumb-desktop CDP_PORT=9653 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-spot-defaults-thumb-mobile CDP_PORT=9654 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-spot-defaults-project-media CDP_PORT=9655 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-nd-sky-lifecycle-output-desktop CDP_PORT=9661 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-nd-sky-lifecycle-output-mobile CDP_PORT=9662 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-nd-sky-lifecycle-thumb-desktop CDP_PORT=9663 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-nd-sky-lifecycle-thumb-mobile CDP_PORT=9664 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-nd-sky-lifecycle-project-media CDP_PORT=9665 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the spotlight default/shadow projection ownership batch. Renderer audit wrote `/tmp/rd-spot-defaults-audit.json`; `sourceManagers.homeSpotlightMap.spotLightDefaultOwnership` confirms source `Qm` defaults, source `Iw` defaults/update path, local Three defaults, source `p1.setLights()` default preservation, rebuild probe coverage, and output/thumb probe checks. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and reported distance `0`, decay `2`, shadow focus `1`, shadow map size `512x512`, shadow camera FOV `90`, near `.5`, and far `500`. Desktop/mobile thumb spotlight probes passed and retained nonzero projected map luma. Project-media probe retained visible media tracks on the probed project pages.
+All relevant checks passed in the `nD/u1` sky composite binding lifecycle batch. Renderer audit wrote `/tmp/rd-nd-sky-lifecycle-audit.json`; recursive false/null review only showed the known Three render-target default diagnostics plus the local renderer default probe null. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and asserted `sourceInitLifecycleMode=source-nD-resize-delay-bind-composite-inputs-sky-repeat-then-start`, constructor-null `tSky`, delayed sky binding, repeat wrapping, second resize, and started-after-binding. Desktop/mobile thumb spotlight probes passed and retained nonzero projected map luma. Project-media probe retained visible media tracks on the probed project pages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this spotlight defaults batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky lifecycle batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the spotlight defaults batch: `/tmp/rd-spot-defaults-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-spot-defaults-output-desktop` and `/tmp/rd-spot-defaults-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-spot-defaults-thumb-desktop` and `/tmp/rd-spot-defaults-thumb-mobile`.
+- Renderer audit passed for the sky lifecycle batch: `/tmp/rd-nd-sky-lifecycle-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-nd-sky-lifecycle-output-desktop` and `/tmp/rd-nd-sky-lifecycle-output-mobile`.
+- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-nd-sky-lifecycle-thumb-desktop` and `/tmp/rd-nd-sky-lifecycle-thumb-mobile`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

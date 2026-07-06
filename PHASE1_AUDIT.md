@@ -72,24 +72,23 @@ Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work b
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 
-### S1-299 `Qm/Iw` Spotlight Defaults and Shadow Projection Ownership
+### S1-300 `nD/u1` Sky Composite Binding Lifecycle
 
-This batch adds a source guardrail for the spotlight constructor defaults and `SpotLight.map` shadow-projection camera state. It does not change production light tuning, shader text, route data, pass order, render-target topology, or visual constants.
+This batch aligns a concrete source lifecycle mismatch around environment `tSky` and `nD.init()` startup timing. It does not tune visual constants, shader formulas, route data, or render-target topology.
 
 Source evidence:
 
-- Source `class Qm extends qa` constructs spotlights with `constructor(e,t,n=0,i=Math.PI/3,r=0,o=2)`, assigns `distance=n`, `angle=i`, `penumbra=r`, `decay=o`, initializes `map=null`, and creates `shadow=new Iw`.
-- Source `class Iw extends Cu` constructs `new Wt(50,1,.5,500)`, sets `focus=1`, and `updateMatrices(e)` derives FOV from `2 * e.angle * focus`, aspect from shadow map size, and far from `e.distance || camera.far`.
-- Source `p1.setLights()` constructs `new Qm(16777215,this.maxSpotLightIntensity)`, then sets position, `angle=Math.PI/4`, and `penumbra=.95`; it does not set `distance`, `decay`, `shadow`, or `castShadow`.
-- Local Three r164 has equivalent `SpotLight`, `SpotLightShadow`, and `LightShadow` defaults: distance `0`, decay `2`, map `null`, `PerspectiveCamera(50,1,0.5,500)`, focus `1`, and `mapSize=512x512`.
+- Source `u1` constructs `this.customUniforms` with `tSky:new I(null)`, and injects `t.uniforms.tSky=this.customUniforms.tSky` in `onBeforeCompile`.
+- Source `nD.init()` emits resize, waits `fn(100)`, then binds `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim` from the work/media render managers.
+- Source `nD.init()` then takes `skyScene.renderManager.renderTargetComposite.texture`, sets `wrapS=wrapT=ci` (`RepeatWrapping`), assigns it to `workScene.env.material.customUniforms.tSky.value`, emits resize again, and calls `start()`.
 
 Runtime and tooling changes:
 
-- `src/client/webgl.ts` now exposes `sourceSpotLightDefaultsProbe()` through both the output probe and thumb spotlight projection probe.
-- The probe records source mode markers, spotlight color, distance, decay, shadow focus/map size, shadow camera FOV/aspect/near/far, and expected source values.
-- `scripts/probe-output-color.mjs` hard-fails if the spotlight default/shadow projection fields drift.
-- `scripts/probe-thumb-spotlight.mjs` now checks the same source default/shadow projection fields for both the normal spotlight probe and the `spotlightProjection` probe.
-- `scripts/audit-renderer-output.mjs` checks mirrored `Qm/Iw` evidence, local Three default evidence, source `p1.setLights()` default preservation, rebuild probe coverage, and output/thumb probe checks.
+- `createEnvironmentMaterial()` now initializes `tSky` as `null` and records `source-u1-constructor-tSky-null`.
+- The constructor no longer sets sky composite repeat wrapping, no longer calls `bindSourceMainCompositeInputs()`, and no longer starts `tick()` immediately.
+- `runSourceInitLifecycle()` now waits 100ms after the first resize, runs `bindSourceDelayedCompositeInputsAndSky()`, performs the second resize, and starts RAF only after delayed bindings.
+- `animateIn()` now waits for both the source init lifecycle and the four source-preloaded textures before scheduling the canvas fade.
+- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, and `scripts/audit-renderer-output.mjs` hard-fail on constructor-null, delayed `tSky` binding, sky repeat wrapping, second resize, and started-after-binding drift.
 
 Verification:
 
@@ -97,13 +96,13 @@ Verification:
 - `node --check scripts/audit-renderer-output.mjs` passed.
 - `node --check scripts/probe-output-color.mjs` passed.
 - `node --check scripts/probe-thumb-spotlight.mjs` passed.
-- `node scripts/audit-renderer-output.mjs > /tmp/rd-spot-defaults-audit.json` passed; only the known render-target/default diagnostics remain false/null in unrelated sections.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-nd-sky-lifecycle-audit.json` passed; recursive false/null review only showed the known Three render-target default diagnostics plus the local renderer default probe null.
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
-- Desktop and mobile output probes passed for `/tmp/rd-spot-defaults-output-desktop` and `/tmp/rd-spot-defaults-output-mobile`.
-- Desktop and mobile thumb spotlight probes passed for `/tmp/rd-spot-defaults-thumb-desktop` and `/tmp/rd-spot-defaults-thumb-mobile`; both retained source spotlight default markers and nonzero projected map luma.
-- Project media probe passed for `/tmp/rd-spot-defaults-project-media` and retained visible media tracks on the probed project pages.
+- Desktop and mobile output probes passed for `/tmp/rd-nd-sky-lifecycle-output-desktop` and `/tmp/rd-nd-sky-lifecycle-output-mobile`.
+- Desktop and mobile thumb spotlight probes passed for `/tmp/rd-nd-sky-lifecycle-thumb-desktop` and `/tmp/rd-nd-sky-lifecycle-thumb-mobile`; both retained nonzero projected map luma.
+- Project media probe passed for `/tmp/rd-nd-sky-lifecycle-project-media` and retained visible media tracks on the probed project pages.
 
-Decision: keep the source `Qm/Iw` spotlight default and shadow-projection guardrail. This closes one default/projection attribution gap only; Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+Decision: keep `u1.tSky` constructor-null and source `nD.init()` delayed sky/main binding lifecycle guarded. This closes one startup-lifecycle mismatch only; Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ### S1-298 `h1/u1` Environment Material Dithering Ownership
 
@@ -609,6 +608,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 225 | S1-300 | `nD/u1` sky composite binding lifecycle | Source `u1` constructs `customUniforms.tSky` with `new I(null)`. Source `nD.init()` performs the initial resize, waits `100ms`, then binds `C1.tWork`, `C1.tMedia`, and `C1.tMouseSim`, sets `skyScene.renderManager.renderTargetComposite.texture.wrapS/wrapT=RepeatWrapping`, assigns that texture to `workScene.env.material.customUniforms.tSky.value`, resizes again, and only then starts the render loop. The rebuild still had constructor-time `tSky` binding and sky repeat wrapping, plus immediate `bindSourceMainCompositeInputs()`/`tick()`. | Rebuild now initializes environment `tSky` to `null`, records `source-u1-constructor-tSky-null`, removes constructor-time sky composite repeat wrapping and main composite input binding, runs `bindSourceDelayedCompositeInputsAndSky()` after the first resize plus 100ms delay, applies the source `tWork/tMedia/tMouseSim` bindings, sets sky composite repeat wrapping, binds environment `tSky`, performs the second resize, and starts RAF only after delayed bindings. `animateIn()` now awaits both the init lifecycle and the four source-preloaded textures. Output probes expose `sourceInitLifecycleMode`, first/second resize flags, delayed binding, started-after-binding, constructor-null, and delayed `tSky` binding markers; `scripts/probe-output-color.mjs` and renderer audit hard-fail on drift or constructor-time regressions. `git diff --check`, syntax checks, renderer audit, build, desktop/mobile output probes, desktop/mobile thumb probes, and project-media probe passed for `/tmp/rd-nd-sky-lifecycle-*`. | Low-medium | Keep `u1.tSky` constructor-null and source `nD.init()` delayed sky/main binding lifecycle guarded. This does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 224 | S1-299 | `Qm/Iw` spotlight defaults and shadow projection ownership | Source `Qm` constructs spotlights with default `distance=0`, `angle=Math.PI/3`, `penumbra=0`, `decay=2`, `map=null`, and `shadow=new Iw`. Source `Iw` constructs `PerspectiveCamera(50,1,.5,500)`, sets `focus=1`, derives projection FOV from spotlight angle/focus, derives aspect from shadow map size, and keeps far as `distance || camera.far`. Source `p1.setLights()` leaves distance, decay, shadow, and castShadow at defaults while setting `angle=Math.PI/4` and `penumbra=.95`. | Production light tuning, shader text, pass order, render targets, route data, and visual constants are unchanged. `sourceSpotLightDefaultsProbe()` now surfaces source default/shadow camera fields through both output and thumb projection probes. Output probe, thumb spotlight probe, and renderer audit hard-fail on drift; full syntax/build/audit/browser probes passed for `/tmp/rd-spot-defaults-*`. | Low | Keep as spotlight default/projection attribution only. This does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 223 | S1-298 | `h1/u1` environment material dithering ownership | Source `h1` constructs `this.material=new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})`, with no `dithering` constructor parameter. Source `u1` then runs `constructor(e){super(e),this.dithering=!0,...}`, so `dithering=true` is owned by the `u1` post-`super` constructor body. | Production shader text, pass order, render targets, visual constants, and route data are unchanged. The rebuild now excludes `dithering:true` from the environment `MeshStandardMaterial` constructor, sets `material.dithering = true` after construction, records `sourceDitheringOwnership`, and exposes `ditheringOwnershipMode` plus `constructorParamsIncludesDithering` in output/reflection probes. Renderer audit checks source/rebuild constructor ownership and runtime probe coverage; full syntax/build/audit/browser probes passed for `/tmp/rd-env-dither-*`. | Low | Keep as environment material constructor-ownership parity only. This does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 222 | S1-297 | Source `Qe.gpuCheck()` GPU/LOW_RES bridge | Source `Le` defaults to `GPU_TIER=3` and `LOW_RES=false`; source `Qe.init()` awaits `gpuCheck()` before app managers initialize; source `Qe.gpuCheck()` awaits the embedded detect-gpu helper, writes `Le.GPU_TIER=e.tier`, catches errors with the source console message, and then writes `Le.LOW_RES=Le.GPU_TIER<3`. The mirrored source rewrites detect-gpu 5.0.38 benchmark loading to `/vendor/detect-gpu/benchmarks`. | Production shaders, route data, pass order, and visual constants are unchanged. The rebuild now uses exact `detect-gpu@5.0.38`, vendors the 16 benchmark JSON files, awaits `initializeSourceGpuTier()` before `new WebGLBackdrop`, exposes `renderer.gpuBridge`, and rejects the old `deviceMemory/saveData` heuristic in renderer audit. Desktop/mobile output probes, desktop/mobile thumb probes, and project-media probe passed for `/tmp/rd-gpu-tier-*`; headless Chrome resolved detect-gpu `FALLBACK` tier `1`, `LOW_RES=true`, and `initialized=true`. | Low-medium | Keep as GPU/LOW_RES source bridge parity only. This does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |

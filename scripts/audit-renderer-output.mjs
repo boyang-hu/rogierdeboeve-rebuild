@@ -168,7 +168,10 @@ const rebuildBrightnessAttribution = readFileSync(rebuildBrightnessAttributionPa
 const rebuildSpotlightMapCompare = readFileSync(rebuildSpotlightMapComparePath, "utf8");
 const rebuildThumbColorspaceCompare = readFileSync(rebuildThumbColorspaceComparePath, "utf8");
 const sourceGpuBenchmarkFiles = readdirSync(sourceGpuBenchmarksDir).filter((file) => file.endsWith(".json")).sort();
+const rebuildConstructor = extractBlock(rebuildWebgl, "constructor(root: HTMLElement)");
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
+const rebuildSourceInitLifecycle = extractBlock(rebuildWebgl, "private runSourceInitLifecycle()");
+const rebuildDelayedCompositeSkyBinding = extractBlock(rebuildWebgl, "private bindSourceDelayedCompositeInputsAndSky()");
 const rebuildCreateLensflareMaterial = extractBlock(rebuildWebgl, "private createLensflareMaterial()");
 const rebuildCreateLuminosityMaterial = extractBlock(rebuildWebgl, "private createLuminosityMaterial(");
 const rebuildCreateBloomBlurMaterial = extractBlock(rebuildWebgl, "private createBloomBlurMaterial(");
@@ -1994,7 +1997,42 @@ const summary = {
         "tMouseSimBindingMode: \"source-nD-init-one-time-C1-tMouseSim-initial-work-mousesim-output\"",
         "mode: \"source-nD-samples-sA-output-texture-once-before-render-loop\"",
         "sourceSAOutputFlipMode: \"source-sA-render-uses-current-as-input-then-flips-output\"",
+        "sourceInitLifecycleMode: this.sourceInitLifecycle.mode",
+        "firstResizeBeforeDelayedBindings: this.sourceInitLifecycle.firstResizeDone",
+        "delayedBindingsApplied: this.sourceInitLifecycle.delayedBindingsApplied",
+        "startedAfterDelayedBindings: this.sourceInitLifecycle.started && this.sourceInitLifecycle.delayedBindingsApplied",
       ]),
+      rebuildInitLifecycle: {
+        constructorFound: Boolean(rebuildConstructor),
+        lifecycleMethodFound: Boolean(rebuildSourceInitLifecycle),
+        delayedBinderFound: Boolean(rebuildDelayedCompositeSkyBinding),
+        constructorFirstResizeOnly: Boolean(rebuildConstructor)
+          && rebuildConstructor.includes("this.resize();")
+          && rebuildConstructor.includes("this.sourceInitLifecycle.firstResizeDone = true;"),
+        constructorNoImmediateMainInputBinding: Boolean(rebuildConstructor)
+          && !rebuildConstructor.includes("this.bindSourceMainCompositeInputs();"),
+        constructorNoImmediateSkyRepeat: Boolean(rebuildConstructor)
+          && !rebuildConstructor.includes("this.skyCompositeTarget.texture.wrapS = RepeatWrapping")
+          && !rebuildConstructor.includes("this.skyCompositeTarget.texture.wrapT = RepeatWrapping"),
+        constructorNoImmediateTick: Boolean(rebuildConstructor)
+          && !rebuildConstructor.includes("this.tick();"),
+        delayedBinderSetsCompositeInputsSkyRepeatAndTSky: Boolean(rebuildDelayedCompositeSkyBinding)
+          && rebuildDelayedCompositeSkyBinding.includes("this.bindSourceMainCompositeInputs();")
+          && rebuildDelayedCompositeSkyBinding.includes("this.skyCompositeTarget.texture.wrapS = RepeatWrapping;")
+          && rebuildDelayedCompositeSkyBinding.includes("this.skyCompositeTarget.texture.wrapT = RepeatWrapping;")
+          && rebuildDelayedCompositeSkyBinding.includes("this.environmentMaterial.customUniforms.tSky.value = this.environmentSkyTexture();")
+          && rebuildDelayedCompositeSkyBinding.includes("sourceDelayedTSkyBindingMode = \"source-nD-after-first-resize-100ms-bind-repeat-composite\""),
+        startAfterDelayedBindings: Boolean(rebuildSourceInitLifecycle)
+          && orderedIncludes(rebuildSourceInitLifecycle, [
+            "this.bindSourceDelayedCompositeInputsAndSky();",
+            "this.resize();",
+            "this.sourceInitLifecycle.secondResizeAfterDelayedBindings = true;",
+            "this.sourceInitLifecycle.started = true;",
+            "this.tick();",
+          ]),
+        animateInAwaitsInitLifecycle: rebuildWebgl.includes("this.sourceInitLifecyclePromise")
+          && rebuildWebgl.includes("this.sourceTexturePreloadPromise"),
+      },
       excerpt: compact(sourceCanvasManager.text),
     },
     textures: sourceTextureManager && {
@@ -2779,8 +2817,15 @@ const summary = {
         customUniformsOnly: Boolean(rebuildEnvironmentMaterialFactory)
           && rebuildEnvironmentMaterialFactory.includes("material.customUniforms = uniforms;")
           && !rebuildEnvironmentMaterialFactory.includes("material.uniforms = uniforms;"),
+        constructorTSkyNull: Boolean(rebuildEnvironmentMaterialFactory)
+          && rebuildEnvironmentMaterialFactory.includes("tSky: { value: null as Texture | null }")
+          && rebuildEnvironmentMaterialFactory.includes("sourceConstructorTSkyMode = \"source-u1-constructor-tSky-null\"")
+          && rebuildEnvironmentMaterialFactory.includes("sourceConstructorTSkyWasNull = uniforms.tSky.value === null")
+          && !rebuildEnvironmentMaterialFactory.includes("tSky: { value: this.environmentSkyTexture() }"),
         runtimeProbe: rebuildWebgl.includes("customUniformsMode: \"source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias\"")
-          && rebuildWebgl.includes("hasMaterialUniformsAlias: \"uniforms\" in this.environmentMaterial"),
+          && rebuildWebgl.includes("hasMaterialUniformsAlias: \"uniforms\" in this.environmentMaterial")
+          && rebuildWebgl.includes("tSkyConstructorMode: this.environmentMaterial.userData.sourceConstructorTSkyMode")
+          && rebuildWebgl.includes("tSkyDelayedBindingMode: this.environmentMaterial.userData.sourceDelayedTSkyBindingMode"),
         updatePathsUseCustomUniforms: [
           "this.environmentMaterial.customUniforms.uDarkenColor.value",
           "this.environmentMaterial.customUniforms.uTime.value",
@@ -3541,7 +3586,9 @@ const summary = {
   rebuildRuntime: {
     texturePreloadAnimateIn: checks(rebuildWebgl, [
       "async animateIn()",
-      "this.sourceTexturePreloadPromise.then(() => {",
+      "this.canvasAnimateInPromise = Promise.all([",
+      "this.sourceInitLifecyclePromise",
+      "this.sourceTexturePreloadPromise",
       "Promise.all([blueNoise, floorNormal, perlin1, perlin2])",
       "this.sourceTexturePreloadState.blueNoise = true",
       "this.sourceTexturePreloadState.floorNormal = true",

@@ -4581,6 +4581,16 @@ export class WebGLBackdrop {
   private canvasAnimateInPromise?: Promise<void>;
   private canvasAnimateInStarted = false;
   private canvasFadeCompleted = false;
+  private sourceInitLifecycle = {
+    mode: "source-nD-resize-delay-bind-composite-inputs-sky-repeat-then-start",
+    firstResizeDone: false,
+    delayedBindingsApplied: false,
+    secondResizeAfterDelayedBindings: false,
+    started: false,
+  };
+  private sourceInitLifecyclePromise: Promise<void> = Promise.resolve();
+  private sourceInitLifecycleTimer: ReturnType<typeof window.setTimeout> | null = null;
+  private destroyed = false;
 
   private loadedTextureColorSpace() {
     return this.debugTextureColorSpace === "srgb" ? SRGBColorSpace : "";
@@ -4684,8 +4694,6 @@ export class WebGLBackdrop {
     this.characterScene.add(this.characterModelRoot);
     this.characterScene.add(this.characterAmbientLight);
     this.characterScene.add(this.characterDirectionalLight);
-    this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
-    this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new CircleGeometry(60, 32), this.floorMaterial);
     this.floorPlane.rotation.x = -Math.PI / 2;
@@ -4718,9 +4726,9 @@ export class WebGLBackdrop {
     this.loadCompositeTextures();
 
     this.resize();
-    this.bindSourceMainCompositeInputs();
+    this.sourceInitLifecycle.firstResizeDone = true;
     this.bind();
-    this.tick();
+    this.sourceInitLifecyclePromise = this.runSourceInitLifecycle();
   }
 
   setProject(payload: ProjectPayload) {
@@ -4920,7 +4928,10 @@ export class WebGLBackdrop {
   async animateIn() {
     if (this.canvasAnimateInPromise) return this.canvasAnimateInPromise;
     this.canvasAnimateInStarted = true;
-    this.canvasAnimateInPromise = this.sourceTexturePreloadPromise.then(() => {
+    this.canvasAnimateInPromise = Promise.all([
+      this.sourceInitLifecyclePromise,
+      this.sourceTexturePreloadPromise,
+    ]).then(() => {
       gsap.fromTo(this.renderer.domElement, { opacity: 0 }, {
         opacity: 1,
         duration: 0.5,
@@ -5144,6 +5155,11 @@ export class WebGLBackdrop {
   }
 
   destroy() {
+    this.destroyed = true;
+    if (this.sourceInitLifecycleTimer !== null) {
+      window.clearTimeout(this.sourceInitLifecycleTimer);
+      this.sourceInitLifecycleTimer = null;
+    }
     cancelAnimationFrame(this.raf);
     window.removeEventListener("resize", this.resize);
     window.removeEventListener("mousemove", this.onMouseMove);
@@ -6536,7 +6552,7 @@ void main() {
       uMultiplier: { value: 2 },
       uDarkenColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
       uDarken: { value: 1 },
-      tSky: { value: this.environmentSkyTexture() },
+      tSky: { value: null as Texture | null },
       uShader1Alpha: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Alpha },
       uShader1Speed: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Speed },
       uShader1Scale: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Scale },
@@ -6560,6 +6576,8 @@ void main() {
       fog: false,
     };
     material.sourceDitheringOwnership = "source-u1-constructor-sets-dithering-after-super";
+    material.userData.sourceConstructorTSkyMode = "source-u1-constructor-tSky-null";
+    material.userData.sourceConstructorTSkyWasNull = uniforms.tSky.value === null;
     material.onBeforeCompile = (shader) => {
       patchEnvironmentShader(shader, material.customUniforms);
     };
@@ -7164,6 +7182,36 @@ void main() {
 
   private get screenMouseSimulationTexture() {
     return this.screenMouseSimulationTargets[this.screenMouseSimulationIndex]?.texture ?? this.placeholder;
+  }
+
+  private runSourceInitLifecycle() {
+    return new Promise<void>((resolve) => {
+      this.sourceInitLifecycleTimer = window.setTimeout(() => {
+        this.sourceInitLifecycleTimer = null;
+        if (this.destroyed) {
+          resolve();
+          return;
+        }
+        this.bindSourceDelayedCompositeInputsAndSky();
+        this.resize();
+        this.sourceInitLifecycle.secondResizeAfterDelayedBindings = true;
+        if (!this.destroyed && !this.sourceInitLifecycle.started) {
+          this.sourceInitLifecycle.started = true;
+          this.lastTickTime = performance.now() * 0.001;
+          this.tick();
+        }
+        resolve();
+      }, 100);
+    });
+  }
+
+  private bindSourceDelayedCompositeInputsAndSky() {
+    this.bindSourceMainCompositeInputs();
+    this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
+    this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
+    this.environmentMaterial.customUniforms.tSky.value = this.environmentSkyTexture();
+    this.environmentMaterial.userData.sourceDelayedTSkyBindingMode = "source-nD-after-first-resize-100ms-bind-repeat-composite";
+    this.sourceInitLifecycle.delayedBindingsApplied = true;
   }
 
   private bindSourceMainCompositeInputs() {
@@ -8721,6 +8769,11 @@ void main() {
           skyPassClearing: "source-Lo-no-explicit-clear",
           skyUpdateMode: "source-V1-low-res-freezes-time",
           skyEnvironmentBinding: "source-nD-resize-delay-then-repeat-composite-bind",
+          sourceInitLifecycleMode: this.sourceInitLifecycle.mode,
+          firstResizeBeforeDelayedBindings: this.sourceInitLifecycle.firstResizeDone,
+          delayedBindingsApplied: this.sourceInitLifecycle.delayedBindingsApplied,
+          secondResizeAfterDelayedBindings: this.sourceInitLifecycle.secondResizeAfterDelayedBindings,
+          startedAfterDelayedBindings: this.sourceInitLifecycle.started && this.sourceInitLifecycle.delayedBindingsApplied,
           preloadGate: "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in",
           animateInMode: "source-nD-animateIn-awaits-init-and-four-preloaded-textures",
           animateInStarted: this.canvasAnimateInStarted,
@@ -9193,6 +9246,9 @@ void main() {
           uMultiplier: this.environmentMaterial.customUniforms.uMultiplier.value,
           uDarken: this.environmentMaterial.customUniforms.uDarken.value,
           uDarkenColor: (this.environmentMaterial.customUniforms.uDarkenColor.value as Color).toArray(),
+          tSkyConstructorMode: this.environmentMaterial.userData.sourceConstructorTSkyMode,
+          tSkyConstructorWasNull: this.environmentMaterial.userData.sourceConstructorTSkyWasNull,
+          tSkyDelayedBindingMode: this.environmentMaterial.userData.sourceDelayedTSkyBindingMode,
           tSkyIsComposite: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,
           tSkySource: this.debugSkyTarget === "off" ? "placeholder" : this.debugSkyTarget === "raw" ? "raw" : "composite",
           tSkyBindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
@@ -9307,6 +9363,7 @@ void main() {
           sizingMode: "source-V1-height-0.75-square",
           rawSizingMode: "source-V1-height-0.75-square",
           bindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
+          delayedBindingMode: this.environmentMaterial.userData.sourceDelayedTSkyBindingMode,
           tSceneConstructorMode: "source-z1-tScene-construct-null-Lo-update-binds-raw",
           tSceneIsRawTarget: this.skyCompositeMaterial.uniforms.tScene.value === this.skyRawTarget.texture,
           isEnvironmentSkySource: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,

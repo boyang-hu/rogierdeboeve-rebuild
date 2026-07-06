@@ -1467,6 +1467,17 @@ async function runProbe() {
   if (updateOrder?.mouseSimulationOrder !== "source-Lu-mousesim-after-raw-bloom-before-composite") {
     throw new Error(`Mouse simulation order source-shape mismatch: ${updateOrder?.mouseSimulationOrder || "missing"}`);
   }
+  const initLifecycleErrors = [];
+  if (updateOrder?.sourceInitLifecycleMode !== "source-nD-resize-delay-bind-composite-inputs-sky-repeat-then-start") {
+    initLifecycleErrors.push("sourceInitLifecycleMode");
+  }
+  if (updateOrder?.firstResizeBeforeDelayedBindings !== true) initLifecycleErrors.push("firstResizeBeforeDelayedBindings");
+  if (updateOrder?.delayedBindingsApplied !== true) initLifecycleErrors.push("delayedBindingsApplied");
+  if (updateOrder?.secondResizeAfterDelayedBindings !== true) initLifecycleErrors.push("secondResizeAfterDelayedBindings");
+  if (updateOrder?.startedAfterDelayedBindings !== true) initLifecycleErrors.push("startedAfterDelayedBindings");
+  if (initLifecycleErrors.length) {
+    throw new Error(`nD init lifecycle source-shape mismatch: ${initLifecycleErrors.join(", ")}`);
+  }
   if (updateOrder?.preloadGate !== "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in") {
     throw new Error(`Texture preload gate source-shape mismatch: ${updateOrder?.preloadGate || "missing"}`);
   }
@@ -1534,6 +1545,9 @@ async function runProbe() {
   if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
   if (environmentUniforms?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("customUniformsMode");
   if (environmentUniforms?.hasMaterialUniformsAlias !== false) environmentErrors.push("materialUniformsAlias");
+  if (environmentUniforms?.tSkyConstructorMode !== "source-u1-constructor-tSky-null") environmentErrors.push("tSkyConstructorMode");
+  if (environmentUniforms?.tSkyConstructorWasNull !== true) environmentErrors.push("tSkyConstructorWasNull");
+  if (environmentUniforms?.tSkyDelayedBindingMode !== "source-nD-after-first-resize-100ms-bind-repeat-composite") environmentErrors.push("tSkyDelayedBindingMode");
   if (environmentUniforms?.hierarchyMode !== "source-h1-rt-object3d-owns-transform") environmentErrors.push("hierarchyMode");
   if (environmentUniforms?.groupType !== "Object3D") environmentErrors.push("groupType");
   if (environmentUniforms?.updateMode !== "source-h1-material-update-only") environmentErrors.push("updateMode");
@@ -1777,6 +1791,7 @@ async function runProbe() {
   if (skyComposite?.sizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("sizingMode");
   if (skyComposite?.rawSizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("rawSizingMode");
   if (skyComposite?.bindingMode !== "source-nD-after-init-resize-delay-bind-repeat-composite") skyUniformErrors.push("bindingMode");
+  if (skyComposite?.delayedBindingMode !== "source-nD-after-first-resize-100ms-bind-repeat-composite") skyUniformErrors.push("delayedBindingMode");
   if (skyComposite?.tSceneConstructorMode !== "source-z1-tScene-construct-null-Lo-update-binds-raw") skyUniformErrors.push("tSceneConstructorMode");
   if (skyComposite?.tSceneIsRawTarget !== true) skyUniformErrors.push("tSceneRawBinding");
   if (skyComposite?.isEnvironmentSkySource !== true) skyUniformErrors.push("environmentSkySource");
