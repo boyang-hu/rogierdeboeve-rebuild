@@ -6220,7 +6220,7 @@ export class WebGLBackdrop {
       uRevealSides: { value: 0 },
       uRevealSpread: { value: 0 },
       uRevealSpreadSides: { value: 0 },
-      uMouseSpeed: { value: 0 },
+      uMouseSpeed: { value: null },
       uMouseLightness: { value: numeric(payload.mouseLightness, 1) },
       uMouseFactor: { value: this.mouseFactor },
       uAuxiliaryMaterial: { value: 0 },
@@ -6247,6 +6247,8 @@ export class WebGLBackdrop {
     }) as WorkBlockMaterial;
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
     material.uniforms = uniforms;
+    material.userData.sourceUMouseSpeedConstructorMode = "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime";
+    material.userData.sourceUMouseSpeedConstructorWasNull = uniforms.uMouseSpeed.value === null;
     material.onBeforeCompile = (shader) => {
       patchWorkBlockShader(shader, uniforms, "work");
     };
@@ -6308,7 +6310,7 @@ export class WebGLBackdrop {
       uRevealProject: { value: 1 },
       uRevealSides: { value: 1 },
       uRevealSpread: { value: kind === "about" ? 1 : 10 },
-      uMouseSpeed: { value: 0 },
+      uMouseSpeed: { value: null },
       uMouseLightness: { value: 1 },
       uMouseFactor: { value: 1 },
       uMouse: { value: new Vector2(0, 0) },
@@ -6338,6 +6340,8 @@ export class WebGLBackdrop {
     material.userData.sourceShaderMode = kind === "about"
       ? "source-XA-jA-WA-direct-shader"
       : "source-KA-YA-qA-direct-shader";
+    material.userData.sourceUMouseSpeedConstructorMode = "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime";
+    material.userData.sourceUMouseSpeedConstructorWasNull = uniforms.uMouseSpeed.value === null;
     material.onBeforeCompile = (shader) => {
       patchWorkBlockShader(shader, uniforms, kind === "about" ? "aboutAuxiliary" : "floatingAuxiliary");
     };
@@ -9600,6 +9604,9 @@ void main() {
               : false,
             hasPhysicalDefine: Object.hasOwn(activeWorkItem.material.defines ?? {}, "PHYSICAL"),
             physicalBranchMode: "source-VA-standard-material-PHYSICAL-inactive",
+            uMouseSpeedConstructorMode: activeWorkItem.material.userData.sourceUMouseSpeedConstructorMode,
+            uMouseSpeedConstructorWasNull: activeWorkItem.material.userData.sourceUMouseSpeedConstructorWasNull,
+            uMouseSpeedRuntimeValue: activeWorkItem.material.uniforms.uMouseSpeed.value,
           } : null,
           materialStateMode: "source-VA-meshstandard-default-toneMapped",
           vertexWorldPositionMode: "source-HA-unconditional-instance-world",
@@ -9653,6 +9660,8 @@ void main() {
             uMouseType: this.aboutBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
             uMouse: this.aboutBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.aboutBlocks.material.uniforms.uUvOffsetScale.value,
+            uMouseSpeedConstructorMode: this.aboutBlocks.material.userData.sourceUMouseSpeedConstructorMode,
+            uMouseSpeedConstructorWasNull: this.aboutBlocks.material.userData.sourceUMouseSpeedConstructorWasNull,
             uMouseSpeed: this.aboutBlocks.material.uniforms.uMouseSpeed.value,
           } : null,
           floatingAuxiliaryMaterial: this.floatingBlocks ? {
@@ -9670,6 +9679,8 @@ void main() {
             uMouseType: this.floatingBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
             uMouse: this.floatingBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.floatingBlocks.material.uniforms.uUvOffsetScale.value,
+            uMouseSpeedConstructorMode: this.floatingBlocks.material.userData.sourceUMouseSpeedConstructorMode,
+            uMouseSpeedConstructorWasNull: this.floatingBlocks.material.userData.sourceUMouseSpeedConstructorWasNull,
             uMouseSpeed: this.floatingBlocks.material.uniforms.uMouseSpeed.value,
           } : null,
         },

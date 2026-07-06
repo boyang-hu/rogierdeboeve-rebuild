@@ -3598,6 +3598,25 @@ const summary = {
           && rebuildWebgl.includes("uvOffsetType: uvOffset?.isVector2 ? \"Vector2\"")
           && rebuildWebgl.includes("uvOffsetRuntimeBridgeMode: \"source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy\""),
       },
+      uMouseSpeedConstructorOwnership: {
+        sourceConstructorNull:
+          sourceVA?.text.includes("uMouseSpeed:new I(null)") === true
+          && sourceXABody.includes("uMouseSpeed:new I(null)")
+          && sourceKABody.includes("uMouseSpeed:new I(null)"),
+        sourceRuntimeWrite:
+          sourceGA.text.includes("this.material.customUniforms.uMouseSpeed.value=this.mouseSpeed"),
+        rebuildConstructorNull:
+          rebuildWebgl.includes("uMouseSpeed: { value: null }")
+          && !rebuildWebgl.includes("uMouseSpeed: { value: 0 }"),
+        rebuildRuntimeWrite:
+          rebuildWebgl.includes("item.material.uniforms.uMouseSpeed.value = item.mouseSpeed"),
+        rebuildConstructorProbe:
+          rebuildWebgl.includes("sourceUMouseSpeedConstructorMode = \"source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime\"")
+          && rebuildWebgl.includes("uMouseSpeedConstructorWasNull: activeWorkItem.material.userData.sourceUMouseSpeedConstructorWasNull")
+          && rebuildOutputProbe.includes("activeUMouseSpeedConstructorWasNull")
+          && rebuildOutputProbe.includes("auxUMouseSpeedConstructorWasNull")
+          && rebuildOutputProbe.includes("floatingAuxUMouseSpeedConstructorWasNull"),
+      },
       mouseFactorOwnership: {
         sourceConstructorDefault:
           sourceVA?.text.includes("uMouseFactor:new I(0)") === true,
@@ -3638,6 +3657,7 @@ const summary = {
           "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
           "this.depthTest=!1,this.renderOrder=10,this.depthWrite=!1",
           "uMouse:new I(new Q)",
+          "uMouseSpeed:new I(null)",
           "uMouseFactor:new I(1)",
           "uMouseLightness:new I(1)",
           "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
@@ -3657,6 +3677,7 @@ const summary = {
           "class KA extends Vn",
           "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
           "uMouse:new I(new Q)",
+          "uMouseSpeed:new I(null)",
           "uMouseFactor:new I(1)",
           "uMouseLightness:new I(1)",
           "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
@@ -3674,6 +3695,7 @@ const summary = {
       },
       rebuildChecks: checks(rebuildWebgl, [
         "uMouse: { value: new Vector2(0, 0) }",
+        "uMouseSpeed: { value: null }",
         "uUvOffsetScale: { value: 1 }",
         "...(kind === \"about\" ? { depthWrite: false, depthTest: false } : {})",
         "if (kind === \"about\") material.renderOrder = 10",
@@ -3689,6 +3711,7 @@ const summary = {
         "auxiliaryMaterial?.shaderMode !== \"source-XA-jA-WA-direct-shader\"",
         "auxiliaryMaterial?.renderOrder !== 10",
         "auxiliaryMaterial?.uMouseType !== \"Vector2\"",
+        "auxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true",
         "auxiliaryMaterial?.uUvOffsetScale ?? 0",
         "floatingAuxiliaryMaterial?.mode !== \"source-KA-floating-material-state\"",
         "floatingAuxiliaryMaterial?.shaderMode !== \"source-KA-YA-qA-direct-shader\"",
@@ -3696,6 +3719,7 @@ const summary = {
         "floatingAuxiliaryMaterial?.depthTest !== true",
         "floatingAuxiliaryMaterial?.renderOrder ?? null",
         "floatingAuxiliaryMaterial?.uMouseType !== \"Vector2\"",
+        "floatingAuxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true",
         "floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0",
         "auxiliaryLifecycle.floatingEntryVisibilityMode !== \"source-Fg-animateIn-onStart-visible-not-enter-state\"",
         "auxiliaryLifecycle.floatingScrollVelocityMode !== \"source-Fg-onRaf-page-scroll-velocity\"",

@@ -335,6 +335,10 @@ async function runProbe() {
   if (activeMaterial?.isMeshPhysicalMaterial !== false) materialErrors.push("activeIsMeshPhysicalMaterial");
   if (activeMaterial?.hasPhysicalDefine !== false) materialErrors.push("activePhysicalDefine");
   if (activeMaterial?.physicalBranchMode !== "source-VA-standard-material-PHYSICAL-inactive") materialErrors.push("activePhysicalBranchMode");
+  if (activeMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
+    materialErrors.push("activeUMouseSpeedConstructorMode");
+  }
+  if (activeMaterial?.uMouseSpeedConstructorWasNull !== true) materialErrors.push("activeUMouseSpeedConstructorWasNull");
   if (activeMaterial?.toneMapped !== true) materialErrors.push("activeToneMapped");
   if (activeMaterial?.transparent !== true) materialErrors.push("activeTransparent");
   if (activeMaterial?.depthWrite !== false) materialErrors.push("activeDepthWrite");
@@ -428,6 +432,10 @@ async function runProbe() {
   if (auxiliaryMaterial?.renderOrder !== 10) materialErrors.push("auxRenderOrder");
   if (auxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("auxMouseUniform");
   if (Math.abs((auxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("auxUvOffsetScale");
+  if (auxiliaryMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
+    materialErrors.push("auxUMouseSpeedConstructorMode");
+  }
+  if (auxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true) materialErrors.push("auxUMouseSpeedConstructorWasNull");
   if (!floatingAuxiliaryMaterial) materialErrors.push("floatingAuxiliaryMaterialMissing");
   if (floatingAuxiliaryMaterial?.mode !== "source-KA-floating-material-state") materialErrors.push("floatingAuxMode");
   if (floatingAuxiliaryMaterial?.shaderMode !== "source-KA-YA-qA-direct-shader") materialErrors.push("floatingAuxShaderMode");
@@ -442,6 +450,10 @@ async function runProbe() {
   if ((floatingAuxiliaryMaterial?.renderOrder ?? null) !== null) materialErrors.push("floatingAuxRenderOrder");
   if (floatingAuxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("floatingAuxMouseUniform");
   if (Math.abs((floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("floatingAuxUvOffsetScale");
+  if (floatingAuxiliaryMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
+    materialErrors.push("floatingAuxUMouseSpeedConstructorMode");
+  }
+  if (floatingAuxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true) materialErrors.push("floatingAuxUMouseSpeedConstructorWasNull");
   if (materialErrors.length) {
     throw new Error(`VA material source-state mismatch: ${materialErrors.join(", ")}`);
   }

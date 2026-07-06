@@ -144,6 +144,7 @@ Known remaining gaps:
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
 - Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
+- Source `VA/XA/KA` `uMouseSpeed` ownership is now guarded: all three material constructors start with `uMouseSpeed=null`, while source `GA.update()` owns the later numeric runtime speed write.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
@@ -168,12 +169,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Normalized renderer-audit render-target default diagnostics without changing production rendering.
-- Source-style depthless targets still expect `texture.generateMipmaps=false`, `depthBuffer=false`, and `stencilBuffer=false`; default local Three targets still expect `generateMipmaps=false`, `depthBuffer=true`, and `stencilBuffer=false`.
-- `scripts/audit-renderer-output.mjs` now reports those booleans as structured `actual` / `expected` / `matchesExpected` diagnostics instead of raw false leaves.
-- The Node-only renderer default probe now returns `status:"unavailable"` with a reason when `OffscreenCanvas` is absent instead of `null`.
-- Recursive false/null extraction from the renderer audit now prints no entries.
-- Previous committed batch was `49f80da Align gallery work state persistence`.
+- Aligned source `VA/XA/KA` `uMouseSpeed` constructor ownership without changing shader text, render targets, project data, route behavior, or visual constants.
+- Source `VA`, `XA`, and `KA` construct `uMouseSpeed` as `new I(null)`; source `GA.update()` later writes `this.mouseSpeed` as the runtime numeric value.
+- Rebuild ordinary work, about auxiliary, and floating auxiliary materials now construct `uMouseSpeed` with `null` and record constructor-null evidence in `userData`.
+- Output probe and renderer audit now assert constructor-null evidence plus the existing source `GA.update()` runtime write path.
+- Previous committed batch was `0785124 Normalize renderer audit target diagnostics`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -183,21 +183,29 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-audit-diagnostics-cleanup.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-audit-diagnostics-cleanup.json","utf8")); function walk(v,p=[]){ if(v===false||v===null) console.log(p.join("."),"=",v); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o);'
+node --check scripts/probe-output-color.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-umousespeed-null-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-umousespeed-null-audit.json","utf8")); function walk(v,p=[]){ if(v===false||v===null) console.log(p.join("."),"=",v); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o);'
+ASTRO_TELEMETRY_DISABLED=1 npm run build
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-output-desktop VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-thumb node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-umousespeed-null-media node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the renderer-audit diagnostic normalization batch. Renderer audit wrote `/tmp/rd-audit-diagnostics-cleanup.json`; recursive false/null extraction printed no entries. Browser probes were not rerun for this script-only QA cleanup; the previous `yD/Qe.workState` batch passed build, desktop output, desktop thumb spotlight, and project-media probes.
+All relevant checks passed in the `uMouseSpeed` constructor-ownership batch. Renderer audit wrote `/tmp/rd-umousespeed-null-audit.json`; recursive false/null extraction printed no entries. Desktop/mobile output probes, thumb spotlight probe, and project-media probe passed with no failures/exceptions/console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this renderer-audit diagnostic cleanup batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `uMouseSpeed` constructor-ownership batch.
 
-Runtime QA was not needed for the latest script-only audit cleanup. The prior production batch was checked with local Chrome CDP scripts.
+Runtime QA was run because the batch touched WebGL material construction.
 
 Verified:
 
-- Renderer audit passed for the render-target diagnostic normalization batch: `/tmp/rd-audit-diagnostics-cleanup.json`.
-- Recursive false/null audit output is empty after wrapping expected false render-target defaults.
-- Home browser regression gates remain the prior batch's desktop output, desktop thumb spotlight, and project-media probes because the latest change is script-only.
+- Renderer audit passed for the `uMouseSpeed` constructor-ownership batch: `/tmp/rd-umousespeed-null-audit.json`.
+- Recursive false/null audit output is empty.
+- Desktop and mobile output probes passed: `/tmp/rd-umousespeed-null-output-desktop`, `/tmp/rd-umousespeed-null-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-umousespeed-null-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-umousespeed-null-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
