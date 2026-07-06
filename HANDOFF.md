@@ -181,12 +181,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Bt/w0` RAF elapsed frame time ownership without changing shader text, render targets, visual constants, route data, mouse normalization, scene order, or the already source-shaped raw frame delta.
-- Source evidence: `w0.start()` resets `elapsedTime`; `w0.getElapsedTime()` calls `getDelta()` before returning `elapsedTime`; `Bt.frame()` computes handler `delta` first, then computes handler `time` through that second `getDelta()` call before invoking handlers; `nD.update()` forwards that elapsed `time` and first raw `delta` to scene instances.
-- The rebuild now tracks `sourceElapsedTime` from RAF start, resets it during delayed lifecycle start, accumulates both the first raw frame delta and the second `getElapsedTime()` delta per frame, and uses accumulated elapsed time rather than wall-clock seconds for render/update `time`.
-- Output probes expose/assert `frameTimeMode=source-Bt-w0-getElapsedTime-elapsed-after-start-not-wall-clock`, `frameElapsedTimeMode=source-Bt-frame-delta-then-getElapsedTime-second-getDelta-before-handlers`, `sourceElapsedTime`, `lastFrameElapsedDelta`, and finite/non-negative elapsed values.
-- Renderer audit extracts the mirrored `w0/Bt` RAF elapsed-time anchors and rejects restoring wall-clock scene time or omitting the second elapsed update.
-- Previous committed batch was `ad624dd Align RAF raw frame delta`.
+- Tightened source `Iu/p1/h1` component update ordering without changing shader text, render targets, visual constants, route data, input normalization, RAF timing, or scene order.
+- Source evidence: `Iu.update()` runs render-manager, then camera-controller, then component updates; `h1` is a `p1` component whose `u1.update()` writes environment `uTime`; `p1.update()` runs spotlight parallax, visible work items, and about blocks after `super.update(...)`.
+- The rebuild now calls `updateHomeCamera(delta)` before `environmentMaterial.customUniforms.uTime.value = time`, then continues with spotlight parallax, visible work items, and auxiliary blocks.
+- Output probes expose/assert `environmentUpdateOrder=source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks`.
+- Renderer audit extracts the mirrored `Iu.update()` / `p1.update()` ordered anchors, extracts rebuild `updateWorkSceneForNextFrame()`, and rejects restoring the old environment-before-camera order.
+- Previous committed batch was `15f0243 Align RAF elapsed frame time`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -200,30 +200,30 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-raf-elapsed-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-raf-elapsed-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-component-order-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-component-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-elapsed-output-desktop VIEWPORT=desktop CDP_PORT=9361 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-elapsed-output-mobile VIEWPORT=mobile CDP_PORT=9362 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-elapsed-interactive VIEWPORT=desktop CDP_PORT=9363 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-elapsed-thumb VIEWPORT=desktop CDP_PORT=9364 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-elapsed-media CDP_PORT=9365 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-output-desktop VIEWPORT=desktop CDP_PORT=9381 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-output-mobile VIEWPORT=mobile CDP_PORT=9382 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-interactive VIEWPORT=desktop CDP_PORT=9383 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-thumb VIEWPORT=desktop CDP_PORT=9384 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-media CDP_PORT=9385 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `Bt/w0` RAF elapsed-time batch. Renderer audit wrote `/tmp/rd-raf-elapsed-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the elapsed-time markers plus the retained raw-delta/start markers. Interactive mouse probe passed with the raw-delta `Ka.uPersistance` guardrail retained. Thumb spotlight probe passed and retained two visible thumbs. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `Iu/p1/h1` component update-order batch. Renderer audit wrote `/tmp/rd-component-order-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the stricter environment-update marker. Interactive mouse probe passed with source mouse/fluid guardrails retained. Thumb spotlight probe passed. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this RAF elapsed-time batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this component update-order batch.
 
-Runtime QA was run because the batch touched Home WebGL frame timing and `Ka` timing guardrail coverage.
+Runtime QA was run because the batch touched Home WebGL frame update ordering.
 
 Verified:
 
-- Renderer audit passed for the RAF elapsed-time batch: `/tmp/rd-raf-elapsed-audit.json`.
+- Renderer audit passed for the component update-order batch: `/tmp/rd-component-order-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-raf-elapsed-output-desktop`, `/tmp/rd-raf-elapsed-output-mobile`.
-- Interactive mouse probe passed: `/tmp/rd-raf-elapsed-interactive`.
-- Thumb spotlight probe passed: `/tmp/rd-raf-elapsed-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-raf-elapsed-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-component-order-output-desktop`, `/tmp/rd-component-order-output-mobile`.
+- Interactive mouse probe passed: `/tmp/rd-component-order-interactive`.
+- Thumb spotlight probe passed: `/tmp/rd-component-order-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-component-order-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

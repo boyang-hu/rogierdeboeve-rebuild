@@ -1773,7 +1773,7 @@ async function runProbe() {
     throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);
   }
   const updateOrder = parsed.probe.settings?.updateOrder;
-  if (updateOrder?.environmentUpdateOrder !== "source-p1-component-post-render") {
+  if (updateOrder?.environmentUpdateOrder !== "source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks") {
     throw new Error(`Environment update-order source-shape mismatch: ${updateOrder?.environmentUpdateOrder || "missing"}`);
   }
   const skyTickingLifecycle = updateOrder?.skyTickingLifecycle || {};

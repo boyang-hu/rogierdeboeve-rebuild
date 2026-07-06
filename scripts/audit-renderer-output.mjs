@@ -239,6 +239,7 @@ const rebuildSetThumbMouseLightness = extractBlock(rebuildWebgl, "private setThu
 const rebuildSetSpotLightIntensity = extractBlock(rebuildWebgl, "private setSpotLightIntensity(");
 const rebuildSetDirectionalLightIntensity = extractBlock(rebuildWebgl, "private setDirectionalLightIntensity(");
 const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private setDirectionalLight2Intensity(");
+const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private updateWorkSceneForNextFrame(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
   ? rebuildTick.slice(0, rebuildTick.indexOf("this.renderer.setRenderTarget(this.mainRawTarget);"))
@@ -2282,6 +2283,7 @@ const summary = {
         "workUpdateOrder: [\"Lu.renderManager.raw\", \"Lu.renderManager.bloom\", \"Ka.mouseSimulation\", \"Lu.renderManager.composite\", \"IT.cameraController\", \"p1.components\"]",
         "mainUpdateOrder: [\"I1.raw\", \"I1.optional-blur\", \"I1.optional-lensflare\", \"I1.optional-luminosity\", \"I1.optional-bloom\", \"I1.fluid\", \"I1.C1-runtime-uniforms\", \"I1.C1-screen\"]",
         "mouseSimulationOrder: \"source-Lu-mousesim-after-raw-bloom-before-composite\"",
+        "environmentUpdateOrder: \"source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks\"",
         "tWorkBindingMode: \"source-nD-init-one-time-C1-tWork-work-renderTargetComposite\"",
         "tMediaBindingMode: \"source-nD-init-one-time-C1-tMedia-media-renderTargetComposite\"",
         "tMouseSimBindingMode: \"source-nD-init-one-time-C1-tMouseSim-initial-work-mousesim-output\"",
@@ -2292,6 +2294,24 @@ const summary = {
         "delayedBindingsApplied: this.sourceInitLifecycle.delayedBindingsApplied",
         "startedAfterDelayedBindings: this.sourceInitLifecycle.started && this.sourceInitLifecycle.delayedBindingsApplied",
       ]),
+      rebuildP1PostRenderOrder: {
+        blockFound: Boolean(rebuildUpdateWorkSceneForNextFrame),
+        cameraBeforeEnvironmentBeforeP1OwnWork: Boolean(rebuildUpdateWorkSceneForNextFrame)
+          && orderedIncludes(rebuildUpdateWorkSceneForNextFrame, [
+            "this.updateHomeCamera(delta);",
+            "this.environmentMaterial.customUniforms.uTime.value = time;",
+            "this.spotLight.position.x = this.homeCamera.position.x * 0.175;",
+            "this.updateVisibleWorkItems(time, delta);",
+            "this.updateAuxiliaryBlocks(time, delta);",
+          ]),
+        noEnvironmentBeforeCamera: Boolean(rebuildUpdateWorkSceneForNextFrame)
+          && !orderedIncludes(rebuildUpdateWorkSceneForNextFrame, [
+            "this.environmentMaterial.customUniforms.uTime.value = time;",
+            "this.updateHomeCamera(delta);",
+          ]),
+        runtimeProbeMarker: rebuildWebgl.includes("environmentUpdateOrder: \"source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks\""),
+        outputProbeAssertion: rebuildOutputProbe.includes("source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks"),
+      },
       rebuildInitLifecycle: {
         constructorFound: Boolean(rebuildConstructor),
         lifecycleMethodFound: Boolean(rebuildSourceInitLifecycle),
@@ -3700,6 +3720,11 @@ const summary = {
         "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController&&this.cameraController.update(e,t,n,i);for",
         "this.components[r].update&&this.components[r].update(e,t,n,i)",
       ]),
+      updateOrder: orderedIncludes(sourceIuUpdate.text, [
+        "update(e,t,n,i){this.renderManager.update(e,t,n,i),",
+        "this.cameraController&&this.cameraController.update(e,t,n,i);",
+        "this.components[r].update&&this.components[r].update(e,t,n,i)",
+      ]),
       excerpt: compact(sourceIuUpdate.text),
     },
     p1Update: sourceP1Update && {
@@ -3713,6 +3738,12 @@ const summary = {
         "o.instance.material.customUniforms.tMouseSim2.value=this.renderManager.mouseSimulation.bufferSim.output.texture",
         "o.instance.update(e,t,n,Math.min(Pe.dpr,1.5))",
         "this.aboutBlocks.visible&&(this.aboutBlocks.update(e,t,n,Math.min(Pe.dpr,1.5))",
+      ]),
+      updateOrder: orderedIncludes(sourceP1Update.text, [
+        "update(e,t,n,i){super.update(e,t,n,i),",
+        "this.spotLight&&this.spotLightParallax",
+        "o.instance.update(e,t,n,Math.min(Pe.dpr,1.5))",
+        "this.aboutBlocks.visible&&",
       ]),
       excerpt: compact(sourceP1Update.text),
     },

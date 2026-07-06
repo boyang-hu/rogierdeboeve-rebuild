@@ -8997,8 +8997,8 @@ void main() {
   }
 
   private updateWorkSceneForNextFrame(time: number, delta: number) {
-    this.environmentMaterial.customUniforms.uTime.value = time;
     this.updateHomeCamera(delta);
+    this.environmentMaterial.customUniforms.uTime.value = time;
     if (this.spotLightParallax) {
       this.spotLight.position.x = this.homeCamera.position.x * 0.175;
       this.spotLight.position.y = (window.innerWidth >= BREAKPOINT_MD ? 0 : 0.3) + this.homeCamera.position.y * 0.175;
@@ -10332,7 +10332,7 @@ void main() {
           sourceElapsedTimeFinite: Number.isFinite(this.sourceElapsedTime),
           mouseSimulationOrder: "source-Lu-mousesim-after-raw-bloom-before-composite",
           postRenderFrame: this.sourcePostRenderFrame,
-          environmentUpdateOrder: "source-p1-component-post-render",
+          environmentUpdateOrder: "source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks",
           skyPassClearing: "source-Lo-no-explicit-clear",
           skyUpdateMode: "source-V1-ticking-gated-low-res-resize-starts-then-100ms-stops",
           skyTickingLifecycle: {
