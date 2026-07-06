@@ -430,6 +430,13 @@ const SOURCE_INITIAL_THUMB_DARKNESS_COLOR = "#000000";
 const SOURCE_INITIAL_THUMB_SATURATION = 1;
 const SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS = 1;
 const SOURCE_THUMB_BACKGROUND = "#222222";
+const SOURCE_SPOTLIGHT_COLOR_HEX = 0xffffff;
+const SOURCE_SPOTLIGHT_DISTANCE = 0;
+const SOURCE_SPOTLIGHT_DECAY = 2;
+const SOURCE_SPOTLIGHT_SHADOW_FOCUS = 1;
+const SOURCE_SPOTLIGHT_SHADOW_CAMERA_NEAR = 0.5;
+const SOURCE_SPOTLIGHT_SHADOW_CAMERA_FAR = 500;
+const SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE = [512, 512] as const;
 const SOURCE_ACTIVE_PROJECT_ORDER = [
   "hashgraph-vc",
   "gc-2026",
@@ -4821,6 +4828,35 @@ export class WebGLBackdrop {
     };
   }
 
+  private sourceSpotLightDefaultsProbe() {
+    const shadowCamera = this.spotLight.shadow.camera as PerspectiveCamera;
+    return {
+      defaultMode: "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow",
+      shadowDefaultMode: "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512",
+      colorHex: this.spotLight.color.getHex(),
+      distance: this.spotLight.distance,
+      decay: this.spotLight.decay,
+      shadowFocus: this.spotLight.shadow.focus,
+      shadowMapSize: this.spotLight.shadow.mapSize.toArray(),
+      shadowCameraFovMode: "source-SpotLightShadow-updateMatrices-angle-focus-fov",
+      shadowCameraExpectedFov: MathUtils.radToDeg(2 * this.spotLight.angle * this.spotLight.shadow.focus),
+      shadowCameraFov: shadowCamera.fov,
+      shadowCameraAspect: shadowCamera.aspect,
+      shadowCameraNear: shadowCamera.near,
+      shadowCameraFarMode: "source-SpotLightShadow-updateMatrices-distance-0-keeps-camera-far-500",
+      shadowCameraFar: shadowCamera.far,
+      expected: {
+        colorHex: SOURCE_SPOTLIGHT_COLOR_HEX,
+        distance: SOURCE_SPOTLIGHT_DISTANCE,
+        decay: SOURCE_SPOTLIGHT_DECAY,
+        shadowFocus: SOURCE_SPOTLIGHT_SHADOW_FOCUS,
+        shadowMapSize: [...SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE],
+        shadowCameraNear: SOURCE_SPOTLIGHT_SHADOW_CAMERA_NEAR,
+        shadowCameraFar: SOURCE_SPOTLIGHT_SHADOW_CAMERA_FAR,
+      },
+    };
+  }
+
   enterWorkGallery(activeSlug = this.activeSlug) {
     this.projectRevealTweens.forEach((tween) => tween.kill());
     this.projectRevealProjectTweens.forEach((tween) => tween.kill());
@@ -8085,6 +8121,7 @@ void main() {
         )),
       },
       spotlight: {
+        ...this.sourceSpotLightDefaultsProbe(),
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
         positionOwnershipMode: "source-direct-SpotLight-position-target-no-local-mirror",
         parallaxMode: "source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile",
@@ -9845,6 +9882,7 @@ void main() {
     return {
       activeSlug: active.slug,
       spotlight: {
+        ...this.sourceSpotLightDefaultsProbe(),
         intensity: this.spotLight.intensity,
         stateOwnership: "source-Se-settings-light-state-onUpdate-intensities",
         stateIntensity: this.lightState.spotLight.intensity,

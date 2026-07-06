@@ -26,6 +26,9 @@ const sourceGpuBenchmarksDir = process.env.SOURCE_GPU_BENCHMARKS_DIR || "public/
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
 const threeWebglLights = readFileSync("node_modules/three/src/renderers/webgl/WebGLLights.js", "utf8");
+const threeSpotLight = readFileSync("node_modules/three/src/lights/SpotLight.js", "utf8");
+const threeSpotLightShadow = readFileSync("node_modules/three/src/lights/SpotLightShadow.js", "utf8");
+const threeLightShadow = readFileSync("node_modules/three/src/lights/LightShadow.js", "utf8");
 const threeTextureSource = readFileSync("node_modules/three/src/textures/Texture.js", "utf8");
 const threeVideoTextureSource = readFileSync("node_modules/three/src/textures/VideoTexture.js", "utf8");
 
@@ -259,6 +262,8 @@ const sourceIuResize = extractAround(bundle, "resize(e,t,n){this.renderManager.r
 const sourceP1InitEnv = extractAround(bundle, "this.floor=this.add(a1),this.floor.position.y=-1.65,this.env=this.add(h1)", 700, 900);
 const sourceP1SetBlocks = extractAround(bundle, "setBlocks(){this.blocks=[]", 120, 1300);
 const sourceP1SetLights = extractAround(bundle, "setLights(){this.ambientLight=new", 240, 1000);
+const sourceSpotLightClass = extractAround(bundle, "class Qm extends", 280, 700);
+const sourceSpotLightShadowClass = extractAround(bundle, "class Iw extends", 280, 620);
 const sourceP1CameraSettings = extractAround(bundle, "setCameraControllerSettings(e=new L(0,0,0),t=new Q(.25,.25),n=10)", 240, 520);
 const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager.update(e,t,n,i),this.cameraController", 240, 700);
 const sourceIT = extractAround(bundle, "class IT{constructor", 120, 3200);
@@ -2361,6 +2366,85 @@ const summary = {
           "maxSpotLightIntensityMatchesSource",
         ]),
         excerpt: compact(sourceP1SetLights.text),
+      },
+      spotLightDefaultOwnership: {
+        sourceQmConstructor: sourceSpotLightClass && {
+          index: sourceSpotLightClass.index,
+          checks: checks(sourceSpotLightClass.text, [
+            "constructor(e,t,n=0,i=Math.PI/3,r=0,o=2)",
+            "this.distance=n",
+            "this.angle=i",
+            "this.penumbra=r",
+            "this.decay=o",
+            "this.map=null",
+            "this.shadow=new Iw",
+          ]),
+          excerpt: compact(sourceSpotLightClass.text),
+        },
+        sourceIwShadow: sourceSpotLightShadowClass && {
+          index: sourceSpotLightShadowClass.index,
+          checks: checks(sourceSpotLightShadowClass.text, [
+            "super(new Wt(50,1,.5,500))",
+            "this.isSpotLightShadow=!0",
+            "this.focus=1",
+            "const t=this.camera,n=br*2*e.angle*this.focus",
+            "i=this.mapSize.width/this.mapSize.height",
+            "r=e.distance||t.far",
+          ]),
+          excerpt: compact(sourceSpotLightShadowClass.text),
+        },
+        localThreeSpotLight: checks(threeSpotLight, [
+          "constructor( color, intensity, distance = 0, angle = Math.PI / 3, penumbra = 0, decay = 2 )",
+          "this.distance = distance",
+          "this.decay = decay",
+          "this.map = null",
+          "this.shadow = new SpotLightShadow()",
+        ]),
+        localThreeSpotLightShadow: checks(threeSpotLightShadow, [
+          "super( new PerspectiveCamera( 50, 1, 0.5, 500 ) )",
+          "this.focus = 1",
+          "const fov = MathUtils.RAD2DEG * 2 * light.angle * this.focus",
+          "const aspect = this.mapSize.width / this.mapSize.height",
+          "const far = light.distance || camera.far",
+        ]),
+        localThreeLightShadow: checks(threeLightShadow, [
+          "this.mapSize = new Vector2( 512, 512 )",
+          "this.bias = 0",
+          "this.normalBias = 0",
+          "this.radius = 1",
+        ]),
+        sourceP1KeepsDefaults: Boolean(sourceP1SetLights)
+          && sourceP1SetLights.text.includes("this.spotLight=new Qm(16777215,this.maxSpotLightIntensity)")
+          && sourceP1SetLights.text.includes("this.spotLight.angle=Math.PI/4")
+          && sourceP1SetLights.text.includes("this.spotLight.penumbra=.95")
+          && !sourceP1SetLights.text.includes("spotLight.distance")
+          && !sourceP1SetLights.text.includes("spotLight.decay")
+          && !sourceP1SetLights.text.includes("spotLight.shadow")
+          && !sourceP1SetLights.text.includes("spotLight.castShadow"),
+        rebuildProbeSurface: checks(rebuildWebgl, [
+          "private sourceSpotLightDefaultsProbe()",
+          "defaultMode: \"source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow\"",
+          "shadowDefaultMode: \"source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512\"",
+          "shadowCameraFovMode: \"source-SpotLightShadow-updateMatrices-angle-focus-fov\"",
+          "shadowCameraFarMode: \"source-SpotLightShadow-updateMatrices-distance-0-keeps-camera-far-500\"",
+          "SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE",
+        ]),
+        outputProbeChecks: checks(rebuildOutputProbe, [
+          "light.defaultMode !== \"source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow\"",
+          "light.shadowDefaultMode !== \"source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512\"",
+          "light.colorHex !== 0xffffff",
+          "light.distance",
+          "light.decay",
+          "light.shadowCameraFovMode !== \"source-SpotLightShadow-updateMatrices-angle-focus-fov\"",
+          "light.shadowCameraFarMode !== \"source-SpotLightShadow-updateMatrices-distance-0-keeps-camera-far-500\"",
+        ]),
+        thumbProbeChecks: checks(rebuildThumbProbe, [
+          "function assertSourceSpotlightDefaults",
+          "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow",
+          "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512",
+          "assertSourceSpotlightDefaults(probe.spotlight, \"spotlight\", sourceShapeErrors)",
+          "assertSourceSpotlightDefaults(projection.spotlight, \"projection\", sourceShapeErrors)",
+        ]),
       },
       sdInitChecks: checks(sourceSDInitSpotlight.text, [
         "J.workScene.spotLight.map=J.workThumbScene.renderManager.renderTargetComposite.texture",

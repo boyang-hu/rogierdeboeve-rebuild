@@ -48,6 +48,33 @@ function expectedThumbX(hook, thumbProgress, totalWidth) {
   return x;
 }
 
+function assertSourceSpotlightDefaults(light, label, errors) {
+  if (light?.defaultMode !== "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow") {
+    errors.push(`${label}DefaultMode=${light?.defaultMode}`);
+  }
+  if (light?.shadowDefaultMode !== "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512") {
+    errors.push(`${label}ShadowDefaultMode=${light?.shadowDefaultMode}`);
+  }
+  if (light?.colorHex !== 0xffffff) errors.push(`${label}ColorHex=${light?.colorHex}`);
+  if (!closeTo(light?.distance, 0)) errors.push(`${label}Distance=${light?.distance}`);
+  if (!closeTo(light?.decay, 2)) errors.push(`${label}Decay=${light?.decay}`);
+  if (!closeTo(light?.shadowFocus, 1)) errors.push(`${label}ShadowFocus=${light?.shadowFocus}`);
+  if (JSON.stringify(light?.shadowMapSize) !== JSON.stringify([512, 512])) {
+    errors.push(`${label}ShadowMapSize=${JSON.stringify(light?.shadowMapSize)}`);
+  }
+  if (light?.shadowCameraFovMode !== "source-SpotLightShadow-updateMatrices-angle-focus-fov") {
+    errors.push(`${label}ShadowCameraFovMode=${light?.shadowCameraFovMode}`);
+  }
+  if (!closeTo(light?.shadowCameraExpectedFov, 90)) errors.push(`${label}ShadowCameraExpectedFov=${light?.shadowCameraExpectedFov}`);
+  if (!closeTo(light?.shadowCameraFov, light?.shadowCameraExpectedFov ?? 90)) errors.push(`${label}ShadowCameraFov=${light?.shadowCameraFov}`);
+  if (!closeTo(light?.shadowCameraAspect, 1)) errors.push(`${label}ShadowCameraAspect=${light?.shadowCameraAspect}`);
+  if (!closeTo(light?.shadowCameraNear, 0.5)) errors.push(`${label}ShadowCameraNear=${light?.shadowCameraNear}`);
+  if (light?.shadowCameraFarMode !== "source-SpotLightShadow-updateMatrices-distance-0-keeps-camera-far-500") {
+    errors.push(`${label}ShadowCameraFarMode=${light?.shadowCameraFarMode}`);
+  }
+  if (!closeTo(light?.shadowCameraFar, 500)) errors.push(`${label}ShadowCameraFar=${light?.shadowCameraFar}`);
+}
+
 function waitForPort(portNumber, timeout = 6000) {
   const start = Date.now();
   return new Promise((resolve, reject) => {
@@ -235,6 +262,7 @@ async function runProbe() {
   if (probe.spotlight?.hasMap !== true) {
     sourceShapeErrors.push(`spotlightHasMap=${probe.spotlight?.hasMap}`);
   }
+  assertSourceSpotlightDefaults(probe.spotlight, "spotlight", sourceShapeErrors);
   if (probe.spotlight?.intensity !== 220) {
     sourceShapeErrors.push(`spotlightIntensity=${probe.spotlight?.intensity}`);
   }
@@ -270,6 +298,7 @@ async function runProbe() {
     }
     if (projection.spotlight?.castShadow !== false) sourceShapeErrors.push(`projectionCastShadow=${projection.spotlight?.castShadow}`);
     if (projection.spotlight?.mapColorSpace !== "") sourceShapeErrors.push(`projectionMapColorSpace=${projection.spotlight?.mapColorSpace}`);
+    assertSourceSpotlightDefaults(projection.spotlight, "projection", sourceShapeErrors);
     if (projection.spotlight?.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") {
       sourceShapeErrors.push(`projectionPositionOwnership=${projection.spotlight?.positionOwnershipMode}`);
     }

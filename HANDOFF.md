@@ -134,7 +134,7 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, work/main pass-material ownership, and source `Lu/kA/I1` settings ownership, but transfer interpretation and exact composite behavior are still not complete.
-- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
 - Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, and source `setLights()` max spotlight scalar ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
@@ -155,16 +155,16 @@ Known remaining gaps:
 - Source `Xt.loadTexture()` immediate texture-object binding is now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: uniforms receive the immediate `Texture` object before image onload, and probes verify onload does not replace that object.
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
+- Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
 
 Latest Phase 1 batch:
 
-- Aligned `h1/u1` environment material dithering ownership.
-- Source `h1` constructs `this.material=new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})`; the constructor object does not include `dithering`.
-- Source `u1` runs `constructor(e){super(e),this.dithering=!0,...}`, so `dithering=true` belongs to the post-`super` `u1` constructor body.
-- The rebuild now removes `dithering:true` from the environment `MeshStandardMaterial` constructor, assigns `material.dithering = true` after construction, and records `sourceDitheringOwnership="source-u1-constructor-sets-dithering-after-super"`.
-- `__rogierOutputProbe.uniforms.environment` and `reflectionState.environment.material` expose `ditheringOwnershipMode` and `constructorParamsIncludesDithering`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if dithering returns as an `h1` constructor parameter or if the post-construction ownership marker drifts.
-- Previous committed batch was `5c96d8c Align GPU tier bridge`.
+- Added `Qm/Iw` spotlight default and shadow projection ownership guardrails.
+- Source `Qm` constructs spotlights with default `distance=0`, `angle=Math.PI/3`, `penumbra=0`, `decay=2`, `map=null`, and `shadow=new Iw`.
+- Source `Iw` constructs `PerspectiveCamera(50,1,.5,500)`, keeps `focus=1`, and updates the shadow projection from spotlight angle/focus, map-size aspect, and `distance || camera.far`.
+- Source `p1.setLights()` constructs `new Qm(16777215,this.maxSpotLightIntensity)`, sets position, `angle=Math.PI/4`, and `penumbra=.95`, but does not set distance, decay, shadow, or castShadow.
+- `__rogierOutputProbe` and `__rogierThumbProbe.spotlightProjection` expose the source default/shadow camera fields; `scripts/probe-output-color.mjs`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` hard-fail on drift.
+- Previous committed batch was `7f830f8 Align environment dithering ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -175,27 +175,28 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-env-dither-audit.json
+node --check scripts/probe-thumb-spotlight.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-spot-defaults-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-env-dither-output-desktop CDP_PORT=9641 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-env-dither-output-mobile CDP_PORT=9642 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-env-dither-thumb-desktop CDP_PORT=9643 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-env-dither-thumb-mobile CDP_PORT=9644 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-env-dither-project-media CDP_PORT=9645 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-spot-defaults-output-desktop CDP_PORT=9651 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-spot-defaults-output-mobile CDP_PORT=9652 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-spot-defaults-thumb-desktop CDP_PORT=9653 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-spot-defaults-thumb-mobile CDP_PORT=9654 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-spot-defaults-project-media CDP_PORT=9655 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the environment dithering ownership batch. Renderer audit wrote `/tmp/rd-env-dither-audit.json`; `sourceManagers.environmentU1.rebuildDitheringOwnership` confirms source `u1` post-`super` assignment, source `h1` constructor exclusion, rebuild post-construction assignment, rebuild constructor exclusion, and runtime probe coverage. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and reported `dithering=true`, `ditheringOwnershipMode=source-u1-constructor-sets-dithering-after-super`, and `constructorParamsIncludesDithering=false`. Desktop/mobile thumb spotlight probes passed and retained the spotlight/thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
+All relevant checks passed in the spotlight default/shadow projection ownership batch. Renderer audit wrote `/tmp/rd-spot-defaults-audit.json`; `sourceManagers.homeSpotlightMap.spotLightDefaultOwnership` confirms source `Qm` defaults, source `Iw` defaults/update path, local Three defaults, source `p1.setLights()` default preservation, rebuild probe coverage, and output/thumb probe checks. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and reported distance `0`, decay `2`, shadow focus `1`, shadow map size `512x512`, shadow camera FOV `90`, near `.5`, and far `500`. Desktop/mobile thumb spotlight probes passed and retained nonzero projected map luma. Project-media probe retained visible media tracks on the probed project pages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this environment dithering batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this spotlight defaults batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the environment dithering batch: `/tmp/rd-env-dither-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-env-dither-output-desktop` and `/tmp/rd-env-dither-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-env-dither-thumb-desktop` and `/tmp/rd-env-dither-thumb-mobile`.
+- Renderer audit passed for the spotlight defaults batch: `/tmp/rd-spot-defaults-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-spot-defaults-output-desktop` and `/tmp/rd-spot-defaults-output-mobile`.
+- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-spot-defaults-thumb-desktop` and `/tmp/rd-spot-defaults-thumb-mobile`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
