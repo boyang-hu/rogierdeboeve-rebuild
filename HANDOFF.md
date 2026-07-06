@@ -145,15 +145,16 @@ Known remaining gaps:
 - Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, ambient intensity tweens `J.workScene.ambientLight.intensity`, and rebuild-only background material uniforms are not source `Se` ambient targets.
 - Source `Se.setBlocksColor()` ownership is now guarded as a no-kill fan-out setter for every ordinary work material emissive color. It no longer keeps rebuild-only block-color tween registry state, retargets only the active block, or writes custom uniforms from this setter.
 - Source thumb state setter ownership is now guarded as no-kill state tween ownership: `Se.setThumbDarknessIntensity()`, `setThumbDarknessColor()`, `setThumbSaturation()`, and `setThumbMouseLightness()` keep their source `t===0` direct branches, otherwise tween `settings.thumb` state and fan out to thumb composite uniforms or work material `uMouseLightness` on update, without rebuild-owned tween registries.
+- Source `Se.settings` scalar/media setter ownership is now guarded for the source no-kill boundary: `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` do not keep rebuild-owned tween registries or pre-emptive kills, while source kill-owned `setRevealSpread()` and `setEnvRotation()` retain their kill behavior.
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `Se` thumb state setter no-kill ownership without changing shader text, render targets, pass order, route behavior, or visual constants.
-- Source `Se.setThumbDarknessIntensity()`, `setThumbDarknessColor()`, `setThumbSaturation()`, and `setThumbMouseLightness()` write directly only when `t===0`; otherwise they tween `this.settings.thumb` / `this.settings.thumb.darknessColor` and update thumb composite uniforms or work material `uMouseLightness` from state on update.
-- Rebuild removed the old `thumbDarknessTweens`, `thumbDarknessColorTweens`, `thumbSaturationTweens`, and `thumbMouseLightnessTweens` registries plus their `.kill()` and `.push(...)` paths.
-- `__rogierThumbProbe.thumbComposite.killMode` exposes `source-no-kill-for-thumb-state-setters`.
-- `scripts/probe-thumb-spotlight.mjs` hard-fails on thumb-state kill-mode drift; `scripts/audit-renderer-output.mjs` checks source/rebuild/probe anchors and rejects old registry/kill/storage paths.
-- Previous committed batch was `eb3fee3 Guard blocks color ownership`.
+- Added a source-backed runtime/audit guardrail for `Se.settings` scalar/media no-kill ownership without changing shader text, render targets, pass order, route behavior, or visual constants.
+- Source `Se.setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` tween `this.settings` / `this.settings.media` and update uniforms from state without stored tween registries or pre-emptive kills.
+- Source `Se.setRevealSpread()` and `Se.setEnvRotation()` explicitly kill their existing anim fields; the rebuild keeps those two kill-owned while removing no-kill scalar/media tween fields.
+- `__rogierOutputProbe.settings.work.settingsStateOwnership` exposes `scalarNoKillMode=source-no-kill-for-darken-saturation-contrast-showScene-fluidStrength-mediaOpacity` and `killOwnedMode=source-kill-owned-revealSpread-envRotation`.
+- `scripts/probe-output-color.mjs` hard-fails on the new markers; `scripts/audit-renderer-output.mjs` checks source/rebuild/probe anchors, rejects removed no-kill tween fields, and requires reveal-spread/env-rotation kill ownership.
+- Previous committed batch was `78d7430 Guard thumb state setter ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -164,29 +165,26 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node --check scripts/probe-thumb-spotlight.mjs
-node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-state-nokill-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-settings-nokill-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-thumb-state-nokill-output-desktop CDP_PORT=9342 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-state-nokill-output-mobile CDP_PORT=9343 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-state-nokill-thumb-desktop CDP_PORT=9344 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-state-nokill-thumb-mobile CDP_PORT=9346 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-thumb-state-nokill-project-media CDP_PORT=9345 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-settings-nokill-output-desktop CDP_PORT=9352 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-settings-nokill-output-mobile CDP_PORT=9353 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-settings-nokill-thumb-desktop CDP_PORT=9354 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-settings-nokill-project-media CDP_PORT=9355 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the thumb state no-kill ownership guardrail batch. Renderer audit wrote `/tmp/rd-thumb-state-nokill-audit.json`; `sourceManagers.Se.thumbStateOwnership` reports `source=true` and `rebuild=true`. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages. Desktop/mobile thumb spotlight probes passed and confirmed `thumbComposite.killMode=source-no-kill-for-thumb-state-setters`, state uniforms matching `thumbState`, and work material `uMouseLightness` matching state. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the `Se.settings` scalar/media no-kill ownership guardrail batch. Renderer audit wrote `/tmp/rd-settings-nokill-audit.json`; `sourceManagers.Se.settingsStateOwnership` reports `source=true` and `rebuild=true`. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed `settingsStateOwnership.scalarNoKillMode` plus `killOwnedMode`. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this thumb state guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this settings ownership guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the thumb state no-kill guardrail batch: `/tmp/rd-thumb-state-nokill-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-thumb-state-nokill-output-desktop` and `/tmp/rd-thumb-state-nokill-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-thumb-state-nokill-thumb-desktop` and `/tmp/rd-thumb-state-nokill-thumb-mobile`.
+- Renderer audit passed for the settings scalar/media no-kill guardrail batch: `/tmp/rd-settings-nokill-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-settings-nokill-output-desktop` and `/tmp/rd-settings-nokill-output-mobile`.
+- Desktop thumb spotlight probe passed for `/tmp/rd-settings-nokill-thumb-desktop`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
@@ -237,7 +235,7 @@ Continue source-driven implementation in this order:
    - Source `Lu/kA/I1` init settings and `I1` lensflare defaults are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, and `Se` thumb state no-kill setter ownership.
+   - Current rebuild now guards source `p1` child order, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, and `Se.settings` scalar/media no-kill versus kill-owned setter ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

@@ -133,6 +133,8 @@ function outputProbeSettled(parsed) {
     && closeTo(lightState.state?.directionalLight, 1.5)
     && closeTo(lightState.state?.directionalLight2, 1)
     && settingsState.mode === "source-Se-settings-scalar-media-state-onUpdate"
+    && settingsState.scalarNoKillMode === "source-no-kill-for-darken-saturation-contrast-showScene-fluidStrength-mediaOpacity"
+    && settingsState.killOwnedMode === "source-kill-owned-revealSpread-envRotation"
     && settingsState.matchesUniforms === true
     && closeTo(settingsState.state?.sceneReveal, 1)
     && mouseFactor.mode === "source-p1-setMouseFactor-updates-VA-uMouseFactor"
@@ -402,6 +404,12 @@ async function runProbe() {
   if (!Number.isFinite(ambientOwnership.ambientLightIntensity)) activeRevealErrors.push("ambientLightIntensity");
   const settingsStateOwnership = workSettings.settingsStateOwnership || {};
   if (settingsStateOwnership.mode !== "source-Se-settings-scalar-media-state-onUpdate") activeRevealErrors.push("settingsStateOwnership");
+  if (settingsStateOwnership.scalarNoKillMode !== "source-no-kill-for-darken-saturation-contrast-showScene-fluidStrength-mediaOpacity") {
+    activeRevealErrors.push("settingsStateScalarNoKillMode");
+  }
+  if (settingsStateOwnership.killOwnedMode !== "source-kill-owned-revealSpread-envRotation") {
+    activeRevealErrors.push("settingsStateKillOwnedMode");
+  }
   if (settingsStateOwnership.matchesUniforms !== true) activeRevealErrors.push("settingsStateUniforms");
   if (settingsStateOwnership.fluidStrengthConstructorDefault !== 0.5) activeRevealErrors.push("settingsStateFluidStrengthConstructorDefault");
   if (settingsStateOwnership.fluidStrengthRuntimeOwnership !== "source-Se-setFluidStrength-writes-C1-uFluidStrength") {

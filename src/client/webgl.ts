@@ -4373,8 +4373,6 @@ export class WebGLBackdrop {
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
-  private saturationTween?: gsap.core.Tween;
-  private contrastTween?: gsap.core.Tween;
   private thumbState = {
     darknessIntensity: 0,
     darknessColor: sourceRgbColor("#000000", "#000000"),
@@ -4400,16 +4398,12 @@ export class WebGLBackdrop {
       opacity: 0,
     },
   };
-  private darkenTween?: gsap.core.Tween;
   private revealSpreadTween?: gsap.core.Tween;
-  private sceneRevealTween?: gsap.core.Tween;
   private spotLightTween?: gsap.core.Tween;
   private directionalLightTween?: gsap.core.Tween;
   private directionalLight2Tween?: gsap.core.Tween;
   private envRotationTween?: gsap.core.Tween;
   private auxiliaryRevealTweens: gsap.core.Tween[] = [];
-  private fluidStrengthTween?: gsap.core.Tween;
-  private mediaOpacityTween?: gsap.core.Tween;
   private mediaTranslationTweens: gsap.core.Tween[] = [];
   private maxSpotLightIntensity = 220;
   private spotLightParallax = true;
@@ -4805,8 +4799,7 @@ export class WebGLBackdrop {
   }
 
   showScene() {
-    this.sceneRevealTween?.kill();
-    this.sceneRevealTween = gsap.to(this.settingsState, {
+    gsap.to(this.settingsState, {
       sceneReveal: 1,
       duration: 1.6,
       ease: "expo.out",
@@ -6654,7 +6647,6 @@ void main() {
   }
 
   private setDarken(value: number, duration = 0.5) {
-    this.darkenTween?.kill();
     const update = () => {
       this.compositeMaterial.uniforms.uDarken.value = this.settingsState.darken;
     };
@@ -6663,7 +6655,7 @@ void main() {
       update();
       return;
     }
-    this.darkenTween = gsap.to(this.settingsState, {
+    gsap.to(this.settingsState, {
       darken: value,
       duration: 0.5,
       ease: "none",
@@ -6689,7 +6681,6 @@ void main() {
   }
 
   private setSaturation(value: number, duration = 1.6) {
-    this.saturationTween?.kill();
     const update = () => {
       this.compositeMaterial.uniforms.uSaturation.value = this.settingsState.saturation;
     };
@@ -6698,7 +6689,7 @@ void main() {
       update();
       return;
     }
-    this.saturationTween = gsap.to(this.settingsState, {
+    gsap.to(this.settingsState, {
       saturation: value,
       duration,
       ease: "expo.out",
@@ -6724,7 +6715,6 @@ void main() {
   }
 
   private setContrast(value: number, duration = 1.6) {
-    this.contrastTween?.kill();
     const update = () => {
       this.preCompositeMaterial.uniforms.uContrast.value = this.settingsState.contrast;
     };
@@ -6733,7 +6723,7 @@ void main() {
       update();
       return;
     }
-    this.contrastTween = gsap.to(this.settingsState, {
+    gsap.to(this.settingsState, {
       contrast: value,
       duration,
       ease: "expo.out",
@@ -6910,7 +6900,6 @@ void main() {
   }
 
   private setFluidStrength(value: number, duration = 0.5) {
-    this.fluidStrengthTween?.kill();
     const update = () => {
       this.preCompositeMaterial.uniforms.uFluidStrength.value = this.settingsState.fluidStrength;
     };
@@ -6919,7 +6908,7 @@ void main() {
       update();
       return;
     }
-    this.fluidStrengthTween = gsap.to(this.settingsState, {
+    gsap.to(this.settingsState, {
       fluidStrength: value,
       duration,
       ease: "none",
@@ -6928,11 +6917,10 @@ void main() {
   }
 
   private setMediaOpacity(value: number, duration = 1.6, ease = "expo.out", delay = 0.25) {
-    this.mediaOpacityTween?.kill();
     const update = () => {
       this.preCompositeMaterial.uniforms.uMediaReveal.value = this.settingsState.media.opacity;
     }
-    this.mediaOpacityTween = gsap.to(this.settingsState.media, {
+    gsap.to(this.settingsState.media, {
       opacity: value,
       duration,
       ease,
@@ -8327,6 +8315,8 @@ void main() {
           },
           settingsStateOwnership: {
             mode: "source-Se-settings-scalar-media-state-onUpdate",
+            scalarNoKillMode: "source-no-kill-for-darken-saturation-contrast-showScene-fluidStrength-mediaOpacity",
+            killOwnedMode: "source-kill-owned-revealSpread-envRotation",
             state: {
               darken: this.settingsState.darken,
               saturation: this.settingsState.saturation,
