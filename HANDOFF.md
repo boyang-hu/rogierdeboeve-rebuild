@@ -150,15 +150,16 @@ Known remaining gaps:
 - Source `p1/Ya` home camera construction and resize projection ownership is now guarded: home camera stays `Ya(55, innerWidth / innerHeight, 1, 2e3)`, initial z `5.5`, and resize projection stays on the `Ya.resize()` plus `Iu.resize()` aspect/update path.
 - Source `yg/U1/I1` main raw camera construction and resize projection ownership is now guarded: main raw camera stays `Ya(Ef(...), Pe.aspect, 1, distance*2)` with distance `1000`, and resize projection stays on the source `yg.resize()` `Ef(...)` FOV/aspect/update path.
 - Source `Xt.loadTexture()` immediate texture-object binding is now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: uniforms receive the immediate `Texture` object before image onload, and probes verify onload does not replace that object.
+- Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `Xt.loadTexture()` immediate texture-object binding without changing shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
-- Source `Xt.loadTexture=e=>this.textureLoader.load(e)` returns an immediate `Texture` object; source `Xt.preloadTextures()` assigns `blueNoise`, `floorNormal`, `perlin1`, and `perlin2` immediately and sets wrapping on those same objects.
-- Source `I1` binds `C1.tNoise` to `Xt.blueNoise`, source `C1` constructs `tPerlin` from `Xt.perlin2`, ordinary work materials use `Xt.perlin1`, and `Ka` mouse simulation uses the shared blue-noise texture.
-- The rebuild now uses `loadTextureImmediate()` for blue-noise, perlin-2, and perlin-1, binds those immediate objects to `C1`, work/aux materials, and screen/local mouse simulation uniforms before image onload, then uses onload promises only to mark completion and prove same-object loading.
-- `__rogierOutputProbe.textures.sourceImmediateTextureBindings` exposes object-binding and loaded-same-object checks; `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on drift.
-- Previous committed batch was `b685bf9 Guard main raw camera Ef surface`.
+- Added a source-backed runtime/audit guardrail for active `u1/Qn` environment shader constants without changing production values, shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
+- Source `h1/u1` reads environment shader-pattern constants from `Qn`; the nearby `BA/Z1` groups contain similar `0/1` values but are not the runtime source for active `u1`.
+- The rebuild now centralizes active environment constants in `SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS` and feeds `createEnvironmentMaterial()` from that object.
+- `__rogierOutputProbe.uniforms.environment.shaderSurface` exposes `sourceConstantsMode=source-u1-uses-Qn-not-BA-Z1`, expected constants, `constantsMatchSource`, `uShader1Speed=0.5`, `uShader1Mix3=1.5`, and `uShader1Mix2Binding=source-declared-only`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if these source constants drift or if `uShader1Mix2` becomes a runtime binding.
+- Previous committed batch was `6fda2f5 Guard immediate texture bindings`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -169,17 +170,17 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-immediate-textures-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-env-qn-constants-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-immediate-textures-output-desktop CDP_PORT=9392 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-immediate-textures-output-mobile CDP_PORT=9393 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-immediate-textures-thumb-desktop CDP_PORT=9394 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-immediate-textures-project-media CDP_PORT=9395 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-env-qn-constants-output-desktop CDP_PORT=9492 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile PROBE_WAIT=30000 OUT_DIR=/tmp/rd-env-qn-constants-output-mobile CDP_PORT=9493 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-env-qn-constants-thumb-desktop CDP_PORT=9494 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-env-qn-constants-project-media CDP_PORT=9495 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `Xt.loadTexture()` immediate texture-object binding guardrail batch. Renderer audit wrote `/tmp/rd-immediate-textures-audit.json`; `sourceManagers.textures.rebuildImmediateTextureBindings` reports `blueNoise`, `perlin2`, `perlin1`, and `runtimeProbe` as true. The only remaining false diagnostics are the known render-target default/snapshot checks around `generateMipmaps`, `depthBuffer`, and `stencilBuffer`. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed the source immediate binding checks for `C1.tNoise`, `C1.tPerlin`, screen/local mouse simulation blue-noise uniforms, and work/aux `tPerlin` uniforms. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the `u1/Qn` environment shader constant guardrail batch. Renderer audit wrote `/tmp/rd-env-qn-constants-audit.json`; `sourceManagers.environmentU1.qnConstants` confirms the source `Qn` values and active `u1` usage, and `rebuildQnConstantGuardrail` reports named constants, factory usage, and runtime probe coverage as true. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed `sourceConstantsMode=source-u1-uses-Qn-not-BA-Z1`, `constantsMatchSource=true`, `uShader1Speed=0.5`, `uShader1Mix3=1.5`, and `uShader1Mix2Binding=source-declared-only`. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this texture guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this environment constant guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

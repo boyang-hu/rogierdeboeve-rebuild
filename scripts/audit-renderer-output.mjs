@@ -273,6 +273,7 @@ const sourceMainU1Scene = extractAround(bundle, "class U1 extends yg", 300, 1100
 const sourceDisplacementO1 = extractAround(bundle, "class O1 extends Lo", 700, 900);
 const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 900, 1700);
+const sourceQnEnvironmentConstants = extractAround(bundle, "Qn={ROUGHNESS_INTENSITY:.94", 20, 520);
 const sourceEnvironmentL1 = extractTemplate(bundle, "l1", "`,c1=");
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
 const sourceA1Floor = extractAround(bundle, "class a1 extends", 300, 1400);
@@ -2502,6 +2503,27 @@ const summary = {
         "t.uniforms.tSky=this.customUniforms.tSky",
         "t.vertexShader=c1,t.fragmentShader=l1",
       ]),
+      qnConstants: sourceQnEnvironmentConstants && {
+        index: sourceQnEnvironmentConstants.index,
+        checks: checks(sourceQnEnvironmentConstants.text, [
+          "Qn={ROUGHNESS_INTENSITY:.94",
+          "ENVMAP_INTENSITY:1",
+          "SHADER_1_ALPHA:.5",
+          "SHADER_1_SPEED:.5",
+          "SHADER_1_SCALE:5.5",
+          "SHADER_2_ALPHA:0",
+          "SHADER_2_SCALE:13",
+          "SHADER_3_ALPHA:0",
+          "SHADER_3_SPEED:0",
+          "SHADER_3_SCALE:0",
+          "SHADER_1_MIX_3:1.5",
+        ]),
+        usedByU1: checks(sourceU1.text, [
+          "uShader1Speed:new I(Qn.SHADER_1_SPEED)",
+          "uShader2Scale:new I(Qn.SHADER_2_SCALE)",
+          "uShader1Mix3:new I(Qn.SHADER_1_MIX_3)",
+        ]),
+      },
       fragmentChecks: checks(sourceEnvironmentL1, [
         "${xg}",
         "${gg}",
@@ -2523,6 +2545,24 @@ const summary = {
           "this.environmentMaterial.customUniforms.tSky.value",
         ].every((needle) => rebuildWebgl.includes(needle)),
         noRuntimeEnvironmentUniformAliasAccess: !rebuildWebgl.includes("this.environmentMaterial.uniforms."),
+      },
+      rebuildQnConstantGuardrail: {
+        namedConstants: checks(rebuildWebgl, [
+          "const SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS = {",
+          "uShader1Speed: 0.5",
+          "uShader2Scale: 13",
+          "uShader1Mix3: 1.5",
+        ]),
+        factoryUsesNamedConstants: Boolean(rebuildEnvironmentMaterialFactory)
+          && [
+            "SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Speed",
+            "SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader2Scale",
+            "SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Mix3",
+          ].every((needle) => rebuildEnvironmentMaterialFactory.includes(needle)),
+        runtimeProbe: rebuildWebgl.includes("sourceConstantsMode: \"source-u1-uses-Qn-not-BA-Z1\"")
+          && rebuildWebgl.includes("constantsMatchSource: environmentShaderConstantsMatchSource")
+          && rebuildOutputProbe.includes("expectedEnvironmentQnConstants")
+          && rebuildOutputProbe.includes("shaderMix2Binding"),
       },
       excerpt: compact(sourceU1.text),
     },

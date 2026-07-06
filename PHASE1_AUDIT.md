@@ -72,6 +72,38 @@ Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work b
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 
+### S1-293 `u1/Qn` Environment Shader Constant Guardrail
+
+This batch hardens the source attribution for active environment shader constants without changing production values, shader text, render targets, route behavior, or visual tuning.
+
+Source evidence:
+
+- Source `h1` constructs the environment material with `new u1({side:BackSide,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:false})`.
+- Source `u1.customUniforms` reads the shader-pattern constants from `Qn`, not from the nearby `BA`/`Z1` work-scene constant groups.
+- The actual source `Qn` values used by `u1` are `SHADER_1_ALPHA=.5`, `SHADER_1_SPEED=.5`, `SHADER_1_SCALE=5.5`, `SHADER_2_ALPHA=0`, `SHADER_2_SCALE=13`, `SHADER_3_ALPHA=0`, `SHADER_3_SPEED=0`, `SHADER_3_SCALE=0`, and `SHADER_1_MIX_3=1.5`.
+- Source `l1` declares `uShader1Mix2`, but source `u1.customUniforms` does not bind it at runtime.
+
+Runtime and tooling changes:
+
+- The rebuild now centralizes the environment shader constants in `SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS` and feeds `createEnvironmentMaterial()` from that source-named object.
+- `__rogierOutputProbe.uniforms.environment.shaderSurface` now exposes `sourceConstantsMode=source-u1-uses-Qn-not-BA-Z1`, the expected `Qn` constants, `constantsMatchSource`, and the source-declared-only `uShader1Mix2` binding state.
+- `scripts/probe-output-color.mjs` hard-fails if any active environment shader constant drifts from the source `Qn` values, or if `uShader1Mix2` becomes a runtime binding.
+- `scripts/audit-renderer-output.mjs` extracts the source `Qn` constant object, proves `u1` reads through `Qn`, and checks the rebuild constant guardrail plus probe assertions.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-env-qn-constants-audit.json` passed; `sourceManagers.environmentU1.qnConstants` confirms the source `Qn` values and `u1` usage, and `rebuildQnConstantGuardrail` reports named constants, factory usage, and runtime probe coverage as true.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed: `/tmp/rd-env-qn-constants-output-desktop`; `shaderSurface.sourceConstantsMode=source-u1-uses-Qn-not-BA-Z1`, `constantsMatchSource=true`, `uShader1Speed=0.5`, `uShader1Mix3=1.5`, and `uShader1Mix2Binding=source-declared-only`.
+- Mobile output probe passed with the same environment constant checks: `/tmp/rd-env-qn-constants-output-mobile`.
+- Desktop thumb spotlight probe passed: `/tmp/rd-env-qn-constants-thumb-desktop`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-env-qn-constants-project-media`.
+
+Decision: keep the active environment constants at the source `Qn` values (`.5/.5/5.5/13/1.5`) and do not replace them with the similarly named `BA/Z1` values (`0/1`) from other source constant groups. Phase 1 remains open because this is attribution/guardrail work only; the floor/environment distribution residual, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` composite interpretation remain unresolved.
+
 ### S1-292 `Xt.loadTexture()` Immediate Blue-Noise/Perlin Binding Guardrail
 
 This batch narrows source texture-object ownership for the composite/noise textures. It changes texture binding timing but does not change shader text, render targets, pass order, route behavior, or visual constants.

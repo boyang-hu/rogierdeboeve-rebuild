@@ -380,6 +380,17 @@ const SOURCE_WORK_ENVMAP_INTENSITY = 0.75;
 const SOURCE_WORK_ROUGHNESS = 1;
 const SOURCE_WORK_METALNESS = 0;
 const SOURCE_WORK_EMISSIVE_INTENSITY = 1;
+const SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS = {
+  uShader1Alpha: 0.5,
+  uShader1Speed: 0.5,
+  uShader1Scale: 5.5,
+  uShader2Alpha: 0,
+  uShader2Scale: 13,
+  uShader3Alpha: 0,
+  uShader3Speed: 0,
+  uShader3Scale: 0,
+  uShader1Mix3: 1.5,
+} as const;
 const SOURCE_ASSET_WEBP_PROBE =
   "data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA";
 const GRID_COLS = 35;
@@ -6411,15 +6422,15 @@ void main() {
       uDarkenColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
       uDarken: { value: 1 },
       tSky: { value: this.environmentSkyTexture() },
-      uShader1Alpha: { value: 0.5 },
-      uShader1Speed: { value: 0.5 },
-      uShader1Scale: { value: 5.5 },
-      uShader2Alpha: { value: 0 },
-      uShader2Scale: { value: 13 },
-      uShader3Alpha: { value: 0 },
-      uShader3Speed: { value: 0 },
-      uShader3Scale: { value: 0 },
-      uShader1Mix3: { value: 1.5 },
+      uShader1Alpha: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Alpha },
+      uShader1Speed: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Speed },
+      uShader1Scale: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Scale },
+      uShader2Alpha: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader2Alpha },
+      uShader2Scale: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader2Scale },
+      uShader3Alpha: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader3Alpha },
+      uShader3Speed: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader3Speed },
+      uShader3Scale: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader3Scale },
+      uShader1Mix3: { value: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS.uShader1Mix3 },
     };
     const material = new MeshStandardMaterial({
       side: BackSide,
@@ -8126,6 +8137,25 @@ void main() {
       (item) => item.mouseMaterial.uniforms.uNoiseTexture.value === this.sourceBlueNoiseTexture,
     );
     const environmentDarkenColor = this.environmentMaterial.customUniforms.uDarkenColor.value as Color;
+    const environmentShaderSurface = {
+      uShader1Alpha: this.environmentMaterial.customUniforms.uShader1Alpha.value,
+      uShader1Speed: this.environmentMaterial.customUniforms.uShader1Speed.value,
+      uShader1Scale: this.environmentMaterial.customUniforms.uShader1Scale.value,
+      uShader2Alpha: this.environmentMaterial.customUniforms.uShader2Alpha.value,
+      uShader2Scale: this.environmentMaterial.customUniforms.uShader2Scale.value,
+      uShader3Alpha: this.environmentMaterial.customUniforms.uShader3Alpha.value,
+      uShader3Speed: this.environmentMaterial.customUniforms.uShader3Speed.value,
+      uShader3Scale: this.environmentMaterial.customUniforms.uShader3Scale.value,
+      uShader1Mix2: this.environmentMaterial.customUniforms.uShader1Mix2?.value ?? null,
+      uShader1Mix2Binding: this.environmentMaterial.customUniforms.uShader1Mix2 ? "runtime" : "source-declared-only",
+      uShader1Mix3: this.environmentMaterial.customUniforms.uShader1Mix3.value,
+    };
+    const environmentShaderConstantKeys =
+      Object.keys(SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS) as Array<keyof typeof SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS>;
+    const environmentShaderConstantsMatchSource = environmentShaderConstantKeys.every((key) => {
+      const value = environmentShaderSurface[key];
+      return typeof value === "number" && Math.abs(value - SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS[key]) < 1e-6;
+    });
     const backgroundAmbientColor = this.backgroundMaterial.uniforms.uAmbientColor.value as Color;
     const activeWorkEmissive = activeWorkItem?.material.emissive ?? null;
     const probeWindow = window as OutputProbeWindow;
@@ -9049,17 +9079,10 @@ void main() {
             : null,
           skyCompositeBindingMatchesUniform: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,
           shaderSurface: {
-            uShader1Alpha: this.environmentMaterial.customUniforms.uShader1Alpha.value,
-            uShader1Speed: this.environmentMaterial.customUniforms.uShader1Speed.value,
-            uShader1Scale: this.environmentMaterial.customUniforms.uShader1Scale.value,
-            uShader2Alpha: this.environmentMaterial.customUniforms.uShader2Alpha.value,
-            uShader2Scale: this.environmentMaterial.customUniforms.uShader2Scale.value,
-            uShader3Alpha: this.environmentMaterial.customUniforms.uShader3Alpha.value,
-            uShader3Speed: this.environmentMaterial.customUniforms.uShader3Speed.value,
-            uShader3Scale: this.environmentMaterial.customUniforms.uShader3Scale.value,
-            uShader1Mix2: this.environmentMaterial.customUniforms.uShader1Mix2?.value ?? null,
-            uShader1Mix2Binding: this.environmentMaterial.customUniforms.uShader1Mix2 ? "runtime" : "source-declared-only",
-            uShader1Mix3: this.environmentMaterial.customUniforms.uShader1Mix3.value,
+            sourceConstantsMode: "source-u1-uses-Qn-not-BA-Z1",
+            expectedConstants: SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS,
+            constantsMatchSource: environmentShaderConstantsMatchSource,
+            ...environmentShaderSurface,
           },
           sceneEnvironment: this.homeScene.environment ? {
             colorSpace: this.homeScene.environment.colorSpace,

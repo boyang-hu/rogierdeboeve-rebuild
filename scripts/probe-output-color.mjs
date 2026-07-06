@@ -1504,6 +1504,32 @@ async function runProbe() {
   if (environmentUniforms && Math.abs((environmentUniforms.groupPositionY ?? 0) + 12.65) > 0.0001) environmentErrors.push("groupPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshPositionY ?? 0) > 0.0001) environmentErrors.push("meshPositionY");
   if (environmentUniforms && Math.abs(environmentUniforms.meshRotationY ?? 0) > 0.0001) environmentErrors.push("meshRotationY");
+  const environmentShaderSurface = environmentUniforms?.shaderSurface || {};
+  const expectedEnvironmentQnConstants = {
+    uShader1Alpha: 0.5,
+    uShader1Speed: 0.5,
+    uShader1Scale: 5.5,
+    uShader2Alpha: 0,
+    uShader2Scale: 13,
+    uShader3Alpha: 0,
+    uShader3Speed: 0,
+    uShader3Scale: 0,
+    uShader1Mix3: 1.5,
+  };
+  if (environmentShaderSurface.sourceConstantsMode !== "source-u1-uses-Qn-not-BA-Z1") {
+    environmentErrors.push("shaderSourceConstantsMode");
+  }
+  if (environmentShaderSurface.constantsMatchSource !== true) environmentErrors.push("shaderConstantsMatchSource");
+  for (const [key, expected] of Object.entries(expectedEnvironmentQnConstants)) {
+    if (Math.abs((environmentShaderSurface[key] ?? NaN) - expected) > 0.0001) {
+      environmentErrors.push(`shaderConstant-${key}`);
+    }
+    if (Math.abs((environmentShaderSurface.expectedConstants?.[key] ?? NaN) - expected) > 0.0001) {
+      environmentErrors.push(`expectedShaderConstant-${key}`);
+    }
+  }
+  if (environmentShaderSurface.uShader1Mix2 !== null) environmentErrors.push("shaderMix2RuntimeValue");
+  if (environmentShaderSurface.uShader1Mix2Binding !== "source-declared-only") environmentErrors.push("shaderMix2Binding");
   if (environmentHierarchy?.group?.type !== "Object3D") environmentErrors.push("reflectionGroupType");
   if (environmentHierarchy?.group?.children !== 1) environmentErrors.push("groupChildren");
   if (environmentHierarchy?.object?.position?.[1] !== 0) environmentErrors.push("meshLocalPosition");
