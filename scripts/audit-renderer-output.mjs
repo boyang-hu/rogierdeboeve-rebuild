@@ -14,6 +14,7 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-renderer-outpu
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
 const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
 const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
+const rebuildMotionPath = process.env.REBUILD_MOTION || "src/client/motion.ts";
 const rebuildSitePath = process.env.REBUILD_SITE || "src/data/site.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
 const rebuildOutputProbePath = process.env.REBUILD_OUTPUT_PROBE || "scripts/probe-output-color.mjs";
@@ -159,6 +160,7 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
+const rebuildMotion = readFileSync(rebuildMotionPath, "utf8");
 const rebuildSite = readFileSync(rebuildSitePath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
 const rebuildOutputProbe = readFileSync(rebuildOutputProbePath, "utf8");
@@ -276,6 +278,7 @@ const sourceIuUpdate = extractAround(bundle, "update(e,t,n,i){this.renderManager
 const sourceIT = extractAround(bundle, "class IT{constructor", 120, 3200);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceTDSpotlight = extractAround(bundle, "updateSpotLight(){J.workScene.spotLight.position.set", 520, 900);
+const sourceFg = extractAround(bundle, "class Fg extends", 200, 1200);
 const sourceWebpDetection = extractAround(bundle, "await k0(\"lossy\").then(()=>{Le.WEBP=!0}).catch(()=>{Le.WEBP=!1})", 240, 420);
 const sourceLeSettings = extractAround(bundle, "class Le{static DEBUG", 0, 560);
 const sourceDetectGpu = extractAround(bundle, "const XD=({mobileTiers", 220, 5200);
@@ -3539,6 +3542,8 @@ const summary = {
         "floatingAuxiliaryMaterial?.renderOrder ?? null",
         "floatingAuxiliaryMaterial?.uMouseType !== \"Vector2\"",
         "floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0",
+        "auxiliaryLifecycle.floatingEntryVisibilityMode !== \"source-Fg-animateIn-onStart-visible-not-enter-state\"",
+        "auxiliaryLifecycle.floatingScrollVelocityMode !== \"source-Fg-onRaf-page-scroll-velocity\"",
       ]),
     },
     dollarAAboutBlocks: sourceDollarA && {
@@ -3573,6 +3578,44 @@ const summary = {
         "mode: \"source-ZA-box-geometry-not-mg\"",
       ]),
       excerpt: compact(sourceZA.text),
+    },
+    FgFloatingBlocksLifecycle: sourceFg && {
+      index: sourceFg.index,
+      checks: checks(sourceFg.text, [
+        "class Fg extends Ht",
+        "this.translation=.005",
+        "J.workScene.floatingBlocks.update(e)",
+        "J.workScene.floatingBlocks.translationZ+=this.translation*Math.abs(this.page.scroll.velocity)",
+        "onComplete:()=>{J.workScene.floatingBlocks.visible=!1}",
+        "onStart:()=>{J.workScene.floatingBlocks.visible=!0}",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "const SOURCE_FLOATING_SCROLL_TRANSLATION = 0.005",
+        "setAboutScrollState(scroll = window.scrollY, velocity = 0)",
+        "this.auxiliaryPageScrollActive = true",
+        "this.floatingBlocks.group.visible = false",
+        "onStart: () => {",
+        "this.floatingBlocks.group.visible = true",
+        "const scrollVelocity = this.auxiliaryPageScrollActive ? this.auxiliaryPageScrollVelocity : window.scrollY - this.auxiliaryScrollLast",
+        "item.translationZ += SOURCE_FLOATING_SCROLL_TRANSLATION * Math.abs(scrollVelocity)",
+        "floatingScrollVelocityMode: \"source-Fg-onRaf-page-scroll-velocity\"",
+      ]),
+      mainChecks: checks(rebuildMain, [
+        "type PageScrollDetail = {",
+        "setAboutScrollState?(scroll?: number, velocity?: number): void",
+        "window.addEventListener(\"rd:page-scroll\", onPageScroll)",
+        "webgl?.setAboutScrollState?.(detail.scroll ?? window.scrollY, detail.velocity ?? 0)",
+      ]),
+      motionChecks: checks(rebuildMotion, [
+        "function dispatchPageScroll(scroll: number, velocity: number)",
+        "dispatchPageScroll(lenis.scroll, lenis.velocity)",
+      ]),
+      outputProbeChecks: checks(rebuildOutputProbe, [
+        "auxiliaryLifecycle.mode !== \"source-TD-Fg-split-about-floating-lifecycle\"",
+        "auxiliaryLifecycle.floatingEntryVisibilityMode !== \"source-Fg-animateIn-onStart-visible-not-enter-state\"",
+        "auxiliaryLifecycle.floatingScrollVelocityMode !== \"source-Fg-onRaf-page-scroll-velocity\"",
+      ]),
+      excerpt: compact(sourceFg.text),
     },
     Ka: (() => {
       const start = bundle.indexOf("class Ka{constructor");

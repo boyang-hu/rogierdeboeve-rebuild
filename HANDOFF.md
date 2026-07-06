@@ -144,6 +144,7 @@ Known remaining gaps:
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
 - Source `XA/KA` auxiliary material constructor state is now guarded: about keeps `XA` depth-disabled `renderOrder=10` state, floating keeps `KA` default depth state and no material `renderOrder`, and both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults. The auxiliary shader bridge is still open.
+- Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
@@ -162,13 +163,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `XA/KA` auxiliary block material constructor state.
-- `createAuxiliaryBlockMaterial()` now gives auxiliary materials source `uMouse:Vector2(0,0)` and `uUvOffsetScale=1`.
-- About `XA` keeps `depthWrite=false`, `depthTest=false`, and material `renderOrder=10`.
-- Floating `KA` no longer inherits about's depth overrides or material `renderOrder`; probe reports `depthWrite=true`, `depthTest=true`, and `renderOrder=null`.
-- `__rogierOutputProbe.settings.work` now exposes separate `auxiliaryMaterial` and `floatingAuxiliaryMaterial` records.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on `XA/KA` constructor-state drift.
-- Previous committed batch was `5945774 Align ag viscosity topology`.
+- Aligned source `Fg` about floating-block lifecycle and scroll velocity ownership.
+- `enterAboutVisualState()` now keeps floating blocks hidden after setup; `animateAboutVisualIn()` makes them visible in the floating `uReveal` tween `onStart`, matching source `Fg.animateIn()`.
+- `motion.ts` broadcasts Lenis `scroll` and `velocity` through `rd:page-scroll`; the about route forwards that state into WebGL through `setAboutScrollState()`.
+- `updateAuxiliaryBlocks()` now uses the page-scroll velocity feed for `.005 * abs(scroll.velocity)` `translationZ`, with a window-delta fallback only when no page-scroll state is available.
+- `__rogierOutputProbe` exposes `auxiliaryLifecycle`, floating visibility/scroll mode, `floatingTranslation`, and active `scrollVelocitySource`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail on `Fg` lifecycle/velocity drift; renderer audit now extracts source `Fg`.
+- Previous committed batch was `b38bb64 Align auxiliary material constructors`.
 - Phase 1 remains open for the auxiliary shader bridge, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -182,34 +183,33 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 node --check scripts/probe-interactive-mouse.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-aux-material-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-fg-lifecycle-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 SKIP_SCREENSHOT=1 CDP_PORT=9278 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 SKIP_SCREENSHOT=1 VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile CDP_PORT=9234 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5177 CDP_PORT=9283 node scripts/probe-project-media.mjs
-# In a separate shell for the static interactive rerun:
 PORT=5180 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
-# Then run:
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 PROBE_WAIT=30000 CDP_PORT=9278 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 VIEWPORT=mobile PROBE_WAIT=30000 CDP_PORT=9279 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 VIEWPORT=mobile CDP_PORT=9234 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9283 node scripts/probe-project-media.mjs
 CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9241 node scripts/probe-interactive-mouse.mjs
+# A narrow custom CDP smoke against /about/ also passed.
 ```
 
-All relevant checks passed in the `XA/KA` auxiliary material constructor-state batch. Renderer audit wrote `/tmp/rd-aux-material-audit.json`; the new `sourceManagers.auxiliaryBlockMaterials` audit subtree has no false/null values. Desktop/mobile output probes passed and asserted separate about/floating material state. Desktop/mobile thumb spotlight probes passed. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`. Static interactive mouse probe passed with zero failures, exceptions, or console messages. A static `/about/` smoke against `http://127.0.0.1:5180/about/` confirmed `aboutVisible=true`, `floatingVisible=true`, source `XA`/`KA` material modes, and no failures/exceptions/console messages.
+All relevant checks passed in the `Fg` floating lifecycle and page-scroll velocity batch. Renderer audit wrote `/tmp/rd-fg-lifecycle-audit.json`; the new `sourceManagers.FgFloatingBlocksLifecycle` audit subtree is all true. Desktop/mobile output probes passed and asserted auxiliary lifecycle modes. Desktop/mobile thumb spotlight probes passed. Project-media probe retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`. Static interactive mouse probe passed with zero failures, exceptions, or console messages. A narrow static `/about/` smoke against `http://127.0.0.1:5180/about/` confirmed `aboutVisible=true`, `floatingVisible=true`, `floatingEntryVisibilityMode=source-Fg-animateIn-onStart-visible-not-enter-state`, `scrollVelocitySource=page-scroll-velocity`, `pageScroll=520` after scroll, and no failures/exceptions/console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this auxiliary material batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `Fg` lifecycle batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the auxiliary material batch: `/tmp/rd-aux-material-audit.json`.
-- Desktop/mobile output probes passed and asserted `source-XA-about-material-state` plus `source-KA-floating-material-state`.
+- Renderer audit passed for the `Fg` lifecycle batch: `/tmp/rd-fg-lifecycle-audit.json`.
+- Desktop/mobile output probes passed and asserted `source-TD-Fg-split-about-floating-lifecycle`.
 - Desktop/mobile thumb spotlight probes passed.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Static interactive mouse probe passed with zero failures/exceptions/console messages.
-- Static `/about/` smoke passed with about/floating blocks visible and source material modes present.
+- Static `/about/` smoke passed with about/floating blocks visible and page-scroll velocity active.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

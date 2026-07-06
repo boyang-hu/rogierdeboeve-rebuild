@@ -40,11 +40,17 @@ type WebGLLike = {
   setProjectScrollState?(payload: ReturnType<typeof projectPayloadFromElement>): void;
   projectLeave?(): void;
   enterAboutVisualState?(visual?: HTMLElement | null, floating?: HTMLElement | null): void;
+  setAboutScrollState?(scroll?: number, velocity?: number): void;
   animateAboutVisualIn?(): void;
   animateAboutVisualOut?(): void;
   destroyAboutVisualState?(): void;
   leaveAboutVisualState?(): void;
   refreshMedia?(): void;
+};
+
+type PageScrollDetail = {
+  scroll?: number;
+  velocity?: number;
 };
 
 type TransitionMode = "home" | "project" | "about" | "work" | "default";
@@ -1207,6 +1213,12 @@ function boot() {
         document.querySelector<HTMLElement>(".ui-about-hero-visual"),
         document.querySelector<HTMLElement>(".ui-about-hero"),
       );
+      const onPageScroll = (event: Event) => {
+        const detail = (event as CustomEvent<PageScrollDetail>).detail ?? {};
+        webgl?.setAboutScrollState?.(detail.scroll ?? window.scrollY, detail.velocity ?? 0);
+      };
+      window.addEventListener("rd:page-scroll", onPageScroll);
+      callbacks.push(() => window.removeEventListener("rd:page-scroll", onPageScroll));
       onPageEntered(() => webgl?.animateAboutVisualIn?.(), callbacks);
       callbacks.push(() => webgl?.destroyAboutVisualState?.());
     } else if (project) {

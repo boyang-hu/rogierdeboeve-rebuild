@@ -321,6 +321,7 @@ async function runProbe() {
   const activeMaterial = workSettings.activeMaterial;
   const auxiliaryMaterial = workSettings.auxiliaryMaterial;
   const floatingAuxiliaryMaterial = workSettings.floatingAuxiliaryMaterial;
+  const auxiliaryLifecycle = workSettings.auxiliaryLifecycle || {};
   const materialErrors = [];
   if (workSettings.materialStateMode !== "source-VA-meshstandard-default-toneMapped") materialErrors.push("materialStateMode");
   if (workSettings.vertexWorldPositionMode !== "source-HA-unconditional-instance-world") materialErrors.push("vertexWorldPositionMode");
@@ -349,6 +350,22 @@ async function runProbe() {
   if (Math.abs((mouseFactor.state ?? NaN) - 1) > 0.001) materialErrors.push("mouseFactorState");
   if (Math.abs((mouseFactor.activeUniform ?? NaN) - (mouseFactor.state ?? NaN)) > 0.001) materialErrors.push("mouseFactorActiveUniform");
   if (mouseFactor.allWorkUniformsMatchState !== true) materialErrors.push("mouseFactorUniformsMatchState");
+  if (auxiliaryLifecycle.mode !== "source-TD-Fg-split-about-floating-lifecycle") materialErrors.push("auxiliaryLifecycleMode");
+  if (auxiliaryLifecycle.aboutEntryVisibilityMode !== "source-TD-addEvents-visible-before-animateIn") {
+    materialErrors.push("auxiliaryAboutEntryVisibility");
+  }
+  if (auxiliaryLifecycle.floatingEntryVisibilityMode !== "source-Fg-animateIn-onStart-visible-not-enter-state") {
+    materialErrors.push("auxiliaryFloatingEntryVisibility");
+  }
+  if (auxiliaryLifecycle.floatingExitVisibilityMode !== "source-Fg-animateOut-onComplete-hidden") {
+    materialErrors.push("auxiliaryFloatingExitVisibility");
+  }
+  if (auxiliaryLifecycle.floatingScrollVelocityMode !== "source-Fg-onRaf-page-scroll-velocity") {
+    materialErrors.push("auxiliaryFloatingScrollVelocity");
+  }
+  if (Math.abs((auxiliaryLifecycle.floatingTranslation ?? NaN) - 0.005) > 0.000001) {
+    materialErrors.push("auxiliaryFloatingTranslation");
+  }
   const blocksColor = workSettings.blocksColorOwnership || {};
   if (blocksColor.mode !== "source-Se-setBlocksColor-tweens-all-work-material-emissive") materialErrors.push("blocksColorMode");
   if (blocksColor.targetMode !== "source-VA-MeshStandardMaterial-emissive") materialErrors.push("blocksColorTargetMode");

@@ -458,6 +458,7 @@ const SOURCE_WORK_ENVMAP_INTENSITY = 0.75;
 const SOURCE_WORK_ROUGHNESS = 1;
 const SOURCE_WORK_METALNESS = 0;
 const SOURCE_WORK_EMISSIVE_INTENSITY = 1;
+const SOURCE_FLOATING_SCROLL_TRANSLATION = 0.005;
 const SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS = {
   uShader1Alpha: 0.5,
   uShader1Speed: 0.5,
@@ -4469,6 +4470,9 @@ export class WebGLBackdrop {
   private galleryDynamicsDelta = 1 / 60;
   private galleryRollTarget = 0;
   private galleryZoomTarget = 0;
+  private auxiliaryPageScrollActive = false;
+  private auxiliaryPageScroll = 0;
+  private auxiliaryPageScrollVelocity = 0;
   private auxiliaryScrollLast = 0;
   private cameraOrigin = new Vector3(0, 0, 5.5);
   private cameraTarget = new Vector3(0, 0, 5.5);
@@ -5032,14 +5036,24 @@ export class WebGLBackdrop {
     }
     if (this.floatingBlocks) {
       this.floatingBlocks.track = floating ?? null;
-      this.floatingBlocks.group.visible = true;
+      this.floatingBlocks.group.visible = false;
       this.floatingBlocks.translationZ = 0;
       this.floatingBlocks.material.uniforms.uReveal.value = 0;
       this.floatingBlocks.material.uniforms.uRevealSpread.value = 0;
     }
+    this.auxiliaryPageScrollActive = false;
+    this.auxiliaryPageScroll = window.scrollY;
+    this.auxiliaryPageScrollVelocity = 0;
     this.auxiliaryScrollLast = window.scrollY;
     this.resize();
     this.updateAboutSpotlight();
+  }
+
+  setAboutScrollState(scroll = window.scrollY, velocity = 0) {
+    if (!Number.isFinite(scroll) || !Number.isFinite(velocity)) return;
+    this.auxiliaryPageScrollActive = true;
+    this.auxiliaryPageScroll = scroll;
+    this.auxiliaryPageScrollVelocity = velocity;
   }
 
   animateAboutVisualIn() {
@@ -5056,7 +5070,14 @@ export class WebGLBackdrop {
       this.auxiliaryRevealTweens.push(gsap.to(this.aboutBlocks.material.uniforms.uRevealSpread, { value: 0, duration: 1.6, ease: "expo.out" }));
     }
     if (this.floatingBlocks) {
-      this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uReveal, { value: 1, duration: 1.6, ease: "expo.out" }));
+      this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uReveal, {
+        value: 1,
+        duration: 1.6,
+        ease: "expo.out",
+        onStart: () => {
+          if (this.floatingBlocks) this.floatingBlocks.group.visible = true;
+        },
+      }));
       this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uRevealSpread, { value: 1, duration: 1.6, ease: "none" }));
     }
   }
@@ -5109,6 +5130,9 @@ export class WebGLBackdrop {
       this.floatingBlocks.track = null;
       this.floatingBlocks.translationZ = 0;
     }
+    this.auxiliaryPageScrollActive = false;
+    this.auxiliaryPageScroll = window.scrollY;
+    this.auxiliaryPageScrollVelocity = 0;
     this.auxiliaryScrollLast = window.scrollY;
     this.setSpotLightIntensity(0, 0);
     this.spotLightParallax = true;
@@ -7678,6 +7702,7 @@ void main() {
   }
 
   private updateAuxiliaryBlocks(time: number, delta: number) {
+    const pageScroll = this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY;
     const updateShared = (item?: AuxiliaryBlockItem) => {
       if (!item?.group.visible) return;
       item.material.uniforms.uTime.value = time;
@@ -7685,20 +7710,20 @@ void main() {
       item.material.uniforms.tDisplacement.value = this.displacementTarget.texture;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
       item.group.position.x = item.offset.x + item.translation.x;
-      item.group.position.y = item.offset.y + item.translation.y + (window.innerWidth >= BREAKPOINT_LG ? window.scrollY : 0) * item.trackScaleF;
+      item.group.position.y = item.offset.y + item.translation.y + (window.innerWidth >= BREAKPOINT_LG ? pageScroll : 0) * item.trackScaleF;
     };
     updateShared(this.aboutBlocks);
     if (this.aboutBlocks?.group.visible) {
       this.aboutBlocks.material.uniforms.uScrollOpacity.value =
-        window.innerWidth >= BREAKPOINT_LG ? 1 : MathUtils.clamp(1 - window.scrollY / Math.max(1, window.innerHeight * 0.25), 0, 1);
+        window.innerWidth >= BREAKPOINT_LG ? 1 : MathUtils.clamp(1 - pageScroll / Math.max(1, window.innerHeight * 0.25), 0, 1);
       this.updateAboutSpotlight();
     }
     const item = this.floatingBlocks;
     if (!item?.group.visible) return;
     updateShared(item);
-    const scrollVelocity = window.scrollY - this.auxiliaryScrollLast;
-    this.auxiliaryScrollLast = window.scrollY;
-    item.translationZ += 0.005 * Math.abs(scrollVelocity);
+    const scrollVelocity = this.auxiliaryPageScrollActive ? this.auxiliaryPageScrollVelocity : window.scrollY - this.auxiliaryScrollLast;
+    this.auxiliaryScrollLast = pageScroll;
+    item.translationZ += SOURCE_FLOATING_SCROLL_TRANSLATION * Math.abs(scrollVelocity);
     const dummy = new Object3D();
     const xNum = item.gridSize.x;
     const yNum = item.gridSize.y;
@@ -8690,6 +8715,15 @@ void main() {
           } : null,
           materialStateMode: "source-VA-meshstandard-default-toneMapped",
           vertexWorldPositionMode: "source-HA-unconditional-instance-world",
+          auxiliaryLifecycle: {
+            mode: "source-TD-Fg-split-about-floating-lifecycle",
+            aboutEntryVisibilityMode: "source-TD-addEvents-visible-before-animateIn",
+            floatingEntryVisibilityMode: "source-Fg-animateIn-onStart-visible-not-enter-state",
+            floatingExitVisibilityMode: "source-Fg-animateOut-onComplete-hidden",
+            floatingScrollVelocityMode: "source-Fg-onRaf-page-scroll-velocity",
+            floatingTranslation: SOURCE_FLOATING_SCROLL_TRANSLATION,
+            scrollVelocitySource: this.auxiliaryPageScrollActive ? "page-scroll-velocity" : "window-scroll-delta-fallback",
+          },
           auxiliaryMaterial: this.aboutBlocks ? {
             mode: "source-XA-about-material-state",
             toneMapped: this.aboutBlocks.material.toneMapped,
@@ -9572,6 +9606,12 @@ void main() {
       auxiliary: {
         aboutVisible: this.aboutBlocks?.group.visible ?? null,
         floatingVisible: this.floatingBlocks?.group.visible ?? null,
+        floatingVisibilityMode: "source-Fg-animateIn-onStart-visible-animateOut-onComplete-hidden",
+        floatingScrollVelocityMode: "source-Fg-onRaf-page-scroll-velocity",
+        floatingTranslation: SOURCE_FLOATING_SCROLL_TRANSLATION,
+        scrollVelocitySource: this.auxiliaryPageScrollActive ? "page-scroll-velocity" : "window-scroll-delta-fallback",
+        pageScroll: this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY,
+        pageScrollVelocity: this.auxiliaryPageScrollActive ? this.auxiliaryPageScrollVelocity : window.scrollY - this.auxiliaryScrollLast,
       },
       floor: {
         group: objectSummary(this.floorGroup),

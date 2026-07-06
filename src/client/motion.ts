@@ -5,8 +5,24 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function dispatchPageScroll(scroll: number, velocity: number) {
+  window.dispatchEvent(new CustomEvent("rd:page-scroll", {
+    detail: { scroll, velocity },
+  }));
+}
+
 function initLenis() {
-  if (prefersReducedMotion()) return () => {};
+  if (prefersReducedMotion()) {
+    let lastScroll = window.scrollY;
+    const onScroll = () => {
+      const scroll = window.scrollY;
+      dispatchPageScroll(scroll, scroll - lastScroll);
+      lastScroll = scroll;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    dispatchPageScroll(lastScroll, 0);
+    return () => window.removeEventListener("scroll", onScroll);
+  }
 
   const lenis = new Lenis({
     lerp: 0.09,
@@ -17,6 +33,7 @@ function initLenis() {
   let rafId = 0;
   function raf(time: number) {
     lenis.raf(time);
+    dispatchPageScroll(lenis.scroll, lenis.velocity);
     rafId = requestAnimationFrame(raf);
   }
 
