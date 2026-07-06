@@ -1115,7 +1115,12 @@ async function runProbe() {
   }
   const environmentUniforms = parsed.probe.uniforms?.environment;
   const environmentHierarchy = parsed.probe.reflectionState?.environment;
+  const sceneWrapHierarchy = parsed.probe.reflectionState?.sceneWrap;
   const environmentErrors = [];
+  if (sceneWrapHierarchy?.sourceChildOrderMode !== "source-p1-sceneWrap-blocksWrap-floor-env") environmentErrors.push("sceneWrapChildOrderMode");
+  if (JSON.stringify(sceneWrapHierarchy?.sourceChildOrder) !== JSON.stringify(["blocksWrap", "floor", "env"])) {
+    environmentErrors.push(`sceneWrapChildOrder=${JSON.stringify(sceneWrapHierarchy?.sourceChildOrder || null)}`);
+  }
   if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
   if (environmentUniforms?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("customUniformsMode");
   if (environmentUniforms?.hasMaterialUniformsAlias !== false) environmentErrors.push("materialUniformsAlias");
@@ -1123,6 +1128,22 @@ async function runProbe() {
   if (environmentUniforms?.groupType !== "Object3D") environmentErrors.push("groupType");
   if (environmentUniforms?.updateMode !== "source-h1-material-update-only") environmentErrors.push("updateMode");
   if (environmentUniforms?.rotationMode !== "source-p1-demorgen-initial-adjustment-only") environmentErrors.push("rotationMode");
+  const rotationSource = environmentUniforms?.rotationSource || {};
+  const hierarchyRotationSource = environmentHierarchy?.rotationSource || {};
+  const expectedRotationY = -((rotationSource.rotationAdjustmentDegrees ?? NaN) * Math.PI / 180);
+  if (rotationSource.mode !== "source-p1-env-rotation-y-negative-rotationAdjustment-from-demorgen") environmentErrors.push("rotationSourceMode");
+  if (!Number.isFinite(rotationSource.count) || rotationSource.count <= 0) environmentErrors.push("rotationSourceCount");
+  if (!Number.isFinite(rotationSource.demorgenIndex) || rotationSource.demorgenIndex < 0 || rotationSource.demorgenIndex >= rotationSource.count) {
+    environmentErrors.push("rotationSourceDemorgenIndex");
+  }
+  if (Math.abs((rotationSource.thetaDegrees ?? NaN) - (360 / Math.max(1, rotationSource.count || 1))) > 0.0001) environmentErrors.push("rotationSourceTheta");
+  if (Math.abs((rotationSource.expectedRotationY ?? NaN) - expectedRotationY) > 0.0001) environmentErrors.push("rotationSourceExpectedY");
+  if (environmentUniforms?.rotationMatchesSource !== true) environmentErrors.push("rotationMatchesSource");
+  if (hierarchyRotationSource.mode !== rotationSource.mode) environmentErrors.push("reflectionRotationSourceMode");
+  if (environmentHierarchy?.rotationMatchesSource !== true) environmentErrors.push("reflectionRotationMatchesSource");
+  if (environmentUniforms && Math.abs((environmentUniforms.groupRotationY ?? NaN) - expectedRotationY) > 0.0001) {
+    environmentErrors.push("groupRotationY");
+  }
   if (environmentUniforms && Math.abs((environmentUniforms.speed ?? 0) - 0.00005) > 0.0000001) environmentErrors.push("speed");
   if (environmentUniforms?.geometry?.mode !== "source-Du-icosahedron") environmentErrors.push("geometryMode");
   if (environmentUniforms?.geometry?.type !== "IcosahedronGeometry") environmentErrors.push("geometryType");

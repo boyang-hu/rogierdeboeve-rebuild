@@ -134,6 +134,7 @@ Known remaining gaps:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
+- Source `p1` floor/environment hierarchy is guarded for `sceneWrap -> blocksWrap/floor/env` child order and `demorgen`-derived environment rotation, but floor/environment distribution and the visible fog-bed/horizon still are not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
@@ -142,12 +143,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Extended the source thumb/spotlight projection guardrail without production visual changes.
-- `__rogierThumbProbe` now includes `spotlightProjectionProbe()` output, so the thumb probe validates the source `SpotLight.map` path through Three's spotlight-map matrix/chunk path at nonzero gallery progress.
-- `scripts/probe-thumb-spotlight.mjs` now asserts source map ownership, no-shadow-cast projection mode, desktop/mobile parallax branch, 3x3 active-bounds sample grid, nonzero in-map coverage, and nonzero sampled map luma.
-- Renderer audit now checks `rebuildThumbProjectionSamplingProbe`.
-- Desktop and mobile thumb projection probes passed at `THUMB_PROGRESS=0.27`; both reported `3/9` in-map samples with nonzero map luma, and mobile confirmed `mobileYOffset=0.3`.
-- Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
+- Strengthened the source `p1` floor/environment hierarchy rotation guardrail without production visual changes.
+- `WebGLBackdrop` now records `environmentRotationSource` metadata from the source `demorgen` index path: project count, theta, rotation adjustment, and expected environment `rotation.y`.
+- `__rogierOutputProbe` now exposes source `sceneWrap` child order `["blocksWrap","floor","env"]`, environment rotation metadata, and `rotationMatchesSource` under both reflection state and environment uniforms.
+- `scripts/probe-output-color.mjs` now asserts source child order, `thetaDegrees`, expected rotation Y, matching group rotation, and reflection/uniform rotation parity.
+- Renderer audit now checks source `p1` hierarchy anchors plus rebuild/probe coverage for `environmentGroup.rotation.y = -MathUtils.degToRad(rotationAdjustment)`.
+- Desktop and mobile output probes confirmed `demorgenIndex=8`, `count=10`, `thetaDegrees=36`, `rotationAdjustmentDegrees=-288`, `expectedRotationY=5.026548245743669`, and `rotationMatchesSource=true`.
+- Phase 1 remains open for actual floor/environment distribution parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
 
 ## Validation Status
 
@@ -160,22 +162,22 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-projection-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-env-rotation-audit.json
 ```
 
-All passed in the thumb spotlight projection sampling guardrail batch.
+All passed in the `p1` environment hierarchy rotation guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports `sourceManagers.homeSpotlightMap.rebuildThumbProjectionSamplingProbe=true`.
-- Desktop thumb projection probe passed at `THUMB_PROGRESS=0.27` with `3/9` in-map spotlight samples and nonzero map luma.
-- Mobile thumb projection probe passed at `THUMB_PROGRESS=0.27` with `3/9` in-map spotlight samples, nonzero map luma, and `mobileYOffset=0.3`.
-- Desktop and mobile output probes passed with no browser failures/exceptions/console messages.
+- Renderer audit reports `sourceManagers.p1EnvironmentHierarchy` source checks, rebuild checks, and rebuild probe checks as true.
+- Desktop output probe passed with source `sceneWrap` child order, `demorgenIndex=8`, `count=10`, `thetaDegrees=36`, `rotationAdjustmentDegrees=-288`, `expectedRotationY=5.026548245743669`, and `rotationMatchesSource=true`.
+- Mobile output probe passed with the same source child order and rotation metadata.
+- Desktop and mobile thumb projection probes passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, nonzero map luma, and mobile `mobileYOffset=0.3`.
 - Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages; project-media remains a regression gate, not proof of Home parity.
-- Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.
+- Existing source render-manager, active reveal, spotlight map, color-state, environment hierarchy, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 
@@ -224,6 +226,7 @@ Continue source-driven implementation in this order:
    - Next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target interpretation.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
+   - Current rebuild now guards source `p1` child order and `demorgen`-derived environment rotation.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

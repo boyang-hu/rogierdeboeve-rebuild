@@ -3917,6 +3917,14 @@ export class WebGLBackdrop {
   private environmentMaterial: EnvironmentMaterial;
   private environmentGroup = new Object3D();
   private environmentPlane: Mesh<IcosahedronGeometry, EnvironmentMaterial>;
+  private environmentRotationSource = {
+    mode: "source-p1-env-rotation-y-negative-rotationAdjustment-from-demorgen",
+    demorgenIndex: -1,
+    count: 0,
+    thetaDegrees: 0,
+    rotationAdjustmentDegrees: 0,
+    expectedRotationY: 0,
+  };
   private readonly environmentSpeed = 0.00005;
   private thumbTarget = makeSourceRenderTarget(false);
   private thumbCompositeTarget = this.thumbTarget.clone();
@@ -4683,6 +4691,7 @@ export class WebGLBackdrop {
     const theta = 360 / count;
     const itemWidth = 6.5;
     let rotationAdjustment = 0;
+    let demorgenIndex = -1;
     this.radius = Math.round(itemWidth / 2 / Math.tan(Math.PI / count));
     this.sceneWrap.position.set(0, 0, this.radius - 0.3);
     this.sceneWrap.rotation.y = Math.PI;
@@ -4702,7 +4711,10 @@ export class WebGLBackdrop {
       rotationWrap.add(mesh);
       rotationWrap.add(rayPlane);
       group.add(rotationWrap);
-      if (payload.slug === "demorgen") rotationAdjustment = -theta * index;
+      if (payload.slug === "demorgen") {
+        rotationAdjustment = -theta * index;
+        demorgenIndex = index;
+      }
       group.position.x = -Math.sin(MathUtils.degToRad(theta * index)) * this.radius;
       group.position.z = Math.cos(MathUtils.degToRad(theta * index)) * this.radius;
       group.lookAt(0, 0, 0);
@@ -4735,6 +4747,14 @@ export class WebGLBackdrop {
     this.thumbTotalItems = this.workItems.length;
     this.calcThumbItemWidth();
     this.environmentGroup.rotation.y = -MathUtils.degToRad(rotationAdjustment);
+    this.environmentRotationSource = {
+      mode: "source-p1-env-rotation-y-negative-rotationAdjustment-from-demorgen",
+      demorgenIndex,
+      count,
+      thetaDegrees: theta,
+      rotationAdjustmentDegrees: rotationAdjustment,
+      expectedRotationY: -MathUtils.degToRad(rotationAdjustment),
+    };
   }
 
   private createWorkBlockMaterial(payload: ProjectPayload, reveal: number) {
@@ -8328,6 +8348,8 @@ void main() {
           hierarchyMode: "source-h1-rt-object3d-owns-transform",
           groupType: this.environmentGroup.type,
           rotationMode: "source-p1-demorgen-initial-adjustment-only",
+          rotationSource: this.environmentRotationSource,
+          rotationMatchesSource: Math.abs(this.environmentGroup.rotation.y - this.environmentRotationSource.expectedRotationY) < 1e-6,
           groupRotationY: this.environmentGroup.rotation.y,
           groupPositionY: this.environmentGroup.position.y,
           meshRotationY: this.environmentPlane.rotation.y,
@@ -8456,6 +8478,13 @@ void main() {
         visible: this.sceneWrap.visible,
         position: this.sceneWrap.position.toArray(),
         rotation: [this.sceneWrap.rotation.x, this.sceneWrap.rotation.y, this.sceneWrap.rotation.z],
+        sourceChildOrderMode: "source-p1-sceneWrap-blocksWrap-floor-env",
+        sourceChildOrder: this.sceneWrap.children.map((child) => {
+          if (child === this.blocksWrap) return "blocksWrap";
+          if (child === this.floorGroup) return "floor";
+          if (child === this.environmentGroup) return "env";
+          return child.type;
+        }),
         children: this.sceneWrap.children.map(objectSummary),
       },
       lights: {
@@ -8510,6 +8539,8 @@ void main() {
       environment: {
         group: objectSummary(this.environmentGroup),
         object: objectSummary(this.environmentPlane),
+        rotationSource: this.environmentRotationSource,
+        rotationMatchesSource: Math.abs(this.environmentGroup.rotation.y - this.environmentRotationSource.expectedRotationY) < 1e-6,
         geometry: {
           mode: "source-Du-icosahedron",
           type: this.environmentPlane.geometry.type,
