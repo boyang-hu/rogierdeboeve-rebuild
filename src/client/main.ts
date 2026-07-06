@@ -1105,7 +1105,8 @@ async function initWebGL() {
   const root = document.querySelector<HTMLElement>("[data-webgl-root]");
   if (!root || !shouldInitWebGL()) return undefined;
   try {
-    const { WebGLBackdrop } = await import("./webgl");
+    const { WebGLBackdrop, initializeSourceGpuTier } = await import("./webgl");
+    await initializeSourceGpuTier();
     return new WebGLBackdrop(root);
   } catch (error) {
     console.warn("WebGL initialization failed", error);

@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -17,10 +17,12 @@ const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
 const rebuildSitePath = process.env.REBUILD_SITE || "src/data/site.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
 const rebuildOutputProbePath = process.env.REBUILD_OUTPUT_PROBE || "scripts/probe-output-color.mjs";
+const rebuildMirrorSitePath = process.env.REBUILD_MIRROR_SITE || "scripts/mirror-site.mjs";
 const rebuildCompositeStagesPath = process.env.REBUILD_COMPOSITE_STAGES || "scripts/compare-composite-stages.mjs";
 const rebuildBrightnessAttributionPath = process.env.REBUILD_BRIGHTNESS_ATTRIBUTION || "scripts/compare-home-brightness-attribution.mjs";
 const rebuildSpotlightMapComparePath = process.env.REBUILD_SPOTLIGHT_MAP_COMPARE || "scripts/compare-spotlight-map.mjs";
 const rebuildThumbColorspaceComparePath = process.env.REBUILD_THUMB_COLORSPACE_COMPARE || "scripts/compare-thumb-colorspace.mjs";
+const sourceGpuBenchmarksDir = process.env.SOURCE_GPU_BENCHMARKS_DIR || "public/vendor/detect-gpu/benchmarks";
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
 const threeWebglLights = readFileSync("node_modules/three/src/renderers/webgl/WebGLLights.js", "utf8");
@@ -157,10 +159,12 @@ const rebuildMain = readFileSync(rebuildMainPath, "utf8");
 const rebuildSite = readFileSync(rebuildSitePath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
 const rebuildOutputProbe = readFileSync(rebuildOutputProbePath, "utf8");
+const rebuildMirrorSite = readFileSync(rebuildMirrorSitePath, "utf8");
 const rebuildCompositeStages = readFileSync(rebuildCompositeStagesPath, "utf8");
 const rebuildBrightnessAttribution = readFileSync(rebuildBrightnessAttributionPath, "utf8");
 const rebuildSpotlightMapCompare = readFileSync(rebuildSpotlightMapComparePath, "utf8");
 const rebuildThumbColorspaceCompare = readFileSync(rebuildThumbColorspaceComparePath, "utf8");
+const sourceGpuBenchmarkFiles = readdirSync(sourceGpuBenchmarksDir).filter((file) => file.endsWith(".json")).sort();
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
 const rebuildCreateLensflareMaterial = extractBlock(rebuildWebgl, "private createLensflareMaterial()");
 const rebuildCreateLuminosityMaterial = extractBlock(rebuildWebgl, "private createLuminosityMaterial(");
@@ -261,6 +265,9 @@ const sourceIT = extractAround(bundle, "class IT{constructor", 120, 3200);
 const sourceP1Update = extractAround(bundle, "update(e,t,n,i){super.update(e,t,n,i),this.spotLight", 240, 1300);
 const sourceTDSpotlight = extractAround(bundle, "updateSpotLight(){J.workScene.spotLight.position.set", 520, 900);
 const sourceWebpDetection = extractAround(bundle, "await k0(\"lossy\").then(()=>{Le.WEBP=!0}).catch(()=>{Le.WEBP=!1})", 240, 420);
+const sourceLeSettings = extractAround(bundle, "class Le{static DEBUG", 0, 560);
+const sourceDetectGpu = extractAround(bundle, "const XD=({mobileTiers", 220, 5200);
+const sourceQeGpuCheck = extractAround(bundle, "await this.gpuCheck().catch(()=>{Le.GPU_TIER=3})", 160, 1700);
 const sourceSe = extractAround(bundle, "class Se", 200, 10600);
 const sourceYDAnimateIn = extractAround(bundle, "Se.setCameraControllerSettings(new L(0,0,0),new Q(1,.5),20)", 360, 620);
 const sourceYDUpdateScene = extractAround(bundle, "J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)", 360, 760);
@@ -540,6 +547,74 @@ const summary = {
         "mainRenderManagerSettings.instanceOwned !== true",
         "lensflareSettings.mode !== \"source-I1-initSettings-lensflare-disabled-scale-1_5-exposure-1-clamp-1\"",
       ]),
+    },
+    gpuTierBridge: {
+      sourceLeDefaults: sourceLeSettings && {
+        index: sourceLeSettings.index,
+        checks: checks(sourceLeSettings.text, [
+          "static GPU_TIER=3",
+          "static LOW_RES=!1",
+        ]),
+        excerpt: compact(sourceLeSettings.text),
+      },
+      sourceDetectGpu: sourceDetectGpu && {
+        index: sourceDetectGpu.index,
+        checks: checks(sourceDetectGpu.text, [
+          "const XD=({mobileTiers:s=[0,15,30,60],desktopTiers:e=[0,15,30,60]",
+          "benchmarksURL:r=\"/vendor/detect-gpu/benchmarks\"",
+          "fetch(`${r}/${M}`).then(w=>w.json())",
+          "return h(S,\"BENCHMARK\",p,m,x)",
+        ]),
+        excerpt: compact(sourceDetectGpu.text),
+      },
+      sourceQeGpuCheck: sourceQeGpuCheck && {
+        index: sourceQeGpuCheck.index,
+        checks: checks(sourceQeGpuCheck.text, [
+          "await this.gpuCheck().catch(()=>{Le.GPU_TIER=3})",
+          "static async gpuCheck(){try{const e=await XD();Le.GPU_TIER=e.tier}catch(e){console.error(\"Error fetching GPU tier:\",e)}Le.LOW_RES=Le.GPU_TIER<3}",
+        ]),
+        excerpt: compact(sourceQeGpuCheck.text),
+      },
+      mirrorRewriteChecks: checks(rebuildMirrorSite, [
+        "https://unpkg.com/detect-gpu@5.0.38/dist/benchmarks",
+        "/vendor/detect-gpu/benchmarks",
+      ]),
+      rebuildChecks: {
+        ...checks(rebuildWebgl + rebuildMain, [
+          "import { getGPUTier, type TierResult } from \"detect-gpu\";",
+          "const SOURCE_GPU_BENCHMARKS_URL = \"/vendor/detect-gpu/benchmarks\";",
+          "mode: \"source-Qe-gpuCheck-XD-detect-gpu-5_0_38\"",
+          "defaultMode: \"source-Le-GPU_TIER-default-3-LOW_RES-false\"",
+          "getGPUTier({ benchmarksURL: SOURCE_GPU_BENCHMARKS_URL })",
+          "sourceGpuBridgeState.tier = SOURCE_GPU_DEFAULT_TIER;",
+          "sourceGpuBridgeState.lowRes = false;",
+          "function sourceGpuTier() {\n  return sourceGpuBridgeState.tier;\n}",
+          "function sourceLowRes() {\n  return sourceGpuBridgeState.lowRes;\n}",
+          "gpuBridge: sourceGpuBridgeSnapshot()",
+          "const { WebGLBackdrop, initializeSourceGpuTier } = await import(\"./webgl\");",
+          "await initializeSourceGpuTier();",
+        ]),
+        rejectsDeviceMemoryHeuristic: !rebuildWebgl.includes("deviceMemory"),
+        rejectsSaveDataHeuristic: !rebuildWebgl.includes("saveData"),
+        rejectsNavigatorTierBridge: !rebuildWebgl.includes("Navigator &"),
+      },
+      rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "gpuBridge.mode !== \"source-Qe-gpuCheck-XD-detect-gpu-5_0_38\"",
+        "gpuBridge.defaultMode !== \"source-Le-GPU_TIER-default-3-LOW_RES-false\"",
+        "gpuBridge.benchmarksURL !== \"/vendor/detect-gpu/benchmarks\"",
+        "gpuBridge.initialized !== true",
+        "gpuBridge.lowRes !== (gpuBridge.tier < 3)",
+        "parsed.probe.renderer?.dprPolicy?.lowRes !== gpuBridge.lowRes",
+        "(mainSettings.gpuTier ?? null) !== gpuBridge.tier",
+      ]),
+      benchmarkFiles: {
+        dir: sourceGpuBenchmarksDir,
+        count: sourceGpuBenchmarkFiles.length,
+        files: sourceGpuBenchmarkFiles,
+        hasDesktopIntel: sourceGpuBenchmarkFiles.includes("d-intel.json"),
+        hasMobileApple: sourceGpuBenchmarkFiles.includes("m-apple.json"),
+        hasMobileAppleIpad: sourceGpuBenchmarkFiles.includes("m-apple-ipad.json"),
+      },
     },
     Lu: sourceLu && {
       index: sourceLu.index,

@@ -652,6 +652,22 @@ async function runProbe() {
   const workOwnership = parsed.probe.settings?.work?.renderManagerOwnership;
   const mainOwnership = parsed.probe.settings?.main?.renderManagerOwnership;
   const mainSettings = parsed.probe.settings?.main || {};
+  const gpuBridge = parsed.probe.renderer?.gpuBridge || {};
+  const gpuBridgeErrors = [];
+  if (gpuBridge.mode !== "source-Qe-gpuCheck-XD-detect-gpu-5_0_38") gpuBridgeErrors.push("mode");
+  if (gpuBridge.defaultMode !== "source-Le-GPU_TIER-default-3-LOW_RES-false") gpuBridgeErrors.push("defaultMode");
+  if (gpuBridge.benchmarksURL !== "/vendor/detect-gpu/benchmarks") gpuBridgeErrors.push("benchmarksURL");
+  if (gpuBridge.defaultTier !== 3) gpuBridgeErrors.push("defaultTier");
+  if (typeof gpuBridge.tier !== "number") gpuBridgeErrors.push("tier");
+  if (gpuBridge.lowRes !== (gpuBridge.tier < 3)) gpuBridgeErrors.push("lowRes");
+  if (gpuBridge.initialized !== true) gpuBridgeErrors.push("initialized");
+  if (gpuBridge.fallbackApplied === true && gpuBridge.tier !== 3) gpuBridgeErrors.push("fallbackTier");
+  if (gpuBridge.result && gpuBridge.result.tier !== gpuBridge.tier) gpuBridgeErrors.push("resultTier");
+  if (parsed.probe.renderer?.dprPolicy?.lowRes !== gpuBridge.lowRes) gpuBridgeErrors.push("dprLowRes");
+  if ((mainSettings.gpuTier ?? null) !== gpuBridge.tier) gpuBridgeErrors.push("mainGpuTier");
+  if (gpuBridgeErrors.length) {
+    throw new Error(`GPU tier bridge source-shape mismatch: ${gpuBridgeErrors.join(", ")}`);
+  }
   const expectedWorkRenderSettings = {
     renderToScreen: false,
     fxaa: { enabled: false },

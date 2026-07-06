@@ -157,13 +157,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `p1` root scene direct-child order without changing shader formulas, visual constants, route data, pass order, render targets, project media, or spotlight/thumb formulas.
-- Source `p1.setLights()` adds ambient, spotlight, spotlight target, and the first directional light to the scene; source `p1.init()` then calls `setAboutBlocks()` and `setFloatingBlocks()` before the final `scene.add(sceneWrap)`.
-- The rebuild now adds `sceneWrap` to `homeScene` after `createAuxiliaryBlocks()`, preserving root order lights -> aboutBlocks -> floatingBlocks -> sceneWrap while retaining `sceneWrap -> blocksWrap/floor/env`.
-- `__rogierOutputProbe.reflectionState.scene` exposes `sourceRootChildOrderMode=source-p1-scene-lights-about-floating-sceneWrap`, `sourceRootChildOrder`, and `sourceRootChildOrderMatches`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if root scene order drifts or the old early `sceneWrap` add returns.
-- Previous committed batch was `3cf6b0d Align displacement target DPR sizing`.
-- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the source-equivalent GPU/LOW_RES bridge.
+- Replaced the rebuild-only `deviceMemory/saveData` GPU-tier heuristic with the source-shaped `Qe.gpuCheck()` bridge.
+- Source `Le` defaults to `GPU_TIER=3` and `LOW_RES=false`; source `Qe.init()` awaits `gpuCheck()`; source `Qe.gpuCheck()` awaits detect-gpu, assigns `Le.GPU_TIER`, catches errors with the source console message, then writes `Le.LOW_RES=Le.GPU_TIER<3`.
+- The rebuild now uses exact `detect-gpu@5.0.38`, vendors the package's 16 benchmark JSON files under `public/vendor/detect-gpu/benchmarks`, and awaits `initializeSourceGpuTier()` before `new WebGLBackdrop`.
+- `__rogierOutputProbe.renderer.gpuBridge` exposes source mode/defaults, benchmark URL, tier, low-res, initialization status, detect-gpu result type, and fallback state.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if the GPU bridge drifts, benchmark URL changes, tier/low-res consistency breaks, or the old local heuristic returns.
+- Previous committed batch was `4c36099 Align p1 root scene order`.
+- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -173,27 +173,27 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-root-order-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-gpu-tier-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-root-order-output-desktop CDP_PORT=9521 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-root-order-output-mobile CDP_PORT=9522 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-root-order-thumb-desktop CDP_PORT=9523 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-root-order-project-media CDP_PORT=9524 node scripts/probe-project-media.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-root-order-thumb-mobile CDP_PORT=9525 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-gpu-tier-output-desktop CDP_PORT=9621 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-gpu-tier-output-mobile CDP_PORT=9622 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-gpu-tier-thumb-desktop CDP_PORT=9623 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-gpu-tier-thumb-mobile CDP_PORT=9624 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-gpu-tier-project-media CDP_PORT=9625 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `p1` root scene direct-child order batch. Renderer audit wrote `/tmp/rd-root-order-audit.json`; `sourceManagers.p1EnvironmentHierarchy.rootSceneDirectChildOrder` confirms source order, rebuild order, old early-`sceneWrap` rejection, and runtime probe coverage. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and reported `sourceRootChildOrderMatches=true`. Desktop/mobile thumb spotlight probes passed and retained the spotlight/thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
+All relevant checks passed in the source GPU/LOW_RES bridge batch. Renderer audit wrote `/tmp/rd-gpu-tier-audit.json`; `sourceManagers.gpuTierBridge` confirms source defaults/checks, mirror rewrite, rebuild wiring, old heuristic rejection, runtime probe coverage, and 16 benchmark files. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and reported `renderer.gpuBridge.initialized=true`, detect-gpu `FALLBACK` tier `1`, and `LOW_RES=true` in headless Chrome. Desktop/mobile thumb spotlight probes passed and retained the spotlight/thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this root scene order batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this GPU bridge batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the root scene order batch: `/tmp/rd-root-order-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-root-order-output-desktop` and `/tmp/rd-root-order-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-root-order-thumb-desktop` and `/tmp/rd-root-order-thumb-mobile`.
+- Renderer audit passed for the GPU bridge batch: `/tmp/rd-gpu-tier-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-gpu-tier-output-desktop` and `/tmp/rd-gpu-tier-output-mobile`.
+- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-gpu-tier-thumb-desktop` and `/tmp/rd-gpu-tier-thumb-mobile`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
@@ -241,7 +241,7 @@ Continue source-driven implementation in this order:
    - `ag` main-fluid pass shaders are now source-shaped; do not reformat them away from the source literal surface.
    - `$1/j1/W1/G1` media composite shader text is now source-shaped; do not remove its inert helper/luminance surface just because the active body is pass-through.
    - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
-   - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings or camera-surface ownership.
+   - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, or camera-surface ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
    - Current rebuild now guards source `p1` root scene direct-child order, `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, and `Se.settings` scalar/media no-kill versus kill-owned setter ownership.

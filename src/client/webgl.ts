@@ -58,6 +58,7 @@ import {
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import gsap from "gsap";
+import { getGPUTier, type TierResult } from "detect-gpu";
 
 type ProjectPayload = {
   slug?: string;
@@ -131,6 +132,20 @@ type ShaderDumpWindow = Window & {
 
 type OutputProbeWindow = Window & {
   __rogierOutputProbe?: Record<string, any>;
+};
+
+type SourceGpuBridgeState = {
+  mode: "source-Qe-gpuCheck-XD-detect-gpu-5_0_38";
+  defaultMode: "source-Le-GPU_TIER-default-3-LOW_RES-false";
+  benchmarksURL: "/vendor/detect-gpu/benchmarks";
+  defaultTier: 3;
+  tier: number;
+  lowRes: boolean;
+  initialized: boolean;
+  fallbackApplied: boolean;
+  result: TierResult | null;
+  error: string | null;
+  pending: Promise<TierResult | undefined> | null;
 };
 
 type RenderTargetStats = {
@@ -269,6 +284,57 @@ type ThumbProbeWindow = Window & {
     };
   };
 };
+
+const SOURCE_GPU_BENCHMARKS_URL = "/vendor/detect-gpu/benchmarks";
+const SOURCE_GPU_DEFAULT_TIER = 3;
+const sourceGpuBridgeState: SourceGpuBridgeState = {
+  mode: "source-Qe-gpuCheck-XD-detect-gpu-5_0_38",
+  defaultMode: "source-Le-GPU_TIER-default-3-LOW_RES-false",
+  benchmarksURL: SOURCE_GPU_BENCHMARKS_URL,
+  defaultTier: SOURCE_GPU_DEFAULT_TIER,
+  tier: SOURCE_GPU_DEFAULT_TIER,
+  lowRes: false,
+  initialized: false,
+  fallbackApplied: false,
+  result: null,
+  error: null,
+  pending: null,
+};
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export async function initializeSourceGpuTier() {
+  if (sourceGpuBridgeState.initialized) return sourceGpuBridgeState.result ?? undefined;
+  if (sourceGpuBridgeState.pending) return sourceGpuBridgeState.pending;
+
+  sourceGpuBridgeState.pending = getGPUTier({ benchmarksURL: SOURCE_GPU_BENCHMARKS_URL })
+    .then((result) => {
+      sourceGpuBridgeState.tier = result.tier;
+      sourceGpuBridgeState.lowRes = sourceGpuBridgeState.tier < 3;
+      sourceGpuBridgeState.result = result;
+      sourceGpuBridgeState.error = null;
+      sourceGpuBridgeState.fallbackApplied = false;
+      sourceGpuBridgeState.initialized = true;
+      return result;
+    })
+    .catch((error: unknown) => {
+      console.error("Error fetching GPU tier:", error);
+      sourceGpuBridgeState.tier = SOURCE_GPU_DEFAULT_TIER;
+      sourceGpuBridgeState.lowRes = false;
+      sourceGpuBridgeState.result = null;
+      sourceGpuBridgeState.error = errorMessage(error);
+      sourceGpuBridgeState.fallbackApplied = true;
+      sourceGpuBridgeState.initialized = true;
+      return undefined;
+    })
+    .finally(() => {
+      sourceGpuBridgeState.pending = null;
+    });
+
+  return sourceGpuBridgeState.pending;
+}
 
 type AuxiliaryBlockItem = {
   kind: "about" | "floating";
@@ -4145,15 +4211,27 @@ function sourceWorkViewportCoords() {
 }
 
 function sourceGpuTier() {
-  const nav = navigator as Navigator & {
-    connection?: { saveData?: boolean };
-    deviceMemory?: number;
-  };
-  return nav.connection?.saveData || (nav.deviceMemory && nav.deviceMemory < 4) ? 2 : 3;
+  return sourceGpuBridgeState.tier;
 }
 
 function sourceLowRes() {
-  return sourceGpuTier() < 3;
+  return sourceGpuBridgeState.lowRes;
+}
+
+function sourceGpuBridgeSnapshot() {
+  return {
+    mode: sourceGpuBridgeState.mode,
+    defaultMode: sourceGpuBridgeState.defaultMode,
+    benchmarksURL: sourceGpuBridgeState.benchmarksURL,
+    defaultTier: sourceGpuBridgeState.defaultTier,
+    tier: sourceGpuBridgeState.tier,
+    lowRes: sourceGpuBridgeState.lowRes,
+    initialized: sourceGpuBridgeState.initialized,
+    fallbackApplied: sourceGpuBridgeState.fallbackApplied,
+    result: sourceGpuBridgeState.result,
+    resultType: sourceGpuBridgeState.result?.type ?? null,
+    error: sourceGpuBridgeState.error,
+  };
 }
 
 function sourceMouseUvOffset() {
@@ -8183,6 +8261,7 @@ void main() {
         toneMapping: this.renderer.toneMapping,
         autoClear: this.renderer.autoClear,
         pixelRatio: this.renderer.getPixelRatio(),
+        gpuBridge: sourceGpuBridgeSnapshot(),
         dprPolicy: {
           devicePixelRatio: window.devicePixelRatio || 1,
           sourceMaxDpr: SOURCE_MAX_DPR,
