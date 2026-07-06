@@ -122,6 +122,7 @@ function outputProbeSettled(parsed) {
   const lightState = workSettings.lightStateOwnership || {};
   const settingsState = workSettings.settingsStateOwnership || {};
   const mouseFactor = workSettings.mouseFactorOwnership || {};
+  const ambient = workSettings.ambientOwnership || {};
   return Boolean(
     parsed.probe
     && parsed.body?.includes("has-entered")
@@ -137,6 +138,11 @@ function outputProbeSettled(parsed) {
     && closeTo(mouseFactor.state, 1)
     && closeTo(mouseFactor.activeUniform, mouseFactor.state)
     && mouseFactor.allWorkUniformsMatchState === true
+    && ambient.mode === "source-Se-setAmbientLight-delegates-color-intensity"
+    && ambient.colorMode === "source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor"
+    && ambient.intensityMode === "source-Se-setAmbientIntensity-tweens-ambientLight-intensity"
+    && ambient.killMode === "source-no-kill-for-setAmbientColor-setAmbientIntensity"
+    && ambient.environmentDarkenMatchesAmbientColor === true
   );
 }
 
@@ -363,6 +369,26 @@ async function runProbe() {
   if (Math.abs((lightStateOwnership.state?.spotLight ?? 0) - 220) > 0.001) activeRevealErrors.push("lightStateSpot");
   if (Math.abs((lightStateOwnership.state?.directionalLight ?? 0) - 1.5) > 0.001) activeRevealErrors.push("lightStateDirectional");
   if (Math.abs((lightStateOwnership.state?.directionalLight2 ?? 0) - 1) > 0.001) activeRevealErrors.push("lightStateDirectional2");
+  const ambientOwnership = workSettings.ambientOwnership || {};
+  if (ambientOwnership.mode !== "source-Se-setAmbientLight-delegates-color-intensity") activeRevealErrors.push("ambientOwnership");
+  if (ambientOwnership.colorMode !== "source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor") {
+    activeRevealErrors.push("ambientColorMode");
+  }
+  if (ambientOwnership.intensityMode !== "source-Se-setAmbientIntensity-tweens-ambientLight-intensity") {
+    activeRevealErrors.push("ambientIntensityMode");
+  }
+  if (ambientOwnership.killMode !== "source-no-kill-for-setAmbientColor-setAmbientIntensity") activeRevealErrors.push("ambientKillMode");
+  if (ambientOwnership.backgroundUniformMode !== "rebuild-background-material-not-source-Se-ambient-target") {
+    activeRevealErrors.push("ambientBackgroundUniformMode");
+  }
+  if (ambientOwnership.environmentDarkenMatchesAmbientColor !== true) activeRevealErrors.push("ambientEnvDarkenColor");
+  if (!Array.isArray(ambientOwnership.ambientLightColor) || ambientOwnership.ambientLightColor.length !== 3) {
+    activeRevealErrors.push("ambientLightColor");
+  }
+  if (!Array.isArray(ambientOwnership.environmentDarkenColor) || ambientOwnership.environmentDarkenColor.length !== 3) {
+    activeRevealErrors.push("ambientEnvironmentDarkenColor");
+  }
+  if (!Number.isFinite(ambientOwnership.ambientLightIntensity)) activeRevealErrors.push("ambientLightIntensity");
   const settingsStateOwnership = workSettings.settingsStateOwnership || {};
   if (settingsStateOwnership.mode !== "source-Se-settings-scalar-media-state-onUpdate") activeRevealErrors.push("settingsStateOwnership");
   if (settingsStateOwnership.matchesUniforms !== true) activeRevealErrors.push("settingsStateUniforms");

@@ -190,6 +190,10 @@ const rebuildSetFluidStrength = extractBlock(rebuildWebgl, "private setFluidStre
 const rebuildSetMediaOpacity = extractBlock(rebuildWebgl, "private setMediaOpacity(");
 const rebuildSetMainColor = extractBlock(rebuildWebgl, "private setMainColor(");
 const rebuildSetMediaBackground = extractBlock(rebuildWebgl, "private setMediaBackground(");
+const rebuildUpdateAmbientDarkenColor = extractBlock(rebuildWebgl, "private updateAmbientDarkenColor()");
+const rebuildSetAmbientColor = extractBlock(rebuildWebgl, "private setAmbientColor(");
+const rebuildSetAmbientIntensity = extractBlock(rebuildWebgl, "private setAmbientIntensity(");
+const rebuildSetAmbientLight = extractBlock(rebuildWebgl, "private setAmbientLight(");
 const rebuildShowScene = extractBlock(rebuildWebgl, "showScene()");
 const rebuildCreateThumbPlane = extractBlock(rebuildWebgl, "private createThumbPlane(");
 const rebuildRenderThumbTargets = extractBlock(rebuildWebgl, "private renderThumbTargets()");
@@ -951,6 +955,58 @@ const summary = {
         "static formatColor=e=>(typeof e==\"string\"",
         "e=sr(e)",
       ]),
+      ambientOwnership: {
+        source:
+          sourceSe.text.includes("ambientColor:{r:0,g:0,b:0},ambientIntensity:xt.ambient")
+          && sourceSe.text.includes("static setAmbientColor(e,t=1.6){const n=this.formatColor(e);oe.to(J.workScene.ambientLight.color,{r:n.r,g:n.g,b:n.b,ease:\"expo.out\",duration:t,onUpdate:()=>{")
+          && sourceSe.text.includes("J.workScene.env.material.customUniforms.uDarkenColor.value.set(J.workScene.ambientLight.color.r,J.workScene.ambientLight.color.g,J.workScene.ambientLight.color.b)")
+          && sourceSe.text.includes("static setAmbientIntensity(e,t=1.6){oe.to(J.workScene.ambientLight,{intensity:e,ease:\"expo.out\",duration:t})}")
+          && sourceSe.text.includes("static setAmbientLight=(e,t=.5,n=1.6)=>{this.setAmbientColor(e,n),this.setAmbientIntensity(t,n)}"),
+        rebuild:
+          Boolean(rebuildUpdateAmbientDarkenColor)
+          && Boolean(rebuildSetAmbientColor)
+          && Boolean(rebuildSetAmbientIntensity)
+          && Boolean(rebuildSetAmbientLight)
+          && rebuildUpdateAmbientDarkenColor.includes("this.environmentMaterial.customUniforms.uDarkenColor.value as Color")
+          && rebuildUpdateAmbientDarkenColor.includes("this.ambientLight.color.r")
+          && rebuildUpdateAmbientDarkenColor.includes("this.ambientLight.color.g")
+          && rebuildUpdateAmbientDarkenColor.includes("this.ambientLight.color.b")
+          && rebuildSetAmbientColor.includes("const next = sourceRgbColor(color, SOURCE_INITIAL_SECONDARY)")
+          && rebuildSetAmbientColor.includes("this.ambientLight.color.copy(next)")
+          && rebuildSetAmbientColor.includes("gsap.to(this.ambientLight.color, {")
+          && rebuildSetAmbientColor.includes("onUpdate: () => this.updateAmbientDarkenColor()")
+          && rebuildSetAmbientIntensity.includes("gsap.to(this.ambientLight, {")
+          && rebuildSetAmbientIntensity.includes("intensity,")
+          && rebuildSetAmbientLight.includes("this.setAmbientColor(color, duration);")
+          && rebuildSetAmbientLight.includes("this.setAmbientIntensity(intensity, duration);")
+          && rebuildWebgl.includes("ambientOwnership: {")
+          && rebuildWebgl.includes("mode: \"source-Se-setAmbientLight-delegates-color-intensity\"")
+          && rebuildWebgl.includes("colorMode: \"source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor\"")
+          && rebuildWebgl.includes("intensityMode: \"source-Se-setAmbientIntensity-tweens-ambientLight-intensity\"")
+          && rebuildWebgl.includes("killMode: \"source-no-kill-for-setAmbientColor-setAmbientIntensity\"")
+          && rebuildWebgl.includes("backgroundUniformMode: \"rebuild-background-material-not-source-Se-ambient-target\"")
+          && rebuildWebgl.includes("environmentDarkenMatchesAmbientColor: environmentDarkenColor.equals(this.ambientLight.color)")
+          && !rebuildWebgl.includes("private ambientTweens")
+          && !rebuildWebgl.includes("private currentAmbientIntensity")
+          && !rebuildSetAmbientColor.includes(".kill()")
+          && !rebuildSetAmbientIntensity.includes(".kill()")
+          && !rebuildSetAmbientLight.includes(".kill()")
+          && !rebuildSetAmbientColor.includes("backgroundMaterial")
+          && !rebuildSetAmbientIntensity.includes("backgroundMaterial")
+          && !rebuildSetAmbientLight.includes("backgroundMaterial"),
+        rebuildProbeChecks: checks(rebuildOutputProbe, [
+          "ambient.mode === \"source-Se-setAmbientLight-delegates-color-intensity\"",
+          "ambient.colorMode === \"source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor\"",
+          "ambient.intensityMode === \"source-Se-setAmbientIntensity-tweens-ambientLight-intensity\"",
+          "ambient.killMode === \"source-no-kill-for-setAmbientColor-setAmbientIntensity\"",
+          "ambient.environmentDarkenMatchesAmbientColor === true",
+          "ambientOwnership.mode !== \"source-Se-setAmbientLight-delegates-color-intensity\"",
+          "ambientOwnership.colorMode !== \"source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor\"",
+          "ambientOwnership.intensityMode !== \"source-Se-setAmbientIntensity-tweens-ambientLight-intensity\"",
+          "ambientOwnership.backgroundUniformMode !== \"rebuild-background-material-not-source-Se-ambient-target\"",
+          "ambientOwnership.environmentDarkenMatchesAmbientColor !== true",
+        ]),
+      },
       thumbStateOwnership: {
         source:
           sourceSe.text.includes("static setThumbDarknessIntensity=(e,t=1.6)=>{t===0?J.workThumbScene.renderManager.compositeMaterial.uniforms.uDarkenIntensity.value=this.settings.thumb.darknessIntensity=e:oe.to(this.settings.thumb,{darknessIntensity:e")

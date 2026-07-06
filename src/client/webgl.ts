@@ -4372,7 +4372,6 @@ export class WebGLBackdrop {
   private activeSlug = "";
   private mouseFactor = 0;
   private mouseFactorTween?: gsap.core.Tween;
-  private ambientTweens: gsap.core.Tween[] = [];
   private saturationTween?: gsap.core.Tween;
   private contrastTween?: gsap.core.Tween;
   private blockColorTweens: gsap.core.Tween[] = [];
@@ -4447,7 +4446,6 @@ export class WebGLBackdrop {
   private sourcePostRenderFrame = 0;
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
-  private currentAmbientIntensity = SOURCE_INITIAL_AMBIENT;
   private mediaBackground = this.settingsState.media.background.clone();
   private gridLayers = SOURCE_GRID_LAYERS;
   private count = 0;
@@ -6617,28 +6615,46 @@ void main() {
     });
   }
 
-  private setAmbientLight(color?: string, intensity = 0.5, duration = 1.6) {
-    this.ambientTweens.forEach((tween) => tween.kill());
-    this.ambientTweens = [];
-    this.currentAmbientIntensity = intensity;
+  private updateAmbientDarkenColor() {
+    (this.environmentMaterial.customUniforms.uDarkenColor.value as Color).setRGB(
+      this.ambientLight.color.r,
+      this.ambientLight.color.g,
+      this.ambientLight.color.b,
+    );
+  }
+
+  private setAmbientColor(color?: string, duration = 1.6) {
     const next = sourceRgbColor(color, SOURCE_INITIAL_SECONDARY);
     if (duration <= 0) {
       this.ambientLight.color.copy(next);
-      this.ambientLight.intensity = intensity;
-      this.backgroundMaterial.uniforms.uAmbientColor.value.copy(next);
-      this.environmentMaterial.customUniforms.uDarkenColor.value.copy(next);
-      this.backgroundMaterial.uniforms.uAmbientIntensity.value = intensity;
+      this.updateAmbientDarkenColor();
       return;
     }
-    this.ambientTweens.push(gsap.to(this.ambientLight.color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
-    this.ambientTweens.push(gsap.to(this.ambientLight, { intensity, duration, ease: "expo.out" }));
-    this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
-    this.ambientTweens.push(gsap.to(this.environmentMaterial.customUniforms.uDarkenColor.value as Color, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" }));
-    this.ambientTweens.push(gsap.to(this.backgroundMaterial.uniforms.uAmbientIntensity, {
-      value: intensity,
+    gsap.to(this.ambientLight.color, {
+      r: next.r,
+      g: next.g,
+      b: next.b,
       duration,
       ease: "expo.out",
-    }));
+      onUpdate: () => this.updateAmbientDarkenColor(),
+    });
+  }
+
+  private setAmbientIntensity(intensity = 0.5, duration = 1.6) {
+    if (duration <= 0) {
+      this.ambientLight.intensity = intensity;
+      return;
+    }
+    gsap.to(this.ambientLight, {
+      intensity,
+      duration,
+      ease: "expo.out",
+    });
+  }
+
+  private setAmbientLight(color?: string, intensity = 0.5, duration = 1.6) {
+    this.setAmbientColor(color, duration);
+    this.setAmbientIntensity(intensity, duration);
   }
 
   private setDarken(value: number, duration = 0.5) {
@@ -8103,6 +8119,8 @@ void main() {
     const c1MouseSimTexture = c1Uniforms.tMouseSim.value as Texture | null;
     const c1MouseSimBoundIndex = this.screenMouseSimulationTargets.findIndex((target) => target.texture === c1MouseSimTexture);
     const c1MouseSimMatchesCurrentOutput = c1MouseSimTexture === this.screenMouseSimulationTexture;
+    const environmentDarkenColor = this.environmentMaterial.customUniforms.uDarkenColor.value as Color;
+    const backgroundAmbientColor = this.backgroundMaterial.uniforms.uAmbientColor.value as Color;
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
@@ -8283,6 +8301,19 @@ void main() {
             allWorkUniformsMatchState: this.workItems.every((item) => (
               Math.abs((item.material.uniforms.uMouseFactor.value as number) - this.mouseFactor) < 1e-6
             )),
+          },
+          ambientOwnership: {
+            mode: "source-Se-setAmbientLight-delegates-color-intensity",
+            colorMode: "source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor",
+            intensityMode: "source-Se-setAmbientIntensity-tweens-ambientLight-intensity",
+            killMode: "source-no-kill-for-setAmbientColor-setAmbientIntensity",
+            backgroundUniformMode: "rebuild-background-material-not-source-Se-ambient-target",
+            ambientLightColor: this.ambientLight.color.toArray(),
+            ambientLightIntensity: this.ambientLight.intensity,
+            environmentDarkenColor: environmentDarkenColor.toArray(),
+            environmentDarkenMatchesAmbientColor: environmentDarkenColor.equals(this.ambientLight.color),
+            backgroundAmbientColor: backgroundAmbientColor.toArray(),
+            backgroundAmbientIntensity: this.backgroundMaterial.uniforms.uAmbientIntensity.value,
           },
           lightStateOwnership: {
             mode: "source-Se-settings-light-state-onUpdate-intensities",
