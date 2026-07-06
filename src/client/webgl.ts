@@ -8760,10 +8760,10 @@ void main() {
   private resizeMainFluidPass(width: number, height: number) {
     const pass = this.mainFluidPass;
     if (!pass.enabled) return;
-    const fluidWidth = Math.max(1, Math.round(width));
-    const fluidHeight = Math.max(1, Math.round(height));
+    const fluidWidth = width;
+    const fluidHeight = height;
     pass.fboSize.set(fluidWidth, fluidHeight);
-    pass.cellScale.set(1 / fluidWidth, 1 / fluidHeight);
+    pass.cellScale.set(1 / width, 1 / height);
     Object.values(pass.targets).forEach((target) => target.setSize(fluidWidth, fluidHeight));
   }
 
@@ -10861,12 +10861,28 @@ void main() {
 
   private mainFluidProbe() {
     const pass = this.mainFluidPass;
+    const expectedRawWidth = floorPowerOfTwo(Math.round(window.innerWidth * sourceDpr())) / 2 / 3;
+    const expectedRawHeight = floorPowerOfTwo(Math.round(window.innerHeight * sourceDpr())) / 2 / 3;
+    const expectedCellScale = [1 / expectedRawWidth, 1 / expectedRawHeight];
+    const close = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+    const targetsMatchFboSize = Object.values(pass.targets).every((target) => (
+      close(target.width, pass.fboSize.x) && close(target.height, pass.fboSize.y)
+    ));
     return {
       enabled: pass.enabled,
       debug: this.debugMainFluid,
       fboSize: pass.fboSize.toArray(),
       cellScale: pass.cellScale.toArray(),
       bounds: pass.bounds.toArray(),
+      sizing: {
+        mode: "source-ag-calcSizes-raw-size-preserved-for-fboSize-cellScale-and-targets",
+        sourceResizeChain: "source-I1-Fa-render-size-div-2-then-ag-onResize-div-3",
+        expectedRawSize: [expectedRawWidth, expectedRawHeight],
+        expectedCellScale,
+        fboSizeMatchesSource: close(pass.fboSize.x, expectedRawWidth) && close(pass.fboSize.y, expectedRawHeight),
+        cellScaleMatchesSource: close(pass.cellScale.x, expectedCellScale[0]) && close(pass.cellScale.y, expectedCellScale[1]),
+        targetsMatchFboSize,
+      },
       topology: {
         mode: "source-ag-createFbos-seven-targets-including-disabled-viscosity",
         targetKeys: Object.keys(pass.targets),

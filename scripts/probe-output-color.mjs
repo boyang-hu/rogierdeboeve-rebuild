@@ -1672,6 +1672,18 @@ async function runProbe() {
     if (mainFluidTargets[key]?.depthBuffer !== false) materialSurfaceErrors.push(`mainFluid${key}DepthBuffer`);
     if (mainFluidTargets[key]?.stencilBuffer !== false) materialSurfaceErrors.push(`mainFluid${key}StencilBuffer`);
   }
+  if (mainFluid.enabled) {
+    const mainFluidSizing = mainFluid.sizing || {};
+    if (mainFluidSizing.mode !== "source-ag-calcSizes-raw-size-preserved-for-fboSize-cellScale-and-targets") {
+      materialSurfaceErrors.push("mainFluidRawSizingMode");
+    }
+    if (mainFluidSizing.sourceResizeChain !== "source-I1-Fa-render-size-div-2-then-ag-onResize-div-3") {
+      materialSurfaceErrors.push("mainFluidRawResizeChain");
+    }
+    if (mainFluidSizing.fboSizeMatchesSource !== true) materialSurfaceErrors.push("mainFluidRawFboSize");
+    if (mainFluidSizing.cellScaleMatchesSource !== true) materialSurfaceErrors.push("mainFluidRawCellScale");
+    if (mainFluidSizing.targetsMatchFboSize !== true) materialSurfaceErrors.push("mainFluidRawTargetSize");
+  }
   if (materialSurfaceErrors.length) {
     throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);
   }

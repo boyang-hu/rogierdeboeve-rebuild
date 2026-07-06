@@ -171,13 +171,14 @@ Known remaining gaps:
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
 - Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
+- Source `I1/ag` raw main-fluid resize ownership is now guarded: source `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`, and source `ag.calcSizes(e,t)` preserves raw incoming `e,t` for `fboSize`, `cellScale`, and target `setSize(...)` while rounding only internal simulation fields through `resolution`.
 
 Latest Phase 1 batch:
 
-- Strengthened source attribution for the retained `lA/aA` source-surface material without changing shader text, render-target sizing, pass order, route behavior, visual constants, or the active default `I1/C1` screen path.
-- Source evidence: `Lu.initRenderer()` creates `this.compositeMaterial=new lA`; `kA extends Lu` calls `super(e,t,n)` and immediately replaces that material with `this.compositeMaterial=new OA`; `I1` is separate from `Lu` and constructs `this.compositeMaterial=new C1` directly.
-- The rebuild now records/probes `mainCompositeMaterial` as `retained-source-Lu-lA-surface-not-active-I1-screen-material`, exposes the `Lu -> lA`, `kA -> OA`, and `I1 -> C1` construction chain, and audit/probe checks reject misclassifying `lA` as the default `I1` screen material.
-- Previous committed batch was `d1caa49 Align main composite runtime uniform order`.
+- Aligned one source-backed sizing edge in the main fluid pass without changing shader text, pass order, route behavior, visual constants, or the GPU-tier enablement branch.
+- Source evidence: `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`; source `ag.calcSizes(e,t)` keeps raw incoming `e,t` for `fboSize.set(e,t)` and `cellScale.set(1/e,1/t)`, then `ag.onResize(e,t)` applies `this.fboSize.x/y` to every FBO.
+- The rebuild now preserves raw dimensions in `resizeMainFluidPass(...)`, writes `cellScale` from raw width/height, exposes `mainFluid.sizing` expected/match fields, and audit/probe checks reject restoring rounded/clamped target sizing.
+- Previous committed batch was `1266c04 Guard composite construction chain attribution`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -188,28 +189,30 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-lu-ka-i1-chain-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-lu-ka-i1-chain-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-main-fluid-raw-size-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-main-fluid-raw-size-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-output-desktop VIEWPORT=desktop CDP_PORT=9292 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-output-mobile VIEWPORT=mobile CDP_PORT=9293 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-thumb CDP_PORT=9294 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-lu-ka-i1-chain-media CDP_PORT=9295 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-fluid-raw-size-output-desktop VIEWPORT=desktop CDP_PORT=9292 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-fluid-raw-size-output-mobile VIEWPORT=mobile CDP_PORT=9293 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-fluid-raw-size-thumb CDP_PORT=9294 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-fluid-raw-size-media CDP_PORT=9295 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-main-fluid-raw-size-interactive CDP_PORT=9296 node scripts/probe-interactive-mouse.mjs
 ```
 
-All relevant checks passed in the `Lu/kA/I1` composite material construction chain guardrail batch. Renderer audit wrote `/tmp/rd-lu-ka-i1-chain-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes recorded the retained `lA/aA` source-surface role and active `source-I1-C1` screen material marker. Thumb spotlight probe and project-media probe passed with no failures/exceptions/console messages in the relevant checks, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `I1/ag` raw main-fluid resize ownership batch. Renderer audit wrote `/tmp/rd-main-fluid-raw-size-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed, thumb spotlight and project-media probes passed, and the interactive mouse probe passed with no failures/exceptions/console messages in the relevant checks. Project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`. Local Chrome reports SwiftShader GPU tier `1`, so normal probes keep `mainFluid.enabled=false`; the raw-sizing runtime assertion is conditional on `mainFluid.enabled`, while the static audit verifies source/rebuild sizing anchors.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this composite construction chain guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this raw main-fluid resize ownership batch.
 
-Runtime QA was run because the batch touched WebGL main render-manager attribution and output probe coverage.
+Runtime QA was run because the batch touched WebGL main-fluid target sizing and output probe coverage.
 
 Verified:
 
-- Renderer audit passed for the `Lu/kA/I1` composite construction chain batch: `/tmp/rd-lu-ka-i1-chain-audit.json`.
+- Renderer audit passed for the `I1/ag` raw main-fluid resize ownership batch: `/tmp/rd-main-fluid-raw-size-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-lu-ka-i1-chain-output-desktop`, `/tmp/rd-lu-ka-i1-chain-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-lu-ka-i1-chain-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-lu-ka-i1-chain-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-main-fluid-raw-size-output-desktop`, `/tmp/rd-main-fluid-raw-size-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-main-fluid-raw-size-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-main-fluid-raw-size-media`.
+- Interactive mouse probe passed: `/tmp/rd-main-fluid-raw-size-interactive`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

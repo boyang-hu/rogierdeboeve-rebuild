@@ -240,6 +240,7 @@ const rebuildRenderWorkBlurPass = extractBlock(rebuildWebgl, "private renderWork
 const rebuildRenderHomeBlurPass = extractBlock(rebuildWebgl, "private renderHomeBlurPass()");
 const rebuildRenderHomeBloomPass = extractBlock(rebuildWebgl, "private renderHomeBloomPass(");
 const rebuildCreateMainFluidPass = extractBlock(rebuildWebgl, "private createMainFluidPass()");
+const rebuildResizeMainFluidPass = extractBlock(rebuildWebgl, "private resizeMainFluidPass(");
 const rebuildUpdateMainFluidPass = extractBlock(rebuildWebgl, "private updateMainFluidPass()");
 const rebuildMainFluidProbe = extractBlock(rebuildWebgl, "private mainFluidProbe()");
 const sourceCA = extractTemplate(bundle, "CA", "`,RA=");
@@ -1748,6 +1749,8 @@ const summary = {
             "class ag",
             "this.fbos={main:null,velocity_1:null,viscosity_0:null,viscosity_1:null,divergence:null,pressure_0:null,pressure_1:null}",
             "this.options={mouseForce:20,resolution:.05,cursorSize:50,poissonIterations:5,bounce:!1,delta:.01,viscosityIntensity:30,viscosityIterations:5,viscosity:!1}",
+            "calcSizes(e,t){const{resolution:n}=this.options;this.width=Math.round(e*n),this.height=Math.round(t*n),this.cellScale.set(1/e,1/t),this.fboSize.set(e,t)}",
+            "onResize(e,t){this.calcSizes(e,t);for(const n in this.fbos)this.fbos[n].setSize(this.fboSize.x,this.fboSize.y)}",
             "new Dn(this.fboSize.x,this.fboSize.y,{depthBuffer:!1,stencilBuffer:!1,type:kn})",
             "this.advection=new GT",
             "this.force=new qT",
@@ -1852,6 +1855,17 @@ const summary = {
             "viscosityA: makeFluidRenderTarget()",
             "viscosityB: makeFluidRenderTarget()",
           ]),
+          sourceShapedResize: checks(rebuildResizeMainFluidPass || "", [
+            "const fluidWidth = width;",
+            "const fluidHeight = height;",
+            "pass.fboSize.set(fluidWidth, fluidHeight);",
+            "pass.cellScale.set(1 / width, 1 / height);",
+            "Object.values(pass.targets).forEach((target) => target.setSize(fluidWidth, fluidHeight));",
+          ]),
+          noRoundedResizeBridge: Boolean(rebuildResizeMainFluidPass)
+            && !rebuildResizeMainFluidPass.includes("Math.round(width)")
+            && !rebuildResizeMainFluidPass.includes("Math.round(height)")
+            && !rebuildResizeMainFluidPass.includes("Math.max(1"),
           sourceShapedUpdate: checks(rebuildUpdateMainFluidPass || "", [
             "if (SOURCE_AG_VISCOSITY_DEFAULTS.enabled) {",
             "pass.viscosityMaterial.uniforms.velocity.value = pass.targets.velocity.texture",
@@ -1872,6 +1886,11 @@ const summary = {
             "viscosity: sourceMaterialProbe(pass.viscosityMaterial, \"source-eA-raw-glsl3\")",
             "viscosityA: renderTargetProbe(this.renderer, pass.targets.viscosityA)",
             "viscosityB: renderTargetProbe(this.renderer, pass.targets.viscosityB)",
+            "mode: \"source-ag-calcSizes-raw-size-preserved-for-fboSize-cellScale-and-targets\"",
+            "sourceResizeChain: \"source-I1-Fa-render-size-div-2-then-ag-onResize-div-3\"",
+            "fboSizeMatchesSource",
+            "cellScaleMatchesSource",
+            "targetsMatchFboSize",
           ]),
           rebuildDefaults: checks(rebuildWebgl, [
             "const SOURCE_AG_VISCOSITY_DEFAULTS = {",
@@ -1886,6 +1905,11 @@ const summary = {
             "source-eA-raw-glsl3",
             "\"main\", \"velocity\", \"viscosityA\", \"viscosityB\", \"divergence\", \"pressureA\", \"pressureB\"",
             "mainFluidViscosityDefaultIntensity",
+            "source-ag-calcSizes-raw-size-preserved-for-fboSize-cellScale-and-targets",
+            "mainFluidRawSizingMode",
+            "mainFluidRawFboSize",
+            "mainFluidRawCellScale",
+            "mainFluidRawTargetSize",
             "for (const key of [\"advection\", \"viscosity\", \"divergence\", \"poisson\", \"pressure\"])",
             "for (const uniformKey of [\"bounds\", \"velocity\", \"velocity_new\", \"v\", \"px\", \"dt\"])",
             "materialSurfaceErrors.push(`mainFluidViscosity${uniformKey}Uniform`)",
