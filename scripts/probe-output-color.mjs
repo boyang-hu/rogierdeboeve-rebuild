@@ -416,6 +416,7 @@ async function runProbe() {
   if (blocksColor.allWorkEmissiveMatchesActive !== true) materialErrors.push("blocksColorFanout");
   if (!auxiliaryMaterial) materialErrors.push("auxiliaryMaterialMissing");
   if (auxiliaryMaterial?.mode !== "source-XA-about-material-state") materialErrors.push("auxMode");
+  if (auxiliaryMaterial?.shaderMode !== "source-XA-jA-WA-direct-shader") materialErrors.push("auxShaderMode");
   if (auxiliaryMaterial?.toneMapped !== true) materialErrors.push("auxToneMapped");
   if (auxiliaryMaterial?.transparent !== true) materialErrors.push("auxTransparent");
   if (auxiliaryMaterial?.depthWrite !== false) materialErrors.push("auxDepthWrite");
@@ -429,6 +430,7 @@ async function runProbe() {
   if (Math.abs((auxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("auxUvOffsetScale");
   if (!floatingAuxiliaryMaterial) materialErrors.push("floatingAuxiliaryMaterialMissing");
   if (floatingAuxiliaryMaterial?.mode !== "source-KA-floating-material-state") materialErrors.push("floatingAuxMode");
+  if (floatingAuxiliaryMaterial?.shaderMode !== "source-KA-YA-qA-direct-shader") materialErrors.push("floatingAuxShaderMode");
   if (floatingAuxiliaryMaterial?.toneMapped !== true) materialErrors.push("floatingAuxToneMapped");
   if (floatingAuxiliaryMaterial?.transparent !== true) materialErrors.push("floatingAuxTransparent");
   if (floatingAuxiliaryMaterial?.depthWrite !== true) materialErrors.push("floatingAuxDepthWrite");

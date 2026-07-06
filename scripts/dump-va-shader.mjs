@@ -1232,6 +1232,8 @@ const sourceStandardBlurFragment = (() => {
 })();
 const sourceFragmentShaders = {
   "VA-work": sourceZ,
+  "XA-about": sourceShader(bundle, "WA"),
+  "KA-floating": sourceShader(bundle, "qA"),
   "A1-pre-composite": sourceShader(bundle, "A1"),
   "Lu-main-composite": sourceShader(bundle, "aA"),
   "OA-work-composite": sourceShader(bundle, "CA"),
@@ -1260,6 +1262,8 @@ const sourceFragmentShaders = {
 };
 const sourceVertexShaders = {
   "VA-work": sourceH,
+  "XA-about": sourceShader(bundle, "jA"),
+  "KA-floating": sourceShader(bundle, "YA"),
   "A1-pre-composite": sourceShader(bundle, "D1"),
   "Lu-main-composite": sourceShader(bundle, "el"),
   "OA-work-composite": sourceShader(bundle, "el"),
@@ -1336,11 +1340,10 @@ try {
   });
   const parsed = JSON.parse(result.result.value);
   const workDump = parsed.dump.find((entry) => entry.variant === "work");
-  if (!workDump) {
-    throw new Error(`No work shader dump found. Body: ${parsed.body}`);
+  if (workDump) {
+    writeFileSync(path.join(outDir, "rebuild-work-vertex.glsl"), workDump.vertexShader);
+    writeFileSync(path.join(outDir, "rebuild-work-fragment.glsl"), workDump.fragmentShader);
   }
-  writeFileSync(path.join(outDir, "rebuild-work-vertex.glsl"), workDump.vertexShader);
-  writeFileSync(path.join(outDir, "rebuild-work-fragment.glsl"), workDump.fragmentShader);
   const genericShaderAnalysis = {};
   for (const entry of parsed.shaderDump || []) {
     const safeName = entry.name.replace(/[^A-Za-z0-9_.-]/g, "_");
@@ -1380,12 +1383,12 @@ try {
     };
   }
   writeFileSync(path.join(outDir, "shader-dump-summary.json"), JSON.stringify(genericShaderAnalysis, null, 2));
-  const vertexAnalysis = analyzeVertex(sourceH, workDump.vertexShader);
-  const fragmentAnalysis = analyzeFragment(sourceZ, workDump.fragmentShader);
-  const vertexCoreChecks = analyzeVertexCore(sourceH, workDump.vertexShader);
-  const uvOffsetSourceEvidence = analyzeWorkUvOffsetSourceEvidence(bundle, workDump.vertexShader);
-  writeFileSync(path.join(outDir, "vertex-analysis.json"), JSON.stringify(vertexAnalysis, null, 2));
-  writeFileSync(path.join(outDir, "fragment-analysis.json"), JSON.stringify(fragmentAnalysis, null, 2));
+  const vertexAnalysis = workDump ? analyzeVertex(sourceH, workDump.vertexShader) : null;
+  const fragmentAnalysis = workDump ? analyzeFragment(sourceZ, workDump.fragmentShader) : null;
+  const vertexCoreChecks = workDump ? analyzeVertexCore(sourceH, workDump.vertexShader) : null;
+  const uvOffsetSourceEvidence = workDump ? analyzeWorkUvOffsetSourceEvidence(bundle, workDump.vertexShader) : null;
+  if (vertexAnalysis) writeFileSync(path.join(outDir, "vertex-analysis.json"), JSON.stringify(vertexAnalysis, null, 2));
+  if (fragmentAnalysis) writeFileSync(path.join(outDir, "fragment-analysis.json"), JSON.stringify(fragmentAnalysis, null, 2));
   const chunkAnalysis = {
     lightsFragmentBegin: analyzeShaderChunk("lights_fragment_begin"),
     lightsPhysicalFragment: analyzeShaderChunk("lights_physical_fragment"),
@@ -1397,9 +1400,9 @@ try {
     dumpCount: parsed.dump.length,
     shaderDumpCount: parsed.shaderDump?.length || 0,
     consoleMessages: consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message)),
-    vertex: summarizeShader("work vertex", workDump.vertexShader, sourceH),
-    fragment: summarizeShader("work fragment", workDump.fragmentShader, sourceZ),
-    vertexAnalysis: {
+    vertex: workDump ? summarizeShader("work vertex", workDump.vertexShader, sourceH) : null,
+    fragment: workDump ? summarizeShader("work fragment", workDump.fragmentShader, sourceZ) : null,
+    vertexAnalysis: vertexAnalysis ? {
       lengths: vertexAnalysis.lengths,
       includesOnlySource: vertexAnalysis.includes.onlySource,
       includesOnlyRebuild: vertexAnalysis.includes.onlyRebuild,
@@ -1409,8 +1412,8 @@ try {
       coreChecks: vertexCoreChecks,
       uvOffsetSourceEvidence,
       anchors: vertexAnalysis.anchors,
-    },
-    fragmentAnalysis: {
+    } : null,
+    fragmentAnalysis: fragmentAnalysis ? {
       lengths: fragmentAnalysis.lengths,
       includesOnlySource: fragmentAnalysis.includes.onlySource,
       includesOnlyRebuild: fragmentAnalysis.includes.onlyRebuild,
@@ -1418,7 +1421,7 @@ try {
       uniformsOnlyRebuild: fragmentAnalysis.uniforms.onlyRebuild,
       keyChecks: fragmentAnalysis.checks,
       anchors: fragmentAnalysis.anchors,
-    },
+    } : null,
     threeChunkAnalysis: {
       lightsFragmentBegin: {
         length: chunkAnalysis.lightsFragmentBegin.length,
@@ -1462,10 +1465,10 @@ try {
     files: {
       sourceVertex: path.join(outDir, "source-HA.glsl"),
       sourceFragment: path.join(outDir, "source-zA.glsl"),
-      rebuildVertex: path.join(outDir, "rebuild-work-vertex.glsl"),
-      rebuildFragment: path.join(outDir, "rebuild-work-fragment.glsl"),
-      vertexAnalysis: path.join(outDir, "vertex-analysis.json"),
-      fragmentAnalysis: path.join(outDir, "fragment-analysis.json"),
+      rebuildVertex: workDump ? path.join(outDir, "rebuild-work-vertex.glsl") : null,
+      rebuildFragment: workDump ? path.join(outDir, "rebuild-work-fragment.glsl") : null,
+      vertexAnalysis: vertexAnalysis ? path.join(outDir, "vertex-analysis.json") : null,
+      fragmentAnalysis: fragmentAnalysis ? path.join(outDir, "fragment-analysis.json") : null,
       threeChunkAnalysis: path.join(outDir, "three-chunk-analysis.json"),
       shaderDumpSummary: path.join(outDir, "shader-dump-summary.json"),
     },

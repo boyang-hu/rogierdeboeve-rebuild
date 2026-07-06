@@ -311,6 +311,10 @@ const sourceSkyB1 = extractTemplate(bundle, "B1", "`,Zs=");
 const sourceVA = extractAround(bundle, "class VA extends", 320, 2200);
 const sourceXA = extractAround(bundle, "class XA extends", 320, 2200);
 const sourceKA = extractAround(bundle, "class KA extends", 320, 2200);
+const sourceAuxiliaryWA = extractTemplate(bundle, "WA", "`,jA=");
+const sourceAuxiliaryJA = extractTemplate(bundle, "jA", "`;class XA extends");
+const sourceAuxiliaryQA = extractTemplate(bundle, "qA", "`,YA=");
+const sourceAuxiliaryYA = extractTemplate(bundle, "YA", "`;class KA extends");
 const sourceMG = extractAround(bundle, "class mg extends", 0, 5900);
 const sourceGA = extractAround(bundle, "class GA extends", 200, 5200);
 const sourceDollarA = extractAround(bundle, "class $A extends", 200, 5600);
@@ -3514,6 +3518,7 @@ const summary = {
           "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
           "uReveal:new I(0),uRevealSpread:new I(1)",
           "uScrollOpacity:new I(1)",
+          "t.vertexShader=jA,t.fragmentShader=WA",
         ]),
         defaultDepthState: {
           depthTestFalse: sourceXABody.includes("this.depthTest=!1"),
@@ -3533,6 +3538,7 @@ const summary = {
           "uReveal:new I(0),uRevealSpread:new I(10)",
           "uRevealProject:new I(1),uRevealSides:new I(1)",
           "uScrollOpacity:new I(1)",
+          "t.vertexShader=YA,t.fragmentShader=qA",
         ]),
         defaultDepthState: {
           keepsDepthTestDefault: !sourceKABody.includes("this.depthTest=!1"),
@@ -3549,13 +3555,18 @@ const summary = {
         "mode: \"source-XA-about-material-state\"",
         "mode: \"source-KA-floating-material-state\"",
         "floatingAuxiliaryMaterial: this.floatingBlocks ?",
+        "source-XA-jA-WA-direct-shader",
+        "source-KA-YA-qA-direct-shader",
+        "patchWorkBlockShader(shader, uniforms, kind === \"about\" ? \"aboutAuxiliary\" : \"floatingAuxiliary\")",
       ]),
       probeChecks: checks(rebuildOutputProbe, [
         "auxiliaryMaterial?.mode !== \"source-XA-about-material-state\"",
+        "auxiliaryMaterial?.shaderMode !== \"source-XA-jA-WA-direct-shader\"",
         "auxiliaryMaterial?.renderOrder !== 10",
         "auxiliaryMaterial?.uMouseType !== \"Vector2\"",
         "auxiliaryMaterial?.uUvOffsetScale ?? 0",
         "floatingAuxiliaryMaterial?.mode !== \"source-KA-floating-material-state\"",
+        "floatingAuxiliaryMaterial?.shaderMode !== \"source-KA-YA-qA-direct-shader\"",
         "floatingAuxiliaryMaterial?.depthWrite !== true",
         "floatingAuxiliaryMaterial?.depthTest !== true",
         "floatingAuxiliaryMaterial?.renderOrder ?? null",
@@ -3563,6 +3574,66 @@ const summary = {
         "floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0",
         "auxiliaryLifecycle.floatingEntryVisibilityMode !== \"source-Fg-animateIn-onStart-visible-not-enter-state\"",
         "auxiliaryLifecycle.floatingScrollVelocityMode !== \"source-Fg-onRaf-page-scroll-velocity\"",
+      ]),
+    },
+    auxiliaryBlockShaders: {
+      sourceChecks: {
+        jA: checks(sourceAuxiliaryJA, [
+          "attribute float instanceIndex",
+          "uniform vec3 uUvOffset",
+          "float revealCombined = uReveal;",
+          "transformed = mix(transformed, perlinDisplaced, (1. - fadeDiplacement) * 10.25)",
+          "float waveDisplacement = displacementF * 3.0 + 9. * (1. - revealCombined);",
+          "transformed *= uReveal;",
+        ]),
+        WA: checks(sourceAuxiliaryWA, [
+          "uniform float uScrollOpacity;",
+          "#include <tonemapping_fragment>",
+          "float revealCombined = 1.;",
+          "uMouseFactor * 0.15",
+          "gl_FragColor.a = mixedAlpha * uScrollOpacity;",
+        ]),
+        YA: checks(sourceAuxiliaryYA, [
+          "float perlinDisplacementHeight = 5.;",
+          "vec4 perlin = texture2D(tPerlin, perlinUv);",
+          "transformed.z *= 7. *  (.5 + instanceColor.r);",
+          "float waveDisplacement = displacementF * 3.0 + 9. * (1.);",
+          "// mvPosition.z = mod(mvPosition.z + (uTime * instanceColor.r * 10.), 1000.) - 50.;",
+        ]),
+        qA: checks(sourceAuxiliaryQA, [
+          "float revealCombined = 1.;",
+          "uMouseFactor * 0.15",
+          "mixedAlpha = clamp(mixedAlpha, 0.05, 1.);",
+          "gl_FragColor.a = mixedAlpha * uReveal;",
+        ]),
+      },
+      rebuildChecks: checks(rebuildWebgl, [
+        "const sourceAboutAuxiliaryJAVertexShader = `",
+        "const sourceAboutAuxiliaryWAFragmentShader = `",
+        "const sourceFloatingAuxiliaryYAVertexShader = `",
+        "const sourceFloatingAuxiliaryQAFragmentShader = `",
+        "shader.vertexShader = sourceAboutAuxiliaryJAVertexShader;",
+        "shader.fragmentShader = sourceAboutAuxiliaryWAFragmentShader;",
+        "shader.vertexShader = sourceFloatingAuxiliaryYAVertexShader;",
+        "shader.fragmentShader = sourceFloatingAuxiliaryQAFragmentShader;",
+        "name: variant === \"work\" ? \"VA-work\" : variant === \"aboutAuxiliary\" ? \"XA-about\" : \"KA-floating\"",
+        "source-XA-jA-WA-direct-shader",
+        "source-KA-YA-qA-direct-shader",
+      ]),
+      noOldBridgeChecks: {
+        noAuxiliaryChunkVariant: !rebuildWebgl.includes("variant: \"work\" | \"auxiliary\""),
+        noAuxiliaryOpaqueChunk: !rebuildWebgl.includes("const auxiliaryBlockOpaqueFragmentChunk"),
+        noAuxiliaryMaterialUniform: !rebuildWebgl.includes("uAuxiliaryMaterial: { value: 1 }"),
+      },
+      dumpChecks: checks(readFileSync("scripts/dump-va-shader.mjs", "utf8"), [
+        "\"XA-about\": sourceShader(bundle, \"WA\")",
+        "\"KA-floating\": sourceShader(bundle, \"qA\")",
+        "\"XA-about\": sourceShader(bundle, \"jA\")",
+        "\"KA-floating\": sourceShader(bundle, \"YA\")",
+      ]),
+      probeChecks: checks(rebuildOutputProbe, [
+        "auxiliaryMaterial?.shaderMode !== \"source-XA-jA-WA-direct-shader\"",
+        "floatingAuxiliaryMaterial?.shaderMode !== \"source-KA-YA-qA-direct-shader\"",
       ]),
     },
     dollarAAboutBlocks: sourceDollarA && {

@@ -143,7 +143,7 @@ Known remaining gaps:
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
-- Source `XA/KA` auxiliary material constructor state is now guarded: about keeps `XA` depth-disabled `renderOrder=10` state, floating keeps `KA` default depth state and no material `renderOrder`, and both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults. The auxiliary shader bridge is still open.
+- Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
@@ -165,14 +165,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Q1/eD/TD` about character rotatable lifecycle.
-- Source `TD.addEvents()` waits `100ms`, registers `aboutVisual`, binds `J.workScene.spotLight.map` to the character scene composite texture, then calls `J.characterScene.character.rotatableMesh.addEvents()` before force resize; source `TD.destroy()` calls `rotatableMesh.removeEvents()`.
-- Source `eD` wraps the character as `cameraPanGroup -> rotatableMesh -> character`; source `Q1` owns passive mouse/touch window events, horizontal-only damped rotation with `dampingFactor=5`, camera pan lerp/clamp, and `rotation.y += delta * 1`.
-- `src/client/webgl.ts` now mirrors that wrapper, adds/removes rotatable events at the source TD lifecycle points, and updates rotatable/camera-pan/auto-rotation before rendering the character target while about is visible.
-- `__rogierOutputProbe` exposes rotatable mode, wrapper mode, event mode, update mode, active-event state, hierarchy counts, rotation, and source constants.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` now hard-fail on character rotatable lifecycle drift.
-- Previous committed batch was `8cd8ee9 Align TD about visual lifecycle`.
-- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the auxiliary shader bridge.
+- Aligned source `XA/KA/jA/WA/YA/qA` auxiliary shader surface.
+- Source `XA.onBeforeCompile` assigns `vertexShader=jA` and `fragmentShader=WA`; source `KA.onBeforeCompile` assigns `vertexShader=YA` and `fragmentShader=qA`.
+- `src/client/webgl.ts` now routes about auxiliary material compilation to direct source `jA/WA` and floating auxiliary material compilation to direct source `YA/qA`.
+- The rebuild-only auxiliary opaque chunk and `uAuxiliaryMaterial` production bridge were removed from the auxiliary path.
+- `__rogierOutputProbe` exposes `source-XA-jA-WA-direct-shader` and `source-KA-YA-qA-direct-shader` for about/floating materials.
+- `scripts/probe-output-color.mjs`, `scripts/audit-renderer-output.mjs`, and `scripts/dump-va-shader.mjs` now guard auxiliary shader-surface ownership.
+- Previous committed batch was `2fa7bb7 Align character rotatable lifecycle`.
+- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -184,26 +184,29 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-character-rotatable-audit.json
+node --check scripts/dump-va-shader.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-aux-shader-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5180 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
-# custom static /about/ CDP drag smoke against http://127.0.0.1:5180/about/
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 PROBE_WAIT=30000 CDP_PORT=9278 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9283 node scripts/probe-project-media.mjs
+# custom static /about/ CDP smoke against http://127.0.0.1:5180/about/
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180/about OUT_DIR=/tmp/rd-aux-shader-dump CDP_PORT=9323 DUMP_WAIT=12000 node scripts/dump-va-shader.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 OUT_DIR=/tmp/rd-aux-home-shader-dump CDP_PORT=9327 DUMP_WAIT=9000 node scripts/dump-va-shader.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 PROBE_WAIT=30000 SKIP_SCREENSHOT=1 CDP_PORT=9324 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 SKIP_SCREENSHOT=1 CDP_PORT=9325 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9328 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `Q1/eD/TD` character rotatable lifecycle batch. Renderer audit wrote `/tmp/rd-character-rotatable-audit.json`; `sourceManagers.TDCharacterRotatableLifecycle` source, rebuild, and output-probe checks were true. The static `/about/` CDP drag smoke passed with rotatable mode `source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy`, events active after the delayed map bind, source wrapper hierarchy present, and dragged rotation changing from `0` to `1.4511`. Desktop output and thumb probes should remain regression gates for this batch; project-media should remain a regression gate and retain `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+All relevant checks passed in the `XA/KA/jA/WA/YA/qA` auxiliary shader surface batch. Renderer audit wrote `/tmp/rd-aux-shader-audit.json`; `sourceManagers.auxiliaryBlockShaders` source, rebuild, no-old-bridge, dump, and probe checks were true. Static `/about/` CDP smoke passed with body `is-about is-ready has-entered has-webgl`, full-size canvas, no failed requests, no exceptions, and no shader/WebGL console messages. Home shader dump wrote `/tmp/rd-aux-home-shader-dump` and kept ordinary `VA-work` source-shaped with vertex/fragment delta `0`. Desktop output and thumb probes passed; project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `Q1/eD/TD` character rotatable lifecycle batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this auxiliary shader surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`; `/about/` enters `is-about is-ready has-entered has-webgl`.
-- Renderer audit passed for the `Q1/eD/TD` character rotatable lifecycle batch: `/tmp/rd-character-rotatable-audit.json`.
-- Static `/about/` drag smoke passed and asserted rotatable event activation plus wrapper/rotation behavior.
+- Renderer audit passed for the `XA/KA/jA/WA/YA/qA` auxiliary shader surface batch: `/tmp/rd-aux-shader-audit.json`.
+- Static `/about/` smoke passed with no failed requests, exceptions, or shader/WebGL console messages.
 - Desktop output, desktop thumb spotlight, and project-media probes remain the browser regression gates for this batch.
 - Project media remains a regression gate, not proof of Home parity.
 - Interactive mouse browser probe was not rerun for this character-lifecycle batch.

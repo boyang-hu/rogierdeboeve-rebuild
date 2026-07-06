@@ -120,7 +120,7 @@ type EnvironmentMaterial = MeshStandardMaterial & {
 };
 type ShaderDumpWindow = Window & {
   __rogierVaShaderDump?: Array<{
-    variant: "work" | "auxiliary";
+    variant: "work" | "aboutAuxiliary" | "floatingAuxiliary";
     vertexShader: string;
     fragmentShader: string;
   }>;
@@ -1213,45 +1213,694 @@ ${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
 }
 `;
 
-const auxiliaryBlockFragmentPars = `
-uniform float uAuxiliaryMaterial;
-uniform float uScrollOpacity;
-`;
-
-const auxiliaryBlockOpaqueFragmentChunk = `
-#ifdef OPAQUE
-diffuseColor.a = 1.0;
-#endif
+const sourceAboutAuxiliaryJAVertexShader = `
+attribute float instanceIndex;
+attribute float instanceAlpha;
+attribute vec3 instanceColor;
+attribute vec3 instanceOffset;
+varying float vInstanceIndex;
+varying float vInstanceAlpha;
+varying vec3 vPosition;
+varying vec3 vOffset;
+varying vec2 vUv;
+uniform vec2 uCoords;
+uniform float uTime;
+uniform float uMouseFactor;
+uniform sampler2D tDisplacement;
+uniform sampler2D tMouseSim;
+uniform sampler2D tPerlin;
+uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
+uniform vec3 uUvOffset;
+uniform float uUvOffsetScale;
+uniform float uReveal;
+uniform float uRevealSpread;
+#define STANDARD
+varying vec3 vViewPosition;
+varying float vNoise;
 
 #ifdef USE_TRANSMISSION
-diffuseColor.a *= material.transmissionAlpha;
+	varying vec3 vWorldPosition;
 #endif
+#include <common>
+#include <uv_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <normal_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
 
-vec3 sourceColor = outgoingLight;
-vec2 sourceUv = vUv / uGridSize.xy + vOffset.xy;
+void main() {
+  vUv = uv;
+	#include <uv_vertex>
+	#include <color_vertex>
+	#include <morphcolor_vertex>
+	#include <beginnormal_vertex>
+	#include <morphnormal_vertex>
+	#include <skinbase_vertex>
+	#include <skinnormal_vertex>
+	#include <defaultnormal_vertex>
+	#include <normal_vertex>
+	#include <begin_vertex>
+	#include <morphtarget_vertex>
+	#include <skinning_vertex>
+	#include <displacementmap_vertex>
 
-vec2 screenUv = gl_FragCoord.xy / max(uCoords, vec2(1.0));
-float simLight = texture2D(tMouseSim2, screenUv).r;
-float mouseF = 1.0 - simLight;
-sourceColor = mix(sourceColor, sourceColor * vec3(mouseF), 1.0 - uMouseLightness);
+  vec2 screenUv = gl_Position.xy / uCoords.xy;
 
-vec2 gridUv = vec2(floor(sourceUv.x * uGridSize.x), floor(sourceUv.y * uGridSize.y));
-vec2 gridUv2 = vec2(floor(sourceUv.y * uGridSize.y), floor(sourceUv.x * uGridSize.y));
-float alpha1 = mix(random(gridUv * vInstanceAlpha), random(gridUv), 1.0);
-float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.0);
-float alpha = alpha1 * alpha2 * vInstanceAlpha;
-float revealCombined = uReveal * uRevealProject;
-float fragmentReveal = mix(revealCombined, 1.0, uAuxiliaryMaterial);
-float revealRadius = 2.0 * pow(fragmentReveal, 0.25);
-float centerAlpha = vignette(sourceUv, vec2(0.5), 0.01, 0.2, 6.0, 1.0);
-float revealAlpha = vignette(sourceUv, vec2(0.5), 0.01, revealRadius, 6.0, 1.0);
-float mouseAlphaFactor = mix(0.5, 0.15, uAuxiliaryMaterial);
-if (screenUv.y > 0.1) alpha += clamp(simLight * (uMouseFactor * mouseAlphaFactor), 0.0, 1.0);
-alpha += centerAlpha * 0.1;
-alpha -= 1.0 - revealAlpha;
-alpha *= mix(uRevealSides, uScrollOpacity, uAuxiliaryMaterial);
+  vec2 newUv = screenUv;
+  vec2 newOffset = instanceOffset.xy;
 
-gl_FragColor = vec4(sourceColor, alpha * diffuseColor.a);
+  newUv.x /= uGridSize.x;
+  newUv.y /= uGridSize.y;
+
+  newUv.x += newOffset.x;
+  newUv.y += newOffset.y;
+
+  vec2 mouseUv = newUv + uUvOffset.xy;
+
+  mouseUv /= uUvOffsetScale;
+
+  vec4 mouseSim = texture2D(tMouseSim, mouseUv);
+
+  vec4 instancePos = instanceMatrix[3];
+
+  vec2 perlinUv = newUv * .75;
+  vec4 perlin = texture2D(tPerlin, perlinUv - uTime * .05);
+  float revealCombined = uReveal;
+
+  float perlinDisplacementHeight = 10.;
+  float perlinDisplacement =  (perlin.x * perlinDisplacementHeight);
+  float toCenter = length(instancePos.xy);
+
+  float perlinScaleDisplacement = min(1., 1. - (perlinDisplacement -  (perlinDisplacementHeight / 2.)) * .1);
+
+  vec3 perlinDisplaced = vec3(transformed);
+  perlinDisplaced.z += perlinDisplacement - (perlinDisplacementHeight / 2.);
+  perlinDisplaced *= perlinScaleDisplacement;
+
+  transformed *= 1. - mouseSim.r * .05;
+
+  float fadeDiplacementScale = (revealCombined * 4.85) - (toCenter * (revealCombined / 4.85));
+  float fadeDiplacement = clamp(fadeDiplacementScale, -1.0, 1.0);
+
+  transformed = mix(transformed, perlinDisplaced, (1. - fadeDiplacement) * 10.25);
+  transformed *= uReveal;
+
+  float mouseTransform = mouseSim.r * 15.;
+
+  vec4 displacement = texture2D(tDisplacement, newUv);
+  float displacementF = displacement.r;
+
+  float waveDisplacement = displacementF * 3.0 + 9. * (1. - revealCombined);
+
+  transformed.z -= 1.5;
+  transformed.z += waveDisplacement;
+  transformed.z += mouseTransform * uMouseFactor;
+  transformed *= 1. - displacementF * .1;
+
+  float spread = 3.;
+
+  vec3 transformedSpread = transformed;
+
+  transformedSpread.x -= instanceColor.x * spread;
+  transformedSpread.x += spread / 2.0;
+  transformedSpread.y -= instanceColor.y * spread;
+  transformedSpread.y += spread / 2.0;
+  transformedSpread.z -= instanceColor.z * spread;
+  transformedSpread.z += spread / 2.0;
+
+  transformed = mix(transformedSpread, transformed, 1. - uRevealSpread);
+
+  vec4 mvPosition = vec4( transformed, 1.0 );
+
+
+  #ifdef USE_INSTANCING
+	mvPosition = instanceMatrix * mvPosition;
+  #endif
+
+  mvPosition = modelViewMatrix * mvPosition;
+  gl_Position = projectionMatrix * mvPosition;
+
+	#include <logdepthbuf_vertex>
+	#include <clipping_planes_vertex>
+
+	vViewPosition = - mvPosition.xyz;
+
+  transformed /= 1. - mouseSim.r * .2;
+  vec4 worldPosition = vec4( transformed, 1.0 );
+
+  worldPosition = instanceMatrix * worldPosition;
+  worldPosition = modelMatrix * worldPosition;
+
+	#include <shadowmap_vertex>
+	#include <fog_vertex>
+  vInstanceIndex = instanceIndex;
+  vInstanceAlpha = instanceAlpha;
+  vOffset = instanceOffset;
+
+  #ifdef USE_TRANSMISSION
+	vWorldPosition = worldPosition.xyz;
+  #endif
+  vPosition = position;
+}
+`;
+
+const sourceAboutAuxiliaryWAFragmentShader = `
+varying float vInstanceIndex;
+varying float vInstanceAlpha;
+varying vec3 vPosition;
+varying vec3 vOffset;
+uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
+uniform float uTime;
+uniform float uMouseFactor;
+uniform float uMouseLightness;
+uniform vec2 uCoords;
+uniform float uReveal;
+uniform float uScrollOpacity;
+varying vec2 vUv;
+uniform sampler2D tMouseSim2;
+uniform sampler2D tDisplacement;
+
+#define STANDARD
+#ifdef PHYSICAL
+	#define IOR
+	#define SPECULAR
+#endif
+uniform vec3 diffuse;
+uniform vec3 emissive;
+uniform float roughness;
+uniform float metalness;
+uniform float opacity;
+#ifdef IOR
+uniform float ior;
+#endif
+#ifdef SPECULAR
+uniform float specularIntensity;
+uniform vec3 specularColor;
+	#ifdef USE_SPECULARINTENSITYMAP
+uniform sampler2D specularIntensityMap;
+	#endif
+	#ifdef USE_SPECULARCOLORMAP
+uniform sampler2D specularColorMap;
+	#endif
+#endif
+#ifdef USE_CLEARCOAT
+uniform float clearcoat;
+uniform float clearcoatRoughness;
+#endif
+#ifdef USE_IRIDESCENCE
+uniform float iridescence;
+uniform float iridescenceIOR;
+uniform float iridescenceThicknessMinimum;
+uniform float iridescenceThicknessMaximum;
+#endif
+#ifdef USE_SHEEN
+uniform vec3 sheenColor;
+uniform float sheenRoughness;
+	#ifdef USE_SHEENCOLORMAP
+uniform sampler2D sheenColorMap;
+	#endif
+	#ifdef USE_SHEENROUGHNESSMAP
+uniform sampler2D sheenRoughnessMap;
+	#endif
+#endif
+varying vec3 vViewPosition;
+#include <common>
+#include <packing>
+#include <dithering_pars_fragment>
+#include <color_pars_fragment>
+#include <uv_pars_fragment>
+// #include <uv2_pars_fragment>
+#include <map_pars_fragment>
+#include <alphamap_pars_fragment>
+#include <alphatest_pars_fragment>
+#include <aomap_pars_fragment>
+#include <lightmap_pars_fragment>
+#include <emissivemap_pars_fragment>
+#include <bsdfs>
+#include <iridescence_fragment>
+#include <cube_uv_reflection_fragment>
+#include <envmap_common_pars_fragment>
+#include <envmap_physical_pars_fragment>
+#include <fog_pars_fragment>
+#include <lights_pars_begin>
+#include <normal_pars_fragment>
+#include <lights_physical_pars_fragment>
+#include <transmission_pars_fragment>
+#include <shadowmap_pars_fragment>
+#include <bumpmap_pars_fragment>
+#include <normalmap_pars_fragment>
+#include <clearcoat_pars_fragment>
+#include <iridescence_pars_fragment>
+#include <roughnessmap_pars_fragment>
+#include <metalnessmap_pars_fragment>
+#include <logdepthbuf_pars_fragment>
+#include <clipping_planes_pars_fragment>
+
+float random(vec2 st)
+{
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+
+float vignette(vec2 coords, vec2 center, float vignin, float vignout, float vignfade, float fstop) {
+  float dist = distance(coords.xy, center);
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
+}
+
+
+void main() {
+	#include <clipping_planes_fragment>
+  vec4 diffuseColor = vec4(diffuse, opacity);
+  ReflectedLight reflectedLight = ReflectedLight(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
+  vec3 totalEmissiveRadiance = emissive;
+
+	#include <logdepthbuf_fragment>
+	#include <map_fragment>
+	#include <color_fragment>
+	#include <alphamap_fragment>
+	#include <alphatest_fragment>
+	#include <roughnessmap_fragment>
+	#include <metalnessmap_fragment>
+	#include <normal_fragment_begin>
+	#include <normal_fragment_maps>
+	#include <clearcoat_normal_fragment_begin>
+	#include <clearcoat_normal_fragment_maps>
+	#include <emissivemap_fragment>
+	#include <lights_physical_fragment>
+	#include <lights_fragment_begin>
+	#include <lights_fragment_maps>
+	#include <lights_fragment_end>
+	#include <aomap_fragment>
+  vec3 totalDiffuse = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
+  vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+	#include <transmission_fragment>
+  vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
+	#ifdef USE_SHEEN
+  float sheenEnergyComp = 1.0 - 0.157 * max3(material.sheenColor);
+  outgoingLight = outgoingLight * sheenEnergyComp + sheenSpecular;
+	#endif
+	#ifdef USE_CLEARCOAT
+  float dotNVcc = saturate(dot(geometry.clearcoatNormal, geometry.viewDir));
+  vec3 Fcc = F_Schlick(material.clearcoatF0, material.clearcoatF90, dotNVcc);
+  outgoingLight = outgoingLight * (1.0 - material.clearcoat * Fcc) + clearcoatSpecular * material.clearcoat;
+	#endif
+	#include <opaque_fragment>
+	#include <tonemapping_fragment>
+	#include <colorspace_fragment>
+	#include <fog_fragment>
+	#include <premultiplied_alpha_fragment>
+	#include <dithering_fragment>
+
+  float mixedAlpha = vInstanceAlpha;
+  vec2 newUv = vUv;
+  vec2 newOffset = vOffset.xy;
+
+  newUv.x /= uGridSize.x;
+  newUv.y /= uGridSize.y;
+
+  newUv.x += newOffset.x;
+  newUv.y += newOffset.y;
+
+  vec2 gridUv = vec2(floor(newUv.x * uGridSize.x), floor(newUv.y * uGridSize.y));
+  vec2 gridUv2 = vec2(floor(newUv.y * uGridSize.y), floor(newUv.x * uGridSize.y));
+
+  float alpha = mix(random(gridUv * vInstanceAlpha), random(gridUv), 1.);
+  float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.);
+
+  vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
+  vec4 mouseSim = texture2D(tMouseSim2, screenUv);
+  vec4 displacement = texture2D(tDisplacement, newUv);
+
+  float revealCombined = 1.;
+  float mouseF = 1. - mouseSim.r;
+
+  mixedAlpha =  ((alpha * alpha2) * vInstanceAlpha);
+  if(screenUv.y > 0.1) mixedAlpha += clamp(mouseSim.r * (uMouseFactor * 0.15), 0., 1.);
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), (1. - uMouseLightness));
+
+  float vignin = 0.01;
+  float vignout = 0.2;
+  float vignfade = 6.;
+  float fstop = 1.0;
+
+  vec2 center = vec2(0.5, 0.5);
+
+  float v = vignette(newUv.xy, center.xy, 0.01, 0.2,  6., 1.0);
+  float v2 = vignette(newUv.xy, center.xy, 0.01, 2.0 * pow(revealCombined, .25),  6. , 1.0);
+
+  mixedAlpha += v * .1;
+  mixedAlpha -= 1. - v2;
+
+  gl_FragColor.a = mixedAlpha * uScrollOpacity;
+}
+`;
+
+const sourceFloatingAuxiliaryYAVertexShader = `
+attribute float instanceIndex;
+attribute float instanceAlpha;
+attribute vec3 instanceColor;
+attribute vec3 instanceOffset;
+varying float vInstanceIndex;
+varying float vInstanceAlpha;
+varying vec3 vPosition;
+varying vec3 vOffset;
+varying vec2 vUv;
+uniform vec2 uCoords;
+uniform float uTime;
+uniform float uMouseFactor;
+uniform sampler2D tDisplacement;
+uniform sampler2D tMouseSim;
+uniform sampler2D tPerlin;
+uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
+uniform vec3 uUvOffset;
+uniform float uUvOffsetScale;
+uniform float uReveal;
+uniform float uRevealSpread;
+#define STANDARD
+varying vec3 vViewPosition;
+varying float vNoise;
+
+#ifdef USE_TRANSMISSION
+	varying vec3 vWorldPosition;
+#endif
+#include <common>
+#include <uv_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <color_pars_vertex>
+#include <fog_pars_vertex>
+#include <normal_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
+
+void main() {
+  vUv = uv;
+	#include <uv_vertex>
+	#include <color_vertex>
+	#include <morphcolor_vertex>
+	#include <beginnormal_vertex>
+	#include <morphnormal_vertex>
+	#include <skinbase_vertex>
+	#include <skinnormal_vertex>
+	#include <defaultnormal_vertex>
+	#include <normal_vertex>
+	#include <begin_vertex>
+	#include <morphtarget_vertex>
+	#include <skinning_vertex>
+	#include <displacementmap_vertex>
+
+  vec2 screenUv = gl_Position.xy / uCoords.xy;
+
+  vec2 newUv = screenUv;
+  vec2 newOffset = instanceOffset.xy;
+
+  newUv.x /= uGridSize.x;
+  newUv.y /= uGridSize.y;
+
+  newUv.x += newOffset.x;
+  newUv.y += newOffset.y;
+
+  vec2 mouseUv = newUv + uUvOffset.xy;
+
+  mouseUv /= uUvOffsetScale;
+
+  vec4 mouseSim = texture2D(tMouseSim, mouseUv);
+
+  vec4 instancePos = instanceMatrix[3];
+
+  vec2 perlinUv = newUv * .75;
+
+  vec4 perlin = texture2D(tPerlin, perlinUv);
+
+  float perlinDisplacementHeight = 5.;
+  float perlinDisplacement =  (perlin.x * perlinDisplacementHeight);
+  float toCenter = length(instancePos.xy);
+
+  float perlinScaleDisplacement = min(1., 1. - (perlinDisplacement -  (perlinDisplacementHeight / 2.)) * .1);
+
+  vec3 perlinDisplaced = vec3(transformed);
+  perlinDisplaced.z += perlinDisplacement - (perlinDisplacementHeight / 2.);
+  perlinDisplaced *= perlinScaleDisplacement;
+
+  float fadeDiplacementScale = 0.0;
+  float fadeDiplacement = clamp(fadeDiplacementScale, -1.0, 1.0);
+
+  transformed.z *= 7. *  (.5 + instanceColor.r);
+
+  float mouseTransform = mouseSim.r * 15.;
+
+  vec4 displacement = texture2D(tDisplacement, newUv);
+
+  float displacementF = displacement.r;
+  float waveDisplacement = displacementF * 3.0 + 9. * (1.);
+  float spread = 3.;
+
+  vec3 transformedSpread = transformed;
+
+  transformed = mix(transformedSpread, transformed, 1. - uRevealSpread);
+
+  vec4 mvPosition = vec4( transformed, 1.0 );
+  // mvPosition.z = mod(mvPosition.z + (uTime * instanceColor.r * 10.), 1000.) - 50.;
+
+
+  #ifdef USE_INSTANCING
+	mvPosition = instanceMatrix * mvPosition;
+  #endif
+
+  mvPosition = modelViewMatrix * mvPosition;
+  gl_Position = projectionMatrix * mvPosition;
+
+	#include <logdepthbuf_vertex>
+	#include <clipping_planes_vertex>
+
+	vViewPosition = - mvPosition.xyz;
+
+  transformed /= 1. - mouseSim.r * .2;
+  vec4 worldPosition = vec4( transformed, 1.0 );
+
+  worldPosition = instanceMatrix * worldPosition;
+  worldPosition = modelMatrix * worldPosition;
+
+	#include <shadowmap_vertex>
+	#include <fog_vertex>
+  vInstanceIndex = instanceIndex;
+  vInstanceAlpha = instanceAlpha;
+  vOffset = instanceOffset;
+
+  #ifdef USE_TRANSMISSION
+	vWorldPosition = worldPosition.xyz;
+  #endif
+  vPosition = position;
+}
+`;
+
+const sourceFloatingAuxiliaryQAFragmentShader = `
+varying float vInstanceIndex;
+varying float vInstanceAlpha;
+varying vec3 vPosition;
+varying vec3 vOffset;
+uniform vec3 uGridSize;
+uniform vec3 uGridOffset;
+uniform float uTime;
+uniform float uMouseFactor;
+uniform float uMouseLightness;
+uniform vec2 uCoords;
+uniform float uReveal;
+uniform float uScrollOpacity;
+varying vec2 vUv;
+uniform sampler2D tMouseSim2;
+uniform sampler2D tDisplacement;
+
+#define STANDARD
+#ifdef PHYSICAL
+	#define IOR
+	#define SPECULAR
+#endif
+uniform vec3 diffuse;
+uniform vec3 emissive;
+uniform float roughness;
+uniform float metalness;
+uniform float opacity;
+#ifdef IOR
+uniform float ior;
+#endif
+#ifdef SPECULAR
+uniform float specularIntensity;
+uniform vec3 specularColor;
+	#ifdef USE_SPECULARINTENSITYMAP
+uniform sampler2D specularIntensityMap;
+	#endif
+	#ifdef USE_SPECULARCOLORMAP
+uniform sampler2D specularColorMap;
+	#endif
+#endif
+#ifdef USE_CLEARCOAT
+uniform float clearcoat;
+uniform float clearcoatRoughness;
+#endif
+#ifdef USE_IRIDESCENCE
+uniform float iridescence;
+uniform float iridescenceIOR;
+uniform float iridescenceThicknessMinimum;
+uniform float iridescenceThicknessMaximum;
+#endif
+#ifdef USE_SHEEN
+uniform vec3 sheenColor;
+uniform float sheenRoughness;
+	#ifdef USE_SHEENCOLORMAP
+uniform sampler2D sheenColorMap;
+	#endif
+	#ifdef USE_SHEENROUGHNESSMAP
+uniform sampler2D sheenRoughnessMap;
+	#endif
+#endif
+varying vec3 vViewPosition;
+#include <common>
+#include <packing>
+#include <dithering_pars_fragment>
+#include <color_pars_fragment>
+#include <uv_pars_fragment>
+// #include <uv2_pars_fragment>
+#include <map_pars_fragment>
+#include <alphamap_pars_fragment>
+#include <alphatest_pars_fragment>
+#include <aomap_pars_fragment>
+#include <lightmap_pars_fragment>
+#include <emissivemap_pars_fragment>
+#include <bsdfs>
+#include <iridescence_fragment>
+#include <cube_uv_reflection_fragment>
+#include <envmap_common_pars_fragment>
+#include <envmap_physical_pars_fragment>
+#include <fog_pars_fragment>
+#include <lights_pars_begin>
+#include <normal_pars_fragment>
+#include <lights_physical_pars_fragment>
+#include <transmission_pars_fragment>
+#include <shadowmap_pars_fragment>
+#include <bumpmap_pars_fragment>
+#include <normalmap_pars_fragment>
+#include <clearcoat_pars_fragment>
+#include <iridescence_pars_fragment>
+#include <roughnessmap_pars_fragment>
+#include <metalnessmap_pars_fragment>
+#include <logdepthbuf_pars_fragment>
+#include <clipping_planes_pars_fragment>
+
+float random(vec2 st)
+{
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+
+float vignette(vec2 coords, vec2 center, float vignin, float vignout, float vignfade, float fstop) {
+  float dist = distance(coords.xy, center);
+  dist = smoothstep(vignout + (fstop / vignfade), vignin + (fstop / vignfade), dist);
+  return clamp(dist, 0.0, 1.0);
+}
+
+
+void main() {
+	#include <clipping_planes_fragment>
+  vec4 diffuseColor = vec4(diffuse, opacity);
+  ReflectedLight reflectedLight = ReflectedLight(vec3(0.0), vec3(0.0), vec3(0.0), vec3(0.0));
+  vec3 totalEmissiveRadiance = emissive;
+
+	#include <logdepthbuf_fragment>
+	#include <map_fragment>
+	#include <color_fragment>
+	#include <alphamap_fragment>
+	#include <alphatest_fragment>
+	#include <roughnessmap_fragment>
+	#include <metalnessmap_fragment>
+	#include <normal_fragment_begin>
+	#include <normal_fragment_maps>
+	#include <clearcoat_normal_fragment_begin>
+	#include <clearcoat_normal_fragment_maps>
+	#include <emissivemap_fragment>
+	#include <lights_physical_fragment>
+	#include <lights_fragment_begin>
+	#include <lights_fragment_maps>
+	#include <lights_fragment_end>
+	#include <aomap_fragment>
+  vec3 totalDiffuse = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
+  vec3 totalSpecular = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+	#include <transmission_fragment>
+  vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
+	#ifdef USE_SHEEN
+  float sheenEnergyComp = 1.0 - 0.157 * max3(material.sheenColor);
+  outgoingLight = outgoingLight * sheenEnergyComp + sheenSpecular;
+	#endif
+	#ifdef USE_CLEARCOAT
+  float dotNVcc = saturate(dot(geometry.clearcoatNormal, geometry.viewDir));
+  vec3 Fcc = F_Schlick(material.clearcoatF0, material.clearcoatF90, dotNVcc);
+  outgoingLight = outgoingLight * (1.0 - material.clearcoat * Fcc) + clearcoatSpecular * material.clearcoat;
+	#endif
+	#include <opaque_fragment>
+	#include <tonemapping_fragment>
+	#include <colorspace_fragment>
+	#include <fog_fragment>
+	#include <premultiplied_alpha_fragment>
+	#include <dithering_fragment>
+
+  float mixedAlpha = vInstanceAlpha;
+  vec2 newUv = vUv;
+  vec2 newOffset = vOffset.xy;
+
+  newUv.x /= uGridSize.x;
+  newUv.y /= uGridSize.y;
+
+  newUv.x += newOffset.x;
+  newUv.y += newOffset.y;
+
+  vec2 gridUv = vec2(floor(newUv.x * uGridSize.x), floor(newUv.y * uGridSize.y));
+  vec2 gridUv2 = vec2(floor(newUv.y * uGridSize.y), floor(newUv.x * uGridSize.y));
+
+  float alpha = mix(random(gridUv * vInstanceAlpha), random(gridUv), 1.);
+  float alpha2 = mix(random(gridUv2 * vInstanceAlpha), random(gridUv2), 1.);
+
+  // create a vignette
+
+  // get screen uv
+  vec2 screenUv = gl_FragCoord.xy / uCoords.xy;
+  vec4 mouseSim = texture2D(tMouseSim2, screenUv);
+  vec4 displacement = texture2D(tDisplacement, newUv);
+
+  float revealCombined = 1.;
+  float mouseF = 1. - mouseSim.r;
+
+  mixedAlpha =  ((alpha * alpha2) * vInstanceAlpha);
+  if(screenUv.y > 0.1) mixedAlpha += clamp(mouseSim.r * (uMouseFactor * 0.15), 0., 1.);
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(mouseF), (1. - uMouseLightness));
+
+  float vignin = 0.01;
+  float vignout = 0.2;
+  float vignfade = 6.;
+  float fstop = 1.0;
+
+  vec2 center = vec2(0.5, 0.5);
+
+  float v = vignette(newUv.xy, center.xy, 0.01, 0.2,  6., 1.0);
+  float v2 = vignette(newUv.xy, center.xy, 0.01, 2.0 * pow(revealCombined, .25),  6. , 1.0);
+
+  mixedAlpha += v * .1;
+  mixedAlpha -= 1. - v2;
+
+  mixedAlpha = clamp(mixedAlpha, 0.05, 1.);
+
+  gl_FragColor.a = mixedAlpha * uReveal;
+}
 `;
 
 const workBlockSourceTailFragmentChunk = `
@@ -1339,33 +1988,27 @@ function stripSourceVaFragmentPaths(fragmentShader: string) {
     .replace(/#ifdef USE_CLEARCOAT\s+float dotNVcc = saturate\( dot\( geometryClearcoatNormal, geometryViewDir \) \);\s+vec3 Fcc = F_Schlick\( material.clearcoatF0, material.clearcoatF90, dotNVcc \);\s+outgoingLight = outgoingLight \* \( 1.0 - material.clearcoat \* Fcc \) \+ \( clearcoatSpecularDirect \+ clearcoatSpecularIndirect \) \* material.clearcoat;\s+#endif/g, "// source VA omits clearcoat outgoing-light tail");
 }
 
+type WorkBlockShaderVariant = "work" | "aboutAuxiliary" | "floatingAuxiliary";
+
 function patchWorkBlockShader(
   shader: { uniforms: Record<string, any>; vertexShader: string; fragmentShader: string },
   uniforms: Record<string, any>,
-  variant: "work" | "auxiliary" = "work",
+  variant: WorkBlockShaderVariant = "work",
 ) {
   Object.assign(shader.uniforms, uniforms);
   if (variant === "work") {
     shader.vertexShader = workBlockSourceHaVertexShader;
+  } else if (variant === "aboutAuxiliary") {
+    shader.vertexShader = sourceAboutAuxiliaryJAVertexShader;
   } else {
-    shader.vertexShader = `${workBlockVertexPars}\n${shader.vertexShader}`
-      .replace("varying vec3 vViewPosition;", workBlockVertexSourceViewVaryings)
-      .replace("void main() {", "void main() {\n  vUv = uv;")
-      .replace("#include <begin_vertex>", workBlockSourceScreenUvBeginVertexChunk)
-      .replace("#include <worldpos_vertex>", workBlockSourceWorldPositionChunk)
-      .replace("#include <shadowmap_vertex>\n\t#include <fog_vertex>", workBlockSourceShadowmapVertexChunk);
+    shader.vertexShader = sourceFloatingAuxiliaryYAVertexShader;
   }
   if (variant === "work") {
     shader.fragmentShader = workBlockSourceZaFragmentShader;
+  } else if (variant === "aboutAuxiliary") {
+    shader.fragmentShader = sourceAboutAuxiliaryWAFragmentShader;
   } else {
-    shader.fragmentShader = `${workBlockFragmentDeclarationPars}\n${auxiliaryBlockFragmentPars}\n${shader.fragmentShader}`
-      .replace("#include <clipping_planes_pars_fragment>", `#include <clipping_planes_pars_fragment>\n\n${workBlockFragmentHelperPars}`)
-      .replace("#include <tonemapping_fragment>", "// source VA omits tonemapping_fragment")
-      .replace("#include <colorspace_fragment>", "// source VA omits colorspace_fragment")
-      .replace("#include <fog_fragment>", "// source VA omits fog_fragment")
-      .replace("#include <premultiplied_alpha_fragment>", "// source VA omits premultiplied_alpha_fragment")
-      .replace("#include <dithering_fragment>", "// source VA omits dithering_fragment");
-    shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", auxiliaryBlockOpaqueFragmentChunk);
+    shader.fragmentShader = sourceFloatingAuxiliaryQAFragmentShader;
   }
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("dump-va-shader")) {
     const dumpWindow = window as ShaderDumpWindow;
@@ -1377,7 +2020,7 @@ function patchWorkBlockShader(
     });
     dumpWindow.__rogierShaderDump ??= [];
     dumpWindow.__rogierShaderDump.push({
-      name: `VA-${variant}`,
+      name: variant === "work" ? "VA-work" : variant === "aboutAuxiliary" ? "XA-about" : "KA-floating",
       vertexShader: shader.vertexShader,
       fragmentShader: shader.fragmentShader,
     });
@@ -5665,12 +6308,10 @@ export class WebGLBackdrop {
       uRevealProject: { value: 1 },
       uRevealSides: { value: 1 },
       uRevealSpread: { value: kind === "about" ? 1 : 10 },
-      uRevealSpreadSides: { value: 1 },
       uMouseSpeed: { value: 0 },
       uMouseLightness: { value: 1 },
       uMouseFactor: { value: 1 },
       uMouse: { value: new Vector2(0, 0) },
-      uAuxiliaryMaterial: { value: 1 },
       uUvOffset: { value: new Vector2(0, 0) },
       uUvOffsetScale: { value: 1 },
       uScrollOpacity: { value: 1 },
@@ -5694,10 +6335,13 @@ export class WebGLBackdrop {
     material.envMapIntensity = SOURCE_WORK_ENVMAP_INTENSITY;
     if (kind === "about") material.renderOrder = 10;
     material.uniforms = uniforms;
+    material.userData.sourceShaderMode = kind === "about"
+      ? "source-XA-jA-WA-direct-shader"
+      : "source-KA-YA-qA-direct-shader";
     material.onBeforeCompile = (shader) => {
-      patchWorkBlockShader(shader, uniforms, "auxiliary");
+      patchWorkBlockShader(shader, uniforms, kind === "about" ? "aboutAuxiliary" : "floatingAuxiliary");
     };
-    material.customProgramCacheKey = () => `source-${kind}-aux-block-chunks`;
+    material.customProgramCacheKey = () => material.userData.sourceShaderMode;
     return material;
   }
 
@@ -8943,6 +9587,7 @@ void main() {
           },
           auxiliaryMaterial: this.aboutBlocks ? {
             mode: "source-XA-about-material-state",
+            shaderMode: this.aboutBlocks.material.userData.sourceShaderMode,
             toneMapped: this.aboutBlocks.material.toneMapped,
             transparent: this.aboutBlocks.material.transparent,
             depthWrite: this.aboutBlocks.material.depthWrite,
@@ -8959,6 +9604,7 @@ void main() {
           } : null,
           floatingAuxiliaryMaterial: this.floatingBlocks ? {
             mode: "source-KA-floating-material-state",
+            shaderMode: this.floatingBlocks.material.userData.sourceShaderMode,
             toneMapped: this.floatingBlocks.material.toneMapped,
             transparent: this.floatingBlocks.material.transparent,
             depthWrite: this.floatingBlocks.material.depthWrite,
