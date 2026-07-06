@@ -153,6 +153,7 @@ async function runProbe() {
   if (sourceDefaults.thumbDarknessColor !== "#000000") sourceDefaultErrors.push("thumbDarknessColor");
   if (sourceDefaults.thumbSaturation !== 1) sourceDefaultErrors.push("thumbSaturation");
   if (sourceDefaults.thumbMouseLightness !== 1) sourceDefaultErrors.push("thumbMouseLightness");
+  if (sourceDefaults.c1FluidStrength !== 0.5) sourceDefaultErrors.push("c1FluidStrength");
   if (sourceDefaultErrors.length) {
     throw new Error(`Se/xt source default mismatch: ${sourceDefaultErrors.join(", ")}`);
   }
@@ -273,6 +274,22 @@ async function runProbe() {
   const settingsStateOwnership = workSettings.settingsStateOwnership || {};
   if (settingsStateOwnership.mode !== "source-Se-settings-scalar-media-state-onUpdate") activeRevealErrors.push("settingsStateOwnership");
   if (settingsStateOwnership.matchesUniforms !== true) activeRevealErrors.push("settingsStateUniforms");
+  if (settingsStateOwnership.fluidStrengthConstructorDefault !== 0.5) activeRevealErrors.push("settingsStateFluidStrengthConstructorDefault");
+  if (settingsStateOwnership.fluidStrengthRuntimeOwnership !== "source-Se-setFluidStrength-writes-C1-uFluidStrength") {
+    activeRevealErrors.push("settingsStateFluidStrengthRuntimeOwnership");
+  }
+  if (settingsStateOwnership.fluidStrengthStateDivergenceMode !== "source-C1-constructor-0_5-Se-settings-initial-0") {
+    activeRevealErrors.push("settingsStateFluidStrengthDivergenceMode");
+  }
+  if (Math.abs((settingsStateOwnership.state?.fluidStrength ?? -1) - 0) > 0.0001) {
+    activeRevealErrors.push("settingsStateFluidStrengthInitial");
+  }
+  if (Math.abs((settingsStateOwnership.fluidStrengthUniform ?? -1) - 0.5) > 0.0001) {
+    activeRevealErrors.push("settingsStateFluidStrengthUniform");
+  }
+  if (settingsStateOwnership.fluidStrengthUniformMatchesState !== false) {
+    activeRevealErrors.push("settingsStateFluidStrengthShouldDiverge");
+  }
   if (settingsStateOwnership.revealSpreadUniformsMatch !== true) activeRevealErrors.push("settingsStateRevealSpread");
   if (settingsStateOwnership.envRotationMatches !== true) activeRevealErrors.push("settingsStateEnvRotation");
   if (settingsStateOwnership.mainColorElementsMatchState !== true) activeRevealErrors.push("settingsStateMainColor");
@@ -624,6 +641,30 @@ async function runProbe() {
   if (c1MaterialSurface.hasTPortalUniform !== true) materialSurfaceErrors.push("preCompositeC1TPortalUniform");
   if (c1MaterialSurface.samplerConstructorMode !== "source-C1-sampler-uniforms-construct-null-branch-owned-bindings") {
     materialSurfaceErrors.push("preCompositeC1SamplerConstructorMode");
+  }
+  if (preCompositeUniforms?.uFluidStrengthConstructorDefault !== 0.5) {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthConstructorDefault");
+  }
+  if (preCompositeUniforms?.uFluidStrengthRuntimeOwnership !== "source-Se-setFluidStrength-writes-C1-uFluidStrength") {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthRuntimeOwnership");
+  }
+  if (preCompositeUniforms?.uFluidStrengthStateDivergenceMode !== "source-C1-constructor-0_5-Se-settings-initial-0") {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthDivergenceMode");
+  }
+  if (Math.abs((preCompositeUniforms?.uFluidStrength ?? -1) - 0.5) > 0.0001) {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthInitialValue");
+  }
+  if (c1MaterialSurface.uFluidStrengthConstructorMode !== "source-C1-uFluidStrength-new-I-0_5") {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthConstructorMode");
+  }
+  if (c1MaterialSurface.uFluidStrengthConstructorDefault !== 0.5) {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthSurfaceDefault");
+  }
+  if (c1MaterialSurface.uFluidStrengthRuntimeOwnership !== "source-Se-setFluidStrength-writes-C1-uFluidStrength") {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthSurfaceRuntimeOwnership");
+  }
+  if (c1MaterialSurface.uFluidStrengthStateDivergenceMode !== "source-C1-constructor-0_5-Se-settings-initial-0") {
+    materialSurfaceErrors.push("preCompositeC1FluidStrengthSurfaceDivergenceMode");
   }
   if (c1MaterialSurface.tBloomBindingMode !== "source-I1-bloom-branch-only") {
     materialSurfaceErrors.push("preCompositeC1TBloomBindingMode");

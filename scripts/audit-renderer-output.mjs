@@ -167,6 +167,8 @@ const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoaded
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
 const rebuildSetProjectBlockReveal = extractBlock(rebuildWebgl, "private setProjectBlockReveal(");
+const rebuildPrepareHomeLighting = extractBlock(rebuildWebgl, "private prepareHomeLighting(");
+const rebuildEnterWorkGallery = extractBlock(rebuildWebgl, "enterWorkGallery(");
 const rebuildSetDarken = extractBlock(rebuildWebgl, "private setDarken(");
 const rebuildSetSaturation = extractBlock(rebuildWebgl, "private setSaturation(");
 const rebuildSetContrast = extractBlock(rebuildWebgl, "private setContrast(");
@@ -778,6 +780,12 @@ const summary = {
           "boolFxaa: { value: false }",
           "tPortal: { value: null }",
           "samplerConstructorMode: \"source-C1-sampler-uniforms-construct-null-branch-owned-bindings\"",
+          "const SOURCE_C1_FLUID_STRENGTH_DEFAULT = 0.5",
+          "uFluidStrength: { value: SOURCE_C1_FLUID_STRENGTH_DEFAULT }",
+          "sourceFluidStrengthConstructorDefault = SOURCE_C1_FLUID_STRENGTH_DEFAULT",
+          "sourceFluidStrengthRuntimeOwnership = \"source-Se-setFluidStrength-writes-C1-uFluidStrength\"",
+          "sourceFluidStrengthStateDivergenceMode = \"source-C1-constructor-0_5-Se-settings-initial-0\"",
+          "uFluidStrengthConstructorMode: \"source-C1-uFluidStrength-new-I-0_5\"",
           "uDisplacementSize: { value: new Vector2(0, 0) }",
           "uContainerSize: { value: new Vector2(0, 0) }",
           "this.preCompositeMaterial.uniforms.uContainerSize.value.set(width, height)",
@@ -801,6 +809,14 @@ const summary = {
           && !rebuildTick.includes("this.preCompositeMaterial.uniforms.tMedia.value = this.mediaTarget.texture"),
         noPerFrameTMouseSimRebind: Boolean(rebuildTick)
           && !rebuildTick.includes("this.preCompositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture"),
+        noPerFrameFluidStrengthStateRewrite: Boolean(rebuildTick)
+          && !rebuildTick.includes("this.preCompositeMaterial.uniforms.uFluidStrength.value = this.settingsState.fluidStrength"),
+        mainFluidUpdateGateUsesC1Uniform: Boolean(rebuildTick)
+          && rebuildTick.includes("const mainFluidTexture = (this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0"),
+        noHomeFluidStrengthCompensationSetter: Boolean(rebuildPrepareHomeLighting)
+          && !rebuildPrepareHomeLighting.includes("this.setFluidStrength("),
+        noGalleryFluidStrengthCompensationSetter: Boolean(rebuildEnterWorkGallery)
+          && !rebuildEnterWorkGallery.includes("this.setFluidStrength(0.5"),
       },
       excerpt: compact(sourceC1.text),
     },
@@ -913,6 +929,10 @@ const summary = {
           && rebuildShowScene.includes("gsap.to(this.settingsState, {")
           && rebuildShowScene.includes("this.preCompositeMaterial.uniforms.uReveal.value = this.settingsState.sceneReveal")
           && rebuildWebgl.includes("mode: \"source-Se-settings-scalar-media-state-onUpdate\"")
+          && rebuildWebgl.includes("fluidStrengthUniformMatchesState")
+          && rebuildWebgl.includes("fluidStrengthConstructorDefault: this.preCompositeMaterial.userData.sourceFluidStrengthConstructorDefault")
+          && rebuildWebgl.includes("fluidStrengthRuntimeOwnership: this.preCompositeMaterial.userData.sourceFluidStrengthRuntimeOwnership")
+          && rebuildWebgl.includes("fluidStrengthStateDivergenceMode: this.preCompositeMaterial.userData.sourceFluidStrengthStateDivergenceMode")
           && !rebuildWebgl.includes("private fluidStrength =")
           && !rebuildWebgl.includes("private darken =")
           && !rebuildWebgl.includes("private saturation =")

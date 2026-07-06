@@ -404,6 +404,7 @@ const SOURCE_C1_UNIFORM_KEYS = [
   "uTransformX",
   "uFluidStrength",
 ] as const;
+const SOURCE_C1_FLUID_STRENGTH_DEFAULT = 0.5;
 
 const SOURCE_O1_FLOOR_UNIFORM_KEYS = [
   "tReflect",
@@ -4258,7 +4259,6 @@ export class WebGLBackdrop {
     this.setDirectionalLightIntensity(1.5);
     this.setDirectionalLight2Intensity(1);
     this.setEnvRotation(0, 0);
-    this.setFluidStrength(document.body.classList.contains("is-project") ? 1 : 0.5, document.body.classList.contains("is-project") ? 0.5 : 1);
     this.setRevealSpread(0);
     this.resetThumbOffsetY();
     this.setCameraControllerSettings();
@@ -4310,7 +4310,6 @@ export class WebGLBackdrop {
     this.setMouseFactor(1, 3);
     this.setRevealSpread(0);
     this.setSpotLightIntensity(this.maxSpotLightIntensity, 1.6);
-    this.setFluidStrength(0.5, 0.5);
     this.workItems.forEach((item) => {
       item.material.uniforms.uReveal.value = 0;
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
@@ -5205,7 +5204,7 @@ export class WebGLBackdrop {
 
   private createPreCompositeMaterial() {
     dumpShader("A1-pre-composite", sourceMatrixFullscreenVertex, homePreCompositeFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
       blending: NoBlending,
@@ -5238,11 +5237,15 @@ export class WebGLBackdrop {
         uMediaReveal: { value: 0 },
         uContrast: { value: this.settingsState.contrast },
         uTransformX: { value: 0 },
-        uFluidStrength: { value: this.settingsState.fluidStrength },
+        uFluidStrength: { value: SOURCE_C1_FLUID_STRENGTH_DEFAULT },
       },
       vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader: homePreCompositeFragment,
     });
+    material.userData.sourceFluidStrengthConstructorDefault = SOURCE_C1_FLUID_STRENGTH_DEFAULT;
+    material.userData.sourceFluidStrengthRuntimeOwnership = "source-Se-setFluidStrength-writes-C1-uFluidStrength";
+    material.userData.sourceFluidStrengthStateDivergenceMode = "source-C1-constructor-0_5-Se-settings-initial-0";
+    return material;
   }
 
   private createMainCompositeMaterial() {
@@ -7552,6 +7555,7 @@ void main() {
         thumbDarknessColor: SOURCE_INITIAL_THUMB_DARKNESS_COLOR,
         thumbSaturation: SOURCE_INITIAL_THUMB_SATURATION,
         thumbMouseLightness: SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS,
+        c1FluidStrength: SOURCE_C1_FLUID_STRENGTH_DEFAULT,
       },
       renderer: {
         outputColorSpace: this.renderer.outputColorSpace,
@@ -7704,8 +7708,13 @@ void main() {
               && Math.abs((this.compositeMaterial.uniforms.uSaturation.value as number) - this.settingsState.saturation) < 1e-6
               && Math.abs((this.preCompositeMaterial.uniforms.uContrast.value as number) - this.settingsState.contrast) < 1e-6
               && Math.abs((this.preCompositeMaterial.uniforms.uReveal.value as number) - this.settingsState.sceneReveal) < 1e-6
-              && Math.abs((this.preCompositeMaterial.uniforms.uFluidStrength.value as number) - this.settingsState.fluidStrength) < 1e-6
               && Math.abs((this.preCompositeMaterial.uniforms.uMediaReveal.value as number) - this.settingsState.media.opacity) < 1e-6,
+            fluidStrengthUniform: this.preCompositeMaterial.uniforms.uFluidStrength.value,
+            fluidStrengthUniformMatchesState:
+              Math.abs((this.preCompositeMaterial.uniforms.uFluidStrength.value as number) - this.settingsState.fluidStrength) < 1e-6,
+            fluidStrengthConstructorDefault: this.preCompositeMaterial.userData.sourceFluidStrengthConstructorDefault,
+            fluidStrengthRuntimeOwnership: this.preCompositeMaterial.userData.sourceFluidStrengthRuntimeOwnership,
+            fluidStrengthStateDivergenceMode: this.preCompositeMaterial.userData.sourceFluidStrengthStateDivergenceMode,
             revealSpreadUniformsMatch: this.workItems.every((item) => (
               Math.abs((item.material.uniforms.uRevealSpread.value as number) - this.settingsState.revealSpread) < 1e-6
             )),
@@ -7870,6 +7879,9 @@ void main() {
           uTimeUpdateOrder: "source-U1-C1-update-after-I1-render",
           uContrast: this.preCompositeMaterial.uniforms.uContrast.value,
           uFluidStrength: this.preCompositeMaterial.uniforms.uFluidStrength.value,
+          uFluidStrengthConstructorDefault: this.preCompositeMaterial.userData.sourceFluidStrengthConstructorDefault,
+          uFluidStrengthRuntimeOwnership: this.preCompositeMaterial.userData.sourceFluidStrengthRuntimeOwnership,
+          uFluidStrengthStateDivergenceMode: this.preCompositeMaterial.userData.sourceFluidStrengthStateDivergenceMode,
           uMediaReveal: this.preCompositeMaterial.uniforms.uMediaReveal.value,
           lensflareEnabled: SOURCE_MAIN_LENSFLARE_SETTINGS.enabled,
           lensflareTargetSize: {
@@ -7888,6 +7900,10 @@ void main() {
               && SOURCE_C1_UNIFORM_KEYS.every((key, index) => c1UniformKeys[index] === key),
             hasTPortalUniform: Object.hasOwn(c1Uniforms, "tPortal"),
             samplerConstructorMode: "source-C1-sampler-uniforms-construct-null-branch-owned-bindings",
+            uFluidStrengthConstructorMode: "source-C1-uFluidStrength-new-I-0_5",
+            uFluidStrengthConstructorDefault: this.preCompositeMaterial.userData.sourceFluidStrengthConstructorDefault,
+            uFluidStrengthRuntimeOwnership: this.preCompositeMaterial.userData.sourceFluidStrengthRuntimeOwnership,
+            uFluidStrengthStateDivergenceMode: this.preCompositeMaterial.userData.sourceFluidStrengthStateDivergenceMode,
             tBloomBindingMode: "source-I1-bloom-branch-only",
             tBloomIsNullWhenDisabled: !this.sourceMainRenderSettings.bloom.enabled && c1Uniforms.tBloom.value === null,
             tBloomIsMainBloomTargetWhenEnabled:
@@ -9073,7 +9089,6 @@ void main() {
     this.applyDebugThumbProgress();
     this.backgroundMaterial.uniforms.uTime.value = time;
     this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
-    this.preCompositeMaterial.uniforms.uFluidStrength.value = this.settingsState.fluidStrength;
     this.preCompositeMaterial.uniforms.boolBloom.value = this.sourceMainRenderSettings.bloom.enabled;
     this.preCompositeMaterial.uniforms.boolFluid.value = this.sourceMainRenderSettings.fluid.enabled;
     this.preCompositeMaterial.uniforms.boolLuminosity.value = this.sourceMainRenderSettings.luminosity.enabled;
@@ -9150,7 +9165,7 @@ void main() {
     }
     this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture;
     if (this.sourceMainRenderSettings.fluid.enabled) {
-      const mainFluidTexture = this.settingsState.fluidStrength > 0
+      const mainFluidTexture = (this.preCompositeMaterial.uniforms.uFluidStrength.value as number) > 0
         ? this.updateMainFluidPass()
         : this.mainFluidPass.enabled
           ? this.mainFluidPass.targets.main.texture

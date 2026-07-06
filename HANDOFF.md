@@ -142,10 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Expanded the source `T1/w1/SD/p1` thumb/spotlight guardrail to cover the mobile source branch without visual tuning or production runtime changes.
-- Source `SD.init()` binds `SpotLight.map` to the thumb composite target, while source `p1.update()` uses desktop `spotLight.position.y=this.camera.position.y*.175` and mobile `spotLight.position.y=.3+this.camera.position.y*.175`.
-- Source `T1.resize(e,t,n)` calls `this.renderManager.resize(t,t,1)`, so thumb targets are square CSS-height targets at DPR `1`.
-- `scripts/probe-thumb-spotlight.mjs` now accepts `VIEWPORT=desktop|mobile`, derives expected spotlight Y branch and target size from the viewport, and writes viewport metadata into the summary; renderer audit checks that source mobile branch and probe coverage.
+- Aligned source `C1.uFluidStrength` constructor/runtime ownership without screenshot-led tuning.
+- Source `C1` constructs `uFluidStrength:new I(.5)`, while source `Se.init()` starts `settings.fluidStrength=0`; only `Se.setFluidStrength(e,t=.5)` writes `C1.uFluidStrength` from that state afterward.
+- The rebuild now constructs `C1/A1` with `SOURCE_C1_FLUID_STRENGTH_DEFAULT=0.5`, records the constructor/runtime ownership on material `userData`, removes Home/WorkGallery `.5` compensation setters, and stops the frame loop from rewriting `uFluidStrength` from `settingsState.fluidStrength`.
+- The main fluid update gate now reads the current `C1.uFluidStrength` uniform, matching source `I1.update()` ownership.
+- Output probes expose the intentional Home constructor divergence: `settingsState.fluidStrength=0`, `C1.uFluidStrength=0.5`, and `fluidStrengthUniformMatchesState=false`.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,22 +160,22 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-mobile-guard-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9481 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-mobile-guard-desktop node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9482 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-mobile-guard-mobile node scripts/probe-thumb-spotlight.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-c1-fluid-strength-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9491 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-fluid-strength-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9492 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-fluid-strength-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9493 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-fluid-strength-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `T1/w1/SD/p1` mobile thumb spotlight guardrail batch.
+All passed in the `C1/Se/I1` fluid-strength constructor ownership batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports `sourceMobileSpotlightParallaxBranch=true` and `rebuildMobileSpotlightParallaxProbe=true`.
-- Desktop thumb probe confirms source desktop parallax Y, spotlight position `[0,0,3.7]`, and `900x900` thumb/composite targets.
-- Mobile thumb probe confirms source mobile parallax Y, `mobileYOffset=0.3`, spotlight position `[0,0.3,3.7]`, and `844x844` thumb/composite targets.
-- Both thumb probes retained the existing spotlight map, thumb wrapping, M1/E1 constructor/order, and x1 target guardrails with no browser failures/exceptions/console messages.
+- Renderer audit reports the source `C1.uFluidStrength:new I(.5)` constructor anchor, rebuild constructor/default markers, no frame-loop state rewrite, no Home/Gallery compensation setter, and C1-uniform fluid update gate.
+- Desktop and mobile output probes confirm Home `settingsState.fluidStrength=0`, `C1.uFluidStrength=0.5`, `fluidStrengthUniformMatchesState=false`, and no browser failures/exceptions/console messages.
+- Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages; project-media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
