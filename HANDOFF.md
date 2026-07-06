@@ -143,13 +143,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Strengthened source `p1.setBlocks()` carousel distribution guardrails without screenshot-led tuning or production visual changes.
-- Source `setBlocks()` evidence now covers `itemWidth=6.5`, `theta=360/count`, `radius=Math.round(itemWidth/2/Math.tan(Math.PI/count))`, circular block x/z positions, per-block `lookAt(blocksWrap.position)`, `demorgen` rotation adjustment, and `sceneWrap.z=radius-.3`.
-- `__rogierOutputProbe.p1UpdateCulling.sourceCarouselDistribution` now exposes item width, count, theta, expected/actual radius, expected/actual `sceneWrap.z`, demorgen rotation adjustment, per-item expected positions, and per-item lookAt parity.
-- `scripts/probe-output-color.mjs` now asserts the runtime carousel distribution fields.
-- `scripts/audit-renderer-output.mjs` now extracts source `p1.setBlocks()` and checks source/rebuild/probe anchors for carousel distribution.
-- The stale renderer-audit check for `i1` floor-reflection target construction was corrected to the current source `512x512` constructor target.
-- Phase 1 remains open for actual floor/environment visual parity beyond this distribution guardrail, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
+- Hardened `scripts/probe-output-color.mjs` against false early failures without production runtime changes.
+- A default fixed 5.2s probe can sample `__rogierOutputProbe` before source `Se.settings` light/scalar tweens have settled on cold starts, causing transient `lightStateDirectional` / `lightStateDirectional2` failures.
+- The output probe now uses `readProbeSummary()` and, after the base `PROBE_WAIT`, polls until source state has settled or `PROBE_STABLE_TIMEOUT` expires.
+- The settle condition checks entered body state, source light-state ownership, light-object/state parity, `spotLight=220`, `directionalLight=1.5`, `directionalLight2=1`, source scalar settings ownership, uniform parity, and `sceneReveal=1`.
+- Existing hard assertions remain unchanged, so real source-state drift still fails.
+- Phase 1 remains open for actual floor/environment visual parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
 
 ## Validation Status
 
@@ -162,10 +161,10 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-p1-carousel-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-probe-stable-audit.json
 ```
 
-All passed in the `p1.setBlocks()` carousel distribution guardrail batch.
+All relevant checks passed in the output-probe stable-wait batch. `node --check scripts/probe-project-media.mjs` and `ASTRO_TELEMETRY_DISABLED=1 npm run build` last passed in the preceding carousel batch; this batch changed only `scripts/probe-output-color.mjs` plus docs.
 
 `npm exec tsc -- --noEmit --pretty false` was also attempted, but it is still blocked by the existing TypeScript config deprecation where `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by the carousel batch.
 
@@ -174,9 +173,9 @@ Runtime QA was done with local Chrome CDP scripts.
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports source `p1.setBlocks()` source checks, rebuild checks, and rebuild probe checks as true.
-- Desktop output probe passed with source carousel distribution fields intact: `/tmp/rd-p1-carousel-output-desktop`.
-- Mobile output probe passed with the same source carousel distribution fields intact: `/tmp/rd-p1-carousel-output-mobile`.
+- Renderer audit passed after the output-probe stable-wait change.
+- Desktop output probe passed with default wait plus stable polling: `/tmp/rd-probe-stable-output-desktop`.
+- Mobile output probe passed with default wait plus stable polling: `/tmp/rd-probe-stable-output-mobile`.
 - Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma.
 - Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages; project-media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

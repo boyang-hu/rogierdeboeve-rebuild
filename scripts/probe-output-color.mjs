@@ -19,6 +19,7 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-output-color-p
 const port = Number(process.env.CDP_PORT || 9278);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.PROBE_WAIT || 5200);
+const stableTimeout = Number(process.env.PROBE_STABLE_TIMEOUT || 30000);
 const deviceScaleFactor = Number(process.env.DEVICE_SCALE_FACTOR || 1);
 const skipScreenshot = process.env.SKIP_SCREENSHOT === "1";
 const viewportName = process.env.VIEWPORT || "desktop";
@@ -41,6 +42,10 @@ function withProbeParams(url) {
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function closeTo(actual, expected, epsilon = 0.001) {
+  return Math.abs((actual ?? NaN) - expected) <= epsilon;
 }
 
 function waitForPort(portNumber, timeout = 6000) {
@@ -95,6 +100,51 @@ async function connectWs(url) {
   return ws;
 }
 
+async function readProbeSummary(ws) {
+  const result = await send(ws, "Runtime.evaluate", {
+    expression: `JSON.stringify({
+      body: document.body.className,
+      ready: document.readyState,
+      active: document.querySelector('[data-project-card].is-active')?.dataset.slug || null,
+      probe: window.__rogierOutputProbe || null,
+      canvas: [...document.querySelectorAll('canvas')].map((canvas) => {
+        const rect = canvas.getBoundingClientRect();
+        return { width: canvas.width, height: canvas.height, rectWidth: rect.width, rectHeight: rect.height };
+      })
+    })`,
+    returnByValue: true,
+  });
+  return JSON.parse(result.result.value);
+}
+
+function outputProbeSettled(parsed) {
+  const workSettings = parsed.probe?.settings?.work || {};
+  const lightState = workSettings.lightStateOwnership || {};
+  const settingsState = workSettings.settingsStateOwnership || {};
+  return Boolean(
+    parsed.probe
+    && parsed.body?.includes("has-entered")
+    && lightState.mode === "source-Se-settings-light-state-onUpdate-intensities"
+    && lightState.matchesLights === true
+    && closeTo(lightState.state?.spotLight, 220)
+    && closeTo(lightState.state?.directionalLight, 1.5)
+    && closeTo(lightState.state?.directionalLight2, 1)
+    && settingsState.mode === "source-Se-settings-scalar-media-state-onUpdate"
+    && settingsState.matchesUniforms === true
+    && closeTo(settingsState.state?.sceneReveal, 1)
+  );
+}
+
+async function waitForOutputProbeSettled(ws) {
+  const start = Date.now();
+  let parsed = await readProbeSummary(ws);
+  while (!outputProbeSettled(parsed) && Date.now() - start < stableTimeout) {
+    await wait(250);
+    parsed = await readProbeSummary(ws);
+  }
+  return parsed;
+}
+
 async function runProbe() {
   const failures = [];
   const exceptions = [];
@@ -122,20 +172,7 @@ async function runProbe() {
   });
   await send(ws, "Page.navigate", { url: withProbeParams(rebuildUrl) });
   await wait(waitAfter);
-  const result = await send(ws, "Runtime.evaluate", {
-    expression: `JSON.stringify({
-      body: document.body.className,
-      ready: document.readyState,
-      active: document.querySelector('[data-project-card].is-active')?.dataset.slug || null,
-      probe: window.__rogierOutputProbe || null,
-      canvas: [...document.querySelectorAll('canvas')].map((canvas) => {
-        const rect = canvas.getBoundingClientRect();
-        return { width: canvas.width, height: canvas.height, rectWidth: rect.width, rectHeight: rect.height };
-      })
-    })`,
-    returnByValue: true,
-  });
-  const parsed = JSON.parse(result.result.value);
+  const parsed = await waitForOutputProbeSettled(ws);
   if (!parsed.probe) throw new Error("No __rogierOutputProbe data found");
   const sourceDefaults = parsed.probe.sourceDefaults || {};
   const sourceDefaultErrors = [];
