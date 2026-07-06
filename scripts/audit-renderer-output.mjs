@@ -2704,6 +2704,21 @@ const summary = {
         ].every((needle) => rebuildWebgl.includes(needle)),
         noRuntimeEnvironmentUniformAliasAccess: !rebuildWebgl.includes("this.environmentMaterial.uniforms."),
       },
+      rebuildDitheringOwnership: {
+        sourceU1SetsAfterSuper: sourceU1.text.includes("constructor(e){super(e),this.dithering=!0"),
+        sourceH1ConstructorArgsExcludeDithering: Boolean(sourceH1)
+          && sourceH1.text.includes("this.material=new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})")
+          && !sourceH1.text.includes("dithering"),
+        factorySetsAfterConstruction: Boolean(rebuildEnvironmentMaterialFactory)
+          && rebuildEnvironmentMaterialFactory.includes("material.dithering = true;")
+          && rebuildEnvironmentMaterialFactory.includes("sourceDitheringOwnership = \"source-u1-constructor-sets-dithering-after-super\""),
+        factoryConstructorExcludesDithering: Boolean(rebuildEnvironmentMaterialFactory)
+          && !rebuildEnvironmentMaterialFactory.includes("dithering: true"),
+        runtimeProbe: rebuildWebgl.includes("ditheringOwnershipMode: this.environmentMaterial.sourceDitheringOwnership")
+          && rebuildWebgl.includes("constructorParamsIncludesDithering")
+          && rebuildOutputProbe.includes("materialDitheringOwnership")
+          && rebuildOutputProbe.includes("constructorParamsDithering"),
+      },
       rebuildQnConstantGuardrail: {
         namedConstants: checks(rebuildWebgl, [
           "const SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS = {",

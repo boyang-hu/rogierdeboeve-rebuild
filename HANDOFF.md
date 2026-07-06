@@ -154,15 +154,17 @@ Known remaining gaps:
 - Source `yg/U1/I1` main raw camera construction and resize projection ownership is now guarded: main raw camera stays `Ya(Ef(...), Pe.aspect, 1, distance*2)` with distance `1000`, and resize projection stays on the source `yg.resize()` `Ef(...)` FOV/aspect/update path.
 - Source `Xt.loadTexture()` immediate texture-object binding is now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: uniforms receive the immediate `Texture` object before image onload, and probes verify onload does not replace that object.
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
+- Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
 
 Latest Phase 1 batch:
 
-- Replaced the rebuild-only `deviceMemory/saveData` GPU-tier heuristic with the source-shaped `Qe.gpuCheck()` bridge.
-- Source `Le` defaults to `GPU_TIER=3` and `LOW_RES=false`; source `Qe.init()` awaits `gpuCheck()`; source `Qe.gpuCheck()` awaits detect-gpu, assigns `Le.GPU_TIER`, catches errors with the source console message, then writes `Le.LOW_RES=Le.GPU_TIER<3`.
-- The rebuild now uses exact `detect-gpu@5.0.38`, vendors the package's 16 benchmark JSON files under `public/vendor/detect-gpu/benchmarks`, and awaits `initializeSourceGpuTier()` before `new WebGLBackdrop`.
-- `__rogierOutputProbe.renderer.gpuBridge` exposes source mode/defaults, benchmark URL, tier, low-res, initialization status, detect-gpu result type, and fallback state.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if the GPU bridge drifts, benchmark URL changes, tier/low-res consistency breaks, or the old local heuristic returns.
-- Previous committed batch was `4c36099 Align p1 root scene order`.
+- Aligned `h1/u1` environment material dithering ownership.
+- Source `h1` constructs `this.material=new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})`; the constructor object does not include `dithering`.
+- Source `u1` runs `constructor(e){super(e),this.dithering=!0,...}`, so `dithering=true` belongs to the post-`super` `u1` constructor body.
+- The rebuild now removes `dithering:true` from the environment `MeshStandardMaterial` constructor, assigns `material.dithering = true` after construction, and records `sourceDitheringOwnership="source-u1-constructor-sets-dithering-after-super"`.
+- `__rogierOutputProbe.uniforms.environment` and `reflectionState.environment.material` expose `ditheringOwnershipMode` and `constructorParamsIncludesDithering`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if dithering returns as an `h1` constructor parameter or if the post-construction ownership marker drifts.
+- Previous committed batch was `5c96d8c Align GPU tier bridge`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -173,27 +175,27 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-gpu-tier-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-env-dither-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-gpu-tier-output-desktop CDP_PORT=9621 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-gpu-tier-output-mobile CDP_PORT=9622 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-gpu-tier-thumb-desktop CDP_PORT=9623 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-gpu-tier-thumb-mobile CDP_PORT=9624 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-gpu-tier-project-media CDP_PORT=9625 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-env-dither-output-desktop CDP_PORT=9641 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-env-dither-output-mobile CDP_PORT=9642 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-env-dither-thumb-desktop CDP_PORT=9643 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-env-dither-thumb-mobile CDP_PORT=9644 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5177 OUT_DIR=/tmp/rd-env-dither-project-media CDP_PORT=9645 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the source GPU/LOW_RES bridge batch. Renderer audit wrote `/tmp/rd-gpu-tier-audit.json`; `sourceManagers.gpuTierBridge` confirms source defaults/checks, mirror rewrite, rebuild wiring, old heuristic rejection, runtime probe coverage, and 16 benchmark files. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and reported `renderer.gpuBridge.initialized=true`, detect-gpu `FALLBACK` tier `1`, and `LOW_RES=true` in headless Chrome. Desktop/mobile thumb spotlight probes passed and retained the spotlight/thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
+All relevant checks passed in the environment dithering ownership batch. Renderer audit wrote `/tmp/rd-env-dither-audit.json`; `sourceManagers.environmentU1.rebuildDitheringOwnership` confirms source `u1` post-`super` assignment, source `h1` constructor exclusion, rebuild post-construction assignment, rebuild constructor exclusion, and runtime probe coverage. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and reported `dithering=true`, `ditheringOwnershipMode=source-u1-constructor-sets-dithering-after-super`, and `constructorParamsIncludesDithering=false`. Desktop/mobile thumb spotlight probes passed and retained the spotlight/thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this GPU bridge batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this environment dithering batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the GPU bridge batch: `/tmp/rd-gpu-tier-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-gpu-tier-output-desktop` and `/tmp/rd-gpu-tier-output-mobile`.
-- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-gpu-tier-thumb-desktop` and `/tmp/rd-gpu-tier-thumb-mobile`.
+- Renderer audit passed for the environment dithering batch: `/tmp/rd-env-dither-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-env-dither-output-desktop` and `/tmp/rd-env-dither-output-mobile`.
+- Desktop/mobile thumb spotlight probes passed for `/tmp/rd-env-dither-thumb-desktop` and `/tmp/rd-env-dither-thumb-mobile`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

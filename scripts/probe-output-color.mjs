@@ -1547,8 +1547,12 @@ async function runProbe() {
   if (environmentUniforms?.geometry?.detail !== 10) environmentErrors.push("geometryDetail");
   if (environmentUniforms?.fog !== false) environmentErrors.push("materialFog");
   if (environmentUniforms?.dithering !== true) environmentErrors.push("materialDithering");
+  if (environmentUniforms?.ditheringOwnershipMode !== "source-u1-constructor-sets-dithering-after-super") {
+    environmentErrors.push("materialDitheringOwnership");
+  }
   if (environmentUniforms && Math.abs((environmentUniforms.envMapIntensity ?? 0) - 1) > 0.0001) environmentErrors.push("envMapIntensity");
   if (environmentUniforms?.constructorParamsMode !== "source-h1-passes-side-envMapIntensity-fog-only") environmentErrors.push("constructorParamsMode");
+  if (environmentUniforms?.constructorParamsIncludesDithering !== false) environmentErrors.push("constructorParamsDithering");
   if (environmentUniforms?.defaultStandardParamsMode !== "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants") environmentErrors.push("defaultStandardParamsMode");
   if (environmentUniforms && Math.abs((environmentUniforms.roughness ?? -1) - 1) > 0.0001) environmentErrors.push("roughnessDefault");
   if (environmentUniforms && Math.abs((environmentUniforms.metalness ?? -1) - 0) > 0.0001) environmentErrors.push("metalnessDefault");
@@ -1593,6 +1597,10 @@ async function runProbe() {
   if (environmentHierarchy?.material?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("reflectionCustomUniformsMode");
   if (environmentHierarchy?.material?.hasMaterialUniformsAlias !== false) environmentErrors.push("reflectionMaterialUniformsAlias");
   if (environmentHierarchy?.material?.constructorParamsMode !== "source-h1-passes-side-envMapIntensity-fog-only") environmentErrors.push("reflectionConstructorParamsMode");
+  if (environmentHierarchy?.material?.ditheringOwnershipMode !== "source-u1-constructor-sets-dithering-after-super") {
+    environmentErrors.push("reflectionDitheringOwnership");
+  }
+  if (environmentHierarchy?.material?.constructorParamsIncludesDithering !== false) environmentErrors.push("reflectionConstructorParamsDithering");
   if (environmentHierarchy?.material?.defaultStandardParamsMode !== "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants") environmentErrors.push("reflectionDefaultStandardParamsMode");
   if (environmentErrors.length) {
     throw new Error(`Environment hierarchy source-shape mismatch: ${environmentErrors.join(", ")}`);

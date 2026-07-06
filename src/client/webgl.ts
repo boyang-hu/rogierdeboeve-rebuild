@@ -116,6 +116,7 @@ type WorkBlockMaterial = MeshStandardMaterial & { uniforms: Record<string, { val
 type EnvironmentMaterial = MeshStandardMaterial & {
   customUniforms: Record<string, { value: any }>;
   sourceConstructorParams?: Record<string, any>;
+  sourceDitheringOwnership?: string;
 };
 type ShaderDumpWindow = Window & {
   __rogierVaShaderDump?: Array<{
@@ -6514,14 +6515,15 @@ void main() {
       side: BackSide,
       envMapIntensity: 1,
       fog: false,
-      dithering: true,
     }) as EnvironmentMaterial;
+    material.dithering = true;
     material.customUniforms = uniforms;
     material.sourceConstructorParams = {
       side: BackSide,
       envMapIntensity: 1,
       fog: false,
     };
+    material.sourceDitheringOwnership = "source-u1-constructor-sets-dithering-after-super";
     material.onBeforeCompile = (shader) => {
       patchEnvironmentShader(shader, material.customUniforms);
     };
@@ -9182,9 +9184,11 @@ void main() {
           sceneEnvironmentUrls: [...this.sourceCubemapLoadState.urls],
           fog: this.environmentMaterial.fog,
           dithering: this.environmentMaterial.dithering,
+          ditheringOwnershipMode: this.environmentMaterial.sourceDitheringOwnership ?? null,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
           constructorParamsMode: "source-h1-passes-side-envMapIntensity-fog-only",
           constructorParams: this.environmentMaterial.sourceConstructorParams ?? null,
+          constructorParamsIncludesDithering: Object.hasOwn(this.environmentMaterial.sourceConstructorParams ?? {}, "dithering"),
           defaultStandardParamsMode: "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants",
           roughness: this.environmentMaterial.roughness,
           metalness: this.environmentMaterial.metalness,
@@ -9462,9 +9466,11 @@ void main() {
           toneMapped: this.environmentMaterial.toneMapped,
           fog: this.environmentMaterial.fog,
           dithering: this.environmentMaterial.dithering,
+          ditheringOwnershipMode: this.environmentMaterial.sourceDitheringOwnership ?? null,
           envMapIntensity: this.environmentMaterial.envMapIntensity,
           constructorParamsMode: "source-h1-passes-side-envMapIntensity-fog-only",
           constructorParams: this.environmentMaterial.sourceConstructorParams ?? null,
+          constructorParamsIncludesDithering: Object.hasOwn(this.environmentMaterial.sourceConstructorParams ?? {}, "dithering"),
           defaultStandardParamsMode: "source-u1-does-not-apply-Qn-roughness-metalness-emissive-constants",
           roughness: this.environmentMaterial.roughness,
           metalness: this.environmentMaterial.metalness,
