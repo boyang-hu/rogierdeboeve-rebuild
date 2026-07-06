@@ -154,7 +154,7 @@ Known remaining gaps:
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
-- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Source `Ka.raycast()` direct hit-UV target writes are now guarded without a rebuild-owned clamp. Exact final Home visual/feel parity is still open.
+- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Source `Ka.raycast()` direct hit-UV target writes are guarded without a rebuild-owned clamp. Source `Ka` constructor/null sampler ownership is now guarded: `uTexture` and `uNoiseTexture` construct as `null`, `uCoords` constructs from `innerWidth/innerHeight`, `uPosOld/uPosNew` construct as zero vectors, and no runtime path binds blue-noise to `Ka.uNoiseTexture`. Exact final Home visual/feel parity is still open.
 - Source `yD` gallery scroll runtime rounding is now guarded: source `onRaf()` uses `Yi(...)` for `scroll.diff` and `scroll.animated`, and source `updateScene()` persists roll `sceneRotation` through `bo(...)` plus `Yi(...)`; the rebuild uses source-rounded helpers for those paths instead of an unrounded local `lerp`.
 - Source `yD/Qe.workState` gallery scroll persistence is now guarded: the session-backed rebuild state carries source runtime scroll fields including `diff`, `velocity`, and `targetPlusDiff`, plus index/hooks/active project/scene rotation.
 - Renderer audit render-target default diagnostics now distinguish expected false values from failed checks: `generateMipmaps`, `depthBuffer`, and `stencilBuffer` defaults are reported as `actual` / `expected` / `matchesExpected`, and the Node-only renderer probe reports `status:"unavailable"` when `OffscreenCanvas` is absent instead of `null`.
@@ -179,12 +179,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Ka.raycast()` direct hit-UV target writes in the work/local mouse simulation path without changing shader text, render targets, pass behavior, project data, route behavior, visual constants, or target sizing.
-- Source evidence: `Ka.raycast({x,y})` normalizes with `Pe.w/Pe.h`, intersects `[this.rayCastMesh]`, and when a hit exists writes `targetPos.x/y` directly from `this.intersects[0].uv.x/y`; source does not clamp the hit UV before `Ka.update()` lerps toward `targetPos`.
-- The rebuild now writes `item.mouseTarget.set(hit.uv.x, hit.uv.y)` directly instead of using `MathUtils.clamp(...)`.
-- Output and interactive probes expose/assert `raycastUvWriteMode=source-Ka-raycast-hit-uv-direct-targetPos-no-clamp`.
-- Renderer audit checks source `Ka.raycast()` direct-write anchors, rebuild direct-write coverage, absence of the old clamp path, and output/interactive probe coverage.
-- Previous committed batch was `4d7f34f Guard thumb render transfer order`.
+- Corrected source `Ka` mouse-simulation constructor/null sampler ownership in the screen/local mouse simulation paths without changing shader text, render targets, pointer/raycast behavior, route behavior, project data, or visual constants.
+- Source evidence: `Ka` constructs `uTexture:null`, `uNoiseTexture:null`, `uCoords:new Q(innerWidth,innerHeight)`, and `uPosOld/uPosNew:new Q(0,0)`; source `sA.render()` owns the later `uTexture` write; the mirrored bundle has no later writer for `Ka.uNoiseTexture`.
+- The rebuild now keeps `Ka.uNoiseTexture` source-null and removes the rebuild-owned blue-noise assignment from screen/work mouse-simulation materials. `Xt.blueNoise` immediate binding remains guarded for the source-owned `C1.tNoise` path.
+- Output and interactive probes expose/assert `noiseTextureBindingMode=source-Ka-uNoiseTexture-constructor-null-no-runtime-writer` plus constructor defaults.
+- Renderer audit checks source `Ka` constructor anchors, rebuild constructor/default coverage, absence of the old blue-noise mouse-sim writer, and updated probe coverage.
+- Previous committed batch was `256c3a6 Align Ka raycast UV target writes`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -195,31 +195,33 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
+node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-transfer-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-thumb-transfer-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-ka-noise-null-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-ka-noise-null-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-output-desktop VIEWPORT=desktop CDP_PORT=9360 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-output-mobile VIEWPORT=mobile CDP_PORT=9361 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-thumb-desktop VIEWPORT=desktop CDP_PORT=9362 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-thumb-mobile VIEWPORT=mobile CDP_PORT=9363 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-transfer-media CDP_PORT=9364 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-noise-null-output-desktop VIEWPORT=desktop CDP_PORT=9381 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-noise-null-output-mobile VIEWPORT=mobile CDP_PORT=9382 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-noise-null-interactive CDP_PORT=9383 node scripts/probe-interactive-mouse.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-noise-null-thumb VIEWPORT=desktop CDP_PORT=9384 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-ka-noise-null-media CDP_PORT=9385 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `Lo/x1/T1` thumb render-transfer guardrail batch. Renderer audit wrote `/tmp/rd-thumb-transfer-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile thumb spotlight probes passed and confirmed `thumbRenderTransfer.stepsMatchExpected=true`, `renderToScreen=false`, `tSceneRole=renderTargetA.texture`, `finalRenderTargetRole=canvas`, and `spotlightMapRole=renderTargetComposite.texture`. Desktop/mobile output probes passed with no failures/exceptions/console messages and retained the prior floor-reflection camera guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `Ka` mouse-simulation constructor/null sampler batch. Renderer audit wrote `/tmp/rd-ka-noise-null-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed `screen/local Ka.uNoiseTexture` stays source-null while `C1.tNoise` keeps the source immediate blue-noise texture binding. Interactive mouse probe passed with no errors and retained active local target movement from `[0.5,0.5]` to approximately `[0.5968,0.5461]`. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this thumb render-transfer batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `Ka` sampler-ownership batch.
 
-Runtime QA was run because the batch touched Home WebGL thumb render-transfer probe instrumentation and spotlight-map input attribution.
+Runtime QA was run because the batch touched Home WebGL mouse-simulation material construction and probe/audit ownership.
 
 Verified:
 
-- Renderer audit passed for the thumb render-transfer batch: `/tmp/rd-thumb-transfer-audit.json`.
+- Renderer audit passed for the `Ka` sampler-ownership batch: `/tmp/rd-ka-noise-null-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-thumb-transfer-output-desktop`, `/tmp/rd-thumb-transfer-output-mobile`.
-- Desktop and mobile thumb spotlight probes passed: `/tmp/rd-thumb-transfer-thumb-desktop`, `/tmp/rd-thumb-transfer-thumb-mobile`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-thumb-transfer-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-ka-noise-null-output-desktop`, `/tmp/rd-ka-noise-null-output-mobile`.
+- Interactive mouse probe passed: `/tmp/rd-ka-noise-null-interactive`.
+- Thumb spotlight probe passed: `/tmp/rd-ka-noise-null-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-ka-noise-null-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

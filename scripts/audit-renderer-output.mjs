@@ -2339,11 +2339,14 @@ const summary = {
           "this.sourceBlueNoiseObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
           "this.noiseTexture = blueNoiseTexture",
           "this.preCompositeMaterial.uniforms.tNoise.value = blueNoiseTexture",
-          "this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture",
           "const blueNoise = blueNoiseLoad.loaded.then((texture) =>",
           "this.sourceBlueNoiseLoadedTexture = texture",
           "this.sourceTexturePreloadState.blueNoise = true",
         ]),
+        kaNoiseTextureSourceNull:
+          rebuildWebgl.includes("kaNoiseTextureBindingMode: \"source-Ka-uNoiseTexture-constructor-null-no-runtime-writer\"")
+          && !rebuildWebgl.includes("this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture")
+          && !rebuildWebgl.includes("item.mouseMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture"),
         perlin2: orderedIncludes(rebuildWebgl, [
           "const perlin2Load = this.loadTextureImmediate(`/images/textures/perlin-2.${sourceExt}`)",
           "const perlin2Texture = perlin2Load.texture",
@@ -2376,6 +2379,7 @@ const summary = {
           && rebuildWebgl.includes("allWorkUniformsImmediate")
           && rebuildOutputProbe.includes("immediateBindingMode")
           && rebuildOutputProbe.includes("blueNoiseC1TNoiseImmediate")
+          && rebuildOutputProbe.includes("blueNoiseKaNoiseMode")
           && rebuildOutputProbe.includes("perlin2C1Immediate")
           && rebuildOutputProbe.includes("perlin1WorkImmediate"),
       },
@@ -4274,7 +4278,7 @@ const summary = {
         "const zNum = sourceLowRes() ? 4 : 4",
         "const geometry = sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)",
         "if (px * px + py * py > radius * radius) continue",
-        "const mouseSimulation = this.createAuxiliaryMouseSimulation(1)",
+        "const mouseSimulation = this.createAuxiliaryMouseSimulation()",
         "rayPlane.scale.set(xNum * MOUSE_RAY_SCALE, yNum * MOUSE_RAY_SCALE, MOUSE_RAY_SCALE)",
         "rayPlane.position.set(0, 0, zNum / 2 + 0.01)",
         "item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder",
@@ -4455,6 +4459,8 @@ const summary = {
         ? {
             index: start,
             checks: checks(sourceKa, [
+              "uTexture:{value:null},uNoiseTexture:{value:null},uCoords:{value:new Q(innerWidth,innerHeight)}",
+              "uPosOld:{value:new Q(0,0)},uPosNew:{value:new Q(0,0)}",
               "onResize(e,t){this.bufferSim.onResize(e,t),this.simulationMaterial.uniforms.uCoords.value.set(e,t)}",
               "onMouseMove({x:e,y:t}){this.onMesh?this.raycast({x:e,y:t}):this.targetPos.set(e/Pe.w,1-t/Pe.h)}",
               "this.mouse.x=e/Pe.w*2-1",
@@ -4475,6 +4481,19 @@ const summary = {
               "raycastEventMode: \"source-Ka-raycast-during-mousemove-not-raf-tail\"",
               "raycastUvWriteMode: \"source-Ka-raycast-hit-uv-direct-targetPos-no-clamp\"",
             ]),
+            rebuildConstructorChecks: checks(rebuildWebgl, [
+              "uTexture: { value: null }",
+              "uNoiseTexture: { value: null }",
+              "uCoords: { value: new Vector2(window.innerWidth, window.innerHeight) }",
+              "uPosOld: { value: new Vector2(0, 0) }",
+              "uPosNew: { value: new Vector2(0, 0) }",
+              "sourceKaConstructorUniformDefaults",
+              "constructorUniformMode: screenConstructorDefaults?.mode",
+              "noiseTextureBindingMode: \"source-Ka-uNoiseTexture-constructor-null-no-runtime-writer\"",
+            ]),
+            rebuildNoNoiseTextureRuntimeWriter:
+              !rebuildWebgl.includes("this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture")
+              && !rebuildWebgl.includes("item.mouseMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture"),
             rebuildNoRaycastUvClamp:
               !rebuildWebgl.includes("MathUtils.clamp(hit.uv.x")
               && !rebuildWebgl.includes("MathUtils.clamp(hit.uv.y"),
@@ -4482,6 +4501,8 @@ const summary = {
               "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp",
               "raycastUvWriteMode",
               "active-raycast-uv-write-mode",
+              "source-Ka-simulationMaterial-constructor-uniform-defaults",
+              "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer",
             ]),
             sourceShaderChecks: {
               vertex: checks(sourceMouseSimulationVertex, [

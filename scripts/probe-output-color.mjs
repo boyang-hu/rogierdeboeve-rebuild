@@ -754,8 +754,15 @@ async function runProbe() {
   const uniformSurfaceErrors = [];
   for (const [label, mouse] of [["screen", screenMouse], ["active", activeMouse]]) {
     if (mouse?.uniformSurfaceMode !== "source-Ka-simulationMaterial-uniform-surface") uniformSurfaceErrors.push(`${label}UniformSurfaceMode`);
-    if (mouse?.hasNoiseTexture !== true) uniformSurfaceErrors.push(`${label}NoiseTexture`);
-    if (mouse?.noiseTextureIsBlueNoise !== true) uniformSurfaceErrors.push(`${label}NoiseTextureBinding`);
+    if (mouse?.constructorUniformMode !== "source-Ka-simulationMaterial-constructor-uniform-defaults") uniformSurfaceErrors.push(`${label}ConstructorUniformMode`);
+    if (mouse?.constructorUniformDefaults?.uTextureWasNull !== true) uniformSurfaceErrors.push(`${label}ConstructorUTexture`);
+    if (mouse?.constructorUniformDefaults?.uNoiseTextureWasNull !== true) uniformSurfaceErrors.push(`${label}ConstructorUNoiseTexture`);
+    if (mouse?.constructorUniformDefaults?.uCoordsMode !== "source-Ka-constructor-innerWidth-innerHeight") uniformSurfaceErrors.push(`${label}ConstructorUCoords`);
+    if (mouse?.constructorUniformDefaults?.uPosConstructorMode !== "source-Ka-constructor-uPosOld-uPosNew-zero-vectors") uniformSurfaceErrors.push(`${label}ConstructorUPos`);
+    if (JSON.stringify(mouse?.constructorUniformDefaults?.uPosOld) !== JSON.stringify([0, 0])) uniformSurfaceErrors.push(`${label}ConstructorUPosOld`);
+    if (JSON.stringify(mouse?.constructorUniformDefaults?.uPosNew) !== JSON.stringify([0, 0])) uniformSurfaceErrors.push(`${label}ConstructorUPosNew`);
+    if (mouse?.noiseTextureBindingMode !== "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer") uniformSurfaceErrors.push(`${label}NoiseTextureBindingMode`);
+    if (mouse?.uNoiseTextureIsSourceNull !== true) uniformSurfaceErrors.push(`${label}NoiseTextureSourceNull`);
     if (mouse?.diffusion !== 0) uniformSurfaceErrors.push(`${label}Diffusion`);
     if (mouse?.diffusionSize !== 0) uniformSurfaceErrors.push(`${label}DiffusionSize`);
     if (JSON.stringify(mouse?.color) !== JSON.stringify([1, 1, 1])) uniformSurfaceErrors.push(`${label}Color`);
@@ -2309,8 +2316,9 @@ async function runProbe() {
   if (blueNoiseImmediate.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") immediateBindingErrors.push("blueNoiseObjectMode");
   if (blueNoiseImmediate.stateIsImmediateTexture !== true) immediateBindingErrors.push("blueNoiseStateImmediate");
   if (blueNoiseImmediate.c1TNoiseIsImmediateTexture !== true) immediateBindingErrors.push("blueNoiseC1TNoiseImmediate");
-  if (blueNoiseImmediate.screenMouseNoiseIsImmediateTexture !== true) immediateBindingErrors.push("blueNoiseScreenMouseImmediate");
-  if (blueNoiseImmediate.allWorkMouseNoiseUniformsImmediate !== true) immediateBindingErrors.push("blueNoiseWorkMouseImmediate");
+  if (blueNoiseImmediate.kaNoiseTextureBindingMode !== "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer") immediateBindingErrors.push("blueNoiseKaNoiseMode");
+  if (blueNoiseImmediate.screenMouseNoiseIsSourceNull !== true) immediateBindingErrors.push("blueNoiseScreenMouseSourceNull");
+  if (blueNoiseImmediate.allWorkMouseNoiseUniformsSourceNull !== true) immediateBindingErrors.push("blueNoiseWorkMouseSourceNull");
   if (blueNoiseImmediate.loadedSameImmediateTexture !== true) immediateBindingErrors.push("blueNoiseLoadedSame");
   if (perlin2Immediate.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") immediateBindingErrors.push("perlin2ObjectMode");
   if (perlin2Immediate.stateIsImmediateTexture !== true) immediateBindingErrors.push("perlin2StateImmediate");

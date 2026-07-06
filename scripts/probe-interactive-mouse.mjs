@@ -162,6 +162,9 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (!afterProbe || !mouse.enabled) errors.push("missing-mouse-simulation-probe");
   if (!screen.target) errors.push("missing-screen-mouse-probe");
   if (screen.uniformSurfaceMode !== "source-Ka-simulationMaterial-uniform-surface") errors.push("screen-uniform-surface");
+  if (screen.constructorUniformMode !== "source-Ka-simulationMaterial-constructor-uniform-defaults") errors.push("screen-constructor-uniforms");
+  if (screen.noiseTextureBindingMode !== "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer") errors.push("screen-noise-binding-mode");
+  if (screen.uNoiseTextureIsSourceNull !== true) errors.push("screen-noise-source-null");
   if (screen.targetState?.depthBuffer !== false || screen.targetState?.stencilBuffer !== false) errors.push("screen-target-state");
   if (screen.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding-no-clamp") errors.push("screen-target-sizing-mode");
   if (screen.targetSizeMatchesSource !== true) errors.push("screen-target-size");
@@ -175,6 +178,9 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (active.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") errors.push("active-raycast-event-mode");
   if (active.raycastNormalizationMode !== "source-Pe-width-height") errors.push("active-raycast-normalization-mode");
   if (active.raycastUvWriteMode !== "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp") errors.push("active-raycast-uv-write-mode");
+  if (active.constructorUniformMode !== "source-Ka-simulationMaterial-constructor-uniform-defaults") errors.push("active-constructor-uniforms");
+  if (active.noiseTextureBindingMode !== "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer") errors.push("active-noise-binding-mode");
+  if (active.uNoiseTextureIsSourceNull !== true) errors.push("active-noise-source-null");
   if (active.allVisibleHaveIndependentTargets !== true) errors.push("active-independent-targets");
   if (distance2(active.pointerRay, expectedPointerRay) > 0.02) errors.push(`pointer-ray=${JSON.stringify(active.pointerRay)}`);
   if (distance2(active.mouseTarget, beforeActive.mouseTarget) < 0.001) errors.push("active-mouse-target-did-not-move");

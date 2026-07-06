@@ -5566,7 +5566,7 @@ export class WebGLBackdrop {
     this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT);
     this.floorReflectionScreen = new Mesh(this.floorReflectionScreenTriangle, this.floorReflectionBlurMaterial);
     this.floorReflectionScreen.frustumCulled = false;
-    this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
+    this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial();
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
     this.mainFluidPass = this.createMainFluidPass();
@@ -6612,7 +6612,7 @@ export class WebGLBackdrop {
         depthTest: false,
       }),
     );
-    const mouseSimulation = this.createAuxiliaryMouseSimulation(1);
+    const mouseSimulation = this.createAuxiliaryMouseSimulation();
     const colors = new Float32Array(maxCount * 3);
     const alphas = new Float32Array(maxCount);
     const offsets = new Float32Array(maxCount * 3);
@@ -7198,10 +7198,6 @@ export class WebGLBackdrop {
     this.sourceBlueNoiseObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
     this.noiseTexture = blueNoiseTexture;
     this.preCompositeMaterial.uniforms.tNoise.value = blueNoiseTexture;
-    this.workItems.forEach((item) => {
-      item.mouseMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture;
-    });
-    this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture;
     const blueNoise = blueNoiseLoad.loaded.then((texture) => {
       this.sourceBlueNoiseLoadedTexture = texture;
       this.sourceTexturePreloadState.blueNoise = true;
@@ -7321,32 +7317,45 @@ export class WebGLBackdrop {
     });
   }
 
-  private createMouseSimulationMaterial(ratio: number, thickness: number, persistance = 0.75) {
+  private createMouseSimulationMaterial(thickness = 0.25, persistance = 0.75) {
     dumpShader("Ka-mouse-simulation", mouseSimulationVertex, mouseSimulationFragment);
-    return new ShaderMaterial({
+    const material = new ShaderMaterial({
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        uTexture: { value: this.placeholder },
-        uNoiseTexture: { value: this.noiseTexture },
-        uCoords: { value: new Vector2(Math.max(1, Math.round(128 * ratio)), 128) },
+        uTexture: { value: null },
+        uNoiseTexture: { value: null },
+        uCoords: { value: new Vector2(window.innerWidth, window.innerHeight) },
         uPersistance: { value: persistance },
         uThickness: { value: thickness },
         uDiffusion: { value: 0 },
         uDiffusionSize: { value: 0 },
         uTime: { value: 0 },
-        uPosOld: { value: new Vector2(0.5, 0.5) },
-        uPosNew: { value: new Vector2(0.5, 0.5) },
+        uPosOld: { value: new Vector2(0, 0) },
+        uPosNew: { value: new Vector2(0, 0) },
         uSpeed: { value: 0 },
         uColor: { value: new Color(0xffffff) },
       },
       vertexShader: mouseSimulationVertex,
       fragmentShader: mouseSimulationFragment,
     });
+    material.userData.sourceKaConstructorUniformDefaults = {
+      mode: "source-Ka-simulationMaterial-constructor-uniform-defaults",
+      uTextureWasNull: material.uniforms.uTexture.value === null,
+      uNoiseTextureWasNull: material.uniforms.uNoiseTexture.value === null,
+      uCoordsMode: "source-Ka-constructor-innerWidth-innerHeight",
+      uCoords: (material.uniforms.uCoords.value as Vector2).toArray(),
+      uPosOld: (material.uniforms.uPosOld.value as Vector2).toArray(),
+      uPosNew: (material.uniforms.uPosNew.value as Vector2).toArray(),
+      uPosConstructorMode: "source-Ka-constructor-uPosOld-uPosNew-zero-vectors",
+      uPersistance: material.uniforms.uPersistance.value,
+      uThickness: material.uniforms.uThickness.value,
+    };
+    return material;
   }
 
   private createWorkMouseSimulation() {
-    const material = this.createMouseSimulationMaterial(GRID_COLS / GRID_ROWS, 0.1, 0.85);
+    const material = this.createMouseSimulationMaterial(0.1, 0.85);
     const scene = new Scene();
     scene.add(makeFullscreenTriangle(material));
     return {
@@ -7356,8 +7365,8 @@ export class WebGLBackdrop {
     };
   }
 
-  private createAuxiliaryMouseSimulation(ratio: number) {
-    const material = this.createMouseSimulationMaterial(ratio, 0.1, 0.85);
+  private createAuxiliaryMouseSimulation() {
+    const material = this.createMouseSimulationMaterial(0.1, 0.85);
     const scene = new Scene();
     scene.add(makeFullscreenTriangle(material));
     return {
@@ -9681,8 +9690,8 @@ void main() {
     const auxiliaryPerlinUniformsImmediate =
       (!this.aboutBlocks || this.aboutBlocks.material.uniforms.tPerlin.value === this.sourcePerlin1Texture)
       && (!this.floatingBlocks || this.floatingBlocks.material.uniforms.tPerlin.value === this.sourcePerlin1Texture);
-    const allWorkMouseNoiseUniformsImmediate = this.workItems.every(
-      (item) => item.mouseMaterial.uniforms.uNoiseTexture.value === this.sourceBlueNoiseTexture,
+    const allWorkMouseNoiseUniformsSourceNull = this.workItems.every(
+      (item) => item.mouseMaterial.uniforms.uNoiseTexture.value === null,
     );
     const environmentDarkenColor = this.environmentMaterial.customUniforms.uDarkenColor.value as Color;
     const environmentShaderSurface = {
@@ -10840,9 +10849,10 @@ void main() {
             objectBindingMode: this.sourceBlueNoiseObjectBindingMode,
             stateIsImmediateTexture: this.noiseTexture === this.sourceBlueNoiseTexture,
             c1TNoiseIsImmediateTexture: this.preCompositeMaterial.uniforms.tNoise.value === this.sourceBlueNoiseTexture,
-            screenMouseNoiseIsImmediateTexture:
-              this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === this.sourceBlueNoiseTexture,
-            allWorkMouseNoiseUniformsImmediate,
+            kaNoiseTextureBindingMode: "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer",
+            screenMouseNoiseIsSourceNull:
+              this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === null,
+            allWorkMouseNoiseUniformsSourceNull,
             loadedSameImmediateTexture: this.sourceTexturePreloadState.blueNoise
               ? this.sourceBlueNoiseLoadedTexture === this.sourceBlueNoiseTexture
               : null,
@@ -11423,6 +11433,8 @@ void main() {
     const screenTarget = this.screenMouseSimulationTargets[this.screenMouseSimulationIndex];
     const activeCoords = active?.mouseMaterial.uniforms.uCoords.value as Vector2 | undefined;
     const activeTarget = active?.mouseTargets[active.mouseIndex];
+    const screenConstructorDefaults = this.screenMouseSimulationMaterial.userData.sourceKaConstructorUniformDefaults;
+    const activeConstructorDefaults = active?.mouseMaterial.userData.sourceKaConstructorUniformDefaults;
     const uvOffset = active?.material.uniforms.uUvOffset.value as Vector2 | undefined;
     const uvOffsetScale = active?.material.uniforms.uUvOffsetScale.value as number | undefined;
     const sourcePlaneSize = sourceWorkMousePlaneSize();
@@ -11471,6 +11483,10 @@ void main() {
           Math.abs(screenCoords.x - expectedScreenTargetSize.width) < 1e-6
           && Math.abs(screenCoords.y - expectedScreenTargetSize.height) < 1e-6,
         uniformSurfaceMode: "source-Ka-simulationMaterial-uniform-surface",
+        constructorUniformMode: screenConstructorDefaults?.mode,
+        constructorUniformDefaults: screenConstructorDefaults,
+        noiseTextureBindingMode: "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer",
+        uNoiseTextureIsSourceNull: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === null,
         hasNoiseTexture: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value instanceof Texture,
         noiseTextureIsBlueNoise: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === this.noiseTexture,
         diffusion: this.screenMouseSimulationMaterial.uniforms.uDiffusion.value,
@@ -11512,6 +11528,10 @@ void main() {
         renderClearMode: active.mouseRenderClearMode,
         uniformSpeed: active.mouseMaterial.uniforms.uSpeed.value,
         uniformSurfaceMode: "source-Ka-simulationMaterial-uniform-surface",
+        constructorUniformMode: activeConstructorDefaults?.mode,
+        constructorUniformDefaults: activeConstructorDefaults,
+        noiseTextureBindingMode: "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer",
+        uNoiseTextureIsSourceNull: active.mouseMaterial.uniforms.uNoiseTexture.value === null,
         hasNoiseTexture: active.mouseMaterial.uniforms.uNoiseTexture.value instanceof Texture,
         noiseTextureIsBlueNoise: active.mouseMaterial.uniforms.uNoiseTexture.value === this.noiseTexture,
         diffusion: active.mouseMaterial.uniforms.uDiffusion.value,
@@ -11577,6 +11597,8 @@ void main() {
             && activeTarget.texture.type === FloatType
             && activeTarget.texture.generateMipmaps === false,
           renderClearModeMatchesSource: active.mouseRenderClearMode === "source-sA-no-explicit-clear",
+          noiseTextureBindingMode: "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer",
+          uNoiseTextureIsSourceNull: active.mouseMaterial.uniforms.uNoiseTexture.value === null,
           updateLerpMode: "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp",
           raycastMode: "source-Ka-onMouseMove-per-item-raycast-immediate-pointer",
           raycastEventMode: "source-Ka-raycast-during-mousemove-not-raf-tail",
