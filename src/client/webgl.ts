@@ -164,6 +164,24 @@ type ThumbProbeWindow = Window & {
     thumbHierarchyMode: string;
     thumbWrapParentIsScene: boolean;
     thumbScrollWrapParentIsThumbWrap: boolean;
+    thumbSceneSurface: {
+      mode: string;
+      backgroundMode: string;
+      sourceBackgroundColor: string;
+      background: number[] | null;
+      expectedBackground: number[];
+      backgroundMatchesSource: boolean;
+      cameraMode: string;
+      cameraBounds: number[];
+      expectedCameraBounds: number[];
+      cameraMatchesSource: boolean;
+      renderManagerSettings: {
+        mode: string;
+        expected: { renderToScreen: boolean };
+        actual: { renderToScreen: boolean };
+        matchesSource: boolean;
+      };
+    };
     itemWidth: number;
     totalItems: number;
     totalWidth: number;
@@ -322,6 +340,7 @@ const SOURCE_HOME_THUMB_DARKNESS_FALLBACK = 0;
 const SOURCE_INITIAL_THUMB_DARKNESS_COLOR = "#000000";
 const SOURCE_INITIAL_THUMB_SATURATION = 1;
 const SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS = 1;
+const SOURCE_THUMB_BACKGROUND = "#222222";
 const SOURCE_ACTIVE_PROJECT_ORDER = [
   "hashgraph-vc",
   "gc-2026",
@@ -3865,6 +3884,7 @@ export class WebGLBackdrop {
   private fluidPlaceholder = makePlaceholderTexture([0, 0, 0, 255]);
   private renderSettings = cloneSourceRenderSettings(SOURCE_HOME_RENDER_SETTINGS);
   private sourceMainRenderSettings: SourceRenderSettings = sourceRuntimeMainRenderSettings();
+  private thumbRenderSettings = { renderToScreen: false };
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private workPerlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
@@ -4243,7 +4263,7 @@ export class WebGLBackdrop {
     this.sceneWrap.add(this.blocksWrap);
     this.sceneWrap.add(this.floorGroup);
     this.sceneWrap.add(this.environmentGroup);
-    this.thumbScene.background = sourceLinearToSrgbColor("#222222");
+    this.thumbScene.background = sourceLinearToSrgbColor(SOURCE_THUMB_BACKGROUND);
     this.thumbWrap.frustumCulled = false;
     this.thumbWrap.add(this.thumbScrollWrap);
     this.thumbScene.add(this.thumbWrap);
@@ -7408,9 +7428,14 @@ void main() {
     this.renderer.render(this.thumbScene, this.thumbCamera);
     this.thumbCompositeMaterial.uniforms.tScene.value = this.thumbTarget.texture;
     this.thumbPostScreen.material = this.thumbCompositeMaterial;
-    this.renderer.setRenderTarget(this.thumbCompositeTarget);
-    this.renderer.render(this.thumbPostScreen, this.backgroundCamera);
-    this.renderer.setRenderTarget(null);
+    if (this.thumbRenderSettings.renderToScreen) {
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.thumbPostScreen, this.backgroundCamera);
+    } else {
+      this.renderer.setRenderTarget(this.thumbCompositeTarget);
+      this.renderer.render(this.thumbPostScreen, this.backgroundCamera);
+      this.renderer.setRenderTarget(null);
+    }
   }
 
   private updateThumbProbe(time: number) {
@@ -7419,6 +7444,17 @@ void main() {
     const color = this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color;
     const spotlightProjection = this.spotlightProjectionProbe();
     const actualProjectOrder = this.workItems.map((item) => item.slug);
+    const expectedThumbBackground = sourceLinearToSrgbColor(SOURCE_THUMB_BACKGROUND);
+    const thumbBackground = this.thumbScene.background instanceof Color ? this.thumbScene.background : null;
+    const thumbCameraBounds = [
+      this.thumbCamera.left,
+      this.thumbCamera.right,
+      this.thumbCamera.top,
+      this.thumbCamera.bottom,
+      this.thumbCamera.near,
+      this.thumbCamera.far,
+    ];
+    const expectedThumbCameraBounds = [-1, 1, 1, -1, 0, 1];
     const probeWindow = window as ThumbProbeWindow;
     probeWindow.__rogierThumbProbe = {
       activeSlug: this.activeSlug,
@@ -7454,6 +7490,24 @@ void main() {
       thumbScrollWrapType: this.thumbScrollWrap.type,
       thumbWrapFrustumCulled: this.thumbWrap.frustumCulled,
       thumbSceneMode: "source-T1-square-height-target-orthographic",
+      thumbSceneSurface: {
+        mode: "source-T1-background-camera-x1-renderToScreen-settings",
+        backgroundMode: "source-T1-222222-linear-to-srgb",
+        sourceBackgroundColor: SOURCE_THUMB_BACKGROUND,
+        background: thumbBackground?.toArray() ?? null,
+        expectedBackground: expectedThumbBackground.toArray(),
+        backgroundMatchesSource: Boolean(thumbBackground && thumbBackground.equals(expectedThumbBackground)),
+        cameraMode: "source-T1-orthographic-minus1-plus1-near0-far1",
+        cameraBounds: thumbCameraBounds,
+        expectedCameraBounds: expectedThumbCameraBounds,
+        cameraMatchesSource: JSON.stringify(thumbCameraBounds) === JSON.stringify(expectedThumbCameraBounds),
+        renderManagerSettings: {
+          mode: "source-x1-initSettings-renderToScreen-false",
+          expected: { renderToScreen: false },
+          actual: { renderToScreen: this.thumbRenderSettings.renderToScreen },
+          matchesSource: this.thumbRenderSettings.renderToScreen === false,
+        },
+      },
       itemWidth: this.thumbItemWidth,
       totalItems: this.thumbTotalItems,
       totalWidth: this.thumbTotalItems * this.thumbItemWidth,

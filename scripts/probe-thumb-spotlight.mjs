@@ -322,6 +322,47 @@ async function runProbe() {
   if (probe.thumbSceneMode !== "source-T1-square-height-target-orthographic") {
     sourceShapeErrors.push(`thumbSceneMode=${probe.thumbSceneMode}`);
   }
+  const thumbSceneSurface = probe.thumbSceneSurface || {};
+  if (thumbSceneSurface.mode !== "source-T1-background-camera-x1-renderToScreen-settings") {
+    sourceShapeErrors.push(`thumbSceneSurfaceMode=${thumbSceneSurface.mode}`);
+  }
+  if (thumbSceneSurface.backgroundMode !== "source-T1-222222-linear-to-srgb") {
+    sourceShapeErrors.push(`thumbSceneBackgroundMode=${thumbSceneSurface.backgroundMode}`);
+  }
+  if (thumbSceneSurface.sourceBackgroundColor !== "#222222") {
+    sourceShapeErrors.push(`thumbSceneBackgroundColor=${thumbSceneSurface.sourceBackgroundColor}`);
+  }
+  if (JSON.stringify(thumbSceneSurface.background) !== JSON.stringify(thumbSceneSurface.expectedBackground)) {
+    sourceShapeErrors.push(`thumbSceneBackground=${JSON.stringify(thumbSceneSurface.background)},expected=${JSON.stringify(thumbSceneSurface.expectedBackground)}`);
+  }
+  if (thumbSceneSurface.backgroundMatchesSource !== true) {
+    sourceShapeErrors.push(`thumbSceneBackgroundMatchesSource=${thumbSceneSurface.backgroundMatchesSource}`);
+  }
+  if (thumbSceneSurface.cameraMode !== "source-T1-orthographic-minus1-plus1-near0-far1") {
+    sourceShapeErrors.push(`thumbSceneCameraMode=${thumbSceneSurface.cameraMode}`);
+  }
+  if (JSON.stringify(thumbSceneSurface.cameraBounds) !== JSON.stringify([-1, 1, 1, -1, 0, 1])) {
+    sourceShapeErrors.push(`thumbSceneCameraBounds=${JSON.stringify(thumbSceneSurface.cameraBounds)}`);
+  }
+  if (JSON.stringify(thumbSceneSurface.expectedCameraBounds) !== JSON.stringify([-1, 1, 1, -1, 0, 1])) {
+    sourceShapeErrors.push(`thumbSceneExpectedCameraBounds=${JSON.stringify(thumbSceneSurface.expectedCameraBounds)}`);
+  }
+  if (thumbSceneSurface.cameraMatchesSource !== true) {
+    sourceShapeErrors.push(`thumbSceneCameraMatchesSource=${thumbSceneSurface.cameraMatchesSource}`);
+  }
+  const thumbRenderManagerSettings = thumbSceneSurface.renderManagerSettings || {};
+  if (thumbRenderManagerSettings.mode !== "source-x1-initSettings-renderToScreen-false") {
+    sourceShapeErrors.push(`thumbRenderManagerSettingsMode=${thumbRenderManagerSettings.mode}`);
+  }
+  if (JSON.stringify(thumbRenderManagerSettings.expected) !== JSON.stringify({ renderToScreen: false })) {
+    sourceShapeErrors.push(`thumbRenderManagerSettingsExpected=${JSON.stringify(thumbRenderManagerSettings.expected)}`);
+  }
+  if (JSON.stringify(thumbRenderManagerSettings.actual) !== JSON.stringify({ renderToScreen: false })) {
+    sourceShapeErrors.push(`thumbRenderManagerSettingsActual=${JSON.stringify(thumbRenderManagerSettings.actual)}`);
+  }
+  if (thumbRenderManagerSettings.matchesSource !== true) {
+    sourceShapeErrors.push(`thumbRenderManagerSettingsMatchesSource=${thumbRenderManagerSettings.matchesSource}`);
+  }
   if (probe.itemWidth !== 2) {
     sourceShapeErrors.push(`itemWidth=${probe.itemWidth}`);
   }

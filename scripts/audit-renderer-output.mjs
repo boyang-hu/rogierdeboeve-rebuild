@@ -192,6 +192,7 @@ const rebuildSetMainColor = extractBlock(rebuildWebgl, "private setMainColor(");
 const rebuildSetMediaBackground = extractBlock(rebuildWebgl, "private setMediaBackground(");
 const rebuildShowScene = extractBlock(rebuildWebgl, "showScene()");
 const rebuildCreateThumbPlane = extractBlock(rebuildWebgl, "private createThumbPlane(");
+const rebuildRenderThumbTargets = extractBlock(rebuildWebgl, "private renderThumbTargets()");
 const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
 const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
@@ -2472,6 +2473,21 @@ const summary = {
         "this.compositeMaterial=new _1",
         "initSettings(){this.settings={renderToScreen:!1}}",
       ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "private thumbRenderSettings = { renderToScreen: false };",
+        "mode: \"source-x1-initSettings-renderToScreen-false\"",
+        "actual: { renderToScreen: this.thumbRenderSettings.renderToScreen }",
+        "matchesSource: this.thumbRenderSettings.renderToScreen === false",
+      ]),
+      rebuildRenderBranch:
+        Boolean(rebuildRenderThumbTargets)
+        && rebuildRenderThumbTargets.includes("if (this.thumbRenderSettings.renderToScreen)")
+        && rebuildRenderThumbTargets.includes("this.renderer.setRenderTarget(this.thumbCompositeTarget)")
+        && rebuildRenderThumbTargets.includes("this.renderer.setRenderTarget(null)"),
+      rebuildProbeChecks: checks(rebuildThumbProbe, [
+        "thumbRenderManagerSettings.mode !== \"source-x1-initSettings-renderToScreen-false\"",
+        "thumbRenderManagerSettings.matchesSource !== true",
+      ]),
       excerpt: compact(sourceThumbX1.text),
     },
     thumbT1: sourceThumbT1 && {
@@ -2485,6 +2501,21 @@ const summary = {
         "this.camera=new Kn(-1,1,1,-1,0,1)",
         "this.renderManager=new x1(this.renderer,this.scene,this.camera)",
         "this.renderManager.resize(t,t,1)",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "const SOURCE_THUMB_BACKGROUND = \"#222222\"",
+        "this.thumbScene.background = sourceLinearToSrgbColor(SOURCE_THUMB_BACKGROUND)",
+        "private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)",
+        "mode: \"source-T1-background-camera-x1-renderToScreen-settings\"",
+        "backgroundMode: \"source-T1-222222-linear-to-srgb\"",
+        "cameraMode: \"source-T1-orthographic-minus1-plus1-near0-far1\"",
+      ]),
+      rebuildProbeChecks: checks(rebuildThumbProbe, [
+        "thumbSceneSurface.mode !== \"source-T1-background-camera-x1-renderToScreen-settings\"",
+        "thumbSceneSurface.backgroundMode !== \"source-T1-222222-linear-to-srgb\"",
+        "thumbSceneSurface.backgroundMatchesSource !== true",
+        "thumbSceneSurface.cameraMode !== \"source-T1-orthographic-minus1-plus1-near0-far1\"",
+        "thumbSceneSurface.cameraMatchesSource !== true",
       ]),
       excerpt: compact(sourceThumbT1.text),
     },
