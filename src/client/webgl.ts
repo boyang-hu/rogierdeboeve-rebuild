@@ -8678,6 +8678,7 @@ void main() {
           0.1,
         );
         item.mouseIndex = meshResult.index;
+        item.mouseOld = meshResult.oldPos;
         item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
         item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta);
         item.material.uniforms.uMouseSpeed.value = item.mouseSpeed;
@@ -8855,6 +8856,7 @@ void main() {
             0.1,
           );
           item.mouseIndex = meshResult.index;
+          item.mouseOld = meshResult.oldPos;
           item.material.uniforms.tMouseSim.value = item.mouseTargets[item.mouseIndex]?.texture ?? this.placeholder;
           item.mouseSpeed = sourceDamp(item.mouseSpeed, meshResult.speed, 10, delta);
           item.material.uniforms.uMouseSpeed.value = item.mouseSpeed;
@@ -8923,8 +8925,8 @@ void main() {
     const speed = sourceRound(newPos.distanceTo(oldPos));
     const outputIndex = 1 - currentIndex;
     material.uniforms.uTexture.value = targets[currentIndex].texture;
-    material.uniforms.uPosNew.value.copy(newPos);
-    material.uniforms.uPosOld.value.copy(oldPos);
+    material.uniforms.uPosNew.value = newPos;
+    material.uniforms.uPosOld.value = oldPos;
     material.uniforms.uSpeed.value = Math.max(speed, 0.0001);
     material.uniforms.uPersistance.value = Math.pow(persistance, delta * 10);
     material.uniforms.uThickness.value = thickness * strength;
@@ -8932,8 +8934,7 @@ void main() {
     this.renderer.setRenderTarget(targets[outputIndex]);
     this.renderer.render(scene, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
-    oldPos.copy(newPos);
-    return { speed, index: outputIndex };
+    return { speed, index: outputIndex, oldPos: newPos.clone() };
   }
 
   private updateScreenMouseSimulation(time: number, delta: number) {
@@ -8953,6 +8954,7 @@ void main() {
       0.25,
     );
     this.screenMouseSimulationIndex = screenResult.index;
+    this.screenMouseSimOldPos = screenResult.oldPos;
     this.compositeMaterial.uniforms.tMouseSim.value = this.screenMouseSimulationTexture;
   }
 
@@ -11494,6 +11496,10 @@ void main() {
         uNoiseTextureIsSourceNull: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === null,
         hasNoiseTexture: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value instanceof Texture,
         noiseTextureIsBlueNoise: this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value === this.noiseTexture,
+        uPosUniformWriteMode: "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment",
+        oldPosCloneMode: "source-Ka-update-oldPos-newPos-clone-after-render",
+        uPosNewUniformIsStateNew: this.screenMouseSimulationMaterial.uniforms.uPosNew.value === this.screenMouseSimNewPos,
+        uPosOldUniformDetachedAfterClone: this.screenMouseSimulationMaterial.uniforms.uPosOld.value !== this.screenMouseSimOldPos,
         diffusion: this.screenMouseSimulationMaterial.uniforms.uDiffusion.value,
         diffusionSize: this.screenMouseSimulationMaterial.uniforms.uDiffusionSize.value,
         color: (this.screenMouseSimulationMaterial.uniforms.uColor.value as Color).toArray(),
@@ -11539,6 +11545,10 @@ void main() {
         uNoiseTextureIsSourceNull: active.mouseMaterial.uniforms.uNoiseTexture.value === null,
         hasNoiseTexture: active.mouseMaterial.uniforms.uNoiseTexture.value instanceof Texture,
         noiseTextureIsBlueNoise: active.mouseMaterial.uniforms.uNoiseTexture.value === this.noiseTexture,
+        uPosUniformWriteMode: "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment",
+        oldPosCloneMode: "source-Ka-update-oldPos-newPos-clone-after-render",
+        uPosNewUniformIsStateNew: active.mouseMaterial.uniforms.uPosNew.value === active.mouseNew,
+        uPosOldUniformDetachedAfterClone: active.mouseMaterial.uniforms.uPosOld.value !== active.mouseOld,
         diffusion: active.mouseMaterial.uniforms.uDiffusion.value,
         diffusionSize: active.mouseMaterial.uniforms.uDiffusionSize.value,
         color: (active.mouseMaterial.uniforms.uColor.value as Color).toArray(),
@@ -11604,6 +11614,10 @@ void main() {
           renderClearModeMatchesSource: active.mouseRenderClearMode === "source-sA-no-explicit-clear",
           noiseTextureBindingMode: "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer",
           uNoiseTextureIsSourceNull: active.mouseMaterial.uniforms.uNoiseTexture.value === null,
+          uPosUniformWriteMode: "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment",
+          oldPosCloneMode: "source-Ka-update-oldPos-newPos-clone-after-render",
+          uPosNewUniformIsStateNew: active.mouseMaterial.uniforms.uPosNew.value === active.mouseNew,
+          uPosOldUniformDetachedAfterClone: active.mouseMaterial.uniforms.uPosOld.value !== active.mouseOld,
           updateLerpMode: "source-Ka-newPos-lerp-targetPos-delta-times-7_5-no-clamp",
           raycastMode: "source-Ka-onMouseMove-per-item-raycast-immediate-pointer",
           raycastEventMode: "source-Ka-raycast-during-mousemove-not-raf-tail",

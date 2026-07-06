@@ -165,6 +165,10 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (screen.constructorUniformMode !== "source-Ka-simulationMaterial-constructor-uniform-defaults") errors.push("screen-constructor-uniforms");
   if (screen.noiseTextureBindingMode !== "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer") errors.push("screen-noise-binding-mode");
   if (screen.uNoiseTextureIsSourceNull !== true) errors.push("screen-noise-source-null");
+  if (screen.uPosUniformWriteMode !== "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment") errors.push("screen-upos-uniform-write-mode");
+  if (screen.oldPosCloneMode !== "source-Ka-update-oldPos-newPos-clone-after-render") errors.push("screen-oldpos-clone-mode");
+  if (screen.uPosNewUniformIsStateNew !== true) errors.push("screen-upos-new-ref");
+  if (screen.uPosOldUniformDetachedAfterClone !== true) errors.push("screen-upos-old-clone-detach");
   if (screen.targetState?.depthBuffer !== false || screen.targetState?.stencilBuffer !== false) errors.push("screen-target-state");
   if (screen.targetSizingMode !== "source-Lu-mousesim-render-size-div-10-no-post-rounding-no-clamp") errors.push("screen-target-sizing-mode");
   if (screen.targetSizeMatchesSource !== true) errors.push("screen-target-size");
@@ -181,6 +185,10 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (active.constructorUniformMode !== "source-Ka-simulationMaterial-constructor-uniform-defaults") errors.push("active-constructor-uniforms");
   if (active.noiseTextureBindingMode !== "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer") errors.push("active-noise-binding-mode");
   if (active.uNoiseTextureIsSourceNull !== true) errors.push("active-noise-source-null");
+  if (active.uPosUniformWriteMode !== "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment") errors.push("active-upos-uniform-write-mode");
+  if (active.oldPosCloneMode !== "source-Ka-update-oldPos-newPos-clone-after-render") errors.push("active-oldpos-clone-mode");
+  if (active.uPosNewUniformIsStateNew !== true) errors.push("active-upos-new-ref");
+  if (active.uPosOldUniformDetachedAfterClone !== true) errors.push("active-upos-old-clone-detach");
   if (active.allVisibleHaveIndependentTargets !== true) errors.push("active-independent-targets");
   if (distance2(active.pointerRay, expectedPointerRay) > 0.02) errors.push(`pointer-ray=${JSON.stringify(active.pointerRay)}`);
   if (distance2(active.mouseTarget, beforeActive.mouseTarget) < 0.001) errors.push("active-mouse-target-did-not-move");
@@ -193,6 +201,8 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (active.sourceShape?.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") sourceShapeErrors.push("raycastEventMode");
   if (active.sourceShape?.raycastNormalizationMode !== "source-Pe-width-height") sourceShapeErrors.push("raycastNormalizationMode");
   if (active.sourceShape?.raycastUvWriteMode !== "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp") sourceShapeErrors.push("raycastUvWriteMode");
+  if (active.sourceShape?.uPosUniformWriteMode !== "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment") sourceShapeErrors.push("uPosUniformWriteMode");
+  if (active.sourceShape?.oldPosCloneMode !== "source-Ka-update-oldPos-newPos-clone-after-render") sourceShapeErrors.push("oldPosCloneMode");
   if (active.sourceShape?.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-pre-rounding-no-clamp") sourceShapeErrors.push("targetSizingMode");
   if (active.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-clamp") sourceShapeErrors.push("activeTargetSizingMode");
   if (sourceShapeErrors.length) errors.push(`active-source-shape=${sourceShapeErrors.join("|")}`);

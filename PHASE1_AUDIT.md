@@ -70,9 +70,43 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `I1` fluid strength ownership now gates only `fluidSimulation.update()` and not the `C1.tFluid` main-FBO binding. This closes one main fluid/composite branch ownership drift; Phase 1 remains open.
+Latest accepted batch: source `Ka.update()` now uses direct `uPosOld/uPosNew` uniform vector references and replaces `oldPos` with `newPos.clone()` after the simulation render. This closes one mouse-simulation runtime ownership drift; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-332 `Ka.update()` uPos Uniform Reference Ownership
+
+This batch aligns one source runtime-ownership edge in the `Ka/sA` mouse-simulation update path. It does not change shader text, render targets, visual constants, route behavior, project data, pointer normalization, or raycast hit-UV behavior.
+
+Source evidence:
+
+- Source `Ka.update(e,t,n)` lerps `this.newPos` toward `this.targetPos`.
+- Source assigns `this.simulationMaterial.uniforms.uPosNew.value=this.newPos` and `this.simulationMaterial.uniforms.uPosOld.value=this.oldPos` before rendering the ping-pong simulation.
+- Source then renders through `this.bufferSim.render()`, resets the renderer target, and replaces state with `this.oldPos=this.newPos.clone()`.
+
+Runtime and tooling changes:
+
+- `updateMouseBrush()` now assigns `uPosNew.value = newPos` and `uPosOld.value = oldPos` directly instead of copying into existing uniform vectors.
+- The screen, work-item, and about auxiliary mouse-simulation paths now replace their `mouseOld` state from `newPos.clone()` after the render, matching source clone ownership.
+- Output and interactive probes expose/assert `uPosUniformWriteMode=source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment`, `oldPosCloneMode=source-Ka-update-oldPos-newPos-clone-after-render`, direct `uPosNew` state-reference ownership, and post-render `uPosOld` clone detachment.
+- `scripts/audit-renderer-output.mjs` checks the source `Ka.update()` anchors, requires the rebuild direct reference/clone path, and rejects restoring `uPos*.value.copy(...)` or `oldPos.copy(newPos)`.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-ka-upos-ref-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile output probes passed with no failures/exceptions/console messages and confirmed the source uPos reference/clone markers: `/tmp/rd-ka-upos-ref-output-desktop`, `/tmp/rd-ka-upos-ref-output-mobile`.
+- Interactive mouse probe passed with no errors and retained screen/local mouse response plus main-fluid pointer guardrails: `/tmp/rd-ka-upos-ref-interactive`.
+- Thumb spotlight probe passed and retained the thumb render-transfer guardrail: `/tmp/rd-ka-upos-ref-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-ka-upos-ref-media`.
+
+Decision: keep `Ka.update()` position uniforms as direct source vector-reference assignments and keep post-render `oldPos = newPos.clone()` state replacement. Do not restore `.copy(...)` uniform writes or `oldPos.copy(newPos)` without mirrored-bundle evidence. Phase 1 remains open because this closes one mouse-simulation update-ownership edge only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-331 `I1` Fluid Strength Gate Binding Ownership
 

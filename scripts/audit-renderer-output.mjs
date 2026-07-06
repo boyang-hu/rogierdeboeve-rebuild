@@ -4481,6 +4481,9 @@ const summary = {
               "this.raycaster.setFromCamera(this.mouse,this.camera)",
               "this.intersects=this.raycaster.intersectObjects([this.rayCastMesh])",
               "this.intersects.length>0&&(this.targetPos.x=this.intersects[0].uv.x,this.targetPos.y=this.intersects[0].uv.y)",
+              "this.simulationMaterial.uniforms.uPosNew.value=this.newPos",
+              "this.simulationMaterial.uniforms.uPosOld.value=this.oldPos",
+              "this.oldPos=this.newPos.clone()",
             ]),
             rebuildRaycastChecks: checks(rebuildWebgl, [
               "private pointerRay = new Vector2()",
@@ -4504,6 +4507,21 @@ const summary = {
               "constructorUniformMode: screenConstructorDefaults?.mode",
               "noiseTextureBindingMode: \"source-Ka-uNoiseTexture-constructor-null-no-runtime-writer\"",
             ]),
+            rebuildUPosUpdateChecks: checks(rebuildWebgl, [
+              "material.uniforms.uPosNew.value = newPos;",
+              "material.uniforms.uPosOld.value = oldPos;",
+              "return { speed, index: outputIndex, oldPos: newPos.clone() };",
+              "item.mouseOld = meshResult.oldPos;",
+              "this.screenMouseSimOldPos = screenResult.oldPos;",
+              "uPosUniformWriteMode: \"source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment\"",
+              "oldPosCloneMode: \"source-Ka-update-oldPos-newPos-clone-after-render\"",
+              "uPosNewUniformIsStateNew",
+              "uPosOldUniformDetachedAfterClone",
+            ]),
+            rebuildNoUPosUniformCopy:
+              !rebuildWebgl.includes("material.uniforms.uPosNew.value.copy(newPos)")
+              && !rebuildWebgl.includes("material.uniforms.uPosOld.value.copy(oldPos)")
+              && !rebuildWebgl.includes("oldPos.copy(newPos)"),
             rebuildNoNoiseTextureRuntimeWriter:
               !rebuildWebgl.includes("this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture")
               && !rebuildWebgl.includes("item.mouseMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture"),
@@ -4516,6 +4534,10 @@ const summary = {
               "active-raycast-uv-write-mode",
               "source-Ka-simulationMaterial-constructor-uniform-defaults",
               "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer",
+              "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment",
+              "source-Ka-update-oldPos-newPos-clone-after-render",
+              "screen-upos-new-ref",
+              "active-upos-old-clone-detach",
             ]),
             sourceShaderChecks: {
               vertex: checks(sourceMouseSimulationVertex, [

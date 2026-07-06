@@ -763,6 +763,10 @@ async function runProbe() {
     if (JSON.stringify(mouse?.constructorUniformDefaults?.uPosNew) !== JSON.stringify([0, 0])) uniformSurfaceErrors.push(`${label}ConstructorUPosNew`);
     if (mouse?.noiseTextureBindingMode !== "source-Ka-uNoiseTexture-constructor-null-no-runtime-writer") uniformSurfaceErrors.push(`${label}NoiseTextureBindingMode`);
     if (mouse?.uNoiseTextureIsSourceNull !== true) uniformSurfaceErrors.push(`${label}NoiseTextureSourceNull`);
+    if (mouse?.uPosUniformWriteMode !== "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment") uniformSurfaceErrors.push(`${label}UPosUniformWriteMode`);
+    if (mouse?.oldPosCloneMode !== "source-Ka-update-oldPos-newPos-clone-after-render") uniformSurfaceErrors.push(`${label}OldPosCloneMode`);
+    if (mouse?.uPosNewUniformIsStateNew !== true) uniformSurfaceErrors.push(`${label}UPosNewRef`);
+    if (mouse?.uPosOldUniformDetachedAfterClone !== true) uniformSurfaceErrors.push(`${label}UPosOldCloneDetach`);
     if (mouse?.diffusion !== 0) uniformSurfaceErrors.push(`${label}Diffusion`);
     if (mouse?.diffusionSize !== 0) uniformSurfaceErrors.push(`${label}DiffusionSize`);
     if (JSON.stringify(mouse?.color) !== JSON.stringify([1, 1, 1])) uniformSurfaceErrors.push(`${label}Color`);
@@ -814,6 +818,8 @@ async function runProbe() {
     if (gaShape.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") shapeErrors.push("raycastEventMode");
     if (gaShape.raycastNormalizationMode !== "source-Pe-width-height") shapeErrors.push("raycastNormalizationMode");
     if (gaShape.raycastUvWriteMode !== "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp") shapeErrors.push("raycastUvWriteMode");
+    if (gaShape.uPosUniformWriteMode !== "source-Ka-update-direct-uPosNew-uPosOld-vector-ref-assignment") shapeErrors.push("uPosUniformWriteMode");
+    if (gaShape.oldPosCloneMode !== "source-Ka-update-oldPos-newPos-clone-after-render") shapeErrors.push("oldPosCloneMode");
     if (activeMouse?.raycastUvWriteMode !== "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp") shapeErrors.push("activeRaycastUvWriteMode");
     if (!Array.isArray(activeMouse?.sourceRayPlaneScale) || Math.abs((activeMouse.sourceRayPlaneScale[2] ?? NaN) - 1.5) > 0.0001) {
       shapeErrors.push("sourceRayPlaneScaleZ");
