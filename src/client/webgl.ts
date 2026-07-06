@@ -4597,19 +4597,22 @@ function makeFluidRenderTarget() {
   return target;
 }
 
-function makeFullscreenTriangle(material: Material) {
+function makeSourceScreenTriangleGeometry() {
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
   geometry.setAttribute("uv", new Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
+  return geometry;
+}
+
+function makeFullscreenTriangle(material: Material) {
+  const geometry = makeSourceScreenTriangleGeometry();
   const mesh = new Mesh(geometry, material);
   mesh.frustumCulled = false;
   return mesh;
 }
 
 function makeSourcePassScreen() {
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
-  geometry.setAttribute("uv", new Float32BufferAttribute([0, 2, 0, 0, 2, 0], 2));
+  const geometry = makeSourceScreenTriangleGeometry();
   const mesh = new Mesh(geometry);
   mesh.frustumCulled = false;
   return mesh as Mesh<BufferGeometry, Material>;
@@ -5079,6 +5082,7 @@ export class WebGLBackdrop {
   private floorReflectionClipBias = 0;
   private floorReflectionBlurMaterial: ShaderMaterial;
   private floorReflectionScreenCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  private floorReflectionScreenTriangle = makeSourceScreenTriangleGeometry();
   private floorReflectionScreen: Mesh<BufferGeometry, ShaderMaterial>;
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
@@ -5389,7 +5393,8 @@ export class WebGLBackdrop {
     this.floorReflectionTarget.depthBuffer = true;
     this.floorReflectionBlurMaterial = this.createFloorReflectionBlurMaterial();
     this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT);
-    this.floorReflectionScreen = makeFullscreenTriangle(this.floorReflectionBlurMaterial);
+    this.floorReflectionScreen = new Mesh(this.floorReflectionScreenTriangle, this.floorReflectionBlurMaterial);
+    this.floorReflectionScreen.frustumCulled = false;
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
     this.screenMouseSimulationScene.add(makeFullscreenTriangle(this.screenMouseSimulationMaterial));
@@ -6115,7 +6120,7 @@ export class WebGLBackdrop {
     this.floorReflectionReadTarget.dispose();
     this.floorReflectionWriteTarget.dispose();
     this.floorReflectionBlurMaterial.dispose();
-    this.floorReflectionScreen.geometry.dispose();
+    this.floorReflectionScreenTriangle.dispose();
     this.displacementMaterial.dispose();
     this.screenMouseSimulationTargets.forEach((target) => target.dispose());
     this.screenMouseSimulationMaterial.dispose();
@@ -10817,6 +10822,13 @@ void main() {
         blurConstructorResolutionMode: "source-i1-sets-t1-uResolution-to-constructor-width-height",
         blurConstructorResolution: [SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT],
         blurPassScreenMode: "source-i1-private-screen-camera",
+        screenTriangleMode: "source-i1-screenTriangle-n1-geometry-owned-by-reflector",
+        screenTriangleSharedWithScreen: this.floorReflectionScreen.geometry === this.floorReflectionScreenTriangle,
+        screenTrianglePosition: Array.from(this.floorReflectionScreenTriangle.getAttribute("position").array),
+        screenTriangleUv: Array.from(this.floorReflectionScreenTriangle.getAttribute("uv").array),
+        screenFrustumCulled: this.floorReflectionScreen.frustumCulled,
+        screenMaterialShared: this.floorReflectionScreen.material === this.floorReflectionBlurMaterial,
+        screenDisposeMode: "source-i1-destroy-disposes-screenTriangle",
         blurDirectionMode: "source-i1-direction-(blurIterations-u-1)*15-axis-by-iteration",
         blurExpectedDirections: Array.from({ length: this.floorReflectionBlurIterations }, (_, iteration) => {
           const direction = (this.floorReflectionBlurIterations - iteration - 1) * 15;

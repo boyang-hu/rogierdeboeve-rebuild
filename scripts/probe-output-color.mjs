@@ -1972,6 +1972,19 @@ async function runProbe() {
     floorErrors.push(`reflectionBlurExpectedDirections=${JSON.stringify(reflectionTargets?.blurExpectedDirections || null)}`);
   }
   if (reflectionTargets?.blurPassScreenMode !== "source-i1-private-screen-camera") floorErrors.push("blurPassScreenMode");
+  if (reflectionTargets?.screenTriangleMode !== "source-i1-screenTriangle-n1-geometry-owned-by-reflector") {
+    floorErrors.push("screenTriangleMode");
+  }
+  if (reflectionTargets?.screenTriangleSharedWithScreen !== true) floorErrors.push("screenTriangleSharedWithScreen");
+  if (JSON.stringify(reflectionTargets?.screenTrianglePosition) !== JSON.stringify([-1, 3, 0, -1, -1, 0, 3, -1, 0])) {
+    floorErrors.push(`screenTrianglePosition=${JSON.stringify(reflectionTargets?.screenTrianglePosition || null)}`);
+  }
+  if (JSON.stringify(reflectionTargets?.screenTriangleUv) !== JSON.stringify([0, 2, 0, 0, 2, 0])) {
+    floorErrors.push(`screenTriangleUv=${JSON.stringify(reflectionTargets?.screenTriangleUv || null)}`);
+  }
+  if (reflectionTargets?.screenFrustumCulled !== false) floorErrors.push("screenFrustumCulled");
+  if (reflectionTargets?.screenMaterialShared !== true) floorErrors.push("screenMaterialShared");
+  if (reflectionTargets?.screenDisposeMode !== "source-i1-destroy-disposes-screenTriangle") floorErrors.push("screenDisposeMode");
   if (reflectionTargets?.reflectorNormalConstructorMode !== "source-i1-normal-new-Vector3-zero-runtime-update-sets-0-0-1") {
     floorErrors.push("reflectorNormalConstructorMode");
   }

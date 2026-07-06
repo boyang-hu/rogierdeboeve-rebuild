@@ -332,7 +332,7 @@ const sourceZA = extractAround(bundle, "class ZA extends", 200, 3000);
 const sourceSA = bundle.match(/class sA\{[\s\S]*?class Ka\{/)?.[0] ?? null;
 const sourceMouseSimulationFragment = extractTemplate(bundle, "rA", "`,oA=");
 const sourceMouseSimulationVertex = extractTemplate(bundle, "oA", "`;class Ka");
-const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
+const sourceI1 = extractAround(bundle, "class i1 extends", 200, 5000);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
 const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 500, 1300);
@@ -3206,6 +3206,10 @@ const summary = {
         "this.normal=new L",
         "this.normal.set(0,0,1)",
         "this.normal.applyMatrix4(this.rotationMatrix)",
+        "this.screenTriangle=n1()",
+        "this.screen=new at(this.screenTriangle,this.blurMaterial)",
+        "this.screen.frustumCulled=!1",
+        "this.screenTriangle.dispose()",
         "this.renderTarget=new Dn(e,t,{depthBuffer:!1})",
         "this.renderTarget.depthBuffer=!0",
         "this.renderTargetRead=this.renderTarget.clone()",
@@ -3219,6 +3223,12 @@ const summary = {
         "private floorReflectorNormal = new Vector3()",
         "private readonly floorReflectorNormalConstructorWasZero = this.floorReflectorNormal.equals(new Vector3())",
         "this.floorReflectorNormal.set(0, 0, 1)",
+        "private floorReflectionScreenTriangle = makeSourceScreenTriangleGeometry()",
+        "this.floorReflectionScreen = new Mesh(this.floorReflectionScreenTriangle, this.floorReflectionBlurMaterial)",
+        "this.floorReflectionScreen.frustumCulled = false",
+        "this.floorReflectionScreenTriangle.dispose()",
+        "screenTriangleMode: \"source-i1-screenTriangle-n1-geometry-owned-by-reflector\"",
+        "screenDisposeMode: \"source-i1-destroy-disposes-screenTriangle\"",
         "reflectorNormalConstructorMode: \"source-i1-normal-new-Vector3-zero-runtime-update-sets-0-0-1\"",
         "reflectorNormalRuntimeMode: \"source-i1-update-normal-set-0-0-1-then-apply-reflector-rotation\"",
         "reflectorType: this.floorReflector.type",
@@ -4149,6 +4159,9 @@ const summary = {
         "this.renderTarget=new Dn(e,t,{depthBuffer:!1})",
         "this.renderTargetUniform=new I(this.blurIterations>0?this.renderTargetRead.texture:this.renderTarget.texture)",
         "this.blurMaterial.uniforms.uResolution.value.set(e,t)",
+        "this.screenTriangle=n1()",
+        "this.screen=new at(this.screenTriangle,this.blurMaterial)",
+        "this.screen.frustumCulled=!1",
         "this.virtualCamera.lookAt(this.target)",
         "this.virtualCamera.far=n.far",
         "this.virtualCamera.updateMatrixWorld()",
@@ -4160,6 +4173,7 @@ const summary = {
         "u===0?this.blurMaterial.uniforms.tMap.value=this.renderTarget.texture:this.blurMaterial.uniforms.tMap.value=this.renderTargetRead.texture",
         "e.setRenderTarget(this.renderTargetWrite)",
         "const l=this.renderTargetRead;this.renderTargetRead=this.renderTargetWrite,this.renderTargetWrite=l,this.renderTargetUniform.value=this.renderTargetRead.texture",
+        "this.screenTriangle.dispose()",
       ]),
       rebuildChecks: checks(rebuildWebgl, [
         "const SOURCE_I1_REFLECTION_WIDTH = 512",
@@ -4169,6 +4183,10 @@ const summary = {
         "private readonly floorReflectionBlurIterations = SOURCE_I1_REFLECTION_BLUR_ITERATIONS",
         "value: this.floorReflectionBlurIterations > 0",
         "this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT)",
+        "private floorReflectionScreenTriangle = makeSourceScreenTriangleGeometry()",
+        "this.floorReflectionScreen = new Mesh(this.floorReflectionScreenTriangle, this.floorReflectionBlurMaterial)",
+        "this.floorReflectionScreen.frustumCulled = false",
+        "this.floorReflectionScreenTriangle.dispose()",
         "const blurIterations = this.floorReflectionBlurIterations",
         "for (let iteration = 0; iteration < blurIterations; iteration += 1)",
         "const direction = (blurIterations - iteration - 1) * 15",
@@ -4181,6 +4199,9 @@ const summary = {
         "JSON.stringify(reflectionTargets?.blurConstructorResolution) !== JSON.stringify([512, 512])",
         "reflectionTargets?.blurDirectionMode !== \"source-i1-direction-(blurIterations-u-1)*15-axis-by-iteration\"",
         "JSON.stringify(reflectionTargets?.blurExpectedDirections) !== JSON.stringify([[15, 0], [0, 0]])",
+        "reflectionTargets?.screenTriangleMode !== \"source-i1-screenTriangle-n1-geometry-owned-by-reflector\"",
+        "reflectionTargets?.screenTriangleSharedWithScreen !== true",
+        "reflectionTargets?.screenDisposeMode !== \"source-i1-destroy-disposes-screenTriangle\"",
       ]),
       order: regexAnchorOrder(sourceI1.text, [
         { label: "lookAt", pattern: /this\.virtualCamera\.lookAt\(this\.target\)/ },

@@ -72,6 +72,42 @@ Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work b
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 
+### S1-316 `i1/a1` Floor Reflection Screen Triangle Ownership
+
+This batch aligns a second narrow source constructor/destroy ownership edge in the floor reflection chain. It does not change shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
+
+Source evidence:
+
+- Source `i1` constructs a private fullscreen triangle with `this.screenTriangle=n1()`.
+- Source `i1` constructs the blur screen from that owned geometry with `this.screen=new at(this.screenTriangle,this.blurMaterial)`.
+- Source `i1` disables culling for that screen via `this.screen.frustumCulled=!1`.
+- Source `i1.destroy()` disposes the owned geometry with `this.screenTriangle.dispose()`.
+
+Runtime and tooling changes:
+
+- `src/client/webgl.ts` now uses `makeSourceScreenTriangleGeometry()` for source fullscreen triangle geometry creation.
+- Floor reflection now owns `floorReflectionScreenTriangle` separately from the screen mesh, matching source `i1.screenTriangle`.
+- The floor reflection blur screen is constructed as `new Mesh(this.floorReflectionScreenTriangle, this.floorReflectionBlurMaterial)` and keeps `frustumCulled=false`.
+- `destroy()` now disposes `floorReflectionScreenTriangle` directly instead of reaching through `floorReflectionScreen.geometry`.
+- Output probes expose `screenTriangleMode`, `screenTriangleSharedWithScreen`, `screenTrianglePosition`, `screenTriangleUv`, `screenFrustumCulled`, `screenMaterialShared`, and `screenDisposeMode`.
+- `scripts/probe-output-color.mjs` hard-fails if the source screen triangle ownership, geometry attributes, material sharing, culling state, or destroy ownership drifts.
+- `scripts/audit-renderer-output.mjs` checks the source `i1` constructor/destroy anchors, rebuild coverage, and probe assertions.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-floor-screen-triangle-audit.json` passed.
+- Recursive false/null extraction from `/tmp/rd-floor-screen-triangle-audit.json` printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed: `/tmp/rd-floor-screen-triangle-output-desktop`.
+- Mobile output probe passed: `/tmp/rd-floor-screen-triangle-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-floor-screen-triangle-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages: `/tmp/rd-floor-screen-triangle-media`.
+
+Decision: keep floor reflection blur-screen geometry owned by the source-shaped `i1` screen-triangle field and dispose that owned geometry directly. Phase 1 remains open because this closes one floor reflection constructor/destroy ownership edge only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
+
 ### S1-315 `i1/a1` Floor Reflection Normal Constructor Ownership
 
 This batch aligns a narrow source constructor/runtime ownership edge in the floor reflection chain. It does not change shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
