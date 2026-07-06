@@ -142,10 +142,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned ordinary work `VA/GA` `uUvOffset` shader declaration without visual tuning.
-- Source `HA` declares `uniform vec3 uUvOffset;` and reads only `uUvOffset.xy`; source `VA.customUniforms` constructs the uniform from `Vector2`, and source `GA.createPlane()` writes only `.x`/`.y` plus `uUvOffsetScale`.
-- The rebuild now declares `uniform vec3 uUvOffset;` in `workBlockSourceHaVertexShader` and shared `workBlockVertexPars`, while keeping runtime `uUvOffset: { value: sourceMouseUvOffset() }` as the source `Vector2`/XY bridge.
-- Output probe exposes/asserts `uvOffsetShaderDeclaration=source-HA-vec3-uUvOffset`, `uvOffsetRuntimeBridgeMode=source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy`, and matching source-shape booleans; renderer audit checks source/rebuild anchors.
+- Expanded the source `T1/w1/SD/p1` thumb/spotlight guardrail to cover the mobile source branch without visual tuning or production runtime changes.
+- Source `SD.init()` binds `SpotLight.map` to the thumb composite target, while source `p1.update()` uses desktop `spotLight.position.y=this.camera.position.y*.175` and mobile `spotLight.position.y=.3+this.camera.position.y*.175`.
+- Source `T1.resize(e,t,n)` calls `this.renderManager.resize(t,t,1)`, so thumb targets are square CSS-height targets at DPR `1`.
+- `scripts/probe-thumb-spotlight.mjs` now accepts `VIEWPORT=desktop|mobile`, derives expected spotlight Y branch and target size from the viewport, and writes viewport metadata into the summary; renderer audit checks that source mobile branch and probe coverage.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -155,31 +155,26 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
-node --check scripts/dump-va-shader.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-uvoffset-vec3-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9472 OUT_DIR=/tmp/rd-uvoffset-vec3-shader node scripts/dump-va-shader.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9473 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-uvoffset-vec3-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9474 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-uvoffset-vec3-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9475 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-uvoffset-vec3-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9476 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-uvoffset-vec3-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-mobile-guard-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9481 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-thumb-mobile-guard-desktop node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9482 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-thumb-mobile-guard-mobile node scripts/probe-thumb-spotlight.mjs
 ```
 
-All passed in the `VA/GA` `uUvOffset` shader declaration batch.
+All passed in the `T1/w1/SD/p1` mobile thumb spotlight guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports all `sourceManagers.GA.uUvOffsetOwnership` checks true: source shader `vec3`, source runtime `Vector2`, rebuild work/shared shader `vec3`, and rebuild runtime `Vector2`.
-- Shader dump reports `VA-work` vertex/fragment deltas `0` and matching `sourceUvOffsetBeforeRevealUniforms`.
-- Desktop/mobile output probes confirm `uvOffsetShaderDeclaration=source-HA-vec3-uUvOffset`, `uvOffsetRuntimeBridgeMode=source-VA-uniform-value-Vector2-GA-writes-xy-shader-reads-xy`, and matching source-shape booleans.
-- Thumb spotlight probe retained the existing spotlight/thumb guardrails.
-- Project media probe retained `5/5` visible tracks on both `/gc-2026/` and `/hashgraph-vc/`.
+- Renderer audit reports `sourceMobileSpotlightParallaxBranch=true` and `rebuildMobileSpotlightParallaxProbe=true`.
+- Desktop thumb probe confirms source desktop parallax Y, spotlight position `[0,0,3.7]`, and `900x900` thumb/composite targets.
+- Mobile thumb probe confirms source mobile parallax Y, `mobileYOffset=0.3`, spotlight position `[0,0.3,3.7]`, and `844x844` thumb/composite targets.
+- Both thumb probes retained the existing spotlight map, thumb wrapping, M1/E1 constructor/order, and x1 target guardrails with no browser failures/exceptions/console messages.
 - Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

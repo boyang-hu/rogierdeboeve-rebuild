@@ -20,6 +20,15 @@ const port = Number(process.env.CDP_PORT || 9233);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const waitAfter = Number(process.env.PROBE_WAIT || 5000);
 const sourceProbeProgress = Number(process.env.THUMB_PROGRESS || 0.27);
+const viewportName = process.env.VIEWPORT || "desktop";
+const viewport = viewportName === "mobile"
+  ? { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }
+  : { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false };
+const expectedSpotlightParallaxYOffsetMode = viewport.width >= 800
+  ? "source-p1-desktop-camera-y-parallax"
+  : "source-p1-mobile-0_3-plus-camera-y-parallax";
+const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3;
+const expectedTargetSize = Math.max(1, Math.round(viewport.height));
 
 if (!Number.isFinite(sourceProbeProgress)) {
   throw new Error(`Invalid THUMB_PROGRESS: ${process.env.THUMB_PROGRESS}`);
@@ -109,12 +118,12 @@ async function runProbe() {
   await send(ws, "Runtime.enable");
   await send(ws, "Network.enable");
   await send(ws, "Emulation.setDeviceMetricsOverride", {
-    width: 1440,
-    height: 900,
-    deviceScaleFactor: 1,
-    mobile: false,
-    screenWidth: 1440,
-    screenHeight: 900,
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: viewport.deviceScaleFactor,
+    mobile: viewport.mobile,
+    screenWidth: viewport.width,
+    screenHeight: viewport.height,
   });
   const url = new URL(rebuildUrl);
   url.searchParams.set("skip-preloader", "");
@@ -180,13 +189,13 @@ async function runProbe() {
   if (probe.spotlight?.parallaxMode !== "source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile") {
     sourceShapeErrors.push(`spotlightParallaxMode=${probe.spotlight?.parallaxMode}`);
   }
-  if (probe.spotlight?.parallaxYOffsetMode !== "source-p1-desktop-camera-y-parallax") {
+  if (probe.spotlight?.parallaxYOffsetMode !== expectedSpotlightParallaxYOffsetMode) {
     sourceShapeErrors.push(`spotlightParallaxYOffsetMode=${probe.spotlight?.parallaxYOffsetMode}`);
   }
   if (probe.spotlight?.mobileBreakpoint !== 800) {
     sourceShapeErrors.push(`spotlightMobileBreakpoint=${probe.spotlight?.mobileBreakpoint}`);
   }
-  if (probe.spotlight?.mobileYOffset !== 0) {
+  if (probe.spotlight?.mobileYOffset !== expectedSpotlightMobileYOffset) {
     sourceShapeErrors.push(`spotlightMobileYOffset=${probe.spotlight?.mobileYOffset}`);
   }
   if (probe.spotlight?.hasMap !== true) {
@@ -204,7 +213,7 @@ async function runProbe() {
   if (probe.spotlight?.stateIntensity !== 220) {
     sourceShapeErrors.push(`spotlightStateIntensity=${probe.spotlight?.stateIntensity}`);
   }
-  if (JSON.stringify(probe.spotlight?.position) !== JSON.stringify([0, 0, 3.7])) {
+  if (JSON.stringify(probe.spotlight?.position) !== JSON.stringify([0, expectedSpotlightMobileYOffset, 3.7])) {
     sourceShapeErrors.push(`spotlightPosition=${JSON.stringify(probe.spotlight?.position)}`);
   }
   if (JSON.stringify(probe.spotlight?.target) !== JSON.stringify([0, 0, -8])) {
@@ -391,10 +400,10 @@ async function runProbe() {
   if (probe.targets?.compositeConstructionMode !== "source-Lo-renderTargetComposite-renderTargetA-clone") {
     sourceShapeErrors.push(`thumbCompositeConstruction=${probe.targets?.compositeConstructionMode}`);
   }
-  if (probe.targets?.thumb?.width !== 900 || probe.targets?.thumb?.height !== 900) {
+  if (probe.targets?.thumb?.width !== expectedTargetSize || probe.targets?.thumb?.height !== expectedTargetSize) {
     sourceShapeErrors.push(`thumbTarget=${probe.targets?.thumb?.width}x${probe.targets?.thumb?.height}`);
   }
-  if (probe.targets?.composite?.width !== 900 || probe.targets?.composite?.height !== 900) {
+  if (probe.targets?.composite?.width !== expectedTargetSize || probe.targets?.composite?.height !== expectedTargetSize) {
     sourceShapeErrors.push(`thumbCompositeTarget=${probe.targets?.composite?.width}x${probe.targets?.composite?.height}`);
   }
   if (!Number.isFinite(probe.targets?.thumb?.luma) || probe.targets.thumb.luma <= 0) {
@@ -451,6 +460,8 @@ async function runProbe() {
   writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
   ws.close();
   return {
+    viewportName,
+    viewport,
     screenshot: screenshotFile,
     ...parsed,
     failures: failures.filter((failure) => !failure.canceled).map((failure) => ({ type: failure.type, errorText: failure.errorText })),

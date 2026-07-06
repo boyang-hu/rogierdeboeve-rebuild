@@ -14,6 +14,7 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-renderer-outpu
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
 const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
 const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
+const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
 const threeWebglLights = readFileSync("node_modules/three/src/renderers/webgl/WebGLLights.js", "utf8");
@@ -147,6 +148,7 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
+const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
 const rebuildCreateLensflareMaterial = extractBlock(rebuildWebgl, "private createLensflareMaterial()");
 const rebuildCreateLuminosityMaterial = extractBlock(rebuildWebgl, "private createLuminosityMaterial(");
@@ -1812,6 +1814,8 @@ const summary = {
         && sourceSDInitSpotlight.text.includes("J.workScene.spotLight.target.position.set(0,0,-8)")
         && sourceTDSpotlight?.text.includes("J.workScene.spotLight.position.set(J.workScene.aboutBlocks.position.x-.5")
         && sourceTDSpotlight?.text.includes("J.workScene.spotLight.target.position.set(J.workScene.aboutBlocks.position.x+1.5"),
+      sourceMobileSpotlightParallaxBranch:
+        sourceP1Update?.text.includes("Pe.w>=Le.BREAKPOINTS.MD?this.spotLight.position.y=this.camera.position.y*.175:this.spotLight.position.y=.3+this.camera.position.y*.175"),
       rebuildDirectSpotlightState:
         rebuildWebgl.includes("positionOwnershipMode: \"source-direct-SpotLight-position-target-no-local-mirror\"")
         && rebuildWebgl.includes("parallaxMode: \"source-p1-spotLight-x-camera-y-desktop-or-0_3-mobile\"")
@@ -1825,6 +1829,16 @@ const summary = {
         && !rebuildWebgl.includes("updateSpotLightBasis")
         && !rebuildWebgl.includes("spotLightRight")
         && !rebuildWebgl.includes("spotLightUp"),
+      rebuildMobileSpotlightParallaxProbe:
+        rebuildWebgl.includes("parallaxYOffsetMode: window.innerWidth >= BREAKPOINT_MD")
+        && rebuildWebgl.includes("? \"source-p1-desktop-camera-y-parallax\"")
+        && rebuildWebgl.includes(": \"source-p1-mobile-0_3-plus-camera-y-parallax\"")
+        && rebuildThumbProbe.includes("const viewportName = process.env.VIEWPORT || \"desktop\"")
+        && rebuildThumbProbe.includes("viewportName === \"mobile\"")
+        && rebuildThumbProbe.includes("const expectedSpotlightParallaxYOffsetMode = viewport.width >= 800")
+        && rebuildThumbProbe.includes("\"source-p1-mobile-0_3-plus-camera-y-parallax\"")
+        && rebuildThumbProbe.includes("const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3")
+        && rebuildThumbProbe.includes("const expectedTargetSize = Math.max(1, Math.round(viewport.height))"),
       rebuildMapProjectionGuards:
         rebuildWebgl.includes("this.thumbWrap.frustumCulled = false")
         && rebuildWebgl.includes("projectionPath: \"source-SpotLight.map-without-castShadow\"")
