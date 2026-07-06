@@ -154,7 +154,7 @@ Known remaining gaps:
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
-- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Exact final Home visual/feel parity is still open.
+- `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Source `Ka.raycast()` direct hit-UV target writes are now guarded without a rebuild-owned clamp. Exact final Home visual/feel parity is still open.
 - Source `yD` gallery scroll runtime rounding is now guarded: source `onRaf()` uses `Yi(...)` for `scroll.diff` and `scroll.animated`, and source `updateScene()` persists roll `sceneRotation` through `bo(...)` plus `Yi(...)`; the rebuild uses source-rounded helpers for those paths instead of an unrounded local `lerp`.
 - Source `yD/Qe.workState` gallery scroll persistence is now guarded: the session-backed rebuild state carries source runtime scroll fields including `diff`, `velocity`, and `targetPlusDiff`, plus index/hooks/active project/scene rotation.
 - Renderer audit render-target default diagnostics now distinguish expected false values from failed checks: `generateMipmaps`, `depthBuffer`, and `stencilBuffer` defaults are reported as `actual` / `expected` / `matchesExpected`, and the Node-only renderer probe reports `status:"unavailable"` when `OffscreenCanvas` is absent instead of `null`.
@@ -179,12 +179,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added source-backed `Lo/x1/T1` thumb raw-to-composite transfer attribution without changing shader text, render targets, pass behavior, project data, route behavior, visual constants, or projection math.
-- Source evidence: `x1.initSettings()` keeps `renderToScreen:false`; source `Lo.update()` renders the thumb scene to `renderTargetA`, binds `compositeMaterial.uniforms.tScene.value = renderTargetA.texture`, assigns the single screen mesh to the composite material, renders that screen to `renderTargetComposite`, and then resets the renderer target to `null`; source `SD.init()` binds `J.workScene.spotLight.map` to that composite texture.
-- The rebuild now records `thumbRenderTransferState` around the existing thumb pass.
-- Thumb probes expose and assert `thumbRenderTransfer`: expected/actual steps, `renderToScreen=false`, raw/composite target roles, `tScene` raw-target binding, screen-material ownership, final target reset, and spotlight-map composite-texture ownership.
-- Renderer audit checks the source `Lo.update()` transfer anchors plus rebuild/probe coverage.
-- Previous committed batch was `3048899 Guard floor reflection camera order`.
+- Aligned source `Ka.raycast()` direct hit-UV target writes in the work/local mouse simulation path without changing shader text, render targets, pass behavior, project data, route behavior, visual constants, or target sizing.
+- Source evidence: `Ka.raycast({x,y})` normalizes with `Pe.w/Pe.h`, intersects `[this.rayCastMesh]`, and when a hit exists writes `targetPos.x/y` directly from `this.intersects[0].uv.x/y`; source does not clamp the hit UV before `Ka.update()` lerps toward `targetPos`.
+- The rebuild now writes `item.mouseTarget.set(hit.uv.x, hit.uv.y)` directly instead of using `MathUtils.clamp(...)`.
+- Output and interactive probes expose/assert `raycastUvWriteMode=source-Ka-raycast-hit-uv-direct-targetPos-no-clamp`.
+- Renderer audit checks source `Ka.raycast()` direct-write anchors, rebuild direct-write coverage, absence of the old clamp path, and output/interactive probe coverage.
+- Previous committed batch was `4d7f34f Guard thumb render transfer order`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status

@@ -70,9 +70,42 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `Lo/x1/T1` thumb render-target transfer order is now guarded for `renderTargetA -> tScene -> screen.material -> renderTargetComposite -> null`, and the spotlight map is verified to consume `renderTargetComposite.texture`. This is runtime attribution only; Phase 1 remains open.
+Latest accepted batch: source `Ka.raycast()` direct hit-UV write ownership is now aligned and guarded for the work/local mouse simulation path. This is runtime behavior parity only; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-328 `Ka` Raycast Hit-UV Direct Write Ownership
+
+This batch aligns one source runtime behavior in the work/local mouse simulation path. It does not change shader text, render targets, visual constants, route behavior, project data, or mouse-simulation target sizing.
+
+Source evidence:
+
+- Source `Ka.onMouseMove({x,y})` delegates mesh-backed pointer input to `this.raycast({x,y})`.
+- Source `Ka.raycast({x,y})` normalizes screen coordinates with `Pe.w/Pe.h`, calls `this.raycaster.setFromCamera(this.mouse,this.camera)`, intersects `[this.rayCastMesh]`, and when a hit exists writes `this.targetPos.x=this.intersects[0].uv.x` and `this.targetPos.y=this.intersects[0].uv.y`.
+- Source does not clamp the hit UV before writing `targetPos`; the later `Ka.update()` path lerps `newPos` toward `targetPos` directly.
+
+Runtime and tooling changes:
+
+- `updatePointerProjection()` now writes `item.mouseTarget.set(hit.uv.x, hit.uv.y)` directly instead of using a rebuild-only `MathUtils.clamp(...)` wrapper.
+- `__rogierOutputProbe.mouseSimulation.active` and `sourceShape` expose `raycastUvWriteMode=source-Ka-raycast-hit-uv-direct-targetPos-no-clamp`.
+- `scripts/probe-output-color.mjs` and `scripts/probe-interactive-mouse.mjs` assert the direct hit-UV write mode.
+- `scripts/audit-renderer-output.mjs` checks the source `Ka.raycast()` direct write, rebuild direct write, absence of the old `MathUtils.clamp(hit.uv...)` path, and output/interactive probe coverage.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-raycast-uv-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed with `raycastUvWriteMode=source-Ka-raycast-hit-uv-direct-targetPos-no-clamp` and no failures/exceptions/console messages: `/tmp/rd-raycast-uv-output-desktop`.
+- Mobile output probe passed with the same raycast UV write marker and no failures/exceptions/console messages: `/tmp/rd-raycast-uv-output-mobile`.
+- Interactive mouse probe passed with active `mouseTarget` moving from `[0.5,0.5]` to approximately `[0.5968,0.5461]`, `raycastUvWriteMode=source-Ka-raycast-hit-uv-direct-targetPos-no-clamp`, and `raycastUvWriteMatchesSource=true`: `/tmp/rd-raycast-uv-interactive`.
+- Thumb spotlight probe passed and retained thumb transfer plus spotlight-map projection guardrails: `/tmp/rd-raycast-uv-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-raycast-uv-media`.
+
+Decision: keep local mouse raycast target writes source-direct from hit UVs. Do not reintroduce a clamp around `hit.uv` without mirrored-bundle evidence. Phase 1 remains open because this closes one local mouse simulation behavior drift only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-327 `Lo/x1/T1` Thumb Render Transfer Guardrail
 

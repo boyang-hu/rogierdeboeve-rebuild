@@ -19,6 +19,7 @@ const rebuildMotionPath = process.env.REBUILD_MOTION || "src/client/motion.ts";
 const rebuildSitePath = process.env.REBUILD_SITE || "src/data/site.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
 const rebuildOutputProbePath = process.env.REBUILD_OUTPUT_PROBE || "scripts/probe-output-color.mjs";
+const rebuildInteractiveMouseProbePath = process.env.REBUILD_INTERACTIVE_MOUSE_PROBE || "scripts/probe-interactive-mouse.mjs";
 const rebuildMirrorSitePath = process.env.REBUILD_MIRROR_SITE || "scripts/mirror-site.mjs";
 const rebuildCompositeStagesPath = process.env.REBUILD_COMPOSITE_STAGES || "scripts/compare-composite-stages.mjs";
 const rebuildBrightnessAttributionPath = process.env.REBUILD_BRIGHTNESS_ATTRIBUTION || "scripts/compare-home-brightness-attribution.mjs";
@@ -175,6 +176,7 @@ const rebuildMotion = readFileSync(rebuildMotionPath, "utf8");
 const rebuildSite = readFileSync(rebuildSitePath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
 const rebuildOutputProbe = readFileSync(rebuildOutputProbePath, "utf8");
+const rebuildInteractiveMouseProbe = readFileSync(rebuildInteractiveMouseProbePath, "utf8");
 const rebuildMirrorSite = readFileSync(rebuildMirrorSitePath, "utf8");
 const rebuildCompositeStages = readFileSync(rebuildCompositeStagesPath, "utf8");
 const rebuildBrightnessAttribution = readFileSync(rebuildBrightnessAttributionPath, "utf8");
@@ -4468,8 +4470,18 @@ const summary = {
               "this.updatePointerProjection()",
               "this.raycaster.setFromCamera(this.pointerRay, this.homeCamera)",
               "const hit = this.raycaster.intersectObject(item.rayPlane, false)[0]",
+              "item.mouseTarget.set(hit.uv.x, hit.uv.y)",
               "raycastMode: \"source-Ka-onMouseMove-per-item-raycast-immediate-pointer\"",
               "raycastEventMode: \"source-Ka-raycast-during-mousemove-not-raf-tail\"",
+              "raycastUvWriteMode: \"source-Ka-raycast-hit-uv-direct-targetPos-no-clamp\"",
+            ]),
+            rebuildNoRaycastUvClamp:
+              !rebuildWebgl.includes("MathUtils.clamp(hit.uv.x")
+              && !rebuildWebgl.includes("MathUtils.clamp(hit.uv.y"),
+            outputProbeChecks: checks(rebuildOutputProbe + rebuildInteractiveMouseProbe, [
+              "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp",
+              "raycastUvWriteMode",
+              "active-raycast-uv-write-mode",
             ]),
             sourceShaderChecks: {
               vertex: checks(sourceMouseSimulationVertex, [

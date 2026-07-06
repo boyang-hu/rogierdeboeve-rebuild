@@ -174,6 +174,7 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (active.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") errors.push("active-raycast-mode");
   if (active.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") errors.push("active-raycast-event-mode");
   if (active.raycastNormalizationMode !== "source-Pe-width-height") errors.push("active-raycast-normalization-mode");
+  if (active.raycastUvWriteMode !== "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp") errors.push("active-raycast-uv-write-mode");
   if (active.allVisibleHaveIndependentTargets !== true) errors.push("active-independent-targets");
   if (distance2(active.pointerRay, expectedPointerRay) > 0.02) errors.push(`pointer-ray=${JSON.stringify(active.pointerRay)}`);
   if (distance2(active.mouseTarget, beforeActive.mouseTarget) < 0.001) errors.push("active-mouse-target-did-not-move");
@@ -185,6 +186,7 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (active.sourceShape?.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") sourceShapeErrors.push("raycastMode");
   if (active.sourceShape?.raycastEventMode !== "source-Ka-raycast-during-mousemove-not-raf-tail") sourceShapeErrors.push("raycastEventMode");
   if (active.sourceShape?.raycastNormalizationMode !== "source-Pe-width-height") sourceShapeErrors.push("raycastNormalizationMode");
+  if (active.sourceShape?.raycastUvWriteMode !== "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp") sourceShapeErrors.push("raycastUvWriteMode");
   if (active.sourceShape?.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-pre-rounding-no-clamp") sourceShapeErrors.push("targetSizingMode");
   if (active.targetSizingMode !== "source-GA-mouseSim-onResize-plane-scale-no-clamp") sourceShapeErrors.push("activeTargetSizingMode");
   if (sourceShapeErrors.length) errors.push(`active-source-shape=${sourceShapeErrors.join("|")}`);

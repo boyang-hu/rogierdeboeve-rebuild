@@ -8637,10 +8637,7 @@ void main() {
       if (!item.group.visible || !item.rayPlane) return;
       const hit = this.raycaster.intersectObject(item.rayPlane, false)[0];
       if (!hit?.uv) return;
-      item.mouseTarget.set(
-        MathUtils.clamp(hit.uv.x, 0, 1),
-        MathUtils.clamp(hit.uv.y, 0, 1),
-      );
+      item.mouseTarget.set(hit.uv.x, hit.uv.y);
     };
     this.workItems.forEach((item) => updateTarget(item));
     if (aboutVisible && this.aboutBlocks) updateTarget(this.aboutBlocks);
@@ -11492,6 +11489,7 @@ void main() {
         raycastMode: "source-Ka-onMouseMove-per-item-raycast-immediate-pointer",
         raycastEventMode: "source-Ka-raycast-during-mousemove-not-raf-tail",
         raycastNormalizationMode: "source-Pe-width-height",
+        raycastUvWriteMode: "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp",
         pointerRay: this.pointerRay.toArray(),
         smoothedPointer: this.pointer.toArray(),
         visibleWorkItemCount: visibleWorkItems.length,
@@ -11583,9 +11581,11 @@ void main() {
           raycastMode: "source-Ka-onMouseMove-per-item-raycast-immediate-pointer",
           raycastEventMode: "source-Ka-raycast-during-mousemove-not-raf-tail",
           raycastNormalizationMode: "source-Pe-width-height",
+          raycastUvWriteMode: "source-Ka-raycast-hit-uv-direct-targetPos-no-clamp",
           raycastModeMatchesSource: true,
           raycastEventModeMatchesSource: true,
           raycastNormalizationModeMatchesSource: true,
+          raycastUvWriteMatchesSource: true,
           allVisibleHaveIndependentTargets: visibleWorkItems.every((item) => item.mouseTarget instanceof Vector2),
           uCoordsMatchesTarget: activeCoords.x === expectedTargetSize.width && activeCoords.y === expectedTargetSize.height,
           mousePlaneScaleMatchesSource:
