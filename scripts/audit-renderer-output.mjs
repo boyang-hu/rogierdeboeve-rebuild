@@ -1595,8 +1595,28 @@ const summary = {
         lensflareTMapNull: Boolean(rebuildCreateLensflareMaterial?.includes("tMap: { value: null }")),
         luminosityTMapNull: Boolean(rebuildCreateLuminosityMaterial?.includes("tMap: { value: null }")),
         bloomBlurTMapNull: Boolean(rebuildCreateBloomBlurMaterial?.includes("tMap: { value: null }")),
+        bloomBlurSourceUnusedSamplers: Boolean(rebuildCreateBloomBlurMaterial)
+          && [
+            "tDetail: { value: null }",
+            "tOverview: { value: null }",
+            "tOverviewMask: { value: null }",
+          ].every((needle) => rebuildCreateBloomBlurMaterial.includes(needle)),
+        bloomBlurConstructorDirection: Boolean(rebuildCreateBloomBlurMaterial)
+          && rebuildCreateBloomBlurMaterial.includes("uDirection: { value: new Vector2(0.5, 0.5) }")
+          && rebuildCreateBloomBlurMaterial.includes("material.userData.sourceConstructorDirection"),
+        bloomBlurConstructorZeroResolution: Boolean(rebuildCreateBloomBlurMaterial)
+          && rebuildCreateBloomBlurMaterial.includes("uResolution: { value: new Vector2() }")
+          && rebuildCreateBloomBlurMaterial.includes("material.userData.sourceConstructorResolution"),
         standardBlurTMapNull: Boolean(rebuildCreateBlurMaterial?.includes("tMap: { value: null }")),
+        standardBlurConstructorZeroResolution: Boolean(rebuildCreateBlurMaterial)
+          && rebuildCreateBlurMaterial.includes("uResolution: { value: new Vector2() }")
+          && rebuildCreateBlurMaterial.includes("material.userData.sourceConstructorResolution")
+          && !rebuildCreateBlurMaterial.includes("uResolution: { value: new Vector2(1, 1) }"),
         fxaaTMapNull: Boolean(rebuildCreateFxaaMaterial?.includes("tMap: { value: null }")),
+        fxaaConstructorZeroResolution: Boolean(rebuildCreateFxaaMaterial)
+          && rebuildCreateFxaaMaterial.includes("uResolution: { value: new Vector2() }")
+          && rebuildCreateFxaaMaterial.includes("material.userData.sourceConstructorResolution")
+          && !rebuildCreateFxaaMaterial.includes("uResolution: { value: new Vector2(1, 1) }"),
         bloomCompositeSamplersNull: Boolean(rebuildCreateBloomCompositeMaterial)
           && [
             "tBlur1: { value: null }",

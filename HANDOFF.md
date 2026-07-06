@@ -148,7 +148,7 @@ Known remaining gaps:
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
-- Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
+- Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`. The `rg/Na/ig` helper constructor surface is also guarded: source zero-vector `uResolution` defaults are preserved, and `rg` keeps source unused null samplers plus constructor direction `[0.5,0.5]`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
 - Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, ambient intensity tweens `J.workScene.ambientLight.intensity`, and rebuild-only background material uniforms are not source `Se` ambient targets.
 - Source `Se.setBlocksColor()` ownership is now guarded as a no-kill fan-out setter for every ordinary work material emissive color. It no longer keeps rebuild-only block-color tween registry state, retargets only the active block, or writes custom uniforms from this setter.
@@ -165,13 +165,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `XA/KA/jA/WA/YA/qA` auxiliary shader surface.
-- Source `XA.onBeforeCompile` assigns `vertexShader=jA` and `fragmentShader=WA`; source `KA.onBeforeCompile` assigns `vertexShader=YA` and `fragmentShader=qA`.
-- `src/client/webgl.ts` now routes about auxiliary material compilation to direct source `jA/WA` and floating auxiliary material compilation to direct source `YA/qA`.
-- The rebuild-only auxiliary opaque chunk and `uAuxiliaryMaterial` production bridge were removed from the auxiliary path.
-- `__rogierOutputProbe` exposes `source-XA-jA-WA-direct-shader` and `source-KA-YA-qA-direct-shader` for about/floating materials.
-- `scripts/probe-output-color.mjs`, `scripts/audit-renderer-output.mjs`, and `scripts/dump-va-shader.mjs` now guard auxiliary shader-surface ownership.
-- Previous committed batch was `2fa7bb7 Align character rotatable lifecycle`.
+- Aligned source `rg/Na/ig` helper pass material constructor surface.
+- Source `rg` constructs `tMap/tDetail/tOverview/tOverviewMask` as `null`, `uDirection` as `new Q(.5,.5)`, and `uResolution` as `new Q`.
+- Source `Na` and `ig` construct `uResolution` as `new Q`; `Lu/I1` write runtime sizes later only through the source resize/update branches.
+- `src/client/webgl.ts` now gives bloom blur `rg` the source unused null sampler uniforms, source constructor direction `[0.5,0.5]`, and zero-vector constructor resolution.
+- Standard blur `Na` and FXAA `ig` now construct `uResolution` as zero vectors before their existing source resize paths write runtime values.
+- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, and `scripts/audit-renderer-output.mjs` now guard these constructor defaults, including the disabled main-bloom branch retaining `[0,0]`.
+- Previous committed batch was `0a21ed1 Align auxiliary shader surface`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -183,33 +183,27 @@ git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
-node --check scripts/probe-project-media.mjs
-node --check scripts/dump-va-shader.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-aux-shader-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-helper-constructor-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-PORT=5180 SERVE_ROOT=dist FALLBACK_ROOT=public node scripts/serve.mjs
-# custom static /about/ CDP smoke against http://127.0.0.1:5180/about/
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180/about OUT_DIR=/tmp/rd-aux-shader-dump CDP_PORT=9323 DUMP_WAIT=12000 node scripts/dump-va-shader.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 OUT_DIR=/tmp/rd-aux-home-shader-dump CDP_PORT=9327 DUMP_WAIT=9000 node scripts/dump-va-shader.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 PROBE_WAIT=30000 SKIP_SCREENSHOT=1 CDP_PORT=9324 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 SKIP_SCREENSHOT=1 CDP_PORT=9325 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5180 CDP_PORT=9328 node scripts/probe-project-media.mjs
+PORT=5180 node scripts/serve.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `XA/KA/jA/WA/YA/qA` auxiliary shader surface batch. Renderer audit wrote `/tmp/rd-aux-shader-audit.json`; `sourceManagers.auxiliaryBlockShaders` source, rebuild, no-old-bridge, dump, and probe checks were true. Static `/about/` CDP smoke passed with body `is-about is-ready has-entered has-webgl`, full-size canvas, no failed requests, no exceptions, and no shader/WebGL console messages. Home shader dump wrote `/tmp/rd-aux-home-shader-dump` and kept ordinary `VA-work` source-shaped with vertex/fragment delta `0`. Desktop output and thumb probes passed; project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+All relevant checks passed in the `rg/Na/ig` helper constructor surface batch. Renderer audit wrote `/tmp/rd-helper-constructor-audit.json`; helper constructor checks for `rg` unused samplers, `rg` constructor direction, and `rg/Na/ig` zero-vector `uResolution` defaults were true. Desktop output probe passed and asserted constructor defaults plus enabled/disabled bloom-resolution branches. Desktop thumb spotlight probe passed. Project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this auxiliary shader surface batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this helper constructor surface batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
-- Home loads with `.gl-canvas`; `/about/` enters `is-about is-ready has-entered has-webgl`.
-- Renderer audit passed for the `XA/KA/jA/WA/YA/qA` auxiliary shader surface batch: `/tmp/rd-aux-shader-audit.json`.
-- Static `/about/` smoke passed with no failed requests, exceptions, or shader/WebGL console messages.
+- Home loads with `.gl-canvas`.
+- Renderer audit passed for the `rg/Na/ig` helper constructor surface batch: `/tmp/rd-helper-constructor-audit.json`.
 - Desktop output, desktop thumb spotlight, and project-media probes remain the browser regression gates for this batch.
 - Project media remains a regression gate, not proof of Home parity.
-- Interactive mouse browser probe was not rerun for this character-lifecycle batch.
+- Interactive mouse browser probe was not rerun for this helper-constructor batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

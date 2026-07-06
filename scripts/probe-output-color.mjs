@@ -1332,7 +1332,9 @@ async function runProbe() {
     materialSurfaceErrors.push("mediaCompositeRendererAutoClearRestored");
   }
   const expectedBloomKernels = [3, 5, 7, 9, 11];
-  const expectedBloomResolutions = (start) => {
+  const expectedZeroResolutionConstructor = [0, 0];
+  const expectedBloomResolutions = (start, enabled = true) => {
+    if (!enabled) return expectedBloomKernels.map(() => expectedZeroResolutionConstructor);
     const out = [];
     let width = start?.width ?? 0;
     let height = start?.height ?? 0;
@@ -1343,9 +1345,9 @@ async function runProbe() {
     }
     return out;
   };
-  for (const [key, expectedStart] of [
-    ["bloomBlur", workRenderSizing?.bloomStart],
-    ["mainBloomBlur", mainRenderSizing?.bloomStart],
+  for (const [key, expectedStart, bloomEnabled] of [
+    ["bloomBlur", workRenderSizing?.bloomStart, parsed.probe.settings?.work?.bloom?.enabled],
+    ["mainBloomBlur", mainRenderSizing?.bloomStart, parsed.probe.settings?.main?.bloom?.enabled],
   ]) {
     const material = passMaterials[key];
     if (material?.materialCount !== expectedBloomKernels.length) materialSurfaceErrors.push(`${key}MaterialCount`);
@@ -1355,13 +1357,21 @@ async function runProbe() {
     if (material?.tMapConstructorMode !== "source-rg-tMap-construct-null-branch-owned-binding") {
       materialSurfaceErrors.push(`${key}TMapConstructorMode`);
     }
+    if (JSON.stringify(material?.constructorResolution) !== JSON.stringify(expectedZeroResolutionConstructor)) {
+      materialSurfaceErrors.push(`${key}ConstructorResolution`);
+    }
+    if (JSON.stringify(material?.constructorDirection) !== JSON.stringify([0.5, 0.5])) {
+      materialSurfaceErrors.push(`${key}ConstructorDirection`);
+    }
+    if (material?.hasSourceUnusedSamplers !== true) materialSurfaceErrors.push(`${key}SourceUnusedSamplers`);
+    if (material?.unusedSamplerConstructorNull !== true) materialSurfaceErrors.push(`${key}UnusedSamplerConstructorNull`);
     if (material?.resolutionResizeMode !== "source-Lu-I1-rg-uResolution-resize-loop") {
       materialSurfaceErrors.push(`${key}ResolutionResizeMode`);
     }
     if (material?.resolutionUpdateMode !== "source-Lu-I1-rg-update-keeps-resize-resolution") {
       materialSurfaceErrors.push(`${key}ResolutionUpdateMode`);
     }
-    if (JSON.stringify(material?.resolutions) !== JSON.stringify(expectedBloomResolutions(expectedStart))) {
+    if (JSON.stringify(material?.resolutions) !== JSON.stringify(expectedBloomResolutions(expectedStart, bloomEnabled))) {
       materialSurfaceErrors.push(`${key}Resolutions`);
     }
   }
@@ -1397,6 +1407,9 @@ async function runProbe() {
       if (material?.tMapConstructorMode !== "source-Na-tMap-construct-null-branch-owned-binding") {
         materialSurfaceErrors.push(`${group}${key}TMapConstructorMode`);
       }
+      if (JSON.stringify(material?.constructorResolution) !== JSON.stringify(expectedZeroResolutionConstructor)) {
+        materialSurfaceErrors.push(`${group}${key}ConstructorResolution`);
+      }
       if (material?.blending !== 0) materialSurfaceErrors.push(`${group}${key}Blending`);
       if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`${group}${key}BlurinessUniform`);
       if (material?.bluriness !== 0) materialSurfaceErrors.push(`${group}${key}BlurinessValue`);
@@ -1425,6 +1438,9 @@ async function runProbe() {
     if (fxaa?.vertexMode !== "source-FT-neighbor-uv") materialSurfaceErrors.push(`${group}VertexMode`);
     if (fxaa?.tMapConstructorMode !== "source-ig-tMap-construct-null-branch-owned-binding") {
       materialSurfaceErrors.push(`${group}TMapConstructorMode`);
+    }
+    if (JSON.stringify(fxaa?.constructorResolution) !== JSON.stringify(expectedZeroResolutionConstructor)) {
+      materialSurfaceErrors.push(`${group}ConstructorResolution`);
     }
     if (fxaa?.screenMode !== expectedScreenMode) materialSurfaceErrors.push(`${group}ScreenMode`);
     if (fxaa?.resizeMode !== expectedResizeMode) materialSurfaceErrors.push(`${group}ResizeMode`);

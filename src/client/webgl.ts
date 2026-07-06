@@ -6811,7 +6811,7 @@ export class WebGLBackdrop {
 
   private createBloomBlurMaterial(kernelRadius = SOURCE_BLOOM_KERNELS[0]) {
     dumpShader("rg-bloom-blur", sourceBloomBlurVertex, homeBloomBlurFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
@@ -6822,12 +6822,19 @@ export class WebGLBackdrop {
       },
       uniforms: {
         tMap: { value: null },
-        uResolution: { value: new Vector2(1, 1) },
-        uDirection: { value: new Vector2(1, 0) },
+        tDetail: { value: null },
+        tOverview: { value: null },
+        tOverviewMask: { value: null },
+        uDirection: { value: new Vector2(0.5, 0.5) },
+        uResolution: { value: new Vector2() },
       },
       vertexShader: sourceBloomBlurVertex,
       fragmentShader: homeBloomBlurFragment,
     });
+    material.userData.sourceConstructorResolution = (material.uniforms.uResolution.value as Vector2).toArray();
+    material.userData.sourceConstructorDirection = (material.uniforms.uDirection.value as Vector2).toArray();
+    material.userData.sourceUnusedSamplerUniforms = ["tDetail", "tOverview", "tOverviewMask"];
+    return material;
   }
 
   private createBloomBlurMaterials() {
@@ -6836,7 +6843,7 @@ export class WebGLBackdrop {
 
   private createBlurMaterial(directionX: number, directionY: number) {
     dumpShader("Na-standard-blur", sourceFullscreenVertex, homeBlurFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
@@ -6845,11 +6852,13 @@ export class WebGLBackdrop {
         tMap: { value: null },
         uBluriness: { value: 0 },
         uDirection: { value: new Vector2(directionX, directionY) },
-        uResolution: { value: new Vector2(1, 1) },
+        uResolution: { value: new Vector2() },
       },
       vertexShader: sourceFullscreenVertex,
       fragmentShader: homeBlurFragment,
     });
+    material.userData.sourceConstructorResolution = (material.uniforms.uResolution.value as Vector2).toArray();
+    return material;
   }
 
   private createBloomCompositeMaterial(verticalTargets: WebGLRenderTarget[], settings = this.renderSettings) {
@@ -6903,18 +6912,20 @@ export class WebGLBackdrop {
 
   private createFxaaMaterial() {
     dumpShader("ig-fxaa", sourceFxaaVertex, homeFxaaFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
         tMap: { value: null },
-        uResolution: { value: new Vector2(1, 1) },
+        uResolution: { value: new Vector2() },
       },
       vertexShader: sourceFxaaVertex,
       fragmentShader: homeFxaaFragment,
     });
+    material.userData.sourceConstructorResolution = (material.uniforms.uResolution.value as Vector2).toArray();
+    return material;
   }
 
   private loadCompositeTextures() {
@@ -9146,6 +9157,18 @@ void main() {
       materialMode: "source-rg-raw-glsl3",
       glslVersion: (materials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
       tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
+      constructorResolution: materials[0]?.userData.sourceConstructorResolution ?? null,
+      constructorDirection: materials[0]?.userData.sourceConstructorDirection ?? null,
+      hasSourceUnusedSamplers: materials.every((material) => (
+        "tDetail" in material.uniforms
+        && "tOverview" in material.uniforms
+        && "tOverviewMask" in material.uniforms
+      )),
+      unusedSamplerConstructorNull: materials.every((material) => (
+        material.uniforms.tDetail?.value === null
+        && material.uniforms.tOverview?.value === null
+        && material.uniforms.tOverviewMask?.value === null
+      )),
       materialCount: materials.length,
       kernelDefines: materials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
       sigmaDefines: materials.map((material) => material.defines?.SIGMA ?? null),
@@ -9167,6 +9190,7 @@ void main() {
         tMapConstructorMode: "source-Na-tMap-construct-null-branch-owned-binding",
         screenMode,
         resizeMode,
+        constructorResolution: horizontalMaterial.userData.sourceConstructorResolution,
         hasBlurinessUniform: "uBluriness" in horizontalMaterial.uniforms,
         hasKernelDefines: Boolean(horizontalMaterial.defines?.KERNEL_RADIUS || horizontalMaterial.defines?.SIGMA),
         direction: (horizontalMaterial.uniforms.uDirection.value as Vector2).toArray(),
@@ -9181,6 +9205,7 @@ void main() {
         tMapConstructorMode: "source-Na-tMap-construct-null-branch-owned-binding",
         screenMode,
         resizeMode,
+        constructorResolution: verticalMaterial.userData.sourceConstructorResolution,
         hasBlurinessUniform: "uBluriness" in verticalMaterial.uniforms,
         hasKernelDefines: Boolean(verticalMaterial.defines?.KERNEL_RADIUS || verticalMaterial.defines?.SIGMA),
         direction: (verticalMaterial.uniforms.uDirection.value as Vector2).toArray(),
@@ -9197,6 +9222,7 @@ void main() {
       tMapConstructorMode: "source-ig-tMap-construct-null-branch-owned-binding",
       screenMode,
       resizeMode,
+      constructorResolution: material.userData.sourceConstructorResolution,
       resolution: (material.uniforms.uResolution.value as Vector2).toArray(),
     });
     const c1Uniforms = this.preCompositeMaterial.uniforms;

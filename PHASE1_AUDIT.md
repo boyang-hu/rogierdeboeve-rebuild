@@ -72,6 +72,39 @@ Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work b
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 
+### S1-307 `rg/Na/ig` Helper Pass Constructor Surface
+
+This batch aligns a narrow helper-material constructor surface in the source `Lu/I1` render-manager chain. It does not change shader text, pass order, render-target sizing formulas, route data, project media, or visual constants.
+
+Source evidence:
+
+- Source `rg` constructs `uniforms:{tMap:new I(null),tDetail:new I(null),tOverview:new I(null),tOverviewMask:new I(null),uDirection:new I(new Q(.5,.5)),uResolution:new I(new Q)}`.
+- Source `Lu` and `I1` later write `rg.uResolution` only inside the `settings.bloom.enabled` resize loop.
+- Source `Na` constructs `uResolution:new I(new Q)` while `Lu/I1` pass in horizontal/vertical `uDirection` instances.
+- Source `ig` constructs `uResolution:new I(new Q)`.
+
+Runtime and tooling changes:
+
+- `createBloomBlurMaterial()` now includes the source unused null sampler uniforms `tDetail`, `tOverview`, and `tOverviewMask`.
+- `createBloomBlurMaterial()` now constructs `uDirection` as `[0.5,0.5]` and `uResolution` as `[0,0]`; the existing bloom loop still writes horizontal/vertical direction and resize-loop resolution before rendering.
+- `createBlurMaterial()` and `createFxaaMaterial()` now construct `uResolution` as `[0,0]`, preserving the existing source resize/update paths for runtime sizes.
+- `__rogierOutputProbe.uniforms.passMaterials` exposes constructor resolution, `rg` constructor direction, unused sampler presence/nullness, and enabled/disabled bloom-resolution branch state.
+- `scripts/probe-output-color.mjs` now hard-fails if `rg/Na/ig` constructor resolution drifts from `[0,0]`, if `rg` loses source unused samplers, or if disabled main bloom incorrectly expects resize-loop values.
+- `scripts/audit-renderer-output.mjs` now checks the source/rebuild constructor anchors for these helper materials.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-helper-constructor-audit.json` passed; helper constructor checks were true.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed with `CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180`.
+- Desktop thumb spotlight probe passed.
+- Project-media probe passed with `gc-2026` and `hashgraph-vc` retaining `5/5` visible media tracks.
+
+Decision: keep `rg/Na/ig` helper pass materials constructor-shaped to the source, including zero-vector `uResolution` defaults and `rg` unused null samplers. Phase 1 remains open because this closes constructor-surface parity only; actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
+
 ### S1-306 `XA/KA/jA/WA/YA/qA` Auxiliary Shader Surface
 
 This batch aligns the source about/floating auxiliary shader ownership. It does not tune visual constants, route data, project media, or start Phase 2.
