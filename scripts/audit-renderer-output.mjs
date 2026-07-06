@@ -193,6 +193,8 @@ const rebuildSetMediaBackground = extractBlock(rebuildWebgl, "private setMediaBa
 const rebuildShowScene = extractBlock(rebuildWebgl, "showScene()");
 const rebuildCreateThumbPlane = extractBlock(rebuildWebgl, "private createThumbPlane(");
 const rebuildRenderThumbTargets = extractBlock(rebuildWebgl, "private renderThumbTargets()");
+const rebuildRenderSkyTarget = extractBlock(rebuildWebgl, "private renderSkyTarget(");
+const rebuildRenderDisplacementTarget = extractBlock(rebuildWebgl, "private renderDisplacementTarget(");
 const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
 const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
@@ -729,14 +731,26 @@ const summary = {
           "uniforms:{tScene:new I(null),uRatio:new I(1),uTime:new I(0)}",
           "class O1 extends Lo",
           "this.compositeMaterial=new N1",
+          "this.backgroundColor=new ye(\"red\").convertLinearToSRGB()",
           "initSettings(){this.settings={renderToScreen:!1}}",
           "this.renderManager.resize(t/10,t/10,n)",
           "this.renderManager.compositeMaterial.uniforms.uRatio.value=e/t",
+          "super.update(e,t,n,i),this.renderManager.compositeMaterial.uniforms.uTime.value=e",
         ]),
         thumbX1: checks(sourceThumbX1.text, [
           "class x1 extends Lo",
           "this.compositeMaterial=new _1",
           "initSettings(){this.settings={renderToScreen:!1}}",
+        ]),
+      },
+      sourcePostRenderUTimeOrder: {
+        sky: orderedIncludes(sourceSkyV1.text, [
+          "update(e,t,n,i){this.ticking&&(super.update(Le.LOW_RES?0:e,t,n,i)",
+          "this.renderManager.compositeMaterial.uniforms.uTime.value=Le.LOW_RES?0:e",
+        ]),
+        displacement: orderedIncludes(sourceDisplacementO1.text, [
+          "update(e,t,n,i){super.update(e,t,n,i)",
+          "this.renderManager.compositeMaterial.uniforms.uTime.value=e",
         ]),
       },
       rebuildSubclassScreenSwap: checks(rebuildWebgl, [
@@ -751,10 +765,29 @@ const summary = {
         "this.renderer.render(this.skyPostScreen, this.backgroundCamera)",
         "this.renderer.render(this.displacementPostScreen, this.backgroundCamera)",
         "this.renderer.render(this.thumbPostScreen, this.backgroundCamera)",
+        "const SOURCE_SKY_BACKGROUND = \"#666666\"",
+        "const SOURCE_DISPLACEMENT_BACKGROUND = \"red\"",
+        "this.skyScene.background = sourceLinearToSrgbColor(SOURCE_SKY_BACKGROUND, SOURCE_SKY_BACKGROUND)",
+        "this.displacementRawScene.background = sourceLinearToSrgbColor(SOURCE_DISPLACEMENT_BACKGROUND, SOURCE_DISPLACEMENT_BACKGROUND)",
         "renderManagerOwnership: \"source-H1-Lo-single-screen-material-swap\"",
         "renderManagerOwnership: \"source-O1-Lo-single-screen-material-swap\"",
         "renderManagerOwnership: \"source-x1-Lo-single-screen-material-swap\"",
+        "uTimeUpdateOrder: \"source-V1-super-update-before-z1-uTime-write\"",
+        "uTimeUpdateOrder: \"source-k1-super-update-before-N1-uTime-write\"",
+        "backgroundMatchesSource: this.displacementRawScene.background instanceof Color",
       ]),
+      rebuildPostRenderUTimeOrder: {
+        sky: Boolean(rebuildRenderSkyTarget) && orderedIncludes(rebuildRenderSkyTarget, [
+          "this.renderer.render(this.skyPostScreen, this.backgroundCamera)",
+          "this.renderer.setRenderTarget(null)",
+          "this.skyCompositeMaterial.uniforms.uTime.value = sourceLowRes() ? 0 : time",
+        ]),
+        displacement: Boolean(rebuildRenderDisplacementTarget) && orderedIncludes(rebuildRenderDisplacementTarget, [
+          "this.renderer.render(this.displacementPostScreen, this.backgroundCamera)",
+          "this.renderer.setRenderTarget(null)",
+          "this.displacementMaterial.uniforms.uTime.value = time",
+        ]),
+      },
       rebuildDerivedTargetOwnership: {
         skyCompositeClone:
           rebuildWebgl.includes("private skyRawTarget = makeSourceRenderTarget(false);")
@@ -2543,6 +2576,12 @@ const summary = {
         "this.scene.background=this.backgroundColor",
         "this.renderManager.resize(t*.75,t*.75,1)",
         "this.renderManager.compositeMaterial.uniforms.uTime.value=Le.LOW_RES?0:e",
+      ]),
+      rebuildChecks: checks(rebuildWebgl, [
+        "const SOURCE_SKY_BACKGROUND = \"#666666\"",
+        "this.skyScene.background = sourceLinearToSrgbColor(SOURCE_SKY_BACKGROUND, SOURCE_SKY_BACKGROUND)",
+        "backgroundMatchesSource: this.skyScene.background instanceof Color",
+        "uTimeUpdateOrder: \"source-V1-super-update-before-z1-uTime-write\"",
       ]),
       excerpt: compact(sourceSkyV1.text),
     },

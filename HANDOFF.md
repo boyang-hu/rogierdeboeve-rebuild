@@ -143,13 +143,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `yD.updateScene()` gallery roll/zoom dynamics without screenshot-led tuning.
-- Source `yD.updateScene(e)` writes sceneWrap rotation, main composite `uTransformX`, and negative thumb progress first.
-- Source then computes roll target with `bo(this.scroll.velocity*-.015,-4,4)`, updates `sceneRotation=Yi(sceneRotation,target,5,e)`, writes scene rotation z, computes zoom target with `bo(abs(this.scroll.velocity*.0015),0,1)`, updates `zoom=Yi(zoom,target,5,e)`, and writes scene position z as rotation z minus zoom.
-- Source `bo()` clamps and rounds through `Fn(...,4)`; source `Yi()` uses source-rounded exponential lerp through `PT/Fn`.
-- `src/client/webgl.ts` now uses `sourceClampRound()` for roll/zoom targets and `sourceDamp()` for the source-rounded lerp in `setGalleryProgress()`, preserving the existing source order `sceneWrap -> uTransformX -> thumbProgress -> roll -> zoom`.
-- `__rogierThumbProbe.galleryDynamics` and `__rogierOutputProbe.camera.galleryDynamics` expose target modes, lerp mode, velocity/delta, rounded state, and rotation/position parity.
-- `scripts/probe-thumb-spotlight.mjs` and `scripts/probe-output-color.mjs` hard-fail on gallery dynamics drift; `scripts/audit-renderer-output.mjs` checks source `bo/Yi` anchors plus rebuild/probe coverage.
+- Added source-backed runtime/audit guardrails for `V1/k1` sky/displacement post-render state and raw background ownership without screenshot-led tuning.
+- Source `V1.update(e,t,n,i)` calls `super.update(Le.LOW_RES?0:e,t,n,i)` before writing `z1.uTime=Le.LOW_RES?0:e`.
+- Source `k1.update(e,t,n,i)` calls `super.update(e,t,n,i)` before writing `N1.uTime=e`.
+- Source `k1.init()` assigns the raw wavves background as `new Color("red").convertLinearToSRGB()`; source `V1.init()` similarly owns `#666666` as the sky raw-scene background.
+- `src/client/webgl.ts` now centralizes `SOURCE_SKY_BACKGROUND` and `SOURCE_DISPLACEMENT_BACKGROUND`.
+- `__rogierOutputProbe.textures.skyComposite` exposes source sky background parity and `uTimeUpdateOrder=source-V1-super-update-before-z1-uTime-write`.
+- `__rogierOutputProbe.passMaterials.displacement` exposes source red raw-background parity and `uTimeUpdateOrder=source-k1-super-update-before-N1-uTime-write`.
+- `scripts/probe-output-color.mjs` hard-fails on sky/displacement background or post-render `uTime` order drift; `scripts/audit-renderer-output.mjs` checks source anchors plus rebuild function order `render -> setRenderTarget(null) -> uTime write`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -162,29 +163,27 @@ node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-gallery-dynamics-audit-final.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-sky-displacement-order-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-gallery-dynamics-output-desktop CDP_PORT=9320 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-gallery-dynamics-output-mobile CDP_PORT=9321 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9322 OUT_DIR=/tmp/rd-gallery-dynamics-thumb-desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile CDP_PORT=9323 OUT_DIR=/tmp/rd-gallery-dynamics-thumb-mobile node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-sky-displacement-order-output-desktop CDP_PORT=9330 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-sky-displacement-order-output-mobile CDP_PORT=9331 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9332 OUT_DIR=/tmp/rd-sky-displacement-order-thumb-desktop node scripts/probe-thumb-spotlight.mjs
 ```
 
-All relevant checks passed in the `yD.updateScene()` gallery roll/zoom dynamics batch. Desktop and mobile output/thumb probes confirmed `galleryDynamics.mode=source-yD-updateScene-roll-zoom-bo-targets-Yi-rounded-lerp`, source `bo()` target modes, source `Yi()` lerp mode, rounded state, and rotation/position parity. Browser probes had no failures/exceptions/console messages.
+All relevant checks passed in the `V1/k1` sky/displacement post-render state guardrail batch. Desktop and mobile output probes confirmed source sky/displacement `uTimeUpdateOrder` markers, source sky background parity, and source red displacement raw-background parity. Browser probes had no failures/exceptions/console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this gallery dynamics batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this sky/displacement guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the gallery dynamics guardrail: `/tmp/rd-gallery-dynamics-audit-final.json`.
-- Desktop output probe passed with gallery dynamics parity and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-output-desktop`.
-- Mobile output probe passed with the same gallery dynamics parity and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-output-mobile`.
-- Desktop thumb probe passed with gallery dynamics target/lerp modes, rounded state, source progress order, and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-thumb-desktop`.
-- Mobile thumb probe passed with the same gallery dynamics guardrail and no browser failures/exceptions/console messages: `/tmp/rd-gallery-dynamics-thumb-mobile`.
-- Project media remains a regression gate, not proof of Home parity; it was not touched by this gallery dynamics batch.
+- Renderer audit passed after the sky/displacement guardrail: `/tmp/rd-sky-displacement-order-audit-final.json`.
+- Desktop output probe passed with sky/displacement post-render state and background parity, with no browser failures/exceptions/console messages: `/tmp/rd-sky-displacement-order-output-desktop`.
+- Mobile output probe passed with the same guardrail and no browser failures/exceptions/console messages: `/tmp/rd-sky-displacement-order-output-mobile`.
+- Desktop thumb smoke passed with no browser failures/exceptions/console messages: `/tmp/rd-sky-displacement-order-thumb-desktop`.
+- Project media remains a regression gate, not proof of Home parity; it was not touched by this sky/displacement guardrail batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

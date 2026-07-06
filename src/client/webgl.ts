@@ -341,6 +341,8 @@ const SOURCE_WORK_MAX_DPR = 1.5;
 const SOURCE_WORK_BG = "#1a1a1a";
 const SOURCE_WORK_FOG_COLOR = "grey";
 const SOURCE_COMPOSITE_BG = "#1f1f1f";
+const SOURCE_SKY_BACKGROUND = "#666666";
+const SOURCE_DISPLACEMENT_BACKGROUND = "red";
 const DEFAULT_BG = SOURCE_WORK_BG;
 const SOURCE_INITIAL_PRIMARY = "#bcbcbc";
 const DEFAULT_COLOR = SOURCE_INITIAL_PRIMARY;
@@ -4202,8 +4204,8 @@ export class WebGLBackdrop {
     this.characterCamera.lookAt(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
     this.mainScene.background = sourceLinearToSrgbColor(SOURCE_MAIN_SCENE_BACKGROUND, SOURCE_MAIN_SCENE_BACKGROUND);
-    this.skyScene.background = sourceLinearToSrgbColor("#666666", "#666666");
-    this.displacementRawScene.background = sourceLinearToSrgbColor("red", "red");
+    this.skyScene.background = sourceLinearToSrgbColor(SOURCE_SKY_BACKGROUND, SOURCE_SKY_BACKGROUND);
+    this.displacementRawScene.background = sourceLinearToSrgbColor(SOURCE_DISPLACEMENT_BACKGROUND, SOURCE_DISPLACEMENT_BACKGROUND);
     this.homeScene.fog = new Fog(SOURCE_WORK_FOG_COLOR, 0, 100);
     this.homeScene.background = sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG);
     this.spotLight.position.set(0, 0, 3.7);
@@ -8478,9 +8480,14 @@ void main() {
             tSceneIsRawTarget: this.displacementMaterial.uniforms.tScene.value === this.displacementRawTarget.texture,
             tSceneIsCompositeTarget: this.displacementMaterial.uniforms.tScene.value === this.displacementTarget.texture,
             vignetteConstantsMode: "source-F1-globals",
+            uTimeUpdateOrder: "source-k1-super-update-before-N1-uTime-write",
             toneMapped: this.displacementMaterial.toneMapped,
             transparent: this.displacementMaterial.transparent,
+            backgroundMode: "source-k1-red-linear-to-srgb",
+            backgroundExpected: sourceLinearToSrgbColor(SOURCE_DISPLACEMENT_BACKGROUND, SOURCE_DISPLACEMENT_BACKGROUND).toArray(),
             rawSceneBackground: this.displacementRawScene.background instanceof Color ? this.displacementRawScene.background.toArray() : null,
+            backgroundMatchesSource: this.displacementRawScene.background instanceof Color
+              && this.displacementRawScene.background.equals(sourceLinearToSrgbColor(SOURCE_DISPLACEMENT_BACKGROUND, SOURCE_DISPLACEMENT_BACKGROUND)),
           },
         },
         thumbComposite: {
@@ -8694,11 +8701,15 @@ void main() {
           tSceneIsRawTarget: this.skyCompositeMaterial.uniforms.tScene.value === this.skyRawTarget.texture,
           isEnvironmentSkySource: this.environmentMaterial.customUniforms.tSky.value === this.skyCompositeTarget.texture,
           backgroundMode: "source-V1-background-666666-linear-to-srgb",
+          backgroundExpected: sourceLinearToSrgbColor(SOURCE_SKY_BACKGROUND, SOURCE_SKY_BACKGROUND).toArray(),
           background: this.skyScene.background instanceof Color ? this.skyScene.background.toArray() : null,
+          backgroundMatchesSource: this.skyScene.background instanceof Color
+            && this.skyScene.background.equals(sourceLinearToSrgbColor(SOURCE_SKY_BACKGROUND, SOURCE_SKY_BACKGROUND)),
           wrapMode: "source-nD-sky-composite-repeat-for-work-env",
           expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           expectedRawSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
           timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",
+          uTimeUpdateOrder: "source-V1-super-update-before-z1-uTime-write",
           glslVersion: (this.skyCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
           wrapS: this.skyCompositeTarget.texture.wrapS,
           wrapT: this.skyCompositeTarget.texture.wrapT,

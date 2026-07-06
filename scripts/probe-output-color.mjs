@@ -1196,6 +1196,10 @@ async function runProbe() {
   if (displacement.tSceneIsRawTarget !== true) materialSurfaceErrors.push("displacementRawSceneBinding");
   if (displacement.tSceneIsCompositeTarget !== false) materialSurfaceErrors.push("displacementCompositeSelfBinding");
   if (displacement.vignetteConstantsMode !== "source-F1-globals") materialSurfaceErrors.push("displacementVignetteConstants");
+  if (displacement.uTimeUpdateOrder !== "source-k1-super-update-before-N1-uTime-write") materialSurfaceErrors.push("displacementUTimeUpdateOrder");
+  if (displacement.backgroundMode !== "source-k1-red-linear-to-srgb") materialSurfaceErrors.push("displacementBackgroundMode");
+  if (displacement.backgroundMatchesSource !== true) materialSurfaceErrors.push("displacementBackgroundMatchesSource");
+  if (!Array.isArray(displacement.rawSceneBackground) || displacement.rawSceneBackground.length !== 3) materialSurfaceErrors.push("displacementRawSceneBackground");
   if (displacement.toneMapped !== false) materialSurfaceErrors.push("displacementToneMapped");
   if (displacement.transparent !== true) materialSurfaceErrors.push("displacementTransparent");
   if (displacement.targetSize && (
@@ -1544,7 +1548,9 @@ async function runProbe() {
   if (skyComposite?.isEnvironmentSkySource !== true) skyUniformErrors.push("environmentSkySource");
   if (skyComposite?.backgroundMode !== "source-V1-background-666666-linear-to-srgb") skyUniformErrors.push("backgroundMode");
   if (!Array.isArray(skyComposite?.background) || skyComposite.background.length !== 3) skyUniformErrors.push("backgroundValue");
+  if (skyComposite?.backgroundMatchesSource !== true) skyUniformErrors.push("backgroundMatchesSource");
   if (skyComposite?.timeMode !== (parsed.probe.renderer?.dprPolicy?.lowRes ? "source-V1-low-res-time-0" : "source-V1-live-time")) skyUniformErrors.push("timeMode");
+  if (skyComposite?.uTimeUpdateOrder !== "source-V1-super-update-before-z1-uTime-write") skyUniformErrors.push("uTimeUpdateOrder");
   if (skyTarget && skyComposite && (skyTarget.width !== skyComposite.expectedSize || skyTarget.height !== skyComposite.expectedSize)) skyUniformErrors.push("targetSize");
   const skyRawTarget = parsed.probe.targets?.skyRaw;
   if (skyRawTarget && skyComposite && (skyRawTarget.width !== skyComposite.expectedRawSize || skyRawTarget.height !== skyComposite.expectedRawSize)) skyUniformErrors.push("rawTargetSize");
