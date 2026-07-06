@@ -70,9 +70,46 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `Bt/w0` RAF manager ownership now drives the rebuild frame loop with requestAnimationFrame-started frames and raw `time - lastTickTime` delta, without the rebuild-only min/max clamp. This closes one frame timing ownership drift; Phase 1 remains open.
+Latest accepted batch: source `Bt/w0` RAF elapsed-time ownership now drives the rebuild handler `time` value from `w0.elapsedTime`, including the source `Bt.frame()` second `getDelta()` call inside `getElapsedTime()`, instead of using wall-clock seconds. This closes one additional frame timing ownership drift; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-336 `Bt/w0` RAF Elapsed Frame Time Ownership
+
+This batch aligns the next source RAF/frame-timing ownership edge in the `Bt/w0 -> nD.update()` chain. It does not change shader text, render targets, visual constants, project data, route behavior, mouse normalization, scene order, or the already source-shaped raw frame delta.
+
+Source evidence:
+
+- Source `w0.start()` resets `elapsedTime=0` and sets `oldTime` from `El()`.
+- Source `w0.getElapsedTime()` calls `this.getDelta()` and then returns `this.elapsedTime`.
+- Source `Bt.frame(e)` first computes `delta` with `this.time.getDelta()`, then computes handler `time` with `this.time.getElapsedTime()`, causing a second `getDelta()` before handlers run.
+- Source `Bt.frame(e)` passes `{ time:n, delta:t, frame:e, fps:i }` into each handler, and source `nD.update({time:e,delta:t,frame:n,fps:i})` forwards that elapsed `time` plus the first raw `delta` into scene updates.
+
+Runtime and tooling changes:
+
+- `WebGLBackdrop.tick()` now keeps source-shaped elapsed time state from loop start instead of using `performance.now() * 0.001` as scene time.
+- Each frame now mirrors source `Bt.frame()` by accumulating the first raw frame delta, immediately taking a second `performance.now()` sample for the `getElapsedTime()`-owned `getDelta()` call, accumulating that second elapsed delta, and using the accumulated `sourceElapsedTime` as handler/render time.
+- The delayed lifecycle start resets `sourceElapsedTime`, `lastFrameDelta`, and `lastFrameElapsedDelta` before scheduling the first RAF.
+- `__rogierOutputProbe.settings.updateOrder` exposes `frameTimeMode=source-Bt-w0-getElapsedTime-elapsed-after-start-not-wall-clock`, `frameElapsedTimeMode=source-Bt-frame-delta-then-getElapsedTime-second-getDelta-before-handlers`, `sourceElapsedTime`, and `lastFrameElapsedDelta`.
+- `scripts/probe-output-color.mjs` hard-fails on elapsed-time marker drift, invalid elapsed-delta values, or accumulated elapsed time that does not cover the two source frame deltas.
+- `scripts/audit-renderer-output.mjs` extracts the source `w0/Bt` elapsed-time anchors and rejects restoring wall-clock scene time or omitting the second source-shaped `getDelta()` elapsed update.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-raf-elapsed-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile output probes passed with the elapsed-time markers and no failures/exceptions/console messages: `/tmp/rd-raf-elapsed-output-desktop`, `/tmp/rd-raf-elapsed-output-mobile`.
+- Interactive mouse probe passed with the raw-delta `Ka.uPersistance` guardrail retained: `/tmp/rd-raf-elapsed-interactive`.
+- Thumb spotlight probe passed with two visible thumbs and no failures/exceptions/console messages: `/tmp/rd-raf-elapsed-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-raf-elapsed-media`.
+
+Decision: keep handler/render time sourced from accumulated `w0.elapsedTime`, including the source `getElapsedTime()` second `getDelta()` call. Do not restore wall-clock scene time without mirrored-bundle evidence. Phase 1 remains open because this closes one frame-timing ownership edge only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-335 `Bt/w0` RAF Raw Delta and Start Ownership
 

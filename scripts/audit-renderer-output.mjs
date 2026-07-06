@@ -2331,21 +2331,43 @@ const summary = {
       index: sourceRafManager.index,
       checks: checks(sourceRafManager.text, [
         "class w0{constructor(){this.startTime=0,this.oldTime=0,this.elapsedTime=0,this.count=0,this.time=0,this.prev=0,this.running=!1}",
+        "start(){this.startTime=El(),this.oldTime=this.startTime,this.elapsedTime=0,this.running=!0}",
         "getDelta(){let e=0;if(this.running){const t=El();e=(t-this.oldTime)/1e3,this.oldTime=t,this.elapsedTime+=e}return e}",
+        "getElapsedTime(){return this.getDelta(),this.elapsedTime}",
         "static start(){this.stopped=!1,this.time.start(),this.id=window.requestAnimationFrame(this.render)}",
         "static frame(e){const t=this.time.getDelta(),n=this.time.getElapsedTime(),i=this.time.getFPS();",
         "this.frames[r].handler({time:n,delta:t,frame:e,fps:i})",
       ]),
       rebuildChecks: {
-        rawFrameDelta: Boolean(rebuildTick) && rebuildTick.includes("const delta = time - this.lastTickTime;"),
+        rawFrameDelta: Boolean(rebuildTick) && rebuildTick.includes("const delta = deltaNow - this.lastTickTime;"),
         noFrameDeltaClamp: !rebuildWebgl.includes("MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20)"),
+        elapsedTimeState: rebuildWebgl.includes("private sourceElapsedTime = 0;"),
+        elapsedTimeResetOnStart: Boolean(rebuildSourceInitLifecycle)
+          && rebuildSourceInitLifecycle.includes("this.sourceElapsedTime = 0;"),
+        elapsedTimeAccumulatesRawDelta: Boolean(rebuildTick)
+          && orderedIncludes(rebuildTick, [
+            "this.sourceElapsedTime += delta;",
+            "this.lastTickTime = deltaNow;",
+            "const elapsedNow = performance.now() * 0.001;",
+            "const elapsedDelta = elapsedNow - this.lastTickTime;",
+            "this.sourceElapsedTime += elapsedDelta;",
+            "this.lastTickTime = elapsedNow;",
+            "const time = this.sourceElapsedTime;",
+          ]),
+        noWallClockSceneTime: Boolean(rebuildTick)
+          && !rebuildTick.includes("const time = performance.now() * 0.001;"),
         storesLastFrameDelta: Boolean(rebuildTick) && rebuildTick.includes("this.lastFrameDelta = delta;"),
+        storesLastFrameElapsedDelta: Boolean(rebuildTick) && rebuildTick.includes("this.lastFrameElapsedDelta = elapsedDelta;"),
         startUsesRequestAnimationFrame: Boolean(rebuildSourceInitLifecycle)
           && rebuildSourceInitLifecycle.includes("this.raf = requestAnimationFrame(this.tick);"),
         startNoImmediateTick: Boolean(rebuildSourceInitLifecycle)
           && !rebuildSourceInitLifecycle.includes("this.tick();"),
         probeDeltaMarker: rebuildWebgl.includes("frameDeltaMode: \"source-Bt-w0-getDelta-raw-no-min-max-clamp\""),
         probeStartMarker: rebuildWebgl.includes("frameStartMode: \"source-Bt-start-requestAnimationFrame-before-frame\""),
+        probeTimeMarker: rebuildWebgl.includes("frameTimeMode: \"source-Bt-w0-getElapsedTime-elapsed-after-start-not-wall-clock\""),
+        probeElapsedTimeMarker: rebuildWebgl.includes("frameElapsedTimeMode: \"source-Bt-frame-delta-then-getElapsedTime-second-getDelta-before-handlers\""),
+        outputProbeTimeAssertion: rebuildOutputProbe.includes("Frame time source-shape mismatch"),
+        outputProbeElapsedTimeAssertion: rebuildOutputProbe.includes("Frame elapsed-time source-shape mismatch"),
         mousePersistenceUsesRawDelta: rebuildWebgl.includes("persistenceDeltaMode: \"source-Ka-update-uPersistance-pow-persistence-raw-delta-times-10\""),
         mousePersistenceNoFixedSixtyFpsGuard: !rebuildWebgl.includes("Math.pow(0.85, 1 / 60 * 10)"),
         outputProbeDeltaAssertion: rebuildOutputProbe.includes("Frame delta source-shape mismatch"),

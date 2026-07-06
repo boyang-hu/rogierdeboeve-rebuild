@@ -5418,7 +5418,9 @@ export class WebGLBackdrop {
   private outputProbeLastUpdate = 0;
   private sourceUpdateOrder = "nD.scenes sky -> media -> work -> main -> workthumb -> wavves -> character; Iu.renderManager -> IT.cameraController -> components";
   private sourcePostRenderFrame = 0;
+  private sourceElapsedTime = 0;
   private lastFrameDelta = 0;
+  private lastFrameElapsedDelta = 0;
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
   private mediaBackground = this.settingsState.media.background.clone();
@@ -8394,6 +8396,9 @@ void main() {
         this.sourceInitLifecycle.secondResizeAfterDelayedBindings = true;
         if (!this.destroyed && !this.sourceInitLifecycle.started) {
           this.sourceInitLifecycle.started = true;
+          this.sourceElapsedTime = 0;
+          this.lastFrameDelta = 0;
+          this.lastFrameElapsedDelta = 0;
           this.lastTickTime = performance.now() * 0.001;
           this.raf = requestAnimationFrame(this.tick);
         }
@@ -10318,8 +10323,13 @@ void main() {
           frameDeltaMode: "source-Bt-w0-getDelta-raw-no-min-max-clamp",
           frameDeltaClampApplied: false,
           frameStartMode: "source-Bt-start-requestAnimationFrame-before-frame",
+          frameTimeMode: "source-Bt-w0-getElapsedTime-elapsed-after-start-not-wall-clock",
+          frameElapsedTimeMode: "source-Bt-frame-delta-then-getElapsedTime-second-getDelta-before-handlers",
+          sourceElapsedTime: this.sourceElapsedTime,
           lastFrameDelta: this.lastFrameDelta,
+          lastFrameElapsedDelta: this.lastFrameElapsedDelta,
           lastFrameDeltaFinite: Number.isFinite(this.lastFrameDelta),
+          sourceElapsedTimeFinite: Number.isFinite(this.sourceElapsedTime),
           mouseSimulationOrder: "source-Lu-mousesim-after-raw-bloom-before-composite",
           postRenderFrame: this.sourcePostRenderFrame,
           environmentUpdateOrder: "source-p1-component-post-render",
@@ -11990,10 +12000,17 @@ void main() {
   }
 
   private tick = () => {
-    const time = performance.now() * 0.001;
-    const delta = time - this.lastTickTime;
+    const deltaNow = performance.now() * 0.001;
+    const delta = deltaNow - this.lastTickTime;
     this.lastFrameDelta = delta;
-    this.lastTickTime = time;
+    this.sourceElapsedTime += delta;
+    this.lastTickTime = deltaNow;
+    const elapsedNow = performance.now() * 0.001;
+    const elapsedDelta = elapsedNow - this.lastTickTime;
+    this.lastFrameElapsedDelta = elapsedDelta;
+    this.sourceElapsedTime += elapsedDelta;
+    this.lastTickTime = elapsedNow;
+    const time = this.sourceElapsedTime;
     this.pointer.lerp(this.targetPointer, 0.055);
     this.applyDebugThumbProgress();
     this.backgroundMaterial.uniforms.uTime.value = time;

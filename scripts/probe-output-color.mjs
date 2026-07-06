@@ -1829,11 +1829,27 @@ async function runProbe() {
   if (updateOrder?.frameStartMode !== "source-Bt-start-requestAnimationFrame-before-frame") {
     throw new Error(`Frame start source-shape mismatch: ${updateOrder?.frameStartMode || "missing"}`);
   }
+  if (updateOrder?.frameTimeMode !== "source-Bt-w0-getElapsedTime-elapsed-after-start-not-wall-clock") {
+    throw new Error(`Frame time source-shape mismatch: ${updateOrder?.frameTimeMode || "missing"}`);
+  }
+  if (updateOrder?.frameElapsedTimeMode !== "source-Bt-frame-delta-then-getElapsedTime-second-getDelta-before-handlers") {
+    throw new Error(`Frame elapsed-time source-shape mismatch: ${updateOrder?.frameElapsedTimeMode || "missing"}`);
+  }
   if (!Number.isFinite(updateOrder?.lastFrameDelta) || updateOrder.lastFrameDelta < 0) {
     throw new Error(`Frame delta value mismatch: ${updateOrder?.lastFrameDelta}`);
   }
+  if (!Number.isFinite(updateOrder?.lastFrameElapsedDelta) || updateOrder.lastFrameElapsedDelta < 0) {
+    throw new Error(`Frame elapsed delta value mismatch: ${updateOrder?.lastFrameElapsedDelta}`);
+  }
+  const expectedMinimumElapsed = updateOrder.lastFrameDelta + updateOrder.lastFrameElapsedDelta;
+  if (!Number.isFinite(updateOrder?.sourceElapsedTime) || updateOrder.sourceElapsedTime < expectedMinimumElapsed) {
+    throw new Error(`Frame elapsed time value mismatch: ${updateOrder?.sourceElapsedTime}`);
+  }
   if (updateOrder?.lastFrameDeltaFinite !== true) {
     throw new Error(`Frame delta finite marker mismatch: ${updateOrder?.lastFrameDeltaFinite}`);
+  }
+  if (updateOrder?.sourceElapsedTimeFinite !== true) {
+    throw new Error(`Frame elapsed-time finite marker mismatch: ${updateOrder?.sourceElapsedTimeFinite}`);
   }
   if (updateOrder?.mouseSimulationOrder !== "source-Lu-mousesim-after-raw-bloom-before-composite") {
     throw new Error(`Mouse simulation order source-shape mismatch: ${updateOrder?.mouseSimulationOrder || "missing"}`);
