@@ -140,6 +140,7 @@ Known remaining gaps:
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, divergence, poisson, and pressure. This is shader-surface parity, not proof that the whole Home fluid/composite feel is complete.
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
+- Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Exact final Home visual/feel parity is still open.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
@@ -154,13 +155,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for active `u1/Qn` environment shader constants without changing production values, shader text, render targets, pass order, route behavior, visual constants, or production camera formulas.
-- Source `h1/u1` reads environment shader-pattern constants from `Qn`; the nearby `BA/Z1` groups contain similar `0/1` values but are not the runtime source for active `u1`.
-- The rebuild now centralizes active environment constants in `SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS` and feeds `createEnvironmentMaterial()` from that object.
-- `__rogierOutputProbe.uniforms.environment.shaderSurface` exposes `sourceConstantsMode=source-u1-uses-Qn-not-BA-Z1`, expected constants, `constantsMatchSource`, `uShader1Speed=0.5`, `uShader1Mix3=1.5`, and `uShader1Mix2Binding=source-declared-only`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if these source constants drift or if `uShader1Mix2` becomes a runtime binding.
-- Previous committed batch was `6fda2f5 Guard immediate texture bindings`.
-- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Added a source-backed runtime/audit guardrail for `$1/j1/Lo` project-media clear ownership without changing production shader formulas, visual constants, route data, pass order, render targets, or render-target topology.
+- Source `Lo.initSettings()` sets `clear:false`, source `j1.initSettings()` sets `clear:true`, but source `Lo.update(...)` does not inspect `this.settings.clear`.
+- Source `$1.update(e,t,n,i)` owns the active media clear branch by temporarily setting `renderer.autoClear=true`, calling `super.update(...)`, then restoring `renderer.autoClear=false`.
+- `__rogierOutputProbe.passMaterials.mediaComposite` exposes `renderManagerOwnership`, `settingsClearMode`, `autoClearMode`, and `rendererAutoClearRestored`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` hard-fail if media clear ownership drifts from source `$1.update()` or if `renderer.autoClear` is not restored.
+- Previous committed batch was `4a7b652 Guard environment shader constants`.
+- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the source-equivalent GPU/LOW_RES bridge.
 
 ## Validation Status
 
@@ -170,26 +171,26 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-env-qn-constants-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-media-clear-final-audit.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-env-qn-constants-output-desktop CDP_PORT=9492 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile PROBE_WAIT=30000 OUT_DIR=/tmp/rd-env-qn-constants-output-mobile CDP_PORT=9493 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-env-qn-constants-thumb-desktop CDP_PORT=9494 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-env-qn-constants-project-media CDP_PORT=9495 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-media-clear-output-desktop CDP_PORT=9501 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=mobile OUT_DIR=/tmp/rd-media-clear-output-mobile CDP_PORT=9502 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 VIEWPORT=desktop OUT_DIR=/tmp/rd-media-clear-thumb-desktop CDP_PORT=9503 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome REBUILD_URL=http://localhost:5177 OUT_DIR=/tmp/rd-media-clear-project-media CDP_PORT=9504 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `u1/Qn` environment shader constant guardrail batch. Renderer audit wrote `/tmp/rd-env-qn-constants-audit.json`; `sourceManagers.environmentU1.qnConstants` confirms the source `Qn` values and active `u1` usage, and `rebuildQnConstantGuardrail` reports named constants, factory usage, and runtime probe coverage as true. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed `sourceConstantsMode=source-u1-uses-Qn-not-BA-Z1`, `constantsMatchSource=true`, `uShader1Speed=0.5`, `uShader1Mix3=1.5`, and `uShader1Mix2Binding=source-declared-only`. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe kept `gc-2026` and `hashgraph-vc` at `5/5` visible media tracks.
+All relevant checks passed in the `$1/j1/Lo` media clear ownership guardrail batch. Renderer audit wrote `/tmp/rd-media-clear-final-audit.json`; `sourceManagers.helperMaterialSurfaces.mediaClearOwnership` confirms source `Lo` settings clear is unused by `Lo.update()`, source `j1` still sets `clear:true`, source `$1.update()` owns the temporary `autoClear` branch, the rebuild scopes/restores `autoClear`, and runtime probe coverage is present. Desktop/mobile output probes passed with no browser failures/exceptions/console messages and confirmed the media composite ownership markers. Desktop thumb spotlight probe passed and retained the thumb projection/state guardrails. Project-media probe retained visible media tracks on the probed project pages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this environment constant guardrail batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this media clear ownership guardrail batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed for the settings scalar/media no-kill guardrail batch: `/tmp/rd-settings-nokill-audit.json`.
-- Desktop/mobile output probes passed for `/tmp/rd-settings-nokill-output-desktop` and `/tmp/rd-settings-nokill-output-mobile`.
-- Desktop thumb spotlight probe passed for `/tmp/rd-settings-nokill-thumb-desktop`.
+- Renderer audit passed for the media clear ownership guardrail batch: `/tmp/rd-media-clear-final-audit.json`.
+- Desktop/mobile output probes passed for `/tmp/rd-media-clear-output-desktop` and `/tmp/rd-media-clear-output-mobile`.
+- Desktop thumb spotlight probe passed for `/tmp/rd-media-clear-thumb-desktop`.
 - Project media remains a regression gate, not proof of Home parity; it retained `5/5` visible media tracks on the probed project pages.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

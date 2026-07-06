@@ -1211,6 +1211,18 @@ async function runProbe() {
     if (settings && passMaterials[key]?.smoothing !== settings.smoothing) materialSurfaceErrors.push(`${key}SmoothingSetting`);
   }
   if (passMaterials.mediaComposite?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mediaCompositeVertexMode");
+  if (passMaterials.mediaComposite?.renderManagerOwnership !== "source-j1-Lo-settings-clear-unused-autoClear-owned-by-dollar1-update") {
+    materialSurfaceErrors.push("mediaCompositeRenderManagerOwnership");
+  }
+  if (passMaterials.mediaComposite?.settingsClearMode !== "source-j1-clear-true-unused-by-Lo-update") {
+    materialSurfaceErrors.push("mediaCompositeSettingsClearMode");
+  }
+  if (passMaterials.mediaComposite?.autoClearMode !== "source-dollar1-update-temporarily-autoClear-true-around-super-update") {
+    materialSurfaceErrors.push("mediaCompositeAutoClearMode");
+  }
+  if (passMaterials.mediaComposite?.rendererAutoClearRestored !== true) {
+    materialSurfaceErrors.push("mediaCompositeRendererAutoClearRestored");
+  }
   const expectedBloomKernels = [3, 5, 7, 9, 11];
   const expectedBloomResolutions = (start) => {
     const out = [];

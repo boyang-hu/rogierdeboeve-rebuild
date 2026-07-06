@@ -200,6 +200,7 @@ const rebuildCreateThumbPlane = extractBlock(rebuildWebgl, "private createThumbP
 const rebuildRenderThumbTargets = extractBlock(rebuildWebgl, "private renderThumbTargets()");
 const rebuildRenderSkyTarget = extractBlock(rebuildWebgl, "private renderSkyTarget(");
 const rebuildRenderDisplacementTarget = extractBlock(rebuildWebgl, "private renderDisplacementTarget(");
+const rebuildRenderMediaCompositeTarget = extractBlock(rebuildWebgl, "private renderMediaCompositeTarget(");
 const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
 const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
@@ -244,6 +245,7 @@ const sourceJT = extractAround(bundle, "class jT extends", 320, 1100);
 const sourceKT = extractAround(bundle, "class KT extends", 320, 1200);
 const sourcePressureJT = extractAround(bundle, "class JT extends", 320, 1100);
 const sourceProjectDataManager = extractAround(bundle, "class is{static getProjects()", 120, 700);
+const sourceMediaScene = extractAround(bundle, "class $1 extends", 320, 900);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 9600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
@@ -1306,6 +1308,36 @@ const summary = {
           "depthTest:!1",
         ]),
         excerpt: compact(sourceW1.text),
+      },
+      mediaClearOwnership: {
+        sourceLoSettingsClearUnused:
+          sourceLo.text.includes("initSettings(){this.settings={renderToScreen:!0,clear:!1}}")
+          && !sourceLo.text.includes("this.settings.clear"),
+        sourceJ1SettingsClearTrueUnused:
+          sourceW1.text.includes("class j1 extends Lo")
+          && sourceW1.text.includes("initSettings(){this.settings={renderToScreen:!1,clear:!0}}"),
+        sourceDollar1OwnsAutoClear:
+          sourceMediaScene?.text.includes("update(e,t,n,i){this.renderer.autoClear=!0,super.update(e,t,n,i),this.renderer.autoClear=!1}") ?? false,
+        rebuildAutoClearScoped: Boolean(rebuildRenderMediaCompositeTarget) && orderedIncludes(rebuildRenderMediaCompositeTarget, [
+          "const previousAutoClear = this.renderer.autoClear",
+          "this.renderer.autoClear = true",
+          "this.renderer.setRenderTarget(this.mediaRawTarget)",
+          "this.mediaCompositeMaterial.uniforms.tScene.value = this.mediaRawTarget.texture",
+          "this.renderer.setRenderTarget(this.mediaTarget)",
+          "this.renderer.render(this.mediaCompositeScene, this.backgroundCamera)",
+          "this.renderer.autoClear = previousAutoClear",
+        ]),
+        runtimeProbe: [
+          "renderManagerOwnership: \"source-j1-Lo-settings-clear-unused-autoClear-owned-by-dollar1-update\"",
+          "settingsClearMode: \"source-j1-clear-true-unused-by-Lo-update\"",
+          "autoClearMode: \"source-dollar1-update-temporarily-autoClear-true-around-super-update\"",
+          "rendererAutoClearRestored: this.renderer.autoClear === false",
+        ].every((needle) => rebuildWebgl.includes(needle)) && [
+          "mediaCompositeRenderManagerOwnership",
+          "mediaCompositeSettingsClearMode",
+          "mediaCompositeAutoClearMode",
+          "mediaCompositeRendererAutoClearRestored",
+        ].every((needle) => rebuildOutputProbe.includes(needle)),
       },
       sourceMatrixFullscreenVertex: {
         D1EqualsEl: sourceD1.trim() === sourceEl.trim(),

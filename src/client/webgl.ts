@@ -8807,6 +8807,10 @@ void main() {
             materialMode: "source-W1-raw-glsl3",
             vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mediaCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
+            renderManagerOwnership: "source-j1-Lo-settings-clear-unused-autoClear-owned-by-dollar1-update",
+            settingsClearMode: "source-j1-clear-true-unused-by-Lo-update",
+            autoClearMode: "source-dollar1-update-temporarily-autoClear-true-around-super-update",
+            rendererAutoClearRestored: this.renderer.autoClear === false,
           },
           ownership: {
             source: "Lu-and-I1-each-create-owned-pass-materials-in-initRenderer",
