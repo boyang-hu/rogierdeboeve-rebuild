@@ -142,10 +142,10 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `o1` floor material uniform order without visual tuning.
-- Source `o1` constructs base uniforms through `uNormalDistortionStrength`, then appends `tNormalMap` and `uNormalScale` from the normal-map branch.
-- The rebuild now declares `createFloorMaterial()` uniforms in that source order.
-- Output probe exposes/asserts `SOURCE_O1_FLOOR_UNIFORM_KEYS`, runtime `Object.keys(floorMaterial.uniforms)`, and `matchesSourceOrder`; renderer audit checks source `o1`, rebuild factory order, and probe coverage.
+- Aligned source `Xt/a1/o1` floor-normal texture object binding without visual tuning.
+- Source `Xt.loadTexture=e=>this.textureLoader.load(e)` returns a `Texture` object immediately; `Xt.preloadTextures()` stores that object on `Xt.floorNormal`, and `a1.init()` applies repeat `[45,45]` before passing the same object to `o1`.
+- The rebuild now uses `loadTextureImmediate()` after source WebP extension selection, binds `floorMaterial.uniforms.tNormalMap` and `uMapTransform` to the immediate floor-normal object, and uses the image-load promise only for the texture preload gate.
+- Output probe exposes/asserts `objectBindingMode=source-Xt-loadTexture-immediate-texture-object-bound-before-onload`, `uniformIsImmediateTexture=true`, `loadedSameImmediateTexture=true`, repeat `[45,45]`, and empty color space; renderer audit checks source/rebuild anchors.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,14 +159,14 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-floor-uniform-order-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9462 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-floor-uniform-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9463 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-floor-uniform-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9464 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-uniform-thumb node scripts/probe-thumb-spotlight.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9465 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-uniform-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-floor-normal-object-audit.json
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9472 PROBE_WAIT=45000 VIEWPORT=desktop OUT_DIR=/tmp/rd-floor-normal-object-output-desktop node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9473 PROBE_WAIT=45000 VIEWPORT=mobile OUT_DIR=/tmp/rd-floor-normal-object-output-mobile node scripts/probe-output-color.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9474 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-normal-object-thumb node scripts/probe-thumb-spotlight.mjs
+REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9475 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-floor-normal-object-media node scripts/probe-project-media.mjs
 ```
 
-All passed in the `o1` floor material uniform order batch.
+All passed in the `Xt/a1/o1` floor-normal texture object binding batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 

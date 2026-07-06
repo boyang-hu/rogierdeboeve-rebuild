@@ -259,7 +259,7 @@ const sourceMouseSimulationVertex = extractTemplate(bundle, "oA", "`;class Ka");
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 4200);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
-const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 120, 1300);
+const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 500, 1300);
 const sourceP1AddEnvironment = extractAround(bundle, "async addEnvironment(){const e=Le.WEBP?\"webp\":\"jpg\"", 220, 420);
 const rendererOutputRefs = [
   extractAround(bundle, "outputColorSpace", 180, 700),
@@ -1538,6 +1538,7 @@ const summary = {
     textures: sourceTextureManager && {
       index: sourceTextureManager.index,
       checks: checks(sourceTextureManager.text, [
+        "static loadTexture=e=>this.textureLoader.load(e)",
         "static preloadTextures(){const e=Le.WEBP?\"webp\":\"jpg\"",
         "this.blueNoise=this.loadTexture(\"/images/textures/blue-noise.png\"),this.blueNoise.wrapS=this.blueNoise.wrapT=ci",
         "this.floorNormal=this.loadTexture(`/images/textures/floor-normal.${e}`),this.floorNormal.wrapS=this.floorNormal.wrapT=ci",
@@ -1561,6 +1562,10 @@ const summary = {
       ]),
       rebuildLoadedTextureDefaults: {
         sourceLoadedTextureHelper: rebuildWebgl.includes("function applySourceLoadedTextureState(texture: Texture"),
+        sourceImmediateTextureLoadHelper: rebuildWebgl.includes("private loadTextureImmediate(src: string")
+          && rebuildWebgl.includes("texture = this.loader.load(src")
+          && rebuildWebgl.includes("this.textureCache.set(src, texture)")
+          && rebuildWebgl.includes("this.textureLoadPromises.set(src, loaded)"),
         noLoadedTextureFilterOverride: !rebuildWebgl.includes("function setTextureQuality")
           && !sourceLoadedTextureHelperBody.includes("texture.minFilter")
           && !sourceLoadedTextureHelperBody.includes("texture.magFilter")
@@ -1924,8 +1929,24 @@ const summary = {
         "private floorReflector = new Object3D()",
         "tReflect: this.floorReflectionRenderTargetUniform",
         "uMatrix: this.floorReflectionTextureMatrixUniform",
+        "sourceFloorNormalObjectBindingMode = \"pending-source-Xt-floorNormal\"",
+        "objectBindingMode: this.sourceFloorNormalObjectBindingMode",
+        "uniformIsImmediateTexture: this.floorMaterial.uniforms.tNormalMap.value === this.sourceFloorNormalTexture",
+        "loadedSameImmediateTexture: this.sourceTexturePreloadState.floorNormal",
         "groupType: this.floorGroup.type",
         "reflectionUniformOwnership: \"source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform\"",
+      ]),
+      floorNormalImmediateBinding: orderedIncludes(rebuildWebgl, [
+        "const floorNormalLoad = this.loadTextureImmediate(`/images/textures/floor-normal.${sourceExt}`, NoColorSpace)",
+        "const floorNormalTexture = floorNormalLoad.texture",
+        "floorNormalTexture.repeat.set(45, 45)",
+        "this.sourceFloorNormalTexture = floorNormalTexture",
+        "this.sourceFloorNormalObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
+        "this.floorMaterial.uniforms.tNormalMap.value = floorNormalTexture",
+        "this.floorMaterial.uniforms.uMapTransform.value = floorNormalTexture.matrix",
+        "const floorNormal = floorNormalLoad.loaded.then((texture) =>",
+        "this.sourceFloorNormalLoadedTexture = texture",
+        "this.sourceTexturePreloadState.floorNormal = true",
       ]),
       excerpt: compact(sourceA1Floor.text),
     },

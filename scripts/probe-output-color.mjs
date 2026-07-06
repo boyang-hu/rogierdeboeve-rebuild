@@ -1150,7 +1150,12 @@ async function runProbe() {
   }
   if (floorUniforms?.matchesSourceOrder !== true) floorErrors.push("floorUniformOrder");
   if (floorUniforms?.normalMap?.bindingMode !== "source-a1-Xt-floorNormal-repeat-45-updateMatrix") floorErrors.push("floorNormalBindingMode");
+  if (floorUniforms?.normalMap?.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") {
+    floorErrors.push("floorNormalObjectBindingMode");
+  }
   if (floorUniforms?.normalMap?.isLoadedTexture !== true) floorErrors.push("floorNormalLoaded");
+  if (floorUniforms?.normalMap?.uniformIsImmediateTexture !== true) floorErrors.push("floorNormalImmediateTexture");
+  if (floorUniforms?.normalMap?.loadedSameImmediateTexture !== true) floorErrors.push("floorNormalLoadedSameImmediateTexture");
   if (!Array.isArray(floorUniforms?.normalMap?.repeat) || Math.abs((floorUniforms.normalMap.repeat[0] ?? 0) - 45) > 0.0001 || Math.abs((floorUniforms.normalMap.repeat[1] ?? 0) - 45) > 0.0001) floorErrors.push("floorNormalRepeat");
   if (!Array.isArray(floorUniforms?.normalMap?.matrix) || floorUniforms.normalMap.matrix.length !== 9) floorErrors.push("floorNormalMatrix");
   if (floorUniforms?.normalMap?.colorSpace !== "") floorErrors.push("floorNormalColorSpace");

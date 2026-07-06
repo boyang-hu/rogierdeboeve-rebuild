@@ -3811,6 +3811,7 @@ export class WebGLBackdrop {
   private loader = new TextureLoader();
   private cubeLoader = new CubeTextureLoader();
   private textureCache = new Map<string, Texture>();
+  private textureLoadPromises = new Map<string, Promise<Texture>>();
   private videoTextureCache = new Map<string, Texture>();
   private sourceProjectThumbs: SourceProjectThumb[] = [];
   private sourceThumbsReadyResolve?: () => void;
@@ -4049,6 +4050,9 @@ export class WebGLBackdrop {
     perlin1: false,
     perlin2: false,
   };
+  private sourceFloorNormalTexture: Texture | null = null;
+  private sourceFloorNormalLoadedTexture: Texture | null = null;
+  private sourceFloorNormalObjectBindingMode = "pending-source-Xt-floorNormal";
   private sourceWebpSupport: boolean | null = null;
   private sourceAssetExt: "webp" | "jpg" | null = null;
   private sourceCubemapLoadState: {
@@ -5486,14 +5490,18 @@ export class WebGLBackdrop {
       if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = texture;
       this.sourceTexturePreloadState.perlin1 = true;
     });
-    const floorNormal = this.loadTextureAsync(`/images/textures/floor-normal.${sourceExt}`).then((texture) => {
-      texture.colorSpace = NoColorSpace;
-      texture.wrapS = RepeatWrapping;
-      texture.wrapT = RepeatWrapping;
-      texture.repeat.set(45, 45);
-      texture.updateMatrix();
-      this.floorMaterial.uniforms.tNormalMap.value = texture;
-      this.floorMaterial.uniforms.uMapTransform.value = texture.matrix;
+    const floorNormalLoad = this.loadTextureImmediate(`/images/textures/floor-normal.${sourceExt}`, NoColorSpace);
+    const floorNormalTexture = floorNormalLoad.texture;
+    floorNormalTexture.wrapS = RepeatWrapping;
+    floorNormalTexture.wrapT = RepeatWrapping;
+    floorNormalTexture.repeat.set(45, 45);
+    floorNormalTexture.updateMatrix();
+    this.sourceFloorNormalTexture = floorNormalTexture;
+    this.sourceFloorNormalObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
+    this.floorMaterial.uniforms.tNormalMap.value = floorNormalTexture;
+    this.floorMaterial.uniforms.uMapTransform.value = floorNormalTexture.matrix;
+    const floorNormal = floorNormalLoad.loaded.then((texture) => {
+      this.sourceFloorNormalLoadedTexture = texture;
       this.sourceTexturePreloadState.floorNormal = true;
     });
     this.loadTexture("/models/me/model_T.jpg", (texture) => {
@@ -6484,21 +6492,34 @@ void main() {
     void this.loadTextureAsync(src).then(onLoad);
   }
 
-  private loadTextureAsync(src: string) {
+  private loadTextureImmediate(src: string, colorSpace: typeof SRGBColorSpace | typeof NoColorSpace | "" = this.loadedTextureColorSpace()) {
     const cached = this.textureCache.get(src);
-    if (cached) return Promise.resolve(cached);
-    return new Promise<Texture>((resolve, reject) => {
-      this.loader.load(
-        src,
-        (texture) => {
-          applySourceLoadedTextureState(texture, this.loadedTextureColorSpace());
-          this.textureCache.set(src, texture);
-          resolve(texture);
-        },
-        undefined,
-        reject,
-      );
+    if (cached) {
+      return {
+        texture: cached,
+        loaded: this.textureLoadPromises.get(src) ?? Promise.resolve(cached),
+      };
+    }
+
+    let texture!: Texture;
+    const loaded = new Promise<Texture>((resolve, reject) => {
+      texture = this.loader.load(src, (loadedTexture) => {
+        applySourceLoadedTextureState(loadedTexture, colorSpace);
+        resolve(loadedTexture);
+      }, undefined, reject);
+    }).catch((error) => {
+      this.textureCache.delete(src);
+      this.textureLoadPromises.delete(src);
+      throw error;
     });
+    applySourceLoadedTextureState(texture, colorSpace);
+    this.textureCache.set(src, texture);
+    this.textureLoadPromises.set(src, loaded);
+    return { texture, loaded };
+  }
+
+  private loadTextureAsync(src: string) {
+    return this.loadTextureImmediate(src).loaded;
   }
 
   private loadVideoTextureAsync(src: string) {
@@ -8221,7 +8242,12 @@ void main() {
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
           normalMap: {
             bindingMode: "source-a1-Xt-floorNormal-repeat-45-updateMatrix",
+            objectBindingMode: this.sourceFloorNormalObjectBindingMode,
             isLoadedTexture: this.floorMaterial.uniforms.tNormalMap.value !== this.placeholder,
+            uniformIsImmediateTexture: this.floorMaterial.uniforms.tNormalMap.value === this.sourceFloorNormalTexture,
+            loadedSameImmediateTexture: this.sourceTexturePreloadState.floorNormal
+              ? this.sourceFloorNormalLoadedTexture === this.sourceFloorNormalTexture
+              : null,
             repeat: this.floorMaterial.uniforms.tNormalMap.value instanceof Texture
               ? this.floorMaterial.uniforms.tNormalMap.value.repeat.toArray()
               : null,
