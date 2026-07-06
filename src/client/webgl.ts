@@ -322,6 +322,18 @@ const SOURCE_HOME_THUMB_DARKNESS_FALLBACK = 0;
 const SOURCE_INITIAL_THUMB_DARKNESS_COLOR = "#000000";
 const SOURCE_INITIAL_THUMB_SATURATION = 1;
 const SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS = 1;
+const SOURCE_ACTIVE_PROJECT_ORDER = [
+  "hashgraph-vc",
+  "gc-2026",
+  "following-wildfire",
+  "engaged",
+  "spritexmarvel",
+  "filmsecession",
+  "theroger",
+  "poppr",
+  "demorgen",
+  "thoughtlab",
+];
 const SOURCE_WORK_DIFFUSE = "#808080";
 const SOURCE_WORK_ENVMAP_INTENSITY = 0.75;
 const SOURCE_WORK_ROUGHNESS = 1;
@@ -6951,6 +6963,7 @@ void main() {
       };
     });
     const visible = items.filter((item) => item.visible);
+    const actualProjectOrder = this.workItems.map((item) => item.slug);
     return {
       source: "p1.update-world-position-cull-then-visible-block-update",
       bounds: {
@@ -6961,6 +6974,12 @@ void main() {
       total: items.length,
       visibleCount: visible.length,
       culledCount: items.length - visible.length,
+      sourceProjectOrder: {
+        mode: "source-is-getProjects-active-filter-date-desc",
+        expected: SOURCE_ACTIVE_PROJECT_ORDER,
+        actual: actualProjectOrder,
+        matchesSource: JSON.stringify(actualProjectOrder) === JSON.stringify(SOURCE_ACTIVE_PROJECT_ORDER),
+      },
       sourceCarouselDistribution: {
         mode: "source-p1-setBlocks-circular-radius-sceneWrap-z-demorgen-rotation-lightRadius",
         itemWidth: sourceItemWidth,
@@ -7381,6 +7400,7 @@ void main() {
     this.thumbProbeLastUpdate = time;
     const color = this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color;
     const spotlightProjection = this.spotlightProjectionProbe();
+    const actualProjectOrder = this.workItems.map((item) => item.slug);
     const probeWindow = window as ThumbProbeWindow;
     probeWindow.__rogierThumbProbe = {
       activeSlug: this.activeSlug,
@@ -7419,6 +7439,12 @@ void main() {
       itemWidth: this.thumbItemWidth,
       totalItems: this.thumbTotalItems,
       totalWidth: this.thumbTotalItems * this.thumbItemWidth,
+      sourceProjectOrder: {
+        mode: "source-is-getProjects-active-filter-date-desc",
+        expected: SOURCE_ACTIVE_PROJECT_ORDER,
+        actual: actualProjectOrder,
+        matchesSource: JSON.stringify(actualProjectOrder) === JSON.stringify(SOURCE_ACTIVE_PROJECT_ORDER),
+      },
       offsetY: this.thumbOffsetY,
       isTransitioning: this.thumbIsTransitioning,
       visibleThumbs: this.workItems.filter((item) => item.thumb.visible).length,

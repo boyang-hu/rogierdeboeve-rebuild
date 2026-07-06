@@ -338,6 +338,12 @@ async function runProbe() {
   if (p1UpdateCulling.source !== "p1.update-world-position-cull-then-visible-block-update") cullingErrors.push("source");
   if (JSON.stringify(p1UpdateCulling.bounds) !== JSON.stringify({ minX: -5.5, maxX: 5.5, maxZ: 5 })) cullingErrors.push("bounds");
   if (p1UpdateCulling.total !== 10) cullingErrors.push("total");
+  const expectedProjectOrder = ["hashgraph-vc", "gc-2026", "following-wildfire", "engaged", "spritexmarvel", "filmsecession", "theroger", "poppr", "demorgen", "thoughtlab"];
+  const projectOrder = p1UpdateCulling.sourceProjectOrder || {};
+  if (projectOrder.mode !== "source-is-getProjects-active-filter-date-desc") cullingErrors.push("projectOrderMode");
+  if (JSON.stringify(projectOrder.expected) !== JSON.stringify(expectedProjectOrder)) cullingErrors.push("projectOrderExpected");
+  if (JSON.stringify(projectOrder.actual) !== JSON.stringify(expectedProjectOrder)) cullingErrors.push("projectOrderActual");
+  if (projectOrder.matchesSource !== true) cullingErrors.push("projectOrderMatchesSource");
   const carousel = p1UpdateCulling.sourceCarouselDistribution || {};
   const expectedTheta = p1UpdateCulling.total > 0 ? 360 / p1UpdateCulling.total : 0;
   const expectedRadius = p1UpdateCulling.total > 0 ? Math.round(6.5 / 2 / Math.tan(Math.PI / p1UpdateCulling.total)) : 0;

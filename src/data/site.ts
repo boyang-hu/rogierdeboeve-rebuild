@@ -4,7 +4,9 @@ import type { AwardGroup, Project } from "../types";
 
 export const projects = projectsData as Project[];
 export const awards = awardsData as AwardGroup[];
-export const activeProjects = projects.filter((project) => project.data.active !== false);
+export const activeProjects = projects
+  .filter((project) => project.data.active !== false)
+  .sort((a, b) => Date.parse(b.data.date) - Date.parse(a.data.date));
 
 export function getProjectBySlug(slug: string) {
   return projects.find((project) => project.data.slug === slug || project.id === slug);

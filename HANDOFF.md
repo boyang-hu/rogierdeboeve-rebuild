@@ -143,11 +143,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime/audit guardrail for `p1` carousel/light scalar ownership without intended production visual behavior change.
-- Source `p1.init()` owns `count`, `theta`, and `itemWidth`; source `p1.setBlocks()` computes `radius` and `lightRadius=radius-3.5`; source `p1.setLights()` sets `maxSpotLightIntensity=220`.
-- `createWorkScene()` now stores the source scalar state on `WebGLBackdrop` (`count`, `theta`, `itemWidth`, `radius`, `lightRadius`) and uses `this.theta` for carousel placement.
-- `__rogierOutputProbe.p1UpdateCulling.sourceCarouselDistribution` exposes actual/expected item width, count, theta, radius, and lightRadius parity; the lights probe exposes `maxSpotLightIntensity` and `maxSpotLightIntensityMatchesSource`.
-- `scripts/probe-output-color.mjs` hard-fails on drift for the new carousel/light fields, and renderer audit checks mirrored source anchors plus rebuild/probe coverage.
+- Added a source-backed runtime/audit guardrail for `is.getProjects()` active project ordering without screenshot-led tuning.
+- Source `is.getProjects()` filters projects with `active !== false` and sorts by `Date.parse(date)` descending; source `getProjectById()` uses the raw project list, while `getNextProject()` uses the sorted active list.
+- `src/data/site.ts` now builds `activeProjects` with the same source active filter and date-desc sort.
+- `SOURCE_ACTIVE_PROJECT_ORDER` records the expected home/thumb order: `hashgraph-vc`, `gc-2026`, `following-wildfire`, `engaged`, `spritexmarvel`, `filmsecession`, `theroger`, `poppr`, `demorgen`, `thoughtlab`.
+- `__rogierOutputProbe.p1UpdateCulling.sourceProjectOrder` and `__rogierThumbProbe.sourceProjectOrder` expose expected order, actual runtime order, and `matchesSource`; output and thumb probes hard-fail on drift.
+- Renderer audit now reads `src/data/site.ts` and checks mirrored source manager anchors, rebuild sorting, runtime probe coverage, and output/thumb probe assertions.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -158,17 +159,17 @@ Last verified in the latest session:
 git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-p1-source-state-audit-final.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-project-order-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-source-state-output-desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-p1-source-state-output-mobile node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9290 OUT_DIR=/tmp/rd-p1-source-state-thumb-desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9291 VIEWPORT=mobile OUT_DIR=/tmp/rd-p1-source-state-thumb-mobile node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-source-state-project-media node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-project-order-output-desktop-final node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-project-order-output-mobile-final node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9292 OUT_DIR=/tmp/rd-project-order-thumb-desktop-final node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome CDP_PORT=9293 VIEWPORT=mobile OUT_DIR=/tmp/rd-project-order-thumb-mobile-final node scripts/probe-thumb-spotlight.mjs
 ```
 
-All relevant checks passed in the `p1` carousel/light scalar state guardrail batch. Desktop and mobile output probes confirmed `actualItemWidth=6.5`, `actualCount=10`, `actualThetaDegrees=36`, `actualRadius=10`, `actualLightRadius=6.5`, `lightRadiusMatchesSource=true`, `maxSpotLightIntensity=220`, and `maxSpotLightIntensityMatchesSource=true`, with no failures/exceptions/console messages. Desktop and mobile thumb probes retained the existing source progress/order and spotlight projection guardrails, with `3/9` in-map spotlight samples and nonzero map luma. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages.
+All relevant checks passed in the `is.getProjects()` active project order guardrail batch. Desktop and mobile output probes confirmed `sourceProjectOrder.mode=source-is-getProjects-active-filter-date-desc`, actual order matching the expected source order, and `matchesSource=true`, with no failures/exceptions/console messages. Desktop and mobile thumb probes confirmed the same project-order parity while retaining existing source progress/order, thumb wrapping, image lifecycle, target sizing, and spotlight projection guardrails, with `3/9` in-map spotlight samples and nonzero map luma.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this guardrail batch.
 
@@ -177,12 +178,12 @@ Runtime QA was done with local Chrome CDP scripts.
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the `p1` source scalar state guardrail.
-- Desktop output probe passed with source item/count/theta/radius/lightRadius and max spotlight scalar parity: `/tmp/rd-p1-source-state-output-desktop`.
-- Mobile output probe passed with the same source scalar parity: `/tmp/rd-p1-source-state-output-mobile`.
-- Desktop thumb projection probe passed with existing order/projection guardrails intact: `/tmp/rd-p1-source-state-thumb-desktop`.
-- Mobile thumb projection probe passed with existing order/projection guardrails intact and the source mobile `0.3` spotlight Y branch: `/tmp/rd-p1-source-state-thumb-mobile`.
-- Project media probe confirms `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages: `/tmp/rd-p1-source-state-project-media`; project-media remains a regression gate, not proof of Home parity.
+- Renderer audit passed after the `is.getProjects()` active project order guardrail.
+- Desktop output probe passed with source active project order parity: `/tmp/rd-project-order-output-desktop-final`.
+- Mobile output probe passed with the same source active project order parity: `/tmp/rd-project-order-output-mobile-final`.
+- Desktop thumb projection probe passed with source active project order parity and existing order/projection guardrails intact: `/tmp/rd-project-order-thumb-desktop-final`.
+- Mobile thumb projection probe passed with source active project order parity, existing order/projection guardrails intact, and the source mobile `0.3` spotlight Y branch: `/tmp/rd-project-order-thumb-mobile-final`.
+- Project media remains a regression gate, not proof of Home parity; it was not touched by this data-order guardrail batch.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.

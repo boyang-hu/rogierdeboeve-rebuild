@@ -78,6 +78,7 @@ This table is the current working board for completing Phase 1. It supersedes th
 
 | Priority | ID | Chain | Source evidence summary | Rebuild status | Risk | Next action |
 | --- | --- | --- | --- | --- | --- | --- |
+| 202 | S1-275 | `is/p1/w1` active project date-desc order guardrail | Source `is.getProjects()` filters project data with `active !== false` and sorts by `Date.parse(date)` descending. Source `getProjectById()` uses the raw project list, while `getNextProject()` uses the sorted active list from `getProjects()`. | Intended production visual behavior is unchanged except for mirroring source project ordering. `activeProjects` now follows the source active filter plus date-desc sort; output and thumb probes expose/assert the expected source order `hashgraph-vc -> gc-2026 -> following-wildfire -> engaged -> spritexmarvel -> filmsecession -> theroger -> poppr -> demorgen -> thoughtlab`; renderer audit checks mirrored source anchors, rebuild sorting, and probe coverage. Build, renderer audit, desktop/mobile output probes, and desktop/mobile thumb probes passed; probes confirmed `sourceProjectOrder.matchesSource=true` with no browser failures/exceptions/console messages. | Low | Keep this as a source data-order guardrail only. It does not close Phase 1 visual parity, spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals. |
 | 201 | S1-274 | `p1` carousel/light scalar state guardrail | Source `p1.init()` owns `count`, `theta`, and `itemWidth`; source `p1.setBlocks()` computes `radius=Math.round(itemWidth/2/Math.tan(Math.PI/count))` and `lightRadius=radius-3.5`; source `p1.setLights()` sets `maxSpotLightIntensity=220`. | Intended production visual behavior is unchanged. `WebGLBackdrop` now stores source-shaped `count`, `theta`, `itemWidth`, `radius`, and `lightRadius`, uses `this.theta` for carousel placement, resets scalar state on the empty-card path, and exposes actual/expected item width, count, theta, radius, and lightRadius parity through `p1UpdateCulling.sourceCarouselDistribution`. The lights probe exposes `maxSpotLightIntensity` and `maxSpotLightIntensityMatchesSource`; output probes and renderer audit hard-fail on drift. Build, renderer audit, desktop/mobile output probes, desktop/mobile thumb probes, and project-media probe passed; output probes confirmed `actualCount=10`, `actualThetaDegrees=36`, `actualRadius=10`, `actualLightRadius=6.5`, and `maxSpotLightIntensity=220`. | Low | Keep this as source scalar-state evidence only. It does not close Phase 1 visual parity, the spotlight/thumb projection transfer feel, the broader `kA/Lu/I1` transfer/composite interpretation, or the floor/environment residuals. |
 | 200 | S1-273 | `yD/w1` gallery progress transform order guardrail | Source `yD.updateScene()` applies gallery-progress writes in this order: `J.workScene.sceneWrap.rotation.y = degToRad(scroll.progress*360+180)`, then `J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value = scroll.progress*1`, then `J.workThumbScene.thumbs.updateGalleryProgress(-scroll.progress)`, then scene roll and zoom. This preserves the source relationship between work-scene rotation, `C1/A1.uTransformX`, and negative thumb progress. | Intended production formulas, constants, render targets, and visual tuning are unchanged. `setGalleryProgress()` now writes `sceneWrap.rotation.y` before `preCompositeMaterial.uniforms.uTransformX.value`, then calls `updateThumbGallery(-progress)` before roll/zoom updates. `__rogierThumbProbe` exposes `sourceProgressTransformOrder=source-yD-sceneWrap-then-uTransformX-then-thumbProgress`, `scripts/probe-thumb-spotlight.mjs` hard-fails on drift, and renderer audit now checks source/rebuild order for `sceneWrap -> uTransformX -> thumbProgress -> roll/zoom`. `git diff --check`, syntax checks, renderer audit, build, desktop/mobile thumb probes, desktop/mobile output probes, and project-media probe passed; desktop/mobile thumb probes confirmed the new order marker with no failures/exceptions/console messages, and project media retained visible tracks. | Low | Keep this as a source update-order guardrail only. It does not close Phase 1 visual parity, the spotlight/thumb projection transfer feel, the broader `kA/Lu/I1` transfer/composite interpretation, or the floor/environment residuals. |
 | 199 | S1-272 | `p1` scene background/fog guardrail | Source `p1.init()` creates `this.fog=new bu("grey",0,100)`, assigns `this.scene.fog=this.fog`, computes `this.backgroundColor=new ye(BA.BACKGROUND_COLOR).convertLinearToSRGB()`, and assigns `this.scene.background=this.backgroundColor`; source `BA.BACKGROUND_COLOR` is `#1a1a1a`. Source floor/env materials keep fog disabled: `a1/o1` is constructed without a `fog` branch, and `h1/u1` passes `fog:false`. | Intended production rendering is unchanged. The rebuild now centralizes `SOURCE_WORK_FOG_COLOR`, exposes `__rogierOutputProbe.settings.work.sceneSurface` with source background/fog/floor-env fog parity, and hard-fails output probes on drift. Renderer audit checks mirrored `p1` scene-surface anchors plus rebuild/probe coverage. `git diff --check`, syntax checks, build, renderer audit, desktop/mobile output probes, desktop thumb probe, and project-media probe passed; desktop/mobile probes confirmed source background/fog parity and floor/env fog disabled, while `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks. | Low | Keep this as a source scene-surface guardrail only. It proves `p1.init()` owns scene background/fog and that floor/env fog branches stay disabled, but it does not close the hard horizon/fog-bed residual. Continue production Phase 1 from spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and remaining floor/environment distribution evidence. |
@@ -5996,6 +5997,42 @@ Verification:
 - Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-light-state-media`.
 
 Decision: keep light intensity setters owned by source-style `Se.settings` state and update actual Three lights from `onUpdate`. Do not reintroduce separate scalar mirror fields or direct `gsap.to(this, ...)` intensity tweens without mirrored-bundle evidence. Phase 1 remains open because this closes state tween ownership only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution gaps remain unresolved.
+
+### S1-275 `is/p1/w1` Active Project Date-Desc Order Guardrail
+
+This batch adds a source-backed runtime/audit guardrail for active project ordering. It intentionally avoids screenshot-led tuning and does not change shader formulas, render-target ownership, spotlight constants, route media behavior, or visual transfer settings.
+
+Source evidence:
+
+- Source data loading assigns `const xf=await gc("projects")`.
+- Source `is.getProjects()` returns `xf.filter(e=>e.data.active!==!1).sort((e,t)=>Date.parse(t.data.date)-Date.parse(e.data.date))`.
+- Source `is.getProjectById()` uses the raw project list with `xf.find(t=>t.id===e)`.
+- Source `is.getNextProject()` starts from `this.getProjects()`, so next-project sequencing follows the filtered date-desc active list.
+
+Runtime and tooling changes:
+
+- `activeProjects` in `src/data/site.ts` now mirrors the source `active !== false` filter followed by `Date.parse(date)` descending sort.
+- `SOURCE_ACTIVE_PROJECT_ORDER` records the mirrored source active order: `hashgraph-vc`, `gc-2026`, `following-wildfire`, `engaged`, `spritexmarvel`, `filmsecession`, `theroger`, `poppr`, `demorgen`, `thoughtlab`.
+- `p1UpdateCulling.sourceProjectOrder` exposes the source order mode, expected order, actual `workItems` order, and source-match boolean for the home carousel.
+- `__rogierThumbProbe.sourceProjectOrder` exposes the same source order surface for the thumbnail strip.
+- `scripts/probe-output-color.mjs` and `scripts/probe-thumb-spotlight.mjs` hard-fail if the order mode, expected order, actual order, or source-match boolean drift.
+- `scripts/audit-renderer-output.mjs` now reads `src/data/site.ts` and checks mirrored source manager anchors, rebuild sorting, runtime probe coverage, and output/thumb probe assertions.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check src/client/webgl.ts` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-project-order-audit-final.json` passed.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed with `sourceProjectOrder.mode=source-is-getProjects-active-filter-date-desc`, actual order matching the expected source order, and `matchesSource=true`: `/tmp/rd-project-order-output-desktop-final`.
+- Mobile output probe passed with the same source order parity: `/tmp/rd-project-order-output-mobile-final`.
+- Desktop thumb spotlight probe passed with the same source order parity plus existing progress/order, thumb wrapping, image lifecycle, target sizing, and spotlight projection guardrails intact: `/tmp/rd-project-order-thumb-desktop-final`.
+- Mobile thumb spotlight probe passed with the same source order parity plus the existing mobile spotlight branch/projection guardrails intact: `/tmp/rd-project-order-thumb-mobile-final`.
+
+Decision: keep this as source `is.getProjects()` data-order evidence/guardrail only. It proves active project filtering and date-desc ordering for the home carousel and thumb strip, but it does not close any remaining visual residual. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and remaining floor/environment distribution evidence.
 
 ### S1-274 `p1` Carousel/Light Scalar State Guardrail
 

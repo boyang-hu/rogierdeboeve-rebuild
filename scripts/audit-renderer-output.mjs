@@ -14,6 +14,7 @@ const outDir = process.env.OUT_DIR || path.join(tmpdir(), "rogier-renderer-outpu
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
 const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
 const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
+const rebuildSitePath = process.env.REBUILD_SITE || "src/data/site.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
 const rebuildOutputProbePath = process.env.REBUILD_OUTPUT_PROBE || "scripts/probe-output-color.mjs";
 const rebuildCompositeStagesPath = process.env.REBUILD_COMPOSITE_STAGES || "scripts/compare-composite-stages.mjs";
@@ -153,6 +154,7 @@ mkdirSync(outDir, { recursive: true });
 const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
+const rebuildSite = readFileSync(rebuildSitePath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
 const rebuildOutputProbe = readFileSync(rebuildOutputProbePath, "utf8");
 const rebuildCompositeStages = readFileSync(rebuildCompositeStagesPath, "utf8");
@@ -233,6 +235,7 @@ const sourceQT = extractAround(bundle, "class qT extends", 320, 1500);
 const sourceJT = extractAround(bundle, "class jT extends", 320, 1100);
 const sourceKT = extractAround(bundle, "class KT extends", 320, 1200);
 const sourcePressureJT = extractAround(bundle, "class JT extends", 320, 1100);
+const sourceProjectDataManager = extractAround(bundle, "class is{static getProjects()", 120, 700);
 const sourceMainI1 = extractAround(bundle, "class I1", 200, 9600);
 const sourcePe = extractAround(bundle, "class Pe", 200, 1400);
 const sourceP1Resize = extractAround(bundle, "resize(e,t,n){super.resize(e,t,Math.min(n,1.5))", 1200, 900);
@@ -1969,6 +1972,44 @@ const summary = {
         "sceneSurface.environmentMaterialFog !== false",
       ]),
       excerpt: compact(sourceP1InitEnv.text),
+    },
+    projectDataOrder: sourceProjectDataManager && {
+      index: sourceProjectDataManager.index,
+      checks: checks(sourceProjectDataManager.text, [
+        "class is{static getProjects()",
+        "xf.filter(e=>e.data.active!==!1).sort((e,t)=>Date.parse(t.data.date)-Date.parse(e.data.date))",
+        "static getProjectById(e){return xf.find(t=>t.id===e)}",
+        "static getNextProject(e){const t=this.getProjects()",
+      ]),
+      rebuildChecks: checks(rebuildSite, [
+        "export const activeProjects = projects",
+        ".filter((project) => project.data.active !== false)",
+        ".sort((a, b) => Date.parse(b.data.date) - Date.parse(a.data.date))",
+        "const index = activeProjects.findIndex((item) => item.data.slug === project.data.slug)",
+      ]),
+      rebuildRuntimeChecks: checks(rebuildWebgl, [
+        "const SOURCE_ACTIVE_PROJECT_ORDER = [",
+        "\"hashgraph-vc\"",
+        "\"thoughtlab\"",
+        "sourceProjectOrder: {",
+        "mode: \"source-is-getProjects-active-filter-date-desc\"",
+        "expected: SOURCE_ACTIVE_PROJECT_ORDER",
+        "actual: actualProjectOrder",
+        "matchesSource: JSON.stringify(actualProjectOrder) === JSON.stringify(SOURCE_ACTIVE_PROJECT_ORDER)",
+      ]),
+      rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "projectOrder.mode !== \"source-is-getProjects-active-filter-date-desc\"",
+        "projectOrderExpected",
+        "projectOrderActual",
+        "projectOrderMatchesSource",
+      ]),
+      rebuildThumbProbeChecks: checks(rebuildThumbProbe, [
+        "projectOrder.mode !== \"source-is-getProjects-active-filter-date-desc\"",
+        "projectOrderExpected",
+        "projectOrderActual",
+        "projectOrderMatchesSource",
+      ]),
+      excerpt: compact(sourceProjectDataManager.text),
     },
     p1CarouselDistribution: sourceP1SetBlocks && {
       index: sourceP1SetBlocks.index,

@@ -328,6 +328,20 @@ async function runProbe() {
   if (probe.totalWidth !== probe.totalItems * probe.itemWidth) {
     sourceShapeErrors.push(`totalWidth=${probe.totalWidth}`);
   }
+  const expectedProjectOrder = ["hashgraph-vc", "gc-2026", "following-wildfire", "engaged", "spritexmarvel", "filmsecession", "theroger", "poppr", "demorgen", "thoughtlab"];
+  const projectOrder = probe.sourceProjectOrder || {};
+  if (projectOrder.mode !== "source-is-getProjects-active-filter-date-desc") {
+    sourceShapeErrors.push(`projectOrderMode=${projectOrder.mode}`);
+  }
+  if (JSON.stringify(projectOrder.expected) !== JSON.stringify(expectedProjectOrder)) {
+    sourceShapeErrors.push(`projectOrderExpected=${JSON.stringify(projectOrder.expected)}`);
+  }
+  if (JSON.stringify(projectOrder.actual) !== JSON.stringify(expectedProjectOrder)) {
+    sourceShapeErrors.push(`projectOrderActual=${JSON.stringify(projectOrder.actual)}`);
+  }
+  if (projectOrder.matchesSource !== true) {
+    sourceShapeErrors.push(`projectOrderMatchesSource=${projectOrder.matchesSource}`);
+  }
   const expectedThumbProgress = -sourceProbeProgress * probe.totalWidth;
   if (!closeTo(probe.thumbProgress, expectedThumbProgress)) {
     sourceShapeErrors.push(`thumbProgress=${probe.thumbProgress},expected=${expectedThumbProgress}`);
