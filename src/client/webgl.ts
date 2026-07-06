@@ -2523,57 +2523,49 @@ void main() {
 `;
 
 const homeLuminosityFragment = `
-precision highp float;
-
+precision mediump float;
 uniform sampler2D tMap;
 uniform float uThreshold;
 uniform float uSmoothing;
-
 in vec2 vUv;
 out vec4 FragColor;
-
 void main() {
-  vec4 texel = texture(tMap, vUv);
-  vec3 luma = vec3(0.299, 0.587, 0.114);
-  float value = dot(texel.xyz, luma);
-  float alpha = smoothstep(uThreshold, uThreshold + uSmoothing, value);
-  FragColor = mix(vec4(0.0), texel, alpha);
+    vec4 texel = texture(tMap, vUv);
+    vec3 luma = vec3(0.299, 0.587, 0.114);
+    float v = dot(texel.xyz, luma);
+    float alpha = smoothstep(uThreshold, uThreshold + uSmoothing, v);
+    FragColor = mix(vec4(0), texel, alpha);
 }
 `;
 
 const homeBloomBlurFragment = `
 precision mediump float;
-
 uniform sampler2D tMap;
 uniform vec2 uDirection;
 uniform vec2 uResolution;
-
 in vec2 vUv;
 out vec4 FragColor;
-
 float gaussianPdf(float x, float sigma) {
-  return 0.39894 * exp(-0.5 * x * x / (sigma * sigma)) / sigma;
+    return 0.39894 * exp(-0.5 * x * x / (sigma * sigma)) / sigma;
 }
-
-vec4 gaussianBlur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
-  vec2 invSize = 1.0 / resolution;
-  float fSigma = float(SIGMA);
-  float weightSum = gaussianPdf(0.0, fSigma);
-  vec3 diffuseSum = texture(image, uv).rgb * weightSum;
-  for (int i = 1; i < KERNEL_RADIUS; i++) {
-    float x = float(i);
-    float weight = gaussianPdf(x, fSigma);
-    vec2 uvOffset = direction * invSize * x;
-    vec3 sample1 = texture(image, uv + uvOffset).rgb;
-    vec3 sample2 = texture(image, uv - uvOffset).rgb;
-    diffuseSum += (sample1 + sample2) * weight;
-    weightSum += 2.0 * weight;
-  }
-  return vec4(diffuseSum / weightSum, 1.0);
+vec4 blur(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
+    vec2 invSize = 1.0 / resolution;
+    float fSigma = float(SIGMA);
+    float weightSum = gaussianPdf(0.0, fSigma);
+    vec3 diffuseSum = texture(image, uv).rgb * weightSum;
+    for (int i = 1; i < KERNEL_RADIUS; i++) {
+        float x = float(i);
+        float w = gaussianPdf(x, fSigma);
+        vec2 uvOffset = direction * invSize * x;
+        vec3 sample1 = texture(image, uv + uvOffset).rgb;
+        vec3 sample2 = texture(image, uv - uvOffset).rgb;
+        diffuseSum += (sample1 + sample2) * w;
+        weightSum += 2.0 * w;
+    }
+    return vec4(diffuseSum / weightSum, 1.0);
 }
-
 void main() {
-  FragColor = gaussianBlur(tMap, vUv, uResolution, uDirection);
+    FragColor = blur(tMap, vUv, uResolution, uDirection);
 }
 `;
 
@@ -2716,10 +2708,8 @@ void main() {
 
 const homeFxaaFragment = `
 precision mediump float;
-
 uniform sampler2D tMap;
 uniform vec2 uResolution;
-
 in vec2 v_rgbNW;
 in vec2 v_rgbNE;
 in vec2 v_rgbSW;
@@ -2727,70 +2717,66 @@ in vec2 v_rgbSE;
 in vec2 v_rgbM;
 in vec2 vUv;
 out vec4 FragColor;
-
 #ifndef FXAA_REDUCE_MIN
-  #define FXAA_REDUCE_MIN (1.0 / 128.0)
+    #define FXAA_REDUCE_MIN   (1.0/ 128.0)
 #endif
 #ifndef FXAA_REDUCE_MUL
-  #define FXAA_REDUCE_MUL (1.0 / 8.0)
+    #define FXAA_REDUCE_MUL   (1.0 / 8.0)
 #endif
 #ifndef FXAA_SPAN_MAX
-  #define FXAA_SPAN_MAX 8.0
+    #define FXAA_SPAN_MAX     8.0
 #endif
-
-vec4 fxaa(
-  sampler2D tex,
-  vec2 fragCoord,
-  vec2 resolution,
-  vec2 rgbNWUv,
-  vec2 rgbNEUv,
-  vec2 rgbSWUv,
-  vec2 rgbSEUv,
-  vec2 rgbMUv
-) {
-  vec4 color;
-  mediump vec2 inverseVP = vec2(1.0 / resolution.x, 1.0 / resolution.y);
-  vec3 rgbNW = texture(tex, rgbNWUv).xyz;
-  vec3 rgbNE = texture(tex, rgbNEUv).xyz;
-  vec3 rgbSW = texture(tex, rgbSWUv).xyz;
-  vec3 rgbSE = texture(tex, rgbSEUv).xyz;
-  vec4 texColor = texture(tex, rgbMUv);
-  vec3 rgbM = texColor.xyz;
-  vec3 luma = vec3(0.299, 0.587, 0.114);
-  float lumaNW = dot(rgbNW, luma);
-  float lumaNE = dot(rgbNE, luma);
-  float lumaSW = dot(rgbSW, luma);
-  float lumaSE = dot(rgbSE, luma);
-  float lumaM = dot(rgbM, luma);
-  float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
-  float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
-  mediump vec2 dir;
-  dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
-  dir.y = ((lumaNW + lumaSW) - (lumaNE + lumaSE));
-  float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
-  float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
-  dir = min(vec2(FXAA_SPAN_MAX), max(vec2(-FXAA_SPAN_MAX), dir * rcpDirMin)) * inverseVP;
-  vec3 rgbA = 0.5 * (
-    texture(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +
-    texture(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz
-  );
-  vec3 rgbB = rgbA * 0.5 + 0.25 * (
-    texture(tex, fragCoord * inverseVP + dir * -0.5).xyz +
-    texture(tex, fragCoord * inverseVP + dir * 0.5).xyz
-  );
-  float lumaB = dot(rgbB, luma);
-  if ((lumaB < lumaMin) || (lumaB > lumaMax)) {
-    color = vec4(rgbA, texColor.a);
-  } else {
-    color = vec4(rgbB, texColor.a);
-  }
-  return color;
+vec4 fxaa(sampler2D tex, vec2 fragCoord, vec2 resolution,
+            vec2 v_rgbNW, vec2 v_rgbNE,
+            vec2 v_rgbSW, vec2 v_rgbSE,
+            vec2 v_rgbM) {
+    vec4 color;
+    mediump vec2 inverseVP = vec2(1.0 / resolution.x, 1.0 / resolution.y);
+    vec3 rgbNW = texture(tex, v_rgbNW).xyz;
+    vec3 rgbNE = texture(tex, v_rgbNE).xyz;
+    vec3 rgbSW = texture(tex, v_rgbSW).xyz;
+    vec3 rgbSE = texture(tex, v_rgbSE).xyz;
+    vec4 texColor = texture(tex, v_rgbM);
+    vec3 rgbM  = texColor.xyz;
+    vec3 luma = vec3(0.299, 0.587, 0.114);
+    float lumaNW = dot(rgbNW, luma);
+    float lumaNE = dot(rgbNE, luma);
+    float lumaSW = dot(rgbSW, luma);
+    float lumaSE = dot(rgbSE, luma);
+    float lumaM  = dot(rgbM,  luma);
+    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+    mediump vec2 dir;
+    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
+    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) *
+                          (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
+    float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+    dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX),
+              max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
+              dir * rcpDirMin)) * inverseVP;
+    vec3 rgbA = 0.5 * (
+        texture(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +
+        texture(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz);
+    vec3 rgbB = rgbA * 0.5 + 0.25 * (
+        texture(tex, fragCoord * inverseVP + dir * -0.5).xyz +
+        texture(tex, fragCoord * inverseVP + dir * 0.5).xyz);
+    float lumaB = dot(rgbB, luma);
+    if ((lumaB < lumaMin) || (lumaB > lumaMax)) {
+        color = vec4(rgbA, texColor.a);
+    } else {
+        color = vec4(rgbB, texColor.a);
+    }
+    return color;
 }
-
 void main() {
-  FragColor = fxaa(tMap, vUv * uResolution, uResolution, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
+    FragColor = fxaa(tMap, vUv * uResolution, uResolution, v_rgbNW, v_rgbNE, v_rgbSW, v_rgbSE, v_rgbM);
 }
 `;
+
+const sourceShaderBlank1 = " ";
+const sourceShaderBlank2 = "  ";
+const sourceShaderBlank4 = "    ";
 
 const mouseSimulationFragment = `
 precision highp float;
@@ -2807,12 +2793,11 @@ uniform float uTime;
 uniform float uDiffusionSize;
 uniform float uDiffusion;
 uniform vec3 uColor;
-
 varying vec2 vUv;
 
 float circle(vec2 uv, vec2 center, float size) {
   float circle = length(uv - center);
-  return 1.0 - smoothstep(0.0, size, circle);
+  return 1. - smoothstep(0.0, size, circle);
 }
 
 // float lineSegment(vec2 p, vec2 a, vec2 b, float thickness, float aspectRatio) {
@@ -2835,38 +2820,46 @@ float circle(vec2 uv, vec2 center, float size) {
 // }
 
 void main() {
-  vec4 noise1 = texture2D(uNoiseTexture, vUv * 4.0 + vec2(uTime * 0.1, 0.0));
-  vec4 noise2 = texture2D(uNoiseTexture, vUv * 8.0 + vec2(0.0, uTime * 0.1) + noise1.rg * 0.5);
-  vec4 noise3 = texture2D(uNoiseTexture, vUv * 16.0 + vec2(-uTime * 0.05, 0.0) + noise2.rg * 0.5);
-  vec4 noise = (noise1 + noise2 * 0.5 + noise3 * 0.25) / 1.75;
-
-  float dirX = (-0.5 + noise.g) * noise.r * 10.0;
-  float dirY = (-0.5 + noise.b) * noise.r * 10.0;
+  vec4 noise1 = texture2D(uNoiseTexture, vUv * 4.0 + vec2(uTime * .1, .0));
+  vec4 noise2 = texture2D(uNoiseTexture, vUv * 8.0 + vec2(.0, uTime * .1) + noise1.rg * .5);
+  vec4 noise3 = texture2D(uNoiseTexture, vUv * 16.0 + vec2(-uTime*.05, 0.) + noise2.rg * .5);
+  vec4 noise = (noise1 + noise2 * .5 + noise3 * .25 ) / 1.75;
+${sourceShaderBlank2}
+  float dirX = (-.5 + noise.g) * noise.r * 10.;
+  float dirY = (-.5 + noise.b) * noise.r * 10.;
+${sourceShaderBlank2}
   vec4 oldTexture = texture2D(uTexture, vUv);
-  float br = 1.0 - + (oldTexture.r + oldTexture.g + oldTexture.b) / 3.0;
+  float br = 1. - + (oldTexture.r + oldTexture.g + oldTexture.b)/3.0;
   vec4 col = oldTexture * (1.0 - uDiffusion);
-  float p2 = uDiffusion / 4.0;
+  float p2 = (uDiffusion)/4.0;
   // vec2 stretchUv = vUv * vec2(1.0, 1.0);
   // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(dirX, dirY) ) * p2;
   // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(dirY, dirX) ) * p2;
   // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(-dirX, -dirY) ) * p2;
   // col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(-dirY, -dirX) ) * p2;
   col.rgb *= uPersistance;
+${sourceShaderBlank2}
+  if (uSpeed > 0.0){
+    float lineValue = 0.;
+    float th = clamp( uThickness + uSpeed * .3, .0001, .2) ;
 
-  if (uSpeed > 0.0) {
-    float lineValue = 0.0;
-    float th = clamp(uThickness + uSpeed * 0.3, 0.0001, 0.2);
     vec2 newUv = vUv;
+
     float ratio = uCoords.x / uCoords.y;
+
     newUv.y /= ratio;
+
     vec2 posOld = uPosOld;
+
     posOld.y /= ratio;
+${sourceShaderBlank4}
     // lineValue = lineSegment(newUv, uPosOld, uPosNew, th, ratio);
     lineValue = circle(newUv, posOld, th);
-    col.rgb = mix(col.rgb, uColor, lineValue * 0.05);
-    col.rgb = clamp(col.rgb, vec3(0.0), vec3(1.0));
-  }
 
+    col.rgb = mix(col.rgb, uColor, lineValue * .05);
+    col.rgb = clamp( col.rgb, vec3(0.), vec3(1.));
+  }
+${sourceShaderBlank1}
   gl_FragColor = vec4(col);
 }
 `;
@@ -3082,7 +3075,7 @@ varying vec2 vUv;
 void main() {
   vUv = uv;
   vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-  gl_Position = projectionMatrix * modelViewPosition;
+  gl_Position = projectionMatrix * modelViewPosition;${sourceShaderBlank1}
 }
 `;
 
@@ -3090,10 +3083,42 @@ const sourceFullscreenVertex = `
 in vec3 position;
 in vec2 uv;
 out vec2 vUv;
-
 void main() {
   vUv = uv;
   gl_Position = vec4(position, 1.0);
+}
+`;
+
+const sourceLensflareVertex = `
+in vec3 position;
+in vec2 uv;
+
+out vec2 vUv;
+
+void main() {
+    vUv = uv;
+    gl_Position = vec4(position, 1.0);
+}
+`;
+
+const sourceLuminosityVertex = `
+in vec3 position;
+in vec2 uv;
+out vec2 vUv;
+void main() {
+    vUv = uv;
+    gl_Position = vec4(position, 1.0);
+}
+`;
+
+const sourceBloomBlurVertex = `
+precision mediump float;
+in vec3 position;
+in vec2 uv;
+out vec2 vUv;
+void main() {
+    vUv = uv;
+    gl_Position = vec4(position, 1.0);
 }
 `;
 
@@ -3156,28 +3181,25 @@ void main() {
 
 const sourceFxaaVertex = `
 precision mediump float;
-
 in vec3 position;
 in vec2 uv;
 uniform vec2 uResolution;
-
 out vec2 v_rgbNW;
 out vec2 v_rgbNE;
 out vec2 v_rgbSW;
 out vec2 v_rgbSE;
 out vec2 v_rgbM;
 out vec2 vUv;
-
 void main() {
-  vUv = uv;
-  vec2 fragCoord = uv * uResolution;
-  vec2 inverseVP = 1.0 / uResolution.xy;
-  v_rgbNW = (fragCoord + vec2(-1.0, -1.0)) * inverseVP;
-  v_rgbNE = (fragCoord + vec2(1.0, -1.0)) * inverseVP;
-  v_rgbSW = (fragCoord + vec2(-1.0, 1.0)) * inverseVP;
-  v_rgbSE = (fragCoord + vec2(1.0, 1.0)) * inverseVP;
-  v_rgbM = vec2(fragCoord * inverseVP);
-  gl_Position = vec4(position, 1.0);
+    vUv = uv;
+    vec2 fragCoord = uv * uResolution;
+    vec2 inverseVP = 1.0 / uResolution.xy;
+    v_rgbNW = (fragCoord + vec2(-1.0, -1.0)) * inverseVP;
+    v_rgbNE = (fragCoord + vec2(1.0, -1.0)) * inverseVP;
+    v_rgbSW = (fragCoord + vec2(-1.0, 1.0)) * inverseVP;
+    v_rgbSE = (fragCoord + vec2(1.0, 1.0)) * inverseVP;
+    v_rgbM = vec2(fragCoord * inverseVP);
+    gl_Position = vec4(position, 1.0);
 }
 `;
 
@@ -5711,7 +5733,7 @@ export class WebGLBackdrop {
   }
 
   private createLensflareMaterial() {
-    dumpShader("L1-lensflare", sourceFullscreenVertex, sourceLensflareFragment);
+    dumpShader("L1-lensflare", sourceLensflareVertex, sourceLensflareFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       depthWrite: false,
@@ -5724,7 +5746,7 @@ export class WebGLBackdrop {
         uClamp: { value: SOURCE_MAIN_LENSFLARE_SETTINGS.clamp },
         uResolution: { value: new Vector2() },
       },
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceLensflareVertex,
       fragmentShader: sourceLensflareFragment,
     });
   }
@@ -5756,7 +5778,7 @@ export class WebGLBackdrop {
 
   private createLuminosityMaterial(settings: SourceRenderSettings) {
     const { luminosity } = settings;
-    dumpShader("sg-luminosity", sourceFullscreenVertex, homeLuminosityFragment);
+    dumpShader("sg-luminosity", sourceLuminosityVertex, homeLuminosityFragment);
     const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
@@ -5767,7 +5789,7 @@ export class WebGLBackdrop {
         uThreshold: { value: 1 },
         uSmoothing: { value: 1 },
       },
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceLuminosityVertex,
       fragmentShader: homeLuminosityFragment,
     });
     material.userData.sourceConstructorThreshold = material.uniforms.uThreshold.value;
@@ -5779,7 +5801,7 @@ export class WebGLBackdrop {
   }
 
   private createBloomBlurMaterial(kernelRadius = SOURCE_BLOOM_KERNELS[0]) {
-    dumpShader("rg-bloom-blur", sourceFullscreenVertex, homeBloomBlurFragment);
+    dumpShader("rg-bloom-blur", sourceBloomBlurVertex, homeBloomBlurFragment);
     return new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
@@ -5794,7 +5816,7 @@ export class WebGLBackdrop {
         uResolution: { value: new Vector2(1, 1) },
         uDirection: { value: new Vector2(1, 0) },
       },
-      vertexShader: sourceFullscreenVertex,
+      vertexShader: sourceBloomBlurVertex,
       fragmentShader: homeBloomBlurFragment,
     });
   }
@@ -9332,10 +9354,10 @@ void main() {
           ? "source-oA-modelview-projection"
           : "non-source",
         hasSourceNoisePath: mouseSimulationFragment.includes("vec4 noise1 = texture2D(uNoiseTexture")
-          && mouseSimulationFragment.includes("float dirX = (-0.5 + noise.g) * noise.r * 10.0")
-          && mouseSimulationFragment.includes("float dirY = (-0.5 + noise.b) * noise.r * 10.0"),
-        hasSourceDiffusionPlaceholders: mouseSimulationFragment.includes("float br = 1.0 - +")
-          && mouseSimulationFragment.includes("float p2 = uDiffusion / 4.0")
+          && mouseSimulationFragment.includes("float dirX = (-.5 + noise.g) * noise.r * 10.")
+          && mouseSimulationFragment.includes("float dirY = (-.5 + noise.b) * noise.r * 10."),
+        hasSourceDiffusionPlaceholders: mouseSimulationFragment.includes("float br = 1. - +")
+          && mouseSimulationFragment.includes("float p2 = (uDiffusion)/4.0")
           && mouseSimulationFragment.includes("// col += blur(uTexture, stretchUv, vec2(uDiffusionSize * br), vec2(dirX, dirY) ) * p2"),
         hasSourceCommentedHelpers: mouseSimulationFragment.includes("// float lineSegment")
           && mouseSimulationFragment.includes("// vec4 blur"),
