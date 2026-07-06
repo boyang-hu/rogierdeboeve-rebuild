@@ -29,6 +29,7 @@ const viewports = {
 };
 const viewport = viewports[viewportName] || viewports.desktop;
 const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
+const sourceActiveProjectSpotlightIntensityMode = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
 const rebuildSearchParams = new URL(rebuildUrl).searchParams;
 const debugCompositeProbe = rebuildSearchParams.has("debug-composite-stage")
   || rebuildSearchParams.has("debug-composite-darken")
@@ -47,6 +48,15 @@ function wait(ms) {
 
 function closeTo(actual, expected, epsilon = 0.001) {
   return Math.abs((actual ?? NaN) - expected) <= epsilon;
+}
+
+function sourceProjectSpotlightUsesPayload(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed !== 0;
+}
+
+function sourceProjectSpotlightIntensity(value, fallback = 220) {
+  return sourceProjectSpotlightUsesPayload(value) ? Number(value) : fallback;
 }
 
 function waitForPort(portNumber, timeout = 6000) {
@@ -232,8 +242,15 @@ async function runProbe() {
   if (light.homeEntryIntensityMode !== sourceHomeSpotlightIntensityMode) spotlightErrors.push("homeEntryIntensityMode");
   if (light.homeEntryIntensityIgnoresPayload !== true) spotlightErrors.push("homeEntryIntensityIgnoresPayload");
   if (Math.abs((light.expectedHomeEntryIntensity ?? 0) - 220) > 0.001) spotlightErrors.push("expectedHomeEntryIntensity");
-  if (Math.abs((light.intensity ?? 0) - 220) > 0.001) spotlightErrors.push("intensity");
-  if (Math.abs((light.stateIntensity ?? 0) - 220) > 0.001) spotlightErrors.push("stateIntensity");
+  const expectedActiveProjectSpotlight = sourceProjectSpotlightIntensity(light.activeProjectSpotlightRaw, 220);
+  const expectedActiveProjectUsesPayload = sourceProjectSpotlightUsesPayload(light.activeProjectSpotlightRaw);
+  if (light.activeProjectIntensityMode !== sourceActiveProjectSpotlightIntensityMode) spotlightErrors.push("activeProjectIntensityMode");
+  if (light.activeProjectFallbackMode !== "source-js-or-falsy-zero-empty-missing-to-maxSpotLightIntensity") spotlightErrors.push("activeProjectFallbackMode");
+  if (light.activeProjectUsesPayloadSpotlight !== expectedActiveProjectUsesPayload) spotlightErrors.push("activeProjectUsesPayloadSpotlight");
+  if (Math.abs((light.expectedActiveProjectIntensity ?? 0) - expectedActiveProjectSpotlight) > 0.001) spotlightErrors.push("expectedActiveProjectIntensity");
+  if (light.activeProjectIntensityMatchesExpected !== true) spotlightErrors.push("activeProjectIntensityMatchesExpected");
+  if (Math.abs((light.intensity ?? 0) - expectedActiveProjectSpotlight) > 0.001) spotlightErrors.push("intensity");
+  if (Math.abs((light.stateIntensity ?? 0) - expectedActiveProjectSpotlight) > 0.001) spotlightErrors.push("stateIntensity");
   if (light.defaultMode !== "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow") spotlightErrors.push("defaultMode");
   if (light.shadowDefaultMode !== "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512") spotlightErrors.push("shadowDefaultMode");
   if (light.colorHex !== 0xffffff) spotlightErrors.push(`colorHex=${light.colorHex}`);
@@ -1894,6 +1911,13 @@ async function runProbe() {
   if (Math.abs((lights?.expectedHomeEntryIntensity ?? NaN) - 220) > 0.0001) lightErrors.push("expectedHomeEntryIntensity");
   if (Math.abs((lights?.maxSpotLightIntensity ?? NaN) - 220) > 0.0001) lightErrors.push("maxSpotLightIntensity");
   if (lights?.maxSpotLightIntensityMatchesSource !== true) lightErrors.push("maxSpotLightIntensityMatchesSource");
+  const expectedLightActiveProjectSpotlight = sourceProjectSpotlightIntensity(lights?.activeProjectSpotlightRaw, 220);
+  const expectedLightActiveProjectUsesPayload = sourceProjectSpotlightUsesPayload(lights?.activeProjectSpotlightRaw);
+  if (lights?.activeProjectIntensityMode !== sourceActiveProjectSpotlightIntensityMode) lightErrors.push("activeProjectIntensityMode");
+  if (lights?.activeProjectFallbackMode !== "source-js-or-falsy-zero-empty-missing-to-maxSpotLightIntensity") lightErrors.push("activeProjectFallbackMode");
+  if (lights?.activeProjectUsesPayloadSpotlight !== expectedLightActiveProjectUsesPayload) lightErrors.push("activeProjectUsesPayloadSpotlight");
+  if (Math.abs((lights?.expectedActiveProjectIntensity ?? NaN) - expectedLightActiveProjectSpotlight) > 0.0001) lightErrors.push("expectedActiveProjectIntensity");
+  if (lights?.activeProjectIntensityMatchesExpected !== true) lightErrors.push("activeProjectIntensityMatchesExpected");
   if (lightErrors.length) {
     throw new Error(`p1 light ownership source-shape mismatch: ${lightErrors.join(", ")}`);
   }

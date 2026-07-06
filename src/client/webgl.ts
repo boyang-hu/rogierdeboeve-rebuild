@@ -447,6 +447,7 @@ const SOURCE_SPOTLIGHT_SHADOW_CAMERA_FAR = 500;
 const SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE = [512, 512] as const;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY = 220;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
+const SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
 const SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS = 100;
 const SOURCE_TD_INITIAL_SCROLL_DELAY_MS = 200;
 const SOURCE_CHARACTER_ROTATABLE_DAMPING = 5;
@@ -4289,6 +4290,16 @@ function numeric(value: string | number | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function sourceProjectSpotlightIntensity(value: string | number | undefined, fallback: number) {
+  const parsed = numeric(value, 0);
+  return parsed || fallback;
+}
+
+function sourceProjectSpotlightUsesPayload(value: string | number | undefined) {
+  const parsed = numeric(value, 0);
+  return parsed !== 0;
+}
+
 function makePlaceholderTexture(color = [20, 20, 20, 255]) {
   const texture = new DataTexture(new Uint8Array(color), 1, 1, RGBAFormat);
   texture.needsUpdate = true;
@@ -5482,15 +5493,15 @@ export class WebGLBackdrop {
     this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
   }
 
-  private prepareHomeLighting(_payload: ProjectPayload) {
-    this.setSpotLightIntensity(this.maxSpotLightIntensity, 1);
+  private prepareHomeLighting(payload: ProjectPayload) {
+    this.initHomeSpotlight();
+    this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1);
     this.setDirectionalLightIntensity(1.5);
     this.setDirectionalLight2Intensity(1);
     this.setEnvRotation(0, 0);
     this.setRevealSpread(0);
     this.resetThumbOffsetY();
     this.setCameraControllerSettings();
-    this.initHomeSpotlight();
   }
 
   beginProjectTransition(payload: ProjectPayload) {
@@ -5581,6 +5592,18 @@ export class WebGLBackdrop {
     };
   }
 
+  private sourceActiveProjectSpotlightProbe(payload?: ProjectPayload) {
+    const expected = sourceProjectSpotlightIntensity(payload?.spotlight, this.maxSpotLightIntensity);
+    return {
+      activeProjectIntensityMode: SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE,
+      activeProjectFallbackMode: "source-js-or-falsy-zero-empty-missing-to-maxSpotLightIntensity",
+      activeProjectSpotlightRaw: payload?.spotlight ?? null,
+      activeProjectUsesPayloadSpotlight: sourceProjectSpotlightUsesPayload(payload?.spotlight),
+      expectedActiveProjectIntensity: expected,
+      activeProjectIntensityMatchesExpected: Math.abs(this.spotLight.intensity - expected) < 0.001,
+    };
+  }
+
   enterWorkGallery(activeSlug = this.activeSlug) {
     this.projectRevealTweens.forEach((tween) => tween.kill());
     this.projectRevealProjectTweens.forEach((tween) => tween.kill());
@@ -5592,12 +5615,12 @@ export class WebGLBackdrop {
     this.setCameraControllerSettings({ x: 0, y: 0, z: 0 }, { x: 1, y: 0.5 }, 20);
     this.setMouseFactor(1, 3);
     this.setRevealSpread(0);
-    this.setSpotLightIntensity(this.maxSpotLightIntensity, 1.6);
+    const active = this.workItems.find((item) => item.slug === activeSlug) ?? this.workItems[0];
+    this.setSpotLightIntensity(sourceProjectSpotlightIntensity(active?.payload.spotlight, this.maxSpotLightIntensity), 1);
     this.workItems.forEach((item) => {
       item.material.uniforms.uReveal.value = 0;
       this.projectRevealProjectTweens.push(gsap.to(item.material.uniforms.uRevealProject, { value: 1, duration: 0.5, ease: "none" }));
     });
-    const active = this.workItems.find((item) => item.slug === activeSlug) ?? this.workItems[0];
     if (active) this.setProjectBlockReveal(active);
   }
 
@@ -9023,6 +9046,7 @@ void main() {
     this.thumbProbeLastUpdate = time;
     const color = this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color;
     const spotlightProjection = this.spotlightProjectionProbe();
+    const activeWorkItem = this.workItems.find((item) => item.slug === this.activeSlug) ?? this.workItems[0];
     const actualProjectOrder = this.workItems.map((item) => item.slug);
     const expectedThumbBackground = sourceLinearToSrgbColor(SOURCE_THUMB_BACKGROUND);
     const thumbBackground = this.thumbScene.background instanceof Color ? this.thumbScene.background : null;
@@ -9181,6 +9205,7 @@ void main() {
       },
       spotlight: {
         ...this.sourceSpotLightDefaultsProbe(),
+        ...this.sourceActiveProjectSpotlightProbe(activeWorkItem?.payload),
         hasMap: this.spotLight.map === this.thumbCompositeTarget.texture,
         homeEntryIntensityMode: SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE,
         homeEntryIntensityIgnoresPayload: true,
@@ -10638,6 +10663,7 @@ void main() {
       "floatingBlocks",
       "sceneWrap",
     ];
+    const activeWorkItem = this.workItems.find((item) => item.slug === this.activeSlug) ?? this.workItems[0];
     return {
       scene: {
         children: this.homeScene.children.map(objectSummary),
@@ -10668,6 +10694,7 @@ void main() {
       },
       lights: {
         ownershipMode: "source-p1-adds-ambient-spot-target-directionalLight-only",
+        ...this.sourceActiveProjectSpotlightProbe(activeWorkItem?.payload),
         directionalLight1InScene: this.directionalLight.parent === this.homeScene,
         directionalLight2InScene: this.directionalLight2.parent === this.homeScene,
         directionalLight1Position: this.directionalLight.position.toArray(),
@@ -11195,6 +11222,7 @@ void main() {
       activeSlug: active.slug,
       spotlight: {
         ...this.sourceSpotLightDefaultsProbe(),
+        ...this.sourceActiveProjectSpotlightProbe(active.payload),
         intensity: this.spotLight.intensity,
         stateOwnership: "source-Se-settings-light-state-onUpdate-intensities",
         stateIntensity: this.lightState.spotLight.intensity,

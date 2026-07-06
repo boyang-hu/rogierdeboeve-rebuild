@@ -30,6 +30,7 @@ const expectedSpotlightParallaxYOffsetMode = viewport.width >= 800
 const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3;
 const expectedTargetSize = Math.max(1, Math.round(viewport.height));
 const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
+const sourceActiveProjectSpotlightIntensityMode = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
 
 if (!Number.isFinite(sourceProbeProgress)) {
   throw new Error(`Invalid THUMB_PROGRESS: ${process.env.THUMB_PROGRESS}`);
@@ -41,6 +42,15 @@ function wait(ms) {
 
 function closeTo(actual, expected, epsilon = 1e-6) {
   return Math.abs(actual - expected) <= epsilon;
+}
+
+function sourceProjectSpotlightUsesPayload(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed !== 0;
+}
+
+function sourceProjectSpotlightIntensity(value, fallback = 220) {
+  return sourceProjectSpotlightUsesPayload(value) ? Number(value) : fallback;
 }
 
 function expectedThumbX(hook, thumbProgress, totalWidth) {
@@ -74,6 +84,27 @@ function assertSourceSpotlightDefaults(light, label, errors) {
     errors.push(`${label}ShadowCameraFarMode=${light?.shadowCameraFarMode}`);
   }
   if (!closeTo(light?.shadowCameraFar, 500)) errors.push(`${label}ShadowCameraFar=${light?.shadowCameraFar}`);
+}
+
+function assertActiveProjectSpotlight(light, label, errors) {
+  const expected = sourceProjectSpotlightIntensity(light?.activeProjectSpotlightRaw, 220);
+  const expectedUsesPayload = sourceProjectSpotlightUsesPayload(light?.activeProjectSpotlightRaw);
+  if (light?.activeProjectIntensityMode !== sourceActiveProjectSpotlightIntensityMode) {
+    errors.push(`${label}ActiveProjectIntensityMode=${light?.activeProjectIntensityMode}`);
+  }
+  if (light?.activeProjectFallbackMode !== "source-js-or-falsy-zero-empty-missing-to-maxSpotLightIntensity") {
+    errors.push(`${label}ActiveProjectFallbackMode=${light?.activeProjectFallbackMode}`);
+  }
+  if (light?.activeProjectUsesPayloadSpotlight !== expectedUsesPayload) {
+    errors.push(`${label}ActiveProjectUsesPayload=${light?.activeProjectUsesPayloadSpotlight}`);
+  }
+  if (!closeTo(light?.expectedActiveProjectIntensity, expected)) {
+    errors.push(`${label}ExpectedActiveProjectIntensity=${light?.expectedActiveProjectIntensity}`);
+  }
+  if (light?.activeProjectIntensityMatchesExpected !== true) {
+    errors.push(`${label}ActiveProjectIntensityMatchesExpected=${light?.activeProjectIntensityMatchesExpected}`);
+  }
+  return expected;
 }
 
 function waitForPort(portNumber, timeout = 6000) {
@@ -264,7 +295,8 @@ async function runProbe() {
     sourceShapeErrors.push(`spotlightHasMap=${probe.spotlight?.hasMap}`);
   }
   assertSourceSpotlightDefaults(probe.spotlight, "spotlight", sourceShapeErrors);
-  if (probe.spotlight?.intensity !== 220) {
+  const expectedActiveProjectSpotlight = assertActiveProjectSpotlight(probe.spotlight, "spotlight", sourceShapeErrors);
+  if (!closeTo(probe.spotlight?.intensity, expectedActiveProjectSpotlight)) {
     sourceShapeErrors.push(`spotlightIntensity=${probe.spotlight?.intensity}`);
   }
   if (probe.spotlight?.stateOwnership !== "source-Se-settings-light-state-onUpdate-intensities") {
@@ -282,7 +314,7 @@ async function runProbe() {
   if (probe.spotlight?.expectedHomeEntryIntensity !== 220) {
     sourceShapeErrors.push(`spotlightExpectedHomeEntryIntensity=${probe.spotlight?.expectedHomeEntryIntensity}`);
   }
-  if (probe.spotlight?.stateIntensity !== 220) {
+  if (!closeTo(probe.spotlight?.stateIntensity, expectedActiveProjectSpotlight)) {
     sourceShapeErrors.push(`spotlightStateIntensity=${probe.spotlight?.stateIntensity}`);
   }
   if (JSON.stringify(probe.spotlight?.position) !== JSON.stringify([0, expectedSpotlightMobileYOffset, 3.7])) {
@@ -309,6 +341,13 @@ async function runProbe() {
     if (projection.spotlight?.castShadow !== false) sourceShapeErrors.push(`projectionCastShadow=${projection.spotlight?.castShadow}`);
     if (projection.spotlight?.mapColorSpace !== "") sourceShapeErrors.push(`projectionMapColorSpace=${projection.spotlight?.mapColorSpace}`);
     assertSourceSpotlightDefaults(projection.spotlight, "projection", sourceShapeErrors);
+    const expectedProjectionSpotlight = assertActiveProjectSpotlight(projection.spotlight, "projection", sourceShapeErrors);
+    if (!closeTo(projection.spotlight?.intensity, expectedProjectionSpotlight)) {
+      sourceShapeErrors.push(`projectionIntensity=${projection.spotlight?.intensity}`);
+    }
+    if (!closeTo(projection.spotlight?.stateIntensity, expectedProjectionSpotlight)) {
+      sourceShapeErrors.push(`projectionStateIntensity=${projection.spotlight?.stateIntensity}`);
+    }
     if (projection.spotlight?.homeEntryIntensityMode !== sourceHomeSpotlightIntensityMode) {
       sourceShapeErrors.push(`projectionHomeEntryIntensityMode=${projection.spotlight?.homeEntryIntensityMode}`);
     }

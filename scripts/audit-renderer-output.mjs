@@ -202,6 +202,7 @@ const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress
 const rebuildSetProjectBlockReveal = extractBlock(rebuildWebgl, "private setProjectBlockReveal(");
 const rebuildPrepareHomeLighting = extractBlock(rebuildWebgl, "private prepareHomeLighting(");
 const rebuildEnterWorkGallery = extractBlock(rebuildWebgl, "enterWorkGallery(");
+const rebuildInitHomeSpotlight = extractBlock(rebuildWebgl, "  initHomeSpotlight()");
 const rebuildSetDarken = extractBlock(rebuildWebgl, "private setDarken(");
 const rebuildSetSaturation = extractBlock(rebuildWebgl, "private setSaturation(");
 const rebuildSetContrast = extractBlock(rebuildWebgl, "private setContrast(");
@@ -2783,10 +2784,30 @@ const summary = {
         "J.workScene.spotLight.intensity=220",
       ]),
       rebuildHomeEntryIntensityOwnership:
+        Boolean(rebuildInitHomeSpotlight)
+        && rebuildInitHomeSpotlight.includes("this.setSpotLightIntensity(this.maxSpotLightIntensity, 0)")
+        && !rebuildInitHomeSpotlight.includes("payload.spotlight")
+        && !rebuildInitHomeSpotlight.includes("sourceProjectSpotlightIntensity("),
+      sourceActiveProjectSpotlightOwnership:
+        sourceYDOnProjectActive?.text.includes("Se.setSpotLightIntensity(t.data.spotlight||J.workScene.maxSpotLightIntensity,1)"),
+      rebuildActiveProjectSpotlightOwnership:
         Boolean(rebuildPrepareHomeLighting)
-        && rebuildPrepareHomeLighting.includes("this.setSpotLightIntensity(this.maxSpotLightIntensity, 1)")
-        && !rebuildPrepareHomeLighting.includes("payload.spotlight")
-        && !rebuildPrepareHomeLighting.includes("numeric("),
+        && Boolean(rebuildEnterWorkGallery)
+        && rebuildWebgl.includes("SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE = \"source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity\"")
+        && rebuildWebgl.includes("function sourceProjectSpotlightIntensity(")
+        && rebuildWebgl.includes("function sourceProjectSpotlightUsesPayload(")
+        && rebuildPrepareHomeLighting.includes("this.initHomeSpotlight()")
+        && rebuildPrepareHomeLighting.includes("this.setSpotLightIntensity(sourceProjectSpotlightIntensity(payload.spotlight, this.maxSpotLightIntensity), 1)")
+        && rebuildEnterWorkGallery.includes("const active = this.workItems.find((item) => item.slug === activeSlug) ?? this.workItems[0]")
+        && rebuildEnterWorkGallery.includes("this.setSpotLightIntensity(sourceProjectSpotlightIntensity(active?.payload.spotlight, this.maxSpotLightIntensity), 1)")
+        && !rebuildEnterWorkGallery.includes("this.setSpotLightIntensity(this.maxSpotLightIntensity, 1.6)")
+        && rebuildWebgl.includes("activeProjectIntensityMode: SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE")
+        && rebuildWebgl.includes("activeProjectFallbackMode: \"source-js-or-falsy-zero-empty-missing-to-maxSpotLightIntensity\"")
+        && rebuildOutputProbe.includes("sourceActiveProjectSpotlightIntensityMode")
+        && rebuildOutputProbe.includes("activeProjectIntensityMatchesExpected")
+        && rebuildThumbProbe.includes("function assertActiveProjectSpotlight")
+        && rebuildThumbProbe.includes("assertActiveProjectSpotlight(probe.spotlight, \"spotlight\", sourceShapeErrors)")
+        && rebuildThumbProbe.includes("assertActiveProjectSpotlight(projection.spotlight, \"projection\", sourceShapeErrors)"),
       threeR164MapPath: {
         webglLights: checks(threeWebglLights, [
           "if ( light.map )",
