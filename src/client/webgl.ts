@@ -4293,10 +4293,10 @@ export class WebGLBackdrop {
 
   setGalleryProgress(progress: number, velocity = 0, delta = 1 / 60) {
     this.galleryProgress = progress;
-    this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     const targetRotation = MathUtils.degToRad(progress * 360 + 180);
     const lerpFactor = 1 - Math.exp(-5 * Math.max(0.001, delta));
     this.sceneWrap.rotation.y = targetRotation;
+    this.preCompositeMaterial.uniforms.uTransformX.value = progress;
     this.updateThumbGallery(-progress);
     this.sceneRotation += (MathUtils.clamp(velocity * -0.015, -4, 4) - this.sceneRotation) * lerpFactor;
     this.zoom += (MathUtils.clamp(Math.abs(velocity * 0.0015), 0, 1) - this.zoom) * lerpFactor;
@@ -7371,6 +7371,7 @@ void main() {
       debugProgress: this.debugThumbProgress,
       sourceProgressSignMode: "source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress",
       sourceProgressUpdateOrder: "source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom",
+      sourceProgressTransformOrder: "source-yD-sceneWrap-then-uTransformX-then-thumbProgress",
       sourceDefaults: {
         thumbDarknessIntensity: SOURCE_INITIAL_THUMB_DARKNESS,
         homeThumbDarknessFallback: SOURCE_HOME_THUMB_DARKNESS_FALLBACK,

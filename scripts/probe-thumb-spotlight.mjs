@@ -174,6 +174,9 @@ async function runProbe() {
   if (probe.sourceProgressUpdateOrder !== "source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom") {
     sourceShapeErrors.push(`sourceProgressUpdateOrder=${probe.sourceProgressUpdateOrder}`);
   }
+  if (probe.sourceProgressTransformOrder !== "source-yD-sceneWrap-then-uTransformX-then-thumbProgress") {
+    sourceShapeErrors.push(`sourceProgressTransformOrder=${probe.sourceProgressTransformOrder}`);
+  }
   if (probe.debugProgress !== sourceProbeProgress) {
     sourceShapeErrors.push(`debugProgress=${probe.debugProgress}`);
   }

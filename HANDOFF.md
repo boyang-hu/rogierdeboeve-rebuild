@@ -133,7 +133,7 @@ Known remaining gaps:
 - The biggest remaining gap is original postprocessing/composite fidelity:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, and work/main pass-material ownership, but transfer interpretation and exact composite behavior are still not complete.
-- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
+- The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
 - Source `p1` floor/environment hierarchy is guarded for `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, and the source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z` distribution, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
@@ -143,12 +143,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Added a source-backed runtime guardrail for the `p1.init()` scene surface without intended production visual behavior change.
-- Source `p1.init()` creates `Fog("grey",0,100)`, assigns it to `scene.fog`, computes `backgroundColor` from `BA.BACKGROUND_COLOR` through `convertLinearToSRGB()`, and assigns it to `scene.background`; source `BA.BACKGROUND_COLOR` is `#1a1a1a`.
-- Source floor/environment materials keep fog disabled: source `a1/o1` is constructed without a `fog` branch, and source `h1/u1` passes `fog:false`.
-- `__rogierOutputProbe.settings.work.sceneSurface` now exposes background/fog/floor-env fog parity, including `backgroundMatchesSource`, explicit `fogType="Fog"`, `fogMatchesSource`, `floorMaterialFogBranch=false`, and `environmentMaterialFog=false`.
-- `scripts/probe-output-color.mjs` hard-fails if the scene surface drifts, and renderer audit checks the mirrored `p1` anchors plus rebuild/probe coverage.
-- Phase 1 remains open for the hard horizon/fog-bed residual, actual floor/environment visual parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
+- Aligned the rebuild runtime order with source `yD.updateScene()` without intended production visual behavior change.
+- Source `yD.updateScene()` writes `J.workScene.sceneWrap.rotation.y`, then `J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value`, then calls `J.workThumbScene.thumbs.updateGalleryProgress(-scroll.progress)`, before roll/zoom updates.
+- `setGalleryProgress()` now mirrors that `sceneWrap -> uTransformX -> thumbProgress -> roll/zoom` order.
+- `__rogierThumbProbe` exposes `sourceProgressTransformOrder=source-yD-sceneWrap-then-uTransformX-then-thumbProgress`.
+- `scripts/probe-thumb-spotlight.mjs` hard-fails if the order marker drifts, and renderer audit checks the source/rebuild order anchors.
+- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -161,15 +161,16 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-p1-scene-surface-audit-final.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-yd-progress-order-audit-final.json
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-scene-surface-output-desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-p1-scene-surface-output-mobile node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-scene-surface-thumb node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-p1-scene-surface-project-media node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-yd-progress-order-thumb-desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-yd-progress-order-thumb-mobile node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-yd-progress-order-output-desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome VIEWPORT=mobile OUT_DIR=/tmp/rd-yd-progress-order-output-mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/google-chrome OUT_DIR=/tmp/rd-yd-progress-order-project-media node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `p1` scene background/fog guardrail batch. Desktop and mobile output probes confirmed `sceneSurface.backgroundMatchesSource=true`, `fogMatchesSource=true`, `floorMaterialFogBranch=false`, and `environmentMaterialFog=false`. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages.
+All relevant checks passed in the `yD` gallery progress order guardrail batch. Desktop and mobile thumb probes confirmed `sourceProgressTransformOrder=source-yD-sceneWrap-then-uTransformX-then-thumbProgress`, retained `3/9` in-map spotlight samples with nonzero map luma, and had no failures/exceptions/console messages. Desktop and mobile output probes passed with no failures. Project-media was rerun after the guardrail change and confirmed `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages.
 
 `npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this guardrail batch.
 
@@ -178,11 +179,12 @@ Runtime QA was done with local Chrome CDP scripts.
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit passed after the `p1` scene background/fog guardrail.
-- Desktop output probe passed with the new scene-surface assertions: `/tmp/rd-p1-scene-surface-output-desktop`.
-- Mobile output probe passed with the same assertions: `/tmp/rd-p1-scene-surface-output-mobile`.
-- Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma: `/tmp/rd-p1-scene-surface-thumb`.
-- Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages: `/tmp/rd-p1-scene-surface-project-media`; project-media remains a regression gate, not proof of Home parity.
+- Renderer audit passed after the `yD` gallery progress order guardrail.
+- Desktop thumb projection probe passed with the new order marker, `3/9` in-map spotlight samples, and nonzero map luma: `/tmp/rd-yd-progress-order-thumb-desktop`.
+- Mobile thumb projection probe passed with the same order marker and source mobile `0.3` spotlight Y branch: `/tmp/rd-yd-progress-order-thumb-mobile`.
+- Desktop output probe passed with no failures: `/tmp/rd-yd-progress-order-output-desktop`.
+- Mobile output probe passed with no failures: `/tmp/rd-yd-progress-order-output-mobile`.
+- Project media probe confirms `gc-2026` and `hashgraph-vc` retained visible media tracks with no failures/exceptions/console messages: `/tmp/rd-yd-progress-order-project-media`; project-media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -222,7 +224,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1` desktop/mobile spotlight parallax branch, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.

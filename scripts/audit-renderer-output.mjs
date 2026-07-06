@@ -1753,16 +1753,20 @@ const summary = {
         "J.workScene.scene.position.z=J.workScene.scene.rotation.z-this.zoom",
       ]),
       rebuildChecks: checks(rebuildWebgl, [
-        "this.preCompositeMaterial.uniforms.uTransformX.value = progress",
         "const targetRotation = MathUtils.degToRad(progress * 360 + 180)",
         "this.sceneWrap.rotation.y = targetRotation",
+        "this.preCompositeMaterial.uniforms.uTransformX.value = progress",
         "this.homeScene.rotation.z = MathUtils.degToRad(this.sceneRotation)",
         "this.homeScene.position.z = this.homeScene.rotation.z - this.zoom",
         "this.updateThumbGallery(-progress)",
         "sourceProgressSignMode: \"source-yD-updateScene-workThumbScene-thumbs-updateGalleryProgress-negative-scroll-progress\"",
         "sourceProgressUpdateOrder: \"source-yD-sceneWrap-uTransformX-thumbProgress-before-roll-zoom\"",
+        "sourceProgressTransformOrder: \"source-yD-sceneWrap-then-uTransformX-then-thumbProgress\"",
       ]),
       sourceOrder: {
+        sceneWrapBeforeTransform:
+          sourceYDUpdateScene.text.indexOf("J.workScene.sceneWrap.rotation.y=_a.degToRad(this.scroll.progress*360+180)")
+          < sourceYDUpdateScene.text.indexOf("J.mainScene.renderManager.compositeMaterial.uniforms.uTransformX.value=this.scroll.progress*1"),
         sceneWrapBeforeThumb:
           sourceYDUpdateScene.text.indexOf("J.workScene.sceneWrap.rotation.y=_a.degToRad(this.scroll.progress*360+180)")
           < sourceYDUpdateScene.text.indexOf("J.workThumbScene.thumbs.updateGalleryProgress(-this.scroll.progress)"),
@@ -1777,6 +1781,9 @@ const summary = {
           < sourceYDUpdateScene.text.indexOf("J.workScene.scene.position.z=J.workScene.scene.rotation.z-this.zoom"),
       },
       rebuildOrder: rebuildSetGalleryProgress && {
+        sceneWrapBeforeTransform:
+          rebuildSetGalleryProgress.indexOf("this.sceneWrap.rotation.y = targetRotation")
+          < rebuildSetGalleryProgress.indexOf("this.preCompositeMaterial.uniforms.uTransformX.value = progress"),
         sceneWrapBeforeThumb:
           rebuildSetGalleryProgress.indexOf("this.sceneWrap.rotation.y = targetRotation")
           < rebuildSetGalleryProgress.indexOf("this.updateThumbGallery(-progress)"),
