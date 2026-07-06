@@ -150,6 +150,7 @@ Known remaining gaps:
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the new interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Exact final Home visual/feel parity is still open.
 - Source `yD` gallery scroll runtime rounding is now guarded: source `onRaf()` uses `Yi(...)` for `scroll.diff` and `scroll.animated`, and source `updateScene()` persists roll `sceneRotation` through `bo(...)` plus `Yi(...)`; the rebuild uses source-rounded helpers for those paths instead of an unrounded local `lerp`.
 - Source `yD/Qe.workState` gallery scroll persistence is now guarded: the session-backed rebuild state carries source runtime scroll fields including `diff`, `velocity`, and `targetPlusDiff`, plus index/hooks/active project/scene rotation.
+- Renderer audit render-target default diagnostics now distinguish expected false values from failed checks: `generateMipmaps`, `depthBuffer`, and `stencilBuffer` defaults are reported as `actual` / `expected` / `matchesExpected`, and the Node-only renderer probe reports `status:"unavailable"` when `OffscreenCanvas` is absent instead of `null`.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`. The `rg/Na/ig` helper constructor surface is also guarded: source zero-vector `uResolution` defaults are preserved, and `rg` keeps source unused null samplers plus constructor direction `[0.5,0.5]`. Source `Lu/I1` runtime ownership of `rg.uDirection` is guarded as shared direction-vector assignment, while standard blur `Na.uDirection` remains constructor-owned.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
 - Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, ambient intensity tweens `J.workScene.ambientLight.intensity`, and rebuild-only background material uniforms are not source `Se` ambient targets.
@@ -167,12 +168,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `yD/Qe.workState` Home work-gallery scroll persistence ownership.
-- Source `yD.destroy()` stores the full `this.scroll` object with index, active project, hooks, and `sceneRotation`; source `yD.init()` restores those fields from `Qe.workState`.
-- Source `yD.onRaf()` adds `scroll.targetPlusDiff` before damping `scroll.animated`, so that field is part of the runtime scroll object after RAF has run.
-- `src/client/main.ts` now persists `diff`, `targetPlusDiff`, `velocity`, and `active` in the session-backed scroll snapshot, and uses `scroll.targetPlusDiff` in the tick path.
-- `scripts/audit-renderer-output.mjs` now guards both `scrollRuntime` and `workStatePersistence` under `sourceManagers.homeGalleryUpdateScene`.
-- Previous committed batch was `80fff05 Align gallery scroll rounding ownership`.
+- Normalized renderer-audit render-target default diagnostics without changing production rendering.
+- Source-style depthless targets still expect `texture.generateMipmaps=false`, `depthBuffer=false`, and `stencilBuffer=false`; default local Three targets still expect `generateMipmaps=false`, `depthBuffer=true`, and `stencilBuffer=false`.
+- `scripts/audit-renderer-output.mjs` now reports those booleans as structured `actual` / `expected` / `matchesExpected` diagnostics instead of raw false leaves.
+- The Node-only renderer default probe now returns `status:"unavailable"` with a reason when `OffscreenCanvas` is absent instead of `null`.
+- Recursive false/null extraction from the renderer audit now prints no entries.
+- Previous committed batch was `49f80da Align gallery work state persistence`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -182,28 +183,21 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
-node --check scripts/probe-output-color.mjs
-node --check scripts/probe-thumb-spotlight.mjs
-node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-workstate-audit-final.json
-ASTRO_TELEMETRY_DISABLED=1 npm run build
-PORT=5180 node scripts/serve.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5180 node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-audit-diagnostics-cleanup.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-audit-diagnostics-cleanup.json","utf8")); function walk(v,p=[]){ if(v===false||v===null) console.log(p.join("."),"=",v); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o);'
 ```
 
-All relevant checks passed in the `yD/Qe.workState` gallery scroll persistence ownership batch. Renderer audit wrote `/tmp/rd-workstate-audit-final.json`; `sourceManagers.homeGalleryUpdateScene.scrollRuntime` and `.workStatePersistence` both reported `{ "source": true, "rebuild": true }`. Desktop output probe passed. Desktop thumb spotlight probe passed. Project-media retained `5/5` visible media tracks on both `gc-2026` and `hashgraph-vc`.
+All relevant checks passed in the renderer-audit diagnostic normalization batch. Renderer audit wrote `/tmp/rd-audit-diagnostics-cleanup.json`; recursive false/null extraction printed no entries. Browser probes were not rerun for this script-only QA cleanup; the previous `yD/Qe.workState` batch passed build, desktop output, desktop thumb spotlight, and project-media probes.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this gallery scroll persistence ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this renderer-audit diagnostic cleanup batch.
 
-Runtime QA was done with local Chrome CDP scripts.
+Runtime QA was not needed for the latest script-only audit cleanup. The prior production batch was checked with local Chrome CDP scripts.
 
 Verified:
 
-- Home loads with `.gl-canvas`.
-- Renderer audit passed for the `yD/Qe.workState` gallery scroll persistence ownership batch: `/tmp/rd-workstate-audit-final.json`.
-- Desktop output, desktop thumb spotlight, and project-media probes passed as the browser regression gates for this batch.
+- Renderer audit passed for the render-target diagnostic normalization batch: `/tmp/rd-audit-diagnostics-cleanup.json`.
+- Recursive false/null audit output is empty after wrapping expected false render-target defaults.
+- Home browser regression gates remain the prior batch's desktop output, desktop thumb spotlight, and project-media probes because the latest change is script-only.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

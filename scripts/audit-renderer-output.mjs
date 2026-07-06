@@ -140,7 +140,16 @@ function compareSignatures(source, rebuild) {
   return mismatches;
 }
 
-function targetSnapshot(target) {
+function booleanDiagnostic(actual, expected = actual) {
+  return {
+    actual: actual ? "true" : "false",
+    expected: expected ? "true" : "false",
+    matchesExpected: actual === expected,
+  };
+}
+
+function targetSnapshot(target, expected = {}) {
+  const expectedTexture = expected.texture ?? {};
   return {
     texture: {
       colorSpace: target.texture.colorSpace,
@@ -148,10 +157,10 @@ function targetSnapshot(target) {
       format: target.texture.format,
       minFilter: target.texture.minFilter,
       magFilter: target.texture.magFilter,
-      generateMipmaps: target.texture.generateMipmaps,
+      generateMipmaps: booleanDiagnostic(target.texture.generateMipmaps, expectedTexture.generateMipmaps),
     },
-    depthBuffer: target.depthBuffer,
-    stencilBuffer: target.stencilBuffer,
+    depthBuffer: booleanDiagnostic(target.depthBuffer, expected.depthBuffer),
+    stencilBuffer: booleanDiagnostic(target.stencilBuffer, expected.stencilBuffer),
   };
 }
 
@@ -389,6 +398,16 @@ const sourceKABody = sourceKA?.text.slice(sourceKA.text.indexOf("class KA extend
 const localDefaultTarget = new WebGLRenderTarget(1, 1);
 const localSourceTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false });
 const localTexture = new Texture();
+const expectedDefaultRenderTarget = {
+  texture: { generateMipmaps: false },
+  depthBuffer: true,
+  stencilBuffer: false,
+};
+const expectedSourceDepthlessRenderTarget = {
+  texture: { generateMipmaps: false },
+  depthBuffer: false,
+  stencilBuffer: false,
+};
 
 const summary = {
   bundle: {
@@ -950,7 +969,10 @@ const summary = {
             "this.thumbCompositeTarget.texture.magFilter = LinearFilter",
           ].some((needle) => rebuildWebgl.includes(needle)),
       },
-      renderTargetDefaults: targetSnapshot(new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false }).clone()),
+      renderTargetDefaults: targetSnapshot(
+        new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false }).clone(),
+        expectedSourceDepthlessRenderTarget,
+      ),
       excerpt: compact(sourceLo.text),
     },
     OA: sourceOA && {
@@ -4087,8 +4109,8 @@ const summary = {
       magFilter: localTexture.magFilter,
       generateMipmaps: localTexture.generateMipmaps,
     },
-    defaultRenderTarget: targetSnapshot(localDefaultTarget),
-    sourceLikeRenderTarget: targetSnapshot(localSourceTarget),
+    defaultRenderTarget: targetSnapshot(localDefaultTarget, expectedDefaultRenderTarget),
+    sourceLikeRenderTarget: targetSnapshot(localSourceTarget, expectedSourceDepthlessRenderTarget),
     rendererDefaultProbe: (() => {
       try {
         const canvas = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(1, 1) : undefined;
@@ -4099,7 +4121,10 @@ const summary = {
               toneMapping: renderer.toneMapping,
               autoClear: renderer.autoClear,
             }
-          : null;
+          : {
+              status: "unavailable",
+              reason: "OffscreenCanvas is unavailable in this Node audit environment",
+            };
       } catch (error) {
         return { error: error instanceof Error ? error.message : String(error) };
       }
