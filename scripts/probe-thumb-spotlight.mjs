@@ -222,6 +222,55 @@ async function runProbe() {
   if (probe.spotlight?.parallax !== true) {
     sourceShapeErrors.push(`spotlightParallax=${probe.spotlight?.parallax}`);
   }
+  const projection = probe.spotlightProjection;
+  if (!projection) {
+    sourceShapeErrors.push("spotlightProjection=missing");
+  } else {
+    if (projection.spotlight?.hasMap !== true) sourceShapeErrors.push(`projectionHasMap=${projection.spotlight?.hasMap}`);
+    if (projection.spotlight?.mapMode !== "source-thumb-composite-target") sourceShapeErrors.push(`projectionMapMode=${projection.spotlight?.mapMode}`);
+    if (projection.spotlight?.mapProjectionMode !== "three-r164-spotLightMap-vSpotLightCoord") {
+      sourceShapeErrors.push(`projectionMapProjectionMode=${projection.spotlight?.mapProjectionMode}`);
+    }
+    if (projection.spotlight?.projectionPath !== "source-SpotLight.map-without-castShadow") {
+      sourceShapeErrors.push(`projectionPath=${projection.spotlight?.projectionPath}`);
+    }
+    if (projection.spotlight?.castShadow !== false) sourceShapeErrors.push(`projectionCastShadow=${projection.spotlight?.castShadow}`);
+    if (projection.spotlight?.mapColorSpace !== "") sourceShapeErrors.push(`projectionMapColorSpace=${projection.spotlight?.mapColorSpace}`);
+    if (projection.spotlight?.positionOwnershipMode !== "source-direct-SpotLight-position-target-no-local-mirror") {
+      sourceShapeErrors.push(`projectionPositionOwnership=${projection.spotlight?.positionOwnershipMode}`);
+    }
+    if (projection.spotlight?.parallaxYOffsetMode !== expectedSpotlightParallaxYOffsetMode) {
+      sourceShapeErrors.push(`projectionParallaxYOffsetMode=${projection.spotlight?.parallaxYOffsetMode}`);
+    }
+    if (projection.projectionMatrixMode !== "source-SD-SpotLight-map-through-three-shadow-matrix") {
+      sourceShapeErrors.push(`projectionMatrixMode=${projection.projectionMatrixMode}`);
+    }
+    if (projection.shadowPathMode !== "source-map-projection-not-shadow-cast") {
+      sourceShapeErrors.push(`projectionShadowPathMode=${projection.shadowPathMode}`);
+    }
+    if (projection.threeChunkMode !== "r164-lights_fragment_begin-multiplies-directLight-by-spotLightMap") {
+      sourceShapeErrors.push(`projectionThreeChunkMode=${projection.threeChunkMode}`);
+    }
+    if (projection.sampleGridMode !== "source-spotlight-map-3x3-active-bounds") {
+      sourceShapeErrors.push(`projectionSampleGridMode=${projection.sampleGridMode}`);
+    }
+    if (projection.sampleCount !== 9 || !Array.isArray(projection.samples) || projection.samples.length !== 9) {
+      sourceShapeErrors.push(`projectionSamples=${projection.sampleCount}/${projection.samples?.length}`);
+    }
+    if (!Number.isFinite(projection.inMapCoverage) || projection.inMapCoverage <= 0) {
+      sourceShapeErrors.push(`projectionInMapCoverage=${projection.inMapCoverage}`);
+    }
+    if (!Number.isFinite(projection.inMapCount) || projection.inMapCount < 1) {
+      sourceShapeErrors.push(`projectionInMapCount=${projection.inMapCount}`);
+    }
+    if (!Number.isFinite(projection.mapLumaMean) || projection.mapLumaMean <= 0.01) {
+      sourceShapeErrors.push(`projectionMapLumaMean=${projection.mapLumaMean}`);
+    }
+    const inMapSamples = (projection.samples || []).filter((sample) => sample.inMap);
+    if (!inMapSamples.every((sample) => Number.isFinite(sample.mapPixel?.luma) && sample.mapPixel.luma > 0.01)) {
+      sourceShapeErrors.push("projectionInMapSampleLuma");
+    }
+  }
   const imageOwnership = probe.thumbImageOwnership || {};
   if (imageOwnership.mode !== "source-Xt-preloadThumbs-projectThumbs-thumbsReady-E1-setImage") {
     sourceShapeErrors.push(`thumbImageOwnership=${imageOwnership.mode}`);

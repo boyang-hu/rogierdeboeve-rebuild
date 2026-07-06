@@ -224,6 +224,7 @@ type ThumbProbeWindow = Window & {
       mapColorSpace: string;
       rendererOutputColorSpace: string;
     };
+    spotlightProjection?: Record<string, any> | null;
     targets: {
       thumb: RenderTargetStats;
       composite: RenderTargetStats;
@@ -7286,6 +7287,7 @@ void main() {
     if (!this.debugThumbProbe || time - this.thumbProbeLastUpdate < 0.5) return;
     this.thumbProbeLastUpdate = time;
     const color = this.thumbCompositeMaterial.uniforms.uDarkenColor.value as Color;
+    const spotlightProjection = this.spotlightProjectionProbe();
     const probeWindow = window as ThumbProbeWindow;
     probeWindow.__rogierThumbProbe = {
       activeSlug: this.activeSlug,
@@ -7422,6 +7424,7 @@ void main() {
         mapColorSpace: this.thumbCompositeTarget.texture.colorSpace,
         rendererOutputColorSpace: this.renderer.outputColorSpace,
       },
+      spotlightProjection,
       targets: {
         sizingMode: "source-T1-renderManager-resize-height-height-dpr-1",
         sourceTargetMode: "source-Lo-renderTargetA-depthless-renderTargetComposite-clone",

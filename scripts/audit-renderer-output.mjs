@@ -1890,6 +1890,14 @@ const summary = {
         rebuildWebgl.includes("this.thumbWrap.frustumCulled = false")
         && rebuildWebgl.includes("projectionPath: \"source-SpotLight.map-without-castShadow\"")
         && rebuildWebgl.includes("shadowPathMode: \"source-map-projection-not-shadow-cast\""),
+      rebuildThumbProjectionSamplingProbe:
+        rebuildWebgl.includes("const spotlightProjection = this.spotlightProjectionProbe();")
+        && rebuildWebgl.includes("spotlightProjection,")
+        && rebuildThumbProbe.includes("const projection = probe.spotlightProjection;")
+        && rebuildThumbProbe.includes("projection.projectionMatrixMode !== \"source-SD-SpotLight-map-through-three-shadow-matrix\"")
+        && rebuildThumbProbe.includes("projection.sampleGridMode !== \"source-spotlight-map-3x3-active-bounds\"")
+        && rebuildThumbProbe.includes("projection.inMapCoverage <= 0")
+        && rebuildThumbProbe.includes("projection.mapLumaMean <= 0.01"),
     },
     p1EnvironmentHierarchy: sourceP1InitEnv && {
       index: sourceP1InitEnv.index,
