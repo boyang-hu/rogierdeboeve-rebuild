@@ -168,6 +168,21 @@ type RenderTargetBandStats = {
   };
 };
 
+type FloorReflectionVisibilitySnapshot = {
+  sceneWrapVisible: boolean;
+  blocksWrapVisible: boolean;
+  floorGroupVisible: boolean;
+  floorPlaneVisible: boolean;
+  floorReflectorVisible: boolean;
+  environmentGroupVisible: boolean;
+  environmentPlaneVisible: boolean;
+  aboutVisible: boolean | null;
+  floatingVisible: boolean | null;
+  floorParentIsSceneWrap: boolean;
+  environmentParentIsSceneWrap: boolean;
+  blocksParentIsSceneWrap: boolean;
+};
+
 type ThumbProbeWindow = Window & {
   __rogierThumbProbe?: {
     activeSlug: string;
@@ -5115,6 +5130,15 @@ export class WebGLBackdrop {
   private floorReflectionScreenCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private floorReflectionScreenTriangle = makeSourceScreenTriangleGeometry();
   private floorReflectionScreen: Mesh<BufferGeometry, ShaderMaterial>;
+  private floorReflectionDrawState = {
+    mode: "source-a1-onBeforeRender-hide-component-group-render-full-scene-restore",
+    renderSceneMode: "source-i1-update-renders-this.scene-with-a1-hidden",
+    renderSceneIsHomeScene: true,
+    before: null as FloorReflectionVisibilitySnapshot | null,
+    during: null as FloorReflectionVisibilitySnapshot | null,
+    after: null as FloorReflectionVisibilitySnapshot | null,
+    lastRenderFrame: 0,
+  };
   private screenMouseSimulationMaterial: ShaderMaterial;
   private screenMouseSimulationTargets: WebGLRenderTarget[] = [];
   private screenMouseSimulationIndex = 0;
@@ -5448,9 +5472,13 @@ export class WebGLBackdrop {
     this.floorPlane.onBeforeRender = () => {
       if (!this.sceneWrap.visible) return;
       if (this.debugFloorReflection === "off") return;
+      this.floorReflectionDrawState.before = this.floorReflectionVisibilitySnapshot();
       this.floorGroup.visible = false;
+      this.floorReflectionDrawState.during = this.floorReflectionVisibilitySnapshot();
+      this.floorReflectionDrawState.lastRenderFrame = this.sourcePostRenderFrame;
       this.renderFloorReflection();
       this.floorGroup.visible = true;
+      this.floorReflectionDrawState.after = this.floorReflectionVisibilitySnapshot();
     };
     this.floorGroup.position.y = -1.65;
     this.floorGroup.add(this.floorPlane);
@@ -10660,6 +10688,59 @@ void main() {
     };
   }
 
+  private floorReflectionVisibilitySnapshot(): FloorReflectionVisibilitySnapshot {
+    return {
+      sceneWrapVisible: this.sceneWrap.visible,
+      blocksWrapVisible: this.blocksWrap.visible,
+      floorGroupVisible: this.floorGroup.visible,
+      floorPlaneVisible: this.floorPlane.visible,
+      floorReflectorVisible: this.floorReflector.visible,
+      environmentGroupVisible: this.environmentGroup.visible,
+      environmentPlaneVisible: this.environmentPlane.visible,
+      aboutVisible: this.aboutBlocks?.group.visible ?? null,
+      floatingVisible: this.floatingBlocks?.group.visible ?? null,
+      floorParentIsSceneWrap: this.floorGroup.parent === this.sceneWrap,
+      environmentParentIsSceneWrap: this.environmentGroup.parent === this.sceneWrap,
+      blocksParentIsSceneWrap: this.blocksWrap.parent === this.sceneWrap,
+    };
+  }
+
+  private floorReflectionDrawStateProbe() {
+    const before = this.floorReflectionDrawState.before;
+    const during = this.floorReflectionDrawState.during;
+    const after = this.floorReflectionDrawState.after;
+    return {
+      ...this.floorReflectionDrawState,
+      floorHiddenDuringReflection: during ? during.floorGroupVisible === false : null,
+      floorPlaneLocalVisibleDuringReflection: during ? during.floorPlaneVisible === true : null,
+      floorReflectorLocalVisibleDuringReflection: during ? during.floorReflectorVisible === true : null,
+      sceneWrapRenderedInReflection: during ? during.sceneWrapVisible === true : null,
+      blocksRenderedInReflection: during
+        ? during.sceneWrapVisible === true && during.blocksWrapVisible === true && during.blocksParentIsSceneWrap === true
+        : null,
+      environmentRenderedInReflection: during
+        ? during.sceneWrapVisible === true
+          && during.environmentGroupVisible === true
+          && during.environmentPlaneVisible === true
+          && during.environmentParentIsSceneWrap === true
+        : null,
+      aboutVisibilityDuringReflection: during?.aboutVisible ?? null,
+      floatingVisibilityDuringReflection: during?.floatingVisible ?? null,
+      floorRestoredAfterReflection: before && after ? before.floorGroupVisible === after.floorGroupVisible : null,
+      restoreMatchesBefore: before && after
+        ? before.sceneWrapVisible === after.sceneWrapVisible
+          && before.blocksWrapVisible === after.blocksWrapVisible
+          && before.floorGroupVisible === after.floorGroupVisible
+          && before.floorPlaneVisible === after.floorPlaneVisible
+          && before.floorReflectorVisible === after.floorReflectorVisible
+          && before.environmentGroupVisible === after.environmentGroupVisible
+          && before.environmentPlaneVisible === after.environmentPlaneVisible
+          && before.aboutVisible === after.aboutVisible
+          && before.floatingVisible === after.floatingVisible
+        : null,
+    };
+  }
+
   private reflectionStateProbe() {
     const objectSummary = (object: Object3D) => ({
       name: object.name || object.type,
@@ -10776,6 +10857,7 @@ void main() {
         pageScroll: this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY,
         pageScrollVelocity: this.auxiliaryPageScrollActive ? this.auxiliaryPageScrollVelocity : window.scrollY - this.auxiliaryScrollLast,
       },
+      floorReflectionDrawState: this.floorReflectionDrawStateProbe(),
       floor: {
         group: objectSummary(this.floorGroup),
         plane: objectSummary(this.floorPlane),

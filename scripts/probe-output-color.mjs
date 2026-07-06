@@ -2039,6 +2039,27 @@ async function runProbe() {
   if (parsed.probe.reflectionState?.floor?.hierarchy?.reflectorParentIsPlane !== true) floorErrors.push("reflectionFloorReflectorParent");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.planeParentIsGroup !== true) floorErrors.push("reflectionFloorPlaneParent");
   if (parsed.probe.reflectionState?.floor?.hierarchy?.groupParentIsSceneWrap !== true) floorErrors.push("reflectionFloorGroupParent");
+  const floorDrawState = parsed.probe.reflectionState?.floorReflectionDrawState;
+  if (floorDrawState?.mode !== "source-a1-onBeforeRender-hide-component-group-render-full-scene-restore") {
+    floorErrors.push("reflectionDrawStateMode");
+  }
+  if (floorDrawState?.renderSceneMode !== "source-i1-update-renders-this.scene-with-a1-hidden") {
+    floorErrors.push("reflectionRenderSceneMode");
+  }
+  if (floorDrawState?.renderSceneIsHomeScene !== true) floorErrors.push("reflectionRenderSceneIsHomeScene");
+  if (!floorDrawState?.before || !floorDrawState?.during || !floorDrawState?.after) floorErrors.push("reflectionDrawSnapshots");
+  if (floorDrawState?.before?.floorGroupVisible !== true) floorErrors.push("reflectionBeforeFloorVisible");
+  if (floorDrawState?.during?.floorGroupVisible !== false) floorErrors.push("reflectionDuringFloorHidden");
+  if (floorDrawState?.after?.floorGroupVisible !== true) floorErrors.push("reflectionAfterFloorVisible");
+  if (floorDrawState?.floorHiddenDuringReflection !== true) floorErrors.push("reflectionFloorHiddenDuring");
+  if (floorDrawState?.floorPlaneLocalVisibleDuringReflection !== true) floorErrors.push("reflectionFloorPlaneLocalVisible");
+  if (floorDrawState?.floorReflectorLocalVisibleDuringReflection !== true) floorErrors.push("reflectionReflectorLocalVisible");
+  if (floorDrawState?.sceneWrapRenderedInReflection !== true) floorErrors.push("reflectionSceneWrapRendered");
+  if (floorDrawState?.blocksRenderedInReflection !== true) floorErrors.push("reflectionBlocksRendered");
+  if (floorDrawState?.environmentRenderedInReflection !== true) floorErrors.push("reflectionEnvironmentRendered");
+  if (floorDrawState?.floorRestoredAfterReflection !== true) floorErrors.push("reflectionFloorRestored");
+  if (floorDrawState?.restoreMatchesBefore !== true) floorErrors.push("reflectionRestoreMatchesBefore");
+  if (!Number.isFinite(floorDrawState?.lastRenderFrame) || floorDrawState.lastRenderFrame < 0) floorErrors.push("reflectionLastRenderFrame");
   if (reflectionTargets?.blurMaterialMode !== "source-t1-raw-glsl3") floorErrors.push("blurMaterialMode");
   if (reflectionTargets?.blurTMapConstructorMode !== "source-t1-tMap-construct-null-update-loop-binds") {
     floorErrors.push("blurTMapConstructorMode");

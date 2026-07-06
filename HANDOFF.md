@@ -173,15 +173,16 @@ Known remaining gaps:
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
 - Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
 - Source `I1/ag` raw main-fluid resize ownership is now guarded: source `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`, and source `ag.calcSizes(e,t)` preserves raw incoming `e,t` for `fboSize`, `cellScale`, and target `setSize(...)` while rounding only internal simulation fields through `resolution`.
+- Source `a1/i1` floor-reflection draw-state is now guarded: floor `onBeforeRender` hides only the floor component group while reflecting the full Home scene, `sceneWrap`/blocks/environment remain visible in the reflected scene, and visibility restores after the reflector update.
 
 Latest Phase 1 batch:
 
-- Aligned one source-backed `yD.onProjectActive()` active-project woosh/audio ownership edge without changing shader text, render targets, project data, route behavior, visual constants, or gallery-out soft-woosh behavior.
-- Source evidence: `yD.onProjectActive(e)` runs `Se.setRevealSpread(0)`, then `ln.playWoosh()`, then inactive/active `uReveal` tweens; source `ln` constructs active-project woosh from `/audio/woosh.*` with `volume:.25` and `rate:1.8`.
-- The rebuild now dispatches `rd:woosh` inside `applyActiveProjectSourceOrder()` after reveal spread and before `uReveal`, and `activateIndex(...)` no longer owns active-project woosh while still preserving `rd:project-active`.
-- `audio.ts` now uses source active-woosh parameters `0.25 / 1.8`; soft woosh remains `0.25 / 1.5`.
-- Probes expose and assert `activeProjectApplicationOrder=source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional` plus `wooshMode=source-yD-onProjectActive-ln-playWoosh-after-revealSpread-before-uReveal`.
-- Previous committed batch was `f03e5e7 Align active project application order`.
+- Added source-backed `a1/i1` floor-reflection draw-state attribution without changing shader text, render targets, pass behavior, project data, route behavior, or visual constants.
+- Source evidence: `a1.onBeforeRender` hides the whole floor component group, calls `this.reflector.update(this.renderer,this.scene,this.camera)`, then restores visibility; source `i1` therefore reflects the full scene with only the floor component hidden.
+- The rebuild now records before/during/after snapshots around the existing `floorGroup.visible=false -> renderFloorReflection() -> true` sequence.
+- Output probes expose and assert `floorReflectionDrawState`: floor group hidden during reflection, floor mesh/reflector locally visible, `sceneWrap`/blocks/environment still reflected, and after-state restored.
+- Renderer audit checks the source `a1` anchor plus rebuild snapshot/probe order.
+- Previous committed batch was `464aac4 Align active project woosh ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -193,28 +194,29 @@ git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-active-woosh-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-active-woosh-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node --check scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-reflection-drawstate-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-reflection-drawstate-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-woosh-output-desktop VIEWPORT=desktop CDP_PORT=9278 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-woosh-output-mobile VIEWPORT=mobile CDP_PORT=9279 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-woosh-thumb CDP_PORT=9233 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-active-woosh-media CDP_PORT=9283 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-output-desktop VIEWPORT=desktop CDP_PORT=9299 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-output-mobile VIEWPORT=mobile CDP_PORT=9300 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-thumb CDP_PORT=9301 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-reflection-drawstate-media CDP_PORT=9302 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `yD.onProjectActive` active-project woosh ownership batch. Renderer audit wrote `/tmp/rd-active-woosh-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed, thumb spotlight and project-media probes passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`. The output and thumb probes confirmed `activeProjectApplicationOrder.mode=source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional`.
+All relevant checks passed in the `a1/i1` floor-reflection draw-state guardrail batch. Renderer audit wrote `/tmp/rd-reflection-drawstate-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed and confirmed populated `floorReflectionDrawState` snapshots with floor hidden, blocks/environment reflected, and state restored. Thumb spotlight and project-media probes passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this active-project woosh batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this floor-reflection draw-state batch.
 
-Runtime QA was run because the batch touched Home WebGL active-project lifecycle/audio ordering and output/thumb probe coverage.
+Runtime QA was run because the batch touched Home WebGL reflector probe instrumentation and output probe coverage.
 
 Verified:
 
-- Renderer audit passed for the active-project woosh ownership batch: `/tmp/rd-active-woosh-audit.json`.
+- Renderer audit passed for the floor-reflection draw-state batch: `/tmp/rd-reflection-drawstate-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-active-woosh-output-desktop`, `/tmp/rd-active-woosh-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-active-woosh-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-active-woosh-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-reflection-drawstate-output-desktop`, `/tmp/rd-reflection-drawstate-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-reflection-drawstate-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-reflection-drawstate-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
