@@ -222,6 +222,7 @@ const rebuildRenderThumbTargets = extractBlock(rebuildWebgl, "private renderThum
 const rebuildRenderSkyTarget = extractBlock(rebuildWebgl, "private renderSkyTarget(");
 const rebuildRenderDisplacementTarget = extractBlock(rebuildWebgl, "private renderDisplacementTarget(");
 const rebuildRenderMediaCompositeTarget = extractBlock(rebuildWebgl, "private renderMediaCompositeTarget(");
+const rebuildRenderFloorReflection = extractBlock(rebuildWebgl, "private renderFloorReflection()");
 const rebuildSetThumbDarknessIntensity = extractBlock(rebuildWebgl, "private setThumbDarknessIntensity(");
 const rebuildSetThumbDarknessColor = extractBlock(rebuildWebgl, "private setThumbDarknessColor(");
 const rebuildSetThumbSaturation = extractBlock(rebuildWebgl, "private setThumbSaturation(");
@@ -3227,8 +3228,14 @@ const summary = {
         "this.floorReflectionScreen = new Mesh(this.floorReflectionScreenTriangle, this.floorReflectionBlurMaterial)",
         "this.floorReflectionScreen.frustumCulled = false",
         "this.floorReflectionScreenTriangle.dispose()",
+        "this.renderer.setRenderTarget(this.floorReflectionWriteTarget)",
+        "const swap = this.floorReflectionReadTarget",
+        "this.floorReflectionReadTarget = this.floorReflectionWriteTarget",
+        "this.floorReflectionWriteTarget = swap",
+        "this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture)",
         "screenTriangleMode: \"source-i1-screenTriangle-n1-geometry-owned-by-reflector\"",
         "screenDisposeMode: \"source-i1-destroy-disposes-screenTriangle\"",
+        "blurSwapOwnershipMode: \"source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop\"",
         "reflectorNormalConstructorMode: \"source-i1-normal-new-Vector3-zero-runtime-update-sets-0-0-1\"",
         "reflectorNormalRuntimeMode: \"source-i1-update-normal-set-0-0-1-then-apply-reflector-rotation\"",
         "reflectorType: this.floorReflector.type",
@@ -3237,6 +3244,11 @@ const summary = {
         "writeConstructionMode: \"source-i1-renderTargetWrite-renderTarget-clone\"",
       ]),
       rebuildNoPresetNormal: !rebuildWebgl.includes("private floorReflectorNormal = new Vector3(0, 1, 0)"),
+      rebuildDirectFieldSwapNoLocalAlias:
+        rebuildRenderFloorReflection?.includes("this.floorReflectionReadTarget = this.floorReflectionWriteTarget") === true
+        && rebuildRenderFloorReflection?.includes("this.floorReflectionWriteTarget = swap") === true
+        && !rebuildRenderFloorReflection?.includes("let readTarget = this.floorReflectionReadTarget")
+        && !rebuildRenderFloorReflection?.includes("this.floorReflectionReadTarget = readTarget"),
       rebuildNoManualTextureDefaults: ![
         "this.floorReflectionTarget.texture.generateMipmaps = false",
         "this.floorReflectionTarget.texture.minFilter = LinearFilter",
@@ -4187,6 +4199,11 @@ const summary = {
         "this.floorReflectionScreen = new Mesh(this.floorReflectionScreenTriangle, this.floorReflectionBlurMaterial)",
         "this.floorReflectionScreen.frustumCulled = false",
         "this.floorReflectionScreenTriangle.dispose()",
+        "this.renderer.setRenderTarget(this.floorReflectionWriteTarget)",
+        "const swap = this.floorReflectionReadTarget",
+        "this.floorReflectionReadTarget = this.floorReflectionWriteTarget",
+        "this.floorReflectionWriteTarget = swap",
+        "this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture)",
         "const blurIterations = this.floorReflectionBlurIterations",
         "for (let iteration = 0; iteration < blurIterations; iteration += 1)",
         "const direction = (blurIterations - iteration - 1) * 15",
@@ -4202,6 +4219,7 @@ const summary = {
         "reflectionTargets?.screenTriangleMode !== \"source-i1-screenTriangle-n1-geometry-owned-by-reflector\"",
         "reflectionTargets?.screenTriangleSharedWithScreen !== true",
         "reflectionTargets?.screenDisposeMode !== \"source-i1-destroy-disposes-screenTriangle\"",
+        "reflectionTargets?.blurSwapOwnershipMode !== \"source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop\"",
       ]),
       order: regexAnchorOrder(sourceI1.text, [
         { label: "lookAt", pattern: /this\.virtualCamera\.lookAt\(this\.target\)/ },

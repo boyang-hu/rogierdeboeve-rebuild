@@ -72,6 +72,41 @@ Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work b
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 
+### S1-317 `i1/a1` Floor Reflection Blur Target Field-Swap Ownership
+
+This batch aligns the source `i1.update()` blur-loop target ownership more tightly. It does not change shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
+
+Source evidence:
+
+- Source `i1.update()` reads `this.renderTargetRead.texture` on blur iterations after the first pass.
+- Source `i1.update()` renders every blur pass into `this.renderTargetWrite`.
+- Source `i1.update()` swaps the instance fields directly with `const l=this.renderTargetRead;this.renderTargetRead=this.renderTargetWrite,this.renderTargetWrite=l`.
+- Source `i1.update()` updates `this.renderTargetUniform.value=this.renderTargetRead.texture` immediately after each field swap.
+
+Runtime and tooling changes:
+
+- `renderFloorReflection()` now reads from `this.floorReflectionReadTarget.texture` directly inside the normal blur loop instead of a local `readTarget` alias.
+- `renderFloorReflection()` now renders into `this.floorReflectionWriteTarget` directly, then swaps `floorReflectionReadTarget` and `floorReflectionWriteTarget` fields inside the loop.
+- The floor reflection render-target uniform is updated from `this.floorReflectionReadTarget.texture` immediately after each direct field swap.
+- Output probes expose `blurSwapOwnershipMode=source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop`.
+- `scripts/probe-output-color.mjs` hard-fails if the direct field-swap ownership marker drifts.
+- `scripts/audit-renderer-output.mjs` extracts `renderFloorReflection()`, checks the source/rebuild direct field-swap anchors, and rejects restoring the local `readTarget` alias/writeback pattern.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-floor-direct-swap-audit.json` passed.
+- Recursive false/null extraction from `/tmp/rd-floor-direct-swap-audit.json` printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed: `/tmp/rd-floor-direct-swap-output-desktop`.
+- Mobile output probe passed: `/tmp/rd-floor-direct-swap-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-floor-direct-swap-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages: `/tmp/rd-floor-direct-swap-media`.
+
+Decision: keep the floor reflection blur loop source-shaped by swapping `renderTargetRead/renderTargetWrite` fields directly and updating the reflection uniform immediately after each swap. Phase 1 remains open because this closes one floor reflection update-loop ownership edge only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
+
 ### S1-316 `i1/a1` Floor Reflection Screen Triangle Ownership
 
 This batch aligns a second narrow source constructor/destroy ownership edge in the floor reflection chain. It does not change shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.

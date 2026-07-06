@@ -2001,6 +2001,9 @@ async function runProbe() {
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
   if (reflectionTargets?.clipBias !== 0) floorErrors.push("clipBias");
   if (reflectionTargets?.blurSwapMode !== "source-i1-write-target-loop-swap") floorErrors.push("blurSwapMode");
+  if (reflectionTargets?.blurSwapOwnershipMode !== "source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop") {
+    floorErrors.push("blurSwapOwnershipMode");
+  }
   if (reflectionTargets?.renderTargetUniformMode !== "source-i1-update-after-each-blur-swap") floorErrors.push("renderTargetUniformMode");
   if (reflectionTargets?.readConstructionMode !== "source-i1-renderTargetRead-renderTarget-clone") floorErrors.push("reflectionReadCloneMode");
   if (reflectionTargets?.writeConstructionMode !== "source-i1-renderTargetWrite-renderTarget-clone") floorErrors.push("reflectionWriteCloneMode");

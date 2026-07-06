@@ -8954,26 +8954,22 @@ void main() {
         this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture);
       } else {
         const blurIterations = this.floorReflectionBlurIterations;
-        let readTarget = this.floorReflectionReadTarget;
-        let writeTarget = this.floorReflectionWriteTarget;
         for (let iteration = 0; iteration < blurIterations; iteration += 1) {
           this.floorReflectionBlurMaterial.uniforms.tMap.value = iteration === 0
             ? this.floorReflectionTarget.texture
-            : readTarget.texture;
+            : this.floorReflectionReadTarget.texture;
           const direction = (blurIterations - iteration - 1) * 15;
           this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(
             iteration % 2 === 0 ? direction : 0,
             iteration % 2 === 0 ? 0 : direction,
           );
-          this.renderer.setRenderTarget(writeTarget);
+          this.renderer.setRenderTarget(this.floorReflectionWriteTarget);
           this.renderer.render(this.floorReflectionScreen, this.floorReflectionScreenCamera);
-          const swap = readTarget;
-          readTarget = writeTarget;
-          writeTarget = swap;
-          this.updateFloorReflectionRenderTargetUniform(readTarget.texture);
+          const swap = this.floorReflectionReadTarget;
+          this.floorReflectionReadTarget = this.floorReflectionWriteTarget;
+          this.floorReflectionWriteTarget = swap;
+          this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture);
         }
-        this.floorReflectionReadTarget = readTarget;
-        this.floorReflectionWriteTarget = writeTarget;
       }
     } finally {
       this.renderer.xr.enabled = previousXrEnabled;
@@ -10845,6 +10841,7 @@ void main() {
         cameraProjectionCopyOrder: "source-updateMatrixWorld-before-projection-copy",
         clipBias: this.floorReflectionClipBias,
         blurSwapMode: "source-i1-write-target-loop-swap",
+        blurSwapOwnershipMode: "source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop",
         renderTargetUniformMode: "source-i1-update-after-each-blur-swap",
         sourceCssSized: this.floorReflectionTarget.width === Math.max(1, window.innerWidth * 0.75)
           && this.floorReflectionTarget.height === Math.max(1, window.innerHeight * 0.75),

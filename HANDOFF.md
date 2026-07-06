@@ -145,6 +145,7 @@ Known remaining gaps:
 - Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
 - Source `i1/a1` floor reflection normal constructor/runtime ownership is now guarded: `i1` constructs the reflection normal as a zero vector, while `i1.update()` owns the later `(0,0,1)` write and reflector-rotation application.
 - Source `i1/a1` floor reflection screen-triangle ownership is now guarded: `i1` constructs `screenTriangle` with `n1()`, creates the blur screen from that owned geometry and blur material, disables frustum culling on the screen, and disposes `screenTriangle` directly in `destroy()`.
+- Source `i1/a1` floor reflection blur target field-swap ownership is now guarded: the normal blur loop reads/writes `renderTargetRead/renderTargetWrite` fields directly, swaps those fields inside the loop, and updates the reflection uniform from the swapped read field after each pass.
 - Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
 - Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement`; floating `ZA/KA` sampler uniforms stay constructor-null because source `ZA.update()` does not write them.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
@@ -171,11 +172,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `i1/a1` floor reflection screen-triangle constructor/destroy ownership without changing shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
-- Source `i1` constructs `this.screenTriangle=n1()`, creates `this.screen=new at(this.screenTriangle,this.blurMaterial)`, disables culling with `this.screen.frustumCulled=!1`, and disposes the owned geometry in `destroy()` via `this.screenTriangle.dispose()`.
-- The rebuild now owns `floorReflectionScreenTriangle` separately, constructs `floorReflectionScreen` from that geometry and the blur material, keeps `frustumCulled=false`, and disposes the owned geometry directly.
-- Output probe and renderer audit now assert `screenTriangleMode`, geometry attributes, mesh/material sharing, culling state, and `screenDisposeMode`.
-- Previous committed batch was `7b703d7 Align floor reflection normal constructor`.
+- Aligned source `i1/a1` floor reflection blur target field-swap ownership without changing shader text, render-target sizing, floor material constants, floor geometry, environment placement, project data, route behavior, or visual tuning.
+- Source `i1.update()` reads `this.renderTargetRead.texture` after the first blur pass, renders into `this.renderTargetWrite`, swaps `this.renderTargetRead/this.renderTargetWrite` fields directly, and updates `this.renderTargetUniform.value` from the swapped read target after each pass.
+- The rebuild now removes the local `readTarget/writeTarget` alias path in the normal floor reflection blur loop, swaps `floorReflectionReadTarget/floorReflectionWriteTarget` fields directly, and updates the reflection uniform from the swapped field.
+- Output probe and renderer audit now assert `blurSwapOwnershipMode=source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop`, and audit rejects restoring local read/write target aliases in `renderFloorReflection()`.
+- Previous committed batch was `411dfd1 Align floor reflection screen triangle ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -186,28 +187,28 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-floor-screen-triangle-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-floor-screen-triangle-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-floor-direct-swap-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-floor-direct-swap-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-screen-triangle-output-desktop VIEWPORT=desktop CDP_PORT=9271 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-screen-triangle-output-mobile VIEWPORT=mobile CDP_PORT=9272 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-screen-triangle-thumb CDP_PORT=9273 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-screen-triangle-media CDP_PORT=9274 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-output-desktop VIEWPORT=desktop CDP_PORT=9281 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-output-mobile VIEWPORT=mobile CDP_PORT=9282 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-thumb CDP_PORT=9283 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-floor-direct-swap-media CDP_PORT=9284 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the floor reflection screen-triangle constructor/destroy-ownership batch. Renderer audit wrote `/tmp/rd-floor-screen-triangle-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes, thumb spotlight probe, and project-media probe passed with no failures/exceptions/console messages in the relevant checks.
+All relevant checks passed in the floor reflection blur target field-swap ownership batch. Renderer audit wrote `/tmp/rd-floor-direct-swap-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes, thumb spotlight probe, and project-media probe passed with no failures/exceptions/console messages in the relevant checks.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this floor reflection screen-triangle ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this floor reflection blur target field-swap ownership batch.
 
 Runtime QA was run because the batch touched WebGL floor reflection state and output probe coverage.
 
 Verified:
 
-- Renderer audit passed for the floor reflection screen-triangle constructor/destroy-ownership batch: `/tmp/rd-floor-screen-triangle-audit.json`.
+- Renderer audit passed for the floor reflection blur target field-swap ownership batch: `/tmp/rd-floor-direct-swap-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-floor-screen-triangle-output-desktop`, `/tmp/rd-floor-screen-triangle-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-floor-screen-triangle-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-floor-screen-triangle-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-floor-direct-swap-output-desktop`, `/tmp/rd-floor-direct-swap-output-mobile`.
+- Thumb spotlight probe passed: `/tmp/rd-floor-direct-swap-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-floor-direct-swap-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
