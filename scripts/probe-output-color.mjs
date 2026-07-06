@@ -30,7 +30,6 @@ const viewport = viewports[viewportName] || viewports.desktop;
 const rebuildSearchParams = new URL(rebuildUrl).searchParams;
 const debugCompositeProbe = rebuildSearchParams.has("debug-composite-stage")
   || rebuildSearchParams.has("debug-composite-darken")
-  || rebuildSearchParams.has("debug-composite-transfer")
   || rebuildSearchParams.has("debug-composite-lighten");
 
 function withProbeParams(url) {

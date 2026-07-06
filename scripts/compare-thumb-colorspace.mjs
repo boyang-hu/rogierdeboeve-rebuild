@@ -142,9 +142,7 @@ const chrome = spawn(chromePath, [
 try {
   await waitForPort(port);
   const results = [];
-  results.push(await captureVariant("rebuild-home-thumb-colorspace-default", ""));
-  results.push(await captureVariant("rebuild-home-thumb-colorspace-composite-srgb", "&debug-thumb-colorspace=composite-srgb"));
-  results.push(await captureVariant("rebuild-home-thumb-colorspace-both-srgb", "&debug-thumb-colorspace=both-srgb"));
+  results.push(await captureVariant("rebuild-home-thumb-source-colorspace", ""));
   writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

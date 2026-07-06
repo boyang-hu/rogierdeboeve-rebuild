@@ -35,12 +35,6 @@ const darkenModes = [
   { label: "mouse-only", mode: 2 },
   { label: "off", mode: 3 },
 ];
-const transferModes = [
-  { label: "default", mode: 0 },
-  { label: "scene-gamma", mode: 1 },
-  { label: "scene-linearize", mode: 2 },
-];
-
 function compactProbeResult(result) {
   const probe = result.probe || {};
   const targets = probe.targets || {};
@@ -48,7 +42,6 @@ function compactProbeResult(result) {
     label: result.label,
     stage: result.stage,
     darkenMode: result.darkenMode,
-    transferMode: result.transferMode,
     active: result.active,
     workRaw: targets.workRaw?.gridStats?.luma,
     workComposite: targets.workComposite?.gridStats?.luma,
@@ -117,7 +110,7 @@ async function connectWs(url) {
   return ws;
 }
 
-async function captureVariant({ stage, darkenMode = 0, transferMode = 0, label = `stage-${stage}` }) {
+async function captureVariant({ stage, darkenMode = 0, label = `stage-${stage}` }) {
   const failures = [];
   const exceptions = [];
   const consoleMessages = [];
@@ -143,7 +136,7 @@ async function captureVariant({ stage, darkenMode = 0, transferMode = 0, label =
     screenHeight: viewport.height,
   });
   await send(ws, "Page.navigate", {
-    url: `${rebuildUrl}/?skip-preloader&debug-output-probe=1&debug-composite-stage=${stage}&debug-composite-darken=${darkenMode}&debug-composite-transfer=${transferMode}`,
+    url: `${rebuildUrl}/?skip-preloader&debug-output-probe=1&debug-composite-stage=${stage}&debug-composite-darken=${darkenMode}`,
   });
   await wait(waitAfter);
   const result = await send(ws, "Runtime.evaluate", {
@@ -170,7 +163,6 @@ async function captureVariant({ stage, darkenMode = 0, transferMode = 0, label =
     label,
     viewport: viewportName,
     darkenMode,
-    transferMode,
     screenshot: screenshotFile,
     ...parsed,
     failures: failures.filter((failure) => !failure.canceled).map((failure) => ({ type: failure.type, errorText: failure.errorText })),
@@ -201,16 +193,11 @@ try {
   for (const variant of darkenModes) {
     darkenResults.push(await captureVariant({ stage: 0, darkenMode: variant.mode, label: `darken-${variant.label}` }));
   }
-  const transferResults = [];
-  for (const variant of transferModes) {
-    transferResults.push(await captureVariant({ stage: 0, transferMode: variant.mode, label: `transfer-${variant.label}` }));
-  }
   const compact = {
     stages: results.map(compactProbeResult),
     darkenModes: darkenResults.map(compactProbeResult),
-    transferModes: transferResults.map(compactProbeResult),
   };
-  writeFileSync(path.join(outDir, "summary.json"), JSON.stringify({ stages: results, darkenModes: darkenResults, transferModes: transferResults }, null, 2));
+  writeFileSync(path.join(outDir, "summary.json"), JSON.stringify({ stages: results, darkenModes: darkenResults }, null, 2));
   writeFileSync(path.join(outDir, "compact-summary.json"), JSON.stringify(compact, null, 2));
   console.log(JSON.stringify({ outDir, ...compact }, null, 2));
 } finally {

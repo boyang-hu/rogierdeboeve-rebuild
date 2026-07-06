@@ -143,8 +143,7 @@ const chrome = spawn(chromePath, [
 try {
   await waitForPort(port);
   const results = [];
-  results.push(await captureVariant("rebuild-home-spotlight-map-on", ""));
-  results.push(await captureVariant("rebuild-home-spotlight-map-off", "&debug-spotlight-map=off"));
+  results.push(await captureVariant("rebuild-home-spotlight-map-source", ""));
   writeFileSync(path.join(outDir, "summary.json"), JSON.stringify(results, null, 2));
   console.log(JSON.stringify(results, null, 2));
 } finally {

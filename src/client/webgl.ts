@@ -2176,14 +2176,11 @@ const homeCompositeDebugFragment = homeCompositeFragment
     `uniform float uSaturation;
 uniform int uDebugStage;
 uniform int uDebugDarkenMode;
-uniform int uDebugTransferMode;
 uniform int uDebugLightenMode;`,
   )
   .replace(
     "vec4 mixed = rgbshift(tScene, uv, -1., .0015);",
     `vec4 mixed = rgbshift(tScene, uv, -1., .0015);
-  if (uDebugTransferMode == 1) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(1.0 / 2.2));
-  if (uDebugTransferMode == 2) mixed.rgb = pow(max(mixed.rgb, vec3(0.0)), vec3(2.2));
   if (uDebugStage == 1) {
     FragColor = vec4(mixed.rgb, 1.0);
     return;
@@ -4002,11 +3999,9 @@ export class WebGLBackdrop {
   private mediaTranslationTweens: gsap.core.Tween[] = [];
   private maxSpotLightIntensity = 220;
   private spotLightParallax = true;
-  private debugDisableHomeSpotlightMap = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-spotlight-map") === "off";
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
   private debugTextureColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-texture-colorspace") : null;
   private debugPassOrder = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-pass-order") : null;
-  private debugThumbColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-thumb-colorspace") : null;
   private debugThumbProbe = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-probe");
   private debugThumbProgress = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug-thumb-progress")
     ? numeric(new URLSearchParams(window.location.search).get("debug-thumb-progress"), 0)
@@ -4016,14 +4011,11 @@ export class WebGLBackdrop {
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-stage"), 0)), 0, 5) : 0;
   private debugCompositeDarkenMode =
     typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-darken"), 0)), 0, 3) : 0;
-  private debugCompositeTransferMode =
-    typeof window !== "undefined" ? MathUtils.clamp(Math.round(numeric(new URLSearchParams(window.location.search).get("debug-composite-transfer"), 0)), 0, 2) : 0;
   private debugCompositeLightenMode =
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug-composite-lighten") === "off" ? 1 : 0;
   private debugCompositeShader =
     this.debugCompositeStage !== 0
     || this.debugCompositeDarkenMode !== 0
-    || this.debugCompositeTransferMode !== 0
     || this.debugCompositeLightenMode !== 0;
   private debugRendererOutput = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-renderer-output") : null;
   private debugMainFluid = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-main-fluid") : null;
@@ -4174,12 +4166,6 @@ export class WebGLBackdrop {
     this.characterScene.add(this.characterModelRoot);
     this.characterScene.add(this.characterAmbientLight);
     this.characterScene.add(this.characterDirectionalLight);
-    if (this.debugThumbColorSpace === "both-srgb") {
-      this.thumbTarget.texture.colorSpace = SRGBColorSpace;
-      this.thumbCompositeTarget.texture.colorSpace = SRGBColorSpace;
-    } else if (this.debugThumbColorSpace === "composite-srgb") {
-      this.thumbCompositeTarget.texture.colorSpace = SRGBColorSpace;
-    }
     this.skyCompositeTarget.texture.wrapS = RepeatWrapping;
     this.skyCompositeTarget.texture.wrapT = RepeatWrapping;
     this.floorMaterial = this.createFloorMaterial();
@@ -5178,7 +5164,6 @@ export class WebGLBackdrop {
     if (this.debugCompositeShader) {
       uniforms.uDebugStage = { value: this.debugCompositeStage };
       uniforms.uDebugDarkenMode = { value: this.debugCompositeDarkenMode };
-      uniforms.uDebugTransferMode = { value: this.debugCompositeTransferMode };
       uniforms.uDebugLightenMode = { value: this.debugCompositeLightenMode };
     }
     const material = new RawShaderMaterial({
@@ -6408,7 +6393,7 @@ void main() {
   }
 
   private homeSpotlightMap() {
-    return this.debugDisableHomeSpotlightMap ? null : this.thumbCompositeTarget.texture;
+    return this.thumbCompositeTarget.texture;
   }
 
   private environmentSkyTexture() {
@@ -7961,7 +7946,6 @@ void main() {
           uSaturation: this.compositeMaterial.uniforms.uSaturation.value,
           uDebugStage: this.compositeMaterial.uniforms.uDebugStage?.value ?? 0,
           uDebugDarkenMode: this.compositeMaterial.uniforms.uDebugDarkenMode?.value ?? 0,
-          uDebugTransferMode: this.compositeMaterial.uniforms.uDebugTransferMode?.value ?? 0,
           uDebugLightenMode: this.compositeMaterial.uniforms.uDebugLightenMode?.value ?? 0,
           shaderSurface: {
             formulaMode: "source-CA-mixed-blend-surface",

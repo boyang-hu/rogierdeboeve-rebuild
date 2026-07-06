@@ -15,6 +15,11 @@ const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bun
 const rebuildWebglPath = process.env.REBUILD_WEBGL || "src/client/webgl.ts";
 const rebuildMainPath = process.env.REBUILD_MAIN || "src/client/main.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
+const rebuildOutputProbePath = process.env.REBUILD_OUTPUT_PROBE || "scripts/probe-output-color.mjs";
+const rebuildCompositeStagesPath = process.env.REBUILD_COMPOSITE_STAGES || "scripts/compare-composite-stages.mjs";
+const rebuildBrightnessAttributionPath = process.env.REBUILD_BRIGHTNESS_ATTRIBUTION || "scripts/compare-home-brightness-attribution.mjs";
+const rebuildSpotlightMapComparePath = process.env.REBUILD_SPOTLIGHT_MAP_COMPARE || "scripts/compare-spotlight-map.mjs";
+const rebuildThumbColorspaceComparePath = process.env.REBUILD_THUMB_COLORSPACE_COMPARE || "scripts/compare-thumb-colorspace.mjs";
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
 const threeWebglLights = readFileSync("node_modules/three/src/renderers/webgl/WebGLLights.js", "utf8");
@@ -149,6 +154,11 @@ const bundle = readFileSync(bundlePath, "utf8");
 const rebuildWebgl = readFileSync(rebuildWebglPath, "utf8");
 const rebuildMain = readFileSync(rebuildMainPath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
+const rebuildOutputProbe = readFileSync(rebuildOutputProbePath, "utf8");
+const rebuildCompositeStages = readFileSync(rebuildCompositeStagesPath, "utf8");
+const rebuildBrightnessAttribution = readFileSync(rebuildBrightnessAttributionPath, "utf8");
+const rebuildSpotlightMapCompare = readFileSync(rebuildSpotlightMapComparePath, "utf8");
+const rebuildThumbColorspaceCompare = readFileSync(rebuildThumbColorspaceComparePath, "utf8");
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
 const rebuildCreateLensflareMaterial = extractBlock(rebuildWebgl, "private createLensflareMaterial()");
 const rebuildCreateLuminosityMaterial = extractBlock(rebuildWebgl, "private createLuminosityMaterial(");
@@ -443,6 +453,23 @@ const summary = {
           && rebuildA1Signature.includes("noise sample"),
       },
     },
+  },
+  debugShortcuts: {
+    noRejectedCompositeTransferDebug:
+      !rebuildWebgl.includes("debug-composite-transfer")
+      && !rebuildWebgl.includes("uDebugTransferMode")
+      && !rebuildOutputProbe.includes("debug-composite-transfer")
+      && !rebuildCompositeStages.includes("debug-composite-transfer")
+      && !rebuildBrightnessAttribution.includes("debug-composite-transfer"),
+    noRejectedSpotlightMapOffDebug:
+      !rebuildWebgl.includes("debug-spotlight-map")
+      && !rebuildBrightnessAttribution.includes("debug-spotlight-map=off")
+      && !rebuildSpotlightMapCompare.includes("debug-spotlight-map=off"),
+    noRejectedThumbColorspaceDebug:
+      !rebuildWebgl.includes("debug-thumb-colorspace")
+      && !rebuildThumbColorspaceCompare.includes("debug-thumb-colorspace"),
+    homeSpotlightMapAlwaysSourceThumbComposite:
+      rebuildWebgl.includes("private homeSpotlightMap() {\n    return this.thumbCompositeTarget.texture;\n  }"),
   },
   sourceManagers: {
     Lu: sourceLu && {

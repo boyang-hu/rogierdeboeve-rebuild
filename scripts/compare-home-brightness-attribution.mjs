@@ -30,8 +30,6 @@ if (!viewport) {
 }
 const defaultVariants = [
   { label: "default", query: "" },
-  { label: "spotlight-map-off", query: "&debug-spotlight-map=off" },
-  { label: "scene-transfer", query: "&debug-composite-transfer=1" },
   { label: "raw-work-composite-pass", query: "&debug-pass-order=raw-work-composite" },
   { label: "renderer-output-linear", query: "&debug-renderer-output=linear" },
   { label: "composite-lighten-off", query: "&debug-composite-lighten=off" },
@@ -45,7 +43,6 @@ const defaultVariants = [
   { label: "environment-off", query: "&debug-environment=off" },
   { label: "texture-srgb-colorspace", query: "&debug-texture-colorspace=srgb" },
   { label: "darken-off", query: "&debug-composite-darken=3" },
-  { label: "spotlight-map-off-darken-off", query: "&debug-spotlight-map=off&debug-composite-darken=3" },
 ];
 const requestedVariantLabels = (process.env.VARIANTS || "")
   .split(",")

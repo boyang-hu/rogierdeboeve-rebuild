@@ -142,11 +142,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `C1.uFluidStrength` constructor/runtime ownership without screenshot-led tuning.
-- Source `C1` constructs `uFluidStrength:new I(.5)`, while source `Se.init()` starts `settings.fluidStrength=0`; only `Se.setFluidStrength(e,t=.5)` writes `C1.uFluidStrength` from that state afterward.
-- The rebuild now constructs `C1/A1` with `SOURCE_C1_FLUID_STRENGTH_DEFAULT=0.5`, records the constructor/runtime ownership on material `userData`, removes Home/WorkGallery `.5` compensation setters, and stops the frame loop from rewriting `uFluidStrength` from `settingsState.fluidStrength`.
-- The main fluid update gate now reads the current `C1.uFluidStrength` uniform, matching source `I1.update()` ownership.
-- Output probes expose the intentional Home constructor divergence: `settingsState.fluidStrength=0`, `C1.uFluidStrength=0.5`, and `fluidStrengthUniformMatchesState=false`.
+- Retired previously rejected query-only transfer/color shortcuts from the current runtime and QA scripts.
+- Runtime no longer accepts `debug-composite-transfer=*`, no longer exposes `uDebugTransferMode`, no longer allows `debug-spotlight-map=off`, and no longer mutates thumb target color spaces through `debug-thumb-colorspace=*`.
+- `homeSpotlightMap()` always returns `thumbCompositeTarget.texture`, preserving the source `SD.init()` spotlight-map path.
+- Attribution scripts no longer construct rejected query URLs; non-rejected stage/darken/lighten, floor/environment, renderer-output, and raw-work-composite diagnostics remain available.
+- Renderer audit now guards `noRejectedCompositeTransferDebug`, `noRejectedSpotlightMapOffDebug`, `noRejectedThumbColorspaceDebug`, and `homeSpotlightMapAlwaysSourceThumbComposite`.
 - Phase 1 remains open for actual spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment distribution parity.
 
 ## Validation Status
@@ -159,22 +159,25 @@ node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
+node --check scripts/compare-composite-stages.mjs
+node --check scripts/compare-home-brightness-attribution.mjs
+node --check scripts/compare-spotlight-map.mjs
+node --check scripts/compare-thumb-colorspace.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-c1-fluid-strength-audit.json
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9491 PROBE_WAIT=30000 VIEWPORT=desktop OUT_DIR=/tmp/rd-c1-fluid-strength-output-desktop node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9492 PROBE_WAIT=30000 VIEWPORT=mobile OUT_DIR=/tmp/rd-c1-fluid-strength-output-mobile node scripts/probe-output-color.mjs
-REBUILD_URL=http://127.0.0.1:5173 CHROME_PATH=/usr/bin/google-chrome-stable CDP_PORT=9493 PROBE_WAIT=30000 OUT_DIR=/tmp/rd-c1-fluid-strength-media node scripts/probe-project-media.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-debug-shortcuts-audit.json
 ```
 
-All passed in the `C1/Se/I1` fluid-strength constructor ownership batch.
+All passed in the rejected debug shortcut retirement batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports the source `C1.uFluidStrength:new I(.5)` constructor anchor, rebuild constructor/default markers, no frame-loop state rewrite, no Home/Gallery compensation setter, and C1-uniform fluid update gate.
-- Desktop and mobile output probes confirm Home `settingsState.fluidStrength=0`, `C1.uFluidStrength=0.5`, `fluidStrengthUniformMatchesState=false`, and no browser failures/exceptions/console messages.
+- Renderer audit reports all four `debugShortcuts` guards as true.
+- Runtime/source script search should only find the rejected query strings inside audit negative checks or historical docs, not active runtime/probe/comparison paths.
+- Desktop and mobile output probes passed with no browser failures/exceptions/console messages.
+- Thumb spotlight probe passed with source `thumbCompositeTarget.texture` map present, empty map color space, and `900x900` thumb/composite targets.
 - Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages; project-media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, and project-media guardrails remain in the audit/probe surface.
 
