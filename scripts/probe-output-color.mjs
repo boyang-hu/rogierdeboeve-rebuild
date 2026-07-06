@@ -1820,6 +1820,21 @@ async function runProbe() {
   if (updateOrder?.mainCompositeUpdateOrder !== "source-U1-super-update-renders-I1-before-C1-update") {
     throw new Error(`Main C1 update order source-shape mismatch: ${updateOrder?.mainCompositeUpdateOrder || "missing"}`);
   }
+  if (updateOrder?.frameDeltaMode !== "source-Bt-w0-getDelta-raw-no-min-max-clamp") {
+    throw new Error(`Frame delta source-shape mismatch: ${updateOrder?.frameDeltaMode || "missing"}`);
+  }
+  if (updateOrder?.frameDeltaClampApplied !== false) {
+    throw new Error(`Frame delta clamp state mismatch: ${updateOrder?.frameDeltaClampApplied}`);
+  }
+  if (updateOrder?.frameStartMode !== "source-Bt-start-requestAnimationFrame-before-frame") {
+    throw new Error(`Frame start source-shape mismatch: ${updateOrder?.frameStartMode || "missing"}`);
+  }
+  if (!Number.isFinite(updateOrder?.lastFrameDelta) || updateOrder.lastFrameDelta < 0) {
+    throw new Error(`Frame delta value mismatch: ${updateOrder?.lastFrameDelta}`);
+  }
+  if (updateOrder?.lastFrameDeltaFinite !== true) {
+    throw new Error(`Frame delta finite marker mismatch: ${updateOrder?.lastFrameDeltaFinite}`);
+  }
   if (updateOrder?.mouseSimulationOrder !== "source-Lu-mousesim-after-raw-bloom-before-composite") {
     throw new Error(`Mouse simulation order source-shape mismatch: ${updateOrder?.mouseSimulationOrder || "missing"}`);
   }

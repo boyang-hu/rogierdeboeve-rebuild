@@ -351,6 +351,7 @@ const sourceMouseSimulationVertex = extractTemplate(bundle, "oA", "`;class Ka");
 const sourceI1 = extractAround(bundle, "class i1 extends", 200, 5000);
 const sourceRenderer = extractAround(bundle, "class qw extends", 200, 1200);
 const sourceCanvasManager = extractAround(bundle, "class nD{constructor", 200, 2200);
+const sourceRafManager = extractAround(bundle, "class w0", 0, 2300);
 const sourceTextureManager = extractAround(bundle, "static preloadTextures(){", 500, 1300);
 const sourceP1AddEnvironment = extractAround(bundle, "async addEnvironment(){const e=Le.WEBP?\"webp\":\"jpg\"", 220, 420);
 const rendererOutputRefs = [
@@ -2317,12 +2318,40 @@ const summary = {
             "this.resize();",
             "this.sourceInitLifecycle.secondResizeAfterDelayedBindings = true;",
             "this.sourceInitLifecycle.started = true;",
-            "this.tick();",
+            "this.raf = requestAnimationFrame(this.tick);",
           ]),
+        startNoImmediateTick: Boolean(rebuildSourceInitLifecycle)
+          && !rebuildSourceInitLifecycle.includes("this.tick();"),
         animateInAwaitsInitLifecycle: rebuildWebgl.includes("this.sourceInitLifecyclePromise")
           && rebuildWebgl.includes("this.sourceTexturePreloadPromise"),
       },
       excerpt: compact(sourceCanvasManager.text),
+    },
+    rafManager: sourceRafManager && {
+      index: sourceRafManager.index,
+      checks: checks(sourceRafManager.text, [
+        "class w0{constructor(){this.startTime=0,this.oldTime=0,this.elapsedTime=0,this.count=0,this.time=0,this.prev=0,this.running=!1}",
+        "getDelta(){let e=0;if(this.running){const t=El();e=(t-this.oldTime)/1e3,this.oldTime=t,this.elapsedTime+=e}return e}",
+        "static start(){this.stopped=!1,this.time.start(),this.id=window.requestAnimationFrame(this.render)}",
+        "static frame(e){const t=this.time.getDelta(),n=this.time.getElapsedTime(),i=this.time.getFPS();",
+        "this.frames[r].handler({time:n,delta:t,frame:e,fps:i})",
+      ]),
+      rebuildChecks: {
+        rawFrameDelta: Boolean(rebuildTick) && rebuildTick.includes("const delta = time - this.lastTickTime;"),
+        noFrameDeltaClamp: !rebuildWebgl.includes("MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20)"),
+        storesLastFrameDelta: Boolean(rebuildTick) && rebuildTick.includes("this.lastFrameDelta = delta;"),
+        startUsesRequestAnimationFrame: Boolean(rebuildSourceInitLifecycle)
+          && rebuildSourceInitLifecycle.includes("this.raf = requestAnimationFrame(this.tick);"),
+        startNoImmediateTick: Boolean(rebuildSourceInitLifecycle)
+          && !rebuildSourceInitLifecycle.includes("this.tick();"),
+        probeDeltaMarker: rebuildWebgl.includes("frameDeltaMode: \"source-Bt-w0-getDelta-raw-no-min-max-clamp\""),
+        probeStartMarker: rebuildWebgl.includes("frameStartMode: \"source-Bt-start-requestAnimationFrame-before-frame\""),
+        mousePersistenceUsesRawDelta: rebuildWebgl.includes("persistenceDeltaMode: \"source-Ka-update-uPersistance-pow-persistence-raw-delta-times-10\""),
+        mousePersistenceNoFixedSixtyFpsGuard: !rebuildWebgl.includes("Math.pow(0.85, 1 / 60 * 10)"),
+        outputProbeDeltaAssertion: rebuildOutputProbe.includes("Frame delta source-shape mismatch"),
+        outputProbeStartAssertion: rebuildOutputProbe.includes("Frame start source-shape mismatch"),
+      },
+      excerpt: compact(sourceRafManager.text),
     },
     textures: sourceTextureManager && {
       index: sourceTextureManager.index,

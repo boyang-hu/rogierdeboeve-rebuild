@@ -5418,6 +5418,7 @@ export class WebGLBackdrop {
   private outputProbeLastUpdate = 0;
   private sourceUpdateOrder = "nD.scenes sky -> media -> work -> main -> workthumb -> wavves -> character; Iu.renderManager -> IT.cameraController -> components";
   private sourcePostRenderFrame = 0;
+  private lastFrameDelta = 0;
   private projectRevealTweens: gsap.core.Tween[] = [];
   private projectRevealProjectTweens: gsap.core.Tween[] = [];
   private mediaBackground = this.settingsState.media.background.clone();
@@ -8394,7 +8395,7 @@ void main() {
         if (!this.destroyed && !this.sourceInitLifecycle.started) {
           this.sourceInitLifecycle.started = true;
           this.lastTickTime = performance.now() * 0.001;
-          this.tick();
+          this.raf = requestAnimationFrame(this.tick);
         }
         resolve();
       }, 100);
@@ -10314,6 +10315,11 @@ void main() {
           mainUpdateOrder: ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-runtime-uniforms", "I1.C1-screen"],
           mainCompositeUpdateOrder: "source-U1-super-update-renders-I1-before-C1-update",
           frameTail: "source-work-renderManager-then-p1-update-before-main",
+          frameDeltaMode: "source-Bt-w0-getDelta-raw-no-min-max-clamp",
+          frameDeltaClampApplied: false,
+          frameStartMode: "source-Bt-start-requestAnimationFrame-before-frame",
+          lastFrameDelta: this.lastFrameDelta,
+          lastFrameDeltaFinite: Number.isFinite(this.lastFrameDelta),
           mouseSimulationOrder: "source-Lu-mousesim-after-raw-bloom-before-composite",
           postRenderFrame: this.sourcePostRenderFrame,
           environmentUpdateOrder: "source-p1-component-post-render",
@@ -11519,6 +11525,7 @@ void main() {
       height: this.workRawTarget.height / SCREEN_MOUSE_SIM_SCALE,
     };
     const expectedUvOffset = sourceMouseUvOffset();
+    const activePersistenceExpected = Math.pow(0.85, this.lastFrameDelta * 10);
     return {
       enabled: this.renderSettings.mousesim.enabled,
       shaderSurface: {
@@ -11736,7 +11743,10 @@ void main() {
             && active.rayPlane.material.opacity === 0
             && active.rayPlane.material.depthWrite === false
             && active.rayPlane.material.depthTest === false,
-          persistenceMatchesSource: Math.abs((active.mouseMaterial.uniforms.uPersistance.value as number) - Math.pow(0.85, 1 / 60 * 10)) < 0.2,
+          persistenceDeltaMode: "source-Ka-update-uPersistance-pow-persistence-raw-delta-times-10",
+          persistenceDelta: this.lastFrameDelta,
+          persistenceExpectedSource: activePersistenceExpected,
+          persistenceMatchesSource: Math.abs((active.mouseMaterial.uniforms.uPersistance.value as number) - activePersistenceExpected) < 1e-6,
           thicknessMatchesSource: Math.abs((active.mouseMaterial.uniforms.uThickness.value as number) - 0.1) < 1e-6,
         },
         groupVisible: active.group.visible,
@@ -11981,7 +11991,8 @@ void main() {
 
   private tick = () => {
     const time = performance.now() * 0.001;
-    const delta = MathUtils.clamp(time - this.lastTickTime, 1 / 120, 1 / 20);
+    const delta = time - this.lastTickTime;
+    this.lastFrameDelta = delta;
     this.lastTickTime = time;
     this.pointer.lerp(this.targetPointer, 0.055);
     this.applyDebugThumbProgress();

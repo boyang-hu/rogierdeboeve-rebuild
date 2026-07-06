@@ -181,12 +181,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `VA` ordinary work material emissive constructor ownership without changing shader text, render targets, visual constants, route data, auxiliary block materials, or `Se.setBlocksColor()` runtime fan-out.
-- Source evidence: `GA.createCube()` constructs `this.material=new VA({color:new ye("#808080")})`; source does not pass `emissive` into `VA`, so `MeshStandardMaterial` owns the constructor emissive default as black. Source `Se.setBlocksColor(e,t=1.6)` later owns block color by tweening every `J.workScene.blocks[*].instance.material.emissive`.
-- The rebuild now constructs ordinary work material with source black emissive, removes constructor-time `payload.blocks ?? DEFAULT_BG` binding, and keeps active project block color on the existing source-shaped `Se.setBlocksColor()` runtime path.
-- Output probes expose/assert `emissiveConstructorMode=source-VA-new-VA-color-only-emissive-default-black` and `emissiveConstructorWasBlack=true` for the active ordinary work material.
-- Renderer audit checks the mirrored `GA.createCube()` constructor anchor and rejects restoring `payload.blocks` or `DEFAULT_BG` inside the ordinary work material constructor.
-- Previous committed batch was `ae0a1f4 Align V1 low-res sky ticking`.
+- Aligned source `Bt/w0` RAF raw delta and start ownership without changing shader text, render targets, visual constants, route data, mouse normalization, or scene order.
+- Source evidence: `w0.getDelta()` returns `(now - oldTime) / 1000` with no min/max clamp; `Bt.frame()` passes that raw `delta` into each handler; `nD.update()` forwards it to the scene instances; `Bt.start()` schedules the first frame with `window.requestAnimationFrame(this.render)`.
+- The rebuild now uses raw `time - this.lastTickTime` delta, records `lastFrameDelta`, removes the rebuild-only `MathUtils.clamp(..., 1 / 120, 1 / 20)` frame clamp, and starts the delayed init lifecycle with `this.raf = requestAnimationFrame(this.tick)` instead of a synchronous first `tick()`.
+- Output probes expose/assert `frameDeltaMode=source-Bt-w0-getDelta-raw-no-min-max-clamp`, `frameDeltaClampApplied=false`, `frameStartMode=source-Bt-start-requestAnimationFrame-before-frame`, and a finite non-negative latest frame delta.
+- The existing `Ka.uPersistance` guardrail now expects source `Math.pow(persistance, delta * 10)` from the same raw frame delta instead of assuming fixed 60fps timing.
+- Renderer audit extracts the mirrored `w0/Bt` RAF manager anchors and rejects restoring the frame clamp or synchronous delayed-lifecycle first tick.
+- Previous committed batch was `218bee9 Align VA emissive constructor ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -200,28 +201,30 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-emissive-constructor-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-emissive-constructor-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-raf-delta-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-raf-delta-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-output-desktop VIEWPORT=desktop CDP_PORT=9341 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-output-mobile VIEWPORT=mobile CDP_PORT=9342 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-thumb VIEWPORT=desktop CDP_PORT=9343 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-emissive-constructor-media CDP_PORT=9344 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-delta-output-desktop VIEWPORT=desktop CDP_PORT=9351 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-delta-output-mobile VIEWPORT=mobile CDP_PORT=9352 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-delta-interactive VIEWPORT=desktop CDP_PORT=9353 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-delta-thumb VIEWPORT=desktop CDP_PORT=9354 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-raf-delta-media CDP_PORT=9355 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `VA` ordinary work emissive constructor batch. Renderer audit wrote `/tmp/rd-emissive-constructor-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the source black emissive constructor markers. Thumb spotlight probe passed and retained the thumb render-transfer guardrail. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `Bt/w0` RAF raw-delta batch. Renderer audit wrote `/tmp/rd-raf-delta-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed `frameDeltaMode=source-Bt-w0-getDelta-raw-no-min-max-clamp` plus `frameStartMode=source-Bt-start-requestAnimationFrame-before-frame`. Interactive mouse probe passed with the raw-delta `Ka.uPersistance` guardrail. Thumb spotlight probe passed and retained two visible thumbs. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this emissive constructor batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this RAF delta batch.
 
-Runtime QA was run because the batch touched Home WebGL ordinary work material construction and probe/audit coverage.
+Runtime QA was run because the batch touched Home WebGL frame timing and `Ka` timing guardrail coverage.
 
 Verified:
 
-- Renderer audit passed for the emissive constructor batch: `/tmp/rd-emissive-constructor-audit.json`.
+- Renderer audit passed for the RAF raw-delta batch: `/tmp/rd-raf-delta-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-emissive-constructor-output-desktop`, `/tmp/rd-emissive-constructor-output-mobile`.
-- Thumb spotlight probe passed: `/tmp/rd-emissive-constructor-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-emissive-constructor-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-raf-delta-output-desktop`, `/tmp/rd-raf-delta-output-mobile`.
+- Interactive mouse probe passed: `/tmp/rd-raf-delta-interactive`.
+- Thumb spotlight probe passed: `/tmp/rd-raf-delta-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-raf-delta-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
