@@ -1592,6 +1592,36 @@ const summary = {
         excerpt: compact(sourceL1.text),
       },
       rebuildConstructorNullInputSamplers: {
+        sourceBloomDirectionRuntimeAssignment: {
+          LuHorizontal:
+            sourceLu.text.includes("this.blurMaterials[p].uniforms.uDirection.value=bf"),
+          LuVertical:
+            sourceLu.text.includes("this.blurMaterials[p].uniforms.uDirection.value=Mf"),
+          I1Horizontal:
+            sourceMainI1.text.includes("this.blurMaterials[p].uniforms.uDirection.value=wf"),
+          I1Vertical:
+            sourceMainI1.text.includes("this.blurMaterials[p].uniforms.uDirection.value=Tf"),
+        },
+        rebuildBloomDirectionRuntimeAssignment: Boolean(rebuildRenderBloomChain)
+          && [
+            "private readonly sourceWorkBloomHorizontalDirection = new Vector2(1, 0);",
+            "private readonly sourceWorkBloomVerticalDirection = new Vector2(0, 1);",
+            "private readonly sourceMainBloomHorizontalDirection = new Vector2(1, 0);",
+            "private readonly sourceMainBloomVerticalDirection = new Vector2(0, 1);",
+            "blurMaterial.uniforms.uDirection.value = horizontalDirection;",
+            "blurMaterial.uniforms.uDirection.value = verticalDirection;",
+            "source-Lu-I1-rg-uDirection-value-shared-vector-assignment",
+          ].every((needle) => rebuildWebgl.includes(needle))
+          && rebuildCreateBloomBlurMaterial.includes("material.userData.sourceConstructorDirection")
+          && !rebuildRenderBloomChain.includes("blurMaterial.uniforms.uDirection.value.set"),
+        rebuildStandardBlurConstructorOwnsDirection: Boolean(rebuildCreateBlurMaterial)
+          && rebuildCreateBlurMaterial.includes("uDirection: { value: new Vector2(directionX, directionY) }")
+          && rebuildCreateBlurMaterial.includes("material.userData.sourceConstructorDirection")
+          && rebuildWebgl.includes("source-Na-constructor-direction-no-post-constructor-set")
+          && !rebuildWebgl.includes("workBlurHorizontalMaterial.uniforms.uDirection.value.set(1, 0)")
+          && !rebuildWebgl.includes("workBlurVerticalMaterial.uniforms.uDirection.value.set(0, 1)")
+          && !rebuildWebgl.includes("mainBlurHorizontalMaterial.uniforms.uDirection.value.set(1, 0)")
+          && !rebuildWebgl.includes("mainBlurVerticalMaterial.uniforms.uDirection.value.set(0, 1)"),
         lensflareTMapNull: Boolean(rebuildCreateLensflareMaterial?.includes("tMap: { value: null }")),
         luminosityTMapNull: Boolean(rebuildCreateLuminosityMaterial?.includes("tMap: { value: null }")),
         bloomBlurTMapNull: Boolean(rebuildCreateBloomBlurMaterial?.includes("tMap: { value: null }")),

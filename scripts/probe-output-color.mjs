@@ -1365,6 +1365,33 @@ async function runProbe() {
     }
     if (material?.hasSourceUnusedSamplers !== true) materialSurfaceErrors.push(`${key}SourceUnusedSamplers`);
     if (material?.unusedSamplerConstructorNull !== true) materialSurfaceErrors.push(`${key}UnusedSamplerConstructorNull`);
+    if (material?.directionAssignmentMode !== "source-Lu-I1-rg-uDirection-value-shared-vector-assignment") {
+      materialSurfaceErrors.push(`${key}DirectionAssignmentMode`);
+    }
+    if (bloomEnabled) {
+      if (material?.runtimeDirectionMode !== "source-enabled-loop-leaves-each-rg-on-shared-vertical-direction") {
+        materialSurfaceErrors.push(`${key}RuntimeDirectionMode`);
+      }
+      if (material?.runtimeUsesSourceVerticalDirection !== true) materialSurfaceErrors.push(`${key}RuntimeVerticalDirectionIdentity`);
+      if (material?.runtimeUsesSourceHorizontalDirection !== false) materialSurfaceErrors.push(`${key}RuntimeHorizontalDirectionIdentity`);
+      if (!Array.isArray(material?.runtimeDirections) || material.runtimeDirections.some((direction) => (
+        JSON.stringify(direction) !== JSON.stringify([0, 1])
+      ))) {
+        materialSurfaceErrors.push(`${key}RuntimeDirections`);
+      }
+    } else {
+      if (material?.runtimeDirectionMode !== "source-disabled-loop-not-run-keeps-constructor-direction") {
+        materialSurfaceErrors.push(`${key}RuntimeDirectionMode`);
+      }
+      if (material?.runtimeKeepsConstructorDirectionWhenDisabled !== true) {
+        materialSurfaceErrors.push(`${key}RuntimeConstructorDirectionWhenDisabled`);
+      }
+      if (!Array.isArray(material?.runtimeDirections) || material.runtimeDirections.some((direction) => (
+        JSON.stringify(direction) !== JSON.stringify([0.5, 0.5])
+      ))) {
+        materialSurfaceErrors.push(`${key}RuntimeDirections`);
+      }
+    }
     if (material?.resolutionResizeMode !== "source-Lu-I1-rg-uResolution-resize-loop") {
       materialSurfaceErrors.push(`${key}ResolutionResizeMode`);
     }
@@ -1409,6 +1436,12 @@ async function runProbe() {
       }
       if (JSON.stringify(material?.constructorResolution) !== JSON.stringify(expectedZeroResolutionConstructor)) {
         materialSurfaceErrors.push(`${group}${key}ConstructorResolution`);
+      }
+      if (JSON.stringify(material?.constructorDirection) !== JSON.stringify(key === "horizontal" ? [1, 0] : [0, 1])) {
+        materialSurfaceErrors.push(`${group}${key}ConstructorDirection`);
+      }
+      if (material?.directionConstructorOwnership !== "source-Na-constructor-direction-no-post-constructor-set") {
+        materialSurfaceErrors.push(`${group}${key}DirectionConstructorOwnership`);
       }
       if (material?.blending !== 0) materialSurfaceErrors.push(`${group}${key}Blending`);
       if (material?.hasBlurinessUniform !== true) materialSurfaceErrors.push(`${group}${key}BlurinessUniform`);

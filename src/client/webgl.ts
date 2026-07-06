@@ -4996,6 +4996,10 @@ export class WebGLBackdrop {
   private renderSettings = cloneSourceRenderSettings(SOURCE_HOME_RENDER_SETTINGS);
   private sourceMainRenderSettings: SourceRenderSettings = sourceRuntimeMainRenderSettings();
   private thumbRenderSettings = { renderToScreen: false };
+  private readonly sourceWorkBloomHorizontalDirection = new Vector2(1, 0);
+  private readonly sourceWorkBloomVerticalDirection = new Vector2(0, 1);
+  private readonly sourceMainBloomHorizontalDirection = new Vector2(1, 0);
+  private readonly sourceMainBloomVerticalDirection = new Vector2(0, 1);
   private noiseTexture = makePlaceholderTexture([255, 255, 255, 255]);
   private perlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
   private workPerlinTexture = makePlaceholderTexture([128, 128, 128, 255]);
@@ -5362,17 +5366,13 @@ export class WebGLBackdrop {
     this.mainBloomVerticalTargets = Array.from({ length: 5 }, () => this.mainRawTarget.clone());
     this.workRawTarget.depthBuffer = true;
     this.workBlurHorizontalMaterial = this.createBlurMaterial(1, 0);
-    this.workBlurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
     this.workBlurVerticalMaterial = this.createBlurMaterial(0, 1);
-    this.workBlurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
     this.workFxaaMaterial = this.createFxaaMaterial();
     this.workLuminosityMaterial = this.createLuminosityMaterial(this.renderSettings);
     this.bloomBlurMaterials = this.createBloomBlurMaterials();
     this.bloomCompositeMaterial = this.createBloomCompositeMaterial(this.workBloomVerticalTargets);
     this.mainBlurHorizontalMaterial = this.createBlurMaterial(1, 0);
-    this.mainBlurHorizontalMaterial.uniforms.uDirection.value.set(1, 0);
     this.mainBlurVerticalMaterial = this.createBlurMaterial(0, 1);
-    this.mainBlurVerticalMaterial.uniforms.uDirection.value.set(0, 1);
     this.mainFxaaMaterial = this.createFxaaMaterial();
     this.mainLuminosityMaterial = this.createLuminosityMaterial(this.sourceMainRenderSettings);
     this.mainBloomBlurMaterials = this.createBloomBlurMaterials();
@@ -6858,6 +6858,7 @@ export class WebGLBackdrop {
       fragmentShader: homeBlurFragment,
     });
     material.userData.sourceConstructorResolution = (material.uniforms.uResolution.value as Vector2).toArray();
+    material.userData.sourceConstructorDirection = (material.uniforms.uDirection.value as Vector2).toArray();
     return material;
   }
 
@@ -9152,7 +9153,12 @@ void main() {
       threshold: material.uniforms.uThreshold.value,
       smoothing: material.uniforms.uSmoothing.value,
     });
-    const bloomBlurProbe = (materials: ShaderMaterial[]) => ({
+    const bloomBlurProbe = (
+      materials: ShaderMaterial[],
+      horizontalDirection: Vector2,
+      verticalDirection: Vector2,
+      bloomEnabled: boolean,
+    ) => ({
       blending: materials[0]?.blending ?? null,
       materialMode: "source-rg-raw-glsl3",
       glslVersion: (materials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
@@ -9173,6 +9179,23 @@ void main() {
       kernelDefines: materials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
       sigmaDefines: materials.map((material) => material.defines?.SIGMA ?? null),
       runtimeKernelUniforms: materials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
+      directionAssignmentMode: "source-Lu-I1-rg-uDirection-value-shared-vector-assignment",
+      runtimeDirectionMode: bloomEnabled
+        ? "source-enabled-loop-leaves-each-rg-on-shared-vertical-direction"
+        : "source-disabled-loop-not-run-keeps-constructor-direction",
+      runtimeDirections: materials.map((material) => (material.uniforms.uDirection.value as Vector2).toArray()),
+      runtimeUsesSourceVerticalDirection: bloomEnabled
+        ? materials.every((material) => material.uniforms.uDirection.value === verticalDirection)
+        : null,
+      runtimeUsesSourceHorizontalDirection: bloomEnabled
+        ? materials.every((material) => material.uniforms.uDirection.value === horizontalDirection)
+        : null,
+      runtimeKeepsConstructorDirectionWhenDisabled: !bloomEnabled
+        ? materials.every((material) => {
+          const direction = (material.uniforms.uDirection.value as Vector2).toArray();
+          return JSON.stringify(direction) === JSON.stringify(material.userData.sourceConstructorDirection);
+        })
+        : null,
       resolutionResizeMode: "source-Lu-I1-rg-uResolution-resize-loop",
       resolutionUpdateMode: "source-Lu-I1-rg-update-keeps-resize-resolution",
       resolutions: materials.map((material) => (material.uniforms.uResolution.value as Vector2).toArray()),
@@ -9191,6 +9214,8 @@ void main() {
         screenMode,
         resizeMode,
         constructorResolution: horizontalMaterial.userData.sourceConstructorResolution,
+        constructorDirection: horizontalMaterial.userData.sourceConstructorDirection,
+        directionConstructorOwnership: "source-Na-constructor-direction-no-post-constructor-set",
         hasBlurinessUniform: "uBluriness" in horizontalMaterial.uniforms,
         hasKernelDefines: Boolean(horizontalMaterial.defines?.KERNEL_RADIUS || horizontalMaterial.defines?.SIGMA),
         direction: (horizontalMaterial.uniforms.uDirection.value as Vector2).toArray(),
@@ -9206,6 +9231,8 @@ void main() {
         screenMode,
         resizeMode,
         constructorResolution: verticalMaterial.userData.sourceConstructorResolution,
+        constructorDirection: verticalMaterial.userData.sourceConstructorDirection,
+        directionConstructorOwnership: "source-Na-constructor-direction-no-post-constructor-set",
         hasBlurinessUniform: "uBluriness" in verticalMaterial.uniforms,
         hasKernelDefines: Boolean(verticalMaterial.defines?.KERNEL_RADIUS || verticalMaterial.defines?.SIGMA),
         direction: (verticalMaterial.uniforms.uDirection.value as Vector2).toArray(),
@@ -10004,7 +10031,12 @@ void main() {
           luminosity: luminosityProbe(this.mainLuminosityMaterial),
           workLuminosity: luminosityProbe(this.workLuminosityMaterial),
           mainLuminosity: luminosityProbe(this.mainLuminosityMaterial),
-          bloomBlur: bloomBlurProbe(this.bloomBlurMaterials),
+          bloomBlur: bloomBlurProbe(
+            this.bloomBlurMaterials,
+            this.sourceWorkBloomHorizontalDirection,
+            this.sourceWorkBloomVerticalDirection,
+            this.renderSettings.bloom.enabled,
+          ),
           bloomComposite: {
             blending: this.bloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
@@ -10023,7 +10055,12 @@ void main() {
             hasRebuildBloomUniforms: [1, 2, 3, 4, 5].some((index) => `tBloom${index}` in this.bloomCompositeMaterial.uniforms),
             hasRebuildFactorUniforms: [1, 2, 3, 4, 5].some((index) => `uFactor${index}` in this.bloomCompositeMaterial.uniforms),
           },
-          mainBloomBlur: bloomBlurProbe(this.mainBloomBlurMaterials),
+          mainBloomBlur: bloomBlurProbe(
+            this.mainBloomBlurMaterials,
+            this.sourceMainBloomHorizontalDirection,
+            this.sourceMainBloomVerticalDirection,
+            this.sourceMainRenderSettings.bloom.enabled,
+          ),
           mainBloomComposite: {
             blending: this.mainBloomCompositeMaterial.blending,
             materialMode: "source-cg-raw-glsl3",
@@ -11093,6 +11130,8 @@ void main() {
     blurMaterials: ShaderMaterial[],
     screen: Mesh<BufferGeometry, Material>,
     compositeMaterial: ShaderMaterial,
+    horizontalDirection: Vector2,
+    verticalDirection: Vector2,
     brightTarget?: WebGLRenderTarget,
   ) {
     let bloomSource = brightTarget ?? sourceTarget;
@@ -11100,12 +11139,12 @@ void main() {
       const verticalTarget = verticalTargets[index];
       const blurMaterial = blurMaterials[index] ?? blurMaterials[blurMaterials.length - 1];
       blurMaterial.uniforms.tMap.value = bloomSource.texture;
-      blurMaterial.uniforms.uDirection.value.set(1, 0);
+      blurMaterial.uniforms.uDirection.value = horizontalDirection;
       screen.material = blurMaterial;
       this.renderer.setRenderTarget(horizontalTarget);
       this.renderer.render(screen, this.backgroundCamera);
       blurMaterial.uniforms.tMap.value = horizontalTarget.texture;
-      blurMaterial.uniforms.uDirection.value.set(0, 1);
+      blurMaterial.uniforms.uDirection.value = verticalDirection;
       this.renderer.setRenderTarget(verticalTarget);
       this.renderer.render(screen, this.backgroundCamera);
       bloomSource = verticalTarget;
@@ -11131,6 +11170,8 @@ void main() {
       this.bloomBlurMaterials,
       this.workPostScreen,
       this.bloomCompositeMaterial,
+      this.sourceWorkBloomHorizontalDirection,
+      this.sourceWorkBloomVerticalDirection,
       brightTarget,
     );
   }
@@ -11143,6 +11184,8 @@ void main() {
       this.mainBloomBlurMaterials,
       this.mainPostScreen,
       this.mainBloomCompositeMaterial,
+      this.sourceMainBloomHorizontalDirection,
+      this.sourceMainBloomVerticalDirection,
       this.sourceMainRenderSettings.luminosity.enabled ? this.mainBloomBrightTarget : undefined,
     );
   }
