@@ -411,6 +411,9 @@ async function runProbe() {
     if (reflectionTargets.rawClearMode !== "source-i1-conditional-clear-when-autoClear-false") reflectionErrors.push("rawClearMode");
     if (reflectionTargets.cameraProjectionCopyOrder !== "source-updateMatrixWorld-before-projection-copy") reflectionErrors.push("cameraProjectionCopyOrder");
     if (reflectionTargets.blurPassScreenMode !== "source-i1-private-screen-camera") reflectionErrors.push("blurPassScreenMode");
+    if (reflectionTargets.constructorMode !== "source-i1-default-width-height-512-blurIterations-2") reflectionErrors.push("constructorMode");
+    if (reflectionTargets.constructorWidth !== 512 || reflectionTargets.constructorHeight !== 512) reflectionErrors.push("constructorSize");
+    if (reflectionTargets.blurIterations !== 2) reflectionErrors.push("blurIterations");
     if (reflectionTargets.sourceCssSized !== true) reflectionErrors.push("sourceCssSized");
   }
   if (reflectionErrors.length) {
@@ -1270,6 +1273,24 @@ async function runProbe() {
   if (reflectionTargets?.blurTMapConstructorMode !== "source-t1-tMap-construct-null-update-loop-binds") {
     floorErrors.push("blurTMapConstructorMode");
   }
+  if (reflectionTargets?.constructorMode !== "source-i1-default-width-height-512-blurIterations-2") floorErrors.push("reflectionConstructorMode");
+  if (reflectionTargets?.constructorWidth !== 512 || reflectionTargets?.constructorHeight !== 512) floorErrors.push("reflectionConstructorSize");
+  if (reflectionTargets?.blurIterations !== 2) floorErrors.push("reflectionBlurIterations");
+  if (reflectionTargets?.renderTargetUniformConstructorMode !== "source-i1-positive-blurIterations-initial-read-texture") {
+    floorErrors.push("reflectionRenderTargetUniformConstructorMode");
+  }
+  if (reflectionTargets?.blurConstructorResolutionMode !== "source-i1-sets-t1-uResolution-to-constructor-width-height") {
+    floorErrors.push("reflectionBlurConstructorResolutionMode");
+  }
+  if (JSON.stringify(reflectionTargets?.blurConstructorResolution) !== JSON.stringify([512, 512])) {
+    floorErrors.push(`reflectionBlurConstructorResolution=${JSON.stringify(reflectionTargets?.blurConstructorResolution || null)}`);
+  }
+  if (reflectionTargets?.blurDirectionMode !== "source-i1-direction-(blurIterations-u-1)*15-axis-by-iteration") {
+    floorErrors.push("reflectionBlurDirectionMode");
+  }
+  if (JSON.stringify(reflectionTargets?.blurExpectedDirections) !== JSON.stringify([[15, 0], [0, 0]])) {
+    floorErrors.push(`reflectionBlurExpectedDirections=${JSON.stringify(reflectionTargets?.blurExpectedDirections || null)}`);
+  }
   if (reflectionTargets?.blurPassScreenMode !== "source-i1-private-screen-camera") floorErrors.push("blurPassScreenMode");
   if (reflectionTargets?.floorVisibilityMode !== "source-a1-onBeforeRender-hide-component-group") floorErrors.push("floorVisibilityMode");
   if (reflectionTargets?.clipBias !== 0) floorErrors.push("clipBias");
@@ -1280,6 +1301,13 @@ async function runProbe() {
   if (reflectionTargets?.readDepthBufferFromCloneBeforeRawToggle !== false) floorErrors.push("reflectionReadCloneDepthBuffer");
   if (reflectionTargets?.writeDepthBufferFromCloneBeforeRawToggle !== false) floorErrors.push("reflectionWriteCloneDepthBuffer");
   if (floorUniforms?.reflectionTargetSize?.constructionDepthBuffer !== false) floorErrors.push("floorRawConstructionDepthBuffer");
+  if (floorUniforms?.reflectionTargetSize?.constructorMode !== "source-i1-default-width-height-512-blurIterations-2") {
+    floorErrors.push("floorReflectionConstructorMode");
+  }
+  if (floorUniforms?.reflectionTargetSize?.constructorWidth !== 512 || floorUniforms?.reflectionTargetSize?.constructorHeight !== 512) {
+    floorErrors.push("floorReflectionConstructorSize");
+  }
+  if (floorUniforms?.reflectionTargetSize?.blurIterations !== 2) floorErrors.push("floorReflectionBlurIterations");
   if (floorUniforms?.reflectionTargetSize?.runtimeDepthBuffer !== true) floorErrors.push("floorRawRuntimeDepthBuffer");
   if (floorUniforms?.reflectionReadTargetSize?.constructionMode !== "source-i1-renderTargetRead-cloned-before-raw-depthBuffer-toggle") floorErrors.push("floorReadCloneMode");
   if (floorUniforms?.reflectionWriteTargetSize?.constructionMode !== "source-i1-renderTargetWrite-cloned-before-raw-depthBuffer-toggle") floorErrors.push("floorWriteCloneMode");

@@ -3452,6 +3452,10 @@ function makeSourceRenderTarget(depthBuffer = false) {
   return new WebGLRenderTarget(1, 1, { depthBuffer, stencilBuffer: false });
 }
 
+const SOURCE_I1_REFLECTION_WIDTH = 512;
+const SOURCE_I1_REFLECTION_HEIGHT = 512;
+const SOURCE_I1_REFLECTION_BLUR_ITERATIONS = 2;
+
 function makeFluidRenderTarget() {
   const target = new WebGLRenderTarget(1, 1, { depthBuffer: false, stencilBuffer: false, type: FloatType });
   target.texture.generateMipmaps = false;
@@ -3879,13 +3883,18 @@ export class WebGLBackdrop {
   private displacementMaterial: ShaderMaterial;
   private displacementRawTarget = makeSourceRenderTarget(false);
   private displacementTarget = this.displacementRawTarget.clone();
-  private floorReflectionTarget = new WebGLRenderTarget(1, 1, { depthBuffer: false });
+  private floorReflectionTarget = new WebGLRenderTarget(SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT, { depthBuffer: false });
   private floorReflectionReadTarget = this.floorReflectionTarget.clone();
   private floorReflectionWriteTarget = this.floorReflectionTarget.clone();
+  private readonly floorReflectionBlurIterations = SOURCE_I1_REFLECTION_BLUR_ITERATIONS;
   private floorReflectionCamera = new PerspectiveCamera();
   private floorReflectionMatrix = new Matrix4();
   private floorReflectionTextureMatrixUniform = { value: this.floorReflectionMatrix };
-  private floorReflectionRenderTargetUniform = { value: this.floorReflectionReadTarget.texture };
+  private floorReflectionRenderTargetUniform = {
+    value: this.floorReflectionBlurIterations > 0
+      ? this.floorReflectionReadTarget.texture
+      : this.floorReflectionTarget.texture,
+  };
   private floorReflectorPlane = new Plane();
   private floorReflectorNormal = new Vector3(0, 1, 0);
   private floorReflectorWorldPosition = new Vector3();
@@ -4162,6 +4171,7 @@ export class WebGLBackdrop {
     this.displacementMaterial = this.createDisplacementMaterial();
     this.floorReflectionTarget.depthBuffer = true;
     this.floorReflectionBlurMaterial = this.createFloorReflectionBlurMaterial();
+    this.floorReflectionBlurMaterial.uniforms.uResolution.value.set(SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT);
     this.floorReflectionScreen = makeFullscreenTriangle(this.floorReflectionBlurMaterial);
     this.screenMouseSimulationMaterial = this.createMouseSimulationMaterial(window.innerWidth / Math.max(1, window.innerHeight));
     this.screenMouseSimulationTargets = Array.from({ length: 2 }, makeSimulationTarget);
@@ -5439,7 +5449,7 @@ export class WebGLBackdrop {
       uniforms: {
         tMap: { value: null },
         uDirection: { value: new Vector2(1, 0) },
-        uResolution: { value: new Vector2(1, 1) },
+        uResolution: { value: new Vector2() },
       },
       vertexShader: floorReflectionBlurVertex,
       fragmentShader: floorReflectionBlurFragment,
@@ -7243,13 +7253,14 @@ void main() {
         this.floorReflectionWriteTarget = swap;
         this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture);
       } else {
+        const blurIterations = this.floorReflectionBlurIterations;
         let readTarget = this.floorReflectionReadTarget;
         let writeTarget = this.floorReflectionWriteTarget;
-        for (let iteration = 0; iteration < 2; iteration += 1) {
+        for (let iteration = 0; iteration < blurIterations; iteration += 1) {
           this.floorReflectionBlurMaterial.uniforms.tMap.value = iteration === 0
             ? this.floorReflectionTarget.texture
             : readTarget.texture;
-          const direction = (2 - iteration - 1) * 15;
+          const direction = (blurIterations - iteration - 1) * 15;
           this.floorReflectionBlurMaterial.uniforms.uDirection.value.set(
             iteration % 2 === 0 ? direction : 0,
             iteration % 2 === 0 ? 0 : direction,
@@ -8239,6 +8250,10 @@ void main() {
           reflectionTargetSize: {
             width: this.floorReflectionTarget.width,
             height: this.floorReflectionTarget.height,
+            constructorMode: "source-i1-default-width-height-512-blurIterations-2",
+            constructorWidth: SOURCE_I1_REFLECTION_WIDTH,
+            constructorHeight: SOURCE_I1_REFLECTION_HEIGHT,
+            blurIterations: this.floorReflectionBlurIterations,
             constructionDepthBuffer: false,
             runtimeDepthBuffer: this.floorReflectionTarget.depthBuffer,
           },
@@ -8589,6 +8604,13 @@ void main() {
       },
       targets: {
         raw: renderTargetSummary(this.floorReflectionTarget),
+        constructorMode: "source-i1-default-width-height-512-blurIterations-2",
+        constructorWidth: SOURCE_I1_REFLECTION_WIDTH,
+        constructorHeight: SOURCE_I1_REFLECTION_HEIGHT,
+        blurIterations: this.floorReflectionBlurIterations,
+        renderTargetUniformConstructorMode: this.floorReflectionBlurIterations > 0
+          ? "source-i1-positive-blurIterations-initial-read-texture"
+          : "source-i1-zero-blurIterations-initial-raw-texture",
         rawConstructionDepthBuffer: false,
         rawRuntimeDepthBuffer: this.floorReflectionTarget.depthBuffer,
         read: renderTargetSummary(this.floorReflectionReadTarget),
@@ -8604,7 +8626,14 @@ void main() {
         blurMaterialBlending: this.floorReflectionBlurMaterial.blending,
         blurMaterialMode: "source-t1-raw-glsl3",
         blurTMapConstructorMode: "source-t1-tMap-construct-null-update-loop-binds",
+        blurConstructorResolutionMode: "source-i1-sets-t1-uResolution-to-constructor-width-height",
+        blurConstructorResolution: [SOURCE_I1_REFLECTION_WIDTH, SOURCE_I1_REFLECTION_HEIGHT],
         blurPassScreenMode: "source-i1-private-screen-camera",
+        blurDirectionMode: "source-i1-direction-(blurIterations-u-1)*15-axis-by-iteration",
+        blurExpectedDirections: Array.from({ length: this.floorReflectionBlurIterations }, (_, iteration) => {
+          const direction = (this.floorReflectionBlurIterations - iteration - 1) * 15;
+          return [iteration % 2 === 0 ? direction : 0, iteration % 2 === 0 ? 0 : direction];
+        }),
         reflectionUniformOwnership: "source-a1-uses-i1-renderTargetUniform-and-textureMatrixUniform",
         tReflectUniformShared: this.floorMaterial.uniforms.tReflect === this.floorReflectionRenderTargetUniform,
         uMatrixUniformShared: this.floorMaterial.uniforms.uMatrix === this.floorReflectionTextureMatrixUniform,

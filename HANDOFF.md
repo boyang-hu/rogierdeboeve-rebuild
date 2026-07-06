@@ -143,12 +143,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Strengthened the source `p1` floor/environment hierarchy rotation guardrail without production visual changes.
-- `WebGLBackdrop` now records `environmentRotationSource` metadata from the source `demorgen` index path: project count, theta, rotation adjustment, and expected environment `rotation.y`.
-- `__rogierOutputProbe` now exposes source `sceneWrap` child order `["blocksWrap","floor","env"]`, environment rotation metadata, and `rotationMatchesSource` under both reflection state and environment uniforms.
-- `scripts/probe-output-color.mjs` now asserts source child order, `thetaDegrees`, expected rotation Y, matching group rotation, and reflection/uniform rotation parity.
-- Renderer audit now checks source `p1` hierarchy anchors plus rebuild/probe coverage for `environmentGroup.rotation.y = -MathUtils.degToRad(rotationAdjustment)`.
-- Desktop and mobile output probes confirmed `demorgenIndex=8`, `count=10`, `thetaDegrees=36`, `rotationAdjustmentDegrees=-288`, `expectedRotationY=5.026548245743669`, and `rotationMatchesSource=true`.
+- Aligned source `i1` floor-reflector constructor defaults without screenshot-led tuning.
+- Floor reflection raw/read/write targets now start from source `512x512` constructor dimensions before the existing source resize path.
+- `floorReflectionBlurIterations` now owns source default `2`, and the blur loop derives directions from `(blurIterations - iteration - 1) * 15`.
+- `floorReflectionRenderTargetUniform` now initializes through the source positive-blur conditional, using the read texture when `blurIterations > 0`.
+- `floorReflectionBlurMaterial.uResolution` now follows source `t1` / `i1` construction: empty vector from `t1`, then `512,512` set by `i1` constructor ownership before later resize writes CSS viewport dimensions.
+- `__rogierOutputProbe`, `scripts/probe-output-color.mjs`, and renderer audit now guard constructor mode, default size, blur iteration count, constructor resolution, and expected blur directions `[[15,0],[0,0]]`.
 - Phase 1 remains open for actual floor/environment distribution parity, spotlight/thumb projection transfer feel, and broader `kA/Lu/I1` transfer/composite interpretation.
 
 ## Validation Status
@@ -162,22 +162,22 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-node scripts/audit-renderer-output.mjs > /tmp/rd-env-rotation-audit.json
+node scripts/audit-renderer-output.mjs > /tmp/rd-i1-constructor-audit.json
 ```
 
-All passed in the `p1` environment hierarchy rotation guardrail batch.
+All passed in the `i1` floor-reflector constructor defaults batch.
 
 Runtime QA was done with local Chrome CDP scripts.
 
 Verified:
 
 - Home loads with `.gl-canvas`.
-- Renderer audit reports `sourceManagers.p1EnvironmentHierarchy` source checks, rebuild checks, and rebuild probe checks as true.
-- Desktop output probe passed with source `sceneWrap` child order, `demorgenIndex=8`, `count=10`, `thetaDegrees=36`, `rotationAdjustmentDegrees=-288`, `expectedRotationY=5.026548245743669`, and `rotationMatchesSource=true`.
-- Mobile output probe passed with the same source child order and rotation metadata.
-- Desktop and mobile thumb projection probes passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, nonzero map luma, and mobile `mobileYOffset=0.3`.
+- Renderer audit reports `sourceManagers.i1` source checks, rebuild checks, and rebuild probe checks as true.
+- Desktop output probe passed with `constructorWidth=512`, `constructorHeight=512`, `blurIterations=2`, `renderTargetUniformConstructorMode=source-i1-positive-blurIterations-initial-read-texture`, `blurConstructorResolution=[512,512]`, and `blurExpectedDirections=[[15,0],[0,0]]`.
+- Mobile output probe passed with the same source constructor/default reflection fields.
+- Desktop thumb projection probe passed with source spotlight/thumb guardrails intact, `3/9` in-map spotlight samples, and nonzero map luma.
 - Project media probe confirms `gc-2026` and `hashgraph-vc` retained `5/5` visible media tracks with no failures/exceptions/console messages; project-media remains a regression gate, not proof of Home parity.
-- Existing source render-manager, active reveal, spotlight map, color-state, environment hierarchy, and project-media guardrails remain in the audit/probe surface.
+- Existing source render-manager, active reveal, spotlight map, color-state, environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 
