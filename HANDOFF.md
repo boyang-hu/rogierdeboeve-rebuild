@@ -143,14 +143,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Replaced the Three examples rounded-box helper with a source-shaped local `mg` geometry builder.
-- Source `class mg extends Vt` defaults `radiusSegments` to `1`, clamps `new mg(e,e,e,.05)` to radius `.05`, emits indexed `position/normal/uv`, and writes all UVs to `.5,.5`.
-- Ordinary `GA` work blocks and about `$A` blocks now use `sourceRoundedBoxGeometry(GRID_CUBE_SIZE, GRID_CUBE_SIZE, GRID_CUBE_SIZE, 0.05)`.
-- Floating `ZA` blocks remain `BoxGeometry(0.5,0.5,0.5)`, matching source `new Cr(e,e,e)`.
-- `__rogierOutputProbe.settings.work` now exposes `activeGeometry`, `aboutGeometry`, and `floatingGeometry`.
-- `scripts/probe-output-color.mjs` hard-fails on source `mg` geometry drift: indexed, `position/normal/uv=24`, `index=132`, radius `.05`, `radiusSegments=1`, centered UVs, and `ZA` box geometry.
-- Renderer audit now checks source `mg/GA/$A/ZA` anchors plus rebuild/probe coverage.
-- The previous ray-plane scale batch is committed as `98f97d0 Align GA ray plane scale`.
+- Added the missing source `U1/I1` lensflare mouse input path as a guardrail without enabling lensflare or changing default visuals.
+- Source `U1.onMouseMove({x:e,y:t})` calls `renderManager.setLightPosition(0,1-t/Pe.h)`.
+- Source `I1.setLightPosition(e,t)` writes `lensflareMaterial.uniforms.uLightPosition` only when `settings.lensflare.enabled`.
+- The rebuild now calls `setMainLensflareLightPosition(0, 1 - event.clientY / window.innerHeight)` from the shared mouse handler, with the same disabled-lensflare no-op guard.
+- `__rogierOutputProbe.uniforms.lensflare` exposes `setLightPositionMode`, `mouseMoveInputMode`, and disabled no-mutation state.
+- `scripts/probe-output-color.mjs` and renderer audit hard-fail on this path drifting.
+- The previous rounded block geometry batch is committed as `6684052 Align source rounded block geometry`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status

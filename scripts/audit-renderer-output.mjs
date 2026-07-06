@@ -1441,6 +1441,7 @@ const summary = {
         "this.screen=new at(this.screenGeometry)",
         "this.screen.frustumCulled=!1",
         "this.renderTargetLensflare=this.renderTargetA.clone()",
+        "setLightPosition(e,t){this.settings.lensflare.enabled&&this.lensflareMaterial.uniforms.uLightPosition.value.set(e,t)}",
         "this.settings.lensflare.enabled&&this.lensflareMaterial.uniforms.uResolution.value.set(e/8,t/8)",
         "e=Fa(e)/2,t=Fa(t)/2",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
@@ -1500,6 +1501,13 @@ const summary = {
           "this.mainBloomCompositeMaterial = this.createBloomCompositeMaterial(this.mainBloomVerticalTargets, this.sourceMainRenderSettings);",
           "mainMaterialOwnership: \"source-I1-pass-materials-owned-by-main-render-manager\"",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceSetLightPositionGuard:
+          sourceMainI1.text.includes("setLightPosition(e,t){this.settings.lensflare.enabled&&this.lensflareMaterial.uniforms.uLightPosition.value.set(e,t)}"),
+        rebuildSetLightPositionGuard:
+          rebuildWebgl.includes("private setMainLensflareLightPosition(x: number, y: number)") &&
+          rebuildWebgl.includes("if (!SOURCE_MAIN_LENSFLARE_SETTINGS.enabled || !this.mainLensflareMaterial) return;") &&
+          rebuildWebgl.includes("(this.mainLensflareMaterial.uniforms.uLightPosition.value as Vector2).set(x, y);") &&
+          rebuildWebgl.includes("setLightPositionMode: \"source-I1-setLightPosition-guards-lensflare-enabled\""),
         rebuildNoSharedPassMaterialFields: [
           "private luminosityMaterial: ShaderMaterial;",
           "private blurHorizontalMaterial: ShaderMaterial;",
@@ -1624,6 +1632,7 @@ const summary = {
       checks: checks(sourceMainU1Scene.text, [
         "class U1 extends yg",
         "this.scene.background=new ye(\"#D9D9D9\").convertLinearToSRGB()",
+        "onMouseMove({x:e,y:t}){this.renderManager&&this.renderManager.setLightPosition(0,1-t/Pe.h)}",
         "setRenderManager(){this.renderManager=new I1(this.renderer,this.scene,this.camera)}",
         "update(e,t,n){super.update(e,t,n),this.renderManager.compositeMaterial.update(e,t,n)}",
         "resize(e,t,n){super.resize(e,t,n),this.renderManager.compositeMaterial.resize(e,t)}",
@@ -1632,6 +1641,9 @@ const summary = {
         mainRawCameraMode: rebuildWebgl.includes("mainRawCameraMode: \"source-yg-perspective-distance-1000-no-camera-controller\""),
         mainRawRenderCamera: rebuildWebgl.includes("mainRawRenderCamera: \"source-U1-I1-renderTargetA-uses-yg-camera\""),
         c1UpdateOrder: rebuildWebgl.includes("uTimeUpdateOrder: \"source-U1-C1-update-after-I1-render\""),
+        lensflareMouseMoveInput:
+          rebuildWebgl.includes("this.setMainLensflareLightPosition(0, 1 - event.clientY / Math.max(1, window.innerHeight));") &&
+          rebuildWebgl.includes("mouseMoveInputMode: \"source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h\""),
       },
       excerpt: compact(sourceMainU1Scene.text),
     },

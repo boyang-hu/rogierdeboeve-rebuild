@@ -1053,6 +1053,15 @@ async function runProbe() {
   const lensflareUniforms = parsed.probe.uniforms?.lensflare;
   if (lensflareUniforms?.screenMode !== "source-I1-mainPostScreen-material-swap") materialSurfaceErrors.push("lensflareScreenMode");
   if (lensflareUniforms?.ownership !== "source-I1-lensflareMaterial-created-only-when-enabled") materialSurfaceErrors.push("lensflareOwnership");
+  if (lensflareUniforms?.setLightPositionMode !== "source-I1-setLightPosition-guards-lensflare-enabled") {
+    materialSurfaceErrors.push("lensflareSetLightPositionMode");
+  }
+  if (lensflareUniforms?.mouseMoveInputMode !== "source-U1-onMouseMove-setLightPosition-0-1-y-over-Pe-h") {
+    materialSurfaceErrors.push("lensflareMouseMoveInputMode");
+  }
+  if (lensflareUniforms?.defaultDisabledNoMaterialMutation !== true) {
+    materialSurfaceErrors.push("lensflareDefaultDisabledNoMaterialMutation");
+  }
   if (lensflareUniforms?.enabled !== false) materialSurfaceErrors.push("lensflareDefaultEnabled");
   if (lensflareUniforms?.materialCreated !== false) materialSurfaceErrors.push("lensflareDefaultMaterialCreated");
   if (lensflareUniforms?.materialMode !== null) materialSurfaceErrors.push("lensflareDefaultMaterialMode");
