@@ -4109,77 +4109,6 @@ const fluidPressureFragment = `precision mediump float;
 #define GLSLIFY 1
 uniform sampler2D pressure;uniform sampler2D velocity;uniform float dt;uniform vec2 px;in vec2 vUv;out vec4 FragColor;void main(){float step=1.0;float p0=texture(pressure,vUv+vec2(px.x*step,0)).r;float p1=texture(pressure,vUv-vec2(px.x*step,0)).r;float p2=texture(pressure,vUv+vec2(0,px.y*step)).r;float p3=texture(pressure,vUv-vec2(0,px.y*step)).r;vec2 v=texture(velocity,vUv).xy;vec2 gradP=vec2(p0-p1,p2-p3)*0.5;v=v-dt*gradP;FragColor=vec4(v,0.0,1.0);}`;
 
-const backgroundFragment = `
-precision highp float;
-
-uniform float uTime;
-uniform float uRatio;
-uniform float uFluidStrength;
-uniform float uProgress;
-uniform vec3 uBgColor;
-uniform vec3 uActiveColor;
-uniform vec3 uAmbientColor;
-uniform float uAmbientIntensity;
-
-varying vec2 vUv;
-
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-}
-
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
-    mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-    u.y
-  );
-}
-
-float fbm(vec2 p) {
-  float f = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 5; i++) {
-    f += a * noise(p);
-    p = p * 2.02 + 13.17;
-    a *= 0.5;
-  }
-  return f;
-}
-
-float vignette(vec2 uv, float inner, float outer) {
-  vec2 p = uv - 0.5;
-  p.x *= uRatio;
-  return smoothstep(outer, inner, length(p));
-}
-
-void main() {
-  vec2 uv = vUv;
-  vec2 p = uv - 0.5;
-  p.x *= uRatio;
-
-  float flowA = fbm(p * 2.3 + vec2(uTime * -0.035 + uProgress, uTime * -0.018));
-  float flowB = fbm(p * 5.0 + vec2(uTime * 0.02, uTime * -0.03));
-  float fluid = mix(flowA, flowB, 0.38);
-  float rings = abs(1.0 / (sin(pow(length(p) * 0.9, 0.25) - uTime * 0.35 + sin(length(p) * 0.8 - 1.6)) * 10.8)) - 0.1;
-
-  vec3 deep = mix(uBgColor, vec3(0.015, 0.018, 0.032), 0.65);
-  vec3 accent = mix(uActiveColor, uAmbientColor, clamp(uAmbientIntensity, 0.0, 1.4) * 0.28);
-  vec3 color = deep;
-  color = mix(color, accent, 0.22 + fluid * 0.34);
-  color += accent * rings * 0.095 * uFluidStrength;
-  color += vec3(flowB) * 0.05;
-
-  float v = vignette(uv, 0.05, 0.84);
-  color *= 0.52 + v * 0.98;
-  color += accent * pow(max(0.0, 1.0 - length(p * vec2(0.8, 1.15))), 3.0) * 0.2;
-
-  gl_FragColor = vec4(color, 1.0);
-}
-`;
-
 const skyCompositeFragment = `
 precision highp float;
 
@@ -5106,7 +5035,6 @@ export class WebGLBackdrop {
   private root: HTMLElement;
   private renderer: WebGLRenderer;
   private mainScene = new Scene();
-  private backgroundScene = new Scene();
   private homeScene = new Scene();
   private skyScene = new Scene();
   private thumbScene = new Scene();
@@ -5180,7 +5108,6 @@ export class WebGLBackdrop {
   private skyCompositeMaterial: ShaderMaterial;
   private skyRawTarget = makeSourceRenderTarget(false);
   private skyCompositeTarget = this.skyRawTarget.clone();
-  private backgroundMaterial: ShaderMaterial;
   private compositeMaterial: ShaderMaterial;
   private workRawTarget = makeSourceRenderTarget(false);
   private workTargetB = this.workRawTarget.clone();
@@ -5586,8 +5513,6 @@ export class WebGLBackdrop {
     this.homeScene.add(this.spotLight.target);
     this.homeScene.add(this.directionalLight);
     this.skyCompositeMaterial = this.createSkyCompositeMaterial();
-    this.backgroundMaterial = this.createBackgroundMaterial();
-    this.backgroundScene.add(makeFullscreenTriangle(this.backgroundMaterial));
     this.preCompositeMaterial = this.createPreCompositeMaterial();
     this.mainCompositeMaterial = this.createMainCompositeMaterial();
     if (SOURCE_MAIN_LENSFLARE_SETTINGS.enabled) {
@@ -6342,7 +6267,6 @@ export class WebGLBackdrop {
       item?.mouseTargets?.forEach((target) => target.dispose());
       item?.mouseMaterial?.dispose();
     });
-    this.backgroundMaterial.dispose();
     this.workRawTarget.dispose();
     this.workTargetB.dispose();
     this.workCompositeTarget.dispose();
@@ -6925,25 +6849,6 @@ export class WebGLBackdrop {
       material.userData.sourceThumbBound = true;
       const boundMesh = getMesh();
       if (boundMesh) boundMesh.userData.sourceThumbBound = true;
-    });
-  }
-
-  private createBackgroundMaterial() {
-    return new ShaderMaterial({
-      depthWrite: false,
-      depthTest: false,
-      uniforms: {
-        uTime: { value: 0 },
-        uRatio: { value: 1 },
-        uFluidStrength: { value: 0.5 },
-        uProgress: { value: 0 },
-        uBgColor: { value: colorFrom(SOURCE_COMPOSITE_BG) },
-        uActiveColor: { value: colorFrom(DEFAULT_COLOR) },
-        uAmbientColor: { value: colorFrom(SOURCE_INITIAL_SECONDARY) },
-        uAmbientIntensity: { value: SOURCE_INITIAL_AMBIENT },
-      },
-      vertexShader: backgroundVertex,
-      fragmentShader: backgroundFragment,
     });
   }
 
@@ -8627,7 +8532,6 @@ void main() {
     this.mainCamera.updateProjectionMatrix();
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
     this.cameraControllerGroup.lookAt(this.cameraLookAt);
-    this.backgroundMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uContainerSize.value.set(width, height);
     this.displacementMaterial.uniforms.uRatio.value = width / height;
@@ -9897,7 +9801,6 @@ void main() {
         uReveal: uniforms.uReveal.value,
       };
     });
-    const backgroundAmbientColor = this.backgroundMaterial.uniforms.uAmbientColor.value as Color;
     const activeWorkEmissive = activeWorkItem?.material.emissive ?? null;
     const aboutScrollOpacityScroll = this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY;
     const aboutScrollOpacityExpectedMobile = sourceMapClampRound(aboutScrollOpacityScroll, 0, window.innerHeight * 0.25, 1, 0);
@@ -10127,13 +10030,11 @@ void main() {
             colorMode: "source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor",
             intensityMode: "source-Se-setAmbientIntensity-tweens-ambientLight-intensity",
             killMode: "source-no-kill-for-setAmbientColor-setAmbientIntensity",
-            backgroundUniformMode: "rebuild-background-material-not-source-Se-ambient-target",
+            backgroundMaterialMode: "source-no-background-material-no-Se-ambient-target",
             ambientLightColor: this.ambientLight.color.toArray(),
             ambientLightIntensity: this.ambientLight.intensity,
             environmentDarkenColor: environmentDarkenColor.toArray(),
             environmentDarkenMatchesAmbientColor: environmentDarkenColor.equals(this.ambientLight.color),
-            backgroundAmbientColor: backgroundAmbientColor.toArray(),
-            backgroundAmbientIntensity: this.backgroundMaterial.uniforms.uAmbientIntensity.value,
           },
           blocksColorOwnership: {
             mode: "source-Se-setBlocksColor-tweens-all-work-material-emissive",
@@ -12235,8 +12136,6 @@ void main() {
     const time = this.sourceElapsedTime;
     this.pointer.lerp(this.targetPointer, 0.055);
     this.applyDebugThumbProgress();
-    this.backgroundMaterial.uniforms.uTime.value = time;
-    this.backgroundMaterial.uniforms.uProgress.value = this.galleryProgress;
     this.updateMediaPlanePositions();
 
     const isProjectView = document.body.classList.contains("is-project");

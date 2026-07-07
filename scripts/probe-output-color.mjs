@@ -204,6 +204,7 @@ function outputProbeSettled(parsed) {
     && ambient.colorMode === "source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor"
     && ambient.intensityMode === "source-Se-setAmbientIntensity-tweens-ambientLight-intensity"
     && ambient.killMode === "source-no-kill-for-setAmbientColor-setAmbientIntensity"
+    && ambient.backgroundMaterialMode === "source-no-background-material-no-Se-ambient-target"
     && ambient.environmentDarkenMatchesAmbientColor === true
     && blocksColor.mode === "source-Se-setBlocksColor-tweens-all-work-material-emissive"
     && blocksColor.killMode === "source-no-kill-for-setBlocksColor"
@@ -756,8 +757,11 @@ async function runProbe() {
     activeRevealErrors.push("ambientIntensityMode");
   }
   if (ambientOwnership.killMode !== "source-no-kill-for-setAmbientColor-setAmbientIntensity") activeRevealErrors.push("ambientKillMode");
-  if (ambientOwnership.backgroundUniformMode !== "rebuild-background-material-not-source-Se-ambient-target") {
-    activeRevealErrors.push("ambientBackgroundUniformMode");
+  if (ambientOwnership.backgroundMaterialMode !== "source-no-background-material-no-Se-ambient-target") {
+    activeRevealErrors.push("ambientBackgroundMaterialMode");
+  }
+  if ("backgroundAmbientColor" in ambientOwnership || "backgroundAmbientIntensity" in ambientOwnership) {
+    activeRevealErrors.push("ambientBackgroundMaterialData");
   }
   if (ambientOwnership.environmentDarkenMatchesAmbientColor !== true) activeRevealErrors.push("ambientEnvDarkenColor");
   if (!Array.isArray(ambientOwnership.ambientLightColor) || ambientOwnership.ambientLightColor.length !== 3) {

@@ -1189,7 +1189,10 @@ const summary = {
           && sourceSe.text.includes("static setAmbientColor(e,t=1.6){const n=this.formatColor(e);oe.to(J.workScene.ambientLight.color,{r:n.r,g:n.g,b:n.b,ease:\"expo.out\",duration:t,onUpdate:()=>{")
           && sourceSe.text.includes("J.workScene.env.material.customUniforms.uDarkenColor.value.set(J.workScene.ambientLight.color.r,J.workScene.ambientLight.color.g,J.workScene.ambientLight.color.b)")
           && sourceSe.text.includes("static setAmbientIntensity(e,t=1.6){oe.to(J.workScene.ambientLight,{intensity:e,ease:\"expo.out\",duration:t})}")
-          && sourceSe.text.includes("static setAmbientLight=(e,t=.5,n=1.6)=>{this.setAmbientColor(e,n),this.setAmbientIntensity(t,n)}"),
+          && sourceSe.text.includes("static setAmbientLight=(e,t=.5,n=1.6)=>{this.setAmbientColor(e,n),this.setAmbientIntensity(t,n)}")
+          && !bundle.includes("backgroundMaterial")
+          && !bundle.includes("uAmbientColor")
+          && !bundle.includes("uAmbientIntensity"),
         rebuild:
           Boolean(rebuildUpdateAmbientDarkenColor)
           && Boolean(rebuildSetAmbientColor)
@@ -1212,10 +1215,18 @@ const summary = {
           && rebuildWebgl.includes("colorMode: \"source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor\"")
           && rebuildWebgl.includes("intensityMode: \"source-Se-setAmbientIntensity-tweens-ambientLight-intensity\"")
           && rebuildWebgl.includes("killMode: \"source-no-kill-for-setAmbientColor-setAmbientIntensity\"")
-          && rebuildWebgl.includes("backgroundUniformMode: \"rebuild-background-material-not-source-Se-ambient-target\"")
+          && rebuildWebgl.includes("backgroundMaterialMode: \"source-no-background-material-no-Se-ambient-target\"")
           && rebuildWebgl.includes("environmentDarkenMatchesAmbientColor: environmentDarkenColor.equals(this.ambientLight.color)")
           && !rebuildWebgl.includes("private ambientTweens")
           && !rebuildWebgl.includes("private currentAmbientIntensity")
+          && !rebuildWebgl.includes("private backgroundMaterial")
+          && !rebuildWebgl.includes("private backgroundScene")
+          && !rebuildWebgl.includes("const backgroundFragment")
+          && !rebuildWebgl.includes("createBackgroundMaterial")
+          && !rebuildWebgl.includes("this.backgroundMaterial")
+          && !rebuildWebgl.includes("backgroundScene.add(makeFullscreenTriangle")
+          && !rebuildWebgl.includes("uAmbientColor")
+          && !rebuildWebgl.includes("uAmbientIntensity")
           && !rebuildSetAmbientColor.includes(".kill()")
           && !rebuildSetAmbientIntensity.includes(".kill()")
           && !rebuildSetAmbientLight.includes(".kill()")
@@ -1227,11 +1238,13 @@ const summary = {
           "ambient.colorMode === \"source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor\"",
           "ambient.intensityMode === \"source-Se-setAmbientIntensity-tweens-ambientLight-intensity\"",
           "ambient.killMode === \"source-no-kill-for-setAmbientColor-setAmbientIntensity\"",
+          "ambient.backgroundMaterialMode === \"source-no-background-material-no-Se-ambient-target\"",
           "ambient.environmentDarkenMatchesAmbientColor === true",
           "ambientOwnership.mode !== \"source-Se-setAmbientLight-delegates-color-intensity\"",
           "ambientOwnership.colorMode !== \"source-Se-setAmbientColor-tweens-ambientLight-color-fanout-env-uDarkenColor\"",
           "ambientOwnership.intensityMode !== \"source-Se-setAmbientIntensity-tweens-ambientLight-intensity\"",
-          "ambientOwnership.backgroundUniformMode !== \"rebuild-background-material-not-source-Se-ambient-target\"",
+          "ambientOwnership.backgroundMaterialMode !== \"source-no-background-material-no-Se-ambient-target\"",
+          "\"backgroundAmbientColor\" in ambientOwnership || \"backgroundAmbientIntensity\" in ambientOwnership",
           "ambientOwnership.environmentDarkenMatchesAmbientColor !== true",
         ]),
       },

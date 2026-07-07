@@ -164,7 +164,7 @@ Known remaining gaps:
 - Renderer audit render-target default diagnostics now distinguish expected false values from failed checks: `generateMipmaps`, `depthBuffer`, and `stencilBuffer` defaults are reported as `actual` / `expected` / `matchesExpected`, and the Node-only renderer probe reports `status:"unavailable"` when `OffscreenCanvas` is absent instead of `null`.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`. The `rg/Na/ig` helper constructor surface is also guarded: source zero-vector `uResolution` defaults are preserved, and `rg` keeps source unused null samplers plus constructor direction `[0.5,0.5]`. Source `Lu/I1` runtime ownership of `rg.uDirection` is guarded as shared direction-vector assignment, while standard blur `Na.uDirection` remains constructor-owned.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
-- Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, ambient intensity tweens `J.workScene.ambientLight.intensity`, and rebuild-only background material uniforms are not source `Se` ambient targets.
+- Source `Se.setAmbientLight()` ownership is now guarded as a delegate to source-shaped `setAmbientColor()` and `setAmbientIntensity()`: ambient color tweens `J.workScene.ambientLight.color`, env `uDarkenColor` follows that ambient light color on update, and ambient intensity tweens `J.workScene.ambientLight.intensity`. The rebuild-only inactive `backgroundMaterial/backgroundScene` bridge is removed; probes and renderer audit now reject `backgroundMaterial`, `backgroundFragment`, `uAmbientColor`, and `uAmbientIntensity` returning without source evidence.
 - Source `Se.setBlocksColor()` ownership is now guarded as a no-kill fan-out setter for every ordinary work material emissive color. It no longer keeps rebuild-only block-color tween registry state, retargets only the active block, or writes custom uniforms from this setter.
 - Source thumb state setter ownership is now guarded as no-kill state tween ownership: `Se.setThumbDarknessIntensity()`, `setThumbDarknessColor()`, `setThumbSaturation()`, and `setThumbMouseLightness()` keep their source `t===0` direct branches, otherwise tween `settings.thumb` state and fan out to thumb composite uniforms or work material `uMouseLightness` on update, without rebuild-owned tween registries.
 - Source `Se.settings` scalar/media setter ownership is now guarded for the source no-kill boundary: `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` do not keep rebuild-owned tween registries or pre-emptive kills, while source kill-owned `setRevealSpread()` and `setEnvRotation()` retain their kill behavior.
@@ -188,12 +188,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Removed the rebuild-only inactive reset from Home gallery work-state restore.
-- Source evidence is the `yD.init()` direct `this.scroll=Qe.workState.scroll` restore plus `yD.destroy()` saving the full scroll object by reference.
-- `__rogierOutputProbe.homeGalleryRuntime` now reports `workStateRestoreMode`, restore presence, restored active value, active-preservation parity, and current `scroll.active`.
-- `scripts/probe-output-color.mjs` supports `SEED_WORK_STATE_ACTIVE=1` and verifies a seeded saved `scroll.active:true` remains true after restore.
-- `scripts/audit-renderer-output.mjs` checks the source save/restore anchors, runtime markers, and rejects `scroll.active = false;`.
-- This is route-state restore parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Removed the rebuild-only inactive `backgroundMaterial/backgroundScene` bridge from Home WebGL.
+- Source evidence: the mirrored bundle has no `backgroundMaterial`, `uAmbientColor`, or `uAmbientIntensity`; source `Se.setAmbientColor()` targets ambient light plus env `uDarkenColor`, source `Se.setAmbientIntensity()` targets ambient light intensity, and source `Se.setAmbientLight()` only delegates.
+- Production code no longer has `backgroundFragment`, `backgroundScene`, `backgroundMaterial`, constructor setup, disposal, resize writes, tick writes, or background ambient probe data.
+- `__rogierOutputProbe.settings.work.ambientOwnership` now reports `backgroundMaterialMode=source-no-background-material-no-Se-ambient-target`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old background material bridge/uniforms returning.
+- This is source-surface cleanup and ambient ownership guardrail work only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -203,24 +203,29 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-workstate-active-audit-postdocs.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-workstate-active-audit-postdocs.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/no-background-material-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/no-background-material-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-workstate-active-output-seeded-postdocs CDP_PORT=9332 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 SEED_WORK_STATE_ACTIVE=1 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-output-desktop CDP_PORT=9380 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-output-mobile CDP_PORT=9381 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-thumb CDP_PORT=9382 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-project-media-rerun CDP_PORT=9384 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=10000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the work-state active restore batch before commit. Renderer audit wrote `/tmp/rd-workstate-active-audit-postdocs.json`; recursive false/null extraction printed `false/null entries 0`. The seeded output probe verified `workStateRestored=true`, `restoredScrollActive=true`, `restoredScrollActivePreserved=true`, and `scrollActive=true`.
+All relevant checks passed for the background material removal batch before commit. Renderer audit wrote `/tmp/no-background-material-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.Se.ambientOwnership.source/rebuild` were both `true`. Desktop and mobile output probes verified `backgroundMaterialMode=source-no-background-material-no-Se-ambient-target` with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this work-state restore batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this background material removal batch.
 
-Project-media, thumb, full capture, and shader dump probes were not rerun because this batch touched only Home gallery route-state restore, the common output probe, renderer audit, and documentation.
+Project-media probe passed on rerun for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages, `projectMediaShaderMode=source-UD-ID-LD-ShaderMaterial-glsl3`, `projectMediaGlslVersion=300 es`, and zero failures, exceptions, or console messages. A first project-media run had a transient `/gc-2026/` `Uncaught (in promise)` event despite exit code `0`; the rerun at `/tmp/no-background-material-project-media-rerun` was clean.
 
 Verified:
 
-- Renderer audit passed for the work-state active restore batch: `/tmp/rd-workstate-active-audit-postdocs.json`.
+- Renderer audit passed for the background material removal batch: `/tmp/no-background-material-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Seeded output probe passed and proved source-shaped active restore behavior.
+- Desktop and mobile output probes passed with the background material absence marker.
+- Desktop thumb spotlight probe passed.
+- Project-media rerun passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
