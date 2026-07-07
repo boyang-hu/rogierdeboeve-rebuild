@@ -196,6 +196,8 @@ function outputProbeSettled(parsed) {
     && closeTo(settingsState.state?.sceneReveal, 1)
     && mouseFactor.mode === "source-p1-setMouseFactor-updates-VA-uMouseFactor"
     && mouseFactor.updateOwnershipMode === "source-p1-update-does-not-write-uMouseFactor"
+    && mouseFactor.tweenOwnershipMode === "source-yD-gD-local-mouseF-tweens-no-p1-global-kill"
+    && mouseFactor.globalTweenKillOwned === false
     && mouseFactor.p1UpdateDoesNotOwnRuntimeWrite === true
     && closeTo(mouseFactor.state, 1)
     && closeTo(mouseFactor.activeUniform, mouseFactor.state)
@@ -488,6 +490,10 @@ async function runProbe() {
   const mouseFactor = workSettings.mouseFactorOwnership || {};
   if (mouseFactor.mode !== "source-p1-setMouseFactor-updates-VA-uMouseFactor") materialErrors.push("mouseFactorMode");
   if (mouseFactor.updateOwnershipMode !== "source-p1-update-does-not-write-uMouseFactor") materialErrors.push("mouseFactorUpdateOwnershipMode");
+  if (mouseFactor.tweenOwnershipMode !== "source-yD-gD-local-mouseF-tweens-no-p1-global-kill") {
+    materialErrors.push("mouseFactorTweenOwnershipMode");
+  }
+  if (mouseFactor.globalTweenKillOwned !== false) materialErrors.push("mouseFactorGlobalTweenKillOwned");
   if (mouseFactor.constructorDefault !== 0) materialErrors.push("mouseFactorConstructorDefault");
   if (mouseFactor.galleryEntryMode !== "source-yD-gallery-entry-set-0-then-tween-1") materialErrors.push("mouseFactorGalleryEntryMode");
   if (mouseFactor.previewMode !== "source-work-preview-enter-0_25-leave-1") materialErrors.push("mouseFactorPreviewMode");

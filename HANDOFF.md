@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `UD` project media shader surface is now matched to mirrored `ID/LD`. The rebuild uses `ShaderMaterial` with `glslVersion: GLSL3`, source-shaped `projectMediaVertex` / `projectMediaFragment`, the source `fg` `blendLighten` helper, `in/out` varyings, `FragColor`, and source alpha writeback. Runtime project-media probes expose and assert the `source-UD-ID-LD-ShaderMaterial-glsl3` mode and `300 es` GLSL version, renderer audit compares expanded rebuild templates against source `ID/LD` with zero delta, and shader dump now opens a project page so `UD-project-media` appears in the residual summary with vertex/fragment delta `0`. This is project-media shader-surface parity only. Phase 1 is still open.
+Latest Phase 1 batch: source `p1/yD/gD` mouse-factor tween ownership is now matched more closely. Source `p1.setMouseFactor(e)` only writes `mouseF` and fans out `VA.uMouseFactor`, while source gallery entry (`yD`) and CTA hover (`gD`) tween local component `mouseF` state and call `J.workScene.setMouseFactor(...)` on update without a global `p1` tween registry/kill. The rebuild removed the global `mouseFactorTween`, uses local tween state for duration-based mouse-factor transitions, and exposes/asserts `source-yD-gD-local-mouseF-tweens-no-p1-global-kill`. This is interaction ownership parity only. Phase 1 is still open.
 
 ## Chosen Stack
 
@@ -188,12 +188,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Removed the rebuild-only inactive `backgroundMaterial/backgroundScene` bridge from Home WebGL.
-- Source evidence: the mirrored bundle has no `backgroundMaterial`, `uAmbientColor`, or `uAmbientIntensity`; source `Se.setAmbientColor()` targets ambient light plus env `uDarkenColor`, source `Se.setAmbientIntensity()` targets ambient light intensity, and source `Se.setAmbientLight()` only delegates.
-- Production code no longer has `backgroundFragment`, `backgroundScene`, `backgroundMaterial`, constructor setup, disposal, resize writes, tick writes, or background ambient probe data.
-- `__rogierOutputProbe.settings.work.ambientOwnership` now reports `backgroundMaterialMode=source-no-background-material-no-Se-ambient-target`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old background material bridge/uniforms returning.
-- This is source-surface cleanup and ambient ownership guardrail work only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Removed the rebuild-owned global `mouseFactorTween` from Home WebGL.
+- Source evidence: `p1.setMouseFactor(e)` only writes `mouseF` and fans out `VA.uMouseFactor`, while `yD.animateIn()` and `gD` CTA hover tween local component `mouseF` state and call `J.workScene.setMouseFactor(this.mouseF)` on update.
+- Production duration transitions now tween a local `{ mouseF }` object and write through the `p1.setMouseFactor()` fan-out path, without a global `p1` tween registry or pre-emptive kill.
+- `__rogierOutputProbe.settings.work.mouseFactorOwnership` now reports `tweenOwnershipMode=source-yD-gD-local-mouseF-tweens-no-p1-global-kill` and `globalTweenKillOwned=false`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old global mouse-factor tween ownership returning.
+- This is interaction ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -203,29 +203,29 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/no-background-material-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/no-background-material-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-mouse-factor-local-tween-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-mouse-factor-local-tween-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-output-desktop CDP_PORT=9380 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-output-mobile CDP_PORT=9381 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-thumb CDP_PORT=9382 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/no-background-material-project-media-rerun CDP_PORT=9384 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=10000 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-output-desktop CDP_PORT=9402 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-thumb CDP_PORT=9403 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-output-mobile CDP_PORT=9404 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-media CDP_PORT=9405 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the background material removal batch before commit. Renderer audit wrote `/tmp/no-background-material-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.Se.ambientOwnership.source/rebuild` were both `true`. Desktop and mobile output probes verified `backgroundMaterialMode=source-no-background-material-no-Se-ambient-target` with zero failures, exceptions, or console messages.
+All relevant checks passed for the mouse-factor tween ownership batch before commit. Renderer audit wrote `/tmp/rd-mouse-factor-local-tween-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.GA.mouseFactorOwnership` reported source/rebuild/probe parity. Desktop and mobile output probes verified `tweenOwnershipMode=source-yD-gD-local-mouseF-tweens-no-p1-global-kill` plus `globalTweenKillOwned=false` with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this background material removal batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this mouse-factor tween ownership batch.
 
-Project-media probe passed on rerun for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages, `projectMediaShaderMode=source-UD-ID-LD-ShaderMaterial-glsl3`, `projectMediaGlslVersion=300 es`, and zero failures, exceptions, or console messages. A first project-media run had a transient `/gc-2026/` `Uncaught (in promise)` event despite exit code `0`; the rerun at `/tmp/no-background-material-project-media-rerun` was clean.
+Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages, `projectMediaShaderMode=source-UD-ID-LD-ShaderMaterial-glsl3`, `projectMediaGlslVersion=300 es`, and zero failures, exceptions, or console messages.
 
 Verified:
 
-- Renderer audit passed for the background material removal batch: `/tmp/no-background-material-audit.json`.
+- Renderer audit passed for the mouse-factor tween ownership batch: `/tmp/rd-mouse-factor-local-tween-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the background material absence marker.
+- Desktop and mobile output probes passed with the source local mouse-factor tween ownership marker.
 - Desktop thumb spotlight probe passed.
-- Project-media rerun passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 

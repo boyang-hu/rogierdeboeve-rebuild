@@ -5299,7 +5299,6 @@ export class WebGLBackdrop {
   private cameraInnerGroup = new Object3D();
   private activeSlug = "";
   private mouseFactor = 0;
-  private mouseFactorTween?: gsap.core.Tween;
   private thumbState = {
     darknessIntensity: 0,
     darknessColor: sourceRgbColor("#000000", "#000000"),
@@ -8119,7 +8118,6 @@ void main() {
   }
 
   private setMouseFactor(value: number, duration = 0, ease = "none") {
-    this.mouseFactorTween?.kill();
     const updateUniforms = () => {
       this.workItems.forEach((item) => {
         item.material.uniforms.uMouseFactor.value = this.mouseFactor;
@@ -8130,11 +8128,15 @@ void main() {
       updateUniforms();
       return;
     }
-    this.mouseFactorTween = gsap.to(this, {
-      mouseFactor: value,
+    const localMouseFactorState = { mouseF: this.mouseFactor };
+    gsap.to(localMouseFactorState, {
+      mouseF: value,
       duration,
       ease,
-      onUpdate: updateUniforms,
+      onUpdate: () => {
+        this.mouseFactor = localMouseFactorState.mouseF;
+        updateUniforms();
+      },
     });
   }
 
@@ -10012,6 +10014,8 @@ void main() {
           mouseFactorOwnership: {
             mode: "source-p1-setMouseFactor-updates-VA-uMouseFactor",
             updateOwnershipMode: "source-p1-update-does-not-write-uMouseFactor",
+            tweenOwnershipMode: "source-yD-gD-local-mouseF-tweens-no-p1-global-kill",
+            globalTweenKillOwned: false,
             constructorDefault: 0,
             galleryEntryMode: "source-yD-gallery-entry-set-0-then-tween-1",
             previewMode: "source-work-preview-enter-0_25-leave-1",

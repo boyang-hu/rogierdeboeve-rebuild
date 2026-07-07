@@ -4614,14 +4614,26 @@ const summary = {
         sourcePreviewEnterLeave:
           bundle.includes("mouseF:.25,duration:3,ease:\"none\",onUpdate:()=>J.workScene.setMouseFactor(this.mouseF)")
           && bundle.includes("mouseF:1,duration:3,ease:\"none\",onUpdate:()=>J.workScene.setMouseFactor(this.mouseF)"),
+        sourceLocalTweenOwnership:
+          sourceYDAnimateIn?.text.includes("oe.to(this,{mouseF:1,duration:3,ease:\"none\"") === true
+          && bundle.includes("onMouseEnter(){this.mouseF=J.workScene.mouseF,oe.to(this,{mouseF:.25,duration:3,ease:\"none\"")
+          && bundle.includes("onMouseLeave(){this.x=0,this.y=0,this.mouseF=J.workScene.mouseF,oe.to(this,{mouseF:1,duration:3,ease:\"none\"")
+          && !bundle.includes("mouseFactorTween")
+          && bundle.includes("setMouseFactor(e){this.mouseF=e,this.blocks.forEach"),
         rebuild:
           rebuildWebgl.includes("private mouseFactor = 0;")
+          && !rebuildWebgl.includes("mouseFactorTween")
+          && rebuildWebgl.includes("const localMouseFactorState = { mouseF: this.mouseFactor };")
+          && rebuildWebgl.includes("gsap.to(localMouseFactorState, {")
+          && rebuildWebgl.includes("this.mouseFactor = localMouseFactorState.mouseF;")
           && rebuildWebgl.includes("uMouseFactor: { value: this.mouseFactor }")
           && rebuildWebgl.includes("this.setMouseFactor(0, 0);")
           && rebuildWebgl.includes("this.setMouseFactor(1, 3);")
           && rebuildWebgl.includes("this.setMouseFactor(enabled ? 0.25 : 1, 3);")
           && rebuildWebgl.includes("mouseFactorOwnership: {")
           && rebuildWebgl.includes("updateOwnershipMode: \"source-p1-update-does-not-write-uMouseFactor\"")
+          && rebuildWebgl.includes("tweenOwnershipMode: \"source-yD-gD-local-mouseF-tweens-no-p1-global-kill\"")
+          && rebuildWebgl.includes("globalTweenKillOwned: false")
           && rebuildWebgl.includes("p1UpdateDoesNotOwnRuntimeWrite: true")
           && rebuildWebgl.includes("allWorkUniformsMatchState"),
         rebuildP1UpdateDoesNotWrite:
@@ -4630,6 +4642,8 @@ const summary = {
         probe:
           rebuildOutputProbe.includes("mouseFactor.mode !== \"source-p1-setMouseFactor-updates-VA-uMouseFactor\"")
           && rebuildOutputProbe.includes("mouseFactor.updateOwnershipMode !== \"source-p1-update-does-not-write-uMouseFactor\"")
+          && rebuildOutputProbe.includes("mouseFactor.tweenOwnershipMode !== \"source-yD-gD-local-mouseF-tweens-no-p1-global-kill\"")
+          && rebuildOutputProbe.includes("mouseFactor.globalTweenKillOwned !== false")
           && rebuildOutputProbe.includes("mouseFactor.p1UpdateDoesNotOwnRuntimeWrite !== true")
           && rebuildOutputProbe.includes("mouseFactor.allWorkUniformsMatchState !== true"),
       },
