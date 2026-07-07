@@ -4,183 +4,106 @@ Last updated: 2026-07-07
 
 ## Purpose
 
-This is the current resume sheet. Keep it short and replace stale details instead of appending chronology.
-
-It should answer only:
-
-- where Phase 1 stands now
-- what the last committed batch closed
-- what to do next
-- how to validate the next batch
-
-It is not a timeline. Use git for history.
+This is the resume sheet for the rebuild. Keep it current-only: replace stale details instead of appending chronology. Use git history for older batch notes.
 
 | Need | Read |
 | --- | --- |
 | Resume current work | `HANDOFF.md` |
-| Check source evidence, blockers, and guarded edges | `PHASE1_AUDIT.md` |
-| Decide the next execution order | `REBUILD_PLAN.md` |
+| Check Phase 1 source evidence and guarded WebGL edges | `PHASE1_AUDIT.md` |
+| Decide execution order after a new finding | `REBUILD_PLAN.md` |
 | Inspect old document states | `git log --oneline` and `git show <commit>:<file>` |
 
 ## Current Snapshot
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 6 active: final QA/cleanup |
-| Phase 1 status | Closed/guarded on 2026-07-07 |
-| Phase 2 status | Closed/guarded on 2026-07-07 |
-| Phase 3 status | Closed/guarded on 2026-07-07 |
-| Phase 4 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Run final QA/cleanup on top of closed Phase 1-5 |
-| Next secondary priority | Keep Phase 1-5 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 5 audio lifecycle source alignment |
-| Last closed evidence batch | Phase 5 audio lifecycle source alignment |
-| Local service | Dev server was available at `http://localhost:5173/` during validation; an older static service was also listening at `http://127.0.0.1:5174/` |
-| Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
+| Active production phase | None |
+| Overall status | Phase 1 through Phase 6 are closed/guarded as of 2026-07-07 |
+| Latest closed batch | Phase 6 final QA and documentation cleanup |
+| Last source-backed code batch | Phase 5 audio lifecycle source alignment |
+| Current priority | Do not patch unless a new source-owned mismatch is isolated |
+| Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
+| Expected worktree | Clean after the Phase 6 docs commit |
 
-Closeout state:
+## Phase Status
 
-| Area | State | Current read |
+| Phase | Status | Reopen only when |
 | --- | --- | --- |
-| Architecture/lifecycle | Guarded | Broad scene structure, route ownership, probes, and source guardrails are in place. |
-| Shader/render-manager parity | Guarded | Shader surfaces and pass edges are source-shaped; `kA/Lu/I1` has no active Phase 1 mismatch. |
-| Final Home visual parity | Guarded | Canvas-only Home distribution and spotlight/thumb transfer are source-guarded; final probe set is clean. |
+| Phase 1: Home WebGL source parity | Closed/guarded | A concrete Home WebGL, renderer, projection, or interaction mismatch is traced to source ownership. |
+| Phase 2: Home DOM/interaction parity | Closed/guarded | A concrete Home DOM, preloader, sound, route, or interaction mismatch is found. |
+| Phase 3: Project detail media/routes | Closed/guarded | A concrete project-detail media, scroll, route, or next-project mismatch is found. |
+| Phase 4: About and auxiliary pages | Closed/guarded | A concrete About DOM, CSS, motion, route, modal, or auxiliary visual mismatch is found. |
+| Phase 5: Transitions/audio/Lenis lifecycle | Closed/guarded | A concrete transition, audio, or page-scroll lifecycle mismatch is found. |
+| Phase 6: Final QA/cleanup | Closed/guarded | Final regression gates fail or docs drift from current state again. |
 
-## Last Closed Batch
+## Latest Evidence
 
-The latest production batch closes the Phase 5 audio lifecycle finding.
+Phase 6 final QA was run against `http://localhost:5173/`.
 
-- Source `lm.addEvents()` binds click and mouseenter from `data-sound-click`; rebuild now gives Home progressbar items the missing `data-sound-click` attribute instead of adding bespoke sound dispatch.
-- Source `ln.playHover()`, `playClick()`, `playWoosh()`, `playSoftWoosh()`, and `playPlucks()` only play when `Le.SOUND` is true; rebuild no longer initializes Howler from muted play events.
-- Source mobile preloader entry skips `ln.initSounds()`; rebuild mobile entry now produces no audio requests.
-- Source `yD.animateIn()` plays plucks once per Home gallery entry; rebuild guards the audio plucks consumer while still allowing the internal Home entry retry needed when WebGL becomes ready after a debug/skip-preloader path.
+Static/build checks:
 
-Earlier Phase 5 batches aligned Lenis/page scroll ownership and transition/nav ownership. Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
-
-## Current Evidence
-
-Latest Phase 5 evidence:
-
-- `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
-- `node --check src/client/audio.ts`
-- `node --check src/client/main.ts`
-- Source audio audit:
-  - Source `lm.addEvents()` uses `data-sound-click` to bind both click and mouseenter.
-  - Source `ln.initSounds()` owns Howler construction for drones, ambient, hover, click, woosh, plucks, and soft-woosh.
-  - Source `iD.onCtaClick()` initializes/toggles/plays click only on non-mobile; `iD.onCta2Click()` only initializes sounds on non-mobile.
-  - Source `ln.play*()` methods do not initialize sounds from muted hover/click/woosh/plucks events.
-  - Source Home progressbar HTML gives every `.ui-progressbar-item` `data-sound-click`, while source `_D.onListItemClick()` only emits `NAV_CLICK`.
-- Static sound role check: generated `dist/index.html` has `10` Home progressbar items and `10` `.ui-progressbar-item[data-sound-click]`.
-- Focused audio lifecycle CDP probe on `http://localhost:5173/?disable-webgl`:
-  - Desktop sound entry initializes Howler, enables the sound toggle, loads the seven source audio files, and fires one guarded `rd:plucks`.
-  - Desktop no-sound entry initializes Howler but leaves sound disabled and fires no `rd:sound-mode`.
-  - Mobile entry has pointer coarse, hides the sound toggle, dispatches no `rd:sound-init`/`rd:sound-mode`, and makes `0` audio requests.
-  - Runtime exceptions: `0`; console errors: `0`; material loading failures: `0`.
-- About/Home/Project regressions passed:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-audio-output-desktop-rerun2 CDP_PORT=9626 node scripts/probe-output-color.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ VIEWPORT=mobile OUT_DIR=/tmp/rd-phase5-audio-output-mobile-rerun2 CDP_PORT=9627 node scripts/probe-output-color.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-audio-about-final CDP_PORT=9629 node scripts/probe-about-scroll-opacity.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-audio-project-media-final CDP_PORT=9630 node scripts/probe-project-media.mjs`
+- `OUT_DIR=/tmp/rd-phase6-final-renderer node scripts/audit-renderer-output.mjs`
+- `git diff --check` before the docs rewrite
 
-Previous Phase 5 evidence:
+Fresh browser probes:
 
-- Source transition/nav audit:
-  - Source `BD.onLeave()` emits `WORK_GALLERY_OUT` only when `from[data-view]` is `home`.
-  - Source `zD.onLeave()` always emits `WORK_GALLERY_OUT`.
-  - Source `HD.onLeave()` only waits `500ms`.
-  - Source `OD.init()` calls `Tr.setActive("home")` and `Ar.setActive("home")`.
-  - Source desktop nav Work link has `data-slug="home"` in Home, About, and Project HTML.
-- Static nav slug check: generated `dist/index.html` and `dist/gc-2026/index.html` Work nav `data-slug` match source `home`.
-- Focused transition/nav CDP probe: `/tmp/rd-phase5-transition-nav-probe-rerun/summary.json`
-  - Direct Project entry has desktop and mobile Work nav active.
-  - About -> Work click does not emit `WORK_GALLERY_OUT`.
-  - Browser back from Home -> About emits `WORK_GALLERY_OUT` while current view state is Home.
-  - Runtime exceptions: `0`; material network failures: `0`.
-- About/Home/Project transition regressions passed:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-transition-about-desktop CDP_PORT=9497 node scripts/probe-about-scroll-opacity.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-transition-output CDP_PORT=9498 node scripts/probe-output-color.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-transition-project-media CDP_PORT=9499 node scripts/probe-project-media.mjs`
-- Source audit:
-  - `SD extends sl`
-  - `DD extends Ug`
-  - `OD extends Ug`
-  - `Ug.setScrollSettings(){this.scrollSettings={}}`
-  - `Ug.resetScroll(){window.scrollTo(0,0),document.body.scrollTop=0,history.scrollRestoration&&(history.scrollRestoration="manual")}`
-  - Source `Ig` defaults include `lerp:.1`, `touchMultiplier:1`, and `wheelMultiplier:1`.
-- Focused Lenis ownership CDP probe: `/tmp/rd-phase5-lenis-ownership-probe/summary.json`
-  - Home initial: no `window.__rogierPageScroll`.
-  - About entry: page scroll controller exists, scroll is `0`, `history.scrollRestoration` is `manual`, and `is-scrolled` is false.
-  - About scroll: `is-scrolled` toggles true.
-  - Home return: page scroll controller is gone and `is-scrolled` is false.
-- `OUT_DIR=/tmp/rd-phase5-lenis-renderer-audit node scripts/audit-renderer-output.mjs`
-- About scroll/auxiliary visual lifecycle probes passed on desktop and mobile:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-lenis-about-desktop CDP_PORT=9491 node scripts/probe-about-scroll-opacity.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-lenis-about-mobile CDP_PORT=9492 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
-- Shared WebGL/project regressions passed:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-lenis-output CDP_PORT=9493 node scripts/probe-output-color.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-lenis-project-media CDP_PORT=9494 node scripts/probe-project-media.mjs`
-
-Latest Phase 4 closeout evidence remains:
-
-- Parse5 static DOM audit: `.ui-about` subtree diff between source mirror and `dist/about/index.html` returned `diffCount: 0`.
-- `OUT_DIR=/tmp/rd-phase4-closeout-renderer-audit node scripts/audit-renderer-output.mjs`
-- About scroll/auxiliary visual lifecycle probes passed on desktop and mobile:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase4-closeout-about-desktop CDP_PORT=9481 node scripts/probe-about-scroll-opacity.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase4-closeout-about-mobile CDP_PORT=9482 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
-- Shared WebGL regressions passed:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase4-closeout-output CDP_PORT=9483 node scripts/probe-output-color.mjs`
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase4-closeout-project-media CDP_PORT=9484 node scripts/probe-project-media.mjs`
-- Earlier auxiliary lifecycle evidence remains available in `/tmp/rd-phase4-lifecycle-*`.
-- Earlier source CSS audit found source `.ui-about-contact .ts-2{line-height:1;letter-spacing:-.03em;font-size:2rem}` and matching source scroll CTA/scrollbar declarations.
-- Earlier focused route CDP probe passed for Home -> About, About -> Work, and Project -> About with `0` runtime exceptions and `0` material network failures.
-- Earlier route-batch About scroll, Home output color, and Project media probes passed with `OUT_DIR=/tmp/rd-phase4-route-*`.
-- Earlier focused About split/animation CDP probe passed and wrote `/tmp/rd-phase4-about-split-probe/summary.json`.
-- Earlier About DOM/modal CDP probe passed and wrote `/tmp/rd-phase4-about-modal-probe/summary.json`.
-
-Phase 2 regression evidence remains available in `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`, `/tmp/rd-output-p2-preloader-desktop`, and `/tmp/rd-output-p2-preloader-mobile`.
-
-Audit method note:
-
-- `/tmp/phase2-home-audit.mjs` launches Chrome with GPU disabled; full WebGL can stall in headless SwiftShader after preloader entry.
-- Use `?disable-webgl` for DOM-interaction audits that do not need canvas rendering.
-- Use `scripts/probe-output-color.mjs` without `?disable-webgl` for visual/WebGL coverage.
+- Home desktop output: `/tmp/rd-phase6-final-home-desktop/summary.json`
+  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
+  - Active project `hashgraph-vc`; desktop CTA parent opacity remains source-shaped at `0`.
+- Home mobile output: `/tmp/rd-phase6-final-home-mobile/summary.json`
+  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
+  - Active project `hashgraph-vc`; mobile CTA parent opacity remains source-shaped at `1`.
+- Thumb spotlight: `/tmp/rd-phase6-final-thumb/summary.json`
+  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
+  - Raw-to-composite transfer, `SpotLight.map` composite ownership, and thumb projection sampling are source-shaped.
+- Project media: `/tmp/rd-phase6-final-project-media/summary.json`
+  - `gc-2026` and `hashgraph-vc` each have `5` visible media planes.
+  - Shader surfaces, constructor defaults, runtime backgrounds, failures, exceptions, and console messages all pass.
+- About desktop: `/tmp/rd-phase6-final-about-desktop/summary.json`
+  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
+  - Desktop scroll opacity is source `1`; destroy lifecycle keeps the current spotlight map.
+- About mobile: `/tmp/rd-phase6-final-about-mobile/summary.json`
+  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
+  - Mobile scroll opacity is source `0.3507`; destroy lifecycle keeps the current spotlight map.
+- Interactive mouse: `/tmp/rd-phase6-final-mouse/summary.json`
+  - Source interaction assertions passed: mouse simulation, active raycast target ownership, input normalization, and main-fluid gating are source-shaped.
+  - The dev-server run recorded one canceled Vite script request and two Vite connection logs. This is not a product/source mismatch.
+  - The probe ran under SwiftShader fallback GPU tier `1`; source `I1` disables main fluid when `Le.GPU_TIER < 3`, and rebuild matches.
 
 ## Source Of Truth
 
 - Final visual acceptance baseline: `https://rogierdeboeve.com/`.
 - Implementation source bundle: `legacy-mirror/public/assets/bundle.250f01b7.js`.
 - Implementation CSS bundle: `legacy-mirror/public/assets/bundle.87ba3613.css`.
-- Local mirror note: online HTML/CSS/service-worker assets matched the mirror during the drift audit; the local JS bundle intentionally differs where `scripts/mirror-site.mjs` rewrites service-worker registration, `detect-gpu` benchmark URLs, and GPU-check fallback behavior for local serving.
+- Local mirror note: online HTML/CSS/service-worker assets matched the mirror during the drift audit. The local JS bundle intentionally differs where `scripts/mirror-site.mjs` rewrites service-worker registration, `detect-gpu` benchmark URLs, and GPU-check fallback behavior for local serving.
 - Screenshots and probes are attribution/regression aids only.
-- Do not tune horizon, fog, floor color, brightness, or projection by eye.
+- Do not tune horizon, fog, floor color, brightness, projection, sound, or motion by eye.
 - Keep the stack: Astro, TypeScript, Three.js, GSAP, Lenis, Howler.
-- Audio must continue to use Howler.
 - Do not delete `public/` or `legacy-mirror/`.
 
 ## Next Action
 
-Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 are closed. Do not reopen them unless a concrete source-owned mismatch appears.
+No planned production phase remains.
 
-Recommended next move:
+When a new visual or behavioral mismatch is reported:
 
-1. Run Phase 6 final QA: build, renderer audit, Home desktop/mobile output probes, thumb spotlight, project media, About desktop/mobile, and interactive mouse.
-2. Clean up current docs only if they drift from the state above; do not append chronology.
-3. Reopen Phase 5 only if focused transition, Lenis, or audio probes expose a concrete source-owned mismatch.
-4. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project route/media, Phase 4 About, and Phase 5 lifecycle probes as regression gates when shared render, router, audio, or lifecycle paths change.
+1. Reproduce it locally and capture the failing route/viewport.
+2. Attribute it to the source bundle/CSS or online baseline before changing code.
+3. Patch only the source-owned owner path.
+4. Run the smallest focused probe plus the affected regression gates.
+5. Update docs and commit code/docs together.
 
-Guarded Phase 1 areas should not be reopened first without new evidence:
+Recommended regression gates by area:
 
-- Cubemap `scene.environment` loader defaults and sampling surface.
-- `p1.addEnvironment()` fire-and-forget cubemap start order.
-- `u1` environment vertex/fragment shader text.
-- Sky composite `V1/H1/z1/B1` target chain and `z1` uniform surface.
-- Renderer constructor clear color/alpha state.
-- `kA/Lu/I1` default visible target transfer.
-- Spotlight-map shader, Three light-chunk multiplication, thumb transfer order, and projection sampling.
-- `w1.updateGalleryProgress()` centered wrapping.
-- `T1/x1/E1/M1` thumb scene surface.
-- Mouse/fluid feel, unless the batch touches interaction paths.
+| Area touched | Minimum gates |
+| --- | --- |
+| Home WebGL/rendering | Build, renderer audit, Home desktop/mobile output, thumb spotlight |
+| Home DOM/preloader/sound | Build, Home output or DOM probe, audio lifecycle probe if sound path changes |
+| Project detail | Build, project media probe, Home output if shared WebGL changed |
+| About/auxiliary | Build, About desktop/mobile probe, Home output if spotlight/shared WebGL changed |
+| Router/transition/scroll | Build, focused route probe, About/project/Home gates as affected |
+| Mouse/fluid/input | Build, interactive mouse probe, Home output |
 
 ## Important Files
 
@@ -190,30 +113,11 @@ Guarded Phase 1 areas should not be reopened first without new evidence:
 - Data: `src/data/projects.json`, `src/data/site.ts`
 - Core validation tools:
   - `scripts/audit-renderer-output.mjs`
-  - `scripts/dump-va-shader.mjs`
   - `scripts/probe-output-color.mjs`
   - `scripts/probe-thumb-spotlight.mjs`
   - `scripts/probe-project-media.mjs`
   - `scripts/probe-about-scroll-opacity.mjs`
-
-## Validate A Rendering Batch
-
-```sh
-node --check src/client/webgl.ts
-node --check scripts/dump-va-shader.mjs
-node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-phase1-audit.json
-git diff --check
-ASTRO_TELEMETRY_DISABLED=1 npm run build
-```
-
-Known blocked check:
-
-```sh
-npm exec tsc -- --noEmit --pretty false
-```
-
-This remains blocked by the existing TypeScript config deprecation around `baseUrl` under TS7.
+  - `scripts/probe-interactive-mouse.mjs`
 
 ## Run Locally
 
@@ -226,12 +130,20 @@ PORT=5173 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
 Open:
 
 ```text
-http://127.0.0.1:5173/?skip-preloader
-http://127.0.0.1:5173/about/?skip-preloader
-http://127.0.0.1:5173/gc-2026/?skip-preloader
+http://localhost:5173/
+http://localhost:5173/about/
+http://localhost:5173/gc-2026/
 ```
 
-Stop the server with Ctrl-C after review. If `5173` is busy, use another port.
+If `5173` is busy, use another port. Stop the server with Ctrl-C after review.
+
+## Known Blocked Check
+
+```sh
+npm exec tsc -- --noEmit --pretty false
+```
+
+This remains blocked by the existing TypeScript config deprecation around `baseUrl` under TS7.
 
 ## Commit Rules
 

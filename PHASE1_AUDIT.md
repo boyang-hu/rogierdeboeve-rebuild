@@ -265,7 +265,7 @@ Current guarded rebuild facts:
 
 ## Final Closeout Evidence
 
-Final closeout was run against the current build on 2026-07-07.
+Final closeout was run against the current build on 2026-07-07. Phase 6 reran the broad browser gates after the final code batch and treated dev-server-only Vite noise separately from product/source mismatches.
 
 Static/build checks:
 
@@ -277,19 +277,19 @@ Static/build checks:
 - `node --check scripts/probe-project-media.mjs`
 - `node --check scripts/probe-about-scroll-opacity.mjs`
 - `node --check scripts/probe-interactive-mouse.mjs`
-- `node scripts/audit-renderer-output.mjs > /tmp/rd-final-phase1-audit.json`
+- `OUT_DIR=/tmp/rd-phase6-final-renderer node scripts/audit-renderer-output.mjs`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
 - `git diff --check`
 
 Browser probes:
 
-- Home desktop output probe: `0` failures, `0` exceptions, `0` shader console messages; renderer clear state, Home entry lifecycle, and active block emissive fallback are guarded.
-- Home mobile output probe: `0` failures, `0` exceptions, `0` shader console messages; renderer clear state, Home entry lifecycle, and active block emissive fallback are guarded.
-- Thumb spotlight probe: `0` failures, `0` exceptions; raw-to-composite transfer order, composite map ownership, spotlight state, thumb composite state, and 3x3 projection sampling are guarded.
-- Project media probe: final serial run has `0` failures, `0` exceptions, and `0` shader console messages for `gc-2026` and `hashgraph-vc`; both report `5` visible media planes with source-shaped shader surfaces, constructor defaults, and background state.
-- About desktop probe: `0` failures, `0` exceptions, `0` shader console messages; scroll opacity matches source `1`, and destroy keeps the current spotlight map.
-- About mobile probe: `0` failures, `0` exceptions, `0` shader console messages; scroll opacity matches source `0.3507`, and destroy keeps the current spotlight map.
-- Interactive mouse probe: `0` failures, `0` exceptions, `0` shader console messages; mouse simulation, active raycast target ownership, and main-fluid pointer response are guarded.
+- Home desktop output probe: `/tmp/rd-phase6-final-home-desktop/summary.json` has `0` failures, `0` exceptions, and `0` console messages; renderer clear state, Home entry lifecycle, and active block emissive fallback are guarded.
+- Home mobile output probe: `/tmp/rd-phase6-final-home-mobile/summary.json` has `0` failures, `0` exceptions, and `0` console messages; renderer clear state, Home entry lifecycle, and active block emissive fallback are guarded.
+- Thumb spotlight probe: `/tmp/rd-phase6-final-thumb/summary.json` has `0` failures, `0` exceptions, and `0` console messages; raw-to-composite transfer order, composite map ownership, spotlight state, thumb composite state, and 3x3 projection sampling are guarded.
+- Project media probe: `/tmp/rd-phase6-final-project-media/summary.json` has `0` failures, `0` exceptions, and `0` console messages for `gc-2026` and `hashgraph-vc`; both report `5` visible media planes with source-shaped shader surfaces, constructor defaults, and background state.
+- About desktop probe: `/tmp/rd-phase6-final-about-desktop/summary.json` has `0` failures, `0` exceptions, and `0` console messages; scroll opacity matches source `1`, and destroy keeps the current spotlight map.
+- About mobile probe: `/tmp/rd-phase6-final-about-mobile/summary.json` has `0` failures, `0` exceptions, and `0` console messages; scroll opacity matches source `0.3507`, and destroy keeps the current spotlight map.
+- Interactive mouse probe: `/tmp/rd-phase6-final-mouse/summary.json` passed source interaction assertions for mouse simulation, active raycast target ownership, input normalization, and main-fluid gating. The dev-server run recorded one canceled Vite script request and two Vite connection logs; these are not product/source mismatches. Under SwiftShader GPU tier `1`, source `I1` disables main fluid through `Le.GPU_TIER < 3`, and rebuild matches.
 
 Post-close online baseline evidence:
 
