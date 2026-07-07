@@ -2088,6 +2088,34 @@ async function runProbe() {
   if (mainFluidMaterials.advectionBounds?.blending !== 0) materialSurfaceErrors.push("mainFluidAdvectionBoundsBlending");
   if (mainFluidMaterials.advectionBounds?.sharedUniforms !== true) materialSurfaceErrors.push("mainFluidAdvectionBoundsSharedUniforms");
   if (mainFluidMaterials.advectionBounds?.sceneChildren !== 2) materialSurfaceErrors.push("mainFluidAdvectionBoundsSceneChildren");
+  const mainFluidGeometry = mainFluid.geometry || {};
+  const sourceIrGeometryMode = "source-Ir-init-PlaneGeometry-2-minus-cellScale-times2-default-frustum-culling";
+  if (mainFluidGeometry.mode !== sourceIrGeometryMode) materialSurfaceErrors.push("mainFluidGeometryMode");
+  for (const key of ["advection", "viscosity", "divergence", "poisson", "pressure"]) {
+    const geometry = mainFluidGeometry[key] || {};
+    if (geometry.meshType !== "Mesh") materialSurfaceErrors.push(`mainFluid${key}GeometryMesh`);
+    if (geometry.geometryType !== "PlaneGeometry") materialSurfaceErrors.push(`mainFluid${key}GeometryType`);
+    if (geometry.geometryMode !== sourceIrGeometryMode) materialSurfaceErrors.push(`mainFluid${key}GeometryMode`);
+    if (JSON.stringify(geometry.geometrySize) !== JSON.stringify([2, 2])) {
+      materialSurfaceErrors.push(`mainFluid${key}GeometrySize=${JSON.stringify(geometry.geometrySize || null)}`);
+    }
+    if (geometry.frustumCulled !== true) materialSurfaceErrors.push(`mainFluid${key}FrustumCulled`);
+  }
+  if (mainFluidGeometry.advection?.childCount !== 2) materialSurfaceErrors.push("mainFluidAdvectionGeometryChildren");
+  if (mainFluidGeometry.advection?.boundsLineType !== "LineSegments") materialSurfaceErrors.push("mainFluidAdvectionBoundsLineType");
+  if (mainFluidGeometry.advection?.boundsLineFrustumCulled !== true) materialSurfaceErrors.push("mainFluidAdvectionBoundsLineFrustumCulled");
+  for (const key of ["viscosity", "divergence", "poisson", "pressure"]) {
+    if (mainFluidGeometry[key]?.childCount !== 1) materialSurfaceErrors.push(`mainFluid${key}GeometryChildren`);
+  }
+  if (mainFluidGeometry.force?.mode !== "source-qT-init-PlaneGeometry-2-2-default-frustum-culling") {
+    materialSurfaceErrors.push("mainFluidForceGeometryMode");
+  }
+  if (mainFluidGeometry.force?.meshType !== "Mesh") materialSurfaceErrors.push("mainFluidForceGeometryMesh");
+  if (mainFluidGeometry.force?.geometryType !== "PlaneGeometry") materialSurfaceErrors.push("mainFluidForceGeometryType");
+  if (JSON.stringify(mainFluidGeometry.force?.geometrySize) !== JSON.stringify([2, 2])) {
+    materialSurfaceErrors.push(`mainFluidForceGeometrySize=${JSON.stringify(mainFluidGeometry.force?.geometrySize || null)}`);
+  }
+  if (mainFluidGeometry.force?.frustumCulled !== true) materialSurfaceErrors.push("mainFluidForceFrustumCulled");
   if (!mainFluidMaterials.advection?.uniformKeys?.includes("px")) materialSurfaceErrors.push("mainFluidAdvectionPxUniform");
   if (!mainFluidMaterials.advection?.uniformKeys?.includes("bounds")) materialSurfaceErrors.push("mainFluidAdvectionBoundsUniform");
   for (const uniformKey of ["bounds", "velocity", "velocity_new", "v", "px", "dt"]) {

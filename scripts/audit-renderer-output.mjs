@@ -322,6 +322,7 @@ const sourceNa = extractAround(bundle, "class Na extends", 420, 900);
 const sourceCg = extractAround(bundle, "class cg extends", 320, 1000);
 const sourceIg = extractAround(bundle, "class ig extends", 320, 900);
 const sourceL1 = extractAround(bundle, "class L1 extends", 320, 1000);
+const sourceIr = extractAround(bundle, "class Ir{constructor", 320, 800);
 const sourceEA = extractAround(bundle, "class eA extends", 320, 1200);
 const sourceAg = extractAround(bundle, "class ag", 260, 3200);
 const sourceGT = extractAround(bundle, "class GT extends", 320, 1500);
@@ -2047,6 +2048,16 @@ const summary = {
         ].every((needle) => rebuildWebgl.includes(needle)),
       },
       agFluid: {
+        Ir: sourceIr && {
+          index: sourceIr.index,
+          checks: checks(sourceIr.text, [
+            "class Ir{constructor(e){this.props=e,this.renderer=e.renderer,this.scene=new To,this.camera=new _u}",
+            "init(){this.geometry=new Rn(2-this.props.cellScale.x*2,2-this.props.cellScale.y*2)",
+            "this.mesh=new at(this.geometry,this.material),this.scene.add(this.mesh)}",
+            "update(){this.renderer.setRenderTarget(this.output),this.renderer.render(this.scene,this.camera)}",
+          ]),
+          excerpt: compact(sourceIr.text),
+        },
         ag: sourceAg && {
           index: sourceAg.index,
           checks: checks(sourceAg.text, [
@@ -2201,6 +2212,16 @@ const summary = {
           excerpt: compact(sourcePressureJT.text),
         },
         rebuildViscosityTopology: {
+          sourceIrGeometry: Boolean(rebuildCreateMainFluidPass)
+            && rebuildCreateMainFluidPass.includes("const makeSourceIrMesh = (material: ShaderMaterial) => {")
+            && rebuildCreateMainFluidPass.includes("const geometry = new PlaneGeometry(2 - cellScale.x * 2, 2 - cellScale.y * 2);")
+            && rebuildCreateMainFluidPass.includes("mesh.userData.sourceGeometryMode = \"source-Ir-init-PlaneGeometry-2-minus-cellScale-times2-default-frustum-culling\";")
+            && rebuildCreateMainFluidPass.includes("scene.add(makeSourceIrMesh(material));")
+            && !rebuildCreateMainFluidPass.includes("scene.add(makeFullscreenTriangle(material));"),
+          sourceGtBoundsLineDefaultCulling: Boolean(rebuildCreateMainFluidPass)
+            && rebuildCreateMainFluidPass.includes("const line = new LineSegments(geometry, boundsMaterial);")
+            && rebuildCreateMainFluidPass.includes("scene.add(line);")
+            && !rebuildCreateMainFluidPass.includes("line.frustumCulled = false;"),
           sourceShapedCreate: checks(rebuildCreateMainFluidPass || "", [
             "const viscosityMaterial = new RawShaderMaterial({",
             "fragmentShader: fluidViscosityFragment",
@@ -2248,6 +2269,13 @@ const summary = {
             "fboSizeMatchesSource",
             "cellScaleMatchesSource",
             "targetsMatchFboSize",
+            "mode: \"source-Ir-init-PlaneGeometry-2-minus-cellScale-times2-default-frustum-culling\"",
+            "geometryProbe(pass.advectionScene)",
+            "geometryProbe(pass.viscosityScene)",
+            "geometryProbe(pass.divergenceScene)",
+            "geometryProbe(pass.poissonScene)",
+            "geometryProbe(pass.pressureScene)",
+            "mode: \"source-qT-init-PlaneGeometry-2-2-default-frustum-culling\"",
           ]),
         rebuildDefaults: checks(rebuildWebgl, [
           "const SOURCE_AG_VISCOSITY_DEFAULTS = {",
@@ -2282,6 +2310,9 @@ const summary = {
             "mainFluidRawFboSize",
             "mainFluidRawCellScale",
             "mainFluidRawTargetSize",
+            "mainFluidGeometryMode",
+            "mainFluidAdvectionBoundsLineFrustumCulled",
+            "mainFluidForceGeometryMode",
             "for (const key of [\"advection\", \"viscosity\", \"divergence\", \"poisson\", \"pressure\"])",
             "for (const uniformKey of [\"bounds\", \"velocity\", \"velocity_new\", \"v\", \"px\", \"dt\"])",
             "materialSurfaceErrors.push(`mainFluidViscosity${uniformKey}Uniform`)",

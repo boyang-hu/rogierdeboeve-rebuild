@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `Lu` work luminosity branch ownership. Source `Lu.update()` runs optional luminosity as its own branch before bloom, binding `sg.tMap` from `renderTargetBlurB` when blur is enabled and otherwise `renderTargetA`; the bloom branch then consumes `renderTargetBright` when luminosity is enabled or `renderTargetA` otherwise. The rebuild now mirrors that by calling `renderWorkLuminosityPass(workSceneTarget)` before `renderHomeBloomPass(this.workRawTarget)`. Output probes expose `source-Lu-luminosity-branch-before-bloom-independent-of-bloom-enabled` and `source-Lu-bloom-branch-consumes-existing-renderTargetBright-or-renderTargetA`; renderer audit rejects moving work luminosity back into the bloom helper. This is work render-manager branch-order parity only; Phase 1 remains open.
+Latest Phase 1 batch: source `Ir/GT` main-fluid bounded pass geometry ownership. Source `Ir.init()` constructs bounded pass meshes as `PlaneGeometry(2 - cellScale.x * 2, 2 - cellScale.y * 2)` and keeps default mesh frustum culling; source `GT.createBounds()` adds the advection bounds `LineSegments` without forcing culling off. The rebuild now mirrors that for advection, viscosity, divergence, poisson, and pressure while keeping the force pass on source `qT` `PlaneGeometry(2,2)`. Output probes expose bounded-pass geometry and culling state; renderer audit rejects restoring the fullscreen-triangle bounded-pass path or forced bounds-line culling. This is main-fluid runtime-object parity only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -183,6 +183,7 @@ Known remaining gaps:
 - Source `V1` low-res sky ticking lifecycle is now aligned and guarded: source `V1.resize()` sets `this.ticking=true` when `Le.LOW_RES`, waits `100ms`, then sets `this.ticking=false`; source `V1.update()` renders sky only while `this.ticking` is true and writes `z1.uTime` after that render. The rebuild now gates sky raw/composite rendering the same way and exposes `skyTickingLifecycle` through the output probe.
 - Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
 - Source `I1/ag` raw main-fluid resize ownership is now guarded: source `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`, and source `ag.calcSizes(e,t)` preserves raw incoming `e,t` for `fboSize`, `cellScale`, and target `setSize(...)` while rounding only internal simulation fields through `resolution`.
+- Source `Ir/GT` main-fluid bounded pass geometry ownership is now guarded: advection, viscosity, divergence, poisson, and pressure use source `Ir` `PlaneGeometry(2 - cellScale.x * 2, 2 - cellScale.y * 2)` meshes with default culling, advection bounds keeps default `LineSegments` culling, and force remains source `qT` `PlaneGeometry(2,2)`.
 - Source `a1/i1` floor-reflection draw-state and `i1` renderer-state are now guarded: floor `onBeforeRender` hides only the floor component group while reflecting the full Home scene, `sceneWrap`/blocks/environment remain visible in the reflected scene, the reflector raw/blur pass disables source-owned renderer state, and visibility plus renderer state restore after the reflector update.
 - Source `qw` renderer constructor/resize ownership is now guarded: no constructor-time DPR write, `resize(e,t,n)` calls `setSize(e,t)` before `setPixelRatio(n)`, and canvas style dimensions are owned by Three's default `setSize` update-style path.
 - Source `p1.update()` side reveal ownership is now guarded: `uRevealSides` and `uRevealSpreadSides` use source `Cs(Math.abs(world.x), ...)->Fn4` four-decimal rounding rather than continuous clamp/mapLinear floats, and output probes assert exact formula parity for visible work items.
@@ -191,14 +192,15 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Lu` work luminosity branch ownership.
-- Source evidence: `Lu.update()` runs optional luminosity before bloom and independently of `bloom.enabled`; bloom chooses `renderTargetBright` when luminosity is enabled and `renderTargetA` otherwise.
-- Moved work luminosity rendering into `renderWorkLuminosityPass(workSceneTarget)` before the work bloom branch.
-- `renderHomeBloomPass()` no longer owns luminosity rendering; it only consumes the already-rendered bright target when luminosity is enabled.
-- `__rogierOutputProbe.settings.work.renderManagerPassInputs` now exposes `luminosityBranchMode=source-Lu-luminosity-branch-before-bloom-independent-of-bloom-enabled` and `bloomBranchMode=source-Lu-bloom-branch-consumes-existing-renderTargetBright-or-renderTargetA`; work update order now records `Lu.raw -> Lu.optional-blur -> Lu.optional-luminosity -> Lu.optional-bloom -> Ka.mouseSimulation -> Lu.composite -> IT.cameraController -> p1.components`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject moving work luminosity back inside the bloom helper.
-- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, `git diff --check`, build, desktop/mobile output probes, and thumb spotlight probe. Project media material/visibility assertions passed and retained `5/5` visible tracks on `/gc-2026/` and `/hashgraph-vc/`; the probe still captured non-blocking promise noise (`4` entries on `/gc-2026/`, `5` on `/hashgraph-vc/`) with zero failures and zero console messages.
-- This is active work render-manager branch-order parity only. With current default work settings (`luminosity.enabled=true`, `bloom.enabled=true`, `blur.enabled=false`) it should not change default Home output. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `Ir/GT` main-fluid bounded pass geometry ownership.
+- Source evidence: `Ir.init()` constructs `PlaneGeometry(2 - cellScale.x * 2, 2 - cellScale.y * 2)` for its mesh and does not disable mesh culling; `GT.createBounds()` adds the bounds `LineSegments` without `frustumCulled=false`.
+- `createMainFluidPass()` now gives advection, viscosity, divergence, poisson, and pressure source `Ir` plane meshes instead of the shared fullscreen triangle helper.
+- The advection bounds line no longer forces culling off.
+- The force pass remains source `qT` `PlaneGeometry(2,2)` with default culling.
+- `__rogierOutputProbe.settings.work.mainFluid.geometry` now exposes bounded-pass mesh type, geometry type/size/mode, child counts, line type, and culling state.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the fullscreen-triangle bounded-pass path or forced bounds-line culling.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, `git diff --check`, build, desktop/mobile output probes, thumb spotlight probe, interactive mouse probe, and project-media material/visibility probe. Project media probe still captured non-blocking page promise noise with zero failures and zero console messages.
+- This is main-fluid runtime-object parity only. Under the current SwiftShader probe tier main fluid remains disabled, so geometry ownership is guarded by output/audit probes rather than used as proof of final Home fluid/composite feel. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -209,30 +211,30 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-lu-luminosity-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-lu-luminosity-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-fluid-ir-geometry-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-fluid-ir-geometry-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5178 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-desktop CDP_PORT=9278 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-mobile CDP_PORT=9279 VIEWPORT=mobile REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-thumb CDP_PORT=9280 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-media CDP_PORT=9281 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-project-media.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 OUT_DIR=/tmp/rd-ucoords-direct-output-mobile-dpr125 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-fluid-ir-geometry-desktop CDP_PORT=9282 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-fluid-ir-geometry-mobile CDP_PORT=9283 VIEWPORT=mobile REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-fluid-ir-geometry-thumb CDP_PORT=9284 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-fluid-ir-geometry-interactive CDP_PORT=9285 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-interactive-mouse.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-fluid-ir-geometry-media CDP_PORT=9286 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the `VA/XA` runtime `uCoords` direct viewport ownership batch before commit. Renderer audit wrote `/tmp/rd-ucoords-direct-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for direct `Pe.w*i,Pe.h*i` coord ownership. Desktop, mobile, and mobile DPR `1.25` output probes verified the direct `uCoords` markers with zero failures, exceptions, or console messages.
+All relevant checks passed for the `Ir/GT` main-fluid bounded pass geometry ownership batch before commit. Renderer audit wrote `/tmp/rd-fluid-ir-geometry-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for bounded-pass `PlaneGeometry` ownership and default culling. Desktop/mobile output probes, thumb spotlight, and interactive mouse probes passed with zero failures, exceptions, or console messages. Project media probe passed material/visibility assertions; it captured non-blocking page promise noise with zero failures and zero console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this runtime `uCoords` ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this main-fluid geometry ownership batch.
 
-Project-media was not rerun for this batch because production project-media code and route data were untouched; project pages remain regression gates, not proof of Home parity.
+Project pages remain regression gates, not proof of Home parity.
 
 Verified:
 
-- Renderer audit passed for the runtime `uCoords` direct viewport ownership batch: `/tmp/rd-ucoords-direct-audit.json`.
+- Renderer audit passed for the `Ir/GT` main-fluid geometry ownership batch: `/tmp/rd-fluid-ir-geometry-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop, mobile, and mobile DPR `1.25` output probes passed with the source direct `uCoords` markers.
-- Project media remains a regression gate, not proof of Home parity.
+- Desktop/mobile output probes passed with the source main-fluid geometry markers.
+- Thumb spotlight, interactive mouse, and project-media probes passed as regression gates.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -276,7 +278,7 @@ Continue source-driven implementation in this order:
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
-   - `ag/eA` main-fluid pass shaders and seven-target topology are now source-shaped; do not reformat them away from the source literal surface or drop the default-disabled viscosity branch.
+   - `ag/eA/Ir/GT` main-fluid pass shaders, seven-target topology, bounded pass geometry, and default culling ownership are now source-shaped; do not reformat them away from the source literal surface, drop the default-disabled viscosity branch, restore fullscreen triangles for bounded `Ir` passes, or force-disable bounds-line culling.
    - `$1/j1/W1/G1` media composite shader text is now source-shaped; do not remove its inert helper/luminance surface just because the active body is pass-through.
    - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
    - Source `Lu/kA/I1` init settings, optional blur target chain and no-pre-clamp target resize input, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, camera-surface ownership, or optional blur target resize ownership.
@@ -320,7 +322,7 @@ Current state:
 - Build previously passed with `npm run build`.
 - `git diff --check` previously passed.
 - Home WebGL is source-derived but not 1:1 yet.
-- Latest batch removed the rebuild-owned optional `Lu/I1` blur target `Math.max(1, ...)` pre-clamps and guarded the direct source `Math.round(css * blur.scale)` path.
+- Latest batch aligned source `Ir/GT` main-fluid bounded pass geometry and default culling ownership.
 - Project detail media pages are closer and should not regress.
 
 Next focus:

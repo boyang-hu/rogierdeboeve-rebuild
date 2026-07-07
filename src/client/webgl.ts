@@ -7504,9 +7504,16 @@ void main() {
     const cellScale = new Vector2();
     const fboSize = new Vector2(1, 1);
     const bounds = new Vector2();
+    const makeSourceIrMesh = (material: ShaderMaterial) => {
+      const geometry = new PlaneGeometry(2 - cellScale.x * 2, 2 - cellScale.y * 2);
+      const mesh = new Mesh(geometry, material);
+      mesh.userData.sourceGeometryMode = "source-Ir-init-PlaneGeometry-2-minus-cellScale-times2-default-frustum-culling";
+      mesh.userData.sourceGeometrySize = [geometry.parameters.width, geometry.parameters.height];
+      return mesh;
+    };
     const makeBoundedScene = (material: ShaderMaterial) => {
       const scene = new Scene();
-      scene.add(makeFullscreenTriangle(material));
+      scene.add(makeSourceIrMesh(material));
       return scene;
     };
     const makeAdvectionScene = (material: ShaderMaterial, boundsMaterial: ShaderMaterial) => {
@@ -7523,7 +7530,6 @@ void main() {
         -1, -1, 0,
       ], 3));
       const line = new LineSegments(geometry, boundsMaterial);
-      line.frustumCulled = false;
       scene.add(line);
       return scene;
     };
@@ -11824,6 +11830,22 @@ void main() {
     const targetsMatchFboSize = Object.values(pass.targets).every((target) => (
       close(target.width, pass.fboSize.x) && close(target.height, pass.fboSize.y)
     ));
+    const geometryProbe = (scene: Scene) => {
+      const mesh = scene.children.find((child): child is Mesh<BufferGeometry, Material> => child instanceof Mesh);
+      const line = scene.children.find((child): child is LineSegments => child instanceof LineSegments);
+      const geometry = mesh?.geometry as PlaneGeometry | undefined;
+      const parameters = geometry?.parameters;
+      return {
+        childCount: scene.children.length,
+        meshType: mesh?.type ?? null,
+        geometryType: mesh?.geometry.type ?? null,
+        geometryMode: mesh?.userData.sourceGeometryMode ?? null,
+        geometrySize: parameters ? [parameters.width, parameters.height] : null,
+        frustumCulled: mesh?.frustumCulled ?? null,
+        boundsLineType: line?.type ?? null,
+        boundsLineFrustumCulled: line?.frustumCulled ?? null,
+      };
+    };
     return {
       enabled: pass.enabled,
       debug: this.debugMainFluid,
@@ -11878,6 +11900,18 @@ void main() {
         divergence: sourceMaterialProbe(pass.divergenceMaterial, "source-jT-raw-glsl3"),
         poisson: sourceMaterialProbe(pass.poissonMaterial, "source-KT-raw-glsl3"),
         pressure: sourceMaterialProbe(pass.pressureMaterial, "source-JT-raw-glsl3"),
+      },
+      geometry: {
+        mode: "source-Ir-init-PlaneGeometry-2-minus-cellScale-times2-default-frustum-culling",
+        advection: geometryProbe(pass.advectionScene),
+        viscosity: geometryProbe(pass.viscosityScene),
+        divergence: geometryProbe(pass.divergenceScene),
+        poisson: geometryProbe(pass.poissonScene),
+        pressure: geometryProbe(pass.pressureScene),
+        force: {
+          mode: "source-qT-init-PlaneGeometry-2-2-default-frustum-culling",
+          ...geometryProbe(pass.forceScene),
+        },
       },
       targets: {
         main: renderTargetProbe(this.renderer, pass.targets.main),
