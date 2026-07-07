@@ -21,10 +21,11 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1, Phase 2, and Phase 3 closed unless new source-owned evidence requires reopening.
-2. Start Phase 4 with About and auxiliary page source audit.
-3. Convert Phase 4 findings into one scoped source-backed fix batch at a time.
-4. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project-detail probes as regression gates when shared paths change.
-5. Move to Phase 5 only after About/auxiliary page parity is clean or explicitly guarded.
+2. Keep the first Phase 4 About shell/footer/credits modal batch closed unless a concrete source-owned mismatch appears.
+3. Continue Phase 4 with About route entry/leave, split/scroll/footer animation details, and mobile About layout.
+4. Convert Phase 4 findings into one scoped source-backed fix batch at a time.
+5. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project-detail probes as regression gates when shared paths change.
+6. Move to Phase 5 only after About/auxiliary page parity is clean or explicitly guarded.
 
 Everything outside the active phase stays paused unless the audit identifies a shared-path dependency.
 
@@ -49,7 +50,7 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
 | 3. Project detail media/routes | Closed/guarded on 2026-07-07 | Reopen only with concrete project-detail media, scroll, or route mismatch evidence. |
-| 4. About and auxiliary pages | Active next | Audit and align About/auxiliary DOM, scroll, modal/credits, footer/nav, and auxiliary WebGL behavior against source. |
+| 4. About and auxiliary pages | Active; first shell/modal batch closed on 2026-07-07 | Continue auditing About route entry/leave, split/scroll/footer animation details, mobile layout, and remaining auxiliary WebGL behavior against source. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
@@ -129,7 +130,7 @@ Required validation:
 - Thumb spotlight probe.
 - Project media probe.
 
-## Phase 3 Active Record
+## Phase 3 Closed Record
 
 ### Closed: Project detail shell/media DOM source alignment
 
@@ -207,12 +208,36 @@ Phase 3 closeout state:
 
 Goal: bring About and auxiliary pages to the same source-backed standard as Home and project-detail pages.
 
-Start with audit, then patch only source-owned findings:
+### Closed: About shell/footer/credits modal source alignment
 
-1. Compare About DOM/CSS structure against source HTML/CSS: hero, intro, collaborations, recognition, contact, credits trigger, modal shell, footer, nav, and mobile states.
-2. Audit About scroll behavior and auxiliary visual lifecycle against source components `DD`, `TD`, `Fg`, and modal `AD`.
-3. Audit route entry/leave behavior for Home <-> About and project -> About now that Phase 3 router behavior is guarded.
-4. Validate each production batch with build, `scripts/probe-about-scroll-opacity.mjs`, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
+Goal: replace the rebuild-only simplified About shell with source-shaped About structure and modal behavior before deeper transition and animation work.
+
+Current read:
+
+- Source About root is `div[data-view="about"].ui-about`; rebuild now matches.
+- Source About shell includes source-shaped hero, intro with `data-split-articles`, collaborations, recognition list sections, contact, scroll CTA, scrollbar, footer credits trigger, and credits modal.
+- Footer credits are About-only; Home and project footers have no credits trigger and no `.ui-footer-credits`, matching source page ownership.
+- Source modal `AD` stops page scroll, creates Lenis on the modal wrapper/content, fades in, then reverses that lifecycle on close; rebuild now mirrors those observable behaviors.
+- Source CSS-backed About/footer/list/modal geometry replaced the earlier simplified About spacing and global mobile footer hide rule.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-about-scroll-probe CDP_PORT=9430 node scripts/probe-about-scroll-opacity.mjs`
+- Focused About DOM/modal CDP probe: `/tmp/rd-phase4-about-modal-probe/summary.json`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/ OUT_DIR=/tmp/rd-phase4-output-color-probe CDP_PORT=9433 node scripts/probe-output-color.mjs`
+- `OUT_DIR=/tmp/rd-phase4-renderer-audit node scripts/audit-renderer-output.mjs`
+
+### Next Phase 4 Queue
+
+Patch only source-owned findings:
+
+1. Audit About route entry/leave behavior for Home <-> About and project -> About now that Phase 3 router behavior is guarded.
+2. Audit About title/intro split animation and footer animation against source `DD`, `Rg`, `Ou`, and split-text behavior.
+3. Audit About scroll CTA fade, custom scrollbar drag, and mobile About layout against source CSS and `wD`.
+4. Audit any remaining auxiliary visual lifecycle edge against source `TD` and `Fg`; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline guard.
+5. Validate each production batch with build, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
 
 ## Watchlist
 

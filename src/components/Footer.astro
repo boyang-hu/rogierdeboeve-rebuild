@@ -1,13 +1,25 @@
+---
+const { credits = false } = Astro.props;
+---
+
 <footer class="ui-footer">
-  <div class="wrap">
-    <div class="grid grid-cols-24 gap-24 items-end">
-      <div class="ui-footer-credits ts-m c-color">Rogier de Boevé © 2026</div>
-      <ul class="ui-footer-socials socials ts-m">
-        <li><a class="social-a c-color" href="https://twitter.com/rogierdeboeve" target="_blank" rel="noopener" data-sound data-sound-click><span>Twitter</span></a></li>
-        <li><a class="social-a c-color" href="https://www.instagram.com/rdboeve/" target="_blank" rel="noopener" data-sound data-sound-click><span>Instagram</span></a></li>
-      </ul>
-      <div class="ui-footer-contact">
-        <a class="ts-m c-color" href="mailto:hello@rogierdeboeve.com" data-sound data-sound-click><span>hello@rogierdeboeve.com</span></a>
+  <div class="ui-footer-primary">
+    <div class="wrap">
+      <div class="lg:grid grid-cols-24 gap-24 items-end">
+        {credits && (
+          <div class="ui-footer-credits">
+            <span class="ts-m c-color" data-modal-trigger="credits" data-sound data-sound-click>Rogier de Boevé © 2026</span>
+          </div>
+        )}
+        <div class="ui-footer-socials">
+          <ul class="socials ts-m">
+            <li class="social"><a class="social-a c-color" href="https://twitter.com/rogierdeboeve" target="_blank" rel="noopener" data-sound data-sound-click><span>Twitter</span></a></li>
+            <li class="social"><a class="social-a c-color" href="https://www.instagram.com/rdboeve/" target="_blank" rel="noopener" data-sound data-sound-click><span>Instagram</span></a></li>
+          </ul>
+        </div>
+        <div class="ui-footer-contact">
+          <a class="ts-m c-color" href="mailto:hello@rogierdeboeve.com" data-sound data-sound-click><span>hello@rogierdeboeve.com</span></a>
+        </div>
       </div>
     </div>
   </div>

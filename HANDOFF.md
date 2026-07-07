@@ -26,15 +26,15 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 4 next; Phase 3 project-detail media/scroll/route behavior is closed and guarded |
+| Active phase | Phase 4 active; About shell/footer/credits modal source alignment is closed and guarded |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
 | Phase 2 status | Closed/guarded on 2026-07-07 |
 | Phase 3 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Start Phase 4 with About/auxiliary page source audit |
+| Current production priority | Continue Phase 4 with About route entry/leave and remaining auxiliary visual lifecycle audit |
 | Next secondary priority | Keep Phase 1-3 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 3 project route behavior source alignment |
-| Last closed evidence batch | Phase 3 project route behavior source alignment |
-| Local service | `scripts/serve.mjs` instances were running at `http://localhost:5173/` and `http://localhost:5174/` during validation |
+| Last committed source-backed code batch | Phase 4 About shell/footer/credits modal source alignment |
+| Last closed evidence batch | Phase 4 About shell/footer/credits modal source alignment |
+| Local service | Local rebuild service was available at `http://127.0.0.1:5173/` during validation |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
 Closeout state:
@@ -47,28 +47,30 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch closes Phase 3 route behavior against source router and Home CTA evidence.
+The latest production batch closes the first Phase 4 About shell/footer/modal alignment against source HTML/CSS and source modal component behavior.
 
-- Source `ha.onClick` routes same-origin anchors with `data-transition || false` and does not skip an event only because another component called `preventDefault()`.
-- Source Home work titles are `div.ui-work-a`, not project anchors; source CTA component prevents the native click only for sound/magnet behavior while the router still owns navigation.
-- Rebuild now mirrors that split: Home work titles are non-links, CTA click no longer changes active project state, and the global router still handles source-owned CTA navigation.
-- Focused route probe passed for project next/default, project back `work`, project-to-About default, and Home CTA `project` transition.
+- Source About root, hero, intro, collaborations, recognition, contact, scroll CTA, scrollbar, footer credits trigger, and credits modal shell are now mirrored in the Astro DOM.
+- Footer credits are About-only; Home and project footers keep only socials/contact, matching source page ownership.
+- Source modal `AD` behavior is mirrored at the rebuild level: trigger opens the credits modal, page Lenis stops, modal Lenis starts on the modal wrapper/content, close/Escape fades out, modal Lenis is destroyed, and page Lenis restarts.
+- Source CSS-backed About/footer/list/modal geometry replaced the earlier rebuild-only simplified About spacing.
 
-Earlier Phase 3 batches aligned project-detail shell/media DOM and source `RD`, `wD`, `CD`, `Ug` scroll behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
+Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
 ## Current Evidence
 
-Latest Phase 3 evidence:
+Latest Phase 4 evidence:
 
-- Route CDP probe passed with no failures:
-  - `/gc-2026/` project next link -> `/following-wildfire/`, no `is-work-gallery-leaving`, no stuck `is-route-swapping`.
-  - `/gc-2026/` project back link with `data-transition="work"` -> `/`, no `is-work-gallery-leaving`.
-  - `/gc-2026/` nav About default transition -> `/about/`, About nav active.
-  - `/` Home CTA with `data-transition="project"` -> `/hashgraph-vc/`, `is-work-gallery-leaving` true during leave and cleared after enter.
-- Project media probe passed with `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`, `REBUILD_URL=http://127.0.0.1:5173`, `PROJECT_SLUGS=gc-2026,hashgraph-vc`, `OUT_DIR=/tmp/rd-phase3-route-project-media-probe`, `CDP_PORT=9420`.
-- Output color/state probe passed with `OUT_DIR=/tmp/rd-phase3-route-output-color-probe`, `CDP_PORT=9421`.
-- Static renderer audit passed: `node scripts/audit-renderer-output.mjs`.
-- Build passed: `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- About scroll/auxiliary visual lifecycle probe passed:
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-about-scroll-probe CDP_PORT=9430 node scripts/probe-about-scroll-opacity.mjs`
+- About DOM/modal CDP probe passed and wrote `/tmp/rd-phase4-about-modal-probe/summary.json`:
+  - About root, hero visual, split intro, scroll CTA, scrollbar, credits trigger, credits modal, credits main, and close button each exist once.
+  - Home and project pages have no credits trigger/footer credits.
+  - Opening credits sets modal `pointer-events: all`, opacity `1`, page Lenis stopped, and modal Lenis active.
+  - Closing credits sets modal `display: none`, opacity `0`, page Lenis restarted, and modal Lenis destroyed.
+- Home output color/state probe passed with `OUT_DIR=/tmp/rd-phase4-output-color-probe`, `CDP_PORT=9433`.
+- Static renderer audit passed with `OUT_DIR=/tmp/rd-phase4-renderer-audit`.
 
 Phase 2 regression evidence remains available in `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`, `/tmp/rd-output-p2-preloader-desktop`, and `/tmp/rd-output-p2-preloader-mobile`.
 
@@ -92,14 +94,15 @@ Audit method note:
 
 ## Next Action
 
-Phase 1, Phase 2, and Phase 3 are closed. Do not reopen them unless a concrete source-owned mismatch appears.
+Phase 1, Phase 2, and Phase 3 are closed. Do not reopen them unless a concrete source-owned mismatch appears. The first Phase 4 About shell/footer/modal batch is also closed.
 
 Recommended next move:
 
-1. Start Phase 4 by auditing About and auxiliary page DOM, scroll, modal/credits, footer/nav, and WebGL auxiliary visual behavior against source.
-2. Convert only source-backed Phase 4 findings into scoped fixes.
-3. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project route/media probes as regression gates when shared render, router, audio, or lifecycle paths change.
-4. Leave broad transitions/audio/Lenis lifecycle cleanup for Phase 5 unless a shared bug blocks Phase 4.
+1. Continue Phase 4 by auditing About route entry/leave from Home and project pages against source transitions.
+2. Audit remaining About auxiliary visual edges not covered by the shell/modal batch: title/intro split animation, footer animation, scroll CTA fade, scrollbar drag, and mobile About layout.
+3. Convert only source-backed findings into one scoped fix batch at a time.
+4. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project route/media probes as regression gates when shared render, router, audio, or lifecycle paths change.
+5. Leave broad transitions/audio/Lenis lifecycle cleanup for Phase 5 unless a shared bug blocks Phase 4.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:
 
@@ -118,7 +121,7 @@ Guarded Phase 1 areas should not be reopened first without new evidence:
 
 - Rebuild WebGL: `src/client/webgl.ts`
 - Client logic: `src/client/main.ts`, `src/client/motion.ts`, `src/client/audio.ts`
-- Pages/templates: `src/pages/index.astro`, `src/pages/[slug].astro`, `src/components/MediaBlock.astro`
+- Pages/templates: `src/pages/index.astro`, `src/pages/[slug].astro`, `src/pages/about.astro`, `src/components/Footer.astro`, `src/components/MediaBlock.astro`
 - Data: `src/data/projects.json`, `src/data/site.ts`
 - Core validation tools:
   - `scripts/audit-renderer-output.mjs`

@@ -5,13 +5,13 @@ import { recognitionSummary } from "../data/site";
 ---
 
 <BaseLayout title="About - Rogier de Boeve">
-  <section data-view="about" class="ui-about">
+  <div data-view="about" class="ui-about">
     <div class="wrap wrap--md">
-      <div class="ui-about-hero grid grid-cols-24 gap-24">
-        <div class="ui-about-hero-visual col-span-7 col-start-6" data-about-model></div>
-        <div class="col-span-8 col-start-14">
-          <h1 class="ui-title ts-m c-color"><span>About me</span></h1>
-          <div class="ui-about-intro">
+      <div class="ui-about-hero lg:grid grid-cols-24 gap-24">
+        <div class="ui-about-hero-visual lg:col-span-8 lg:col-start-6 xl:col-span-7 xl:col-start-6" data-about-model></div>
+        <div class="lg:col-start-14 lg:col-span-10 xl:col-span-8 xl:col-start-14">
+          <h1 class="ui-title ts-m c-color"><span class="ui-title-inner">About me</span></h1>
+          <div class="ui-about-intro" data-split-articles>
             <p class="ts-1">Independent Freelance Creative Developer & Digital Designer</p>
             <p class="ts-p">Belgium-based creative developer and digital designer, passionate about digital art, creative coding, and 3D animation.</p>
             <p class="ts-p">Always looking for interesting freelance opportunities to develop beautiful digital experiences.</p>
@@ -19,23 +19,23 @@ import { recognitionSummary } from "../data/site";
         </div>
       </div>
 
-      <div class="ui-about-collab grid grid-cols-24 gap-24">
-        <div class="col-span-8 col-start-6">
+      <div class="ui-about-collab flex flex-col md:grid md:grid-cols-24">
+        <div class="ui-about-brands md:col-span-9 lg:col-span-8 lg:col-start-6 xl:col-start-6">
           <h2 class="ts-m">Brands I've worked for</h2>
           <p class="ts-p">Marvel Studios, Coca-Cola, Nike,<br />Jaeger-LeCoultre, ABC TV,<br />T-Mobile, Postman, De Morgen,<br />DreamWorks, On Running.</p>
         </div>
-        <div class="col-span-8 col-start-14">
+        <div class="ui-about-agencies md:col-span-9 md:col-start-13 lg:col-span-8 lg:col-start-14 xl:col-start-14">
           <h2 class="ts-m">Agencies I've worked with</h2>
           <p class="ts-p">Dogstudio, Immersive Garden,<br />North Kingdom, Thoughtlab,<br />Reflektor Digital, Mortierbrigade,<br />Powster, ToyFight.</p>
         </div>
       </div>
 
-      <div class="ui-about-recognition grid grid-cols-24 gap-24">
+      <div class="ui-about-recognition lg:grid grid-cols-24 gap-24">
         <div class="col-span-16 col-start-6">
           <h2 class="ts-m">Recognition</h2>
           <div class="c-list ts-m">
             {recognitionSummary.map((group) => (
-              <div class="c-list-section grid grid-cols-16 gap-24">
+              <div class="c-list-section md:grid grid-cols-16 gap-x-24 gap-y-12">
                 <div class="c-list-section-title">{group.title}</div>
                 <div class="c-list-items">
                   {group.items.map(([title, amount]) => (
@@ -51,7 +51,7 @@ import { recognitionSummary } from "../data/site";
         </div>
       </div>
 
-      <div class="ui-about-contact grid grid-cols-24 gap-24">
+      <div class="ui-about-contact lg:grid grid-cols-24">
         <div class="col-span-7 col-start-6">
           <h2 class="ts-m">Services</h2>
           <ul class="ts-p">
@@ -61,12 +61,104 @@ import { recognitionSummary } from "../data/site";
             <li>Motion Design</li>
           </ul>
         </div>
-        <div class="col-span-8 col-start-14">
+        <div class="lg:col-span-10 lg:col-start-14 xl:col-span-8 xl:col-start-14">
           <h2 class="ts-m">Contact</h2>
           <p class="ts-2">Reach out for<br />freelance collaborations<br />or just to <a href="mailto:hello@rogierdeboeve.com">say hi</a>.</p>
         </div>
       </div>
     </div>
-    <Footer />
-  </section>
+    <div class="c-scroll-cta c-color">
+      <div class="wrap wrap--md">
+        <div class="lg:grid grid-cols-24 gap-24">
+          <div class="lg:col-start-14 lg:col-span-10 xl:col-span-8 xl:col-start-14">
+            <div class="c-scroll-cta-inner">
+              <span class="c-scroll-cta-icon" aria-hidden="true">
+                <svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6">
+                  <rect rx="1" width="2" height="2" fill="currentColor"></rect>
+                  <rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect>
+                  <rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect>
+                </svg>
+              </span>
+              <span class="c-scroll-cta-text ts-m">Scroll Down</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <Footer credits />
+    <div class="ui-scrollbar c-color" aria-hidden="true">
+      <div class="ui-scrollbar-thumb"><div class="ui-scrollbar-thumb-inner"></div></div>
+      <div class="ui-scrollbar-total"></div>
+    </div>
+    <div class="c-modal" style="opacity: 0; pointer-events: none;" data-modal="credits">
+      <div class="c-modal-outer">
+        <div class="c-modal-inner">
+          <div class="wrap wrap--md">
+            <div class="ui-about-credits-main lg:grid grid-cols-24 gap-24">
+              <div class="col-span-7 col-start-6">
+                <h2 class="ts-3">Tools</h2>
+                <h3 class="ts-m">Development</h3>
+                <ul class="ts-p">
+                  <li>Astro</li>
+                  <li>Alien.js</li>
+                  <li>GSAP</li>
+                  <li>Howler.js</li>
+                  <li>Lenis</li>
+                  <li>Three.js</li>
+                </ul>
+
+                <h3 class="ts-m">Design</h3>
+                <ul class="ts-p">
+                  <li>Figma</li>
+                  <li>Photoshop</li>
+                </ul>
+              </div>
+
+              <div class="lg:col-span-10 lg:col-start-14 xl:col-span-8 xl:col-start-14">
+                <h2 class="ts-3">Resources</h2>
+                <h3 class="ts-m">Fonts</h3>
+                <ul class="ts-p">
+                  <li>Jet Brains Mono</li>
+                  <li>Neue Haas Grotesk</li>
+                </ul>
+
+                <h3 class="ts-m">Sound fx</h3>
+                <ul class="ts-p">
+                  <li>Generative.fm</li>
+                  <li>Ava Music Group</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <span class="c-link c-modal-close" data-sound data-sound-click>
+        <span class="c-link-icon">
+          <span class="c-link-icon-bg">
+            <svg class="c-icon-arrow" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+              <rect class="c-icon-arrow-border" x="0" y="0" width="28" height="28" fill="transparent" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1"></rect>
+              <rect class="c-icon-arrow-border-hover" x="0" y="0" width="28" height="28" fill="transparent" stroke="currentColor" stroke-width="1"></rect>
+            </svg>
+          </span>
+          <span class="c-link-icon">
+            <svg class="c-icon-close" width="6" height="6" viewBox="0 0 6 6" aria-hidden="true">
+              <rect rx="1" x="4" width="2" height="2" fill="currentColor"></rect>
+              <rect rx="1" width="2" height="2" fill="currentColor"></rect>
+              <rect rx="1" x="2" y="2" width="2" height="2" fill="currentColor"></rect>
+              <rect rx="1" y="4" x="4" width="2" height="2" fill="currentColor"></rect>
+              <rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect>
+            </svg>
+          </span>
+        </span>
+        <span class="c-link-text">
+          <span class="c-link-text-outer">
+            <span class="c-link-text-inner">
+              <span class="c-link-text-static"><span>Close</span></span>
+              <span class="c-link-text-hover"><span>Close</span></span>
+            </span>
+          </span>
+        </span>
+      </span>
+    </div>
+  </div>
 </BaseLayout>

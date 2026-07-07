@@ -1,4 +1,5 @@
 import gsap from "gsap";
+import Lenis from "lenis";
 import projectsData from "../data/projects.json";
 import type { Project } from "../types";
 
@@ -62,6 +63,8 @@ type PageScrollDetail = {
 
 type PageScrollController = {
   scrollTo: (target: number, options?: { immediate?: boolean }) => void;
+  start?: () => void;
+  stop?: () => void;
   getState: () => {
     scroll: number;
     animatedScroll: number;
@@ -1362,6 +1365,101 @@ function initHomeRouteLeave(getWebgl: () => WebGLLike | undefined, navigate?: Ap
   return () => cleanups.splice(0).forEach((cleanup) => cleanup());
 }
 
+function initModals() {
+  const view = document.querySelector<HTMLElement>("[data-view]");
+  if (!view) return () => {};
+
+  const cleanups: Array<() => void> = [];
+  const activeTweens = new Map<HTMLElement, gsap.core.Tween>();
+  const modalScrolls = new Map<HTMLElement, { lenis: Lenis; rafId: number }>();
+
+  const stopModalScroll = (modal: HTMLElement) => {
+    const runtime = modalScrolls.get(modal);
+    if (!runtime) return;
+
+    cancelAnimationFrame(runtime.rafId);
+    runtime.lenis.destroy();
+    modalScrolls.delete(modal);
+  };
+
+  const startModalScroll = (modal: HTMLElement) => {
+    if (prefersReducedMotion() || modalScrolls.has(modal)) return;
+
+    const content = modal.querySelector<HTMLElement>(".c-modal-outer");
+    if (!content) return;
+
+    const lenis = new Lenis({ wrapper: modal, content });
+    const runtime = {
+      lenis,
+      rafId: 0,
+    };
+    const raf = (time: number) => {
+      lenis.raf(time);
+      runtime.rafId = requestAnimationFrame(raf);
+    };
+
+    runtime.rafId = requestAnimationFrame(raf);
+    modalScrolls.set(modal, runtime);
+  };
+
+  const showModal = (modal: HTMLElement) => {
+    activeTweens.get(modal)?.kill();
+    modal.style.pointerEvents = "all";
+    modal.style.display = "block";
+    window.__rogierPageScroll?.stop?.();
+    startModalScroll(modal);
+    activeTweens.set(modal, gsap.fromTo(modal, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "none" }));
+  };
+
+  const hideModal = (modal: HTMLElement) => {
+    activeTweens.get(modal)?.kill();
+    modal.style.pointerEvents = "none";
+    window.__rogierPageScroll?.start?.();
+    stopModalScroll(modal);
+    activeTweens.set(modal, gsap.to(modal, {
+      opacity: 0,
+      duration: 0.5,
+      ease: "none",
+      onComplete: () => {
+        modal.style.display = "none";
+      },
+    }));
+  };
+
+  view.querySelectorAll<HTMLElement>("[data-modal]").forEach((modal) => {
+    const id = modal.dataset.modal;
+    if (!id) return;
+
+    const triggers = Array.from(view.querySelectorAll<HTMLElement>(`[data-modal-trigger="${id}"]`));
+    const closeButton = modal.querySelector<HTMLElement>(".c-modal-close");
+    const onTriggerClick = (event: MouseEvent) => {
+      event.preventDefault();
+      showModal(modal);
+    };
+    const onCloseClick = (event: MouseEvent) => {
+      event.preventDefault();
+      hideModal(modal);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" || event.keyCode === 27) hideModal(modal);
+    };
+
+    triggers.forEach((trigger) => trigger.addEventListener("click", onTriggerClick));
+    closeButton?.addEventListener("click", onCloseClick);
+    document.addEventListener("keydown", onKeyDown);
+    cleanups.push(() => {
+      activeTweens.get(modal)?.kill();
+      stopModalScroll(modal);
+      triggers.forEach((trigger) => trigger.removeEventListener("click", onTriggerClick));
+      closeButton?.removeEventListener("click", onCloseClick);
+      document.removeEventListener("keydown", onKeyDown);
+      if (modal.style.pointerEvents === "all") window.__rogierPageScroll?.start?.();
+    });
+  });
+
+  return () => cleanups.splice(0).forEach((cleanup) => cleanup());
+}
+
 function initViewLifecycle(animate = true) {
   const view = document.querySelector<HTMLElement>("[data-view]");
   if (!view) return () => {};
@@ -1555,6 +1653,7 @@ function boot() {
     cleanupPageCallbacks.push(initProjectLeave(() => webgl));
     cleanupPageCallbacks.push(initAboutLeave(() => webgl, navigateTo));
     cleanupPageCallbacks.push(initHomeRouteLeave(() => webgl, navigateTo));
+    cleanupPageCallbacks.push(initModals());
     cleanupPageCallbacks.push(initScrollState());
   };
   const preloadRoutes = () => {

@@ -14,6 +14,8 @@ type PageScrollDetail = {
 type PageScrollController = {
   scrollTo: (target: number, options?: { immediate?: boolean }) => void;
   getState: () => PageScrollDetail;
+  start?: () => void;
+  stop?: () => void;
 };
 
 declare global {
@@ -56,6 +58,12 @@ function initLenis() {
         else window.scrollTo({ top: target, behavior: "smooth" });
       },
       getState: () => nativePageScrollState(),
+      start: () => {
+        document.documentElement.style.overflow = "";
+      },
+      stop: () => {
+        document.documentElement.style.overflow = "hidden";
+      },
     };
     window.__rogierPageScroll = controller;
     const onScroll = () => {
@@ -89,6 +97,8 @@ function initLenis() {
   const controller: PageScrollController = {
     scrollTo: (target, options) => lenis.scrollTo(target, options),
     getState: lenisState,
+    start: () => lenis.start(),
+    stop: () => lenis.stop(),
   };
   window.__rogierPageScroll = controller;
 
