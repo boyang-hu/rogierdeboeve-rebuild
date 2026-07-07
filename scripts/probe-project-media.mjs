@@ -89,6 +89,74 @@ async function evaluateJson(ws, expression) {
   return JSON.parse(result.result.value);
 }
 
+function assertArray(actual, expected, label, errors) {
+  if (JSON.stringify(actual || null) !== JSON.stringify(expected)) errors.push(label);
+}
+
+function assertProjectMediaMaterial(parsed, slug) {
+  const errors = [];
+  const projectMedia = parsed.probe?.uniforms?.projectMedia;
+  const planes = projectMedia?.planes || [];
+  if (projectMedia?.mode !== "source-UD-FD-ND-project-media-material-lifecycle") errors.push("mode");
+  if (projectMedia?.constructorDefaultsMode !== "source-UD-null-tMap-zero-size-vectors-zero-background") {
+    errors.push("constructorDefaultsMode");
+  }
+  if (projectMedia?.uMapSizeBindingMode !== "source-ND-init-writes-data-media-width-height-load-updates-natural-size") {
+    errors.push("uMapSizeBindingMode");
+  }
+  if (projectMedia?.uContainerSizeBindingMode !== "source-FD-resize-writes-bounds-width-height") {
+    errors.push("uContainerSizeBindingMode");
+  }
+  if (projectMedia?.tMapBindingMode !== "source-ND-loadImage-loadVideo-binds-after-load") {
+    errors.push("tMapBindingMode");
+  }
+  if (projectMedia?.uBackgroundColorBindingMode !== "source-FD-updateBackground-Se-setMediaBackground-resize-writes-runtime") {
+    errors.push("uBackgroundColorBindingMode");
+  }
+  if (projectMedia?.planeCount !== parsed.mediaCount) errors.push("planeCount");
+  if (!Array.isArray(planes) || planes.length !== parsed.mediaCount || planes.length === 0) errors.push("planes");
+  if (projectMedia?.allConstructorDefaultsMatchSource !== true) errors.push("allConstructorDefaultsMatchSource");
+  if (projectMedia?.allRuntimeBackgroundsMatchState !== true) errors.push("allRuntimeBackgroundsMatchState");
+
+  planes.forEach((plane, index) => {
+    const label = `plane${index}`;
+    if (plane.constructorDefaultsMode !== "source-UD-null-tMap-zero-size-vectors-zero-background") {
+      errors.push(`${label}ConstructorDefaultsMode`);
+    }
+    if (plane.toneMappedMode !== "source-UD-toneMapped-false") errors.push(`${label}ToneMappedMode`);
+    if (plane.toneMapped !== false) errors.push(`${label}ToneMapped`);
+    if (plane.transparent !== true) errors.push(`${label}Transparent`);
+    if (plane.depthWrite !== false) errors.push(`${label}DepthWrite`);
+    if (plane.depthTest !== false) errors.push(`${label}DepthTest`);
+    if (plane.constructorTMapWasNull !== true) errors.push(`${label}ConstructorTMapWasNull`);
+    assertArray(plane.constructorContainerSize, [0, 0], `${label}ConstructorContainerSize`, errors);
+    assertArray(plane.constructorMapSize, [0, 0], `${label}ConstructorMapSize`, errors);
+    assertArray(plane.constructorBackgroundColor, [0, 0, 0], `${label}ConstructorBackgroundColor`, errors);
+    if (plane.constructorBackgroundWasZero !== true) errors.push(`${label}ConstructorBackgroundWasZero`);
+    if (plane.constructorRevealWasZero !== true) errors.push(`${label}ConstructorRevealWasZero`);
+    if (plane.uMapSizeBindingMode !== "source-ND-init-writes-data-media-width-height-load-updates-natural-size") {
+      errors.push(`${label}UMapSizeBindingMode`);
+    }
+    if (plane.uContainerSizeBindingMode !== "source-FD-resize-writes-bounds-width-height") {
+      errors.push(`${label}UContainerSizeBindingMode`);
+    }
+    if (plane.tMapBindingMode !== "source-ND-loadImage-loadVideo-binds-after-load") errors.push(`${label}TMapBindingMode`);
+    if (plane.uBackgroundColorBindingMode !== "source-FD-updateBackground-Se-setMediaBackground-resize-writes-runtime") {
+      errors.push(`${label}BackgroundBindingMode`);
+    }
+    if (plane.tMapBound !== true && plane.tMapIsNull !== true) errors.push(`${label}TMapBindingState`);
+    if (!Array.isArray(plane.uMapSize) || plane.uMapSize.some((value) => !(value > 0))) errors.push(`${label}UMapSizeRuntime`);
+    if (!Array.isArray(plane.uContainerSize) || plane.uContainerSize.some((value) => !(value > 0))) {
+      errors.push(`${label}UContainerSizeRuntime`);
+    }
+    if (plane.uBackgroundColorMatchesState !== true) errors.push(`${label}BackgroundMatchesState`);
+  });
+
+  if (errors.length) {
+    throw new Error(`Project media material mismatch for ${slug}: ${errors.join(", ")}`);
+  }
+}
+
 async function probeSlug(ws, slug) {
   const failures = [];
   const exceptions = [];
@@ -123,9 +191,11 @@ async function probeSlug(ws, slug) {
     probe: window.__rogierOutputProbe || null
   }`);
   if (!parsed.probe) throw new Error(`No __rogierOutputProbe data found for ${slug}`);
+  assertProjectMediaMaterial(parsed, slug);
   const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
   const screenshotFile = path.join(outDir, `${slug}-project-media-probe.png`);
   writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
+  const projectMedia = parsed.probe?.uniforms?.projectMedia || null;
   ws.removeEventListener("message", onMessage);
   return {
     slug,
@@ -134,6 +204,10 @@ async function probeSlug(ws, slug) {
     mediaReveal: parsed.probe?.uniforms?.preComposite?.uMediaReveal,
     mediaRawMean: parsed.probe?.targets?.mediaRaw?.gridStats?.mean,
     mediaMean: parsed.probe?.targets?.media?.gridStats?.mean,
+    projectMediaConstructorMode: projectMedia?.constructorDefaultsMode,
+    projectMediaPlaneCount: projectMedia?.planeCount,
+    projectMediaAllConstructorDefaultsMatchSource: projectMedia?.allConstructorDefaultsMatchSource,
+    projectMediaAllRuntimeBackgroundsMatchState: projectMedia?.allRuntimeBackgroundsMatchState,
     failures: failures.filter((failure) => !failure.canceled).map((failure) => ({ type: failure.type, errorText: failure.errorText })),
     exceptions,
     consoleMessages: consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message)),

@@ -70,9 +70,44 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults including zero-vector `uCoords` construction, source `$A` about local `Ka` runtime writeback, source `ZA/KA` floating no-sampler-write and no-`uCoords` runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence plus `scroll.active` restore preservation ownership are guarded; source `qw` renderer constructor/resize ownership is guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing and source-rounded `uScrollOpacity=Cs(scroll,0,Pe.h*.25,1,0,!0)` ownership are guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest guardrail addition: source `$1/j1/W1` media composite implicit default `NormalBlending` constructor shape is guarded without an explicit rebuild `blending:` field.
+Latest guardrail addition: source `UD/FD/ND` project media material constructor defaults and later runtime writer ownership are guarded. Project media planes now expose source-null/zero constructor state separately from `ND`/`FD` runtime writes.
 
-Latest accepted batch: source `$1/j1/W1` media composite material now keeps Three's implicit default `NormalBlending=1` constructor shape. The mirrored `W1` material sets `transparent:true`, `depthWrite:false`, and `depthTest:false`, but does not set `blending`, while the rebuild had an explicit `blending: NormalBlending` override. This is media composite material-state parity only; Phase 1 remains open.
+Latest accepted batch: source `UD` project media material construction now starts with `tMap:null`, zero size vectors, zero background color, `uReveal:0`, and source material flags including `toneMapped:false`; the rebuild no longer seeds a placeholder texture, `1x1`/`1600x1200` dimensions, or project media background at construction time. This is project-media material-constructor parity only; Phase 1 remains open.
+
+### S1-354 `UD/FD/ND` Project Media Material Constructor Defaults
+
+This batch aligns one source-backed constructor/runtime ownership edge in the project media plane chain. It does not change shader formulas, render targets, media composite transfer, project data, route behavior, media reveal timing, or the source `C1.tMedia` binding.
+
+Source evidence:
+
+- Source `UD` constructs its material with `glslVersion:lt`, `toneMapped:false`, `transparent:true`, `depthWrite:false`, `depthTest:false`, `tMap:new I(null)`, `uContainerSize:new I(new Q)`, `uMapSize:new I(new Q)`, `uCameraDistance:new I`, `uRadius:new I`, `uBackgroundColor:new I(new L)`, and `uReveal:new I(0)`.
+- Source `ND.init()` reads `data-media-width` / `data-media-height` and writes `this.mediaItemInstance.planeMesh.material.uniforms.uMapSize.value.set(e,t)` after construction.
+- Source `ND.loadImage()` / `loadVideo()` bind `tMap` only after the media worker/video path produces a texture, and the video `loadedmetadata` branch writes natural video dimensions.
+- Source `FD.resize()` owns runtime DOM sizing through `uContainerSize.value.set(this.bounds.width,this.bounds.height)` and `uRadius`; project/background state is written later, not as a `UD` constructor default.
+
+Runtime and tooling changes:
+
+- `createMediaMaterial()` now constructs `tMap:null`, empty `Vector2()` values for `uContainerSize` and `uMapSize`, `new Color(0,0,0)` for `uBackgroundColor`, `uReveal:0`, and `toneMapped:false`.
+- The old constructor placeholder texture, `Vector2(1,1)`, `Vector2(1600,1200)`, and `this.mediaBackground.clone()` defaults were removed.
+- Media material `userData` records source constructor mode plus `ND`/`FD` runtime binding ownership markers.
+- `__rogierOutputProbe.uniforms.projectMedia` exposes every project media plane's constructor defaults, runtime map/container/background values, material flags, and source binding modes.
+- `scripts/probe-project-media.mjs` now asserts the `UD` constructor defaults and `ND`/`FD` runtime ownership on both checked project routes.
+- `scripts/audit-renderer-output.mjs` extracts source `UD`, `FD`, and `ND`, checks the source anchors, rejects the old rebuild constructor fallbacks, and checks project-media probe coverage.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/ud-media-defaults-audit.json` passed; `sourceManagers.helperMaterialSurfaces.UDProjectMedia` source/rebuild/probe ownership checks were all `true`, and recursive false/null count was `0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed at `/tmp/ud-media-defaults-output-desktop` with zero failures, exceptions, or console messages.
+- Mobile output probe passed at `/tmp/ud-media-defaults-output-mobile` with zero failures, exceptions, or console messages.
+- Project media probe passed cleanly on rerun at `/tmp/ud-media-defaults-project-media-rerun`; `gc-2026` and `hashgraph-vc` both retained `5/5` visible media, `projectMediaAllConstructorDefaultsMatchSource=true`, `projectMediaAllRuntimeBackgroundsMatchState=true`, and zero failures, exceptions, or console messages.
+- Desktop thumb spotlight probe passed at `/tmp/ud-media-defaults-thumb` with zero failures, exceptions, or console messages.
+
+Decision: keep project media `UD` construction source-null/zero and leave texture, natural/media DOM sizes, radius, and background state to the source `ND`/`FD` lifecycle. Do not restore placeholder textures, constructor-time fallback dimensions, or constructor-time project background color without mirrored-bundle evidence. Phase 1 remains open because this closes one project-media constructor/runtime ownership mismatch only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-353 `$1/j1/W1` Media Composite Implicit Blending Default
 

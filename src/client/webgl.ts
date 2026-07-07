@@ -7866,22 +7866,36 @@ void main() {
 
   private createMediaMaterial() {
     dumpShader("UD-project-media", projectMediaVertex, projectMediaFragment);
-    return new ShaderMaterial({
+    const material = new ShaderMaterial({
+      toneMapped: false,
       transparent: true,
       depthWrite: false,
       depthTest: false,
       uniforms: {
-        tMap: { value: this.placeholder },
-        uContainerSize: { value: new Vector2(1, 1) },
-        uMapSize: { value: new Vector2(1600, 1200) },
+        tMap: { value: null },
+        uContainerSize: { value: new Vector2() },
+        uMapSize: { value: new Vector2() },
         uCameraDistance: { value: 0 },
         uRadius: { value: 0 },
-        uBackgroundColor: { value: this.mediaBackground.clone() },
+        uBackgroundColor: { value: new Color(0, 0, 0) },
         uReveal: { value: 0 },
       },
       vertexShader: projectMediaVertex,
       fragmentShader: projectMediaFragment,
     });
+    material.userData.sourceMediaMaterialConstructorMode = "source-UD-null-tMap-zero-size-vectors-zero-background";
+    material.userData.sourceMediaMaterialToneMappedMode = "source-UD-toneMapped-false";
+    material.userData.sourceMediaMaterialTMapWasNull = material.uniforms.tMap.value === null;
+    material.userData.sourceMediaMaterialContainerSize = (material.uniforms.uContainerSize.value as Vector2).toArray();
+    material.userData.sourceMediaMaterialMapSize = (material.uniforms.uMapSize.value as Vector2).toArray();
+    material.userData.sourceMediaMaterialBackgroundColor = (material.uniforms.uBackgroundColor.value as Color).toArray();
+    material.userData.sourceMediaMaterialBackgroundWasZero = (material.uniforms.uBackgroundColor.value as Color).equals(new Color(0, 0, 0));
+    material.userData.sourceMediaMaterialRevealWasZero = material.uniforms.uReveal.value === 0;
+    material.userData.sourceMediaMaterialMapSizeBindingMode = "source-ND-init-writes-data-media-width-height-load-updates-natural-size";
+    material.userData.sourceMediaMaterialContainerSizeBindingMode = "source-FD-resize-writes-bounds-width-height";
+    material.userData.sourceMediaMaterialTMapBindingMode = "source-ND-loadImage-loadVideo-binds-after-load";
+    material.userData.sourceMediaMaterialBackgroundBindingMode = "source-FD-updateBackground-Se-setMediaBackground-resize-writes-runtime";
+    return material;
   }
 
   private observeMediaPlane(plane: MediaPlane) {
@@ -9812,6 +9826,42 @@ void main() {
       const value = environmentShaderSurface[key];
       return typeof value === "number" && Math.abs(value - SOURCE_QN_ENVIRONMENT_SHADER_CONSTANTS[key]) < 1e-6;
     });
+    const projectMediaPlanes = this.mediaPlanes.map((plane) => {
+      const uniforms = plane.material.uniforms;
+      const backgroundColor = uniforms.uBackgroundColor.value as Color;
+      return {
+        constructorDefaultsMode: plane.material.userData.sourceMediaMaterialConstructorMode,
+        toneMappedMode: plane.material.userData.sourceMediaMaterialToneMappedMode,
+        toneMapped: plane.material.toneMapped,
+        transparent: plane.material.transparent,
+        depthWrite: plane.material.depthWrite,
+        depthTest: plane.material.depthTest,
+        constructorTMapWasNull: plane.material.userData.sourceMediaMaterialTMapWasNull,
+        constructorContainerSize: plane.material.userData.sourceMediaMaterialContainerSize,
+        constructorMapSize: plane.material.userData.sourceMediaMaterialMapSize,
+        constructorBackgroundColor: plane.material.userData.sourceMediaMaterialBackgroundColor,
+        constructorBackgroundWasZero: plane.material.userData.sourceMediaMaterialBackgroundWasZero,
+        constructorRevealWasZero: plane.material.userData.sourceMediaMaterialRevealWasZero,
+        uMapSizeBindingMode: plane.material.userData.sourceMediaMaterialMapSizeBindingMode,
+        uContainerSizeBindingMode: plane.material.userData.sourceMediaMaterialContainerSizeBindingMode,
+        tMapBindingMode: plane.material.userData.sourceMediaMaterialTMapBindingMode,
+        uBackgroundColorBindingMode: plane.material.userData.sourceMediaMaterialBackgroundBindingMode,
+        loaded: plane.loaded,
+        visible: plane.mesh.visible,
+        tMapIsNull: uniforms.tMap.value === null,
+        tMapBound: uniforms.tMap.value === plane.texture,
+        uMapSize: (uniforms.uMapSize.value as Vector2).toArray(),
+        uContainerSize: (uniforms.uContainerSize.value as Vector2).toArray(),
+        uRadius: uniforms.uRadius.value,
+        uCameraDistance: uniforms.uCameraDistance.value,
+        uBackgroundColor: backgroundColor.toArray(),
+        uBackgroundColorMatchesState:
+          Math.abs(backgroundColor.r - this.settingsState.media.background.r) < 1e-6
+          && Math.abs(backgroundColor.g - this.settingsState.media.background.g) < 1e-6
+          && Math.abs(backgroundColor.b - this.settingsState.media.background.b) < 1e-6,
+        uReveal: uniforms.uReveal.value,
+      };
+    });
     const backgroundAmbientColor = this.backgroundMaterial.uniforms.uAmbientColor.value as Color;
     const activeWorkEmissive = activeWorkItem?.material.emissive ?? null;
     const aboutScrollOpacityScroll = this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY;
@@ -10457,6 +10507,31 @@ void main() {
         },
       },
       uniforms: {
+        projectMedia: {
+          mode: "source-UD-FD-ND-project-media-material-lifecycle",
+          planeCount: projectMediaPlanes.length,
+          constructorDefaultsMode: "source-UD-null-tMap-zero-size-vectors-zero-background",
+          uMapSizeBindingMode: "source-ND-init-writes-data-media-width-height-load-updates-natural-size",
+          uContainerSizeBindingMode: "source-FD-resize-writes-bounds-width-height",
+          tMapBindingMode: "source-ND-loadImage-loadVideo-binds-after-load",
+          uBackgroundColorBindingMode: "source-FD-updateBackground-Se-setMediaBackground-resize-writes-runtime",
+          allConstructorDefaultsMatchSource: projectMediaPlanes.every((plane) => (
+            plane.constructorDefaultsMode === "source-UD-null-tMap-zero-size-vectors-zero-background"
+            && plane.toneMappedMode === "source-UD-toneMapped-false"
+            && plane.toneMapped === false
+            && plane.transparent === true
+            && plane.depthWrite === false
+            && plane.depthTest === false
+            && plane.constructorTMapWasNull === true
+            && JSON.stringify(plane.constructorContainerSize) === JSON.stringify([0, 0])
+            && JSON.stringify(plane.constructorMapSize) === JSON.stringify([0, 0])
+            && JSON.stringify(plane.constructorBackgroundColor) === JSON.stringify([0, 0, 0])
+            && plane.constructorBackgroundWasZero === true
+            && plane.constructorRevealWasZero === true
+          )),
+          allRuntimeBackgroundsMatchState: projectMediaPlanes.every((plane) => plane.uBackgroundColorMatchesState === true),
+          planes: projectMediaPlanes,
+        },
         preComposite: {
           materialMode: "source-C1-raw-glsl3",
           vertexMode: "source-D1-matrix-fullscreen",

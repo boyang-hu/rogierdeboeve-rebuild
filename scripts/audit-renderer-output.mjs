@@ -19,6 +19,7 @@ const rebuildMotionPath = process.env.REBUILD_MOTION || "src/client/motion.ts";
 const rebuildSitePath = process.env.REBUILD_SITE || "src/data/site.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
 const rebuildOutputProbePath = process.env.REBUILD_OUTPUT_PROBE || "scripts/probe-output-color.mjs";
+const rebuildProjectMediaProbePath = process.env.REBUILD_PROJECT_MEDIA_PROBE || "scripts/probe-project-media.mjs";
 const rebuildAboutScrollProbePath = process.env.REBUILD_ABOUT_SCROLL_PROBE || "scripts/probe-about-scroll-opacity.mjs";
 const rebuildInteractiveMouseProbePath = process.env.REBUILD_INTERACTIVE_MOUSE_PROBE || "scripts/probe-interactive-mouse.mjs";
 const rebuildMirrorSitePath = process.env.REBUILD_MIRROR_SITE || "scripts/mirror-site.mjs";
@@ -178,6 +179,7 @@ const rebuildMotion = readFileSync(rebuildMotionPath, "utf8");
 const rebuildSite = readFileSync(rebuildSitePath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
 const rebuildOutputProbe = readFileSync(rebuildOutputProbePath, "utf8");
+const rebuildProjectMediaProbe = readFileSync(rebuildProjectMediaProbePath, "utf8");
 const rebuildAboutScrollProbe = readFileSync(rebuildAboutScrollProbePath, "utf8");
 const rebuildInteractiveMouseProbe = readFileSync(rebuildInteractiveMouseProbePath, "utf8");
 const rebuildMirrorSite = readFileSync(rebuildMirrorSitePath, "utf8");
@@ -202,6 +204,7 @@ const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaa
 const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
 const rebuildCreateMainCompositeMaterial = extractBlock(rebuildWebgl, "private createMainCompositeMaterial()");
 const rebuildCreateMediaCompositeMaterial = extractBlock(rebuildWebgl, "private createMediaCompositeMaterial()");
+const rebuildCreateMediaMaterial = extractBlock(rebuildWebgl, "private createMediaMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const rebuildCreateWorkBlockMaterial = extractBlock(rebuildWebgl, "private createWorkBlockMaterial()");
 const rebuildWorkBlockSourceHaVertexShader = extractConstTemplate(rebuildWebgl, "workBlockSourceHaVertexShader");
@@ -280,6 +283,9 @@ const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
 const sourceWorkRenderManagerKA = extractAround(bundle, "class kA extends Lu", 320, 900);
 const sourceLA = extractAround(bundle, "class lA extends", 320, 1100);
 const sourceW1 = extractAround(bundle, "class W1 extends", 320, 1100);
+const sourceUD = extractAround(bundle, "class UD extends", 320, 1200);
+const sourceFD = extractAround(bundle, "class FD extends", 320, 1800);
+const sourceND = extractAround(bundle, "class ND extends", 320, 2800);
 const sourceSg = extractAround(bundle, "class sg extends", 320, 900);
 const sourceRg = extractAround(bundle, "class rg extends", 320, 1100);
 const sourceNa = extractAround(bundle, "class Na extends", 420, 900);
@@ -1537,6 +1543,73 @@ const summary = {
             && rebuildOutputProbe.includes("mediaCompositeDefaultBlending"),
         },
         excerpt: compact(sourceW1.text),
+      },
+      UDProjectMedia: sourceUD && sourceFD && sourceND && {
+        index: sourceUD.index,
+        checks: checks(sourceUD.text, [
+          "class UD extends Cn",
+          "glslVersion:lt",
+          "toneMapped:!1",
+          "tMap:new I(null)",
+          "uContainerSize:new I(new Q)",
+          "uMapSize:new I(new Q)",
+          "uCameraDistance:new I",
+          "uRadius:new I",
+          "uBackgroundColor:new I(new L)",
+          "uReveal:new I(0)",
+          "transparent:!0",
+          "depthWrite:!1",
+          "depthTest:!1",
+        ]),
+        ownership: {
+          sourceConstructorDefaults: orderedIncludes(sourceUD.text, [
+            "tMap:new I(null)",
+            "uContainerSize:new I(new Q)",
+            "uMapSize:new I(new Q)",
+            "uCameraDistance:new I",
+            "uRadius:new I",
+            "uBackgroundColor:new I(new L)",
+            "uReveal:new I(0)",
+          ]),
+          sourceFDResizeWritesRuntime:
+            sourceFD.text.includes("this.material.uniforms.uContainerSize.value.set(this.bounds.width,this.bounds.height)")
+            && sourceFD.text.includes("this.material.uniforms.uRadius.value=r"),
+          sourceNDInitWritesMapSize:
+            sourceND.text.includes("this.mediaItemInstance.planeMesh.material.uniforms.uMapSize.value.set(e,t)"),
+          sourceNDLoadBindsTexture:
+            sourceND.text.includes("this.mediaItemInstance.planeMesh.material.uniforms.tMap.value=r")
+            && sourceND.text.includes("this.mediaItemInstance.planeMesh.material.uniforms.tMap.value=n"),
+          sourceNDVideoMetadataWritesNaturalSize:
+            sourceND.text.includes("this.mediaItemInstance.planeMesh.material.uniforms.uMapSize.value.set(this.video.videoWidth,this.video.videoHeight)"),
+          rebuildConstructorDefaults:
+            Boolean(rebuildCreateMediaMaterial)
+            && rebuildCreateMediaMaterial.includes("toneMapped: false")
+            && rebuildCreateMediaMaterial.includes("tMap: { value: null }")
+            && rebuildCreateMediaMaterial.includes("uContainerSize: { value: new Vector2() }")
+            && rebuildCreateMediaMaterial.includes("uMapSize: { value: new Vector2() }")
+            && rebuildCreateMediaMaterial.includes("uBackgroundColor: { value: new Color(0, 0, 0) }")
+            && rebuildCreateMediaMaterial.includes("uReveal: { value: 0 }"),
+          rebuildNoOldConstructorFallbacks:
+            Boolean(rebuildCreateMediaMaterial)
+            && !rebuildCreateMediaMaterial.includes("tMap: { value: this.placeholder }")
+            && !rebuildCreateMediaMaterial.includes("uContainerSize: { value: new Vector2(1, 1) }")
+            && !rebuildCreateMediaMaterial.includes("uMapSize: { value: new Vector2(1600, 1200) }")
+            && !rebuildCreateMediaMaterial.includes("uBackgroundColor: { value: this.mediaBackground.clone() }"),
+          rebuildRuntimeWriters:
+            rebuildWebgl.includes("material.uniforms.uMapSize.value.set(")
+            && rebuildWebgl.includes("plane.material.uniforms.uMapSize.value.set(video.videoWidth || 1600, video.videoHeight || 1200)")
+            && rebuildWebgl.includes("plane.material.uniforms.tMap.value = texture")
+            && rebuildWebgl.includes("plane.material.uniforms.uContainerSize.value.set(Math.max(1, rect.width), Math.max(1, rect.height))")
+            && rebuildWebgl.includes("plane.material.uniforms.uBackgroundColor.value.copy(this.mediaBackground)"),
+          rebuildProbeCoverage:
+            rebuildWebgl.includes("projectMedia: {")
+            && rebuildWebgl.includes("allConstructorDefaultsMatchSource")
+            && rebuildWebgl.includes("source-UD-null-tMap-zero-size-vectors-zero-background")
+            && rebuildProjectMediaProbe.includes("Project media material mismatch")
+            && rebuildProjectMediaProbe.includes("source-UD-null-tMap-zero-size-vectors-zero-background")
+            && rebuildProjectMediaProbe.includes("source-FD-resize-writes-bounds-width-height"),
+        },
+        excerpt: compact(`${sourceUD.text} ${sourceFD.text} ${sourceND.text}`),
       },
       mediaClearOwnership: {
         sourceLoSettingsClearUnused:
