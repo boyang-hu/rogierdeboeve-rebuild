@@ -338,6 +338,11 @@ async function runProbe() {
   if (Math.abs((light.intensity ?? 0) - expectedActiveProjectSpotlight) > 0.001) spotlightErrors.push("intensity");
   if (Math.abs((light.stateIntensity ?? 0) - expectedActiveProjectSpotlight) > 0.001) spotlightErrors.push("stateIntensity");
   if (light.defaultMode !== "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow") spotlightErrors.push("defaultMode");
+  if (light.constructorLifecycleMode !== "source-p1-setLights-no-map-no-target-position") spotlightErrors.push("constructorLifecycleMode");
+  if (light.constructorMapWasNull !== true) spotlightErrors.push("constructorMapWasNull");
+  if (JSON.stringify(light.constructorTarget) !== JSON.stringify([0, 0, 0])) spotlightErrors.push(`constructorTarget=${JSON.stringify(light.constructorTarget)}`);
+  if (light.constructorTargetWasDefault !== true) spotlightErrors.push("constructorTargetWasDefault");
+  if (light.homeInitMode !== "source-SD-init-owns-spotLight-map-position-target-intensity") spotlightErrors.push("homeInitMode");
   if (light.shadowDefaultMode !== "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512") spotlightErrors.push("shadowDefaultMode");
   if (light.colorHex !== 0xffffff) spotlightErrors.push(`colorHex=${light.colorHex}`);
   if (!closeTo(light.distance, 0)) spotlightErrors.push(`distance=${light.distance}`);
@@ -552,6 +557,12 @@ async function runProbe() {
   }
   if (auxiliaryLifecycle.aboutInitialScrollMode !== "source-TD-await-200ms-after-map-then-onScroll") {
     materialErrors.push("auxiliaryAboutInitialScrollMode");
+  }
+  if (typeof auxiliaryLifecycle.aboutPreviousSpotlightMapMode !== "string") {
+    materialErrors.push("auxiliaryAboutPreviousSpotlightMapMode");
+  }
+  if (typeof auxiliaryLifecycle.aboutPreviousSpotlightMapWasNull !== "boolean") {
+    materialErrors.push("auxiliaryAboutPreviousSpotlightMapWasNull");
   }
   if (auxiliaryLifecycle.aboutCharacterRotatableMode !== "source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy") {
     materialErrors.push("auxiliaryAboutCharacterRotatableMode");

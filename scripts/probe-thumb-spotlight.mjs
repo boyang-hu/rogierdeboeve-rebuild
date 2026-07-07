@@ -92,6 +92,19 @@ function assertSourceSpotlightDefaults(light, label, errors) {
   if (light?.defaultMode !== "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow") {
     errors.push(`${label}DefaultMode=${light?.defaultMode}`);
   }
+  if (light?.constructorLifecycleMode !== "source-p1-setLights-no-map-no-target-position") {
+    errors.push(`${label}ConstructorLifecycleMode=${light?.constructorLifecycleMode}`);
+  }
+  if (light?.constructorMapWasNull !== true) errors.push(`${label}ConstructorMapWasNull=${light?.constructorMapWasNull}`);
+  if (JSON.stringify(light?.constructorTarget) !== JSON.stringify([0, 0, 0])) {
+    errors.push(`${label}ConstructorTarget=${JSON.stringify(light?.constructorTarget)}`);
+  }
+  if (light?.constructorTargetWasDefault !== true) {
+    errors.push(`${label}ConstructorTargetWasDefault=${light?.constructorTargetWasDefault}`);
+  }
+  if (light?.homeInitMode !== "source-SD-init-owns-spotLight-map-position-target-intensity") {
+    errors.push(`${label}HomeInitMode=${light?.homeInitMode}`);
+  }
   if (light?.shadowDefaultMode !== "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512") {
     errors.push(`${label}ShadowDefaultMode=${light?.shadowDefaultMode}`);
   }

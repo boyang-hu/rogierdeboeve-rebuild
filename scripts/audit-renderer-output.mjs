@@ -3513,13 +3513,29 @@ const summary = {
           && sourceP1SetLights.text.includes("this.spotLight=new Qm(16777215,this.maxSpotLightIntensity)")
           && sourceP1SetLights.text.includes("this.spotLight.angle=Math.PI/4")
           && sourceP1SetLights.text.includes("this.spotLight.penumbra=.95")
+          && !sourceP1SetLights.text.includes("spotLight.map")
+          && !sourceP1SetLights.text.includes("spotLight.target.position")
           && !sourceP1SetLights.text.includes("spotLight.distance")
           && !sourceP1SetLights.text.includes("spotLight.decay")
           && !sourceP1SetLights.text.includes("spotLight.shadow")
           && !sourceP1SetLights.text.includes("spotLight.castShadow"),
+        rebuildP1SetLightsLifecycle:
+          rebuildWebgl.includes("SOURCE_SPOTLIGHT_CONSTRUCTOR_MODE = \"source-p1-setLights-no-map-no-target-position\"")
+          && rebuildWebgl.includes("SOURCE_HOME_SPOTLIGHT_INIT_MODE = \"source-SD-init-owns-spotLight-map-position-target-intensity\"")
+          && rebuildWebgl.includes("private sourceSpotlightConstructorMapWasNull = false;")
+          && rebuildWebgl.includes("this.sourceSpotlightConstructorMapWasNull = this.spotLight.map === null;")
+          && rebuildWebgl.includes("this.sourceSpotlightConstructorTarget = this.spotLight.target.position.toArray()")
+          && rebuildWebgl.includes("constructorLifecycleMode: SOURCE_SPOTLIGHT_CONSTRUCTOR_MODE")
+          && rebuildWebgl.includes("constructorMapWasNull: this.sourceSpotlightConstructorMapWasNull")
+          && rebuildWebgl.includes("constructorTargetWasDefault: JSON.stringify(this.sourceSpotlightConstructorTarget) === JSON.stringify([0, 0, 0])")
+          && rebuildWebgl.includes("homeInitMode: SOURCE_HOME_SPOTLIGHT_INIT_MODE"),
         rebuildProbeSurface: checks(rebuildWebgl, [
           "private sourceSpotLightDefaultsProbe()",
           "defaultMode: \"source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow\"",
+          "constructorLifecycleMode: SOURCE_SPOTLIGHT_CONSTRUCTOR_MODE",
+          "constructorMapWasNull: this.sourceSpotlightConstructorMapWasNull",
+          "constructorTargetWasDefault: JSON.stringify(this.sourceSpotlightConstructorTarget) === JSON.stringify([0, 0, 0])",
+          "homeInitMode: SOURCE_HOME_SPOTLIGHT_INIT_MODE",
           "shadowDefaultMode: \"source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512\"",
           "shadowCameraFovMode: \"source-SpotLightShadow-updateMatrices-angle-focus-fov\"",
           "shadowCameraFarMode: \"source-SpotLightShadow-updateMatrices-distance-0-keeps-camera-far-500\"",
@@ -3527,6 +3543,10 @@ const summary = {
         ]),
         outputProbeChecks: checks(rebuildOutputProbe, [
           "light.defaultMode !== \"source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow\"",
+          "light.constructorLifecycleMode !== \"source-p1-setLights-no-map-no-target-position\"",
+          "light.constructorMapWasNull !== true",
+          "light.constructorTargetWasDefault !== true",
+          "light.homeInitMode !== \"source-SD-init-owns-spotLight-map-position-target-intensity\"",
           "light.shadowDefaultMode !== \"source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512\"",
           "light.colorHex !== 0xffffff",
           "light.distance",
@@ -3537,6 +3557,8 @@ const summary = {
         thumbProbeChecks: checks(rebuildThumbProbe, [
           "function assertSourceSpotlightDefaults",
           "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow",
+          "source-p1-setLights-no-map-no-target-position",
+          "source-SD-init-owns-spotLight-map-position-target-intensity",
           "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512",
           "assertSourceSpotlightDefaults(probe.spotlight, \"spotlight\", sourceShapeErrors)",
           "assertSourceSpotlightDefaults(projection.spotlight, \"projection\", sourceShapeErrors)",
@@ -3550,6 +3572,12 @@ const summary = {
       ]),
       rebuildHomeEntryIntensityOwnership:
         Boolean(rebuildInitHomeSpotlight)
+        && orderedIncludes(rebuildInitHomeSpotlight, [
+          "this.spotLight.map = this.homeSpotlightMap()",
+          "this.spotLight.position.set(0, 0, 3.7)",
+          "this.spotLight.target.position.set(0, 0, -8)",
+          "this.setSpotLightIntensity(this.maxSpotLightIntensity, 0)",
+        ])
         && rebuildInitHomeSpotlight.includes("this.setSpotLightIntensity(this.maxSpotLightIntensity, 0)")
         && !rebuildInitHomeSpotlight.includes("payload.spotlight")
         && !rebuildInitHomeSpotlight.includes("sourceProjectSpotlightIntensity("),
@@ -5291,6 +5319,7 @@ const summary = {
         "mapBindingMode: \"source-TD-after-100ms-character-composite-not-enter-state\"",
         "resizeMode: \"source-TD-pe-FORCE_RESIZE-after-character-map\"",
         "initialScrollMode: \"source-TD-await-200ms-after-map-then-onScroll\"",
+        "previousSpotlightMapMode: \"source-p1-setLights-null-map-before-TD-delay\"",
         "private scheduleAboutVisualLifecycle()",
         "this.aboutSpotlightMapTimer = window.setTimeout(() => {",
         "this.spotLight.map = this.characterTarget.texture",
@@ -5306,6 +5335,9 @@ const summary = {
         "aboutScrollOpacityMatchesSource:",
         "probeWindow.__rogierAboutScrollProbeSet = (scroll: number, velocity = 0) => this.setAboutScrollState(scroll, velocity);",
         "this.clearAboutVisualLifecycleTimers();",
+        "previousMap === null",
+        "source-p1-setLights-null-map-before-TD-delay",
+        "source-SD-home-thumb-map-before-TD-delay",
         "this.sourceRemoveCharacterRotatableEvents();",
       ]),
       scrollOpacityRuntimeOwnership: {
@@ -5328,6 +5360,7 @@ const summary = {
         "auxiliaryLifecycle.aboutMapBindingMode !== \"source-TD-after-100ms-character-composite-not-enter-state\"",
         "auxiliaryLifecycle.aboutResizeMode !== \"source-TD-pe-FORCE_RESIZE-after-character-map\"",
         "auxiliaryLifecycle.aboutInitialScrollMode !== \"source-TD-await-200ms-after-map-then-onScroll\"",
+        "auxiliaryLifecycle.aboutPreviousSpotlightMapMode",
         "auxiliaryLifecycle.aboutCharacterRotatableMode !== \"source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy\"",
         "const sourceAboutScrollOpacityMode = \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"",
         "const aboutScrollOpacityExpectedMobile = sourceMapClampRound(",
@@ -5341,7 +5374,10 @@ const summary = {
         "window.dispatchEvent(new CustomEvent(\"rd:page-scroll\"",
         "const expectedMobile = sourceMapClampRound(",
         "lifecycle.aboutScrollOpacityMode !== sourceAboutScrollOpacityMode",
+        "lifecycle.aboutPreviousSpotlightMapMode !== \"source-p1-setLights-null-map-before-TD-delay\"",
+        "lifecycle.aboutPreviousSpotlightMapWasNull !== true",
         "lifecycle.aboutScrollOpacityMatchesSource !== true",
+        "message !== \"Failed to get subsystem status for purpose Object\"",
         "if (lifecycle.aboutScrollOpacityDesktopOverride !== (viewport.width >= sourceBreakpointLg)) errors.push(\"desktopOverride\")",
       ]),
       excerpt: compact(sourceTDSpotlight.text),

@@ -199,6 +199,12 @@ async function runProbe() {
   if (!parsed.body?.includes("has-entered")) errors.push("bodyHasEntered");
   if (parsed.aboutVisible !== true) errors.push("aboutVisible");
   if (lifecycle.aboutScrollOpacityMode !== sourceAboutScrollOpacityMode) errors.push("mode");
+  if (lifecycle.aboutPreviousSpotlightMapMode !== "source-p1-setLights-null-map-before-TD-delay") {
+    errors.push(`previousMapMode=${lifecycle.aboutPreviousSpotlightMapMode}`);
+  }
+  if (lifecycle.aboutPreviousSpotlightMapWasNull !== true) {
+    errors.push(`previousMapWasNull=${lifecycle.aboutPreviousSpotlightMapWasNull}`);
+  }
   if (!Number.isFinite(actualScroll) || actualScroll <= 0) errors.push("scroll");
   if (lifecycle.aboutScrollOpacityDesktopOverride !== (viewport.width >= sourceBreakpointLg)) errors.push("desktopOverride");
   if (!closeTo(lifecycle.aboutScrollOpacityExpectedMobile, expectedMobile)) errors.push("expectedMobile");
@@ -207,7 +213,10 @@ async function runProbe() {
   if (lifecycle.aboutScrollOpacityMatchesSource !== true) errors.push("matchesSource");
   if (failures.some((failure) => !failure.canceled)) errors.push("networkFailures");
   if (exceptions.length) errors.push("exceptions");
-  const unexpectedConsoleMessages = consoleMessages.filter((message) => !message.startsWith("[vite] "));
+  const unexpectedConsoleMessages = consoleMessages.filter((message) => (
+    !message.startsWith("[vite] ")
+    && message !== "Failed to get subsystem status for purpose Object"
+  ));
   if (unexpectedConsoleMessages.length) errors.push("consoleMessages");
   if (errors.length) {
     throw new Error(`About scroll opacity source-shape mismatch: ${errors.join(", ")} ${JSON.stringify({

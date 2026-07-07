@@ -525,6 +525,8 @@ const SOURCE_SPOTLIGHT_SHADOW_CAMERA_NEAR = 0.5;
 const SOURCE_SPOTLIGHT_SHADOW_CAMERA_FAR = 500;
 const SOURCE_SPOTLIGHT_SHADOW_MAP_SIZE = [512, 512] as const;
 const SOURCE_HOME_SPOTLIGHT_INTENSITY = 220;
+const SOURCE_SPOTLIGHT_CONSTRUCTOR_MODE = "source-p1-setLights-no-map-no-target-position";
+const SOURCE_HOME_SPOTLIGHT_INIT_MODE = "source-SD-init-owns-spotLight-map-position-target-intensity";
 const SOURCE_HOME_SPOTLIGHT_INTENSITY_MODE = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const SOURCE_ACTIVE_PROJECT_SPOTLIGHT_INTENSITY_MODE = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
 const SOURCE_ACTIVE_PROJECT_APPLICATION_ORDER_MODE = "source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional";
@@ -5416,6 +5418,8 @@ export class WebGLBackdrop {
     resizeMode: "source-TD-pe-FORCE_RESIZE-after-character-map",
     initialScrollMode: "source-TD-await-200ms-after-map-then-onScroll",
     setupKeepsPreviousSpotlightMap: true,
+    previousSpotlightMapMode: "source-p1-setLights-null-map-before-TD-delay",
+    previousSpotlightMapWasNull: false,
     rafActiveAfterMapDelay: false,
     mapBoundAfterDelay: false,
     forceResizeAfterMapBind: false,
@@ -5429,6 +5433,8 @@ export class WebGLBackdrop {
   };
   private maxSpotLightIntensity = SOURCE_HOME_SPOTLIGHT_INTENSITY;
   private spotLightParallax = true;
+  private sourceSpotlightConstructorMapWasNull = false;
+  private sourceSpotlightConstructorTarget: [number, number, number] = [0, 0, 0];
   private debugSkyTarget = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-sky-target") : null;
   private debugTextureColorSpace = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-texture-colorspace") : null;
   private debugPassOrder = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("debug-pass-order") : null;
@@ -5578,10 +5584,10 @@ export class WebGLBackdrop {
     this.homeScene.fog = new Fog(SOURCE_WORK_FOG_COLOR, 0, 100);
     this.homeScene.background = sourceLinearToSrgbColor(SOURCE_WORK_BG, SOURCE_WORK_BG);
     this.spotLight.position.set(0, 0, 3.7);
-    this.spotLight.target.position.set(0, 0, -8);
     this.spotLight.angle = Math.PI / 4;
     this.spotLight.penumbra = 0.95;
-    this.spotLight.map = this.homeSpotlightMap();
+    this.sourceSpotlightConstructorMapWasNull = this.spotLight.map === null;
+    this.sourceSpotlightConstructorTarget = this.spotLight.target.position.toArray() as [number, number, number];
     this.directionalLight.position.set(10.5, 10, 1);
     this.directionalLight2.position.set(-10.5, 5, -1);
     this.homeScene.add(this.ambientLight);
@@ -5795,6 +5801,11 @@ export class WebGLBackdrop {
     const shadowCamera = this.spotLight.shadow.camera as PerspectiveCamera;
     return {
       defaultMode: "source-Qm-constructor-color-intensity-default-distance-decay-SpotLightShadow",
+      constructorLifecycleMode: SOURCE_SPOTLIGHT_CONSTRUCTOR_MODE,
+      constructorMapWasNull: this.sourceSpotlightConstructorMapWasNull,
+      constructorTarget: [...this.sourceSpotlightConstructorTarget],
+      constructorTargetWasDefault: JSON.stringify(this.sourceSpotlightConstructorTarget) === JSON.stringify([0, 0, 0]),
+      homeInitMode: SOURCE_HOME_SPOTLIGHT_INIT_MODE,
       shadowDefaultMode: "source-Iw-SpotLightShadow-default-focus1-camera-50-1-0_5-500-mapSize512",
       colorHex: this.spotLight.color.getHex(),
       distance: this.spotLight.distance,
@@ -5990,6 +6001,7 @@ export class WebGLBackdrop {
   }
 
   private resetAboutVisualLifecycleState() {
+    const previousMap = this.spotLight.map;
     this.aboutVisualRafActive = false;
     this.aboutVisualLifecycle.rafActiveAfterMapDelay = false;
     this.aboutVisualLifecycle.mapBoundAfterDelay = false;
@@ -5997,7 +6009,13 @@ export class WebGLBackdrop {
     this.aboutVisualLifecycle.initialScrollAfterDelay = false;
     this.aboutVisualLifecycle.characterRotatableAddAfterMapDelay = false;
     this.aboutVisualLifecycle.characterRotatableRemoveOnDestroy = false;
-    this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap = this.spotLight.map !== this.characterTarget.texture;
+    this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap = previousMap !== this.characterTarget.texture;
+    this.aboutVisualLifecycle.previousSpotlightMapWasNull = previousMap === null;
+    this.aboutVisualLifecycle.previousSpotlightMapMode = previousMap === null
+      ? "source-p1-setLights-null-map-before-TD-delay"
+      : previousMap === this.homeSpotlightMap()
+        ? "source-SD-home-thumb-map-before-TD-delay"
+        : "source-route-owned-non-character-map-before-TD-delay";
   }
 
   private applySourceAboutScrollState() {
@@ -10351,6 +10369,8 @@ void main() {
             aboutResizeMode: this.aboutVisualLifecycle.resizeMode,
             aboutInitialScrollMode: this.aboutVisualLifecycle.initialScrollMode,
             aboutSetupKeepsPreviousSpotlightMap: this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap,
+            aboutPreviousSpotlightMapMode: this.aboutVisualLifecycle.previousSpotlightMapMode,
+            aboutPreviousSpotlightMapWasNull: this.aboutVisualLifecycle.previousSpotlightMapWasNull,
             aboutRafActiveAfterMapDelay: this.aboutVisualLifecycle.rafActiveAfterMapDelay,
             aboutMapBoundAfterDelay: this.aboutVisualLifecycle.mapBoundAfterDelay,
             aboutForceResizeAfterMapBind: this.aboutVisualLifecycle.forceResizeAfterMapBind,
@@ -11636,6 +11656,8 @@ void main() {
         aboutInitialScrollDelayMs: this.aboutVisualLifecycle.initialScrollDelayMs,
         aboutMapBoundAfterDelay: this.aboutVisualLifecycle.mapBoundAfterDelay,
         aboutInitialScrollAfterDelay: this.aboutVisualLifecycle.initialScrollAfterDelay,
+        aboutPreviousSpotlightMapMode: this.aboutVisualLifecycle.previousSpotlightMapMode,
+        aboutPreviousSpotlightMapWasNull: this.aboutVisualLifecycle.previousSpotlightMapWasNull,
         aboutSpotlightMapMode: this.spotLight.map === this.characterTarget.texture
           ? "source-TD-character-composite-after-delay"
           : "source-TD-not-bound-during-initial-100ms",
