@@ -378,6 +378,7 @@ const sourceH1 = extractAround(bundle, "class h1 extends", 200, 800);
 const sourceU1 = extractAround(bundle, "class u1 extends", 900, 1700);
 const sourceQnEnvironmentConstants = extractAround(bundle, "Qn={ROUGHNESS_INTENSITY:.94", 20, 520);
 const sourceEnvironmentL1 = extractTemplate(bundle, "l1", "`,c1=");
+const sourceEnvironmentC1 = extractTemplate(bundle, "c1", "`,Qn=");
 const sourceDu = extractAround(bundle, "class Du extends", 240, 700);
 const sourceA1Floor = extractAround(bundle, "class a1 extends", 300, 1400);
 const sourceO1FloorMaterial = extractAround(bundle, "class o1 extends", 700, 1600);
@@ -3969,6 +3970,19 @@ const summary = {
         "${Po}",
         "#define STANDARD",
         "uniform sampler2D tSky",
+      ]),
+      vertexChecks: checks(sourceEnvironmentC1, [
+        "varying vec2 vUv",
+        "#define STANDARD",
+        "#include <uv_pars_vertex>",
+        "#include <worldpos_vertex>",
+        "#include <shadowmap_vertex>",
+        "vViewPosition = - mvPosition.xyz",
+      ]),
+      shaderDumpCoverage: checks(readFileSync("scripts/dump-va-shader.mjs", "utf8"), [
+        "\"u1-environment\": sourceShader(bundle, \"l1\")",
+        "\"u1-environment\": sourceShader(bundle, \"c1\")",
+        "environmentCoreChecks: entry.name === \"u1-environment\"",
       ]),
       rebuildCustomUniformOwnership: {
         factoryFound: Boolean(rebuildEnvironmentMaterialFactory),

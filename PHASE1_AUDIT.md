@@ -2,24 +2,24 @@
 
 Last updated: 2026-07-07
 
-## How To Read This
+## Purpose
 
-This file is the Phase 1 evidence register. It is organized by current blocker and source system, not by discovery date.
+This file is the Phase 1 evidence register. It records current source facts, guarded conclusions, open blockers, and closeout criteria.
 
-| Section | Purpose |
-| --- | --- |
-| Scope | What Phase 1 is allowed to cover. |
-| Status | Current parity estimate and closeout state. |
-| Active Blockers | Open problems in priority order. |
-| Evidence By System | Current source facts and guarded conclusions. |
-| Closed Source-Edge Ledger | Compact source-edge history, newest first. |
-
-Docs-only reshuffles are not listed here. Use git for old document versions:
+It is not a chronological work log. Use git for older states:
 
 ```sh
 git log --oneline
 git show <commit>:PHASE1_AUDIT.md
 ```
+
+| Section | Purpose |
+| --- | --- |
+| Scope | What Phase 1 is allowed to cover. |
+| Current Status | Current parity estimate and closeout state. |
+| Open Blockers | Problems that still prevent Phase 1 closeout. |
+| Evidence Register | Current source facts and guarded rebuild facts by system. |
+| Guarded Edges | Source-backed areas that should not be reopened first without new evidence. |
 
 ## Scope
 
@@ -40,7 +40,7 @@ Primary source areas:
 - `Se`: visual state setter ownership
 - `TD/Fg/Q1/eD`: about and auxiliary visual ownership
 
-## Status
+## Current Status
 
 Phase 1 is open. Closeout requires source-backed parity or explicit technical bridge documentation.
 
@@ -51,11 +51,11 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 | Final Home visual parity | 55-65% | Medium-low | Home still diverges in projection feel and floor/environment blend. |
 | Runtime stability | Good | Strong | Build, renderer audit, and browser probes are currently clean. |
 
-## Active Blockers
+## Open Blockers
 
 1. Floor/environment residuals.
-   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
-   - Open: hard horizon and fog-bed distribution still differ. This is the next production priority.
+   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
+   - Open: hard horizon and fog-bed distribution still differ.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
 2. Spotlight/thumb projection transfer feel.
@@ -71,7 +71,7 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
    - Guarded: `Ka` mouse simulation constructor/update ownership, raycast hit-UV ownership, main-fluid pointer/diff ownership, bounded pass geometry, and interactive probe coverage.
    - Open: final feel remains a regression concern when touching interaction paths.
 
-## Evidence By System
+## Evidence Register
 
 ### Floor And Environment
 
@@ -82,13 +82,16 @@ Current source read:
 - Source floor `a1` creates `new i1`, uses `Xt.floorNormal`, sets `repeat` to `45,45`, creates `new Tu(60,32)`, and uses `o1` with `color:"#4a4a4a"`, `uMirror:1`, `reflectivity:.97`, and `uFloorMixStrength:15`.
 - Source floor reflection assigns `tReflect` and `uMatrix` from the reflector, rotates the floor to `-PI/2`, hides the floor group during reflection render, updates the reflector, then restores visibility.
 - Source environment `h1/u1` uses an icosahedron `Du(300,10)`, `side: BackSide`, `envMapIntensity:1`, `fog:false`, `dithering:true`, and `speed=5e-5`.
+- Source environment fragment shader is `l1`; source environment vertex shader is `c1`.
 
 Current guarded rebuild facts:
 
 - Browser output probe reports production debug clean.
-- Scene background/fog, floor hierarchy/material, environment hierarchy/material, floor reflection draw-state, reflector target sizing, environment rotation, and low-res SwiftShader branch are currently source-shaped.
-- Cubemap `scene.environment` is now guarded beyond load success: source `CubeTextureLoader` creates a `CubeTexture`, assigns `SRGBColorSpace`, fills six images, and uses `CubeTexture` defaults for reflection mapping and `flipY=false`; the browser probe confirms those runtime fields plus default wrap/filter/mipmap/type/format and six loaded images.
-- Remaining investigation should focus on environment shader target contents, sky/environment timing, final target distribution, or renderer state not covered by those guards.
+- Scene background/fog, floor hierarchy/material, environment hierarchy/material, floor reflection draw-state, reflector target sizing, environment rotation, and low-res SwiftShader branch are source-shaped.
+- Cubemap `scene.environment` is guarded beyond load success: source `CubeTextureLoader` creates a `CubeTexture`, assigns `SRGBColorSpace`, fills six images, and uses `CubeTexture` defaults for reflection mapping and `flipY=false`; the browser probe confirms those runtime fields plus default wrap/filter/mipmap/type/format and six loaded images.
+- `u1-environment` shader dump coverage now includes both source `l1` fragment and source `c1` vertex extraction.
+- The environment vertex shader text in rebuild matches the source `c1` surface, including the source `vViewPosition = - mvPosition.xyz` expression and chunk order.
+- Remaining investigation should focus on sky/environment timing, environment target contents, final target distribution, or renderer state not covered by those guards.
 
 ### Texture And Animate-In Lifecycle
 
@@ -144,26 +147,28 @@ Current guarded rebuild facts:
 - About lifecycle probes and renderer audit guard this ownership edge.
 - Keep about probes in the validation set when touching `TD`, `Fg`, `Q1`, `eD`, spotlight map ownership, or auxiliary blocks.
 
-## Closed Source-Edge Ledger
+## Guarded Edges
 
-This is the only compact source-edge ledger maintained in the docs. It excludes docs-only cleanup commits.
+These are current boundaries, grouped by system instead of discovery time.
 
-| Commit | Area | Closed edge |
-| --- | --- | --- |
-| `38931a6` | `nD/Xt` canvas animate-in texture awaits | `animateIn()` awaits immediate `Texture` objects, not image-load promises; load completion remains probe state only. |
-| `53b13f4` | `kA/Lu/I1` render-manager follow-up | Default Home path renders C1 directly to screen; delayed C1 bindings are one-time source-owned inputs. |
-| `9986590` | `TD` about destroy spotlight map | About out/destroy keep the current spotlight map; `SD.init()` owns later Home map bind. |
-| `a42e975` | `p1/SD/TD` spotlight init lifecycle | Constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
-| `a69ad3a` | `Ir/GT` main-fluid bounded geometry | Bounded passes use source geometry and default culling; force pass stays fullscreen. |
-| `fe213c1` | `Lu` luminosity branch | Work luminosity branch runs before and independently of bloom. |
-| `f6e84c4` | `Lu/I1` optional blur target resize | Optional blur follows source target chain and direct resize input ownership. |
-| `cdbbde7` | `eD/Pe` character camera pan | About character pan consumes shared source `Pe.mouse.normalized`. |
-| `dcb3ed6` | `VA/XA` runtime `uCoords` | Work/about coords use direct viewport times capped DPR without rebuild clamp. |
-| `c0b2e42` | `IT` camera denominator | Home camera update uses direct `Pe.w/Pe.h`, not rebuild `Math.max` denominators. |
-| `0441731` | `VA/XA/KA` cache keys | Block materials use Three default `onBeforeCompile` cache key path, no local override. |
-| `02f0b0d` | `h1/u1` cache key | Environment material uses source no-custom-cache-key ownership. |
-| `43cf728` | `Lu/I1` bloom mip resize | Bloom mip chain halves directly like source, without per-step round/clamp ownership. |
-| `5bb0264` | `Lo` resize inputs | Sky, displacement, thumb, and floor reflection pass direct inputs through `Lo.resize`. |
+| System | Guarded source edge |
+| --- | --- |
+| Floor/environment | `Lo` resize inputs pass direct source dimensions for sky, displacement, thumb, and floor reflection. |
+| Floor/environment | `h1/u1` environment material uses source no-custom-cache-key ownership. |
+| Floor/environment | Cubemap loader defaults and `scene.environment` sampling fields are guarded by browser probe. |
+| Floor/environment | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
+| Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |
+| Render managers | Work luminosity branch runs before and independently of bloom. |
+| Render managers | Optional blur follows source target chain and direct resize input ownership. |
+| Render managers | Bloom mip chain halves directly like source, without per-step round/clamp ownership. |
+| Render managers | Default Home path renders C1 directly to screen; delayed C1 bindings are one-time source-owned inputs. |
+| Camera/block materials | Home camera update uses direct `Pe.w/Pe.h`, not rebuild `Math.max` denominators. |
+| Camera/block materials | Work/about coords use direct viewport times capped DPR without rebuild clamp. |
+| Camera/block materials | Block materials use Three default `onBeforeCompile` cache key path, no local override. |
+| Spotlight/thumb | Constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
+| Spotlight/thumb | About out/destroy keep the current spotlight map; `SD.init()` owns later Home map bind. |
+| Interaction/about | Bounded fluid passes use source geometry and default culling; force pass stays fullscreen. |
+| Interaction/about | About character pan consumes shared source `Pe.mouse.normalized`. |
 
 ## Completion Criteria
 
@@ -182,6 +187,7 @@ Default validation for a Phase 1 rendering batch:
 
 ```sh
 node --check src/client/webgl.ts
+node --check scripts/dump-va-shader.mjs
 node --check scripts/audit-renderer-output.mjs
 node scripts/audit-renderer-output.mjs > /tmp/rd-phase1-audit.json
 git diff --check

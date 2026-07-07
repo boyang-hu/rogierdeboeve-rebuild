@@ -2,17 +2,17 @@
 
 Last updated: 2026-07-07
 
-## How To Use This
+## Purpose
 
-This file is the forward execution queue. It is ordered by what to do next, not by discovery date.
+This file is the forward execution queue. It is ordered by what to do next, not by when discoveries happened.
 
 | File | Role |
 | --- | --- |
 | `HANDOFF.md` | Current resume snapshot and immediate next action. |
-| `PHASE1_AUDIT.md` | Phase 1 evidence, blockers, and source-edge ledger. |
-| `REBUILD_PLAN.md` | Work queue, gates, and validation profiles. |
+| `PHASE1_AUDIT.md` | Phase 1 source evidence, guarded edges, blockers, and closeout criteria. |
+| `REBUILD_PLAN.md` | Work queue, phase gates, and validation profiles. |
 
-Do not use this file as a history log. Use git for old plans.
+Use git for history. Do not maintain a second timeline here.
 
 ## Execution Rules
 
@@ -37,31 +37,44 @@ Do not use this file as a history log. Use git for old plans.
 | 5. Transitions/audio/Lenis lifecycle | Pending | Do not start before Phase 1 closes. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
-## Now
+## Phase 1 Queue
 
-### 1. Floor/environment distribution
+### Active: Floor/environment distribution
 
 Goal: explain and fix the remaining hard horizon and fog-bed residual from source-owned behavior.
 
-Work path:
+Already guarded for this lane:
 
-1. Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
-2. Treat current structural guardrails as closed unless new evidence contradicts them.
-3. Treat cubemap loader defaults and `scene.environment` sampling state as guarded unless a new probe contradicts them.
-4. Look for async timing, render target contents, material inputs, shader target distribution, or renderer state before changing production behavior.
-5. Do not tune horizon, fog, brightness, or floor color by eye.
+- Scene and `sceneWrap` hierarchy.
+- Home camera surfaces.
+- Environment hierarchy/material ownership.
+- `u1` environment shader surface: source `l1` fragment and source `c1` vertex.
+- Cubemap `scene.environment` loader defaults and sampling fields.
+- Floor material inputs, reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
+- Texture-object await semantics for `nD.animateIn()`.
+
+Next source candidates:
+
+1. Sky/environment timing.
+2. Environment target contents.
+3. Final work target distribution.
+4. Renderer state not yet covered by the audit.
+
+Rules:
+
+- Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and target contents.
+- Treat current structural guardrails as closed unless new evidence contradicts them.
+- Do not tune horizon, fog, brightness, or floor color by eye.
 
 Required validation:
 
 - Build.
 - Renderer audit.
-- Desktop/mobile output probes.
+- Desktop/mobile output probes when production behavior changes.
 - Project media probe if shared render/media paths change.
 - Focused band/capture attribution when the candidate source chain affects final color distribution.
 
-## Next
-
-### 2. Spotlight/thumb projection content and transfer
+### Next: Spotlight/thumb projection content and transfer
 
 Goal: close projected thumb brightness, depth, content transfer, and timing.
 
@@ -80,7 +93,7 @@ Required validation:
 
 ## Watchlist
 
-### 3. `kA/Lu/I1` composite and transfer
+### `kA/Lu/I1` composite and transfer
 
 Use this only if new evidence contradicts the current audit.
 
@@ -90,7 +103,7 @@ Current boundary:
 - `renderTargetComposite` is unused for the default visible Home path.
 - Source `nD` binds C1 `tWork`, `tMedia`, and initial work mouse-simulation texture once after the delayed resize/bind phase.
 
-### 4. Interaction/mouse/fluid
+### Interaction/mouse/fluid
 
 Use this when a batch touches mouse/fluid paths or when a specific interaction regression is isolated.
 
@@ -99,7 +112,7 @@ Current boundary:
 - Existing `Ka`, `ag`, and `qT` guardrails remain active.
 - Run `scripts/probe-interactive-mouse.mjs` for mouse/fluid path changes.
 
-## Non-Goals For The Current Phase 1 Batch
+## Non-Goals For The Active Phase 1 Batch
 
 - Do not start Phase 2.
 - Do not accept visual deviations as Phase 1 closeout.
@@ -120,6 +133,7 @@ Default rendering batch:
 
 ```sh
 node --check src/client/webgl.ts
+node --check scripts/dump-va-shader.mjs
 node --check scripts/audit-renderer-output.mjs
 node scripts/audit-renderer-output.mjs > /tmp/rd-phase1-audit.json
 git diff --check
