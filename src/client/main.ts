@@ -52,7 +52,25 @@ type WebGLLike = {
 
 type PageScrollDetail = {
   scroll?: number;
+  animatedScroll?: number;
   velocity?: number;
+  limit?: number;
+  dimensions?: {
+    scrollHeight?: number;
+  };
+};
+
+type PageScrollController = {
+  scrollTo: (target: number, options?: { immediate?: boolean }) => void;
+  getState: () => {
+    scroll: number;
+    animatedScroll: number;
+    velocity: number;
+    limit: number;
+    dimensions: {
+      scrollHeight: number;
+    };
+  };
 };
 
 type HomeGalleryRuntimeProbe = {
@@ -69,6 +87,7 @@ type HomeGalleryRuntimeProbe = {
 
 type HomeGalleryProbeWindow = Window & {
   __rogierHomeGalleryRuntime?: HomeGalleryRuntimeProbe;
+  __rogierPageScroll?: PageScrollController;
 };
 
 type TransitionMode = "home" | "project" | "about" | "work" | "default";
@@ -168,6 +187,35 @@ function projectPayloadFromElement(element?: HTMLElement | null) {
 
 function applyActiveColor(color?: string) {
   if (color) document.documentElement.style.setProperty("--active-color", color);
+}
+
+const sourceRound = (value: number, precision = 4) => {
+  const scale = 10 ** precision;
+  return Math.round(value * scale) / scale;
+};
+
+const sourceMap = (value: number, inputMin: number, inputMax: number, outputMin: number, outputMax: number, clamp = false) => {
+  if (inputMax === inputMin) return sourceRound(outputMin);
+  const mapped = ((value - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin) + outputMin;
+  if (!clamp) return sourceRound(mapped);
+  const max = outputMin > outputMax ? outputMin : outputMax;
+  const min = outputMin > outputMax ? outputMax : outputMin;
+  return sourceRound(Math.min(Math.max(mapped, min), max));
+};
+
+function pageScrollState(detail?: PageScrollDetail) {
+  const scrollHeight = detail?.dimensions?.scrollHeight ?? document.documentElement.scrollHeight;
+  const limit = detail?.limit ?? Math.max(0, scrollHeight - window.innerHeight);
+  const scroll = detail?.scroll ?? window.scrollY;
+  return {
+    scroll,
+    animatedScroll: detail?.animatedScroll ?? scroll,
+    velocity: detail?.velocity ?? 0,
+    limit,
+    dimensions: {
+      scrollHeight,
+    },
+  };
 }
 
 function hasPageEntered() {
@@ -1095,22 +1143,98 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
 }
 
 function initScrollState() {
-  const update = () => {
-    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    const progress = Math.min(1, Math.max(0, window.scrollY / max));
-    const projectHeader = document.querySelector<HTMLElement>(".ui-project-content-header");
-    const projectHeaderMax = Math.max(1, projectHeader?.offsetHeight ?? window.innerHeight);
-    const projectHeaderProgress = Math.min(1, Math.max(0, window.scrollY / projectHeaderMax));
-    document.documentElement.classList.toggle("is-scrolled", window.scrollY > 24);
-    document.documentElement.style.setProperty("--scroll-progress", String(progress));
-    document.documentElement.style.setProperty("--project-header-progress", String(projectHeaderProgress));
+  const projectHeader = document.querySelector<HTMLElement>(".ui-project-content-header");
+  const desktopQuery = window.matchMedia("(min-width: 1000px)");
+  const scrollbar = document.querySelector<HTMLElement>(".ui-scrollbar");
+  const scrollbarThumb = scrollbar?.querySelector<HTMLElement>(".ui-scrollbar-thumb");
+  let projectHeaderHeight = projectHeader?.clientHeight ?? 0;
+  let projectHeaderActive = desktopQuery.matches;
+  let scrollbarThumbHeight = scrollbarThumb?.offsetHeight ?? 0;
+  let scrollbarInnerHeight = scrollbar?.offsetHeight ?? 0;
+  let pointerStart: number | null = null;
+  let lastScrollState = pageScrollState();
+
+  const updateScrollbarBounds = () => {
+    scrollbarThumbHeight = scrollbarThumb?.offsetHeight ?? 0;
+    scrollbarInnerHeight = scrollbar?.offsetHeight ?? 0;
   };
-  update();
-  window.addEventListener("scroll", update, { passive: true });
-  window.addEventListener("resize", update);
+
+  const updateScrollbarVisibility = () => {
+    if (!scrollbar) return;
+    scrollbar.style.opacity = lastScrollState.limit > window.innerHeight ? "1" : "0";
+  };
+
+  const update = (detail?: PageScrollDetail) => {
+    lastScrollState = pageScrollState(detail);
+    document.documentElement.classList.toggle("is-scrolled", lastScrollState.scroll > 20);
+
+    if (projectHeader && projectHeaderActive) {
+      const opacity = sourceMap(lastScrollState.scroll, 0, projectHeaderHeight, 1, 0);
+      const y = sourceMap(lastScrollState.scroll, 0, projectHeaderHeight, 0, 25);
+      projectHeader.style.opacity = String(opacity);
+      projectHeader.style.transform = `translate3d(0, ${y}px, 0)`;
+    }
+
+    if (scrollbarThumb && scrollbarInnerHeight > scrollbarThumbHeight && lastScrollState.limit > 0) {
+      const progress = lastScrollState.scroll / lastScrollState.limit;
+      scrollbarThumb.style.transform = `translate3d(0,${progress * (scrollbarInnerHeight - scrollbarThumbHeight)}px,0)`;
+    }
+  };
+
+  const onPageScroll = (event: Event) => update((event as CustomEvent<PageScrollDetail>).detail);
+  const onNativeScroll = () => update();
+  const onResize = () => {
+    projectHeaderHeight = projectHeader?.clientHeight ?? 0;
+    projectHeaderActive = desktopQuery.matches;
+    if (projectHeader && !projectHeaderActive) {
+      projectHeader.style.opacity = "1";
+      projectHeader.style.transform = "translate3d(0, 0, 0)";
+    }
+    updateScrollbarBounds();
+    update(lastScrollState);
+    updateScrollbarVisibility();
+  };
+  const onPointerDown = (event: PointerEvent) => {
+    pointerStart = event.clientY;
+  };
+  const onPointerMove = (event: PointerEvent) => {
+    if (pointerStart == null || !scrollbarInnerHeight || !scrollbarThumbHeight) return;
+    event.preventDefault();
+    const target = sourceMap(
+      event.clientY,
+      pointerStart,
+      scrollbarInnerHeight - (scrollbarThumbHeight - pointerStart),
+      0,
+      lastScrollState.limit,
+    );
+    (window as HomeGalleryProbeWindow).__rogierPageScroll?.scrollTo(target, { immediate: true }) ?? window.scrollTo(0, target);
+  };
+  const onPointerUp = () => {
+    pointerStart = null;
+  };
+
+  updateScrollbarBounds();
+  update((window as HomeGalleryProbeWindow).__rogierPageScroll?.getState());
+  updateScrollbarVisibility();
+  window.addEventListener("rd:page-scroll", onPageScroll);
+  window.addEventListener("scroll", onNativeScroll, { passive: true });
+  window.addEventListener("resize", onResize);
+  scrollbar?.addEventListener("pointerdown", onPointerDown);
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
   return () => {
-    window.removeEventListener("scroll", update);
-    window.removeEventListener("resize", update);
+    window.removeEventListener("rd:page-scroll", onPageScroll);
+    window.removeEventListener("scroll", onNativeScroll);
+    window.removeEventListener("resize", onResize);
+    scrollbar?.removeEventListener("pointerdown", onPointerDown);
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    if (projectHeader) {
+      projectHeader.style.opacity = "";
+      projectHeader.style.transform = "";
+    }
+    if (scrollbar) scrollbar.style.opacity = "";
+    if (scrollbarThumb) scrollbarThumb.style.transform = "";
   };
 }
 
@@ -1124,6 +1248,7 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
   let nextActive = false;
   let nextHeight = next.clientHeight;
   let viewportHeight = window.innerHeight;
+  let lastScrollState = pageScrollState();
 
   const apply = (payload: ReturnType<typeof projectPayloadFromElement>) => {
     applyActiveColor(payload.color);
@@ -1135,11 +1260,12 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
     viewportHeight = window.innerHeight;
   };
 
-  const update = () => {
-    const scrollHeight = document.documentElement.scrollHeight;
+  const update = (detail?: PageScrollDetail) => {
+    lastScrollState = pageScrollState(detail);
+    const scrollHeight = lastScrollState.dimensions.scrollHeight;
     const endScroll = scrollHeight - viewportHeight;
     const start = endScroll - nextHeight / 2;
-    const progress = Math.min(1, Math.max(0, (window.scrollY - start) / Math.max(1, endScroll - start)));
+    const progress = sourceMap(lastScrollState.animatedScroll, start, endScroll, 0, 1, true);
     if (progress >= 0.01) {
       if (!nextActive) {
         nextActive = true;
@@ -1155,17 +1281,21 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
 
   const onResize = () => {
     resize();
-    update();
+    update(lastScrollState);
   };
+  const onPageScroll = (event: Event) => update((event as CustomEvent<PageScrollDetail>).detail);
+  const onNativeScroll = () => update();
   const onPageHide = () => apply(currentPayload);
 
   resize();
-  update();
-  window.addEventListener("scroll", update, { passive: true });
+  update((window as HomeGalleryProbeWindow).__rogierPageScroll?.getState());
+  window.addEventListener("rd:page-scroll", onPageScroll);
+  window.addEventListener("scroll", onNativeScroll, { passive: true });
   window.addEventListener("resize", onResize);
   window.addEventListener("pagehide", onPageHide, { once: true });
   return () => {
-    window.removeEventListener("scroll", update);
+    window.removeEventListener("rd:page-scroll", onPageScroll);
+    window.removeEventListener("scroll", onNativeScroll);
     window.removeEventListener("resize", onResize);
     window.removeEventListener("pagehide", onPageHide);
   };

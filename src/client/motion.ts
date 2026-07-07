@@ -1,27 +1,74 @@
 import gsap from "gsap";
 import Lenis from "lenis";
 
+type PageScrollDetail = {
+  scroll: number;
+  animatedScroll: number;
+  velocity: number;
+  limit: number;
+  dimensions: {
+    scrollHeight: number;
+  };
+};
+
+type PageScrollController = {
+  scrollTo: (target: number, options?: { immediate?: boolean }) => void;
+  getState: () => PageScrollDetail;
+};
+
+declare global {
+  interface Window {
+    __rogierPageScroll?: PageScrollController;
+  }
+}
+
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function dispatchPageScroll(scroll: number, velocity: number) {
+function nativePageScrollState(velocity = 0): PageScrollDetail {
+  const scroll = window.scrollY;
+  const scrollHeight = document.documentElement.scrollHeight;
+  const limit = Math.max(0, scrollHeight - window.innerHeight);
+  return {
+    scroll,
+    animatedScroll: scroll,
+    velocity,
+    limit,
+    dimensions: {
+      scrollHeight,
+    },
+  };
+}
+
+function dispatchPageScroll(detail: PageScrollDetail) {
   window.dispatchEvent(new CustomEvent("rd:page-scroll", {
-    detail: { scroll, velocity },
+    detail,
   }));
 }
 
 function initLenis() {
   if (prefersReducedMotion()) {
     let lastScroll = window.scrollY;
+    const controller: PageScrollController = {
+      scrollTo: (target, options) => {
+        if (options?.immediate) window.scrollTo(0, target);
+        else window.scrollTo({ top: target, behavior: "smooth" });
+      },
+      getState: () => nativePageScrollState(),
+    };
+    window.__rogierPageScroll = controller;
     const onScroll = () => {
       const scroll = window.scrollY;
-      dispatchPageScroll(scroll, scroll - lastScroll);
+      dispatchPageScroll(nativePageScrollState(scroll - lastScroll));
       lastScroll = scroll;
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    dispatchPageScroll(lastScroll, 0);
-    return () => window.removeEventListener("scroll", onScroll);
+    dispatchPageScroll(nativePageScrollState(0));
+    return () => {
+      if (window.__rogierPageScroll === controller) delete window.__rogierPageScroll;
+      window.removeEventListener("scroll", onScroll);
+    };
   }
 
   const lenis = new Lenis({
@@ -30,15 +77,31 @@ function initLenis() {
     touchMultiplier: 1.2,
   });
 
+  const lenisState = (): PageScrollDetail => ({
+    scroll: lenis.scroll,
+    animatedScroll: lenis.animatedScroll,
+    velocity: lenis.velocity,
+    limit: lenis.limit,
+    dimensions: {
+      scrollHeight: lenis.dimensions.scrollHeight,
+    },
+  });
+  const controller: PageScrollController = {
+    scrollTo: (target, options) => lenis.scrollTo(target, options),
+    getState: lenisState,
+  };
+  window.__rogierPageScroll = controller;
+
   let rafId = 0;
   function raf(time: number) {
     lenis.raf(time);
-    dispatchPageScroll(lenis.scroll, lenis.velocity);
+    dispatchPageScroll(lenisState());
     rafId = requestAnimationFrame(raf);
   }
 
   rafId = requestAnimationFrame(raf);
   return () => {
+    if (window.__rogierPageScroll === controller) delete window.__rogierPageScroll;
     cancelAnimationFrame(rafId);
     lenis.destroy();
   };

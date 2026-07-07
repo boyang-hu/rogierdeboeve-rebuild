@@ -26,13 +26,13 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 3 in progress; first project-detail shell/media DOM batch is source-aligned |
+| Active phase | Phase 3 in progress; project-detail shell/media DOM and RD/wD/CD scroll-state batches are source-aligned |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
 | Phase 2 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Continue Phase 3 with project-detail scroll-state, next-project state, custom scrollbar, and route behavior audit |
+| Current production priority | Continue Phase 3 with project-to-project/Home/About route behavior audit |
 | Next secondary priority | Keep Phase 1 and Phase 2 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 3 project-detail shell/media DOM source alignment |
-| Last closed evidence batch | Phase 3 project-detail shell/media DOM source alignment |
+| Last committed source-backed code batch | Phase 3 project-detail RD/wD/CD scroll-state source alignment |
+| Last closed evidence batch | Phase 3 project-detail RD/wD/CD scroll-state source alignment |
 | Local service | `scripts/serve.mjs` instances were running at `http://localhost:5173/` and `http://localhost:5174/` during validation |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -46,25 +46,27 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch starts Phase 3 by aligning the project-detail shell and media DOM with the source HTML/CSS read.
+The latest production batch aligns project-detail scroll-state behavior with source `RD`, `wD`, `CD`, and `Ug`.
 
-- `src/pages/[slug].astro` now emits the source-shaped project root, header back link, content/header wrappers, info items, desktop/mobile media roots, next-project wrapper, and scroll CTA grid.
-- `src/components/MediaBlock.astro` now matches source project media attributes: desktop tracks use `[data-media]` without `media-block`/`data-media-type`; mobile fallback videos use `autoplay loop muted playsinline` plus the source inline object-fit style.
-- `src/styles/global.css` now includes the source responsive utility classes used by project pages and replaces rebuild-only project media shadows/filters with source project header/content/media/next styling.
-- `src/client/main.ts` resolves project payloads from local project data when the source-shaped DOM only exposes `data-project` or `data-project-slug`.
-- `src/client/webgl.ts` now applies project-detail darkness from `darkenDetail` on project views and keeps `darkenOverview` for Home.
-- Removed obsolete `media-block`, `data-mobile-media`, and `data-webgl-project` hooks from the project path.
+- `src/client/motion.ts` now exposes a source-like page scroll snapshot from Lenis: `scroll`, `animatedScroll`, `limit`, and `dimensions.scrollHeight`, plus immediate `scrollTo`.
+- `src/client/main.ts` now drives project header opacity/translate from the source `RD` formula, using `scroll -> opacity 1..0` and `scroll -> y 0..25` over the header height.
+- `src/client/main.ts` now drives the custom project scrollbar from the source `wD` behavior: fixed-height thumb, Lenis `scroll/limit` translation, source visibility threshold, and source-shaped pointer drag target mapping.
+- `src/client/main.ts` now drives next-project state from the source `CD` bottom threshold, using `animatedScroll`, source `scrollHeight`, and next-project height to switch WebGL/color state to the next payload and restore the current payload.
+- `src/styles/global.css` no longer uses rebuild-only CSS variables for project header opacity or scrollbar thumb scaling.
 
-Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
+The previous Phase 3 batch aligned the project-detail shell and media DOM with source HTML/CSS. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
 ## Current Evidence
 
 Latest Phase 3 evidence:
 
-- Source project HTML/CSS checked against `legacy-mirror/public/gc-2026/index.html`, `legacy-mirror/public/hashgraph-vc/index.html`, and `legacy-mirror/public/assets/bundle.87ba3613.css`.
-- Build output DOM assertion: 30/30 passed for `gc-2026` and `hashgraph-vc` against source-shaped root, header link, content wrappers, media roots, mobile video attributes, next-project wrapper, and absence of rebuild-only project data attributes.
-- Project media probe passed with `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`, `REBUILD_URL=http://127.0.0.1:5173`, `PROJECT_SLUGS=gc-2026,hashgraph-vc`, `OUT_DIR=/tmp/rd-phase3-project-media-probe`.
-- Output color/state probe passed with `OUT_DIR=/tmp/rd-phase3-output-color-probe`.
+- Source runtime behavior checked against `legacy-mirror/public/assets/bundle.250f01b7.js` classes `Ug`, `wD`, `RD`, and `CD`.
+- Temporary CDP runtime probe on `http://127.0.0.1:5173/gc-2026/?skip-preloader&debug-output-probe=1` passed:
+  - `RD` header opacity and translate matched the source formula at scroll 100.
+  - `wD` scrollbar thumb translate matched `scroll / limit * (innerHeight - thumbHeight)`.
+  - `CD` switched active WebGL state to the next project near the bottom and restored `gc-2026` at the top.
+- Project media probe passed with `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`, `REBUILD_URL=http://127.0.0.1:5173`, `PROJECT_SLUGS=gc-2026,hashgraph-vc`, `OUT_DIR=/tmp/rd-phase3-scroll-project-media-probe`.
+- Output color/state probe passed with `OUT_DIR=/tmp/rd-phase3-scroll-output-color-probe`.
 - Static renderer audit passed: `node scripts/audit-renderer-output.mjs`.
 - Build passed: `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 
@@ -94,7 +96,7 @@ Phase 1 and Phase 2 are closed. Do not reopen either one unless a concrete sourc
 
 Recommended next move:
 
-1. Continue Phase 3 with project-detail scroll-state visuals, source scrollbar behavior, next-project state switching, and project-to-project/Home/About route behavior.
+1. Continue Phase 3 with project-to-project, project-to-Home, and project-to-About route behavior.
 2. Convert only source-backed Phase 3 findings into scoped fixes.
 3. Keep Phase 1 WebGL and Phase 2 Home DOM/interaction probes as regression gates when shared render, router, audio, or lifecycle paths change.
 4. After Phase 3 is clean or guarded, move to Phase 4 About/auxiliary pages.

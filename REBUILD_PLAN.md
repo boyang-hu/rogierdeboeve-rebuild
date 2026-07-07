@@ -48,7 +48,7 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
-| 3. Project detail media | Active; first shell/media DOM batch closed on 2026-07-07 | Close remaining scroll-state, next-project state switching, custom scrollbar, and project route behavior against source/online. |
+| 3. Project detail media | Active; shell/media DOM and RD/wD/CD scroll-state batches closed on 2026-07-07 | Close remaining project route behavior against source/online. |
 | 4. About and auxiliary pages | Pending with partial guardrails | Start after Phase 3 is clean or guarded. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
@@ -154,13 +154,33 @@ Validation passed:
 - `node scripts/audit-renderer-output.mjs`
 - Build-output DOM assertion: 30/30 passed for `gc-2026` and `hashgraph-vc`.
 
+### Closed: Project detail RD/wD/CD scroll-state source alignment
+
+Goal: replace rebuild-only scroll approximations with the source-owned project-detail scroll behavior.
+
+Current read:
+
+- Source `Ug` owns page scroll setup, `html.is-scrolled` at `scroll > 20`, and the page scroll object consumed by project components.
+- Source `RD` owns desktop project header fade/translate from page scroll over header height; mobile resets opacity and transform.
+- Source `wD` owns the custom scrollbar: fixed-height thumb, source visibility threshold `scroll.limit > innerHeight`, thumb translate from `scroll / limit`, and immediate scroll mapping during pointer drag.
+- Source `CD` owns bottom-of-page next-project state switching from `animatedScroll`, `dimensions.scrollHeight`, viewport height, and half the next-project section height.
+- Rebuild now sends a source-like Lenis page scroll snapshot through `rd:page-scroll` and exposes immediate page `scrollTo` for source `wD` parity.
+- Rebuild no longer uses CSS variables for project header opacity or scrollbar thumb scale/translate.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Temporary CDP runtime probe on `http://127.0.0.1:5173/gc-2026/?skip-preloader&debug-output-probe=1`: `RD` opacity/translate, `wD` thumb translate, and `CD` next/current active state switching all matched source formulas.
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase3-scroll-project-media-probe node scripts/probe-project-media.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-phase3-scroll-output-color-probe node scripts/probe-output-color.mjs`
+- `node scripts/audit-renderer-output.mjs`
+
 Remaining Phase 3 queue:
 
-1. Audit and align project-detail scroll-state visuals owned by source `RD`.
-2. Audit and align source custom scrollbar behavior owned by `wD`.
-3. Audit and align next-project state switching owned by source `CD`, including bottom-of-page color/media transitions.
-4. Audit project-to-project, project-to-Home, and project-to-About route behavior against source transitions.
-5. Re-run project media, output color/state, renderer audit, and focused DOM assertions after each production batch.
+1. Audit project-to-project, project-to-Home, and project-to-About route behavior against source transitions.
+2. Align route lifecycle and transition findings only where source bundle evidence owns the behavior.
+3. Re-run project media, output color/state, renderer audit, and focused route assertions after each production batch.
 
 ## Watchlist
 

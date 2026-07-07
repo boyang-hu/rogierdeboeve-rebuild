@@ -1483,14 +1483,6 @@ html.is-mobile .preloader-cta-2 {
   justify-content: space-between;
 }
 
-@media (min-width: 1000px) {
-  .ui-project-content-header {
-    opacity: calc(1 - var(--project-header-progress, 0));
-    transform: translate3d(0, calc(1.5625rem * var(--project-header-progress, 0)), 0);
-    will-change: opacity, transform;
-  }
-}
-
 .ui-project-content-header .ts-2,
 .ui-project-info-item {
   overflow: hidden;
@@ -1694,13 +1686,14 @@ html.is-scrolled .c-scroll-cta {
   top: 0;
   width: 0.125rem;
   min-height: 1.125rem;
-  height: max(1.125rem, calc(5.5rem * var(--scroll-progress, 0.2)));
-  transform: translateY(calc((5.5rem - 1.125rem) * var(--scroll-progress, 0)));
+  cursor: grab;
 }
 
 .ui-scrollbar-thumb-inner {
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 0.125rem;
-  height: 100%;
   min-height: 1.125rem;
   background: currentColor;
 }
