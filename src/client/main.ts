@@ -906,7 +906,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
       event.preventDefault();
       window.dispatchEvent(new CustomEvent("rd:sound-click"));
       if (performance.now() - lastTouchSelect < 500) return;
-      setDomActiveIndex(index);
     };
     const onCtaMouseEnter = () => previewWork(true);
     const onCtaMouseLeave = () => previewWork(false);
@@ -1605,7 +1604,7 @@ function boot() {
       });
   };
   const onRouterClick = (event: MouseEvent) => {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])");
     if (!link) return;
     const target = new URL(link.href, window.location.href);

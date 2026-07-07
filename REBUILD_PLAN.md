@@ -20,11 +20,11 @@ Use git for history. Do not maintain a second timeline here.
 
 The current order is intentionally narrow:
 
-1. Keep Phase 1 and Phase 2 closed unless new source-owned evidence requires reopening.
-2. Continue Phase 3 after the first source-backed project-detail shell/media DOM alignment batch.
-3. Convert the remaining Phase 3 findings into one small project-detail fix batch at a time.
-4. Move to Phase 4 only after project-detail media and route behavior are clean or explicitly guarded.
-5. Keep Phase 1 WebGL and Phase 2 Home interaction probes as regression gates when shared paths change.
+1. Keep Phase 1, Phase 2, and Phase 3 closed unless new source-owned evidence requires reopening.
+2. Start Phase 4 with About and auxiliary page source audit.
+3. Convert Phase 4 findings into one scoped source-backed fix batch at a time.
+4. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project-detail probes as regression gates when shared paths change.
+5. Move to Phase 5 only after About/auxiliary page parity is clean or explicitly guarded.
 
 Everything outside the active phase stays paused unless the audit identifies a shared-path dependency.
 
@@ -48,8 +48,8 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
-| 3. Project detail media | Active; shell/media DOM and RD/wD/CD scroll-state batches closed on 2026-07-07 | Close remaining project route behavior against source/online. |
-| 4. About and auxiliary pages | Pending with partial guardrails | Start after Phase 3 is clean or guarded. |
+| 3. Project detail media/routes | Closed/guarded on 2026-07-07 | Reopen only with concrete project-detail media, scroll, or route mismatch evidence. |
+| 4. About and auxiliary pages | Active next | Audit and align About/auxiliary DOM, scroll, modal/credits, footer/nav, and auxiliary WebGL behavior against source. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
@@ -176,11 +176,43 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-phase3-scroll-output-color-probe node scripts/probe-output-color.mjs`
 - `node scripts/audit-renderer-output.mjs`
 
-Remaining Phase 3 queue:
+### Closed: Project route behavior source alignment
 
-1. Audit project-to-project, project-to-Home, and project-to-About route behavior against source transitions.
-2. Align route lifecycle and transition findings only where source bundle evidence owns the behavior.
-3. Re-run project media, output color/state, renderer audit, and focused route assertions after each production batch.
+Goal: close project-detail route behavior against source router transitions before moving to About.
+
+Current read:
+
+- Source router handles same-origin anchors through `ha.onClick`, using `data-transition || false` and not skipping navigation merely because a component called `preventDefault()`.
+- Source Home work titles are `div.ui-work-a`; only the CTA anchors own project navigation via `data-transition="project"`.
+- Source Home CTA component `gD` calls `preventDefault()` for native click/sound behavior, while the router still navigates the CTA anchor.
+- Rebuild now mirrors that split: Home work titles are non-links, CTA click no longer mutates active project state, and global router navigation still runs for source-owned CTA clicks.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Focused CDP route probe: project next/default -> `/following-wildfire/`; project back `data-transition="work"` -> `/`; project nav About/default -> `/about/`; Home CTA `data-transition="project"` -> `/hashgraph-vc/` with `is-work-gallery-leaving` only during Home leave.
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase3-route-project-media-probe CDP_PORT=9420 node scripts/probe-project-media.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-phase3-route-output-color-probe CDP_PORT=9421 node scripts/probe-output-color.mjs`
+- `node scripts/audit-renderer-output.mjs`
+
+Phase 3 closeout state:
+
+- Project shell/media DOM is source-shaped.
+- Project page scroll, scrollbar, header fade, and next-project color/WebGL state are source-shaped.
+- Project route behavior is source-shaped for project-to-project, project-to-Home, project-to-About, and Home CTA project entry.
+- Reopen Phase 3 only with concrete source-owned mismatch evidence.
+
+## Phase 4 Active Queue
+
+Goal: bring About and auxiliary pages to the same source-backed standard as Home and project-detail pages.
+
+Start with audit, then patch only source-owned findings:
+
+1. Compare About DOM/CSS structure against source HTML/CSS: hero, intro, collaborations, recognition, contact, credits trigger, modal shell, footer, nav, and mobile states.
+2. Audit About scroll behavior and auxiliary visual lifecycle against source components `DD`, `TD`, `Fg`, and modal `AD`.
+3. Audit route entry/leave behavior for Home <-> About and project -> About now that Phase 3 router behavior is guarded.
+4. Validate each production batch with build, `scripts/probe-about-scroll-opacity.mjs`, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
 
 ## Watchlist
 

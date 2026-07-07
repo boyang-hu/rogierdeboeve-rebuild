@@ -41,9 +41,9 @@ const colorValue = (value?: string) => {
                     data-ambient={project.data.ambient}
                     data-spotlight={project.data.spotlight}
                   >
-                    <a class="ui-work-a" href={`/${project.data.slug}/`} data-sound data-sound-click>
+                    <div class="ui-work-a" data-sound data-sound-click>
                       <span>{project.data.title}</span>
-                    </a>
+                    </div>
                     <a href={`/${project.data.slug}/`} data-transition="project" class="ui-work-cta">
                       <Button text="View project" />
                     </a>

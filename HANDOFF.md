@@ -26,13 +26,14 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 3 in progress; project-detail shell/media DOM and RD/wD/CD scroll-state batches are source-aligned |
+| Active phase | Phase 4 next; Phase 3 project-detail media/scroll/route behavior is closed and guarded |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
 | Phase 2 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Continue Phase 3 with project-to-project/Home/About route behavior audit |
-| Next secondary priority | Keep Phase 1 and Phase 2 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 3 project-detail RD/wD/CD scroll-state source alignment |
-| Last closed evidence batch | Phase 3 project-detail RD/wD/CD scroll-state source alignment |
+| Phase 3 status | Closed/guarded on 2026-07-07 |
+| Current production priority | Start Phase 4 with About/auxiliary page source audit |
+| Next secondary priority | Keep Phase 1-3 probes as regression gates when shared paths change |
+| Last committed source-backed code batch | Phase 3 project route behavior source alignment |
+| Last closed evidence batch | Phase 3 project route behavior source alignment |
 | Local service | `scripts/serve.mjs` instances were running at `http://localhost:5173/` and `http://localhost:5174/` during validation |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -46,27 +47,26 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch aligns project-detail scroll-state behavior with source `RD`, `wD`, `CD`, and `Ug`.
+The latest production batch closes Phase 3 route behavior against source router and Home CTA evidence.
 
-- `src/client/motion.ts` now exposes a source-like page scroll snapshot from Lenis: `scroll`, `animatedScroll`, `limit`, and `dimensions.scrollHeight`, plus immediate `scrollTo`.
-- `src/client/main.ts` now drives project header opacity/translate from the source `RD` formula, using `scroll -> opacity 1..0` and `scroll -> y 0..25` over the header height.
-- `src/client/main.ts` now drives the custom project scrollbar from the source `wD` behavior: fixed-height thumb, Lenis `scroll/limit` translation, source visibility threshold, and source-shaped pointer drag target mapping.
-- `src/client/main.ts` now drives next-project state from the source `CD` bottom threshold, using `animatedScroll`, source `scrollHeight`, and next-project height to switch WebGL/color state to the next payload and restore the current payload.
-- `src/styles/global.css` no longer uses rebuild-only CSS variables for project header opacity or scrollbar thumb scaling.
+- Source `ha.onClick` routes same-origin anchors with `data-transition || false` and does not skip an event only because another component called `preventDefault()`.
+- Source Home work titles are `div.ui-work-a`, not project anchors; source CTA component prevents the native click only for sound/magnet behavior while the router still owns navigation.
+- Rebuild now mirrors that split: Home work titles are non-links, CTA click no longer changes active project state, and the global router still handles source-owned CTA navigation.
+- Focused route probe passed for project next/default, project back `work`, project-to-About default, and Home CTA `project` transition.
 
-The previous Phase 3 batch aligned the project-detail shell and media DOM with source HTML/CSS. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
+Earlier Phase 3 batches aligned project-detail shell/media DOM and source `RD`, `wD`, `CD`, `Ug` scroll behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
 ## Current Evidence
 
 Latest Phase 3 evidence:
 
-- Source runtime behavior checked against `legacy-mirror/public/assets/bundle.250f01b7.js` classes `Ug`, `wD`, `RD`, and `CD`.
-- Temporary CDP runtime probe on `http://127.0.0.1:5173/gc-2026/?skip-preloader&debug-output-probe=1` passed:
-  - `RD` header opacity and translate matched the source formula at scroll 100.
-  - `wD` scrollbar thumb translate matched `scroll / limit * (innerHeight - thumbHeight)`.
-  - `CD` switched active WebGL state to the next project near the bottom and restored `gc-2026` at the top.
-- Project media probe passed with `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`, `REBUILD_URL=http://127.0.0.1:5173`, `PROJECT_SLUGS=gc-2026,hashgraph-vc`, `OUT_DIR=/tmp/rd-phase3-scroll-project-media-probe`.
-- Output color/state probe passed with `OUT_DIR=/tmp/rd-phase3-scroll-output-color-probe`.
+- Route CDP probe passed with no failures:
+  - `/gc-2026/` project next link -> `/following-wildfire/`, no `is-work-gallery-leaving`, no stuck `is-route-swapping`.
+  - `/gc-2026/` project back link with `data-transition="work"` -> `/`, no `is-work-gallery-leaving`.
+  - `/gc-2026/` nav About default transition -> `/about/`, About nav active.
+  - `/` Home CTA with `data-transition="project"` -> `/hashgraph-vc/`, `is-work-gallery-leaving` true during leave and cleared after enter.
+- Project media probe passed with `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`, `REBUILD_URL=http://127.0.0.1:5173`, `PROJECT_SLUGS=gc-2026,hashgraph-vc`, `OUT_DIR=/tmp/rd-phase3-route-project-media-probe`, `CDP_PORT=9420`.
+- Output color/state probe passed with `OUT_DIR=/tmp/rd-phase3-route-output-color-probe`, `CDP_PORT=9421`.
 - Static renderer audit passed: `node scripts/audit-renderer-output.mjs`.
 - Build passed: `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 
@@ -92,15 +92,14 @@ Audit method note:
 
 ## Next Action
 
-Phase 1 and Phase 2 are closed. Do not reopen either one unless a concrete source-owned mismatch appears.
+Phase 1, Phase 2, and Phase 3 are closed. Do not reopen them unless a concrete source-owned mismatch appears.
 
 Recommended next move:
 
-1. Continue Phase 3 with project-to-project, project-to-Home, and project-to-About route behavior.
-2. Convert only source-backed Phase 3 findings into scoped fixes.
-3. Keep Phase 1 WebGL and Phase 2 Home DOM/interaction probes as regression gates when shared render, router, audio, or lifecycle paths change.
-4. After Phase 3 is clean or guarded, move to Phase 4 About/auxiliary pages.
-5. Leave broad transitions/audio/Lenis lifecycle cleanup for Phase 5 unless a shared bug blocks Phase 3 or Phase 4.
+1. Start Phase 4 by auditing About and auxiliary page DOM, scroll, modal/credits, footer/nav, and WebGL auxiliary visual behavior against source.
+2. Convert only source-backed Phase 4 findings into scoped fixes.
+3. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project route/media probes as regression gates when shared render, router, audio, or lifecycle paths change.
+4. Leave broad transitions/audio/Lenis lifecycle cleanup for Phase 5 unless a shared bug blocks Phase 4.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:
 
