@@ -70,7 +70,37 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults including zero-vector `uCoords` construction, source `$A` about local `Ka` runtime writeback, source `ZA/KA` floating no-sampler-write and no-`uCoords` runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; source `qw` renderer constructor/resize ownership is guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing and source-rounded `uScrollOpacity=Cs(scroll,0,Pe.h*.25,1,0,!0)` ownership are guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `TD.onScroll()` ownership of about `uScrollOpacity` is now tightened. Source computes mobile opacity with `Cs(scroll,0,Pe.h*.25,1,0,!0)` and forces desktop opacity to `1`; the rebuild now uses `sourceMapClampRound(pageScroll,0,window.innerHeight*.25,1,0)` with the same desktop branch and guards it through static and runtime probes. This is one about-route uniform ownership edge only; Phase 1 remains open.
+Latest accepted batch: shader dump QA now hard-fails invalid captures. `scripts/dump-va-shader.mjs` no longer exits successfully when Chrome lands on a `neterror` body, when the ordinary work `VA` shader dump is missing, when no generic shader dumps are captured, or when shader/runtime console errors appear; renderer audit guards those checks. This is QA harness hardening only; Phase 1 remains open.
+
+### S1-348 Shader Dump Invalid-Capture Hard Fail
+
+This batch hardens Phase 1 shader evidence collection. It does not change production WebGL rendering, shader text, render targets, visual constants, route data, or source parity state.
+
+Investigation finding:
+
+- A shader dump against unreachable `http://127.0.0.1:5176` produced a Chrome `neterror` page with `dumpCount=0` and `shaderDumpCount=0`.
+- Before this batch, that invalid capture still exited `0`, allowing the summarizer to emit an empty Phase 1 shader table.
+- A valid dump against `http://localhost:5176` still captures the page body as `is-home is-ready has-entered has-webgl`, with `dumpCount=3`, `shaderDumpCount=27`, and no shader/runtime console errors.
+
+Runtime and tooling changes:
+
+- `scripts/dump-va-shader.mjs` now throws on `parsed.body === "neterror"` or a body containing `neterror`.
+- The script now throws when the ordinary work `VA` dump is missing.
+- The script now throws when `shaderDumpCount === 0`.
+- The script now throws when shader/runtime console errors matching shader program failures or exceptions are present.
+- `scripts/audit-renderer-output.mjs` now guards these new hard-fail strings so the dump harness cannot silently return to accepting empty captures.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/dump-va-shader.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-shader-dump-hardfail-audit.json` passed; recursive false/null review printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Neterror dump against `http://127.0.0.1:5176` failed nonzero as expected with `Shader dump page failed to load: body=neterror`.
+- Valid dump against `http://localhost:5176` passed and reported `dumpCount=3`, `shaderDumpCount=27`, and no shader/runtime console errors.
+
+Decision: keep shader dump evidence collection fail-fast for invalid browser captures. Do not treat this as Phase 1 production parity or visual closeout. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ### S1-347 `TD.onScroll()` About `uScrollOpacity` `Cs/Fn4` Ownership
 

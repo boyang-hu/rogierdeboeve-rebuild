@@ -1950,6 +1950,10 @@ const summary = {
           "shaderName === \"ag-viscosity\"",
           "viscosityUniformSurface",
           "viscosityJacobiFormula",
+          "parsed.body === \"neterror\"",
+          "Shader dump did not capture ordinary work VA shader",
+          "Shader dump did not capture any generic shaders",
+          "Shader dump saw console/runtime errors",
         ]),
         shaderResidualSummary: checks(readFileSync("scripts/summarize-phase1-shader-gaps.mjs", "utf8"), [
           "\"ag-viscosity\"",

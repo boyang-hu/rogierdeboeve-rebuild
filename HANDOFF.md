@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `TD.onScroll()` about `uScrollOpacity` rounding ownership. Source uses `Cs(scroll,0,Pe.h*.25,1,0,!0)` for mobile and forces desktop to `1`; the rebuild now uses `sourceMapClampRound(pageScroll,0,window.innerHeight*.25,1,0)` with the same desktop branch, exposes expected/actual/match fields through the output probe, and rejects the previous continuous clamp in renderer audit. Static checks, renderer audit, recursive false/null audit review, build, desktop/mobile home output probes, and desktop/mobile about scroll-opacity probes passed. Phase 1 is still open.
+Latest Phase 1 batch: shader dump QA hardening. `scripts/dump-va-shader.mjs` now fails when Chrome lands on a `neterror` page, when the ordinary work `VA` dump is missing, when no generic shader dumps are captured, or when shader/runtime console errors appear; renderer audit guards those failure checks. This is QA harness hardening only, not production WebGL parity. Static checks, renderer audit with recursive false/null review, build, expected-failing neterror dump, and valid localhost shader dump passed. Phase 1 is still open.
 
 ## Chosen Stack
 
@@ -184,16 +184,15 @@ Known remaining gaps:
 - Source `qw` renderer constructor/resize ownership is now guarded: no constructor-time DPR write, `resize(e,t,n)` calls `setSize(e,t)` before `setPixelRatio(n)`, and canvas style dimensions are owned by Three's default `setSize` update-style path.
 - Source `p1.update()` side reveal ownership is now guarded: `uRevealSides` and `uRevealSpreadSides` use source `Cs(Math.abs(world.x), ...)->Fn4` four-decimal rounding rather than continuous clamp/mapLinear floats, and output probes assert exact formula parity for visible work items.
 - Source `p1.setMouseFactor()` runtime ownership is now guarded through the update path: `VA.uMouseFactor` is constructed at `0` and fanned out by `p1.setMouseFactor()`, while `p1.update()` does not write it per frame.
+- Shader dump QA now hard-fails misleading empty dumps: `neterror` bodies, missing ordinary work `VA` dumps, zero generic shader dumps, and shader/runtime console errors no longer exit successfully.
 
 Latest Phase 1 batch:
 
-- Aligned source `p1.setMouseFactor()` ownership by removing the rebuild-only per-frame `uMouseFactor` write from `updateVisibleWorkItems()`.
-- Source evidence: `VA` constructs `uMouseFactor:new I(0)`, `p1.setMouseFactor(e)` writes `this.mouseF=e` and fans `e` out to each work material, gallery entry and preview hover animate through `J.workScene.setMouseFactor(...)`, and source `p1.update()` does not write `uMouseFactor`.
-- `src/client/webgl.ts` now keeps `setMouseFactor()` as the only ordinary-work `uMouseFactor` runtime fan-out owner and exposes `updateOwnershipMode=source-p1-update-does-not-write-uMouseFactor` in `__rogierOutputProbe.settings.work.mouseFactorOwnership`.
-- `scripts/probe-output-color.mjs` asserts the new ownership markers while still verifying the active/all-work uniforms match the current source-owned state.
-- `scripts/audit-renderer-output.mjs` now extracts `updateVisibleWorkItems()` and checks both source and rebuild update paths for absence of `uMouseFactor` writes.
-- Previous committed batch was `2359741 Align p1 side reveal rounding`.
-- Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Hardened `scripts/dump-va-shader.mjs` so invalid dumps fail instead of producing empty or misleading Phase 1 shader summaries.
+- The script now throws on `body=neterror`, missing ordinary work `VA` shader dump, `shaderDumpCount=0`, and shader/runtime console errors.
+- `scripts/audit-renderer-output.mjs` now checks those guard strings so the dump cannot silently return to accepting empty captures.
+- Valid localhost dump still reports `body=is-home is-ready has-entered has-webgl`, `dumpCount=3`, `shaderDumpCount=27`, and no shader/runtime console errors; the focused Phase 1 shader surfaces remain source-shaped in that generated dump.
+- This is QA harness hardening only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -201,27 +200,27 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
+node --check scripts/dump-va-shader.mjs
 node --check scripts/audit-renderer-output.mjs
-node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-mousefactor-update-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-mousefactor-update-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-shader-dump-hardfail-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-shader-dump-hardfail-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-mousefactor-update-output-desktop CDP_PORT=9282 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-mousefactor-update-output-mobile CDP_PORT=9283 VIEWPORT=mobile PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-shader-dump-hardfail-neterror CDP_PORT=9320 node scripts/dump-va-shader.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-shader-dump-hardfail-ok CDP_PORT=9321 node scripts/dump-va-shader.mjs
 ```
 
-All relevant checks passed in the `p1.setMouseFactor()` update-ownership batch. Renderer audit wrote `/tmp/rd-mousefactor-update-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.GA.mouseFactorOwnership` reported source constructor/default, source `p1.setMouseFactor()`, source `p1.update()` no-write, rebuild `updateVisibleWorkItems()` no-write, and probe coverage as true. Desktop output probe wrote `/tmp/rd-mousefactor-update-output-desktop`; mobile output probe wrote `/tmp/rd-mousefactor-update-output-mobile`. Both probes reported no failed requests, runtime exceptions, or console messages.
+All relevant checks passed for the shader dump hard-fail batch. Renderer audit wrote `/tmp/rd-shader-dump-hardfail-audit.json`; recursive false/null extraction printed `false/null entries 0`. The negative dump against unreachable `http://127.0.0.1:5176` failed as expected with `Shader dump page failed to load: body=neterror`. The valid dump against `http://localhost:5176` succeeded with `body=is-home is-ready has-entered has-webgl`, `dumpCount=3`, `shaderDumpCount=27`, and no shader/runtime console errors.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this mouse-factor ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this shader dump QA batch.
 
-Project-media, thumb, and full capture probes were not rerun because this batch touched only Home work-block `uMouseFactor` runtime ownership and output-probe coverage, not project media, thumb render targets, shader text, route data, or source content. Desktop/mobile output probes were rerun because the touched uniform path executes on both viewports.
+Project-media, thumb, full capture, and output-color probes were not rerun because this batch touched only shader dump/audit tooling and documentation, not production WebGL rendering, route data, source content, thumb render targets, or project media.
 
 Verified:
 
-- Renderer audit passed for the `p1.setMouseFactor()` update-ownership batch: `/tmp/rd-mousefactor-update-audit.json`.
+- Renderer audit passed for the shader dump hard-fail batch: `/tmp/rd-shader-dump-hardfail-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop output probe passed: `/tmp/rd-mousefactor-update-output-desktop`.
-- Mobile output probe passed: `/tmp/rd-mousefactor-update-output-mobile`.
+- Neterror shader dump fails nonzero instead of producing an empty successful summary.
+- Valid localhost shader dump passes and still reports the focused Phase 1 shader surfaces as source-shaped.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

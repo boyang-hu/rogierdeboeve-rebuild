@@ -1352,6 +1352,20 @@ try {
   });
   const parsed = JSON.parse(result.result.value);
   const workDump = parsed.dump.find((entry) => entry.variant === "work");
+  const shaderDumpCount = parsed.shaderDump?.length || 0;
+  const fatalConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
+  if (parsed.body === "neterror" || parsed.body?.includes("neterror")) {
+    throw new Error(`Shader dump page failed to load: body=${parsed.body || "missing"}`);
+  }
+  if (!workDump) {
+    throw new Error(`Shader dump did not capture ordinary work VA shader; dumpCount=${parsed.dump.length}`);
+  }
+  if (shaderDumpCount === 0) {
+    throw new Error("Shader dump did not capture any generic shaders");
+  }
+  if (fatalConsoleMessages.length) {
+    throw new Error(`Shader dump saw console/runtime errors: ${fatalConsoleMessages.join(" | ")}`);
+  }
   if (workDump) {
     writeFileSync(path.join(outDir, "rebuild-work-vertex.glsl"), workDump.vertexShader);
     writeFileSync(path.join(outDir, "rebuild-work-fragment.glsl"), workDump.fragmentShader);
@@ -1410,8 +1424,8 @@ try {
   const summary = {
     body: parsed.body,
     dumpCount: parsed.dump.length,
-    shaderDumpCount: parsed.shaderDump?.length || 0,
-    consoleMessages: consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message)),
+    shaderDumpCount,
+    consoleMessages: fatalConsoleMessages,
     vertex: workDump ? summarizeShader("work vertex", workDump.vertexShader, sourceH) : null,
     fragment: workDump ? summarizeShader("work fragment", workDump.fragmentShader, sourceZ) : null,
     vertexAnalysis: vertexAnalysis ? {
