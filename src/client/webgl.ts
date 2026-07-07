@@ -4871,6 +4871,46 @@ function renderTargetProbe(renderer: WebGLRenderer, target: WebGLRenderTarget, s
   };
 }
 
+function renderTargetHomeBandStats(renderer: WebGLRenderer, target: WebGLRenderTarget) {
+  const width = Math.max(1, target.width);
+  const height = Math.max(1, target.height);
+  const pixels = new Uint8Array(width * height * 4);
+  renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels);
+  const rows: number[] = [];
+  const x0 = Math.floor(width * 0.2);
+  const x1 = Math.floor(width * 0.8);
+  for (let yTop = 0; yTop < height; yTop += 1) {
+    const y = height - 1 - yTop;
+    let sum = 0;
+    let count = 0;
+    for (let x = x0; x < x1; x += 1) {
+      const index = (y * width + x) * 4;
+      sum += (
+        pixels[index] * 0.2126
+        + pixels[index + 1] * 0.7152
+        + pixels[index + 2] * 0.0722
+      ) / 255;
+      count += 1;
+    }
+    rows.push(sum / Math.max(1, count));
+  }
+  const centerBandLuma = rows.reduce((sum, value) => sum + value, 0) / Math.max(1, rows.length);
+  const bands = [0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85].map((position) => {
+    const center = Math.round(height * position);
+    const start = Math.max(0, center - 10);
+    const end = Math.min(height, center + 10);
+    const slice = rows.slice(start, end);
+    const value = slice.reduce((sum, item) => sum + item, 0) / Math.max(1, slice.length);
+    return [position, Number(value.toFixed(4))] as [number, number];
+  });
+  return {
+    width,
+    height,
+    centerBandLuma: Number(centerBandLuma.toFixed(4)),
+    bands,
+  };
+}
+
 function sourceRoundedBoxGeometryProbe(geometry?: BufferGeometry) {
   const sourceGeometry = geometry as SourceRoundedBoxGeometry | undefined;
   const parameters = sourceGeometry?.parameters ?? null;
@@ -11398,6 +11438,8 @@ void main() {
         workComposite: renderTargetProbe(this.renderer, this.workCompositeTarget),
         mainRaw: renderTargetProbe(this.renderer, this.mainRawTarget),
         preComposite: renderTargetProbe(this.renderer, this.compositeTarget),
+        workCompositeHomeBands: renderTargetHomeBandStats(this.renderer, this.workCompositeTarget),
+        preCompositeHomeBands: renderTargetHomeBandStats(this.renderer, this.compositeTarget),
         bloomBright: renderTargetProbe(this.renderer, this.workBloomBrightTarget),
         bloom: renderTargetProbe(this.renderer, this.workBloomHorizontalTargets[0]),
         mainBloomBright: renderTargetProbe(this.renderer, this.mainBloomBrightTarget),
@@ -12559,6 +12601,13 @@ void main() {
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
   }
 
+  private renderHomeCompositeProbeTarget() {
+    this.mainPostScreen.material = this.preCompositeMaterial;
+    this.renderer.setRenderTarget(this.compositeTarget);
+    this.renderer.render(this.mainPostScreen, this.backgroundCamera);
+    this.renderer.setRenderTarget(null);
+  }
+
   private tick = () => {
     const deltaNow = performance.now() * 0.001;
     const delta = deltaNow - this.lastTickTime;
@@ -12656,6 +12705,7 @@ void main() {
     this.preCompositeMaterial.uniforms.boolFxaa.value = this.sourceMainRenderSettings.fxaa.enabled;
     this.preCompositeMaterial.uniforms.tLensflare.value = this.mainLensflareTarget.texture;
     this.renderHomeCompositePass();
+    if (this.debugOutputProbe) this.renderHomeCompositeProbeTarget();
     this.preCompositeMaterial.uniforms.uTime.value = time;
     this.renderThumbTargets();
     this.renderDisplacementTarget(time);
