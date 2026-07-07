@@ -133,6 +133,7 @@ type ShaderDumpWindow = Window & {
 
 type OutputProbeWindow = Window & {
   __rogierOutputProbe?: Record<string, any>;
+  __rogierAboutScrollProbeSet?: (scroll: number, velocity?: number) => void;
 };
 
 type SourceGpuBridgeState = {
@@ -5972,9 +5973,10 @@ export class WebGLBackdrop {
   private applySourceAboutScrollState() {
     const pageScroll = this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY;
     this.updateAboutSpotlight();
+    const scrollOpacity = sourceMapClampRound(pageScroll, 0, window.innerHeight * 0.25, 1, 0);
     if (this.aboutBlocks) {
       this.aboutBlocks.material.uniforms.uScrollOpacity.value =
-        window.innerWidth >= BREAKPOINT_LG ? 1 : MathUtils.clamp(1 - pageScroll / Math.max(1, window.innerHeight * 0.25), 0, 1);
+        window.innerWidth >= BREAKPOINT_LG ? 1 : scrollOpacity;
     }
   }
 
@@ -9802,7 +9804,14 @@ void main() {
     });
     const backgroundAmbientColor = this.backgroundMaterial.uniforms.uAmbientColor.value as Color;
     const activeWorkEmissive = activeWorkItem?.material.emissive ?? null;
+    const aboutScrollOpacityScroll = this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY;
+    const aboutScrollOpacityExpectedMobile = sourceMapClampRound(aboutScrollOpacityScroll, 0, window.innerHeight * 0.25, 1, 0);
+    const aboutScrollOpacityExpected = window.innerWidth >= BREAKPOINT_LG ? 1 : aboutScrollOpacityExpectedMobile;
+    const aboutScrollOpacityActual = this.aboutBlocks
+      ? (this.aboutBlocks.material.uniforms.uScrollOpacity.value as number)
+      : null;
     const probeWindow = window as OutputProbeWindow;
+    probeWindow.__rogierAboutScrollProbeSet = (scroll: number, velocity = 0) => this.setAboutScrollState(scroll, velocity);
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
       bodyClass: document.body.className,
@@ -10192,6 +10201,16 @@ void main() {
             floatingScrollVelocityMode: "source-Fg-onRaf-page-scroll-velocity",
             floatingTranslation: SOURCE_FLOATING_SCROLL_TRANSLATION,
             scrollVelocitySource: this.auxiliaryPageScrollActive ? "page-scroll-velocity" : "window-scroll-delta-fallback",
+            aboutScrollOpacityMode: "source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4",
+            aboutScrollOpacityScroll,
+            aboutScrollOpacityViewportHeight: window.innerHeight,
+            aboutScrollOpacityDesktopOverride: window.innerWidth >= BREAKPOINT_LG,
+            aboutScrollOpacityExpectedMobile,
+            aboutScrollOpacityExpected,
+            aboutScrollOpacityActual,
+            aboutScrollOpacityMatchesSource:
+              aboutScrollOpacityActual !== null
+              && Math.abs(aboutScrollOpacityActual - aboutScrollOpacityExpected) < 1e-6,
           },
           auxiliaryMaterial: this.aboutBlocks ? {
             mode: "source-XA-about-material-state",

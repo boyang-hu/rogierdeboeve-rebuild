@@ -12,6 +12,8 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
+Latest Phase 1 batch: source `TD.onScroll()` about `uScrollOpacity` rounding ownership. Source uses `Cs(scroll,0,Pe.h*.25,1,0,!0)` for mobile and forces desktop to `1`; the rebuild now uses `sourceMapClampRound(pageScroll,0,window.innerHeight*.25,1,0)` with the same desktop branch, exposes expected/actual/match fields through the output probe, and rejects the previous continuous clamp in renderer audit. Static checks, renderer audit, recursive false/null audit review, build, desktop/mobile home output probes, and desktop/mobile about scroll-opacity probes passed. Phase 1 is still open.
+
 ## Chosen Stack
 
 - Astro static output
@@ -109,6 +111,7 @@ Implemented:
   - source WebP-selected texture/cubemap extension ownership from `Qe`, `Xt`, and `p1.addEnvironment()`
   - source `Xt.loadTexture()` immediate texture-object binding for blue-noise, perlin-1, perlin-2, and floor-normal
   - support for `ambient < 0 && colors.invert`
+  - about `TD.onScroll()` `uScrollOpacity` source rounding through `Cs(...,!0)->Fn4`, with desktop override to `1`
 - Project media system
   - desktop `[data-media][data-media-src]` empty tracks mapped to WebGL planes
   - image/video loading into Three textures

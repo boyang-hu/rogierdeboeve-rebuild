@@ -28,6 +28,8 @@ const viewports = {
   mobile: { width: 390, height: 844, mobile: true },
 };
 const viewport = viewports[viewportName] || viewports.desktop;
+const sourceBreakpointLg = 1000;
+const sourceAboutScrollOpacityMode = "source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4";
 const sourceHomeSpotlightIntensityMode = "source-SD-init-direct-spotLight-intensity-220-no-project-payload";
 const sourceActiveProjectSpotlightIntensityMode = "source-yD-onProjectActive-spotlight-payload-or-maxSpotLightIntensity";
 const sourceActiveProjectApplicationOrderMode = "source-yD-onProjectActive-spotlight-reveal-woosh-uReveal-before-look-directional";
@@ -497,6 +499,30 @@ async function runProbe() {
   }
   if (Math.abs((auxiliaryLifecycle.floatingTranslation ?? NaN) - 0.005) > 0.000001) {
     materialErrors.push("auxiliaryFloatingTranslation");
+  }
+  const aboutScrollOpacityExpectedMobile = sourceMapClampRound(
+    auxiliaryLifecycle.aboutScrollOpacityScroll,
+    0,
+    auxiliaryLifecycle.aboutScrollOpacityViewportHeight * 0.25,
+    1,
+    0,
+  );
+  const aboutScrollOpacityExpected = auxiliaryLifecycle.aboutScrollOpacityDesktopOverride ? 1 : aboutScrollOpacityExpectedMobile;
+  if (auxiliaryLifecycle.aboutScrollOpacityMode !== sourceAboutScrollOpacityMode) materialErrors.push("auxiliaryAboutScrollOpacityMode");
+  if (auxiliaryLifecycle.aboutScrollOpacityDesktopOverride !== (viewport.width >= sourceBreakpointLg)) {
+    materialErrors.push("auxiliaryAboutScrollOpacityDesktopOverride");
+  }
+  if (!closeTo(auxiliaryLifecycle.aboutScrollOpacityExpectedMobile, aboutScrollOpacityExpectedMobile, 0.00001)) {
+    materialErrors.push("auxiliaryAboutScrollOpacityExpectedMobile");
+  }
+  if (!closeTo(auxiliaryLifecycle.aboutScrollOpacityExpected, aboutScrollOpacityExpected, 0.00001)) {
+    materialErrors.push("auxiliaryAboutScrollOpacityExpected");
+  }
+  if (!closeTo(auxiliaryLifecycle.aboutScrollOpacityActual, aboutScrollOpacityExpected, 0.00001)) {
+    materialErrors.push("auxiliaryAboutScrollOpacityActual");
+  }
+  if (auxiliaryLifecycle.aboutScrollOpacityMatchesSource !== true) {
+    materialErrors.push("auxiliaryAboutScrollOpacityMatchesSource");
   }
   const blocksColor = workSettings.blocksColorOwnership || {};
   if (blocksColor.mode !== "source-Se-setBlocksColor-tweens-all-work-material-emissive") materialErrors.push("blocksColorMode");

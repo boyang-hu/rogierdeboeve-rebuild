@@ -19,6 +19,7 @@ const rebuildMotionPath = process.env.REBUILD_MOTION || "src/client/motion.ts";
 const rebuildSitePath = process.env.REBUILD_SITE || "src/data/site.ts";
 const rebuildThumbProbePath = process.env.REBUILD_THUMB_PROBE || "scripts/probe-thumb-spotlight.mjs";
 const rebuildOutputProbePath = process.env.REBUILD_OUTPUT_PROBE || "scripts/probe-output-color.mjs";
+const rebuildAboutScrollProbePath = process.env.REBUILD_ABOUT_SCROLL_PROBE || "scripts/probe-about-scroll-opacity.mjs";
 const rebuildInteractiveMouseProbePath = process.env.REBUILD_INTERACTIVE_MOUSE_PROBE || "scripts/probe-interactive-mouse.mjs";
 const rebuildMirrorSitePath = process.env.REBUILD_MIRROR_SITE || "scripts/mirror-site.mjs";
 const rebuildCompositeStagesPath = process.env.REBUILD_COMPOSITE_STAGES || "scripts/compare-composite-stages.mjs";
@@ -177,6 +178,7 @@ const rebuildMotion = readFileSync(rebuildMotionPath, "utf8");
 const rebuildSite = readFileSync(rebuildSitePath, "utf8");
 const rebuildThumbProbe = readFileSync(rebuildThumbProbePath, "utf8");
 const rebuildOutputProbe = readFileSync(rebuildOutputProbePath, "utf8");
+const rebuildAboutScrollProbe = readFileSync(rebuildAboutScrollProbePath, "utf8");
 const rebuildInteractiveMouseProbe = readFileSync(rebuildInteractiveMouseProbePath, "utf8");
 const rebuildMirrorSite = readFileSync(rebuildMirrorSitePath, "utf8");
 const rebuildCompositeStages = readFileSync(rebuildCompositeStagesPath, "utf8");
@@ -4647,6 +4649,9 @@ const summary = {
         "pe.emit(xe.FORCE_RESIZE)",
         "await fn(200)",
         "this.onScroll()",
+        "const t=Cs(e,0,Pe.h*.25,1,0,!0)",
+        "Pe.w>=Le.BREAKPOINTS.LG?J.workScene.aboutBlocks.material.customUniforms.uScrollOpacity.value=1",
+        "J.workScene.aboutBlocks.material.customUniforms.uScrollOpacity.value=t",
         "Bt.remove(\"aboutVisual\")",
         "J.characterScene.character.rotatableMesh.removeEvents()",
       ]),
@@ -4666,9 +4671,27 @@ const summary = {
         "this.applySourceAboutScrollState();",
         "}, SOURCE_TD_INITIAL_SCROLL_DELAY_MS);",
         "}, SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS);",
+        "const scrollOpacity = sourceMapClampRound(pageScroll, 0, window.innerHeight * 0.25, 1, 0);",
+        "window.innerWidth >= BREAKPOINT_LG ? 1 : scrollOpacity",
+        "aboutScrollOpacityMode: \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"",
+        "aboutScrollOpacityMatchesSource:",
+        "probeWindow.__rogierAboutScrollProbeSet = (scroll: number, velocity = 0) => this.setAboutScrollState(scroll, velocity);",
         "this.clearAboutVisualLifecycleTimers();",
         "this.sourceRemoveCharacterRotatableEvents();",
       ]),
+      scrollOpacityRuntimeOwnership: {
+        sourceRoundedCs:
+          sourceTDSpotlight.text.includes("const t=Cs(e,0,Pe.h*.25,1,0,!0)")
+          && sourceTDSpotlight.text.includes("uScrollOpacity.value=t"),
+        rebuildUsesRoundedCs:
+          rebuildWebgl.includes("const scrollOpacity = sourceMapClampRound(pageScroll, 0, window.innerHeight * 0.25, 1, 0);")
+          && rebuildWebgl.includes("window.innerWidth >= BREAKPOINT_LG ? 1 : scrollOpacity")
+          && rebuildWebgl.includes("aboutScrollOpacityMode: \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"")
+          && rebuildWebgl.includes("probeWindow.__rogierAboutScrollProbeSet = (scroll: number, velocity = 0) => this.setAboutScrollState(scroll, velocity);"),
+        rebuildRejectsContinuousClamp:
+          !rebuildWebgl.includes("MathUtils.clamp(1 - pageScroll / Math.max(1, window.innerHeight * 0.25), 0, 1)")
+          && !rebuildWebgl.includes("MathUtils.clamp(1 - pageScroll / (window.innerHeight * 0.25), 0, 1)"),
+      },
       outputProbeChecks: checks(rebuildOutputProbe, [
         "auxiliaryLifecycle.aboutSpotlightLifecycleMode !== \"source-TD-addEvents-100ms-map-resize-200ms-initial-scroll\"",
         "auxiliaryLifecycle.aboutMapDelayMs !== 100",
@@ -4677,6 +4700,20 @@ const summary = {
         "auxiliaryLifecycle.aboutResizeMode !== \"source-TD-pe-FORCE_RESIZE-after-character-map\"",
         "auxiliaryLifecycle.aboutInitialScrollMode !== \"source-TD-await-200ms-after-map-then-onScroll\"",
         "auxiliaryLifecycle.aboutCharacterRotatableMode !== \"source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy\"",
+        "const sourceAboutScrollOpacityMode = \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"",
+        "const aboutScrollOpacityExpectedMobile = sourceMapClampRound(",
+        "auxiliaryLifecycle.aboutScrollOpacityMode !== sourceAboutScrollOpacityMode",
+        "auxiliaryLifecycle.aboutScrollOpacityMatchesSource !== true",
+      ]),
+      aboutScrollProbeChecks: checks(rebuildAboutScrollProbe, [
+        "const sourceAboutScrollOpacityMode = \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"",
+        "const aboutScrollOpacityProbeScroll = 137.1373",
+        "window.__rogierAboutScrollProbeSet?.",
+        "window.dispatchEvent(new CustomEvent(\"rd:page-scroll\"",
+        "const expectedMobile = sourceMapClampRound(",
+        "lifecycle.aboutScrollOpacityMode !== sourceAboutScrollOpacityMode",
+        "lifecycle.aboutScrollOpacityMatchesSource !== true",
+        "if (lifecycle.aboutScrollOpacityDesktopOverride !== (viewport.width >= sourceBreakpointLg)) errors.push(\"desktopOverride\")",
       ]),
       excerpt: compact(sourceTDSpotlight.text),
     },
