@@ -367,13 +367,35 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-lenis-output CDP_PORT=9493 node scripts/probe-output-color.mjs`
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-lenis-project-media CDP_PORT=9494 node scripts/probe-project-media.mjs`
 
+### Closed: Transition/nav ownership source alignment
+
+Goal: align remaining shared transition/nav ownership with source `BD`, `zD`, `HD`, `OD`, `Tr`, and `Ar`.
+
+Current read:
+
+- Source desktop Work nav uses `data-slug="home"` in Home, About, and Project HTML; rebuild now matches.
+- Source Project view `OD.init()` calls `Tr.setActive("home")` and `Ar.setActive("home")`; rebuild now activates Work nav on direct and routed Project entry.
+- Source `BD.onLeave()` emits `WORK_GALLERY_OUT` when the leaving view is Home; rebuild now preserves that behavior for click and popstate default-transition paths.
+- Source `zD.onLeave()` always emits `WORK_GALLERY_OUT`; rebuild keeps that project-transition behavior.
+- Source `HD.onLeave()` only waits `500ms`; rebuild keeps work transition free of `WORK_GALLERY_OUT`.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Static nav slug check against source Home/Project HTML.
+- Focused transition/nav CDP probe: `/tmp/rd-phase5-transition-nav-probe-rerun/summary.json`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-transition-about-desktop CDP_PORT=9497 node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-transition-output CDP_PORT=9498 node scripts/probe-output-color.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-transition-project-media CDP_PORT=9499 node scripts/probe-project-media.mjs`
+
 ### Next Phase 5 Queue
 
 Patch only source-owned findings:
 
-1. Audit transition ownership and ordering against source `BD`, `zD`, `HD`, `Sg`, and `sl`.
-2. Reopen Lenis/page scroll only if focused ownership or About/Project scroll probes expose a concrete source-owned mismatch.
-3. Audit audio lifecycle against source `ln` and `lm`: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
+1. Audit audio lifecycle against source `ln` and `lm`: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
+2. Reopen transition/nav only if focused route probes expose a concrete source-owned mismatch.
+3. Reopen Lenis/page scroll only if focused ownership or About/Project scroll probes expose a concrete source-owned mismatch.
 4. Validate each batch with build, route assertions, output state probes, and About/project/Home regression probes for shared paths.
 
 ## Watchlist

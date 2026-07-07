@@ -31,10 +31,10 @@ It is not a timeline. Use git for history.
 | Phase 2 status | Closed/guarded on 2026-07-07 |
 | Phase 3 status | Closed/guarded on 2026-07-07 |
 | Phase 4 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Continue Phase 5 with transition and audio lifecycle audit after Lenis/page scroll ownership alignment |
+| Current production priority | Continue Phase 5 with audio lifecycle audit after transition/nav ownership alignment |
 | Next secondary priority | Keep Phase 1-4 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 5 Lenis/page scroll ownership source alignment |
-| Last closed evidence batch | Phase 5 Lenis/page scroll ownership source alignment |
+| Last committed source-backed code batch | Phase 5 transition/nav ownership source alignment |
+| Last closed evidence batch | Phase 5 transition/nav ownership source alignment |
 | Local service | Dev server was available at `http://localhost:5173/` during validation; an older static service was also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -48,12 +48,12 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch closes the first Phase 5 Lenis/page scroll ownership finding.
+The latest production batch closes the Phase 5 transition/nav ownership finding.
 
-- Source Home `SD extends sl`, not `Ug`; rebuild no longer creates a page Lenis controller or `is-scrolled` page scroll state on Home.
-- Source About/Project `DD` and `OD` extend `Ug`; rebuild now limits page Lenis, scrollbar state, and `is-scrolled` ownership to About/Project.
-- Source `Ug.setScrollSettings()` returns `{}` and source `Ig` defaults are `lerp: .1`, `wheelMultiplier: 1`, and `touchMultiplier: 1`; rebuild removed the prior custom Lenis values.
-- Source `Ug.resetScroll()` runs before `initScroll()` and sets `history.scrollRestoration = "manual"`; rebuild now resets page scroll before creating the About/Project page scroll controller and clears `is-scrolled` on teardown.
+- Source desktop Work nav uses `data-slug="home"`; rebuild now matches instead of using rebuild-only `data-slug="work"`.
+- Source Project view `OD.init()` calls `Tr.setActive("home")` and `Ar.setActive("home")`; rebuild now activates Work nav on direct and routed Project entry.
+- Source default transition `BD.onLeave()` emits `WORK_GALLERY_OUT` whenever the leaving view is Home, including popstate paths; rebuild now bases the event on current view plus source transition mode instead of only internal route mode.
+- Source `zD` still owns unconditional project-transition `WORK_GALLERY_OUT`, and source `HD` work transition still does not emit it.
 
 Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
@@ -63,6 +63,25 @@ Latest Phase 5 evidence:
 
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Source transition/nav audit:
+  - Source `BD.onLeave()` emits `WORK_GALLERY_OUT` only when `from[data-view]` is `home`.
+  - Source `zD.onLeave()` always emits `WORK_GALLERY_OUT`.
+  - Source `HD.onLeave()` only waits `500ms`.
+  - Source `OD.init()` calls `Tr.setActive("home")` and `Ar.setActive("home")`.
+  - Source desktop nav Work link has `data-slug="home"` in Home, About, and Project HTML.
+- Static nav slug check: generated `dist/index.html` and `dist/gc-2026/index.html` Work nav `data-slug` match source `home`.
+- Focused transition/nav CDP probe: `/tmp/rd-phase5-transition-nav-probe-rerun/summary.json`
+  - Direct Project entry has desktop and mobile Work nav active.
+  - About -> Work click does not emit `WORK_GALLERY_OUT`.
+  - Browser back from Home -> About emits `WORK_GALLERY_OUT` while current view state is Home.
+  - Runtime exceptions: `0`; material network failures: `0`.
+- About/Home/Project regressions passed:
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-transition-about-desktop CDP_PORT=9497 node scripts/probe-about-scroll-opacity.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-transition-output CDP_PORT=9498 node scripts/probe-output-color.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-transition-project-media CDP_PORT=9499 node scripts/probe-project-media.mjs`
+
+Previous Phase 5 evidence:
+
 - Source audit:
   - `SD extends sl`
   - `DD extends Ug`
@@ -126,8 +145,8 @@ Phase 1, Phase 2, Phase 3, and Phase 4 are closed. Do not reopen them unless a c
 
 Recommended next move:
 
-1. Continue Phase 5 by auditing source `BD/zD/HD` and `Sg/sl` transition ordering across route changes.
-2. Audit source `ln/lm` audio lifecycle: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
+1. Audit source `ln/lm` audio lifecycle: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
+2. Reopen transition/nav only if focused route probes expose a concrete source-owned mismatch.
 3. Reopen Lenis/page scroll only if the Phase 5 ownership probe or About/Project scroll probes fail.
 4. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project route/media, and Phase 4 About probes as regression gates when shared render, router, audio, or lifecycle paths change.
 

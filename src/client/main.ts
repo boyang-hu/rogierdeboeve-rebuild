@@ -322,6 +322,12 @@ function runCurrentViewComponentLeave(webgl?: WebGLLike) {
   if (viewName === "project") webgl?.projectLeave?.();
 }
 
+function setProjectNavActive() {
+  document.querySelectorAll<HTMLElement>(".ui-nav-a, .ui-nav-mobile-a").forEach((link) => {
+    if (link.dataset.slug === "home") link.classList.add("is-active");
+  });
+}
+
 function dispatchSoundMode(enabled: boolean) {
   window.dispatchEvent(new CustomEvent("rd:sound-mode", { detail: { enabled } }));
 }
@@ -1577,6 +1583,7 @@ function boot() {
     } else if (project) {
       webgl?.refreshMedia?.();
       webgl?.enterProjectVisualState?.(payload);
+      setProjectNavActive();
       onPageEntered(() => webgl?.mediaAnimateIn?.(), callbacks);
     }
   };
@@ -1609,11 +1616,12 @@ function boot() {
     if (routing) return;
     routing = true;
     const routeUrl = normalizeRouteUrl(url);
+    const currentViewName = document.querySelector<HTMLElement>("[data-view]")?.dataset.view;
     const routePromise = loadRoute(routeUrl);
     const leavePromise = new Promise((resolve) => window.setTimeout(resolve, transitionDelay(mode)));
     runCurrentViewComponentLeave(webgl);
     animateCurrentViewOut();
-    if ((mode === "home" || mode === "project") && !document.documentElement.classList.contains("is-work-gallery-leaving")) {
+    if ((mode === "project" || (mode !== "work" && currentViewName === "home")) && !document.documentElement.classList.contains("is-work-gallery-leaving")) {
       window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
     }
     Promise.all([routePromise, leavePromise])
