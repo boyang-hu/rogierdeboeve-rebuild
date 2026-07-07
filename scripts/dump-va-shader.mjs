@@ -750,7 +750,7 @@ function analyzeMainFluidCore(sourceVertex, sourceFragment, rebuildVertex, rebui
       rebuild: rebuildF.includes("#defineGLSLIFY1"),
     },
   };
-  if (["ag-advection", "ag-advection-bounds", "ag-divergence", "ag-poisson", "ag-pressure"].includes(shaderName)) {
+  if (["ag-advection", "ag-advection-bounds", "ag-viscosity", "ag-divergence", "ag-poisson", "ag-pressure"].includes(shaderName)) {
     checks.vertexSourceUniformSurface = {
       source: sourceV.includes("uniformvec2px") && (shaderName.includes("force") || sourceV.includes("uniformvec2bounds")),
       rebuild: rebuildV.includes("uniformvec2px") && (shaderName.includes("force") || rebuildV.includes("uniformvec2bounds")),
@@ -776,6 +776,16 @@ function analyzeMainFluidCore(sourceVertex, sourceFragment, rebuildVertex, rebui
     checks.forceUniformSurface = {
       source: ["uniformvec2force", "uniformvec2center", "uniformvec2scale", "uniformvec2px"].every((value) => sourceF.includes(value)),
       rebuild: ["uniformvec2force", "uniformvec2center", "uniformvec2scale", "uniformvec2px"].every((value) => rebuildF.includes(value)),
+    };
+  }
+  if (shaderName === "ag-viscosity") {
+    checks.viscosityUniformSurface = {
+      source: ["uniformsampler2Dvelocity", "uniformsampler2Dvelocity_new", "uniformfloatv", "uniformvec2px", "uniformfloatdt"].every((value) => sourceF.includes(value)),
+      rebuild: ["uniformsampler2Dvelocity", "uniformsampler2Dvelocity_new", "uniformfloatv", "uniformvec2px", "uniformfloatdt"].every((value) => rebuildF.includes(value)),
+    };
+    checks.viscosityJacobiFormula = {
+      source: ["vec2old=texture(velocity,vUv).xy", "vec2new0=texture(velocity_new,vUv+vec2(px.x*2.0,0)).xy", "new/=4.0*(1.0+v*dt)"].every((value) => sourceF.includes(value)),
+      rebuild: ["vec2old=texture(velocity,vUv).xy", "vec2new0=texture(velocity_new,vUv+vec2(px.x*2.0,0)).xy", "new/=4.0*(1.0+v*dt)"].every((value) => rebuildF.includes(value)),
     };
   }
   return checks;
@@ -1250,6 +1260,7 @@ const sourceFragmentShaders = {
   "ag-advection": sourceShader(bundle, "Sf"),
   "ag-advection-bounds": sourceShader(bundle, "Sf"),
   "ag-force": sourceShader(bundle, "$T"),
+  "ag-viscosity": sourceShader(bundle, "QT"),
   "ag-divergence": sourceShader(bundle, "WT"),
   "ag-poisson": sourceShader(bundle, "YT"),
   "ag-pressure": sourceShader(bundle, "ZT"),
@@ -1281,6 +1292,7 @@ const sourceVertexShaders = {
   "ag-advection": sourceShader(bundle, "Co"),
   "ag-advection-bounds": sourceShader(bundle, "VT"),
   "ag-force": sourceShader(bundle, "XT"),
+  "ag-viscosity": sourceShader(bundle, "Co"),
   "ag-divergence": sourceShader(bundle, "Co"),
   "ag-poisson": sourceShader(bundle, "Co"),
   "ag-pressure": sourceShader(bundle, "Co"),

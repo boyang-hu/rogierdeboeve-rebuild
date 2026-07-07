@@ -1,6 +1,6 @@
 # Rogier de Boeve Rebuild Handoff
 
-Last updated: 2026-07-06
+Last updated: 2026-07-07
 
 This document records the current rebuild state for continuing work on another machine.
 
@@ -181,12 +181,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `yD` Home gallery RAF raw delta ownership without changing shader text, render targets, visual constants, route data, pointer normalization, WebGL `Bt/w0` timing, or scene order.
-- Source evidence: `yD.addEvents()` registers `Bt.add(this.onRaf,this.id)`; `yD.onRaf({delta:t})` uses raw `t` in `Yi(...)` for `scroll.diff` and `scroll.animated`, then calls `updateScene(t)`; `yD.updateScene(e)` uses that same `e` in roll/zoom `Yi(...)`.
-- The rebuild Home gallery tick now uses `(now - lastFrame) / 1000` directly instead of `Math.min(0.05, Math.max(0.001, ...))`, passes the same raw delta into `setGalleryProgress(...)`, and exposes `source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp`.
-- Output/thumb probes assert the WebGL gallery dynamics marker, and the output probe also reads `window.__rogierHomeGalleryRuntime` from `main.ts`.
-- Renderer audit extracts source `yD` anchors, extracts the rebuild Home gallery tick, and rejects restoring the old gallery delta clamp.
-- Previous committed batch was `4aa9ade Align Iu component update order`.
+- Closed the source `ag/eA/QT` viscosity shader attribution gap in QA tooling without changing production WebGL rendering, shader strings, render targets, visual constants, route behavior, pointer normalization, scene order, or runtime pass execution.
+- Source evidence: source `eA` constructs the default-disabled viscosity pass with `vertexShader:Co` and `fragmentShader:QT`; source `ag.createForces()` always constructs `this.viscosity=new eA(...)`; source `ag.options.viscosity` defaults to `false`.
+- `scripts/dump-va-shader.mjs` now maps `ag-viscosity` to source `QT/Co` and checks the viscosity uniform surface plus Jacobi formula.
+- `scripts/summarize-phase1-shader-gaps.mjs` now includes `ag-viscosity` in the Phase 1 residual table, and renderer audit guards the dump/summarizer attribution.
+- Shader dump `/tmp/rd-viscosity-shader-attribution-dump` reports `ag-viscosity` vertex/fragment deltas `0`, no source-only/rebuild-only uniforms, and all new viscosity core checks source/rebuild `true`.
+- Previous committed batch was `b10ecd1 Align yD gallery RAF raw delta`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -196,34 +196,30 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
+node --check scripts/dump-va-shader.mjs
+node --check scripts/summarize-phase1-shader-gaps.mjs
 node --check scripts/probe-output-color.mjs
 node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-gallery-raf-delta-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-gallery-raf-delta-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-viscosity-shader-attribution-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-viscosity-shader-attribution-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-output-desktop VIEWPORT=desktop CDP_PORT=9397 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-output-mobile VIEWPORT=mobile CDP_PORT=9398 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-interactive VIEWPORT=desktop CDP_PORT=9399 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-thumb VIEWPORT=desktop CDP_PORT=9400 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-media CDP_PORT=9401 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-viscosity-shader-attribution-dump CDP_PORT=9412 PROBE_WAIT=30000 node scripts/dump-va-shader.mjs
 ```
 
-All relevant checks passed in the `yD` Home gallery RAF raw-delta batch. Renderer audit wrote `/tmp/rd-gallery-raf-delta-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the raw gallery delta marker from both WebGL gallery dynamics and `window.__rogierHomeGalleryRuntime`. Interactive mouse probe passed with source mouse/fluid guardrails retained. Thumb spotlight probe passed with the raw-delta gallery dynamics marker retained. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `ag/eA/QT` viscosity shader attribution batch. Renderer audit wrote `/tmp/rd-viscosity-shader-attribution-audit.json`; recursive false/null extraction printed `false/null entries 0`. Shader dump wrote `/tmp/rd-viscosity-shader-attribution-dump`; `ag-viscosity` reported vertex and fragment deltas `0`, no source-only/rebuild-only uniforms, and source/rebuild `true` for `vertexGlslifyDefine`, `fragmentGlslifyDefine`, `vertexSourceUniformSurface`, `viscosityUniformSurface`, and `viscosityJacobiFormula`. Browser output/thumb/project probes were not rerun because this batch changed QA/reporting scripts and docs only, not production runtime WebGL.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this gallery RAF delta batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this shader attribution batch.
 
-Runtime QA was run because the batch touched Home gallery frame delta passed into WebGL gallery dynamics.
+Runtime QA was not required for this batch because production runtime code did not change. The local dev server at `http://127.0.0.1:5173` was used only for shader dump collection.
 
 Verified:
 
-- Renderer audit passed for the gallery RAF raw-delta batch: `/tmp/rd-gallery-raf-delta-audit.json`.
+- Renderer audit passed for the viscosity shader attribution batch: `/tmp/rd-viscosity-shader-attribution-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-gallery-raf-delta-output-desktop`, `/tmp/rd-gallery-raf-delta-output-mobile`.
-- Interactive mouse probe passed: `/tmp/rd-gallery-raf-delta-interactive`.
-- Thumb spotlight probe passed: `/tmp/rd-gallery-raf-delta-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-gallery-raf-delta-media`.
+- Shader dump passed and now reports `ag-viscosity` as source-shaped: `/tmp/rd-viscosity-shader-attribution-dump`.
+- Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

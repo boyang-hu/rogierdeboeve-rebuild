@@ -1,6 +1,6 @@
 # Phase 1 Audit: Home WebGL Source Parity
 
-Last updated: 2026-07-06
+Last updated: 2026-07-07
 
 ## Scope
 
@@ -70,7 +70,36 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `yD` Home gallery RAF delta ownership is now guarded: the Home gallery tick uses raw `(now - lastFrame) / 1000` delta instead of the rebuild-only `0.001..0.05` clamp, passes that same raw delta into `setGalleryProgress(...)`, and exposes the no-gallery-clamp marker through runtime/output/thumb probes. This extends the earlier `Bt/w0` raw frame timing work to the source `yD.onRaf({delta:t}) -> Yi(...) -> updateScene(t)` gallery chain; Phase 1 remains open.
+Latest accepted batch: source `ag/eA/QT` viscosity shader attribution is now guarded in QA tooling. The rebuild already dumped `ag-viscosity`, but the shader dump summary had no source mapping for source `eA`'s `vertexShader:Co` / `fragmentShader:QT` pass, so that default-disabled main-fluid branch could appear source-null in residual reports. `scripts/dump-va-shader.mjs` now maps `ag-viscosity` to `QT/Co`, checks viscosity uniforms and the Jacobi formula, `scripts/summarize-phase1-shader-gaps.mjs` includes it in the Phase 1 table, and renderer audit guards the attribution. This is reporting parity only; Phase 1 remains open.
+
+### S1-339 `ag/eA/QT` Viscosity Shader Attribution
+
+This batch closes one QA/reporting gap in the main-fluid shader attribution chain. It does not change production WebGL rendering, shader strings, render targets, visual constants, route behavior, pointer normalization, scene order, or runtime pass execution.
+
+Source evidence:
+
+- Source `eA` constructs the viscosity pass with `vertexShader:Co` and `fragmentShader:QT`.
+- Source `ag.createForces()` always constructs `this.viscosity=new eA(...)`.
+- Source `ag.options.viscosity` defaults to `false`, so the viscosity branch is constructed but default-disabled.
+
+Tooling changes:
+
+- `scripts/dump-va-shader.mjs` now maps `ag-viscosity` to source fragment `QT` and vertex `Co`.
+- `analyzeMainFluidCore()` checks the `ag-viscosity` uniform surface and Jacobi update formula.
+- `scripts/summarize-phase1-shader-gaps.mjs` includes `ag-viscosity` in the Phase 1 residual table and summary text.
+- `scripts/audit-renderer-output.mjs` guards the dump/summarizer attribution so the source-null report cannot return silently.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/dump-va-shader.mjs` passed.
+- `node --check scripts/summarize-phase1-shader-gaps.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-viscosity-shader-attribution-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- Shader dump passed: `/tmp/rd-viscosity-shader-attribution-dump`.
+- `ag-viscosity` now reports vertex delta `0`, fragment delta `0`, no source-only or rebuild-only uniforms, and source/rebuild `true` for `vertexGlslifyDefine`, `fragmentGlslifyDefine`, `vertexSourceUniformSurface`, `viscosityUniformSurface`, and `viscosityJacobiFormula`.
+
+Decision: keep `ag-viscosity` source attribution in the shader dump and Phase 1 residual table. This does not close Phase 1 because it is QA/reporting parity only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
 

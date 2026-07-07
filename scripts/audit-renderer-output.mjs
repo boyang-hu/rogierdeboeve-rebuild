@@ -1932,16 +1932,27 @@ const summary = {
             "cellScaleMatchesSource",
             "targetsMatchFboSize",
           ]),
-          rebuildDefaults: checks(rebuildWebgl, [
-            "const SOURCE_AG_VISCOSITY_DEFAULTS = {",
-            "enabled: false",
-            "intensity: 30",
-            "iterations: 5",
-            "const fluidViscosityFragment = `precision mediump float;",
-          ]),
-          outputProbeGuards: checks(rebuildOutputProbe, [
-            "source-ag-createFbos-seven-targets-including-disabled-viscosity",
-            "source-ag-eA-viscosity-pass-constructed-default-disabled",
+        rebuildDefaults: checks(rebuildWebgl, [
+          "const SOURCE_AG_VISCOSITY_DEFAULTS = {",
+          "enabled: false",
+          "intensity: 30",
+          "iterations: 5",
+          "const fluidViscosityFragment = `precision mediump float;",
+        ]),
+        shaderDumpAttribution: checks(readFileSync("scripts/dump-va-shader.mjs", "utf8"), [
+          "\"ag-viscosity\": sourceShader(bundle, \"QT\")",
+          "\"ag-viscosity\": sourceShader(bundle, \"Co\")",
+          "shaderName === \"ag-viscosity\"",
+          "viscosityUniformSurface",
+          "viscosityJacobiFormula",
+        ]),
+        shaderResidualSummary: checks(readFileSync("scripts/summarize-phase1-shader-gaps.mjs", "utf8"), [
+          "\"ag-viscosity\"",
+          "including the default-disabled `ag-viscosity` branch",
+        ]),
+        outputProbeGuards: checks(rebuildOutputProbe, [
+          "source-ag-createFbos-seven-targets-including-disabled-viscosity",
+          "source-ag-eA-viscosity-pass-constructed-default-disabled",
             "source-eA-raw-glsl3",
             "\"main\", \"velocity\", \"viscosityA\", \"viscosityB\", \"divergence\", \"pressureA\", \"pressureB\"",
             "mainFluidViscosityDefaultIntensity",
