@@ -8,17 +8,17 @@ This is the current resume sheet. Keep it short and replace stale details instea
 
 It should answer only:
 
-- where the rebuild is now
-- what just landed or is in flight
+- where Phase 1 stands now
+- what the last committed batch closed
 - what to do next
-- how to validate before committing
+- how to validate the next batch
 
 It is not a timeline. Use git for history.
 
 | Need | Read |
 | --- | --- |
 | Resume current work | `HANDOFF.md` |
-| Check source evidence and guarded edges | `PHASE1_AUDIT.md` |
+| Check source evidence, blockers, and guarded edges | `PHASE1_AUDIT.md` |
 | Decide the next execution order | `REBUILD_PLAN.md` |
 | Inspect old document states | `git log --oneline` and `git show <commit>:<file>` |
 
@@ -30,7 +30,7 @@ It is not a timeline. Use git for history.
 | Phase 1 status | Open, roughly 65-70% complete |
 | Current production priority | Floor/environment distribution residuals |
 | Next secondary priority | Spotlight/thumb projection transfer feel |
-| Latest source-backed guard batch | Sky composite `V1/H1/z1/B1` target chain and `z1` uniform surface |
+| Last committed source-backed batch | `d910163` sky composite `V1/H1/z1/B1` target chain and `z1` uniform surface |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -42,13 +42,23 @@ Estimated parity:
 | Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up. |
 | Final Home visual parity | 55-65% | Home still diverges in spotlight/thumb projection feel and floor/environment distribution. |
 
-## Current Batch
+## Last Closed Batch
 
-The current source-backed batch closes the sky composite target-content candidate, not the remaining floor/environment visual residual.
+The committed source-backed batch closed the sky-composite target-content candidate, not the remaining floor/environment residual.
 
 - Source `V1/H1/z1/B1` renders the sky raw target and cloned composite through `Lo`, using height `*.75` square sizing and no explicit clear.
 - Source `z1` declares `uShader1Mix3`, `uShader3Scale`, and `uShaderMix`, but only binds `uShaderMix`; because `Zs.SHADER_1_MIX_3` is missing, the source runtime value is undefined.
-- Rebuild already follows this behavior; the current batch makes the static audit explicit and documents the candidate as guarded.
+- Rebuild already follows this behavior; the audit now rejects reopening that candidate first without new source evidence.
+
+## Current Evidence
+
+The remaining visible gap points back to distribution through environment/floor/final work contents, not to the now-guarded sky target.
+
+- Variant attribution showed environment-off and floor-reflection-off make the largest brightness-distribution moves.
+- Sky-off moved the output, but in the opposite direction from the likely residual; sky is not the first suspect.
+- Source-vs-rebuild band analysis showed the rebuild is still too bright in mid bands and darker/shifted around the lower floor band.
+- `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
+- `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
 
 ## Source Of Truth
 
@@ -62,13 +72,14 @@ The current source-backed batch closes the sky composite target-content candidat
 
 ## Next Action
 
-Continue Phase 1 with floor/environment distribution:
+Continue Phase 1 with a floor/environment distribution batch:
 
-1. Trace the remaining hard horizon and fog-bed difference through environment target contents, final target distribution, or renderer state not yet covered.
-2. Treat cubemap sampling, `p1.addEnvironment()` start order, `u1` shader text, sky composite target contents, and renderer constructor clear state as guarded unless a new source probe contradicts them.
-3. Patch only after a concrete source mismatch is identified.
-4. Update `PHASE1_AUDIT.md` with evidence and `REBUILD_PLAN.md` only if the queue changes.
-5. Validate and commit the scoped batch.
+1. Trace environment target contents beyond the guarded sky composite input.
+2. Trace how the floor reflection path receives environment contribution through `a1/i1/o1/t1`.
+3. Only if those remain source-shaped, inspect final work distribution and renderer state not yet covered by output-color guards.
+4. Patch only after a concrete source mismatch is identified.
+5. Update `PHASE1_AUDIT.md` with evidence; update `REBUILD_PLAN.md` only if the execution queue changes.
+6. Validate and commit the scoped batch.
 
 Do not spend the next batch first on these guarded areas unless new evidence points back at them:
 

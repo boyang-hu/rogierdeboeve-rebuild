@@ -51,10 +51,20 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 | Final Home visual parity | 55-65% | Medium-low | Home still diverges in projection feel and floor/environment blend. |
 | Runtime stability | Good | Strong | Build, renderer audit, and browser probes are currently clean. |
 
+Current decision map:
+
+| Lane | State | Next useful move |
+| --- | --- | --- |
+| Floor/environment distribution | Active blocker | Trace environment target contents and floor reflection contribution before changing visuals. |
+| Spotlight/thumb projection | Next blocker | Return after the active floor/environment lane is either fixed or bridged. |
+| `kA/Lu/I1` transfer | Watchlist | Reopen only if environment/floor evidence points into final work distribution. |
+| Interaction/mouse/fluid | Watchlist | Reopen only when touching interaction paths or when a specific regression is isolated. |
+
 ## Open Blockers
 
 1. Floor/environment residuals.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, renderer constructor clear state, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
+   - Current attribution: environment-off and floor-reflection-off make the largest distribution moves; sky-off is not the first suspect after the sky composite guard.
    - Open: hard horizon and fog-bed distribution still differ.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
@@ -75,6 +85,14 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 
 ### Floor And Environment
 
+Current attribution read:
+
+- Rebuild variant attribution points at environment and floor reflection as the dominant distribution levers.
+- Captured source-vs-rebuild bands show the rebuild remains brighter through mid bands and shifted/darker around the lower floor band.
+- Desktop band deltas from the current comparison data: center `-0.0046`, bands `0.35 +0.0240`, `0.45 +0.0235`, `0.55 +0.0180`, `0.75 -0.0299`.
+- Mobile band deltas from the current comparison data: center `+0.0170`, bands `0.35 +0.0625`, `0.45 +0.0499`, `0.55 +0.0531`, `0.75 -0.0237`, `0.85 +0.0585`.
+- Interpretation: keep investigating environment target contents, floor reflection contribution, and final distribution before considering any visual tuning.
+
 Current source read:
 
 - `p1.init()` calls `addEnvironment()` without awaiting the cubemap load, then continues the Home scene setup.
@@ -86,6 +104,8 @@ Current source read:
 - Source environment fragment shader is `l1`; source environment vertex shader is `c1`.
 - Source sky composite `V1/H1/z1/B1` renders a height `*.75` square raw target through `Lo`, then a cloned composite target, with no explicit clear.
 - Source `z1` shader declares `uShader1Mix3`, `uShader3Scale`, and `uShaderMix`, but the constructor only binds `uShaderMix` from missing `Zs.SHADER_1_MIX_3`; `Zs` defines `SHADER_MIX`, so that runtime value is undefined.
+- Source `p1.update()` calls the work render before camera/components update; environment `uTime` is written for the next frame.
+- Source `p1.setLights()` adds ambient, spot, spot target, and `directionalLight1` to the scene. `directionalLight2` exists but is not added.
 
 Current guarded rebuild facts:
 
@@ -96,6 +116,8 @@ Current guarded rebuild facts:
 - `u1-environment` shader dump coverage now includes both source `l1` fragment and source `c1` vertex extraction.
 - The environment vertex shader text in rebuild matches the source `c1` surface, including the source `vViewPosition = - mvPosition.xyz` expression and chunk order.
 - Sky composite target contents are guarded for source `V1/H1/z1/B1` render-manager shape, height-based square sizing, no explicit clear, post-render `uTime` write, delayed `tSky` repeat binding, and source `z1` declared-only uniform oddities.
+- Work-render-before-environment-update order is guarded by runtime probe.
+- Light ownership is guarded: rebuild keeps `directionalLight2` out of the scene like source.
 - Remaining investigation should focus on environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state.
 
 ### Renderer State

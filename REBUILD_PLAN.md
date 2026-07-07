@@ -6,7 +6,7 @@ Last updated: 2026-07-07
 
 This file is the forward execution queue. It is ordered by what to do next, not by when discoveries happened.
 
-If a completed item still matters, keep it in a guarded list. Do not preserve old batch notes as a second timeline.
+If a completed item still matters, keep it in a guarded list. Do not preserve old batch notes as a second timeline, and do not copy detailed evidence here from `PHASE1_AUDIT.md`.
 
 | File | Role |
 | --- | --- |
@@ -15,6 +15,17 @@ If a completed item still matters, keep it in a guarded list. Do not preserve ol
 | `REBUILD_PLAN.md` | Work queue, phase gates, and validation profiles. |
 
 Use git for history. Do not maintain a second timeline here.
+
+## Current Work Order
+
+The current order is intentionally narrow:
+
+1. Finish Phase 1 Home WebGL source parity.
+2. Close floor/environment distribution through source-owned evidence.
+3. Close spotlight/thumb projection transfer.
+4. Reopen `kA/Lu/I1`, interaction, project media, or about pages only when evidence or touched code requires it.
+
+Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
 
 ## Execution Rules
 
@@ -45,6 +56,12 @@ Use git for history. Do not maintain a second timeline here.
 
 Goal: explain and fix the remaining hard horizon and fog-bed residual from source-owned behavior.
 
+Current read:
+
+- The active suspect set is environment target contents, floor reflection contribution, final work target distribution, and renderer state not yet covered by existing guards.
+- The current attribution basis lives in `PHASE1_AUDIT.md`.
+- Do not promote a visual tweak into production unless the source path owns it.
+
 Already guarded for this lane:
 
 - Scene and `sceneWrap` hierarchy.
@@ -58,17 +75,19 @@ Already guarded for this lane:
 - Floor material inputs, reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
 - Texture-object await semantics for `nD.animateIn()`.
 
-Next source candidates:
+Next source candidates, in order:
 
 1. Environment target contents beyond the guarded sky composite input.
-2. Final work target distribution.
-3. Renderer state not yet covered by existing output-color audit guards.
+2. Floor reflection contribution and environment input through `a1/i1/o1/t1`.
+3. Final work target distribution.
+4. Renderer state not yet covered by existing output-color audit guards.
 
 Rules:
 
 - Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, environment target contents, and final work target distribution.
 - Treat current structural guardrails as closed unless new evidence contradicts them.
 - Do not tune horizon, fog, brightness, or floor color by eye.
+- Keep detailed findings in `PHASE1_AUDIT.md`; keep this file as the next-action queue.
 
 Required validation:
 
