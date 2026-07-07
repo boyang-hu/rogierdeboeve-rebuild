@@ -20,10 +20,18 @@ const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const originalUrl = process.env.ORIGINAL_URL || "http://127.0.0.1:5175";
 const captureWait = Number(process.env.CAPTURE_WAIT || 3000);
 const captureSet = process.env.CAPTURE_SET || "full";
+const skipOriginalAssetPreflight = process.env.SKIP_ORIGINAL_ASSET_PREFLIGHT === "1";
 const viewports = {
   desktop: { width: 1440, height: 900 },
   mobile: { width: 390, height: 844 },
 };
+
+const originalAssetPreflightPaths = [
+  "/images/thumbs/thoughtlab.webp",
+  "/images/textures/perlin-1.webp",
+  "/images/textures/floor-normal.webp",
+  "/images/cubemaps/01/px.webp",
+];
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -61,6 +69,62 @@ function send(ws, method, params = {}) {
 }
 send.id = 0;
 send.pending = new Map();
+
+function formatAssetPreflightFailure(failure) {
+  if (failure.error) return `${failure.url}: ${failure.error}`;
+  return `${failure.url}: status ${failure.status}, content-type ${failure.contentType || "<missing>"}`;
+}
+
+async function validateOriginalAssetPreflight() {
+  if (skipOriginalAssetPreflight) {
+    return { skipped: true, reason: "SKIP_ORIGINAL_ASSET_PREFLIGHT=1" };
+  }
+
+  const checks = await Promise.all(originalAssetPreflightPaths.map(async (assetPath) => {
+    const url = new URL(assetPath, originalUrl).href;
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      const contentType = response.headers.get("content-type") || "";
+      await response.arrayBuffer();
+      return {
+        path: assetPath,
+        url,
+        status: response.status,
+        contentType,
+        ok: response.ok && contentType.toLowerCase().startsWith("image/"),
+      };
+    } catch (error) {
+      return {
+        path: assetPath,
+        url,
+        status: 0,
+        contentType: "",
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }));
+
+  const failures = checks.filter((check) => !check.ok);
+  const result = {
+    mode: "source-original-mirror-assets-available",
+    originalUrl,
+    hint: "When using legacy-mirror locally, start it with FALLBACK_ROOT=public so /images assets resolve.",
+    checks,
+    failures,
+  };
+  writeFileSync(path.join(outDir, "original-asset-preflight.json"), JSON.stringify(result, null, 2));
+
+  if (failures.length) {
+    throw new Error([
+      "Original asset preflight failed. The capture would be misleading because required source /images assets are unavailable.",
+      "For the local legacy mirror, start it with: PORT=5175 SERVE_ROOT=legacy-mirror/public FALLBACK_ROOT=public node scripts/serve.mjs",
+      ...failures.map(formatAssetPreflightFailure),
+    ].join("\n"));
+  }
+
+  return result;
+}
 
 async function connectWs(url) {
   const ws = new WebSocket(url);
@@ -157,6 +221,7 @@ async function capture({ name, url, viewportName = "desktop", clickEnter = false
 }
 
 mkdirSync(outDir, { recursive: true });
+await validateOriginalAssetPreflight();
 
 const chrome = spawn(chromePath, [
   `--remote-debugging-port=${port}`,

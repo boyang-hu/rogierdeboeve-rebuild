@@ -181,12 +181,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Closed the source `ag/eA/QT` viscosity shader attribution gap in QA tooling without changing production WebGL rendering, shader strings, render targets, visual constants, route behavior, pointer normalization, scene order, or runtime pass execution.
-- Source evidence: source `eA` constructs the default-disabled viscosity pass with `vertexShader:Co` and `fragmentShader:QT`; source `ag.createForces()` always constructs `this.viscosity=new eA(...)`; source `ag.options.viscosity` defaults to `false`.
-- `scripts/dump-va-shader.mjs` now maps `ag-viscosity` to source `QT/Co` and checks the viscosity uniform surface plus Jacobi formula.
-- `scripts/summarize-phase1-shader-gaps.mjs` now includes `ag-viscosity` in the Phase 1 residual table, and renderer audit guards the dump/summarizer attribution.
-- Shader dump `/tmp/rd-viscosity-shader-attribution-dump` reports `ag-viscosity` vertex/fragment deltas `0`, no source-only/rebuild-only uniforms, and all new viscosity core checks source/rebuild `true`.
-- Previous committed batch was `b10ecd1 Align yD gallery RAF raw delta`.
+- Hardened `scripts/capture.mjs` so source-vs-rebuild captures cannot silently use a broken local original mirror.
+- The capture harness now preflights representative original `/images` assets before launching Chrome: `/images/thumbs/thoughtlab.webp`, `/images/textures/perlin-1.webp`, `/images/textures/floor-normal.webp`, and `/images/cubemaps/01/px.webp`.
+- The preflight requires successful `image/*` responses, writes `original-asset-preflight.json`, and fails with the exact fallback-backed mirror command when the local original is invalid.
+- `scripts/audit-renderer-output.mjs` now guards the capture preflight paths, content-type check, artifact, and `FALLBACK_ROOT=public` hint.
+- This was prompted by the resume finding that `/tmp/rd-resume-home-capture` was invalid because `legacy-mirror/public` was served without `FALLBACK_ROOT=public`; `/tmp/rd-resume-home-capture-fallback` was the valid comparison run.
+- Previous committed batch was `01b2562 Guard ag viscosity shader attribution`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -195,30 +195,28 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
+node --check scripts/capture.mjs
 node --check scripts/audit-renderer-output.mjs
-node --check scripts/dump-va-shader.mjs
-node --check scripts/summarize-phase1-shader-gaps.mjs
-node --check scripts/probe-output-color.mjs
-node --check scripts/probe-interactive-mouse.mjs
-node --check scripts/probe-thumb-spotlight.mjs
-node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-viscosity-shader-attribution-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-viscosity-shader-attribution-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-capture-preflight-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-capture-preflight-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-viscosity-shader-attribution-dump CDP_PORT=9412 PROBE_WAIT=30000 node scripts/dump-va-shader.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable ORIGINAL_URL=http://127.0.0.1:5175 REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-capture-preflight-valid-final CDP_PORT=9420 CAPTURE_WAIT=900 CAPTURE_SET=home node scripts/capture.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable ORIGINAL_URL=http://127.0.0.1:5182 REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-capture-preflight-invalid CDP_PORT=9419 CAPTURE_WAIT=100 CAPTURE_SET=home node scripts/capture.mjs
 ```
 
-All relevant checks passed in the `ag/eA/QT` viscosity shader attribution batch. Renderer audit wrote `/tmp/rd-viscosity-shader-attribution-audit.json`; recursive false/null extraction printed `false/null entries 0`. Shader dump wrote `/tmp/rd-viscosity-shader-attribution-dump`; `ag-viscosity` reported vertex and fragment deltas `0`, no source-only/rebuild-only uniforms, and source/rebuild `true` for `vertexGlslifyDefine`, `fragmentGlslifyDefine`, `vertexSourceUniformSurface`, `viscosityUniformSurface`, and `viscosityJacobiFormula`. Browser output/thumb/project probes were not rerun because this batch changed QA/reporting scripts and docs only, not production runtime WebGL.
+All relevant checks passed in the source mirror asset preflight batch. Renderer audit wrote `/tmp/rd-capture-preflight-audit.json`; recursive false/null extraction printed `false/null entries 0`. Valid fallback-backed home capture wrote `/tmp/rd-capture-preflight-valid-final` with desktop/mobile original/rebuild Home screenshots and no failed requests or runtime exceptions. The negative no-fallback mirror test at `http://127.0.0.1:5182` failed before Chrome capture as expected, reporting HTML content types for the four image asset probes.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this shader attribution batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this capture preflight batch.
 
-Runtime QA was not required for this batch because production runtime code did not change. The local dev server at `http://127.0.0.1:5173` was used only for shader dump collection.
+Runtime production probes were not required for this batch because production runtime code did not change. The local rebuild server at `http://127.0.0.1:5173` and fallback-backed original mirror at `http://127.0.0.1:5175` were used for the home-only capture harness check.
 
 Verified:
 
-- Renderer audit passed for the viscosity shader attribution batch: `/tmp/rd-viscosity-shader-attribution-audit.json`.
+- Renderer audit passed for the capture preflight batch: `/tmp/rd-capture-preflight-audit.json`.
 - Recursive false/null audit output is empty.
-- Shader dump passed and now reports `ag-viscosity` as source-shaped: `/tmp/rd-viscosity-shader-attribution-dump`.
+- `scripts/capture.mjs` syntax check passed.
+- Valid home capture passed and wrote `original-asset-preflight.json`: `/tmp/rd-capture-preflight-valid-final`.
+- Negative no-fallback mirror preflight failed as expected: `/tmp/rd-capture-preflight-invalid`.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

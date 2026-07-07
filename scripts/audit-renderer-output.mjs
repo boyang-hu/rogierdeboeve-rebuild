@@ -25,6 +25,7 @@ const rebuildCompositeStagesPath = process.env.REBUILD_COMPOSITE_STAGES || "scri
 const rebuildBrightnessAttributionPath = process.env.REBUILD_BRIGHTNESS_ATTRIBUTION || "scripts/compare-home-brightness-attribution.mjs";
 const rebuildSpotlightMapComparePath = process.env.REBUILD_SPOTLIGHT_MAP_COMPARE || "scripts/compare-spotlight-map.mjs";
 const rebuildThumbColorspaceComparePath = process.env.REBUILD_THUMB_COLORSPACE_COMPARE || "scripts/compare-thumb-colorspace.mjs";
+const rebuildCapturePath = process.env.REBUILD_CAPTURE || "scripts/capture.mjs";
 const sourceGpuBenchmarksDir = process.env.SOURCE_GPU_BENCHMARKS_DIR || "public/vendor/detect-gpu/benchmarks";
 const threeLightsFragmentBegin = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/lights_fragment_begin.glsl.js", "utf8");
 const threeShadowmapVertex = readFileSync("node_modules/three/src/renderers/shaders/ShaderChunk/shadowmap_vertex.glsl.js", "utf8");
@@ -182,6 +183,7 @@ const rebuildCompositeStages = readFileSync(rebuildCompositeStagesPath, "utf8");
 const rebuildBrightnessAttribution = readFileSync(rebuildBrightnessAttributionPath, "utf8");
 const rebuildSpotlightMapCompare = readFileSync(rebuildSpotlightMapComparePath, "utf8");
 const rebuildThumbColorspaceCompare = readFileSync(rebuildThumbColorspaceComparePath, "utf8");
+const rebuildCapture = readFileSync(rebuildCapturePath, "utf8");
 const sourceGpuBenchmarkFiles = readdirSync(sourceGpuBenchmarksDir).filter((file) => file.endsWith(".json")).sort();
 const rebuildConstructor = extractBlock(rebuildWebgl, "constructor(root: HTMLElement)");
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
@@ -4911,6 +4913,18 @@ const summary = {
       "animateIn?(): Promise<void>",
       "void webgl?.animateIn?.()",
       "window.dispatchEvent(new CustomEvent(\"rd:home-gallery-in\"))",
+    ]),
+    captureOriginalAssetPreflight: checks(rebuildCapture, [
+      "const originalAssetPreflightPaths = [",
+      "\"/images/thumbs/thoughtlab.webp\"",
+      "\"/images/textures/perlin-1.webp\"",
+      "\"/images/textures/floor-normal.webp\"",
+      "\"/images/cubemaps/01/px.webp\"",
+      "SKIP_ORIGINAL_ASSET_PREFLIGHT",
+      "contentType.toLowerCase().startsWith(\"image/\")",
+      "original-asset-preflight.json",
+      "FALLBACK_ROOT=public",
+      "await validateOriginalAssetPreflight();",
     ]),
   },
   localThree: {
