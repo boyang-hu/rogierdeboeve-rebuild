@@ -46,7 +46,7 @@ Everything outside Home DOM/interaction stays paused unless the audit identifies
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
-| 2. Home DOM/interaction parity | Audit started | First pass identifies source-backed DOM/interaction gaps before production edits. |
+| 2. Home DOM/interaction parity | Audit complete, first fix batch queued | Start with source DOM/CSS shell gaps before touching interaction algorithms. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 2-4 scope is accepted. |
@@ -132,7 +132,7 @@ Required validation:
 
 ### Phase 2 Home DOM/interaction parity
 
-This is the active production lane. Start with audit-only work before production edits.
+This is the active production lane. The first audit pass is complete.
 
 Initial boundary:
 
@@ -140,7 +140,30 @@ Initial boundary:
 - Start from Home DOM state, interaction affordances, and route-level user-visible behavior.
 - Do not reopen WebGL source parity unless a Phase 2 finding identifies a concrete shared-path mismatch.
 
-Audit checklist:
+Audit evidence:
+
+- File: `/tmp/rd-phase2-home-audit/home-dom-interaction-audit.json`.
+- Online and rebuild had `0` network failures and `0` runtime exceptions in checked Home desktop/mobile scenarios.
+- Wheel input and second work-item click both moved active project from `hashgraph-vc` to `gc-2026` in online and rebuild.
+- Therefore the first Phase 2 production batch should not start with gallery scroll algorithm changes.
+
+Current fix queue:
+
+1. Mobile nav shell.
+   - Source owns `.ui-header-mobile lg:hidden`, `.ui-nav-mobile`, and `.ui-nav-mobile-toggle > .wrap > svg`.
+   - Rebuild currently uses an absolute `<button>` toggle and different hit-area/vertical geometry.
+2. Sound toggle shell.
+   - Source owns the `28x28` `.ui-sound-toggle` div/SVG, z-index `200`, opacity `1` after enter, hover ring, and source-shaped rect bars.
+   - Rebuild currently uses a button/SVG variant, z-index `20`, and opacity `.75`.
+3. Preloader.
+   - Source owns `div.preloader-cta[data-sound]`, `div.preloader-cta-2[data-sound]`, progress opacity/transform animation, delayed pointer activation, and no active work item before enter.
+   - Rebuild currently server-renders/initializes the first work item as active before enter and uses a timer-driven button/data-attribute flow.
+   - Keep this as its own batch because it touches entry timing, sound choice, session state, and Home gallery activation.
+4. Mobile work list/title CSS.
+   - Source keeps `.ui-title` hidden by visibility/pointer behavior on mobile and handles inactive mobile cards mainly through link opacity/pointer state.
+   - Rebuild uses display/height/card-opacity choices that differ, while visible active CTA geometry is already close.
+
+Original audit checklist:
 
 - Home DOM structure and text against online/source.
 - Header, nav, mobile menu, and footer visible states.
