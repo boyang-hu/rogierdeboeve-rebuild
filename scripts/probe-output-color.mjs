@@ -1661,6 +1661,10 @@ async function runProbe() {
     if (settings && passMaterials[key]?.smoothing !== settings.smoothing) materialSurfaceErrors.push(`${key}SmoothingSetting`);
   }
   if (passMaterials.mediaComposite?.vertexMode !== "source-el-matrix-fullscreen") materialSurfaceErrors.push("mediaCompositeVertexMode");
+  if (passMaterials.mediaComposite?.blendingMode !== "source-W1-no-explicit-blending-three-NormalBlending-default") {
+    materialSurfaceErrors.push("mediaCompositeBlendingMode");
+  }
+  if (passMaterials.mediaComposite?.blending !== 1) materialSurfaceErrors.push("mediaCompositeDefaultBlending");
   if (passMaterials.mediaComposite?.renderManagerOwnership !== "source-j1-Lo-settings-clear-unused-autoClear-owned-by-dollar1-update") {
     materialSurfaceErrors.push("mediaCompositeRenderManagerOwnership");
   }

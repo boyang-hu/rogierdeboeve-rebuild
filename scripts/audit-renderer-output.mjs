@@ -201,6 +201,7 @@ const rebuildCreateFloorMaterial = extractBlock(rebuildWebgl, "private createFlo
 const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaaMaterial()");
 const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
 const rebuildCreateMainCompositeMaterial = extractBlock(rebuildWebgl, "private createMainCompositeMaterial()");
+const rebuildCreateMediaCompositeMaterial = extractBlock(rebuildWebgl, "private createMediaCompositeMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const rebuildCreateWorkBlockMaterial = extractBlock(rebuildWebgl, "private createWorkBlockMaterial()");
 const rebuildWorkBlockSourceHaVertexShader = extractConstTemplate(rebuildWebgl, "workBlockSourceHaVertexShader");
@@ -1524,6 +1525,17 @@ const summary = {
           "depthWrite:!1",
           "depthTest:!1",
         ]),
+        ownership: {
+          sourceImplicitDefaultBlending: !sourceW1.text.includes("blending:"),
+          rebuildImplicitDefaultBlending:
+            Boolean(rebuildCreateMediaCompositeMaterial)
+            && !rebuildCreateMediaCompositeMaterial.includes("blending:")
+            && rebuildCreateMediaCompositeMaterial.includes("sourceBlendingMode = \"source-W1-no-explicit-blending-three-NormalBlending-default\""),
+          rebuildProbeCoverage:
+            rebuildWebgl.includes("blendingMode: this.mediaCompositeMaterial.userData.sourceBlendingMode")
+            && rebuildOutputProbe.includes("mediaCompositeBlendingMode")
+            && rebuildOutputProbe.includes("mediaCompositeDefaultBlending"),
+        },
         excerpt: compact(sourceW1.text),
       },
       mediaClearOwnership: {

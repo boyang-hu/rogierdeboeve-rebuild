@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: `ag/qT` main-fluid force material now keeps the source default transparent state. Source `qT` constructs its additive force `RawShaderMaterial` with `glslVersion`, `depthWrite:false`, `depthTest:false`, `vertexShader`, `fragmentShader`, `blending:Uc`, and uniforms, but no `transparent` override, so Three's default `transparent=false` applies. The rebuild removed the non-source `transparent:true` from `forceMaterial`, and output/audit tooling now rejects restoring it. This is one main-fluid material-state edge only. Phase 1 is still open.
+Latest Phase 1 batch: `$1/j1/W1` media composite material now keeps the source implicit blending constructor shape. Source `W1` constructs its `RawShaderMaterial` with `glslVersion`, `toneMapped:false`, `transparent:true`, `depthWrite:false`, `depthTest:false`, uniforms, `vertexShader:el`, and `fragmentShader:G1`, but no explicit `blending`, so Three's default `NormalBlending=1` applies. The rebuild removed the non-source explicit `blending: NormalBlending`, and output/audit tooling now rejects restoring an explicit `blending:` field while still asserting the runtime default. This is one project-media composite material-state edge only. Phase 1 is still open.
 
 ## Chosen Stack
 

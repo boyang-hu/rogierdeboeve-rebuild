@@ -32,7 +32,6 @@ import {
   MirroredRepeatWrapping,
   NoBlending,
   NoColorSpace,
-  NormalBlending,
   Object3D,
   OrthographicCamera,
   PerspectiveCamera,
@@ -7063,11 +7062,10 @@ export class WebGLBackdrop {
 
   private createMediaCompositeMaterial() {
     dumpShader("j1-media-composite", sourceMatrixFullscreenVertex, mediaCompositeFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       toneMapped: false,
       transparent: true,
-      blending: NormalBlending,
       depthWrite: false,
       depthTest: false,
       uniforms: {
@@ -7084,6 +7082,8 @@ export class WebGLBackdrop {
       vertexShader: sourceMatrixFullscreenVertex,
       fragmentShader: mediaCompositeFragment,
     });
+    material.userData.sourceBlendingMode = "source-W1-no-explicit-blending-three-NormalBlending-default";
+    return material;
   }
 
   private createLuminosityMaterial(settings: SourceRenderSettings) {
@@ -10653,6 +10653,7 @@ void main() {
         passMaterials: {
           mediaComposite: {
             blending: this.mediaCompositeMaterial.blending,
+            blendingMode: this.mediaCompositeMaterial.userData.sourceBlendingMode,
             materialMode: "source-W1-raw-glsl3",
             vertexMode: "source-el-matrix-fullscreen",
             glslVersion: (this.mediaCompositeMaterial as RawShaderMaterial).glslVersion ?? null,
