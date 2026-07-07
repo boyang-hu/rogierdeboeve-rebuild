@@ -14,6 +14,7 @@ let initialized = false;
 let soundsInitialized = false;
 let soundToggle: HTMLElement | null = null;
 let soundToggleRects: NodeListOf<SVGRectElement> | [] = [];
+let homeGalleryPlucksPlayed = false;
 const boundSoundItems = new WeakSet<HTMLElement>();
 
 function initSounds() {
@@ -56,7 +57,6 @@ function initSounds() {
 }
 
 function playAmbient() {
-  initSounds();
   ambient?.play();
   drones?.play();
   ambient?.fade(0, 0.2, 5000);
@@ -114,14 +114,12 @@ function showSoundButton() {
 
 function playHover() {
   if (!enabled) return;
-  initSounds();
   hover?.play();
   hover?.fade(0.6, 0, 1000);
 }
 
 function playClick() {
   if (!enabled) return;
-  initSounds();
   click?.play();
 }
 
@@ -167,21 +165,21 @@ export function initAudio() {
   window.addEventListener("rd:sound-click", playClick);
   window.addEventListener("rd:sound-hover", playHover);
   window.addEventListener("rd:bind-sound-items", (event) => {
+    homeGalleryPlucksPlayed = false;
     bindSoundItems((event as CustomEvent<{ root?: ParentNode }>).detail?.root ?? document);
   });
   window.addEventListener("rd:soft-woosh", () => {
-    initSounds();
     if (enabled) softWoosh?.play();
   });
   window.addEventListener("rd:woosh", () => {
-    initSounds();
     if (enabled) woosh?.play();
   });
   window.addEventListener("rd:plucks", () => {
-    initSounds();
     if (enabled) plucks?.play();
   });
   window.addEventListener("rd:home-gallery-in", () => {
+    if (homeGalleryPlucksPlayed) return;
+    homeGalleryPlucksPlayed = true;
     window.dispatchEvent(new CustomEvent("rd:plucks"));
   });
 }

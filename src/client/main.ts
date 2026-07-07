@@ -1489,6 +1489,7 @@ function boot() {
     cleanupMotion = undefined;
   };
   const cleanupPage = () => {
+    homeGalleryEntered = false;
     cleanupPageMotion();
     cleanupPageCallbacks.splice(0).forEach((cleanup) => cleanup());
   };
@@ -1557,7 +1558,8 @@ function boot() {
         void webgl?.animateIn?.();
         const enter = () => {
           webgl?.showScene?.();
-          homeGalleryEntered = true;
+          if (webgl && homeGalleryEntered) return;
+          if (webgl) homeGalleryEntered = true;
           window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
         };
         if (document.querySelector(".preloader") && !prefersReducedMotion()) {
@@ -1565,7 +1567,8 @@ function boot() {
           callbacks.push(() => window.clearTimeout(timer));
           return;
         }
-        enter();
+        const timer = window.setTimeout(enter, 0);
+        callbacks.push(() => window.clearTimeout(timer));
       }, callbacks);
     } else if (document.querySelector("[data-view='about']")) {
       webgl?.enterAboutVisualState?.(

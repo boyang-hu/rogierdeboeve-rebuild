@@ -26,15 +26,15 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 5 active: transitions/audio/Lenis lifecycle audit |
+| Active phase | Phase 6 active: final QA/cleanup |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
 | Phase 2 status | Closed/guarded on 2026-07-07 |
 | Phase 3 status | Closed/guarded on 2026-07-07 |
 | Phase 4 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Continue Phase 5 with audio lifecycle audit after transition/nav ownership alignment |
-| Next secondary priority | Keep Phase 1-4 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 5 transition/nav ownership source alignment |
-| Last closed evidence batch | Phase 5 transition/nav ownership source alignment |
+| Current production priority | Run final QA/cleanup on top of closed Phase 1-5 |
+| Next secondary priority | Keep Phase 1-5 probes as regression gates when shared paths change |
+| Last committed source-backed code batch | Phase 5 audio lifecycle source alignment |
+| Last closed evidence batch | Phase 5 audio lifecycle source alignment |
 | Local service | Dev server was available at `http://localhost:5173/` during validation; an older static service was also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -48,14 +48,14 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch closes the Phase 5 transition/nav ownership finding.
+The latest production batch closes the Phase 5 audio lifecycle finding.
 
-- Source desktop Work nav uses `data-slug="home"`; rebuild now matches instead of using rebuild-only `data-slug="work"`.
-- Source Project view `OD.init()` calls `Tr.setActive("home")` and `Ar.setActive("home")`; rebuild now activates Work nav on direct and routed Project entry.
-- Source default transition `BD.onLeave()` emits `WORK_GALLERY_OUT` whenever the leaving view is Home, including popstate paths; rebuild now bases the event on current view plus source transition mode instead of only internal route mode.
-- Source `zD` still owns unconditional project-transition `WORK_GALLERY_OUT`, and source `HD` work transition still does not emit it.
+- Source `lm.addEvents()` binds click and mouseenter from `data-sound-click`; rebuild now gives Home progressbar items the missing `data-sound-click` attribute instead of adding bespoke sound dispatch.
+- Source `ln.playHover()`, `playClick()`, `playWoosh()`, `playSoftWoosh()`, and `playPlucks()` only play when `Le.SOUND` is true; rebuild no longer initializes Howler from muted play events.
+- Source mobile preloader entry skips `ln.initSounds()`; rebuild mobile entry now produces no audio requests.
+- Source `yD.animateIn()` plays plucks once per Home gallery entry; rebuild guards the audio plucks consumer while still allowing the internal Home entry retry needed when WebGL becomes ready after a debug/skip-preloader path.
 
-Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
+Earlier Phase 5 batches aligned Lenis/page scroll ownership and transition/nav ownership. Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
 ## Current Evidence
 
@@ -63,6 +63,28 @@ Latest Phase 5 evidence:
 
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `node --check src/client/audio.ts`
+- `node --check src/client/main.ts`
+- Source audio audit:
+  - Source `lm.addEvents()` uses `data-sound-click` to bind both click and mouseenter.
+  - Source `ln.initSounds()` owns Howler construction for drones, ambient, hover, click, woosh, plucks, and soft-woosh.
+  - Source `iD.onCtaClick()` initializes/toggles/plays click only on non-mobile; `iD.onCta2Click()` only initializes sounds on non-mobile.
+  - Source `ln.play*()` methods do not initialize sounds from muted hover/click/woosh/plucks events.
+  - Source Home progressbar HTML gives every `.ui-progressbar-item` `data-sound-click`, while source `_D.onListItemClick()` only emits `NAV_CLICK`.
+- Static sound role check: generated `dist/index.html` has `10` Home progressbar items and `10` `.ui-progressbar-item[data-sound-click]`.
+- Focused audio lifecycle CDP probe on `http://localhost:5173/?disable-webgl`:
+  - Desktop sound entry initializes Howler, enables the sound toggle, loads the seven source audio files, and fires one guarded `rd:plucks`.
+  - Desktop no-sound entry initializes Howler but leaves sound disabled and fires no `rd:sound-mode`.
+  - Mobile entry has pointer coarse, hides the sound toggle, dispatches no `rd:sound-init`/`rd:sound-mode`, and makes `0` audio requests.
+  - Runtime exceptions: `0`; console errors: `0`; material loading failures: `0`.
+- About/Home/Project regressions passed:
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-audio-output-desktop-rerun2 CDP_PORT=9626 node scripts/probe-output-color.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ VIEWPORT=mobile OUT_DIR=/tmp/rd-phase5-audio-output-mobile-rerun2 CDP_PORT=9627 node scripts/probe-output-color.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-audio-about-final CDP_PORT=9629 node scripts/probe-about-scroll-opacity.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-audio-project-media-final CDP_PORT=9630 node scripts/probe-project-media.mjs`
+
+Previous Phase 5 evidence:
+
 - Source transition/nav audit:
   - Source `BD.onLeave()` emits `WORK_GALLERY_OUT` only when `from[data-view]` is `home`.
   - Source `zD.onLeave()` always emits `WORK_GALLERY_OUT`.
@@ -75,13 +97,10 @@ Latest Phase 5 evidence:
   - About -> Work click does not emit `WORK_GALLERY_OUT`.
   - Browser back from Home -> About emits `WORK_GALLERY_OUT` while current view state is Home.
   - Runtime exceptions: `0`; material network failures: `0`.
-- About/Home/Project regressions passed:
+- About/Home/Project transition regressions passed:
   - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-transition-about-desktop CDP_PORT=9497 node scripts/probe-about-scroll-opacity.mjs`
   - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-transition-output CDP_PORT=9498 node scripts/probe-output-color.mjs`
   - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-transition-project-media CDP_PORT=9499 node scripts/probe-project-media.mjs`
-
-Previous Phase 5 evidence:
-
 - Source audit:
   - `SD extends sl`
   - `DD extends Ug`
@@ -141,14 +160,14 @@ Audit method note:
 
 ## Next Action
 
-Phase 1, Phase 2, Phase 3, and Phase 4 are closed. Do not reopen them unless a concrete source-owned mismatch appears.
+Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 are closed. Do not reopen them unless a concrete source-owned mismatch appears.
 
 Recommended next move:
 
-1. Audit source `ln/lm` audio lifecycle: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
-2. Reopen transition/nav only if focused route probes expose a concrete source-owned mismatch.
-3. Reopen Lenis/page scroll only if the Phase 5 ownership probe or About/Project scroll probes fail.
-4. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project route/media, and Phase 4 About probes as regression gates when shared render, router, audio, or lifecycle paths change.
+1. Run Phase 6 final QA: build, renderer audit, Home desktop/mobile output probes, thumb spotlight, project media, About desktop/mobile, and interactive mouse.
+2. Clean up current docs only if they drift from the state above; do not append chronology.
+3. Reopen Phase 5 only if focused transition, Lenis, or audio probes expose a concrete source-owned mismatch.
+4. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project route/media, Phase 4 About, and Phase 5 lifecycle probes as regression gates when shared render, router, audio, or lifecycle paths change.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:
 

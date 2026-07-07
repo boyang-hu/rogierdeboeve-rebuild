@@ -20,12 +20,10 @@ Use git for history. Do not maintain a second timeline here.
 
 The current order is intentionally narrow:
 
-1. Keep Phase 1, Phase 2, and Phase 3 closed unless new source-owned evidence requires reopening.
-2. Keep Phase 4 closed unless concrete About or auxiliary page evidence requires reopening.
-3. Start Phase 5 with a source audit of shared transitions, audio, and Lenis lifecycle behavior.
-4. Convert only source-backed Phase 5 findings into one scoped fix batch at a time.
-5. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project-detail, and Phase 4 About probes as regression gates when shared paths change.
-6. Move to Phase 6 only after Phase 5 shared lifecycle parity is clean or explicitly guarded.
+1. Keep Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 closed unless new source-owned evidence requires reopening.
+2. Run Phase 6 final QA/cleanup against the closed Phase 1-5 surface.
+3. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project-detail, Phase 4 About, and Phase 5 lifecycle probes as regression gates when shared paths change.
+4. Convert only source-backed Phase 6 findings into scoped fix batches.
 
 Everything outside the active phase stays paused unless the audit identifies a shared-path dependency.
 
@@ -51,8 +49,8 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
 | 3. Project detail media/routes | Closed/guarded on 2026-07-07 | Reopen only with concrete project-detail media, scroll, or route mismatch evidence. |
 | 4. About and auxiliary pages | Closed/guarded on 2026-07-07 | Reopen only with concrete About DOM, CSS, motion, route lifecycle, or auxiliary visual mismatch evidence. |
-| 5. Transitions/audio/Lenis lifecycle | Active | Audit source transitions, Lenis/page scroll lifecycle, and audio lifecycle; patch only source-owned findings. |
-| 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
+| 5. Transitions/audio/Lenis lifecycle | Closed/guarded on 2026-07-07 | Reopen only with concrete transition, audio, or Lenis lifecycle mismatch evidence. |
+| 6. Final QA/cleanup | Active | Run broad final probes, clean docs/worktree, and prepare final handoff. |
 
 ## Phase 1 Closed Record
 
@@ -339,9 +337,9 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase4-closeout-output CDP_PORT=9483 node scripts/probe-output-color.mjs`
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase4-closeout-project-media CDP_PORT=9484 node scripts/probe-project-media.mjs`
 
-## Phase 5 Active Queue
+## Phase 5 Closed Queue
 
-Goal: close shared transition, scroll, and audio lifecycle behavior against the source bundle before final QA.
+Goal: keep shared transition, scroll, and audio lifecycle behavior guarded against the source bundle during final QA.
 
 ### Closed: Lenis/page scroll ownership source alignment
 
@@ -389,14 +387,39 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-transition-output CDP_PORT=9498 node scripts/probe-output-color.mjs`
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-transition-project-media CDP_PORT=9499 node scripts/probe-project-media.mjs`
 
-### Next Phase 5 Queue
+### Closed: Audio lifecycle source alignment
 
-Patch only source-owned findings:
+Goal: align shared Howler initialization, sound-item binding, Home gallery audio, and mobile sound behavior with source `ln`, `lm`, `iD`, `yD`, and `_D`.
 
-1. Audit audio lifecycle against source `ln` and `lm`: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
-2. Reopen transition/nav only if focused route probes expose a concrete source-owned mismatch.
-3. Reopen Lenis/page scroll only if focused ownership or About/Project scroll probes expose a concrete source-owned mismatch.
-4. Validate each batch with build, route assertions, output state probes, and About/project/Home regression probes for shared paths.
+Current read:
+
+- Source `lm.addEvents()` uses `data-sound-click` to bind both click and mouseenter; rebuild Home progressbar items now carry the missing `data-sound-click` source attribute.
+- Source `_D.onListItemClick()` only prevents default, emits `NAV_CLICK`, and updates active progress state; rebuild keeps progressbar sound ownership in the generic sound-item binding instead of adding bespoke click audio.
+- Source `ln.initSounds()` owns Howler construction; source `ln.playHover()`, `playClick()`, `playWoosh()`, `playSoftWoosh()`, and `playPlucks()` only play when `Le.SOUND` is true. Rebuild no longer initializes Howler from muted play events.
+- Source desktop Enter with sound initializes/toggles/plays click; desktop Enter without sound only initializes sounds; mobile skips sound initialization. Rebuild now matches those observable paths.
+- Source Home gallery entry plays plucks once. Rebuild guards the audio plucks consumer once per page sound-item bind while still allowing the internal Home entry event to retry when WebGL becomes ready after debug/skip-preloader paths.
+
+Validation passed:
+
+- `git diff --check`
+- `node --check src/client/audio.ts`
+- `node --check src/client/main.ts`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Static sound role check: generated `dist/index.html` has `10` `.ui-progressbar-item` nodes and `10` `.ui-progressbar-item[data-sound-click]` nodes.
+- Focused audio lifecycle CDP probe on `http://localhost:5173/?disable-webgl`: desktop sound, desktop no-sound, and mobile entry paths passed with `0` runtime exceptions, `0` console errors, `0` material loading failures, and mobile `0` audio requests.
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-audio-output-desktop-rerun2 CDP_PORT=9626 node scripts/probe-output-color.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ VIEWPORT=mobile OUT_DIR=/tmp/rd-phase5-audio-output-mobile-rerun2 CDP_PORT=9627 node scripts/probe-output-color.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-audio-about-final CDP_PORT=9629 node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-audio-project-media-final CDP_PORT=9630 node scripts/probe-project-media.mjs`
+
+### Phase 6 Active Queue
+
+Patch only source-owned findings discovered by final QA:
+
+1. Run final broad validation: build, renderer audit, Home desktop/mobile output probes, thumb spotlight, project media, About desktop/mobile, and interactive mouse.
+2. Confirm docs describe current state only and do not preserve stale Phase 5 queues.
+3. Confirm worktree is clean after the final commit.
+4. Reopen Phase 1-5 only if a final probe exposes a concrete source-owned mismatch.
 
 ## Watchlist
 
