@@ -1144,6 +1144,12 @@ async function runProbe() {
   if (mainRenderSizing?.fxaaResizeInputMode !== "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled") {
     bloomClearingErrors.push("mainFxaaResizeInputMode");
   }
+  if (workRenderSizing?.blurResizeInputMode !== "source-Lu-Na-target-size-round-css-scale-no-rebuild-pre-clamp") {
+    bloomClearingErrors.push("workBlurResizeInputMode");
+  }
+  if (mainRenderSizing?.blurResizeInputMode !== "source-I1-Na-target-size-round-css-scale-no-rebuild-pre-clamp") {
+    bloomClearingErrors.push("mainBlurResizeInputMode");
+  }
   if (workRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workBloomPassClearing");
   if (mainRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("mainBloomPassClearing");
   if (workClearing?.rawPass !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workRawPassClearing");

@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `eD/Pe` about-character camera-pan normalized mouse ownership. Source `Pe.onMouseMove()` writes `normalized={x:mouse.x/Pe.w,y:1-mouse.y/Pe.h}`, and source `eD.update()` lerps character mouse toward `Pe.mouse.normalized` before applying `-mouse.y+.5` to the camera-pan group. The rebuild now updates shared `sourceMouseNormalized` in `onMouseMove()` and `updateSourceCharacterScene()` consumes that state instead of recomputing `pointerPixels / Math.max(1, window.innerWidth/Height)` with the old non-source y direction. Output, interactive, renderer-audit, and targeted `/about/` CDP probes guard this. This is an about-character input guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `Lu/I1` optional blur target resize pre-clamp ownership. Source `Lu.resize(e,t,n)` and `I1.resize(e,t,n)` compute optional `renderTargetBlurA/B` sizes from direct `Math.round(e*this.settings.blur.scale)` / `Math.round(t*this.settings.blur.scale)`, with no `Math.max(1, ...)` pre-clamp; the rebuild now mirrors that for work and main optional blur targets while keeping existing CSS `Na.uResolution` writes. Output probes expose `source-Lu-Na-target-size-round-css-scale-no-rebuild-pre-clamp` and `source-I1-Na-target-size-round-css-scale-no-rebuild-pre-clamp`; renderer audit rejects restoring the old clamp. This is default-disabled helper-pass parity only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -191,13 +191,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `VA/XA` runtime `uCoords` direct viewport ownership.
-- Source evidence: `VA.update()` and about `XA.update()` write `uCoords` directly from `Pe.w*i,Pe.h*i`.
-- Removed rebuild-owned `Math.max(1, window.innerWidth * workDpr)` / `Math.max(1, window.innerHeight * workDpr)` clamps from `sourceWorkViewportCoords()`.
-- `__rogierOutputProbe.settings.work.p1UpdateCulling.items[]` now reports the direct no-clamp mode, expected coords, direct viewport parity, and rounded render-target divergence diagnostics.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the runtime `uCoords` clamp.
-- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, desktop/mobile output probes, and mobile DPR `1.25` output probe.
-- This is block-material runtime coordinate ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `Lu/I1` optional `Na` blur target resize input ownership.
+- Source evidence: `Lu.resize(e,t,n)` and `I1.resize(e,t,n)` size optional blur targets with direct `Math.round(e*this.settings.blur.scale)` / `Math.round(t*this.settings.blur.scale)` and no `Math.max(1, ...)` pre-clamp.
+- Removed the rebuild-owned work/main optional blur target clamps from `resize()`.
+- `__rogierOutputProbe.settings.work.renderManagerSizing.blurResizeInputMode` and `.main.renderManagerSizing.blurResizeInputMode` now expose the source no-pre-clamp modes.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the old work/main optional blur target clamp.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, `git diff --check`, build, desktop/mobile output probes, and thumb spotlight probe. Project media material/visibility assertions passed and retained `5/5` visible tracks on `/gc-2026/` and `/hashgraph-vc/`; `hashgraph-vc` still reported eight non-blocking captured promise exceptions with zero failed requests and zero filtered console errors.
+- This is default-disabled helper-pass source-shape parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -208,11 +208,13 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-ucoords-direct-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-ucoords-direct-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-blur-target-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-blur-target-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-ucoords-direct-output-desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-ucoords-direct-output-mobile node scripts/probe-output-color.mjs
+PORT=5178 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-blur-target-output-desktop CDP_PORT=9278 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-blur-target-output-mobile CDP_PORT=9279 VIEWPORT=mobile REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-blur-target-thumb CDP_PORT=9280 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 OUT_DIR=/tmp/rd-ucoords-direct-output-mobile-dpr125 node scripts/probe-output-color.mjs
 ```
 
@@ -275,7 +277,7 @@ Continue source-driven implementation in this order:
    - `ag/eA` main-fluid pass shaders and seven-target topology are now source-shaped; do not reformat them away from the source literal surface or drop the default-disabled viscosity branch.
    - `$1/j1/W1/G1` media composite shader text is now source-shaped; do not remove its inert helper/luminance surface just because the active body is pass-through.
    - `I1` optional blur now follows `renderTargetA -> renderTargetBlurA -> renderTargetBlurB`; do not restore the old `compositeTarget` blur bridge.
-   - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, or camera-surface ownership.
+   - Source `Lu/kA/I1` init settings, optional blur target chain and no-pre-clamp target resize input, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, camera-surface ownership, or optional blur target resize ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
    - Current rebuild now guards source `p1` root scene direct-child order, source `p1.init()` sceneWrap child attach order, final `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, source `h1/u1` environment custom-uniform/dithering/no-custom-program-cache-key ownership, source `VA/XA/KA` block material no-custom-program-cache-key ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
@@ -316,6 +318,7 @@ Current state:
 - Build previously passed with `npm run build`.
 - `git diff --check` previously passed.
 - Home WebGL is source-derived but not 1:1 yet.
+- Latest batch removed the rebuild-owned optional `Lu/I1` blur target `Math.max(1, ...)` pre-clamps and guarded the direct source `Math.round(css * blur.scale)` path.
 - Project detail media pages are closer and should not regress.
 
 Next focus:

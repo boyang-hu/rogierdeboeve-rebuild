@@ -840,6 +840,17 @@ const summary = {
           "this.workBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);",
           "source-Lu-Na-resize-css-width-height-when-blur-enabled",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceBlurTargetResizeNoPreClamp:
+          sourceLu.text.includes("const i=Math.round(e*this.settings.blur.scale),r=Math.round(t*this.settings.blur.scale);this.renderTargetBlurA.setSize(i,r),this.renderTargetBlurB.setSize(i,r)")
+          && !sourceLu.text.includes("Math.max(1,Math.round(e*this.settings.blur.scale))"),
+        rebuildBlurTargetResizeNoPreClamp:
+          Boolean(rebuildResize)
+          && rebuildResize.includes("const workBlurWidth = Math.round(width * this.renderSettings.blur.scale);")
+          && rebuildResize.includes("const workBlurHeight = Math.round(height * this.renderSettings.blur.scale);")
+          && rebuildWebgl.includes("blurResizeInputMode: \"source-Lu-Na-target-size-round-css-scale-no-rebuild-pre-clamp\"")
+          && rebuildOutputProbe.includes("source-Lu-Na-target-size-round-css-scale-no-rebuild-pre-clamp")
+          && !rebuildResize.includes("const workBlurWidth = Math.max(1, Math.round(width * this.renderSettings.blur.scale));")
+          && !rebuildResize.includes("const workBlurHeight = Math.max(1, Math.round(height * this.renderSettings.blur.scale));"),
         sourceMouseSimResizeNoPostRound:
           sourceLu.text.includes("this.settings.mousesim.enabled&&this.mouseSimulation.onResize(e/10,t/10)")
           && !sourceLu.text.includes("Math.round(e/10)")
@@ -2489,6 +2500,17 @@ const summary = {
         sourceBloomBlurResizeResolution:
           sourceMainI1.text.includes("this.blurMaterials[i].uniforms.uResolution.value.set(e,t),e/=2,t/=2")
           && !sourceMainI1.text.includes("this.blurMaterials[p].uniforms.uResolution"),
+        sourceBlurTargetResizeNoPreClamp:
+          sourceMainI1.text.includes("const i=Math.round(e*this.settings.blur.scale),r=Math.round(t*this.settings.blur.scale);this.renderTargetBlurA.setSize(i,r),this.renderTargetBlurB.setSize(i,r)")
+          && !sourceMainI1.text.includes("Math.max(1,Math.round(e*this.settings.blur.scale))"),
+        rebuildBlurTargetResizeNoPreClamp:
+          Boolean(rebuildResize)
+          && rebuildResize.includes("const blurWidth = Math.round(width * this.sourceMainRenderSettings.blur.scale);")
+          && rebuildResize.includes("const blurHeight = Math.round(height * this.sourceMainRenderSettings.blur.scale);")
+          && rebuildWebgl.includes("blurResizeInputMode: \"source-I1-Na-target-size-round-css-scale-no-rebuild-pre-clamp\"")
+          && rebuildOutputProbe.includes("source-I1-Na-target-size-round-css-scale-no-rebuild-pre-clamp")
+          && !rebuildResize.includes("const blurWidth = Math.max(1, Math.round(width * this.sourceMainRenderSettings.blur.scale));")
+          && !rebuildResize.includes("const blurHeight = Math.max(1, Math.round(height * this.sourceMainRenderSettings.blur.scale));"),
         rebuildBloomBlurResizeResolution:
           rebuildResizeBloomMipChain?.includes("blurMaterials[index]?.uniforms.uResolution.value.set(mipWidth, mipHeight);")
           && rebuildResizeBloomMipChain?.includes("mipWidth /= 2;")

@@ -8580,16 +8580,16 @@ void main() {
       this.mainFxaaMaterial.uniforms.uResolution.value.set(sourceFxaaWidth, sourceFxaaHeight);
     }
     if (this.renderSettings.blur.enabled) {
-      const workBlurWidth = Math.max(1, Math.round(width * this.renderSettings.blur.scale));
-      const workBlurHeight = Math.max(1, Math.round(height * this.renderSettings.blur.scale));
+      const workBlurWidth = Math.round(width * this.renderSettings.blur.scale);
+      const workBlurHeight = Math.round(height * this.renderSettings.blur.scale);
       this.workBlurTargetA.setSize(workBlurWidth, workBlurHeight);
       this.workBlurTargetB.setSize(workBlurWidth, workBlurHeight);
       this.workBlurHorizontalMaterial.uniforms.uResolution.value.set(width, height);
       this.workBlurVerticalMaterial.uniforms.uResolution.value.set(width, height);
     }
     if (this.sourceMainRenderSettings.blur.enabled) {
-      const blurWidth = Math.max(1, Math.round(width * this.sourceMainRenderSettings.blur.scale));
-      const blurHeight = Math.max(1, Math.round(height * this.sourceMainRenderSettings.blur.scale));
+      const blurWidth = Math.round(width * this.sourceMainRenderSettings.blur.scale);
+      const blurHeight = Math.round(height * this.sourceMainRenderSettings.blur.scale);
       this.mainBlurTargetA.setSize(blurWidth, blurHeight);
       this.mainBlurTargetB.setSize(blurWidth, blurHeight);
       this.mainBlurHorizontalMaterial.uniforms.uResolution.value.set(width, height);
@@ -10108,6 +10108,7 @@ void main() {
             primaryDepthBuffer: this.workRawTarget.depthBuffer,
             renderTargetSize: { width: this.workRawTarget.width, height: this.workRawTarget.height },
             fxaaResizeInputMode: "source-Lu-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
+            blurResizeInputMode: "source-Lu-Na-target-size-round-css-scale-no-rebuild-pre-clamp",
             bloomStart: this.workBloomHorizontalTargets[0]
               ? { width: this.workBloomHorizontalTargets[0].width, height: this.workBloomHorizontalTargets[0].height }
               : null,
@@ -10532,6 +10533,7 @@ void main() {
             renderTargetSize: { width: this.mainRawTarget.width, height: this.mainRawTarget.height },
             c1RatioResizeOrder: "source-I1-resize-writes-C1-uRatio-before-target-resize",
             fxaaResizeInputMode: "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
+            blurResizeInputMode: "source-I1-Na-target-size-round-css-scale-no-rebuild-pre-clamp",
             bloomStart: this.mainBloomHorizontalTargets[0]
               ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
               : null,
