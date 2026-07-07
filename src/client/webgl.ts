@@ -5566,7 +5566,6 @@ export class WebGLBackdrop {
       stencil: false,
       depth: false,
     });
-    this.renderer.setClearColor(colorFrom(SOURCE_WORK_BG), 0);
     this.renderer.outputColorSpace = this.debugRendererOutput === "linear" ? LinearSRGBColorSpace : SRGBColorSpace;
     this.renderer.autoClear = false;
     this.renderer.domElement.className = "gl-canvas";
@@ -9787,6 +9786,8 @@ void main() {
     const drawingBufferSize = new Vector2();
     this.renderer.getSize(rendererSize);
     this.renderer.getDrawingBufferSize(drawingBufferSize);
+    const rendererClearColor = new Color();
+    this.renderer.getClearColor(rendererClearColor);
     const canvas = this.renderer.domElement;
     const canvasRect = canvas.getBoundingClientRect();
     const mouseSimProbe = this.renderSettings.mousesim.enabled
@@ -10078,6 +10079,9 @@ void main() {
         outputColorSpace: this.renderer.outputColorSpace,
         toneMapping: this.renderer.toneMapping,
         autoClear: this.renderer.autoClear,
+        clearColorMode: "source-qw-no-constructor-setClearColor-three-default",
+        clearColor: rendererClearColor.toArray(),
+        clearAlpha: this.renderer.getClearAlpha(),
         pixelRatio: this.renderer.getPixelRatio(),
         constructorDprMode: "source-qw-constructor-no-initial-setPixelRatio-resize-owns-dpr",
         resizeMode: "source-qw-resize-setSize-before-setPixelRatio-default-updateStyle",

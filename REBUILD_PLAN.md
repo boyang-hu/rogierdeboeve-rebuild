@@ -6,6 +6,8 @@ Last updated: 2026-07-07
 
 This file is the forward execution queue. It is ordered by what to do next, not by when discoveries happened.
 
+If a completed item still matters, keep it in a guarded list. Do not preserve old batch notes as a second timeline.
+
 | File | Role |
 | --- | --- |
 | `HANDOFF.md` | Current resume snapshot and immediate next action. |
@@ -51,15 +53,16 @@ Already guarded for this lane:
 - `u1` environment shader surface: source `l1` fragment and source `c1` vertex.
 - Cubemap `scene.environment` loader defaults and sampling fields.
 - `p1.addEnvironment()` fire-and-forget cubemap start order before floor/env sceneWrap attachment.
+- Renderer constructor clear state: source `qw` has no `setClearColor`, and probes guard default clear color/alpha.
 - Floor material inputs, reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
 - Texture-object await semantics for `nD.animateIn()`.
 
 Next source candidates:
 
-1. Remaining sky/environment frame timing beyond cubemap startup.
+1. Remaining sky/environment frame timing beyond cubemap startup and renderer constructor clear state.
 2. Environment target contents.
 3. Final work target distribution.
-4. Renderer state not yet covered by the audit.
+4. Renderer state not yet covered by existing output-color audit guards.
 
 Rules:
 

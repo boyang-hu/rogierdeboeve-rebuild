@@ -6,7 +6,7 @@ Last updated: 2026-07-07
 
 This file is the Phase 1 evidence register. It records current source facts, guarded conclusions, open blockers, and closeout criteria.
 
-It is not a chronological work log. Use git for older states:
+Keep it current-only: when a source fact is guarded, place it in the relevant system section and remove stale "latest batch" wording. It is not a chronological work log. Use git for older states:
 
 ```sh
 git log --oneline
@@ -54,7 +54,7 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 ## Open Blockers
 
 1. Floor/environment residuals.
-   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
+   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, renderer constructor clear state, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
    - Open: hard horizon and fog-bed distribution still differ.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
@@ -93,7 +93,22 @@ Current guarded rebuild facts:
 - `p1.addEnvironment()` cubemap loading now starts as a source-shaped fire-and-forget call before floor/env sceneWrap attachment. The texture preload binder no longer owns cubemap startup, and browser output probes guard `sceneEnvironmentStartOrder`.
 - `u1-environment` shader dump coverage now includes both source `l1` fragment and source `c1` vertex extraction.
 - The environment vertex shader text in rebuild matches the source `c1` surface, including the source `vViewPosition = - mvPosition.xyz` expression and chunk order.
-- Remaining investigation should focus on sky/environment timing, environment target contents, final target distribution, or renderer state not covered by those guards.
+- Remaining investigation should focus on sky/environment timing, environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state.
+
+### Renderer State
+
+Current source read:
+
+- Source `qw` creates `WebGLRenderer` with `alpha:true`, `antialias:false`, `preserveDrawingBuffer:false`, `powerPreference:"high-performance"`, `stencil:false`, and `depth:false`.
+- Source `qw` sets `autoClear=false`, assigns `outputColorSpace=Gt`, and appends the canvas.
+- Source `qw` does not call `setClearColor` in the constructor.
+
+Current guarded rebuild facts:
+
+- Rebuild no longer sets `SOURCE_WORK_BG` as the renderer clear color in the constructor.
+- Runtime output probes publish `clearColorMode`, `clearColor`, and `clearAlpha`.
+- Browser output probes guard the source-shaped clear state: no constructor clear-color override, default clear color `[0,0,0]`, and clear alpha `0`.
+- Renderer audit rejects reintroducing constructor-time `this.renderer.setClearColor(...)`.
 
 ### Texture And Animate-In Lifecycle
 
@@ -160,6 +175,7 @@ These are current boundaries, grouped by system instead of discovery time.
 | Floor/environment | Cubemap loader defaults and `scene.environment` sampling fields are guarded by browser probe. |
 | Floor/environment | `p1.addEnvironment()` starts cubemap loading fire-and-forget before floor/env sceneWrap attachment. |
 | Floor/environment | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
+| Renderer state | Renderer constructor has no source `setClearColor`; probes guard default clear color `[0,0,0]` and clear alpha `0`. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |
 | Render managers | Work luminosity branch runs before and independently of bloom. |
 | Render managers | Optional blur follows source target chain and direct resize input ownership. |

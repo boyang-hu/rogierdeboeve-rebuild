@@ -2682,6 +2682,7 @@ const summary = {
       rebuildChecks: checks(rebuildWebgl, [
         "this.renderer.setSize(width, height);",
         "this.renderer.setPixelRatio(dpr);",
+        "clearColorMode: \"source-qw-no-constructor-setClearColor-three-default\"",
         "constructorDprMode: \"source-qw-constructor-no-initial-setPixelRatio-resize-owns-dpr\"",
         "resizeMode: \"source-qw-resize-setSize-before-setPixelRatio-default-updateStyle\"",
         "canvasStyleUpdateMode: \"source-qw-setSize-default-updateStyle-true\"",
@@ -2691,9 +2692,13 @@ const summary = {
         "this.renderer.setPixelRatio(dpr);",
       ]),
       rejectsConstructorDpr: Boolean(rebuildConstructor) && !rebuildConstructor.includes("this.renderer.setPixelRatio("),
+      rejectsConstructorClearColor: Boolean(rebuildConstructor) && !rebuildConstructor.includes("this.renderer.setClearColor("),
       rejectsOldResizeOrder: !rebuildWebgl.includes("this.renderer.setPixelRatio(dpr);\n    this.renderer.setSize(width, height, false);"),
       rejectsNoStyleUpdateSetSize: !rebuildWebgl.includes("this.renderer.setSize(width, height, false);"),
       rebuildProbeChecks: checks(rebuildOutputProbe, [
+        "renderer.clearColorMode !== \"source-qw-no-constructor-setClearColor-three-default\"",
+        "renderer.clearAlpha",
+        "renderer.clearColor",
         "renderer.constructorDprMode !== \"source-qw-constructor-no-initial-setPixelRatio-resize-owns-dpr\"",
         "renderer.resizeMode !== \"source-qw-resize-setSize-before-setPixelRatio-default-updateStyle\"",
         "renderer.canvasStyleUpdateMode !== \"source-qw-setSize-default-updateStyle-true\"",

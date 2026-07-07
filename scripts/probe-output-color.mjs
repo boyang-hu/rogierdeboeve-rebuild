@@ -1189,6 +1189,11 @@ async function runProbe() {
   const expectedCanvasWidth = Math.floor((renderer.size?.width || 0) * (renderer.dprPolicy?.globalDpr || 1));
   const expectedCanvasHeight = Math.floor((renderer.size?.height || 0) * (renderer.dprPolicy?.globalDpr || 1));
   if (renderer.constructorDprMode !== "source-qw-constructor-no-initial-setPixelRatio-resize-owns-dpr") rendererErrors.push("constructorDprMode");
+  if (renderer.clearColorMode !== "source-qw-no-constructor-setClearColor-three-default") rendererErrors.push("clearColorMode");
+  if (!Array.isArray(renderer.clearColor) || renderer.clearColor.length !== 3 || renderer.clearColor.some((value) => Math.abs(value) > 0.0001)) {
+    rendererErrors.push("clearColor");
+  }
+  if (!closeTo(renderer.clearAlpha, 0, 0.0001)) rendererErrors.push("clearAlpha");
   if (renderer.resizeMode !== "source-qw-resize-setSize-before-setPixelRatio-default-updateStyle") rendererErrors.push("resizeMode");
   if (renderer.resizeOrder !== "setSize-then-setPixelRatio") rendererErrors.push("resizeOrder");
   if (renderer.canvasStyleUpdateMode !== "source-qw-setSize-default-updateStyle-true") rendererErrors.push("canvasStyleUpdateMode");
