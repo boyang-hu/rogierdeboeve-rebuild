@@ -36,32 +36,57 @@ const pathname = Astro.url.pathname;
     </div>
   </div>
 
-  <nav class="ui-nav-mobile c-color" aria-label="Mobile navigation">
-    <button class="ui-nav-mobile-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-menu-toggle data-sound-click>
-      <span class="ui-nav-mobile-toggle-icon-lines" aria-hidden="true">
-        <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-1"></span>
-        <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-2"></span>
-        <span class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-3"></span>
-      </span>
-    </button>
-    <div class="ui-nav-mobile-content-bg"></div>
-    <div class="ui-nav-mobile-content">
-      <div class="ui-nav-mobile-content-main wrap">
-        <a class={`ui-nav-mobile-a ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="work" data-sound data-sound-click>
-          <span class="ui-nav-mobile-a-inner">Work</span>
-        </a>
-        <a class={`ui-nav-mobile-a ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about" data-sound data-sound-click>
-          <span class="ui-nav-mobile-a-inner">About</span>
-        </a>
+  <div class="ui-header-mobile lg:hidden">
+    <div class="ui-nav-mobile c-color">
+      <div class="ui-nav-mobile-toggle">
+        <div class="wrap">
+          <svg class="ui-nav-mobile-toggle-icon" width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect class="ui-nav-mobile-toggle-icon-rect" x="-0.5" y="0.5" width="55" height="55" transform="matrix(-1 0 0 1 55 0)" stroke="currentColor" stroke-opacity="0.4" stroke-dasharray="2 2"></rect>
+            <g class="ui-nav-mobile-toggle-icon-lines">
+              <line class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-1" x1="20" y1="23.5" x2="36" y2="23.5" stroke="currentColor"></line>
+              <line class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-2" x1="20" y1="27.5" x2="36" y2="27.5" stroke="currentColor"></line>
+              <line class="ui-nav-mobile-toggle-icon-line ui-nav-mobile-toggle-icon-line-3" x1="20" y1="31.5" x2="36" y2="31.5" stroke="currentColor"></line>
+            </g>
+          </svg>
+        </div>
       </div>
-      <div class="ui-nav-mobile-content-footer wrap">
-        <div class="ui-nav-mobile-content-footer-links ts-m">
-          <a class="ui-nav-mobile-content-footer-link c-color" href="https://twitter.com/rogierdeboeve" target="_blank" rel="noopener" data-sound data-sound-click>Twitter</a>
-          <a class="ui-nav-mobile-content-footer-link c-color" href="https://www.instagram.com/rdboeve/" target="_blank" rel="noopener" data-sound data-sound-click>Instagram</a>
+
+      <div class="ui-nav-mobile-content-bg"></div>
+
+      <div class="ui-nav-mobile-content">
+        <div class="ui-nav-mobile-content-main">
+          <div class="wrap">
+            <a class={`ui-nav-mobile-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="home">
+              <span class="ui-nav-mobile-a-inner">
+                <span class="ui-nav-mobile-a-title">Work</span>
+              </span>
+            </a>
+            <a class={`ui-nav-mobile-a c-color ${pathname.startsWith("/about") ? "is-active" : ""}`} href="/about/" data-slug="about">
+              <span class="ui-nav-mobile-a-inner">
+                <span class="ui-nav-mobile-a-title">About</span>
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <div class="ui-nav-mobile-content-footer">
+          <div class="wrap">
+            <ul class="ui-nav-mobile-content-footer-links ts-m">
+              <li class="ui-nav-mobile-content-footer-link">
+                <a class="social-a c-color" href="https://twitter.com/rogierdeboeve" target="_blank" rel="noopener"><span>Twitter</span></a>
+              </li>
+              <li class="ui-nav-mobile-content-footer-link">
+                <a class="social-a c-color" href="https://www.instagram.com/rdboeve/" target="_blank" rel="noopener"><span>Instagram</span></a>
+              </li>
+              <li class="ui-nav-mobile-content-footer-link">
+                <a class="social-a c-color" href="mailto:hello@rogierdeboeve.com"><span>E-mail</span></a>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
-  </nav>
+  </div>
 </header>
 
 <nav class="ui-nav" aria-label="Main navigation">

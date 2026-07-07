@@ -46,7 +46,7 @@ Everything outside Home DOM/interaction stays paused unless the audit identifies
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
-| 2. Home DOM/interaction parity | Audit complete, first fix batch queued | Start with source DOM/CSS shell gaps before touching interaction algorithms. |
+| 2. Home DOM/interaction parity | First shell fix complete | Continue with preloader source parity before interaction algorithms. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 2-4 scope is accepted. |
@@ -151,14 +151,14 @@ Current fix queue:
 
 1. Mobile nav shell.
    - Source owns `.ui-header-mobile lg:hidden`, `.ui-nav-mobile`, and `.ui-nav-mobile-toggle > .wrap > svg`.
-   - Rebuild currently uses an absolute `<button>` toggle and different hit-area/vertical geometry.
+   - Done: rebuild now uses the source shell; final audit matched mobile toggle rect `104x56` at `x=286,y=31`, desktop hidden rect `0x0`, and mobile menu content opacity `1` when open.
 2. Sound toggle shell.
    - Source owns the `28x28` `.ui-sound-toggle` div/SVG, z-index `200`, opacity `1` after enter, hover ring, and source-shaped rect bars.
-   - Rebuild currently uses a button/SVG variant, z-index `20`, and opacity `.75`.
+   - Done: rebuild now uses the source shell and `.is-active` state; final audit matched `28x28`, z-index `200`, opacity `1`, and source class state after entry.
 3. Preloader.
    - Source owns `div.preloader-cta[data-sound]`, `div.preloader-cta-2[data-sound]`, progress opacity/transform animation, delayed pointer activation, and no active work item before enter.
    - Rebuild currently server-renders/initializes the first work item as active before enter and uses a timer-driven button/data-attribute flow.
-   - Keep this as its own batch because it touches entry timing, sound choice, session state, and Home gallery activation.
+   - Next batch. Keep it narrow because it touches entry timing, sound choice, session state, and Home gallery activation.
 4. Mobile work list/title CSS.
    - Source keeps `.ui-title` hidden by visibility/pointer behavior on mobile and handles inactive mobile cards mainly through link opacity/pointer state.
    - Rebuild uses display/height/card-opacity choices that differ, while visible active CTA geometry is already close.
@@ -172,6 +172,15 @@ Original audit checklist:
 - Wheel, keyboard, touch, drag, hover, and click behavior.
 - Home-to-project/about route behavior and state restoration.
 - Howler sound event timing only where source behavior is observable or source-owned.
+
+Latest validation:
+
+- `node --check src/client/main.ts`
+- `node --check src/client/audio.ts`
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Phase 2 Home audit: `/tmp/rd-phase2-home-audit-after-shell-final/home-dom-interaction-audit.json`
+- Home output probes: desktop `/tmp/rd-output-p2-shell-desktop`, mobile `/tmp/rd-output-p2-shell-mobile`
 
 ### `kA/Lu/I1` composite and transfer
 

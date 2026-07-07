@@ -259,7 +259,7 @@ function initPreloader() {
   const preloader = document.querySelector<HTMLElement>("[data-preloader]");
   const percent = document.querySelector<HTMLElement>("[data-preloader-percent]");
   const enterButtons = document.querySelectorAll<HTMLButtonElement>("[data-preloader-enter]");
-  const soundToggle = document.querySelector<HTMLButtonElement>("[data-sound-toggle]");
+  const soundToggle = document.querySelector<HTMLElement>(".ui-sound-toggle");
   const hasEntered = () => getSessionValue("rd:has-entered") === "true";
   const getSessionSoundMode = () => getSessionValue("rd:sound-enabled") !== "false";
   const setSessionState = (soundEnabled: boolean) => {
@@ -275,8 +275,7 @@ function initPreloader() {
     complete = true;
     setSessionState(soundEnabled);
     dispatchSoundMode(soundEnabled);
-    soundToggle?.setAttribute("aria-pressed", String(soundEnabled));
-    soundToggle?.classList.toggle("is-muted", !soundEnabled);
+    soundToggle?.classList.toggle("is-active", soundEnabled);
     document.body.classList.remove("is-preloading");
     document.body.classList.add("has-entered");
     preloader?.classList.add("is-hidden");
@@ -309,12 +308,11 @@ function initPreloader() {
 }
 
 function initSoundToggle() {
-  const toggle = document.querySelector<HTMLButtonElement>("[data-sound-toggle]");
+  const toggle = document.querySelector<HTMLElement>(".ui-sound-toggle");
   if (!toggle) return;
   toggle.addEventListener("click", () => {
-    const enabled = toggle.getAttribute("aria-pressed") !== "true";
-    toggle.setAttribute("aria-pressed", String(enabled));
-    toggle.classList.toggle("is-muted", !enabled);
+    const enabled = !toggle.classList.contains("is-active");
+    toggle.classList.toggle("is-active", enabled);
     persistSoundMode(enabled);
     dispatchSoundMode(enabled);
   });
@@ -322,7 +320,7 @@ function initSoundToggle() {
 
 function initMenu() {
   const nav = document.querySelector<HTMLElement>(".ui-nav-mobile");
-  const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+  const toggle = document.querySelector<HTMLElement>(".ui-nav-mobile-toggle");
   const links = Array.from(nav?.querySelectorAll<HTMLAnchorElement>(".ui-nav-mobile-a") ?? []);
   const cleanupCallbacks: Array<() => void> = [];
   let closeTimer = 0;
@@ -330,7 +328,6 @@ function initMenu() {
     window.clearTimeout(closeTimer);
     nav?.classList.remove("is-active");
     document.documentElement.classList.remove("is-nav-mobile-open");
-    toggle?.setAttribute("aria-expanded", "false");
   };
   const setActive = (slug: string | undefined) => {
     links.forEach((link) => link.classList.toggle("is-active", Boolean(slug) && link.dataset.slug === slug));
@@ -343,7 +340,6 @@ function initMenu() {
   const onToggleClick = () => {
     const active = nav?.classList.toggle("is-active") ?? false;
     document.documentElement.classList.toggle("is-nav-mobile-open", active);
-    toggle?.setAttribute("aria-expanded", String(active));
   };
   toggle?.addEventListener("click", onToggleClick);
   cleanupCallbacks.push(() => toggle?.removeEventListener("click", onToggleClick));

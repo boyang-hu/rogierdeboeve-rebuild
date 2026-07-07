@@ -81,16 +81,33 @@ const pageClass = pathname === "/" ? "is-home" : pathname.startsWith("/about") ?
     <main class="ui-main">
       <slot />
     </main>
-    <button class="ui-sound-toggle c-color" type="button" aria-label="Toggle sound" aria-pressed="true" data-sound-toggle>
-      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
-        <circle class="ui-sound-toggle-static" cx="16" cy="16" r="15" fill="none" stroke="currentColor" stroke-dasharray="2 2"></circle>
-        <g class="ui-sound-toggle-rects" fill="currentColor">
-          <rect x="11" y="13" width="2" height="6" rx="1"></rect>
-          <rect x="15" y="10" width="2" height="12" rx="1"></rect>
-          <rect x="19" y="13" width="2" height="6" rx="1"></rect>
+    <div class="ui-sound-toggle c-color" data-sound-click>
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect class="ui-sound-toggle-static" x="0.5" y="0.5" width="27" height="27" rx="13.5" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="2 2"></rect>
+        <g class="ui-sound-toggle-hover-wrap">
+          <rect class="ui-sound-toggle-hover" x="0.5" y="0.5" width="27" height="27" rx="13.5" stroke="currentColor" stroke-opacity="1"></rect>
+        </g>
+        <g class="ui-sound-toggle-rects">
+          <rect x="6.125" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="7" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="7.875" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="8.75" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="9.625" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="10.5" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="11.375" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="12.25" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="13.125" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="14" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="14.875" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="15.75" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="16.625" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="17.5" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="18.375" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="19.25" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
+          <rect x="20.125" y="14" width="1.75" height="1.75" rx="0.875" fill="currentColor"></rect>
         </g>
       </svg>
-    </button>
+    </div>
     <script>
       import "../client/main.ts";
     </script>

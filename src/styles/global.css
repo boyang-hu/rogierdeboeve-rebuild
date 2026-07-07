@@ -32,6 +32,7 @@
   --py: clamp(1.5rem, 3.2vw, 3.25rem);
   --gap: 1.5rem;
   --expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --circ: cubic-bezier(0.075, 0.82, 0.165, 1);
 }
 
 *,
@@ -366,8 +367,122 @@ body.is-ready [data-view] {
   opacity: 1;
 }
 
-.ui-nav-mobile {
+.ui-header-mobile {
   display: none;
+}
+
+.ui-nav-mobile {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.ui-nav-mobile a {
+  pointer-events: none;
+}
+
+.ui-nav-mobile-content-bg,
+.ui-nav-mobile-content {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+}
+
+.ui-nav-mobile-toggle {
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.ui-nav-mobile-toggle .wrap {
+  display: flex;
+  justify-content: end;
+}
+
+.ui-nav-mobile-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-nav-mobile-content-main {
+  flex: 1;
+  padding-top: 53.75vh;
+}
+
+.ui-nav-mobile-content-footer {
+  padding-bottom: 3rem;
+}
+
+.ui-nav-mobile-content-bg {
+  pointer-events: none;
+  background-color: #141414;
+  opacity: 0.9;
+  z-index: -1;
+}
+
+.ui-nav-mobile-a {
+  font-family: var(--font-sans);
+  font-size: 2.75rem;
+  line-height: 0.54545;
+  letter-spacing: -0.03em;
+  display: block;
+  position: relative;
+  opacity: var(--opacity-dimmed);
+}
+
+.ui-nav-mobile-a.is-active {
+  opacity: 1;
+}
+
+.ui-nav-mobile-a + .ui-nav-mobile-a {
+  margin-top: 1.375rem;
+}
+
+.ui-nav-mobile-content-footer-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-nav-mobile-content-footer-link {
+  height: 1rem;
+  opacity: var(--opacity-dimmed);
+}
+
+.ui-nav-mobile-toggle-icon-line {
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.ui-nav-mobile-content,
+.ui-nav-mobile-content-bg {
+  opacity: 0;
+  transition: opacity 0.3s linear;
+}
+
+.ui-nav-mobile.is-active a {
+  pointer-events: auto;
+}
+
+.ui-nav-mobile.is-active .ui-nav-mobile-content,
+.ui-nav-mobile.is-active .ui-nav-mobile-content-bg {
+  opacity: 1;
+}
+
+.ui-nav-mobile.is-active .ui-nav-mobile-toggle-icon-lines {
+  transform: translate(2px) translateY(2px);
+}
+
+.ui-nav-mobile.is-active .ui-nav-mobile-toggle-icon-line-1 {
+  transform: rotate(45deg) translateY(3px);
+}
+
+.ui-nav-mobile.is-active .ui-nav-mobile-toggle-icon-line-2 {
+  transform: rotate(-45deg) translateY(-3px);
+}
+
+.ui-nav-mobile.is-active .ui-nav-mobile-toggle-icon-line-3 {
+  opacity: 0;
 }
 
 body.is-project .ui-nav {
@@ -691,31 +806,80 @@ body.is-project .ui-header-description {
 
 .ui-sound-toggle {
   position: fixed;
-  right: calc(var(--py) + 0.25rem);
   bottom: calc(var(--py) + 0.125rem);
-  z-index: 20;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  right: calc(var(--py) + 0.25rem);
+  z-index: 200;
   opacity: 0;
   pointer-events: none;
   cursor: pointer;
-  transition: opacity 0.35s linear;
+  transition: opacity 0.3s;
 }
 
 body.has-entered .ui-sound-toggle {
-  opacity: 0.75;
+  opacity: 1;
   pointer-events: auto;
 }
 
-.ui-sound-toggle:hover {
-  opacity: 1;
+.ui-sound-toggle .ui-sound-toggle-hover {
+  opacity: 0.6;
+  transform-origin: center center;
+  transform-box: fill-box;
+  transition: transform 0.8s var(--circ), stroke-dashoffset 0.8s var(--circ);
+  transition-delay: 0.3s;
 }
 
-.ui-sound-toggle.is-muted .ui-sound-toggle-rects {
-  opacity: 0.25;
+.ui-sound-toggle .ui-sound-toggle-hover-wrap {
+  opacity: 0;
+  transition: opacity 0.3s linear;
+}
+
+.ui-sound-toggle .ui-sound-toggle-static {
+  opacity: 1;
+  transition: opacity 0.3s linear;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-sound-toggle:hover .ui-sound-toggle-hover {
+    transition-delay: 0s;
+  }
+
+  .ui-sound-toggle:hover .ui-sound-toggle-hover-wrap {
+    opacity: 1;
+  }
+
+  .ui-sound-toggle:hover .ui-sound-toggle-static {
+    opacity: 0;
+  }
+}
+
+.ui-sound-toggle svg {
+  height: 2rem;
+  width: 2rem;
+}
+
+.ui-sound-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: #000;
+  border-radius: 50%;
+  opacity: 0.15;
+  transform: scale(2);
+  filter: blur(10px);
+  transition: opacity 0.5s;
+}
+
+.ui-sound-toggle-rects {
+  transform-origin: center;
+  transform-box: fill-box;
+  opacity: 0.6;
+  transform: translateY(-1px) scaleX(0.5) scaleX(0.85);
+  transition: transform 1.2s var(--expo);
+}
+
+.ui-sound-toggle.is-active .ui-sound-toggle-rects {
+  transform: translate(0) scaleX(0.85) scaleX(0.85);
 }
 
 .preloader {
@@ -1349,47 +1513,43 @@ html.is-scrolled .c-scroll-cta {
     padding-top: 2rem;
   }
 
+  .ui-header-mobile {
+    display: block;
+    position: absolute;
+    top: 1.9375rem;
+    right: 0;
+  }
+
   .ui-nav-mobile {
     display: block;
-    position: fixed;
-    inset: 0;
+    position: static;
     pointer-events: none;
     opacity: 0;
-    z-index: 20;
+    z-index: auto;
   }
 
   .ui-nav-mobile-toggle {
-    position: absolute;
-    top: 1.45rem;
-    right: var(--px);
-    width: 3.5rem;
-    height: 3.5rem;
-    border: 1px dashed rgba(188, 188, 188, 0.75);
-    display: grid;
-    place-content: center;
-    background: rgba(20, 20, 20, 0.62);
+    position: static;
+    width: auto;
+    height: auto;
+    border: 0;
+    display: block;
+    background: transparent;
     color: currentColor;
-    pointer-events: auto;
-    z-index: 21;
+    pointer-events: all;
+    z-index: auto;
   }
 
   .ui-nav-mobile-toggle-icon-lines {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
     transition: transform 0.3s linear;
-  }
-
-  .ui-nav-mobile.is-active .ui-nav-mobile-toggle {
-    border-style: solid;
+    transform-origin: center;
+    transform-box: fill-box;
   }
 
   .ui-nav-mobile-toggle-icon-line {
-    display: block;
-    width: 1rem;
-    height: 1px;
-    background: currentColor;
+    display: inline;
     transform-origin: center;
+    transform-box: fill-box;
     transition: opacity 0.3s linear, transform 0.3s linear;
   }
 
@@ -1432,7 +1592,7 @@ html.is-scrolled .c-scroll-cta {
 
   .ui-nav-mobile-content-footer-link {
     height: 1rem;
-    opacity: 0.55;
+    opacity: var(--opacity-dimmed);
   }
 
   .ui-nav-mobile.is-active a {
@@ -1444,12 +1604,8 @@ html.is-scrolled .c-scroll-cta {
     opacity: 1;
   }
 
-  .ui-nav-mobile.is-active .ui-nav-mobile-content-bg {
-    opacity: 0.9;
-  }
-
   .ui-nav-mobile.is-active .ui-nav-mobile-toggle-icon-lines {
-    transform: translate(2px, 2px);
+    transform: translate(2px) translateY(2px);
   }
 
   .ui-nav-mobile.is-active .ui-nav-mobile-toggle-icon-line-1 {

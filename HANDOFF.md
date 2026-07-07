@@ -28,9 +28,9 @@ It is not a timeline. Use git for history.
 | --- | --- |
 | Active phase | Phase 2, Home DOM/interaction parity audit |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Phase 2 audit-only pass against online/source behavior |
-| Next secondary priority | First source-backed Home DOM/interaction fix batch |
-| Last committed source-backed code batch | Home brightness overlay parity, `416c43d` |
+| Current production priority | Phase 2 preloader source parity batch |
+| Next secondary priority | Mobile work list/title source CSS after preloader |
+| Last committed source-backed code batch | Phase 2 mobile nav and sound toggle shell parity |
 | Last closed evidence batch | Phase 2 Home DOM/interaction audit plus Phase 1 closeout |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
@@ -95,15 +95,15 @@ Current Phase 2 read:
 
 - Clean in the audit: online and rebuild had `0` network failures and `0` runtime exceptions in the checked Home desktop/mobile scenarios.
 - Clean in the audit: wheel input and second work-item click both moved the active project from `hashgraph-vc` to `gc-2026` in online and rebuild, so the first production batch should not start by rewriting the gallery scroll algorithm.
+- Closed in the first production batch: mobile nav shell now uses the source `.ui-header-mobile` and `.ui-nav-mobile-toggle > .wrap > svg` structure; mobile toggle rect matches online at `104x56` from `x=286,y=31`, and desktop hidden rect is `0x0`.
+- Closed in the first production batch: sound toggle now uses the source `28x28` div/SVG shell, z-index `200`, opacity `1` after enter, `.is-active` state, hover ring, and source-shaped rect bars.
 - Open source-backed gap: preloader markup, animation timing, pointer state, and pre-enter active work state differ. Online has no active work item before entering; rebuild server-renders/initializes `hashgraph-vc` as active before entering.
-- Open source-backed gap: mobile nav shell differs. Source uses `.ui-header-mobile` with `.ui-nav-mobile-toggle > .wrap > svg`; rebuild uses an absolute `<button>` with a different hit area and vertical position.
-- Open source-backed gap: sound toggle markup/CSS differs. Source uses a `28x28` div, z-index `200`, opacity `1` after enter, hover ring, and source-shaped rect bars; rebuild uses a button/SVG variant with z-index `20` and opacity `.75`.
 - Lower-priority source-backed gap: mobile work list/title CSS differs, though the visible active mobile CTA is already close in the audit.
 
 Recommended next move:
 
-1. Start the first Phase 2 production batch with the static source DOM/CSS shell: mobile nav and sound toggle.
-2. Keep preloader as a separate source-backed batch because it touches markup, animation timing, session state, sound choice, and Home gallery entry timing.
+1. Start the preloader source parity batch.
+2. Keep the preloader batch narrow because it touches markup, animation timing, session state, sound choice, and Home gallery entry timing.
 3. Keep Phase 1 WebGL, project media, about, and interaction probes as regression gates when shared render or lifecycle paths change.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:

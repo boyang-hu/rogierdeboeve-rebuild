@@ -81,7 +81,7 @@ export function initAudio() {
     window.dispatchEvent(new CustomEvent("rd:plucks"));
   });
 
-  document.querySelectorAll<HTMLElement>("[data-sound]").forEach((element) => {
+  document.querySelectorAll<HTMLElement>("[data-sound], [data-sound-click]").forEach((element) => {
     element.addEventListener("mouseenter", () => enabled && hover?.play());
   });
   document.querySelectorAll<HTMLElement>("[data-sound-click]").forEach((element) => {
