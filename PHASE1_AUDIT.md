@@ -2,21 +2,23 @@
 
 Last updated: 2026-07-07
 
-## Purpose
+## How To Read This
 
-This is the canonical active audit for Phase 1. It records:
+This file is the Phase 1 evidence register. It is organized by current blocker and source system, not by discovery date.
 
-- current parity read
-- active blockers
-- source evidence already closed
-- closeout criteria
+| Section | Purpose |
+| --- | --- |
+| Scope | What Phase 1 is allowed to cover. |
+| Status | Current parity estimate and closeout state. |
+| Active Blockers | Open problems in priority order. |
+| Evidence By System | Current source facts and guarded conclusions. |
+| Closed Source-Edge Ledger | Compact source-edge history, newest first. |
 
-It is not a running diary. Blockers are ordered by current priority. Closed batches are listed newest first in one table below.
-
-Older long-form timelines remain available through git:
+Docs-only reshuffles are not listed here. Use git for old document versions:
 
 ```sh
-git show 9986590:PHASE1_AUDIT.md
+git log --oneline
+git show <commit>:PHASE1_AUDIT.md
 ```
 
 ## Scope
@@ -38,7 +40,7 @@ Primary source areas:
 - `Se`: visual state setter ownership
 - `TD/Fg/Q1/eD`: about and auxiliary visual ownership
 
-## Status Snapshot
+## Status
 
 Phase 1 is open. Closeout requires source-backed parity or explicit technical bridge documentation.
 
@@ -53,57 +55,102 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 
 1. Floor/environment residuals.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
-   - Open: hard horizon/fog-bed distribution still differs. Do not tune brightness or fog visually without source ownership evidence.
+   - Open: hard horizon and fog-bed distribution still differ. This is the next production priority.
+   - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
 2. Spotlight/thumb projection transfer feel.
    - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
    - Open: projected thumb brightness, depth, content transfer, and timing still do not feel source-exact.
 
 3. `kA/Lu/I1` composite and transfer interpretation.
-   - Guarded: many source-shaped shader surfaces, pass settings, optional blur chain, resize ownership, runtime uniform order, GPU/LOW_RES bridge, and main/work camera surfaces.
-   - Narrowed: source `I1` default `renderToScreen=true` path renders C1 directly to screen; `renderTargetComposite` is retained but unused for the default visible Home path.
-   - Narrowed: source `nD` delayed C1 bindings are one-time `tWork`, `tMedia`, and initial work mouse-simulation output bindings after the `100ms` delay.
-   - Open: keep this as a regression guardrail, but do not treat default render-target transfer as the current primary suspect unless new evidence contradicts the audit.
+   - Guarded: shader surfaces, pass settings, optional blur chain, resize ownership, runtime uniform order, GPU/LOW_RES bridge, and main/work camera surfaces.
+   - Narrowed: source `I1` default `renderToScreen=true` renders C1 directly to screen; `renderTargetComposite` is retained but unused for the default visible Home path.
+   - Rule: keep this as a regression guardrail, not the first suspect, unless new evidence contradicts the audit.
 
 4. Mouse/fluid interaction parity.
    - Guarded: `Ka` mouse simulation constructor/update ownership, raycast hit-UV ownership, main-fluid pointer/diff ownership, bounded pass geometry, and interactive probe coverage.
    - Open: final feel remains a regression concern when touching interaction paths.
 
-## Current Evidence
+## Evidence By System
 
-### `38931a6` `nD/Xt` Animate-In Texture Awaits
+### Floor And Environment
 
-- Source `Xt.loadTexture()` returns the immediate Three `Texture` object from `TextureLoader.load()`, not a load promise.
-- Source `nD.animateIn()` awaits `initPromise`, then awaits `Xt.blueNoise`, `Xt.floorNormal`, `Xt.perlin1`, and `Xt.perlin2`; those texture awaits resolve immediately because the values are `Texture` objects.
-- Rebuild now keeps `animateIn()` gated on the delayed init lifecycle and immediate texture-object awaits.
+Current source read:
+
+- `p1.init()` calls `addEnvironment()` without awaiting the cubemap load, then continues the Home scene setup.
+- `addEnvironment()` awaits the cubemap internally and later assigns `scene.environment`.
+- Source floor `a1` creates `new i1`, uses `Xt.floorNormal`, sets `repeat` to `45,45`, creates `new Tu(60,32)`, and uses `o1` with `color:"#4a4a4a"`, `uMirror:1`, `reflectivity:.97`, and `uFloorMixStrength:15`.
+- Source floor reflection assigns `tReflect` and `uMatrix` from the reflector, rotates the floor to `-PI/2`, hides the floor group during reflection render, updates the reflector, then restores visibility.
+- Source environment `h1/u1` uses an icosahedron `Du(300,10)`, `side: BackSide`, `envMapIntensity:1`, `fog:false`, `dithering:true`, and `speed=5e-5`.
+
+Current guarded rebuild facts:
+
+- Browser output probe reports production debug clean.
+- Scene background/fog, floor hierarchy/material, environment hierarchy/material, floor reflection draw-state, reflector target sizing, environment rotation, and low-res SwiftShader branch are currently source-shaped.
+- Remaining investigation should focus on source asset properties, target contents, timing, or renderer state that is not yet covered by those guards.
+
+### Texture And Animate-In Lifecycle
+
+Current source read:
+
+- `Xt.loadTexture()` returns the immediate Three `Texture` from `TextureLoader.load()`, not a load promise.
+- `nD.animateIn()` awaits `initPromise`, then awaits `Xt.blueNoise`, `Xt.floorNormal`, `Xt.perlin1`, and `Xt.perlin2`.
+- Those texture awaits resolve immediately because the values are texture objects.
+
+Current guarded rebuild facts:
+
+- Rebuild keeps `animateIn()` gated on delayed init lifecycle and immediate texture-object awaits.
 - Image onload state remains separate probe state and is not an `animateIn()` gate.
 - Renderer audit and output probe guard against reintroducing `sourceTexturePreloadPromise` as an `animateIn()` dependency.
 
-### `53b13f4` `kA/Lu/I1` Render-Manager Follow-Up
+### Spotlight And Thumb Projection
 
-- `VA-work` shader dump matched source-shaped vertex and fragment text with zero recorded deltas.
-- `OA-work-composite`, `A1-pre-composite`, thumb, floor, environment, media, and fluid shaders were source-shaped.
-- Relevant source bundle light chunks and local Three chunks had zero deltas, including the spotlight-map multiplication path.
-- Source `I1` default target behavior was traced: `settings.renderToScreen` defaults to `true`, C1 renders straight to the canvas, and `renderTargetComposite` is not written in the default visible path.
-- Source `U1.update()` calls `super.update()` before `C1.update()`, so C1 `uTime` updates after the frame render. Rebuild keeps that order.
-- Source `nD.init()` binds C1 `tWork`, `tMedia`, and `tMouseSim` once after the `100ms` delayed resize/bind phase. Rebuild keeps those as delayed one-time bindings.
-- Full renderer audit has zero recursive false/null findings, and desktop browser output/thumb probes pass on these surfaces.
+Current source read:
 
-### `9986590` `TD` About Destroy Spotlight Map
+- `SD.init()` owns Home spotlight map, target, position, and intensity setup.
+- `TD.addEvents()` binds about spotlight map after its delayed setup.
+- `TD.animateOut()` and `TD.destroy()` do not restore the Home thumb composite; `SD.init()` owns the later Home bind.
 
-- Source `TD.addEvents()` binds `J.workScene.spotLight.map` to `J.characterScene.renderManager.renderTargetComposite.texture` after the `100ms` delay.
-- Source `TD.animateOut()` only tweens about reveal uniforms and calls `Se.setSpotLightIntensity(0)`.
-- Source `TD.destroy()` removes the about RAF handler, clears about block visibility/tracking, restores `spotLightParallax=true`, and removes character rotatable events.
-- Neither source method restores `J.workScene.spotLight.map` to the Home thumb composite; `SD.init()` owns that later Home bind.
-- Rebuild about lifecycle probes and renderer audit guard this ownership edge.
+Current guarded rebuild facts:
 
-## Source-Edge Ledger
+- Spotlight constructor defaults, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, shader surfaces, and projection sampling are guarded.
+- The open issue is projection feel: brightness, depth, content transfer, and timing.
 
-Newest first. This is the only maintained source-edge timeline in the docs; docs-only reshuffles stay in git.
+### Render Managers And Composite Transfer
+
+Current source read:
+
+- Source `I1` default `settings.renderToScreen=true` renders C1 directly to the canvas.
+- `renderTargetComposite` is retained but unused for the default visible Home path.
+- Source `U1.update()` calls `super.update()` before `C1.update()`, so C1 `uTime` updates after the frame render.
+- Source `nD.init()` binds C1 `tWork`, `tMedia`, and initial work mouse-simulation output once after the delayed resize/bind phase.
+
+Current guarded rebuild facts:
+
+- `VA-work`, `OA-work-composite`, `A1-pre-composite`, thumb, floor, environment, media, and fluid shaders are source-shaped in the audit.
+- Relevant source bundle light chunks and local Three chunks have zero recorded deltas, including spotlight-map multiplication.
+- Full renderer audit has zero recursive false/null findings on the guarded surfaces.
+
+### About And Auxiliary Ownership
+
+Current source read:
+
+- `TD.destroy()` removes the about RAF handler, clears about block visibility/tracking, restores `spotLightParallax=true`, and removes character rotatable events.
+- It does not restore `J.workScene.spotLight.map` to the Home thumb composite.
+
+Current guarded rebuild facts:
+
+- About lifecycle probes and renderer audit guard this ownership edge.
+- Keep about probes in the validation set when touching `TD`, `Fg`, `Q1`, `eD`, spotlight map ownership, or auxiliary blocks.
+
+## Closed Source-Edge Ledger
+
+This is the only compact source-edge ledger maintained in the docs. It excludes docs-only cleanup commits.
 
 | Commit | Area | Closed edge |
 | --- | --- | --- |
 | `38931a6` | `nD/Xt` canvas animate-in texture awaits | `animateIn()` awaits immediate `Texture` objects, not image-load promises; load completion remains probe state only. |
+| `53b13f4` | `kA/Lu/I1` render-manager follow-up | Default Home path renders C1 directly to screen; delayed C1 bindings are one-time source-owned inputs. |
 | `9986590` | `TD` about destroy spotlight map | About out/destroy keep the current spotlight map; `SD.init()` owns later Home map bind. |
 | `a42e975` | `p1/SD/TD` spotlight init lifecycle | Constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
 | `a69ad3a` | `Ir/GT` main-fluid bounded geometry | Bounded passes use source geometry and default culling; force pass stays fullscreen. |
@@ -116,23 +163,6 @@ Newest first. This is the only maintained source-edge timeline in the docs; docs
 | `02f0b0d` | `h1/u1` cache key | Environment material uses source no-custom-cache-key ownership. |
 | `43cf728` | `Lu/I1` bloom mip resize | Bloom mip chain halves directly like source, without per-step round/clamp ownership. |
 | `5bb0264` | `Lo` resize inputs | Sky, displacement, thumb, and floor reflection pass direct inputs through `Lo.resize`. |
-
-## Narrowed Non-Primary Suspects
-
-These areas are still guarded, but should not be the first place to spend another batch without new contradictory evidence:
-
-- `I1` default visible target transfer: source renders C1 directly to screen when `renderToScreen=true`; rebuild's unused default `compositeTarget` is expected.
-- Spotlight-map shader and Three light chunk multiplication: source and rebuild shader/chunk evidence currently match.
-- `w1.updateGalleryProgress()` centered wrapping and `T1/x1/E1/M1` thumb scene surface: current thumb probe passes source-shaped positioning, sizing, image binding, material defaults, and composite transfer.
-
-## Active Guardrails
-
-- Use source bundle evidence for every production behavior change.
-- Keep visual captures as regression/attribution only.
-- Run project media probes for shared render-manager or media changes.
-- Run interactive mouse probe for mouse/fluid changes.
-- Keep about lifecycle probes when touching `TD`, `Fg`, `Q1`, `eD`, spotlight map ownership, or auxiliary blocks.
-- Do not reintroduce stale accepted-deviation closeout language.
 
 ## Completion Criteria
 
@@ -170,3 +200,11 @@ CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrom
 node --check scripts/probe-about-scroll-opacity.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about CDP_PORT=9304 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-about-scroll-opacity.mjs
 ```
+
+Known blocked check:
+
+```sh
+npm exec tsc -- --noEmit --pretty false
+```
+
+This remains blocked by the existing TypeScript config deprecation around `baseUrl` under TS7.

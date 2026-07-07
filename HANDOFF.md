@@ -2,81 +2,66 @@
 
 Last updated: 2026-07-07
 
-## Read This First
+## Start Here
 
-This file is the fast resume sheet. It should answer only:
+This is the single resume sheet. It answers the current state and the next action only.
 
-- where the rebuild is now
-- what just finished
-- what to do next
-- how to run or validate it
-
-Use the other docs for deeper detail:
-
-| File | Role |
+| Need | Read |
 | --- | --- |
-| `HANDOFF.md` | Current snapshot and immediate next action. |
-| `PHASE1_AUDIT.md` | Canonical Phase 1 evidence, active blockers, and source-edge ledger. |
-| `REBUILD_PLAN.md` | Forward execution order and validation matrix. |
+| Where are we now? | This file |
+| Why do we believe that? | `PHASE1_AUDIT.md` |
+| What exact order should work follow? | `REBUILD_PLAN.md` |
+| What happened earlier? | `git log --oneline` and `git show <commit>:<file>` |
 
-Historical timelines are not maintained in these files. Use git when older archaeology is needed:
+The three Markdown files do not maintain separate timelines. Keep history in git.
 
-```sh
-git log --oneline
-git show <commit>:PHASE1_AUDIT.md
-git show <commit>:REBUILD_PLAN.md
-```
+## Current State
 
-## Current Snapshot
-
-| Item | Current value |
+| Item | Value |
 | --- | --- |
 | Active phase | Phase 1, Home WebGL source parity |
 | Phase 1 status | Open, roughly 65-70% complete |
-| Current priority | Floor/environment distribution attribution |
-| Last completed code batch | `38931a6 Align animate-in texture await semantics` |
-| Docs policy | Current-state docs only; use git log for docs-only history. |
-| Expected worktree | Clean unless a new batch is in progress |
-| Expected local service | Stopped after review |
+| Current production priority | Floor/environment distribution residuals |
+| Next secondary priority | Spotlight/thumb projection transfer feel |
+| Latest completed source batch | `38931a6 Align animate-in texture await semantics` |
+| Expected local service | Stopped unless actively reviewing |
+| Expected worktree | Clean unless a scoped batch is in progress |
 
 Estimated parity:
 
 | Area | Estimate | Read |
 | --- | ---: | --- |
 | Architecture/lifecycle | 75-80% | Broad scene structure, route ownership, probes, and source guardrails are in place. |
-| Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up, not the first suspect. |
+| Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up. |
 | Final Home visual parity | 55-65% | Home still diverges in spotlight/thumb projection feel and floor/environment distribution. |
 
 ## Source Of Truth
 
-- Implementation spec:
-  - `legacy-mirror/public/assets/bundle.250f01b7.js`
-  - `legacy-mirror/public/assets/bundle.87ba3613.css`
-- Visual QA is verification and attribution only.
-- Do not close a mismatch as an accepted visual deviation unless it is documented as an unavoidable technical bridge.
-- Keep the agreed stack: Astro, TypeScript, Three.js, GSAP, Lenis, Howler.
+- JavaScript bundle: `legacy-mirror/public/assets/bundle.250f01b7.js`
+- CSS bundle: `legacy-mirror/public/assets/bundle.87ba3613.css`
+- Screenshots and probes are for attribution and regression only.
+- Do not tune horizon, fog, floor color, brightness, or projection by eye.
+- Keep the stack: Astro, TypeScript, Three.js, GSAP, Lenis, Howler.
 - Audio must continue to use Howler.
 - Do not delete `public/` or `legacy-mirror/`.
 
-## Immediate Next Action
+## Next Batch
 
-Continue Phase 1 with a scoped source-backed batch:
+Continue Phase 1 with floor/environment distribution.
 
-1. Trace the floor/environment visible residual from source-owned content, timing, material inputs, target contents, or renderer state.
-2. Avoid repeating already-closed structural checks unless new evidence contradicts them.
+1. Trace the remaining hard horizon and fog-bed difference from source-owned content, timing, material inputs, render target contents, or renderer state.
+2. Use the existing attribution probes to choose the next source chain, not to tune production values.
 3. Patch only after a concrete source mismatch is identified.
-4. Update `PHASE1_AUDIT.md` and `REBUILD_PLAN.md` with the source evidence, then commit the batch.
+4. Update `PHASE1_AUDIT.md` with the source evidence and `REBUILD_PLAN.md` if the queue changes.
+5. Validate and commit the scoped batch.
 
-Do not tune horizon, fog, brightness, or floor color by eye.
-
-## Do Not Reopen First
-
-These areas are guarded and should stay secondary unless new probe/source evidence points back at them:
+Do not spend the next batch first on these guarded areas unless new evidence points back at them:
 
 - `kA/Lu/I1` default visible target transfer.
 - Spotlight-map shader and Three light-chunk multiplication.
 - `w1.updateGalleryProgress()` centered wrapping.
 - `T1/x1/E1/M1` thumb scene surface.
+- Mouse/fluid feel, unless the batch touches interaction paths.
 
 ## Important Files
 
@@ -84,16 +69,14 @@ These areas are guarded and should stay secondary unless new probe/source eviden
 - Client logic: `src/client/main.ts`, `src/client/motion.ts`, `src/client/audio.ts`
 - Pages/templates: `src/pages/index.astro`, `src/pages/[slug].astro`, `src/components/MediaBlock.astro`
 - Data: `src/data/projects.json`, `src/data/site.ts`
-- Main validation tools:
+- Core validation tools:
   - `scripts/audit-renderer-output.mjs`
   - `scripts/probe-output-color.mjs`
   - `scripts/probe-thumb-spotlight.mjs`
-  - `scripts/probe-about-scroll-opacity.mjs`
   - `scripts/probe-project-media.mjs`
+  - `scripts/probe-about-scroll-opacity.mjs`
 
-## Validation Baseline
-
-Default checks for a Phase 1 rendering batch:
+## Validate A Rendering Batch
 
 ```sh
 node --check src/client/webgl.ts

@@ -2,15 +2,17 @@
 
 Last updated: 2026-07-07
 
-## Purpose
+## How To Use This
 
-This file is the forward execution plan. It is ordered by what to do next, not by discovery date.
+This file is the forward execution queue. It is ordered by what to do next, not by discovery date.
 
-Do not use this file as a history log:
+| File | Role |
+| --- | --- |
+| `HANDOFF.md` | Current resume snapshot and immediate next action. |
+| `PHASE1_AUDIT.md` | Phase 1 evidence, blockers, and source-edge ledger. |
+| `REBUILD_PLAN.md` | Work queue, gates, and validation profiles. |
 
-- current snapshot lives in `HANDOFF.md`
-- active Phase 1 evidence and source-edge ledger live in `PHASE1_AUDIT.md`
-- older timelines live in git
+Do not use this file as a history log. Use git for old plans.
 
 ## Execution Rules
 
@@ -21,57 +23,99 @@ Do not use this file as a history log:
 - Audio must use Howler.
 - Do not delete `public/` or `legacy-mirror/`.
 - Work in scoped source-backed batches.
-- Each completed batch updates docs, runs validation, and commits code/docs together.
+- Each completed production batch updates docs, runs validation, and commits code/docs together.
 - Commits use `Boyang Hu <i@boyang.hu>` and no AI co-author.
 
-## Phase Status
+## Phase Gates
 
-| Phase | Status | Next condition |
+| Phase | Status | Gate to advance |
 | --- | --- | --- |
-| 1. Home WebGL source parity | In progress, about 65-70% complete | Close active WebGL blockers below. |
+| 1. Home WebGL source parity | In progress, about 65-70% complete | Close the Phase 1 blockers in `PHASE1_AUDIT.md`. |
 | 2. Home DOM/interaction parity | Paused | Resume only after Phase 1 closes. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Do not start before Phase 1 closes. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
-## Phase 1 Work Queue
+## Now
 
-The first item is the next production batch unless new source evidence changes priority.
+### 1. Floor/environment distribution
 
-1. Floor/environment distribution.
-   - Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
-   - Current structural guardrails pass, so look for content, timing, source asset/state inputs, or renderer state before changing production behavior.
-   - Do not tune horizon, fog, brightness, or floor color by eye.
-   - Required checks: build, renderer audit, desktop/mobile output probes, project media probe, and focused band/capture attribution when relevant.
+Goal: explain and fix the remaining hard horizon and fog-bed residual from source-owned behavior.
 
-2. Spotlight/thumb projection content and transfer.
-   - Shader, light-chunk, and `T1/x1/E1/M1` scene-surface evidence currently looks source-shaped.
-   - Focus on projected thumb brightness, depth, content transfer, and timing.
-   - Required checks: build, renderer audit, desktop/mobile output probes, thumb spotlight probe, project media probe.
+Work path:
 
-3. `kA/Lu/I1` composite and transfer follow-up only if contradicted.
-   - Current source read: default `I1.renderToScreen=true` renders C1 directly to screen; `renderTargetComposite` is unused for the default visible Home path.
-   - Current source read: `nD` binds C1 `tWork`, `tMedia`, and initial work mouse-simulation texture once after the delayed resize/bind phase.
-   - Keep existing audit/probe guardrails; do not repeat this as the primary next batch without new failing evidence.
+1. Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
+2. Treat current structural guardrails as closed unless new evidence contradicts them.
+3. Look for source asset properties, async timing, render target contents, material inputs, or renderer state before changing production behavior.
+4. Do not tune horizon, fog, brightness, or floor color by eye.
 
-4. Interaction/mouse/fluid follow-up only if touched.
-   - Keep existing `Ka`, `ag`, and `qT` guardrails.
-   - Run `scripts/probe-interactive-mouse.mjs` for mouse/fluid path changes.
+Required validation:
 
-## Non-Goals For The Next Batch
+- Build.
+- Renderer audit.
+- Desktop/mobile output probes.
+- Project media probe if shared render/media paths change.
+- Focused band/capture attribution when the candidate source chain affects final color distribution.
+
+## Next
+
+### 2. Spotlight/thumb projection content and transfer
+
+Goal: close projected thumb brightness, depth, content transfer, and timing.
+
+Current boundary:
+
+- Shader, light-chunk, and `T1/x1/E1/M1` scene-surface evidence currently looks source-shaped.
+- Do not repeat the already-verified spotlight-map shader/light-chunk path unless new evidence appears.
+
+Required validation:
+
+- Build.
+- Renderer audit.
+- Desktop/mobile output probes.
+- Thumb spotlight probe.
+- Project media probe.
+
+## Watchlist
+
+### 3. `kA/Lu/I1` composite and transfer
+
+Use this only if new evidence contradicts the current audit.
+
+Current boundary:
+
+- Source `I1.renderToScreen=true` renders C1 directly to screen.
+- `renderTargetComposite` is unused for the default visible Home path.
+- Source `nD` binds C1 `tWork`, `tMedia`, and initial work mouse-simulation texture once after the delayed resize/bind phase.
+
+### 4. Interaction/mouse/fluid
+
+Use this when a batch touches mouse/fluid paths or when a specific interaction regression is isolated.
+
+Current boundary:
+
+- Existing `Ka`, `ag`, and `qT` guardrails remain active.
+- Run `scripts/probe-interactive-mouse.mjs` for mouse/fluid path changes.
+
+## Non-Goals For The Current Phase 1 Batch
 
 - Do not start Phase 2.
 - Do not accept visual deviations as Phase 1 closeout.
 - Do not introduce screenshot-driven production tuning.
 - Do not refactor unrelated WebGL systems while chasing one source chain.
 - Do not change project-detail media behavior unless source evidence requires it.
-- Do not repeat the already-verified spotlight-map shader/light-chunk path unless new evidence appears.
-- Do not repeat the already-verified `I1` default screen/render-target path unless new evidence appears.
+- Do not repeat already-verified `I1` default screen/render-target behavior without new evidence.
 
-## Validation Matrix
+## Validation Profiles
 
-Always run:
+Docs-only cleanup:
+
+```sh
+git diff --check
+```
+
+Default rendering batch:
 
 ```sh
 node --check src/client/webgl.ts
@@ -81,7 +125,7 @@ git diff --check
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 ```
 
-Syntax-check and run relevant browser probes while a local server is active:
+Browser probes while a local server is active:
 
 ```sh
 PORT=5173 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
@@ -93,7 +137,7 @@ node --check scripts/probe-project-media.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-media CDP_PORT=9303 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-project-media.mjs
 ```
 
-Add these when relevant:
+Add when relevant:
 
 ```sh
 node --check scripts/probe-about-scroll-opacity.mjs
