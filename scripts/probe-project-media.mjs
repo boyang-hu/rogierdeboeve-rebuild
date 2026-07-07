@@ -98,6 +98,9 @@ function assertProjectMediaMaterial(parsed, slug) {
   const projectMedia = parsed.probe?.uniforms?.projectMedia;
   const planes = projectMedia?.planes || [];
   if (projectMedia?.mode !== "source-UD-FD-ND-project-media-material-lifecycle") errors.push("mode");
+  if (projectMedia?.shaderMode !== "source-UD-ID-LD-ShaderMaterial-glsl3") errors.push("shaderMode");
+  if (projectMedia?.glslVersionMode !== "source-UD-glslVersion-lt-GLSL3") errors.push("glslVersionMode");
+  if (projectMedia?.glslVersion !== "300 es") errors.push("glslVersion");
   if (projectMedia?.constructorDefaultsMode !== "source-UD-null-tMap-zero-size-vectors-zero-background") {
     errors.push("constructorDefaultsMode");
   }
@@ -116,10 +119,14 @@ function assertProjectMediaMaterial(parsed, slug) {
   if (projectMedia?.planeCount !== parsed.mediaCount) errors.push("planeCount");
   if (!Array.isArray(planes) || planes.length !== parsed.mediaCount || planes.length === 0) errors.push("planes");
   if (projectMedia?.allConstructorDefaultsMatchSource !== true) errors.push("allConstructorDefaultsMatchSource");
+  if (projectMedia?.allShaderSurfacesMatchSource !== true) errors.push("allShaderSurfacesMatchSource");
   if (projectMedia?.allRuntimeBackgroundsMatchState !== true) errors.push("allRuntimeBackgroundsMatchState");
 
   planes.forEach((plane, index) => {
     const label = `plane${index}`;
+    if (plane.shaderMode !== "source-UD-ID-LD-ShaderMaterial-glsl3") errors.push(`${label}ShaderMode`);
+    if (plane.glslVersionMode !== "source-UD-glslVersion-lt-GLSL3") errors.push(`${label}GlslVersionMode`);
+    if (plane.glslVersion !== "300 es") errors.push(`${label}GlslVersion`);
     if (plane.constructorDefaultsMode !== "source-UD-null-tMap-zero-size-vectors-zero-background") {
       errors.push(`${label}ConstructorDefaultsMode`);
     }
@@ -204,8 +211,11 @@ async function probeSlug(ws, slug) {
     mediaReveal: parsed.probe?.uniforms?.preComposite?.uMediaReveal,
     mediaRawMean: parsed.probe?.targets?.mediaRaw?.gridStats?.mean,
     mediaMean: parsed.probe?.targets?.media?.gridStats?.mean,
+    projectMediaShaderMode: projectMedia?.shaderMode,
+    projectMediaGlslVersion: projectMedia?.glslVersion,
     projectMediaConstructorMode: projectMedia?.constructorDefaultsMode,
     projectMediaPlaneCount: projectMedia?.planeCount,
+    projectMediaAllShaderSurfacesMatchSource: projectMedia?.allShaderSurfacesMatchSource,
     projectMediaAllConstructorDefaultsMatchSource: projectMedia?.allConstructorDefaultsMatchSource,
     projectMediaAllRuntimeBackgroundsMatchState: projectMedia?.allRuntimeBackgroundsMatchState,
     failures: failures.filter((failure) => !failure.canceled).map((failure) => ({ type: failure.type, errorText: failure.errorText })),

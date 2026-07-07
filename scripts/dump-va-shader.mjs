@@ -21,9 +21,16 @@ const port = Number(process.env.CDP_PORT || 9231);
 const rebuildUrl = process.env.REBUILD_URL || "http://127.0.0.1:5173";
 const extraQuery = process.env.EXTRA_QUERY || "";
 const bundlePath = process.env.SOURCE_BUNDLE || "legacy-mirror/public/assets/bundle.250f01b7.js";
+const projectDumpPath = process.env.PROJECT_DUMP_PATH || "/gc-2026/";
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function dumpUrl(pathname = "/") {
+  const baseUrl = rebuildUrl.replace(/\/$/, "");
+  const cleanPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return `${baseUrl}${cleanPath}?skip-preloader&dump-va-shader=1${extraQuery}`;
 }
 
 function waitForPort(portNumber, timeout = 6000) {
@@ -76,6 +83,16 @@ async function connectWs(url) {
     else pending.resolve(message.result);
   });
   return ws;
+}
+
+async function captureShaderDump(ws, url) {
+  await send(ws, "Page.navigate", { url });
+  await wait(Number(process.env.DUMP_WAIT || 5000));
+  const result = await send(ws, "Runtime.evaluate", {
+    expression: "JSON.stringify({ body: document.body.className, dump: window.__rogierVaShaderDump || [], shaderDump: window.__rogierShaderDump || [] })",
+    returnByValue: true,
+  });
+  return JSON.parse(result.result.value);
 }
 
 function extractSourceShader(bundle, name, terminator) {
@@ -1265,7 +1282,7 @@ const sourceFragmentShaders = {
   "ag-poisson": sourceShader(bundle, "YT"),
   "ag-pressure": sourceShader(bundle, "ZT"),
   "Ka-mouse-simulation": sourceShader(bundle, "rA"),
-  "UD-project-media": sourceShader(bundle, "LD"),
+  "UD-project-media": sourceShader(bundle, "LD", "`,ID="),
   "z1-sky-composite": sourceShader(bundle, "B1"),
   "u1-environment": sourceShader(bundle, "l1"),
   "o1-floor-material": sourceShader(bundle, "s1"),
@@ -1297,6 +1314,7 @@ const sourceVertexShaders = {
   "ag-poisson": sourceShader(bundle, "Co"),
   "ag-pressure": sourceShader(bundle, "Co"),
   "Ka-mouse-simulation": sourceShader(bundle, "oA"),
+  "UD-project-media": sourceShader(bundle, "ID", "`;class UD"),
   "o1-floor-material": sourceShader(bundle, "r1"),
   "t1-floor-reflection-blur": sourceShader(bundle, "e1"),
 };
@@ -1344,24 +1362,32 @@ try {
     screenWidth: 1440,
     screenHeight: 900,
   });
-  await send(ws, "Page.navigate", { url: `${rebuildUrl}/?skip-preloader&dump-va-shader=1${extraQuery}` });
-  await wait(Number(process.env.DUMP_WAIT || 5000));
-  const result = await send(ws, "Runtime.evaluate", {
-    expression: "JSON.stringify({ body: document.body.className, dump: window.__rogierVaShaderDump || [], shaderDump: window.__rogierShaderDump || [] })",
-    returnByValue: true,
-  });
-  const parsed = JSON.parse(result.result.value);
+  const parsed = await captureShaderDump(ws, dumpUrl("/"));
+  const projectParsed = projectDumpPath ? await captureShaderDump(ws, dumpUrl(projectDumpPath)) : null;
+  const mergedShaderDump = [];
+  const seenShaderNames = new Set();
+  for (const entry of [...(parsed.shaderDump || []), ...(projectParsed?.shaderDump || [])]) {
+    if (seenShaderNames.has(entry.name)) continue;
+    seenShaderNames.add(entry.name);
+    mergedShaderDump.push(entry);
+  }
   const workDump = parsed.dump.find((entry) => entry.variant === "work");
-  const shaderDumpCount = parsed.shaderDump?.length || 0;
+  const shaderDumpCount = mergedShaderDump.length;
   const fatalConsoleMessages = consoleMessages.filter((message) => /Shader Error|WebGLProgram|exception/i.test(message));
   if (parsed.body === "neterror" || parsed.body?.includes("neterror")) {
     throw new Error(`Shader dump page failed to load: body=${parsed.body || "missing"}`);
+  }
+  if (projectParsed && (projectParsed.body === "neterror" || projectParsed.body?.includes("neterror"))) {
+    throw new Error(`Project shader dump page failed to load: body=${projectParsed.body || "missing"}`);
   }
   if (!workDump) {
     throw new Error(`Shader dump did not capture ordinary work VA shader; dumpCount=${parsed.dump.length}`);
   }
   if (shaderDumpCount === 0) {
     throw new Error("Shader dump did not capture any generic shaders");
+  }
+  if (!mergedShaderDump.some((entry) => entry.name === "UD-project-media")) {
+    throw new Error(`Shader dump did not capture UD-project-media from project path ${projectDumpPath}`);
   }
   if (fatalConsoleMessages.length) {
     throw new Error(`Shader dump saw console/runtime errors: ${fatalConsoleMessages.join(" | ")}`);
@@ -1371,7 +1397,7 @@ try {
     writeFileSync(path.join(outDir, "rebuild-work-fragment.glsl"), workDump.fragmentShader);
   }
   const genericShaderAnalysis = {};
-  for (const entry of parsed.shaderDump || []) {
+  for (const entry of mergedShaderDump) {
     const safeName = entry.name.replace(/[^A-Za-z0-9_.-]/g, "_");
     const sourceVertex = sourceVertexShaders[entry.name] || null;
     const sourceFragment = sourceFragmentShaders[entry.name] || null;
@@ -1423,8 +1449,11 @@ try {
   writeFileSync(path.join(outDir, "three-chunk-analysis.json"), JSON.stringify(chunkAnalysis, null, 2));
   const summary = {
     body: parsed.body,
+    projectBody: projectParsed?.body ?? null,
     dumpCount: parsed.dump.length,
     shaderDumpCount,
+    homeShaderDumpCount: parsed.shaderDump?.length || 0,
+    projectShaderDumpCount: projectParsed?.shaderDump?.length || 0,
     consoleMessages: fatalConsoleMessages,
     vertex: workDump ? summarizeShader("work vertex", workDump.vertexShader, sourceH) : null,
     fragment: workDump ? summarizeShader("work fragment", workDump.fragmentShader, sourceZ) : null,

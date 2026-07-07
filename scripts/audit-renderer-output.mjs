@@ -56,6 +56,14 @@ function extractConstTemplate(source, name) {
   return source.slice(bodyStart, end);
 }
 
+function expandRebuildRuntimeTemplate(template, replacements = {}) {
+  let expanded = template.replaceAll("${SOURCE_TRAILING_SPACE}", " ");
+  for (const [name, value] of Object.entries(replacements)) {
+    expanded = expanded.replaceAll(`\${${name}}`, value);
+  }
+  return expanded;
+}
+
 function extractAround(bundle, needle, before = 400, after = 1400) {
   const index = bundle.indexOf(needle);
   if (index < 0) return null;
@@ -209,6 +217,13 @@ const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkSce
 const rebuildCreateWorkBlockMaterial = extractBlock(rebuildWebgl, "private createWorkBlockMaterial()");
 const rebuildWorkBlockSourceHaVertexShader = extractConstTemplate(rebuildWebgl, "workBlockSourceHaVertexShader");
 const rebuildWorkBlockVertexPars = extractConstTemplate(rebuildWebgl, "workBlockVertexPars");
+const rebuildProjectMediaVertex = extractConstTemplate(rebuildWebgl, "projectMediaVertex");
+const rebuildSourceBlendLightenHelper = extractConstTemplate(rebuildWebgl, "sourceBlendLightenHelper");
+const rebuildProjectMediaFragment = extractConstTemplate(rebuildWebgl, "projectMediaFragment");
+const rebuildProjectMediaVertexExpanded = expandRebuildRuntimeTemplate(`${rebuildProjectMediaVertex}\n`);
+const rebuildProjectMediaFragmentExpanded = expandRebuildRuntimeTemplate(`${rebuildProjectMediaFragment}\n`, {
+  sourceBlendLightenHelper: `${rebuildSourceBlendLightenHelper}\n`,
+});
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
@@ -277,6 +292,8 @@ const rebuildA1 = extractConstTemplate(rebuildWebgl, "homePreCompositeFragment")
 const sourcePo = extractTemplate(bundle, "Po", "`,CA=");
 const sourceBlendLighten = extractTemplate(bundle, "fg", "`,yA=");
 const sourceBlendMultiply = extractTemplate(bundle, "hg", "`,dg=");
+const sourceUDFragment = extractTemplate(bundle, "LD", "`,ID=").replace("${fg}", sourceBlendLighten);
+const sourceUDVertex = extractTemplate(bundle, "ID", "`;class UD");
 const sourceLu = extractAround(bundle, "class Lu", 200, 7200);
 const sourceLo = extractAround(bundle, "class Lo", 200, 2600);
 const sourceOA = extractAround(bundle, "class OA extends", 320, 1300);
@@ -384,6 +401,10 @@ writeFileSync(path.join(outDir, "rebuild-homePreComposite.glsl"), rebuildA1);
 writeFileSync(path.join(outDir, "source-Po-blend.glsl"), sourcePo);
 writeFileSync(path.join(outDir, "source-fg-blend-lighten.glsl"), sourceBlendLighten);
 writeFileSync(path.join(outDir, "source-hg-blend-multiply.glsl"), sourceBlendMultiply);
+writeFileSync(path.join(outDir, "source-ID-project-media-vertex.glsl"), sourceUDVertex);
+writeFileSync(path.join(outDir, "source-LD-project-media-fragment.glsl"), sourceUDFragment);
+writeFileSync(path.join(outDir, "rebuild-UD-project-media-vertex.glsl"), rebuildProjectMediaVertexExpanded);
+writeFileSync(path.join(outDir, "rebuild-UD-project-media-fragment.glsl"), rebuildProjectMediaFragmentExpanded);
 
 const blendModeMatches = [...sourcePo.matchAll(/mode == (\d+)\)\s*\{\s*return\s+([A-Za-z0-9_]+)/g)].map((match) => ({
   mode: Number(match[1]),
@@ -1561,6 +1582,59 @@ const summary = {
           "depthWrite:!1",
           "depthTest:!1",
         ]),
+        shaderSurface: {
+          vertexLength: {
+            source: sourceUDVertex.length,
+            rebuild: rebuildProjectMediaVertexExpanded.length,
+            delta: rebuildProjectMediaVertexExpanded.length - sourceUDVertex.length,
+          },
+          fragmentLength: {
+            source: sourceUDFragment.length,
+            rebuild: rebuildProjectMediaFragmentExpanded.length,
+            delta: rebuildProjectMediaFragmentExpanded.length - sourceUDFragment.length,
+          },
+          sourceVertexChecks: checks(sourceUDVertex, [
+            "precision highp float",
+            "uniform float uCircleRotation",
+            "out vec2 vUv",
+            "out vec3 vDir",
+            "// out vec3 vCameraPosition",
+            "vec4 worldPosition = modelMatrix * vec4(position, 1.0)",
+            "// vCameraPosition = worldPosition.xyz - cameraPosition",
+            "gl_Position = projectionMatrix * mvPosition",
+          ]),
+          sourceFragmentChecks: checks(sourceUDFragment, [
+            "float blendLighten(float base, float blend)",
+            "vec2 new = rs < ri",
+            "return texture2D(tex, uv)",
+            "in vec2 vUv",
+            "// in vec3 vCameraPosition",
+            "out vec4 FragColor",
+            "float udRoundBox( vec2 p, vec2 b, float r )",
+            "color.rgb = blendLighten(color.rgb, vec3(.02))",
+            "float b = udRoundBox(vUv.xy * res - halfRes, halfRes, uRadius);",
+            "vec3 a = mix(vec3(1.0,0.0,0.0), vec3(0.0,0.0,0.0), smoothstep(0.0, 1.0, b))",
+            "color.rgb = mix(color.rgb, uBackgroundColor, 1. - uReveal)",
+            "color.a = a.x",
+            "FragColor = color",
+          ]),
+          rebuildVertexMatchesSource: rebuildProjectMediaVertexExpanded === sourceUDVertex,
+          rebuildFragmentMatchesSource: rebuildProjectMediaFragmentExpanded === sourceUDFragment,
+          rebuildShaderChecks: {
+            glslVersion: rebuildCreateMediaMaterial?.includes("glslVersion: GLSL3") ?? false,
+            shaderModeProbe:
+              rebuildWebgl.includes("source-UD-ID-LD-ShaderMaterial-glsl3")
+              && rebuildWebgl.includes("allShaderSurfacesMatchSource")
+              && rebuildProjectMediaProbe.includes("source-UD-ID-LD-ShaderMaterial-glsl3")
+              && rebuildProjectMediaProbe.includes("allShaderSurfacesMatchSource"),
+            sourceLightenHelper: rebuildSourceBlendLightenHelper === sourceBlendLighten.slice(0, -1),
+            noLegacyProjectMediaShaderSurface:
+              !rebuildProjectMediaVertexExpanded.includes("varying vec2 vUv")
+              && !rebuildProjectMediaFragmentExpanded.includes("gl_FragColor = vec4(color.rgb, mask)")
+              && !rebuildProjectMediaFragmentExpanded.includes("max(color.rgb, vec3(0.02))")
+              && !rebuildProjectMediaFragmentExpanded.includes("newSize"),
+          },
+        },
         ownership: {
           sourceConstructorDefaults: orderedIncludes(sourceUD.text, [
             "tMap:new I(null)",

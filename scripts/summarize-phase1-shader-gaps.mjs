@@ -23,6 +23,7 @@ const focusOrder = [
   "o1-floor-material",
   "t1-floor-reflection-blur",
   "j1-media-composite",
+  "UD-project-media",
   "ag-advection",
   "ag-advection-bounds",
   "ag-force",

@@ -725,19 +725,54 @@ function sourceBloomFactors(strength: number, radius: number) {
   return [1, 0.8, 0.6, 0.4, 0.2].map((factor) => strength * MathUtils.lerp(factor, 1.2 - factor, radius));
 }
 
-const projectMediaVertex = `
-varying vec2 vUv;
+const SOURCE_TRAILING_SPACE = " ";
 
+const projectMediaVertex = `
+precision highp float;
+
+uniform float uCircleRotation;
+out vec2 vUv;
+out vec3 vDir;
+// out vec3 vCameraPosition;
 void main() {
   vUv = uv;
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+  // vCameraPosition = worldPosition.xyz - cameraPosition;
   vec4 mvPosition = viewMatrix * worldPosition;
   gl_Position = projectionMatrix * mvPosition;
 }
 `;
 
+const sourceBlendLightenHelper = `
+float blendLighten(float base, float blend) {
+	return max(blend,base);
+}
+
+vec3 blendLighten(vec3 base, vec3 blend) {
+	return vec3(blendLighten(base.r,blend.r),blendLighten(base.g,blend.g),blendLighten(base.b,blend.b));
+}
+
+vec3 blendLighten(vec3 base, vec3 blend, float opacity) {
+	return (blendLighten(base, blend) * opacity + base * (1.0 - opacity));
+}
+`;
+
 const projectMediaFragment = `
 precision highp float;
+
+${sourceBlendLightenHelper}
+vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 size) {
+  vec2 s = size;
+  vec2 i = imgSize;
+  float rs = s.x / s.y;
+  float ri = i.x / i.y;
+  vec2 new = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
+  vec2 newOffset = (rs < ri ? vec2((new.x - s.x) / 2.0, 0.0) : vec2(0.0, (new.y - s.y) / 2.0)) / new;
+  vec2 uv = ouv * s / new + newOffset;
+
+  return texture2D(tex, uv);
+}
 
 uniform sampler2D tMap;
 uniform vec2 uMapSize;
@@ -747,42 +782,36 @@ uniform float uRadius;
 uniform vec3 uBackgroundColor;
 uniform float uReveal;
 
-varying vec2 vUv;
+in vec2 vUv;
+// in vec3 vCameraPosition;
+out vec4 FragColor;
 
-vec4 coverTexture(sampler2D tex, vec2 imgSize, vec2 ouv, vec2 size) {
-  vec2 s = size;
-  vec2 i = imgSize;
-  float rs = s.x / s.y;
-  float ri = i.x / i.y;
-  vec2 newSize = rs < ri ? vec2(i.x * s.y / i.y, s.y) : vec2(s.x, i.y * s.x / i.x);
-  vec2 newOffset = (rs < ri ? vec2((newSize.x - s.x) / 2.0, 0.0) : vec2(0.0, (newSize.y - s.y) / 2.0)) / newSize;
-  vec2 uv = ouv * s / newSize + newOffset;
-  return texture2D(tex, uv);
-}
-
-float udRoundBox(vec2 p, vec2 b, float r) {
-  return length(max(abs(p) - b + r, 0.0)) - r;
+float udRoundBox( vec2 p, vec2 b, float r ) {
+  return length(max(abs(p)-b+r,0.0))-r;
 }
 
 void main() {
-  float parallax = uCameraDistance * 0.0001;
+  float parallax = uCameraDistance * 0.0001;  // Adjust the factor to control the strength of the parallax effect
   vec2 uv = vUv;
+${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
   uv.y -= parallax;
 
+  // vec4 color = texture(tMap, uv);
   vec4 color = coverTexture(tMap, uMapSize, uv, uContainerSize);
-  color.rgb = max(color.rgb, vec3(0.02));
+  color.rgb = blendLighten(color.rgb, vec3(.02));
 
   vec2 res = uContainerSize;
   vec2 halfRes = 0.5 * res;
-  float rounded = udRoundBox(vUv.xy * res - halfRes, halfRes, uRadius);
-  float mask = 1.0 - smoothstep(0.0, 1.0, rounded);
+  float b = udRoundBox(vUv.xy * res - halfRes, halfRes, uRadius);${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}${SOURCE_TRAILING_SPACE}
+  vec3 a = mix(vec3(1.0,0.0,0.0), vec3(0.0,0.0,0.0), smoothstep(0.0, 1.0, b));
 
-  color.rgb = mix(color.rgb, uBackgroundColor, 1.0 - uReveal);
-  gl_FragColor = vec4(color.rgb, mask);
+
+  color.rgb = mix(color.rgb, uBackgroundColor, 1. - uReveal);
+
+  color.a = a.x;
+  FragColor = color;
 }
 `;
-
-const SOURCE_TRAILING_SPACE = " ";
 
 const workBlockVertexPars = `
 attribute float instanceIndex;
@@ -7867,6 +7896,7 @@ void main() {
   private createMediaMaterial() {
     dumpShader("UD-project-media", projectMediaVertex, projectMediaFragment);
     const material = new ShaderMaterial({
+      glslVersion: GLSL3,
       toneMapped: false,
       transparent: true,
       depthWrite: false,
@@ -7883,6 +7913,8 @@ void main() {
       vertexShader: projectMediaVertex,
       fragmentShader: projectMediaFragment,
     });
+    material.userData.sourceMediaMaterialShaderMode = "source-UD-ID-LD-ShaderMaterial-glsl3";
+    material.userData.sourceMediaMaterialGlslVersionMode = "source-UD-glslVersion-lt-GLSL3";
     material.userData.sourceMediaMaterialConstructorMode = "source-UD-null-tMap-zero-size-vectors-zero-background";
     material.userData.sourceMediaMaterialToneMappedMode = "source-UD-toneMapped-false";
     material.userData.sourceMediaMaterialTMapWasNull = material.uniforms.tMap.value === null;
@@ -9830,6 +9862,9 @@ void main() {
       const uniforms = plane.material.uniforms;
       const backgroundColor = uniforms.uBackgroundColor.value as Color;
       return {
+        shaderMode: plane.material.userData.sourceMediaMaterialShaderMode,
+        glslVersionMode: plane.material.userData.sourceMediaMaterialGlslVersionMode,
+        glslVersion: plane.material.glslVersion ?? null,
         constructorDefaultsMode: plane.material.userData.sourceMediaMaterialConstructorMode,
         toneMappedMode: plane.material.userData.sourceMediaMaterialToneMappedMode,
         toneMapped: plane.material.toneMapped,
@@ -10510,6 +10545,9 @@ void main() {
         projectMedia: {
           mode: "source-UD-FD-ND-project-media-material-lifecycle",
           planeCount: projectMediaPlanes.length,
+          shaderMode: "source-UD-ID-LD-ShaderMaterial-glsl3",
+          glslVersionMode: "source-UD-glslVersion-lt-GLSL3",
+          glslVersion: projectMediaPlanes[0]?.glslVersion ?? null,
           constructorDefaultsMode: "source-UD-null-tMap-zero-size-vectors-zero-background",
           uMapSizeBindingMode: "source-ND-init-writes-data-media-width-height-load-updates-natural-size",
           uContainerSizeBindingMode: "source-FD-resize-writes-bounds-width-height",
@@ -10528,6 +10566,11 @@ void main() {
             && JSON.stringify(plane.constructorBackgroundColor) === JSON.stringify([0, 0, 0])
             && plane.constructorBackgroundWasZero === true
             && plane.constructorRevealWasZero === true
+          )),
+          allShaderSurfacesMatchSource: projectMediaPlanes.every((plane) => (
+            plane.shaderMode === "source-UD-ID-LD-ShaderMaterial-glsl3"
+            && plane.glslVersionMode === "source-UD-glslVersion-lt-GLSL3"
+            && plane.glslVersion === "300 es"
           )),
           allRuntimeBackgroundsMatchState: projectMediaPlanes.every((plane) => plane.uBackgroundColorMatchesState === true),
           planes: projectMediaPlanes,
