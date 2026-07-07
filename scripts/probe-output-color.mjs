@@ -1062,6 +1062,9 @@ async function runProbe() {
     if (reflectionTargets.constructorWidth !== 512 || reflectionTargets.constructorHeight !== 512) reflectionErrors.push("constructorSize");
     if (reflectionTargets.blurIterations !== 2) reflectionErrors.push("blurIterations");
     if (reflectionTargets.sourceCssSized !== true) reflectionErrors.push("sourceCssSized");
+    if (reflectionTargets.resizeInputMode !== "source-i1-setSize-css-viewport-0.75-no-rebuild-pre-clamp") {
+      reflectionErrors.push("resizeInputMode");
+    }
   }
   if (reflectionErrors.length) {
     throw new Error(`Floor reflection source-shape mismatch: ${reflectionErrors.join(", ")}`);
@@ -1909,16 +1912,16 @@ async function runProbe() {
   }
   const displacement = passMaterials.displacement || {};
   const rendererSize = parsed.probe.renderer?.size || {};
-  const expectedDisplacementSize = Math.max(
-    1,
-    Math.round(((rendererSize.height || 0) / 10) * (parsed.probe.renderer?.dprPolicy?.globalDpr || 1)),
-  );
+  const expectedDisplacementSize = Math.round(((rendererSize.height || 0) / 10) * (parsed.probe.renderer?.dprPolicy?.globalDpr || 1));
   if (displacement.materialMode !== "source-N1-raw-glsl3") materialSurfaceErrors.push("displacementMaterialMode");
   if (displacement.glslVersion !== "300 es") materialSurfaceErrors.push("displacementGlslVersion");
   if (displacement.blending !== 0) materialSurfaceErrors.push("displacementBlending");
   if (displacement.vertexMode !== "source-tl-matrix-fullscreen") materialSurfaceErrors.push("displacementVertexMode");
   if (displacement.sizingMode !== "source-k1-resize-height-div-10-then-Lo-round-times-dpr") {
     materialSurfaceErrors.push("displacementSizingMode");
+  }
+  if (displacement.resizeClampMode !== "source-k1-O1-Lo-round-no-rebuild-pre-clamp") {
+    materialSurfaceErrors.push("displacementResizeClampMode");
   }
   if (displacement.expectedTargetSize !== expectedDisplacementSize) materialSurfaceErrors.push("displacementExpectedTargetSize");
   if (displacement.clearMode !== "source-Lo-no-explicit-clear") materialSurfaceErrors.push("displacementClearMode");
@@ -2596,6 +2599,9 @@ async function runProbe() {
   }
   if (floorUniforms?.reflectionTargetSize?.blurIterations !== 2) floorErrors.push("floorReflectionBlurIterations");
   if (floorUniforms?.reflectionTargetSize?.runtimeDepthBuffer !== true) floorErrors.push("floorRawRuntimeDepthBuffer");
+  if (floorUniforms?.reflectionResizeInputMode !== "source-i1-setSize-css-viewport-0.75-no-rebuild-pre-clamp") {
+    floorErrors.push("floorReflectionResizeInputMode");
+  }
   if (floorUniforms?.reflectionReadTargetSize?.constructionMode !== "source-i1-renderTargetRead-cloned-before-raw-depthBuffer-toggle") floorErrors.push("floorReadCloneMode");
   if (floorUniforms?.reflectionWriteTargetSize?.constructionMode !== "source-i1-renderTargetWrite-cloned-before-raw-depthBuffer-toggle") floorErrors.push("floorWriteCloneMode");
   if (floorUniforms?.reflectionReadTargetSize?.depthBuffer !== false) floorErrors.push("floorReadCloneDepthBuffer");
@@ -2620,6 +2626,7 @@ async function runProbe() {
   if (skyComposite?.vertexMode !== "source-tl-matrix-fullscreen") skyUniformErrors.push("vertexMode");
   if (skyComposite?.sizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("sizingMode");
   if (skyComposite?.rawSizingMode !== "source-V1-height-0.75-square") skyUniformErrors.push("rawSizingMode");
+  if (skyComposite?.resizeClampMode !== "source-V1-H1-Lo-round-no-rebuild-pre-clamp") skyUniformErrors.push("resizeClampMode");
   if (skyComposite?.bindingMode !== "source-nD-after-init-resize-delay-bind-repeat-composite") skyUniformErrors.push("bindingMode");
   if (skyComposite?.delayedBindingMode !== "source-nD-after-first-resize-100ms-bind-repeat-composite") skyUniformErrors.push("delayedBindingMode");
   if (skyComposite?.tSceneConstructorMode !== "source-z1-tScene-construct-null-Lo-update-binds-raw") skyUniformErrors.push("tSceneConstructorMode");

@@ -70,9 +70,46 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults including zero-vector `uCoords` construction, source `$A` about local `Ka` runtime writeback, source `ZA/KA` floating no-sampler-write and no-`uCoords` runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence plus `scroll.active` restore preservation ownership are guarded; source `qw` renderer constructor/resize ownership is guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order and source `C1/I1` `tNoise` constructor/runtime ownership are guarded; source `Qe/Xt` WebP-before-preload texture ordering and immediate constructor texture ownership are guarded for blue-noise, perlin-1, perlin-2, and floor-normal, including `C1.tPerlin`, `VA/XA/KA.tPerlin`, and `a1/o1` floor normal constructor binding; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state, reveal uniform surface, and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing and source-rounded `uScrollOpacity=Cs(scroll,0,Pe.h*.25,1,0,!0)` ownership are guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest guardrail addition: source `I1/C1` resize order ownership now rejects recombining the `C1.uRatio` and `C1.uContainerSize` resize writes. Source `I1.resize()` writes `C1.uRatio=e/t` before target resizing, while source `U1.resize()` calls `C1.resize(e,t)` after inherited `I1`/camera resize to write `uContainerSize`.
+Latest guardrail addition: source `Lo`-derived square and floor-reflection resize input ownership now rejects rebuild-owned pre-clamping before the source render-size paths. Source `V1.resize()` passes `height * .75` into `H1/Lo`, source `k1.resize()` passes `height / 10` into `O1/Lo` with DPR preserved, source `T1.resize()` passes `height` into `x1/Lo`, and source `i1.setSize()` uses CSS viewport `width * .75` / `height * .75` directly.
 
-Latest accepted batch: source `I1/C1` resize order ownership now writes `preCompositeMaterial.uRatio` at the top of `resize()` before renderer/target sizing and leaves `uContainerSize` in the later C1-resize-equivalent section. Runtime probes expose `c1RatioResizeOrder`, `uRatioResizeOrder`, and `uContainerSizeResizeOrder`; output probes and renderer audit guard that split ownership. This is resize-order parity only; Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+Latest accepted batch: source `Lo`-derived resize input ownership now keeps sky, displacement, thumb, and floor reflection sizing on the direct source inputs and leaves rounding to the source-equivalent target paths. Runtime probes expose `resizeClampMode` / `resizeInputMode` markers for `V1/H1/Lo`, `k1/O1/Lo`, `T1/x1/Lo`, and `i1.setSize()`, while output/thumb probes and renderer audit reject restoring local `Math.max(1, ...)` pre-clamps. This is resize-input ownership parity only; Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+
+### S1-363 `Lo`-Derived Direct Resize Input Ownership
+
+This batch aligns direct resize input ownership for source `Lo`-derived square targets and the floor reflector. It does not change shader text, render pass order, active source settings, visual constants, route data, spotlight/thumb formulas, project media, or default production output settings.
+
+Source evidence:
+
+- Source `V1.resize(e,t,n)` calls `this.renderManager.resize(t*.75,t*.75,1)` for the sky `H1/Lo` path.
+- Source `k1.resize(e,t,n)` calls `this.renderManager.resize(t/10,t/10,n)` for the displacement `O1/Lo` path.
+- Source `T1.resize(e,t,n)` calls `this.renderManager.resize(t,t,1)` for the thumb `x1/Lo` path.
+- Source `Lo.resize(e,t,n)` owns render-size rounding with `e=Math.round(e*n),t=Math.round(t*n)`.
+- Source `i1.setSize(e,t,n)` uses `e*.75` and `t*.75` directly for floor reflection targets.
+
+Runtime and tooling changes:
+
+- Sky target sizing now uses `Math.round(height * 0.75)` without a rebuild-owned pre-clamp.
+- Displacement target sizing now uses `Math.round((height / 10) * dpr)` without a rebuild-owned pre-clamp.
+- Thumb target sizing now uses `Math.round(height)` without a rebuild-owned pre-clamp.
+- Floor reflection target sizing now uses `width * 0.75` and `height * 0.75` directly.
+- `__rogierOutputProbe` and `__rogierThumbProbe` expose source resize clamp/input markers for sky, displacement, thumb, and floor reflection.
+- `scripts/probe-output-color.mjs`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` assert the new markers and reject restoring the old local `Math.max(1, ...)` pre-clamps.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check src/client/webgl.ts` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-target-direct-resize-audit.json` passed; recursive false/null count was `0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed at `/tmp/rd-target-direct-resize-output-desktop` with zero failures, exceptions, or console messages.
+- Mobile output probe passed at `/tmp/rd-target-direct-resize-output-mobile` with zero failures, exceptions, or console messages.
+- Desktop thumb spotlight probe passed at `/tmp/rd-target-direct-resize-thumb` with zero failures, exceptions, or console messages.
+- Project media probe passed at `/tmp/rd-target-direct-resize-media`; `/gc-2026/` and `/hashgraph-vc/` retained `5/5` visible media and zero failures, exceptions, or console messages.
+
+Decision: keep `V1/H1/Lo`, `k1/O1/Lo`, `T1/x1/Lo`, and `i1.setSize()` sizing on the direct source resize inputs, with no rebuild-owned pre-clamp before the source-equivalent rounding/target paths. Phase 1 remains open because this closes resize-input ownership mismatches only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-362 `I1/C1` Resize Ratio Order Ownership
 

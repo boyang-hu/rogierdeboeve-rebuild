@@ -28,7 +28,7 @@ const expectedSpotlightParallaxYOffsetMode = viewport.width >= 800
   ? "source-p1-desktop-camera-y-parallax"
   : "source-p1-mobile-0_3-plus-camera-y-parallax";
 const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3;
-const expectedTargetSize = Math.max(1, Math.round(viewport.height));
+const expectedTargetSize = Math.round(viewport.height);
 const expectedThumbTransferSteps = [
   "setRenderTarget(renderTargetA)",
   "render(scene,camera)",
@@ -684,6 +684,9 @@ async function runProbe() {
   }
   if (probe.targets?.sizingMode !== "source-T1-renderManager-resize-height-height-dpr-1") {
     sourceShapeErrors.push(`thumbTargetSizing=${probe.targets?.sizingMode}`);
+  }
+  if (probe.targets?.resizeClampMode !== "source-T1-x1-Lo-round-no-rebuild-pre-clamp") {
+    sourceShapeErrors.push(`thumbTargetResizeClamp=${probe.targets?.resizeClampMode}`);
   }
   if (probe.targets?.sourceTargetMode !== "source-Lo-renderTargetA-depthless-renderTargetComposite-clone") {
     sourceShapeErrors.push(`thumbTargetMode=${probe.targets?.sourceTargetMode}`);

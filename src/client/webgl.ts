@@ -8624,7 +8624,7 @@ void main() {
       );
     }
     if (this.sourceMainRenderSettings.fluid.enabled) this.resizeMainFluidPass(mainHalfMipWidth / 3, mainHalfMipHeight / 3);
-    const skySize = Math.max(1, Math.round(height * 0.75));
+    const skySize = Math.round(height * 0.75);
     this.skyRawTarget.setSize(skySize, skySize);
     this.skyCompositeTarget.setSize(skySize, skySize);
     this.homeCamera.aspect = width / height;
@@ -8638,11 +8638,11 @@ void main() {
     this.cameraControllerGroup.lookAt(this.cameraLookAt);
     this.preCompositeMaterial.uniforms.uContainerSize.value.set(width, height);
     this.displacementMaterial.uniforms.uRatio.value = width / height;
-    const displacementSize = Math.max(1, Math.round((height / 10) * dpr));
+    const displacementSize = Math.round((height / 10) * dpr);
     this.displacementRawTarget.setSize(displacementSize, displacementSize);
     this.displacementTarget.setSize(displacementSize, displacementSize);
-    const floorReflectionWidth = Math.max(1, width * 0.75);
-    const floorReflectionHeight = Math.max(1, height * 0.75);
+    const floorReflectionWidth = width * 0.75;
+    const floorReflectionHeight = height * 0.75;
     this.floorReflectionTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionReadTarget.setSize(floorReflectionWidth, floorReflectionHeight);
     this.floorReflectionWriteTarget.setSize(floorReflectionWidth, floorReflectionHeight);
@@ -8667,7 +8667,7 @@ void main() {
         this.aboutBlocks.mouseMaterial.uniforms.uCoords.value.set(planeWidth, planeHeight);
       }
     }
-    const thumbSize = Math.max(1, Math.round(height));
+    const thumbSize = Math.round(height);
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
     this.characterTarget.setSize(thumbSize, thumbSize);
@@ -9692,6 +9692,7 @@ void main() {
       spotlightProjection,
       targets: {
         sizingMode: "source-T1-renderManager-resize-height-height-dpr-1",
+        resizeClampMode: "source-T1-x1-Lo-round-no-rebuild-pre-clamp",
         sourceTargetMode: "source-Lo-renderTargetA-depthless-renderTargetComposite-clone",
         rawConstructionMode: "source-Lo-renderTargetA-new-depthless-stencilless",
         compositeConstructionMode: "source-Lo-renderTargetComposite-renderTargetA-clone",
@@ -10945,7 +10946,8 @@ void main() {
             glslVersion: (this.displacementMaterial as RawShaderMaterial).glslVersion ?? null,
             vertexMode: "source-tl-matrix-fullscreen",
             sizingMode: "source-k1-resize-height-div-10-then-Lo-round-times-dpr",
-            expectedTargetSize: Math.max(1, Math.round((window.innerHeight / 10) * sourceDpr())),
+            resizeClampMode: "source-k1-O1-Lo-round-no-rebuild-pre-clamp",
+            expectedTargetSize: Math.round((window.innerHeight / 10) * sourceDpr()),
             sourceDpr: sourceDpr(),
             clearMode: "source-Lo-no-explicit-clear",
             renderManagerOwnership: "source-O1-Lo-single-screen-material-swap",
@@ -11050,9 +11052,10 @@ void main() {
           tReflectUniformShared: this.floorMaterial.uniforms.tReflect === this.floorReflectionRenderTargetUniform,
           uMatrixUniformShared: this.floorMaterial.uniforms.uMatrix === this.floorReflectionTextureMatrixUniform,
           reflectionSizing: "source-i1-css-viewport-0.75",
+          reflectionResizeInputMode: "source-i1-setSize-css-viewport-0.75-no-rebuild-pre-clamp",
           reflectionExpectedCssSize: {
-            width: Math.max(1, window.innerWidth * 0.75),
-            height: Math.max(1, window.innerHeight * 0.75),
+            width: window.innerWidth * 0.75,
+            height: window.innerHeight * 0.75,
           },
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
           normalMap: {
@@ -11223,6 +11226,7 @@ void main() {
           vertexMode: "source-tl-matrix-fullscreen",
           sizingMode: "source-V1-height-0.75-square",
           rawSizingMode: "source-V1-height-0.75-square",
+          resizeClampMode: "source-V1-H1-Lo-round-no-rebuild-pre-clamp",
           bindingMode: "source-nD-after-init-resize-delay-bind-repeat-composite",
           delayedBindingMode: this.environmentMaterial.userData.sourceDelayedTSkyBindingMode,
           tSceneConstructorMode: "source-z1-tScene-construct-null-Lo-update-binds-raw",
@@ -11234,8 +11238,8 @@ void main() {
           backgroundMatchesSource: this.skyScene.background instanceof Color
             && this.skyScene.background.equals(sourceLinearToSrgbColor(SOURCE_SKY_BACKGROUND, SOURCE_SKY_BACKGROUND)),
           wrapMode: "source-nD-sky-composite-repeat-for-work-env",
-          expectedSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
-          expectedRawSize: Math.max(1, Math.round(window.innerHeight * 0.75)),
+          expectedSize: Math.round(window.innerHeight * 0.75),
+          expectedRawSize: Math.round(window.innerHeight * 0.75),
           timeMode: sourceLowRes() ? "source-V1-low-res-time-0" : "source-V1-live-time",
           renderGateMode: "source-V1-update-this.ticking-guards-super-update",
           lowResRenderMode: sourceLowRes()
@@ -11706,8 +11710,9 @@ void main() {
         blurSwapMode: "source-i1-write-target-loop-swap",
         blurSwapOwnershipMode: "source-i1-direct-renderTargetRead-renderTargetWrite-field-swap-inside-loop",
         renderTargetUniformMode: "source-i1-update-after-each-blur-swap",
-        sourceCssSized: this.floorReflectionTarget.width === Math.max(1, window.innerWidth * 0.75)
-          && this.floorReflectionTarget.height === Math.max(1, window.innerHeight * 0.75),
+        resizeInputMode: "source-i1-setSize-css-viewport-0.75-no-rebuild-pre-clamp",
+        sourceCssSized: this.floorReflectionTarget.width === window.innerWidth * 0.75
+          && this.floorReflectionTarget.height === window.innerHeight * 0.75,
       },
     };
   }

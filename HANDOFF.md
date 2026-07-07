@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `I1/C1` resize order ownership. Source `I1.resize()` writes `C1.uRatio=e/t` before target resizing, while source `U1.resize()` calls `C1.resize(e,t)` after the inherited `I1`/camera resize to write `uContainerSize`. The rebuild now separates those writes: `uRatio` is updated at the top of `resize()`, and `uContainerSize` stays in the later `C1.resize`-equivalent section. This is a resize-order guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `Lo`-derived direct resize input ownership. Source `V1.resize()`, `k1.resize()`, and `T1.resize()` pass direct square inputs into their `Lo` render managers, source `Lo.resize()` owns DPR rounding, and source `i1.setSize()` uses CSS viewport `0.75` sizing directly for floor reflection. The rebuild now removes local `Math.max(1, ...)` pre-clamps from sky, displacement, thumb, and floor reflection sizing and guards those paths with runtime/audit markers. This is a resize-input guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -145,7 +145,7 @@ Known remaining gaps:
 - Source `ag` main-fluid pass shader text now dumps as source-shaped for advection, bounds, force, viscosity, divergence, poisson, and pressure. The source seven-FBO topology including default-disabled `eA` viscosity is now guarded, but this is pass/topology parity, not proof that the whole Home fluid/composite feel is complete.
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
-- Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
+- Source `Lo`-derived direct resize input ownership is now guarded: source `V1.resize()` passes `height * .75` into `H1/Lo`, source `k1.resize()` passes `height / 10` into `O1/Lo.resize(...)` with DPR rounding owned by `Lo.resize()`, source `T1.resize()` passes `height` into `x1/Lo`, and source `i1.setSize()` uses CSS viewport `0.75` floor reflection inputs directly. The rebuild rejects local `Math.max(1, ...)` pre-clamps for those paths.
 - Source `p1` root scene direct-child order and sceneWrap child attach order are now guarded: lights are added first, source block/about/floating setup runs before `sceneWrap.add(blocksWrap)`, floor/env are attached after that, and `sceneWrap` is added last to the root scene.
 - Source `i1/a1` floor reflection normal constructor/runtime ownership is now guarded: `i1` constructs the reflection normal as a zero vector, while `i1.update()` owns the later `(0,0,1)` write and reflector-rotation application.
 - Source `i1/a1` floor reflection screen-triangle ownership is now guarded: `i1` constructs `screenTriangle` with `n1()`, creates the blur screen from that owned geometry and blur material, disables frustum culling on the screen, and disposes `screenTriangle` directly in `destroy()`.
@@ -188,14 +188,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `I1/C1` resize-order ownership for the Home main pre-composite material.
-- Source evidence: `I1.resize(e,t,n)` writes `this.compositeMaterial.uniforms.uRatio.value=e/t` before renderer/target sizing, while `U1.resize(e,t,n)` later calls `this.renderManager.compositeMaterial.resize(e,t)` and source `C1.resize(e,t)` writes `uContainerSize`.
-- Production `resize()` now writes `preCompositeMaterial.uRatio` at the top of the resize path before renderer and render-target sizing.
-- `preCompositeMaterial.uContainerSize` remains in the later `C1.resize`-equivalent section after the main camera resize.
-- `__rogierOutputProbe` now reports `settings.main.renderManagerSizing.c1RatioResizeOrder`, `uniforms.preComposite.uRatio`, `uRatioResizeOrder`, and `uContainerSizeResizeOrder`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject recombining the source-split `uRatio` and `uContainerSize` resize writes.
+- Aligned source `Lo`-derived direct resize input ownership for sky, displacement, thumb, and floor reflection targets.
+- Source evidence: `V1.resize(e,t,n)` passes `t*.75,t*.75,1` into `H1/Lo`, `k1.resize(e,t,n)` passes `t/10,t/10,n` into `O1/Lo`, `T1.resize(e,t,n)` passes `t,t,1` into `x1/Lo`, source `Lo.resize()` owns `Math.round(input * dpr)`, and source `i1.setSize(e,t,n)` uses `e*.75` / `t*.75` directly.
+- Production `resize()` now uses `Math.round(height * 0.75)` for sky, `Math.round((height / 10) * dpr)` for displacement, `Math.round(height)` for thumb, and direct `width * 0.75` / `height * 0.75` for floor reflection.
+- The old rebuild-owned `Math.max(1, ...)` pre-clamps are removed from those paths.
+- `__rogierOutputProbe` and `__rogierThumbProbe` now report `resizeClampMode` / `resizeInputMode` markers for `V1/H1/Lo`, `k1/O1/Lo`, `T1/x1/Lo`, and `i1.setSize()`.
+- `scripts/probe-output-color.mjs`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` reject restoring the old pre-clamped resize paths.
 - Verification passed: `git diff --check`, syntax checks, renderer audit with recursive false/null count `0`, build, desktop/mobile output probes, desktop thumb spotlight probe, and project-media probe. `/gc-2026/` and `/hashgraph-vc/` retained `5/5` visible media.
-- This is resize-order ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- This is resize-input ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -205,29 +205,30 @@ Last verified in the latest session:
 git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-c1-resize-order-final2-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-c1-resize-order-final2-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-target-direct-resize-final-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-target-direct-resize-final-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-output-desktop CDP_PORT=9478 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-output-mobile CDP_PORT=9479 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile DEVICE_SCALE_FACTOR=2 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-thumb CDP_PORT=9480 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-media CDP_PORT=9481 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9490 OUT_DIR=/tmp/rd-target-direct-resize-output-desktop PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9491 OUT_DIR=/tmp/rd-target-direct-resize-output-mobile PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile DEVICE_SCALE_FACTOR=2 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9492 OUT_DIR=/tmp/rd-target-direct-resize-thumb PROBE_WAIT=8000 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9493 OUT_DIR=/tmp/rd-target-direct-resize-media PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the `I1/C1` resize-order ownership batch before commit. Renderer audit wrote `/tmp/rd-c1-resize-order-final2-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the source split between `I1.resize()` writing `C1.uRatio` before target sizing and `U1.resize -> C1.resize` writing `uContainerSize` later. Desktop and mobile output probes verified `c1RatioResizeOrder`, `uRatioResizeOrder`, and `uContainerSizeResizeOrder` with zero failures, exceptions, or console messages.
+All relevant checks passed for the `Lo`-derived direct resize input ownership batch before commit. Renderer audit wrote `/tmp/rd-target-direct-resize-final-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the no-pre-clamp resize input paths on sky, displacement, thumb, and floor reflection. Desktop and mobile output probes verified the displacement/sky/floor markers, and the thumb spotlight probe verified the thumb target marker with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `I1/C1` resize-order ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this direct resize input ownership batch.
 
 Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages with zero failures, exceptions, or console messages.
 
 Verified:
 
-- Renderer audit passed for the `I1/C1` resize-order ownership batch: `/tmp/rd-c1-resize-order-final2-audit.json`.
+- Renderer audit passed for the direct resize input ownership batch: `/tmp/rd-target-direct-resize-final-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source resize-order markers.
-- Desktop thumb spotlight probe passed.
+- Desktop and mobile output probes passed with the source resize input markers.
+- Desktop thumb spotlight probe passed with the source thumb target resize marker.
 - Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.

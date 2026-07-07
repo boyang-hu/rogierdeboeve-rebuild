@@ -983,7 +983,8 @@ const summary = {
         "renderManagerOwnership: \"source-O1-Lo-single-screen-material-swap\"",
         "renderManagerOwnership: \"source-x1-Lo-single-screen-material-swap\"",
         "sizingMode: \"source-k1-resize-height-div-10-then-Lo-round-times-dpr\"",
-        "expectedTargetSize: Math.max(1, Math.round((window.innerHeight / 10) * sourceDpr()))",
+        "resizeClampMode: \"source-k1-O1-Lo-round-no-rebuild-pre-clamp\"",
+        "expectedTargetSize: Math.round((window.innerHeight / 10) * sourceDpr())",
         "uTimeUpdateOrder: \"source-V1-super-update-before-z1-uTime-write\"",
         "private skyTicking = true",
         "private skyLowResStopTimers: ReturnType<typeof window.setTimeout>[] = []",
@@ -1004,11 +1005,15 @@ const summary = {
           sourceLo.text.includes("e=Math.round(e*n),t=Math.round(t*n)")
           && sourceDisplacementO1.text.includes("this.renderManager.resize(t/10,t/10,n)"),
         rebuildUsesDpr:
-          rebuildWebgl.includes("const displacementSize = Math.max(1, Math.round((height / 10) * dpr));")
+          rebuildWebgl.includes("const displacementSize = Math.round((height / 10) * dpr);")
           && rebuildWebgl.includes("sizingMode: \"source-k1-resize-height-div-10-then-Lo-round-times-dpr\""),
         rejectsOldCssOnlySize: !rebuildWebgl.includes("const displacementSize = Math.max(1, Math.round(height / 10));"),
+        rejectsRebuildPreClamp:
+          !rebuildWebgl.includes("const displacementSize = Math.max(1, Math.round((height / 10) * dpr));")
+          && rebuildWebgl.includes("resizeClampMode: \"source-k1-O1-Lo-round-no-rebuild-pre-clamp\""),
         runtimeProbe:
           rebuildOutputProbe.includes("displacementSizingMode")
+          && rebuildOutputProbe.includes("displacementResizeClampMode")
           && rebuildOutputProbe.includes("displacementExpectedTargetSize")
           && rebuildOutputProbe.includes("parsed.probe.renderer?.dprPolicy?.globalDpr"),
       },
@@ -3500,7 +3505,11 @@ const summary = {
         && rebuildThumbProbe.includes("const expectedSpotlightParallaxYOffsetMode = viewport.width >= 800")
         && rebuildThumbProbe.includes("\"source-p1-mobile-0_3-plus-camera-y-parallax\"")
         && rebuildThumbProbe.includes("const expectedSpotlightMobileYOffset = viewport.width >= 800 ? 0 : 0.3")
-        && rebuildThumbProbe.includes("const expectedTargetSize = Math.max(1, Math.round(viewport.height))"),
+        && rebuildThumbProbe.includes("const expectedTargetSize = Math.round(viewport.height)")
+        && rebuildWebgl.includes("const thumbSize = Math.round(height);")
+        && !rebuildWebgl.includes("const thumbSize = Math.max(1, Math.round(height));")
+        && rebuildWebgl.includes("resizeClampMode: \"source-T1-x1-Lo-round-no-rebuild-pre-clamp\"")
+        && rebuildThumbProbe.includes("probe.targets?.resizeClampMode !== \"source-T1-x1-Lo-round-no-rebuild-pre-clamp\""),
       rebuildMapProjectionGuards:
         rebuildWebgl.includes("this.thumbWrap.frustumCulled = false")
         && rebuildWebgl.includes("projectionPath: \"source-SpotLight.map-without-castShadow\"")
@@ -4033,6 +4042,10 @@ const summary = {
         "reflectorNormalRuntimeMode: \"source-i1-update-normal-set-0-0-1-then-apply-reflector-rotation\"",
         "reflectorType: this.floorReflector.type",
         "this.floorReflectionTarget.depthBuffer = true",
+        "const floorReflectionWidth = width * 0.75;",
+        "const floorReflectionHeight = height * 0.75;",
+        "reflectionResizeInputMode: \"source-i1-setSize-css-viewport-0.75-no-rebuild-pre-clamp\"",
+        "resizeInputMode: \"source-i1-setSize-css-viewport-0.75-no-rebuild-pre-clamp\"",
         "readConstructionMode: \"source-i1-renderTargetRead-renderTarget-clone\"",
         "writeConstructionMode: \"source-i1-renderTargetWrite-renderTarget-clone\"",
         "private floorReflectionRendererState = {",
@@ -4065,6 +4078,9 @@ const summary = {
         "floorReflectionRendererState: this.floorReflectionRendererStateProbe()",
         "floorReflectionCameraState: this.floorReflectionCameraStateProbe()",
       ]),
+      rebuildNoResizePreClamp:
+        !rebuildWebgl.includes("const floorReflectionWidth = Math.max(1, width * 0.75);")
+        && !rebuildWebgl.includes("const floorReflectionHeight = Math.max(1, height * 0.75);"),
       rebuildNoPresetNormal: !rebuildWebgl.includes("private floorReflectorNormal = new Vector3(0, 1, 0)"),
       sourceRendererStateOrder: orderedIncludes(sourceI1.text, [
         "const r=e.getRenderTarget(),o=e.xr.enabled,a=e.shadowMap.autoUpdate",
@@ -4457,8 +4473,12 @@ const summary = {
         "if (sourceLowRes() && !this.skyTicking)",
         "skyUpdateMode: \"source-V1-ticking-gated-low-res-resize-starts-then-100ms-stops\"",
         "lowResRenderMode: sourceLowRes()",
+        "const skySize = Math.round(height * 0.75);",
+        "resizeClampMode: \"source-V1-H1-Lo-round-no-rebuild-pre-clamp\"",
         "uTimeUpdateOrder: \"source-V1-super-update-before-z1-uTime-write\"",
       ]),
+      rebuildNoResizePreClamp:
+        !rebuildWebgl.includes("const skySize = Math.max(1, Math.round(height * 0.75));"),
       excerpt: compact(sourceSkyV1.text),
     },
     skyZ1: sourceSkyZ1 && {
