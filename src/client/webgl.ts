@@ -6915,7 +6915,7 @@ export class WebGLBackdrop {
         boolLuminosity: { value: false },
         boolFxaa: { value: false },
         uTime: { value: 0 },
-        tNoise: { value: this.noiseTexture },
+        tNoise: { value: null },
         tLensflare: { value: null },
         uRatio: { value: 1 },
         tPerlin: { value: this.perlinTexture },
@@ -6936,6 +6936,8 @@ export class WebGLBackdrop {
     material.userData.sourceFluidStrengthConstructorDefault = SOURCE_C1_FLUID_STRENGTH_DEFAULT;
     material.userData.sourceFluidStrengthRuntimeOwnership = "source-Se-setFluidStrength-writes-C1-uFluidStrength";
     material.userData.sourceFluidStrengthStateDivergenceMode = "source-C1-constructor-0_5-Se-settings-initial-0";
+    material.userData.sourceTNoiseConstructorWasNull = material.uniforms.tNoise.value === null;
+    material.userData.sourceTNoiseRuntimeOwnership = "source-I1-constructor-after-initRenderer-binds-Xt-blueNoise";
     return material;
   }
 
@@ -10556,6 +10558,10 @@ void main() {
               matchesCurrentOutputTexture: c1MouseSimMatchesCurrentOutput,
               matchesCurrentOnlyWhenOutputIndexZero: c1MouseSimMatchesCurrentOutput === (this.screenMouseSimulationIndex === 0),
             },
+            tNoiseConstructorMode: "source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise",
+            tNoiseConstructorWasNull: this.preCompositeMaterial.userData.sourceTNoiseConstructorWasNull,
+            tNoiseRuntimeOwnership: this.preCompositeMaterial.userData.sourceTNoiseRuntimeOwnership,
+            tNoiseIsBlueNoiseImmediate: c1Uniforms.tNoise.value === this.sourceBlueNoiseTexture,
             tPerlinIsLoadedTexture: c1Uniforms.tPerlin.value === this.perlinTexture,
             uDisplacementSizeMode: "source-C1-constructor-default-new-Vector2-no-runtime-write",
             uDisplacement: c1Uniforms.uDisplacement.value,

@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `p1/yD/gD` mouse-factor tween ownership is now matched more closely. Source `p1.setMouseFactor(e)` only writes `mouseF` and fans out `VA.uMouseFactor`, while source gallery entry (`yD`) and CTA hover (`gD`) tween local component `mouseF` state and call `J.workScene.setMouseFactor(...)` on update without a global `p1` tween registry/kill. The rebuild removed the global `mouseFactorTween`, uses local tween state for duration-based mouse-factor transitions, and exposes/asserts `source-yD-gD-local-mouseF-tweens-no-p1-global-kill`. This is interaction ownership parity only. Phase 1 is still open.
+Latest Phase 1 batch: source `C1/I1` `tNoise` constructor/runtime ownership is now matched more closely. Source `C1` constructs `tNoise:new I(null)`, while source `I1` later binds `C1.tNoise` to `Xt.blueNoise` after renderer setup. The rebuild now constructs `C1.tNoise` as `null`, records the source `I1` runtime ownership boundary, and exposes/asserts `source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise`. This is constructor/runtime ownership parity only; `tPerlin` constructor parity remains a separate future bridge because the rebuild still carries a WebP/preload placeholder path before binding the source texture object. Phase 1 is still open.
 
 ## Chosen Stack
 
@@ -170,7 +170,7 @@ Known remaining gaps:
 - Source `Se.settings` scalar/media setter ownership is now guarded for the source no-kill boundary: `setDarken()`, `setSaturation()`, `setContrast()`, `showScene()`, `setFluidStrength()`, and `setMediaOpacity()` do not keep rebuild-owned tween registries or pre-emptive kills, while source kill-owned `setRevealSpread()` and `setEnvRotation()` retain their kill behavior.
 - Source `p1/Ya` home camera construction and resize projection ownership is now guarded: home camera stays `Ya(55, innerWidth / innerHeight, 1, 2e3)`, initial z `5.5`, and resize projection stays on the `Ya.resize()` plus `Iu.resize()` aspect/update path.
 - Source `yg/U1/I1` main raw camera construction and resize projection ownership is now guarded: main raw camera stays `Ya(Ef(...), Pe.aspect, 1, distance*2)` with distance `1000`, and resize projection stays on the source `yg.resize()` `Ef(...)` FOV/aspect/update path.
-- Source `I1/C1` main composite runtime uniform order is now guarded: source `I1.update()` runs optional fluid, then writes `C1.tScene`, the four bool uniforms, and `tLensflare` immediately before assigning/rendering the `C1` screen path, while `U1.update()` still owns the later `C1.uTime` write.
+- Source `I1/C1` main composite runtime uniform order is now guarded: source `I1.update()` runs optional fluid, then writes `C1.tScene`, the four bool uniforms, and `tLensflare` immediately before assigning/rendering the `C1` screen path, while `U1.update()` still owns the later `C1.uTime` write. Source `C1/I1` `tNoise` constructor/runtime ownership is also guarded: `C1` constructs `tNoise` as `null`, and `I1` binds the source blue-noise texture after renderer setup.
 - Source `Xt.loadTexture()` immediate texture-object binding is now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: uniforms receive the immediate `Texture` object before image onload, and probes verify onload does not replace that object.
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
@@ -188,12 +188,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Removed the rebuild-owned global `mouseFactorTween` from Home WebGL.
-- Source evidence: `p1.setMouseFactor(e)` only writes `mouseF` and fans out `VA.uMouseFactor`, while `yD.animateIn()` and `gD` CTA hover tween local component `mouseF` state and call `J.workScene.setMouseFactor(this.mouseF)` on update.
-- Production duration transitions now tween a local `{ mouseF }` object and write through the `p1.setMouseFactor()` fan-out path, without a global `p1` tween registry or pre-emptive kill.
-- `__rogierOutputProbe.settings.work.mouseFactorOwnership` now reports `tweenOwnershipMode=source-yD-gD-local-mouseF-tweens-no-p1-global-kill` and `globalTweenKillOwned=false`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old global mouse-factor tween ownership returning.
-- This is interaction ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned `C1/I1` `tNoise` constructor/runtime ownership in the Home main pre-composite material.
+- Source evidence: `C1` constructs `tNoise:new I(null)`, while the same constructor keeps `tPerlin:new I(Xt.perlin2)`; source `I1` then runs `initSettings()`, `initRenderer()`, and binds `this.compositeMaterial.uniforms.tNoise.value=Xt.blueNoise`.
+- Production `createPreCompositeMaterial()` now constructs `tNoise` as `null`, records `sourceTNoiseConstructorWasNull`, and records the runtime owner as `source-I1-constructor-after-initRenderer-binds-Xt-blueNoise`.
+- `__rogierOutputProbe.settings.work.materialSurface` now reports `tNoiseConstructorMode=source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise`, `tNoiseConstructorWasNull=true`, `tNoiseRuntimeOwnership=source-I1-constructor-after-initRenderer-binds-Xt-blueNoise`, and immediate blue-noise binding.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old constructor-time `tNoise` texture binding returning.
+- This is constructor/runtime ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the still-separate `tPerlin` preload bridge.
 
 ## Validation Status
 
@@ -203,27 +203,27 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-mouse-factor-local-tween-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-mouse-factor-local-tween-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-c1-tnoise-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-c1-tnoise-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-output-desktop CDP_PORT=9402 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-thumb CDP_PORT=9403 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-output-mobile CDP_PORT=9404 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-mouse-factor-local-media CDP_PORT=9405 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-output-desktop CDP_PORT=9410 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-output-mobile CDP_PORT=9411 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-thumb CDP_PORT=9412 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-media CDP_PORT=9413 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the mouse-factor tween ownership batch before commit. Renderer audit wrote `/tmp/rd-mouse-factor-local-tween-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.GA.mouseFactorOwnership` reported source/rebuild/probe parity. Desktop and mobile output probes verified `tweenOwnershipMode=source-yD-gD-local-mouseF-tweens-no-p1-global-kill` plus `globalTweenKillOwned=false` with zero failures, exceptions, or console messages.
+All relevant checks passed for the `C1/I1` `tNoise` constructor ownership batch before commit. Renderer audit wrote `/tmp/rd-c1-tnoise-audit.json`; recursive false/null extraction printed `false/null entries 0`, and the audit/probe surface reported source/rebuild/probe coverage for the `tNoise` constructor/runtime boundary. Desktop and mobile output probes verified `tNoiseConstructorMode=source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise`, `tNoiseConstructorWasNull=true`, `tNoiseRuntimeOwnership=source-I1-constructor-after-initRenderer-binds-Xt-blueNoise`, and immediate blue-noise binding with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this mouse-factor tween ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `tNoise` constructor ownership batch.
 
 Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages, `projectMediaShaderMode=source-UD-ID-LD-ShaderMaterial-glsl3`, `projectMediaGlslVersion=300 es`, and zero failures, exceptions, or console messages.
 
 Verified:
 
-- Renderer audit passed for the mouse-factor tween ownership batch: `/tmp/rd-mouse-factor-local-tween-audit.json`.
+- Renderer audit passed for the `C1/I1` `tNoise` constructor ownership batch: `/tmp/rd-c1-tnoise-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source local mouse-factor tween ownership marker.
+- Desktop and mobile output probes passed with the source `C1/I1` `tNoise` constructor/runtime ownership markers.
 - Desktop thumb spotlight probe passed.
 - Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
 - Project media remains a regression gate, not proof of Home parity.

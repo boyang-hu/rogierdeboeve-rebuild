@@ -1103,6 +1103,7 @@ const summary = {
         "depthTest:!1",
         "tScene:new I(null),tWork:new I(null),tMedia:new I(null),tBloom:new I(null),tBlur:new I(null),tFluid:new I(null),tPortal:new I(null),tMouseSim:new I(null)",
         "boolBloom:new I(!1),boolFluid:new I(!1),boolLuminosity:new I(!1),boolFxaa:new I(!1)",
+        "tNoise:new I(null),tLensflare:new I(null),uRatio:new I(1),tPerlin:new I(Xt.perlin2)",
         "uDisplacementSize:new I(new Q),uContainerSize:new I(new Q),uDisplacement:new I(.1),uPerlin:new I(.1)",
         "uBgColor:new I(new ye(\"#1F1F1F\").convertLinearToSRGB())",
         "uReveal:new I(0),uMediaReveal:new I(0),uContrast:new I(xt.contrast),uTransformX:new I(0),uFluidStrength:new I(.5)",
@@ -1117,7 +1118,14 @@ const summary = {
           "boolLuminosity: { value: false }",
           "boolFxaa: { value: false }",
           "tPortal: { value: null }",
+          "tNoise: { value: null }",
+          "sourceTNoiseConstructorWasNull = material.uniforms.tNoise.value === null",
+          "sourceTNoiseRuntimeOwnership = \"source-I1-constructor-after-initRenderer-binds-Xt-blueNoise\"",
           "samplerConstructorMode: \"source-C1-sampler-uniforms-construct-null-branch-owned-bindings\"",
+          "tNoiseConstructorMode: \"source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise\"",
+          "tNoiseConstructorWasNull: this.preCompositeMaterial.userData.sourceTNoiseConstructorWasNull",
+          "tNoiseRuntimeOwnership: this.preCompositeMaterial.userData.sourceTNoiseRuntimeOwnership",
+          "tNoiseIsBlueNoiseImmediate: c1Uniforms.tNoise.value === this.sourceBlueNoiseTexture",
           "const SOURCE_C1_FLUID_STRENGTH_DEFAULT = 0.5",
           "uFluidStrength: { value: SOURCE_C1_FLUID_STRENGTH_DEFAULT }",
           "sourceFluidStrengthConstructorDefault = SOURCE_C1_FLUID_STRENGTH_DEFAULT",
@@ -1165,6 +1173,11 @@ const summary = {
           && rebuildWebgl.includes("tFluidStrengthGateBindsMainTarget")
           && rebuildOutputProbe.includes("preCompositeC1TFluidUpdateGateMode")
           && rebuildOutputProbe.includes("preCompositeC1TFluidStrengthGateBinding"),
+        tNoiseProbeCoverage:
+          rebuildOutputProbe.includes("preCompositeC1TNoiseConstructorMode")
+          && rebuildOutputProbe.includes("preCompositeC1TNoiseConstructorNull")
+          && rebuildOutputProbe.includes("preCompositeC1TNoiseRuntimeOwnership")
+          && rebuildOutputProbe.includes("preCompositeC1TNoiseImmediateBinding"),
         noHomeFluidStrengthCompensationSetter: Boolean(rebuildPrepareHomeLighting)
           && !rebuildPrepareHomeLighting.includes("this.setFluidStrength("),
         noGalleryFluidStrengthCompensationSetter: Boolean(rebuildEnterWorkGallery)

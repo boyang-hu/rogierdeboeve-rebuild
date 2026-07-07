@@ -1472,6 +1472,18 @@ async function runProbe() {
   if (c1MouseSimBinding.matchesCurrentOnlyWhenOutputIndexZero !== true) {
     materialSurfaceErrors.push("preCompositeC1TMouseSimCurrentOnlyWhenIndexZero");
   }
+  if (c1MaterialSurface.tNoiseConstructorMode !== "source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise") {
+    materialSurfaceErrors.push("preCompositeC1TNoiseConstructorMode");
+  }
+  if (c1MaterialSurface.tNoiseConstructorWasNull !== true) {
+    materialSurfaceErrors.push("preCompositeC1TNoiseConstructorNull");
+  }
+  if (c1MaterialSurface.tNoiseRuntimeOwnership !== "source-I1-constructor-after-initRenderer-binds-Xt-blueNoise") {
+    materialSurfaceErrors.push("preCompositeC1TNoiseRuntimeOwnership");
+  }
+  if (c1MaterialSurface.tNoiseIsBlueNoiseImmediate !== true) {
+    materialSurfaceErrors.push("preCompositeC1TNoiseImmediateBinding");
+  }
   if (c1MaterialSurface.tPerlinIsLoadedTexture !== true) materialSurfaceErrors.push("preCompositeC1TPerlinBinding");
   if (c1MaterialSurface.uDisplacementSizeMode !== "source-C1-constructor-default-new-Vector2-no-runtime-write") {
     materialSurfaceErrors.push("preCompositeC1UDisplacementSizeMode");
