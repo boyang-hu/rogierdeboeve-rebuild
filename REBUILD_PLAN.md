@@ -21,9 +21,10 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1 closed unless new source-owned evidence requires reopening.
-2. Run the Phase 2 Home DOM/interaction audit against the online site and source bundle.
-3. Convert the audit into one small source-backed Home fix batch at a time.
-4. Keep project media, about, and interaction probes as regression gates when shared paths change.
+2. Finish remaining Phase 2 Home DOM/interaction follow-up checks.
+3. Convert any remaining source-backed finding into one small Home fix batch at a time.
+4. Decide whether Phase 2 can close after route/session, sound-choice, and remaining interaction checks are clean or explicitly deferred.
+5. Keep project media, about, and interaction probes as regression gates when shared paths change.
 
 Everything outside Home DOM/interaction stays paused unless the audit identifies a shared-path dependency.
 
@@ -46,7 +47,7 @@ Everything outside Home DOM/interaction stays paused unless the audit identifies
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
-| 2. Home DOM/interaction parity | First shell fix complete | Continue with preloader source parity before interaction algorithms. |
+| 2. Home DOM/interaction parity | Shell, preloader, and mobile work states closed; follow-up checks remain | Close or defer sound-choice/audio lifecycle, route/session restore, and remaining Home interaction details. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 2-4 scope is accepted. |
@@ -143,11 +144,14 @@ Initial boundary:
 Audit evidence:
 
 - File: `/tmp/rd-phase2-home-audit/home-dom-interaction-audit.json`.
+- Latest preloader/mobile DOM audit: `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`.
 - Online and rebuild had `0` network failures and `0` runtime exceptions in checked Home desktop/mobile scenarios.
 - Wheel input and second work-item click both moved active project from `hashgraph-vc` to `gc-2026` in online and rebuild.
 - Therefore the first Phase 2 production batch should not start with gallery scroll algorithm changes.
+- The latest DOM audit used `?disable-webgl` because the temporary audit runner disables GPU; use output probes for WebGL/visual coverage.
+- Latest WebGL output probes passed for desktop `/tmp/rd-output-p2-preloader-desktop` and mobile `/tmp/rd-output-p2-preloader-mobile`.
 
-Current fix queue:
+Closed source-backed batches:
 
 1. Mobile nav shell.
    - Source owns `.ui-header-mobile lg:hidden`, `.ui-nav-mobile`, and `.ui-nav-mobile-toggle > .wrap > svg`.
@@ -157,11 +161,21 @@ Current fix queue:
    - Done: rebuild now uses the source shell and `.is-active` state; final audit matched `28x28`, z-index `200`, opacity `1`, and source class state after entry.
 3. Preloader.
    - Source owns `div.preloader-cta[data-sound]`, `div.preloader-cta-2[data-sound]`, progress opacity/transform animation, delayed pointer activation, and no active work item before enter.
-   - Rebuild currently server-renders/initializes the first work item as active before enter and uses a timer-driven button/data-attribute flow.
-   - Next batch. Keep it narrow because it touches entry timing, sound choice, session state, and Home gallery activation.
+   - Done: rebuild now uses the source-shaped DOM/CTA/data-sound structure, delayed CTA activation, source reveal path, WebGL-ready gate, and no pre-enter active work item.
 4. Mobile work list/title CSS.
    - Source keeps `.ui-title` hidden by visibility/pointer behavior on mobile and handles inactive mobile cards mainly through link opacity/pointer state.
-   - Rebuild uses display/height/card-opacity choices that differ, while visible active CTA geometry is already close.
+   - Done: rebuild now keeps the title in layout but hidden, keeps cards opaque, hides inactive links through opacity/pointer state, and leaves the active CTA interactive.
+
+Open Phase 2 follow-up queue:
+
+1. Sound choice and audio lifecycle.
+   - Verify source/online behavior for preloader sound opt-in/out, persisted sound setting, Howler resume/mute, and sound-toggle state after route/session restore.
+2. Route/session restore.
+   - Verify Home to project/about, browser back/forward, `skip-preloader`, re-entry after `rd:has-entered`, and active work restoration.
+3. Remaining Home interaction affordances.
+   - Verify desktop hover CTA, progressbar click state, touch/drag/keyboard behavior, mobile menu close/open state, and header/footer animation details.
+4. Phase 2 close decision.
+   - Close Phase 2 only after the checks above are clean or explicitly deferred with source-backed rationale.
 
 Original audit checklist:
 
@@ -177,10 +191,13 @@ Latest validation:
 
 - `node --check src/client/main.ts`
 - `node --check src/client/audio.ts`
+- `node --check src/client/webgl.ts`
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
-- Phase 2 Home audit: `/tmp/rd-phase2-home-audit-after-shell-final/home-dom-interaction-audit.json`
-- Home output probes: desktop `/tmp/rd-output-p2-shell-desktop`, mobile `/tmp/rd-output-p2-shell-mobile`
+- Phase 2 shell audit: `/tmp/rd-phase2-home-audit-after-shell-final/home-dom-interaction-audit.json`
+- Phase 2 preloader/mobile DOM audit: `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`
+- Home output probes after shell batch: desktop `/tmp/rd-output-p2-shell-desktop`, mobile `/tmp/rd-output-p2-shell-mobile`
+- Home output probes after preloader/mobile batch: desktop `/tmp/rd-output-p2-preloader-desktop`, mobile `/tmp/rd-output-p2-preloader-mobile`
 
 ### `kA/Lu/I1` composite and transfer
 

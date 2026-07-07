@@ -32,7 +32,9 @@
   --py: clamp(1.5rem, 3.2vw, 3.25rem);
   --gap: 1.5rem;
   --expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --expo-out: var(--expo);
   --circ: cubic-bezier(0.075, 0.82, 0.165, 1);
+  --opacity-dimmed: 0.6;
 }
 
 *,
@@ -122,11 +124,6 @@ svg {
   pointer-events: none;
   opacity: 0;
   overflow: hidden;
-  transition: opacity 1.2s var(--expo);
-}
-
-body.has-entered .gl {
-  opacity: 1;
 }
 
 .gl-canvas {
@@ -884,99 +881,134 @@ body.has-entered .ui-sound-toggle {
 
 .preloader {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   z-index: 100;
   display: flex;
-  align-items: center;
   justify-content: center;
-  background: var(--bg);
+  align-items: center;
   font-family: var(--font-mono);
   font-size: 0.75rem;
+  font-style: normal;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  transition: opacity 0.55s linear, visibility 0.55s linear;
 }
 
-html.has-session-entered .preloader {
-  display: none;
+.preloader span {
+  display: block;
 }
 
 .preloader.is-hidden {
-  opacity: 0;
-  visibility: hidden;
   pointer-events: none;
+}
+
+.preloader-footer-text {
+  display: flex;
+  overflow: hidden;
+  opacity: var(--opacity-dimmed);
+}
+
+.preloader-footer-text-dots {
+  width: 1.25rem;
+  margin-left: 0.25rem;
+  letter-spacing: -0.1em;
 }
 
 .preloader-progress {
   position: relative;
-  width: 28.875rem;
-  height: 28.875rem;
-  display: grid;
-  place-items: center;
-}
-
-.preloader-progress-circles {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.preloader-progress-circle {
-  stroke-dasharray: 1445;
-  stroke-dashoffset: 1445;
-  animation: preloader-circle 1.05s var(--expo) forwards;
+  margin-bottom: 1rem;
+  opacity: 0;
+  will-change: opacity, transform;
 }
 
 .preloader-progress-text,
-.preloader-cta,
-.preloader-cta-2 {
+.preloader-cta {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5rem;
+  transform: translate(-50%, -55%);
+  text-align: center;
 }
 
-.preloader-progress-text {
-  opacity: 0.6;
+.preloader-progress-text,
+.preloader-progress-circles {
   pointer-events: none;
 }
 
-.preloader-cta,
-.preloader-cta-2 {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: inherit;
-  cursor: pointer;
+.preloader-progress-text-inner {
+  display: inline-flex;
+}
+
+.preloader-progress-circles {
+  width: 28.75rem;
+  height: 28.75rem;
+}
+
+@media (max-width: 999px) {
+  .preloader-progress-circles {
+    width: 18.75rem;
+    height: 18.75rem;
+  }
+}
+
+.preloader-cta.is-active + .preloader-progress-circles .preloader-progress-outline,
+.preloader-cta.is-active + .preloader-progress-circles .preloader-progress-circle {
+  transition: r var(--expo-out) 1.2s, stroke-dashoffset var(--expo-out) 1.2s, stroke-dasharray var(--expo-out) 1.2s;
+}
+
+.preloader-cta.is-active:hover + .preloader-progress-circles .preloader-progress-outline {
+  r: var(--circle-r2-hover);
+}
+
+.preloader-progress-circle {
+  stroke-dasharray: var(--circle-dash-array-static);
+  stroke-dashoffset: var(--circle-dash-offset-static);
+  will-change: stroke-dashoffset, stroke-dasharray;
+}
+
+.preloader-cta.is-active:hover + .preloader-progress-circles .preloader-progress-circle {
+  stroke-dasharray: var(--circle-dash-array-hover);
+  stroke-dashoffset: var(--circle-dash-offset-hover);
+  r: var(--circle-r1-hover);
+}
+
+.preloader-footer {
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  left: 0;
+  padding-bottom: calc(var(--py) + 1.5rem);
+}
+
+.preloader-footer-text-inner {
+  display: flex;
+  background: linear-gradient(90deg, transparent 50%, transparent 100%);
 }
 
 .preloader-cta {
+  --cta-size: 15rem;
+  position: absolute;
   width: 15rem;
   height: 15rem;
   border-radius: 50%;
-  display: grid;
-  place-items: center;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 2;
-  transition: opacity 0.35s linear;
-}
-
-.preloader-cta.is-active {
-  opacity: 1;
-  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
 }
 
 .preloader-cta-text-inner,
-.preloader-cta-text-static,
-.preloader-cta-text-hover,
-.preloader-cta-2-text,
-.preloader-cta-text-2-inner,
-.preloader-footer-text,
 .preloader-footer-text-inner {
-  display: block;
+  transform: translateY(-110%);
+  opacity: 0;
 }
 
 .preloader-cta-text {
@@ -985,30 +1017,49 @@ html.has-session-entered .preloader {
 }
 
 .preloader-cta-text-hover {
+  transform: translateY(100%);
   position: absolute;
-  inset: 0;
-  transform: translateY(102%);
+  top: 0;
+  left: 0;
+}
+
+.preloader-cta:hover .preloader-cta-text-static,
+.preloader-cta:hover .preloader-cta-text-hover {
+  transition: transform var(--expo-out) 1.2s, opacity var(--expo-out) 1.2s;
 }
 
 .preloader-cta:hover .preloader-cta-text-static {
-  transform: translateY(-102%);
+  transform: translateY(-100%);
+  opacity: 0;
 }
 
 .preloader-cta:hover .preloader-cta-text-hover {
   transform: translateY(0);
+  opacity: 1;
 }
 
-.preloader-cta-text-static,
-.preloader-cta-text-hover {
-  transition: transform 0.9s var(--expo);
+.preloader-cta,
+.preloader-cta-2 {
+  pointer-events: none;
+  cursor: pointer;
+}
+
+.preloader-cta.is-active,
+.preloader-cta-2.is-active {
+  pointer-events: auto;
 }
 
 .preloader-cta-2 {
+  text-align: center;
+  position: absolute;
   bottom: 0.5rem;
   left: 0;
   width: 100%;
-  opacity: 0.55;
-  z-index: 2;
+}
+
+html.is-mobile .preloader-cta-2 {
+  opacity: 0;
+  pointer-events: none !important;
 }
 
 .preloader-cta-2-text {
@@ -1017,50 +1068,23 @@ html.has-session-entered .preloader {
   padding-bottom: 0.35rem;
 }
 
-.preloader-cta-2-text::after {
+.preloader-cta-text-2-inner {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.preloader-cta-text-2-inner::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -0.15rem;
+  bottom: -0.3rem;
+  display: block;
   height: 1px;
-  background-image: linear-gradient(90deg, currentColor, currentColor 50%, transparent 50%, transparent 100%);
-  background-size: 0.3125rem 1px;
-  opacity: 0.4;
-}
-
-.preloader-footer {
-  position: fixed;
-  left: 0;
-  bottom: 0;
   width: 100%;
-  padding-bottom: calc(var(--py) + 1.5rem);
-}
-
-.preloader-footer .wrap {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.preloader-footer-text {
-  opacity: 0.6;
-}
-
-.preloader-footer-text-inner {
-  display: flex;
-}
-
-.preloader-footer-text-dots {
-  display: inline-block;
-  width: 1.25rem;
-  margin-left: 0.25rem;
-  letter-spacing: 0;
-}
-
-@keyframes preloader-circle {
-  to {
-    stroke-dashoffset: 0;
-  }
+  opacity: 0.4;
+  background-size: 0.3125rem 1px;
+  background-repeat: repeat no-repeat;
+  background-position: 0 100%;
+  background-image: linear-gradient(90deg, currentColor, currentColor 50%, transparent 50%, transparent 100%);
 }
 
 .ui-footer-credits {
@@ -1657,8 +1681,9 @@ html.is-scrolled .c-scroll-cta {
     height: 100vh;
   }
 
-  .ui-title {
-    display: none;
+  .ui-work-content .ui-title {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .ui-work-ul {
@@ -1677,25 +1702,24 @@ html.is-scrolled .c-scroll-cta {
     min-height: 0;
     padding-inline: var(--px);
     display: block;
-    opacity: 0;
-    transform: translateY(0.75rem);
+    opacity: 1;
+    transform: none;
     pointer-events: none;
-    transition: opacity 0.45s linear, transform 0.65s var(--expo);
   }
 
   .ui-work-ul li.is-active {
     opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+    transform: none;
   }
 
   .ui-work-a {
     font-size: 1.5rem;
-    opacity: 1;
+    opacity: 0;
+    pointer-events: none;
     text-shadow: 0 0.08rem 0.7rem rgba(0, 0, 0, 0.62);
   }
 
-  body.has-entered .gl {
+  .ui-work-ul li.is-active .ui-work-a {
     opacity: 1;
   }
 
@@ -1703,12 +1727,12 @@ html.is-scrolled .c-scroll-cta {
     display: flex;
     position: static;
     width: 100%;
-    max-width: none;
+    max-width: 13rem;
     aspect-ratio: auto;
-    margin-top: 1.125rem;
+    margin-top: 1rem;
     transform: none;
     opacity: 1;
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   .ui-work-ul li.is-active .ui-work-cta {
@@ -1841,6 +1865,12 @@ html.is-scrolled .c-scroll-cta {
   .preloader-cta-2,
   .ui-sound-toggle {
     display: none;
+  }
+}
+
+@media (max-width: 799px) {
+  .ui-work-cta {
+    max-width: 100%;
   }
 }
 

@@ -5989,6 +5989,7 @@ export class WebGLBackdrop {
       await this.sourcePerlin1Texture;
       await this.sourcePerlin2Texture;
       this.sourceTextureAnimateInAwaitedObjects = true;
+      gsap.set(this.root, { opacity: 1 });
       gsap.fromTo(this.renderer.domElement, { opacity: 0 }, {
         opacity: 1,
         duration: 0.5,

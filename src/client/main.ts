@@ -255,10 +255,20 @@ function initButtons() {
   return () => window.removeEventListener("resize", formatAll);
 }
 
-function initPreloader() {
-  const preloader = document.querySelector<HTMLElement>("[data-preloader]");
-  const percent = document.querySelector<HTMLElement>("[data-preloader-percent]");
-  const enterButtons = document.querySelectorAll<HTMLButtonElement>("[data-preloader-enter]");
+function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()) {
+  const preloader = document.querySelector<HTMLElement>(".preloader");
+  const progressContainer = document.querySelector<HTMLElement>(".preloader-progress");
+  const progressCircles = document.querySelector<HTMLElement>(".preloader-progress-circles");
+  const progressCircle = document.querySelector<SVGCircleElement>(".preloader-progress-circle");
+  const progressCircleOutline = document.querySelector<SVGCircleElement>(".preloader-progress-outline");
+  const progressTextInner = document.querySelector<HTMLElement>(".preloader-progress-text-inner");
+  const progressText = document.querySelector<HTMLElement>(".preloader-progress-text-percent");
+  const textDots = document.querySelector<HTMLElement>(".preloader-footer-text-dots");
+  const cta = document.querySelector<HTMLElement>(".preloader-cta");
+  const cta2 = document.querySelector<HTMLElement>(".preloader-cta-2");
+  const ctaTextInner = document.querySelector<HTMLElement>(".preloader-cta-text-inner");
+  const ctaTextInner2 = document.querySelector<HTMLElement>(".preloader-cta-text-2-inner");
+  const footerTextInner = document.querySelector<HTMLElement>(".preloader-footer-text-inner");
   const soundToggle = document.querySelector<HTMLElement>(".ui-sound-toggle");
   const hasEntered = () => getSessionValue("rd:has-entered") === "true";
   const getSessionSoundMode = () => getSessionValue("rd:sound-enabled") !== "false";
@@ -267,44 +277,187 @@ function initPreloader() {
     setSessionValue("rd:sound-enabled", String(soundEnabled));
   };
   const skipPreloader = new URLSearchParams(window.location.search).has("skip-preloader") || hasEntered();
-  let progress = 0;
+  const progressState = {
+    progress: 0,
+    progressCircleR: progressCircle?.r.baseVal.value ?? 230,
+    progressCircleOutlineR: progressCircleOutline?.r.baseVal.value ?? 224,
+    rotation: 0,
+  };
+  let loadingTextTimer = 0;
+  let loadCompleteTimer = 0;
+  let activeTimer = 0;
+  let rotationTween: gsap.core.Tween | undefined;
+  let progressTween: gsap.core.Tween | undefined;
   let complete = false;
 
   const reveal = (soundEnabled: boolean) => {
     if (complete) return;
     complete = true;
+    window.clearTimeout(loadingTextTimer);
+    window.clearTimeout(loadCompleteTimer);
+    window.clearTimeout(activeTimer);
+    rotationTween?.kill();
+    progressTween?.kill();
     setSessionState(soundEnabled);
     dispatchSoundMode(soundEnabled);
     soundToggle?.classList.toggle("is-active", soundEnabled);
+    if (soundToggle) {
+      soundToggle.style.pointerEvents = "auto";
+      gsap.to(soundToggle, { opacity: 1, duration: 0.5, ease: "none" });
+    }
     document.body.classList.remove("is-preloading");
     document.body.classList.add("has-entered");
-    preloader?.classList.add("is-hidden");
-    emitPageEntered();
-    window.setTimeout(() => preloader?.remove(), 850);
+    if (preloader) preloader.style.pointerEvents = "none";
+    if (cta) cta.style.pointerEvents = "none";
+    if (cta2) cta2.style.pointerEvents = "none";
+    let finalized = false;
+    const finalize = () => {
+      if (finalized) return;
+      finalized = true;
+      preloader?.remove();
+      emitPageEntered();
+    };
+    if (progressContainer) {
+      gsap.killTweensOf(progressContainer);
+      gsap.to(progressContainer, {
+        scale: 1.2,
+        opacity: 0,
+        duration: 1,
+        ease: "expo.out",
+        onComplete: finalize,
+      });
+      window.setTimeout(finalize, 1100);
+    } else {
+      finalize();
+    }
   };
 
   if (skipPreloader) {
-    reveal(getSessionSoundMode());
+    setSessionState(getSessionSoundMode());
+    dispatchSoundMode(getSessionSoundMode());
+    soundToggle?.classList.toggle("is-active", getSessionSoundMode());
+    document.body.classList.remove("is-preloading");
+    document.body.classList.add("has-entered");
+    preloader?.remove();
+    emitPageEntered();
     return;
   }
 
-  const timer = window.setInterval(() => {
-    progress = Math.min(100, progress + Math.ceil((100 - progress) * 0.18));
-    if (percent) percent.textContent = String(progress);
-    if (progress >= 100) {
-      window.clearInterval(timer);
-      enterButtons.forEach((button) => button.classList.add("is-active"));
+  const setProgressText = (value: number) => {
+    if (progressText) progressText.innerHTML = String(Math.floor(value));
+  };
+
+  const setProgressCircle = (value = 0) => {
+    if (!progressCircle) return;
+    const radius = progressCircle.r.baseVal.value;
+    const circumference = Math.PI * radius * 2;
+    const offset = circumference - (circumference * value) / 100;
+    progressCircle.style.strokeDasharray = String(circumference);
+    progressCircle.style.strokeDashoffset = String(offset);
+  };
+
+  const setProgressCircleToIntro = (value = 100) => {
+    if (!progressCircle || !progressCircleOutline) return;
+    const radius = progressCircle.r.baseVal.value;
+    const hoverRadius = radius * 0.95;
+    const circumference = Math.PI * (radius * 2);
+    const hoverCircumference = Math.PI * (hoverRadius * 2);
+    const staticRatio = 0.05 * (value / 100);
+    const hoverRatio = 0.0001 * (value / 100);
+    const staticDash = circumference * (0.5 - staticRatio);
+    const staticGap = circumference * staticRatio;
+    const hoverDash = hoverCircumference * (0.5 - hoverRatio);
+    const hoverGap = hoverCircumference * hoverRatio;
+    progressCircle.style.setProperty("--circle-dash-array-static", `${staticDash} ${staticGap}`);
+    progressCircle.style.setProperty("--circle-dash-offset-static", String(staticDash));
+    progressCircle.style.setProperty("--circle-dash-array-hover", `${hoverDash} ${hoverGap}`);
+    progressCircle.style.setProperty("--circle-dash-offset-hover", String(hoverDash));
+    progressCircle.style.setProperty("--circle-r1-hover", `${hoverRadius}px`);
+    progressCircleOutline.style.setProperty("--circle-r2-hover", `${hoverRadius * 1.075}px`);
+    progressCircle.style.strokeDasharray = "";
+    progressCircle.style.strokeDashoffset = "";
+  };
+
+  const loadingTextAnimation = (text = "") => {
+    if (textDots) textDots.innerText = text;
+    const nextText = text.length < 3 ? `${text}.` : "";
+    loadingTextTimer = window.setTimeout(() => loadingTextAnimation(nextText), 400);
+  };
+
+  const activateCtas = () => {
+    cta?.classList.add("is-active");
+    cta2?.classList.add("is-active");
+    cta?.addEventListener("click", () => reveal(cta.dataset.sound !== "false"), { once: true });
+    cta2?.addEventListener("click", () => reveal(false), { once: true });
+  };
+
+  const onLoadComplete = () => {
+    rotationTween?.pause();
+    const rotationTarget = 135 - (progressState.rotation % 360) + 360;
+    if (progressCircles) gsap.to(progressCircles, { rotate: `+=${rotationTarget}deg`, duration: 2, ease: "expo.out" });
+    const introState = { progress: 0 };
+    if (progressContainer) gsap.to(progressContainer, { translateY: "-.75rem", duration: 2, ease: "expo.out" });
+    if (ctaTextInner) gsap.fromTo(ctaTextInner, { translateY: "-102%", opacity: 0 }, { translateY: "0", opacity: 1, duration: 1.2, ease: "expo.out" });
+    if (progressTextInner) {
+      gsap.fromTo(progressTextInner, { translateY: "0" }, { translateY: "102%", duration: 1.2, ease: "expo.out" });
+      gsap.to(progressTextInner, { opacity: 0, duration: 0.2, ease: "none" });
     }
-  }, 90);
+    if (progressCircle) {
+      gsap.to(progressState, {
+        progressCircleR: 120,
+        duration: 2,
+        ease: "expo.out",
+        onUpdate: () => progressCircle.setAttribute("r", String(progressState.progressCircleR)),
+      });
+    }
+    if (progressCircleOutline) {
+      gsap.to(progressState, {
+        progressCircleOutlineR: 115,
+        duration: 2,
+        ease: "expo.out",
+        onUpdate: () => progressCircleOutline.setAttribute("r", String(progressState.progressCircleOutlineR)),
+      });
+    }
+    gsap.to(introState, {
+      progress: 100,
+      duration: 2,
+      ease: "expo.out",
+      onUpdate: () => setProgressCircleToIntro(introState.progress),
+    });
+    if (footerTextInner) gsap.fromTo(footerTextInner, { translateY: "0", opacity: 1 }, { translateY: "102%", opacity: 0, duration: 1, ease: "expo.out" });
+    if (ctaTextInner2) gsap.fromTo(ctaTextInner2, { translateY: "102%", opacity: 0 }, { translateY: "0", opacity: 1, duration: 2, delay: 0.2, ease: "expo.out" });
+    activeTimer = window.setTimeout(activateCtas, 1000);
+  };
 
-  enterButtons.forEach((button) => {
-    button.addEventListener("click", () => reveal(button.dataset.soundMode !== "off"));
-  });
-
+  setProgressCircle(0);
   window.setTimeout(() => {
-    enterButtons.forEach((button) => button.classList.add("is-active"));
-    if (percent) percent.textContent = "100";
-  }, 1000);
+    if (progressContainer) gsap.fromTo(progressContainer, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 3, ease: "power4.out" });
+    if (footerTextInner) gsap.fromTo(footerTextInner, { opacity: 0, translateY: "110%" }, { opacity: 1, translateY: "0", duration: 1.8, delay: 0.02, ease: "expo.out" });
+    rotationTween = gsap.to(progressState, {
+      rotation: 360,
+      duration: 6,
+      ease: "none",
+      repeat: -1,
+      onUpdate: () => {
+        if (progressCircles) progressCircles.style.transform = `rotate(${progressState.rotation}deg)`;
+      },
+    });
+    progressTween = gsap.to(progressState, {
+      progress: 100,
+      duration: 1,
+      ease: "power4.out",
+      onUpdate: () => {
+        setProgressCircle(progressState.progress);
+        setProgressText(progressState.progress);
+      },
+      onComplete: () => {
+        void loadCompletePromise.finally(() => {
+          loadCompleteTimer = window.setTimeout(onLoadComplete, 1000);
+        });
+      },
+    });
+    loadingTextAnimation();
+  }, 100);
 }
 
 function initSoundToggle() {
@@ -664,15 +817,17 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   };
 
   const enterWorkGallery = () => {
+    if (!scroll.active) {
+      activateIndex(activeIndex, false, true, true);
+      scroll.active = true;
+    }
     const webgl = getWebgl();
     if (!webgl) return;
-    if (scroll.active && webglGalleryEntered) return;
-    activateIndex(activeIndex, false, true, true);
+    if (webglGalleryEntered) return;
     webgl.restoreGalleryState?.(scroll.progress, sceneRotation);
     webgl.setGalleryProgress?.(scroll.progress, scroll.velocity, 1 / 60);
     webgl.enterWorkGallery?.(activeProjectId || cardsArray[activeIndex]?.dataset.slug);
     webglGalleryEntered = true;
-    scroll.active = true;
   };
 
   const onPageShow = () => {
@@ -928,7 +1083,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     cleanupCallbacks.splice(0).forEach((cleanup) => cleanup());
   };
 
-  activateIndex(activeIndex, false, true, false);
   raf = requestAnimationFrame(tick);
   const onPageHide = () => saveWorkState();
   const onBeforeUnload = () => cleanupWorkGallery();
@@ -1155,6 +1309,7 @@ function initViewLifecycle(animate = true) {
 }
 
 function shouldInitWebGL() {
+  if (new URLSearchParams(window.location.search).has("disable-webgl")) return false;
   const probe = document.createElement("canvas");
   if (!probe.getContext("webgl2") && !probe.getContext("webgl")) return false;
   return true;
@@ -1177,6 +1332,7 @@ async function initWebGL() {
 }
 
 function boot() {
+  document.documentElement.classList.toggle("is-mobile", window.matchMedia("(pointer: coarse)").matches);
   document.body.classList.add("is-ready");
   let webgl: WebGLLike | undefined;
   let homeGalleryEntered = false;
@@ -1260,6 +1416,11 @@ function boot() {
           homeGalleryEntered = true;
           window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
         };
+        if (document.querySelector(".preloader") && !prefersReducedMotion()) {
+          const timer = window.setTimeout(enter, 1100);
+          callbacks.push(() => window.clearTimeout(timer));
+          return;
+        }
         enter();
       }, callbacks);
     } else if (document.querySelector("[data-view='about']")) {
@@ -1362,14 +1523,15 @@ function boot() {
     navigateTo(target.href, mode);
   };
 
-  initPreloader();
+  const webglReady = initWebGL().then((instance) => {
+    webgl = instance;
+    initWebglForCurrentPage(cleanupPageCallbacks);
+  });
+
+  initPreloader(webglReady);
   void import("./audio").then(({ initAudio }) => {
     initAudio();
     if (homeGalleryEntered) window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
-  });
-  void initWebGL().then((instance) => {
-    webgl = instance;
-    initWebglForCurrentPage(cleanupPageCallbacks);
   });
 
   initSoundToggle();

@@ -21,7 +21,7 @@ const colorValue = (value?: string) => {
               <ul class="ui-work-ul">
                 {activeProjects.map((project, index) => (
                   <li
-                    class={index === 0 ? "c-color is-active" : "c-color"}
+                    class="c-color"
                     data-project-card
                     data-slug={project.data.slug}
                     data-color={colorValue(project.data.colors.primary)}
@@ -60,7 +60,7 @@ const colorValue = (value?: string) => {
       <div class="ui-progressbar-items">
         {activeProjects.map((project, index) => (
           <button
-            class={index === 0 ? "ui-progressbar-item is-active" : "ui-progressbar-item"}
+            class="ui-progressbar-item"
             type="button"
             data-slug={project.data.slug}
             data-progress-slug={project.data.slug}

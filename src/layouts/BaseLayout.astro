@@ -45,33 +45,39 @@ const pageClass = pathname === "/" ? "is-home" : pathname.startsWith("/about") ?
         }
       } catch {}
     </script>
-    <div class="preloader c-color" data-preloader>
+    <div class="preloader c-color">
       <div class="preloader-progress">
-        <button class="preloader-cta" type="button" data-preloader-enter data-sound-mode="on">
-          <span class="preloader-cta-text">
-            <span class="preloader-cta-text-inner">
-              <span class="preloader-cta-text-static">Enter</span>
-              <span class="preloader-cta-text-hover">Enter</span>
-            </span>
-          </span>
-        </button>
+        <div class="preloader-cta" data-sound="true">
+          <div class="preloader-cta-text">
+            <div class="preloader-cta-text-inner">
+              <div class="preloader-cta-text-static">Enter</div>
+              <div class="preloader-cta-text-hover">Enter</div>
+            </div>
+          </div>
+        </div>
         <svg class="preloader-progress-circles" width="462" height="462" viewBox="0 0 462 462" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle class="preloader-progress-outline" opacity="0.4" cx="231" cy="231" r="224" stroke="currentColor" stroke-dasharray="2 2"></circle>
           <circle class="preloader-progress-circle" opacity="0.5" cx="231" cy="231" r="230" stroke="currentColor"></circle>
         </svg>
-        <div class="preloader-progress-text" aria-hidden="true">
-          <div class="preloader-progress-text-inner"><span data-preloader-percent>0</span>%</div>
+        <div class="preloader-progress-text">
+          <div class="preloader-progress-text-inner"><div class="preloader-progress-text-percent">0</div>%</div>
         </div>
-        <button class="preloader-cta-2" type="button" data-preloader-enter data-sound-mode="off">
-          <span class="preloader-cta-2-text">
-            <span class="preloader-cta-text-2-inner">Enter without sound</span>
-          </span>
-        </button>
+        <div class="preloader-cta-2" data-sound="false">
+          <div class="preloader-cta-2-text">
+            <div class="preloader-cta-text-2-inner">
+              <div class="preloader-cta-text-2-static">Enter without sound</div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="preloader-footer">
         <div class="wrap">
-          <div class="preloader-footer-text">
-            <span class="preloader-footer-text-inner">Loading<span class="preloader-footer-text-dots">...</span></span>
+          <div class="flex justify-end">
+            <div class="preloader-footer-text">
+              <div class="preloader-footer-text-inner">
+                Loading<span class="preloader-footer-text-dots">...</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

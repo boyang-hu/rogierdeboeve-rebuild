@@ -26,13 +26,13 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 2, Home DOM/interaction parity audit |
+| Active phase | Phase 2, Home DOM/interaction parity follow-up |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Phase 2 preloader source parity batch |
-| Next secondary priority | Mobile work list/title source CSS after preloader |
-| Last committed source-backed code batch | Phase 2 mobile nav and sound toggle shell parity |
-| Last closed evidence batch | Phase 2 Home DOM/interaction audit plus Phase 1 closeout |
-| Local service | Stopped unless actively reviewing |
+| Current production priority | Route/session, sound-choice, and remaining Home interaction checks |
+| Next secondary priority | Decide whether Phase 2 can close or needs one more narrow fix batch |
+| Last committed source-backed code batch | Phase 2 Home preloader and mobile work-state parity |
+| Last closed evidence batch | Phase 2 Home preloader/mobile DOM audit plus WebGL output probes |
+| Local service | Running at `http://localhost:5174/` while reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
 Closeout state:
@@ -45,33 +45,32 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest committed batch aligned Home page brightness with the source-owned page overlay behavior.
+The latest production batch aligned Home preloader and mobile work-state behavior with the online/source read.
 
-- Rebuild removed the non-source `.gl::after` dark overlay from `src/styles/global.css`.
-- `src/client/webgl.ts` now exposes debug-only C1 render-target and Home band probe data for attribution checks.
-- Online site versus local source mirror remains visually close in the checked center luma samples: desktop `-0.0012`, mobile `-0.0005`.
-- Online site versus rebuild after the overlay removal remains close in the checked center luma samples: desktop `-0.0047`, mobile `-0.0027`.
+- Preloader markup now uses the source-shaped `.preloader`, `.preloader-cta[data-sound="true"]`, `.preloader-cta-2[data-sound="false"]`, progress text, circle, footer text, and dots structure.
+- Preloader timing now waits for WebGL readiness before CTA activation, uses source-shaped progress/CTA intro motion, and removes the preloader through the source `scale: 1.2`, `opacity: 0`, `expo.out` reveal path.
+- Home no longer server-renders or immediately initializes an active work item before preloader entry; gallery entry owns the first active state.
+- Mobile work title/list behavior now matches the observed online/source computed state: title remains in layout but hidden, cards stay opaque, inactive links are hidden/non-interactive, active link is visible, and the active CTA owns pointer interaction.
+- The `?disable-webgl` query is available for DOM audits only; normal users still run WebGL, and visual/WebGL validation remains covered by output probes.
 
-The earlier Phase 1 closeout remains guarded.
-
-- Source `yD.onProjectActive()` uses `colors.blocks || "#000000"`; rebuild matches this active block fallback.
-- Final renderer audit, build, Home desktop/mobile probes, thumb spotlight probe, project media probe, about desktop/mobile probes, and interactive mouse probe passed during closeout.
-- Phase 1 has no active blockers in `PHASE1_AUDIT.md`.
+Phase 1 remains closed/guarded in `PHASE1_AUDIT.md`.
 
 ## Current Evidence
 
-The main Home brightness residual has been closed through two source-owned findings: active block material fallback parity and removal of a rebuild-only page overlay.
+Latest Phase 2 evidence:
 
-- Before this batch, canvas-only desktop bands were about `+0.061/+0.068` at `0.45/0.55`; mobile was about `+0.10` at `0.35-0.55`.
-- After the source fallback fix, canvas-only desktop center delta was `+0.0027`, with bands within about `-0.0017` to `+0.0040`.
-- After the source fallback fix, canvas-only mobile center delta was `-0.0042`, with bands within about `-0.0089` to `+0.0012`.
-- After removing the rebuild-only Home overlay, online-versus-rebuild center luma deltas were desktop `-0.0047` and mobile `-0.0027` in the latest attribution run.
-- A desktop CTA DOM visibility mismatch has been cleared; it was screenshot noise, not the WebGL residual.
-- Initial Home WebGL entry lifecycle is now guarded: source-shaped spotlight prep happens before gallery entry, and active-project reveal is not triggered before gallery entry.
-- `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
-- `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
-- Spotlight/thumb projection transfer is guarded: browser probe confirms source `Lo` raw-to-composite transfer order, `SpotLight.map` receives the thumb composite texture, spotlight position/target/intensity match `SD.init()`, and 3x3 active-bounds projection sampling has nonzero map content.
-- About lifecycle, project media material lifecycle, and interactive mouse/fluid paths passed their current guard probes.
+- DOM audit with WebGL disabled for test stability: `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`.
+- Desktop WebGL output probe: `/tmp/rd-output-p2-preloader-desktop`.
+- Mobile WebGL output probe: `/tmp/rd-output-p2-preloader-mobile`.
+- DOM audit result: online and rebuild both removed the preloader after entry, both activated `hashgraph-vc`, both moved to `gc-2026` after wheel input, and both reported `0` checked network failures/runtime exceptions.
+- Mobile DOM audit result: title display/visibility, card opacity, link opacity/pointer-events, active link visibility, and active CTA pointer-events matched online.
+- WebGL output probes reported no failures/exceptions and preserved active `hashgraph-vc` after entry on desktop and mobile.
+
+Audit method note:
+
+- `/tmp/phase2-home-audit.mjs` launches Chrome with GPU disabled; full WebGL can stall in headless SwiftShader after preloader entry.
+- Use `?disable-webgl` for DOM-interaction audits that do not need canvas rendering.
+- Use `scripts/probe-output-color.mjs` without `?disable-webgl` for visual/WebGL coverage.
 
 ## Source Of Truth
 
@@ -89,22 +88,15 @@ The main Home brightness residual has been closed through two source-owned findi
 
 Phase 1 is closed. Do not reopen it unless a concrete source-owned mismatch appears.
 
-Phase 2 audit evidence lives at `/tmp/rd-phase2-home-audit/home-dom-interaction-audit.json`.
-
-Current Phase 2 read:
-
-- Clean in the audit: online and rebuild had `0` network failures and `0` runtime exceptions in the checked Home desktop/mobile scenarios.
-- Clean in the audit: wheel input and second work-item click both moved the active project from `hashgraph-vc` to `gc-2026` in online and rebuild, so the first production batch should not start by rewriting the gallery scroll algorithm.
-- Closed in the first production batch: mobile nav shell now uses the source `.ui-header-mobile` and `.ui-nav-mobile-toggle > .wrap > svg` structure; mobile toggle rect matches online at `104x56` from `x=286,y=31`, and desktop hidden rect is `0x0`.
-- Closed in the first production batch: sound toggle now uses the source `28x28` div/SVG shell, z-index `200`, opacity `1` after enter, `.is-active` state, hover ring, and source-shaped rect bars.
-- Open source-backed gap: preloader markup, animation timing, pointer state, and pre-enter active work state differ. Online has no active work item before entering; rebuild server-renders/initializes `hashgraph-vc` as active before entering.
-- Lower-priority source-backed gap: mobile work list/title CSS differs, though the visible active mobile CTA is already close in the audit.
+Phase 2 Home shell/preloader/mobile-list parity is now closed by the latest batch. Do not call all of Phase 2 complete until the remaining observable Home flows are either matched or explicitly deferred.
 
 Recommended next move:
 
-1. Start the preloader source parity batch.
-2. Keep the preloader batch narrow because it touches markup, animation timing, session state, sound choice, and Home gallery entry timing.
-3. Keep Phase 1 WebGL, project media, about, and interaction probes as regression gates when shared render or lifecycle paths change.
+1. Audit sound choice and audio lifecycle from source/online: preloader sound opt-in/out, persisted sound state, Howler resume/mute behavior, and sound-toggle state after route/session restore.
+2. Audit route/session restore: Home to project/about, browser back/forward, `skip-preloader`, re-entry after `rd:has-entered`, and active work restoration.
+3. Sweep remaining Home interaction affordances: desktop hover CTA, progressbar click state, touch/drag/keyboard behavior, mobile menu close/open state, and footer/header animation details.
+4. Only after those checks are clean, decide whether Phase 2 is complete and move to Phase 3 project-detail media parity.
+5. Keep Phase 1 WebGL, project media, about, and interaction probes as regression gates when shared render or lifecycle paths change.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:
 
