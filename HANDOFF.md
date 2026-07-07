@@ -27,10 +27,11 @@ It is not a timeline. Use git for history.
 | Item | Value |
 | --- | --- |
 | Active phase | Phase 1, Home WebGL source parity |
-| Phase 1 status | Open, roughly 75-80% complete |
-| Current production priority | Spotlight/thumb projection transfer closeout |
-| Next secondary priority | Final Home WebGL distribution audit |
-| Last committed source-backed batch | Home blocks-color fallback parity |
+| Phase 1 status | Open, roughly 80-85% complete |
+| Current production priority | Final Home WebGL closeout audit |
+| Next secondary priority | Phase 1 completion package and regression probes |
+| Last committed source-backed code batch | Home blocks-color fallback parity |
+| Last closed evidence batch | Spotlight/thumb projection transfer guard |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -39,8 +40,8 @@ Estimated parity:
 | Area | Estimate | Current read |
 | --- | ---: | --- |
 | Architecture/lifecycle | 80-85% | Broad scene structure, route ownership, probes, and source guardrails are in place. |
-| Shader/render-manager parity | 70-80% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up. |
-| Final Home visual parity | 70-80% | Canvas-only Home distribution is now close; remaining work is projection/transfer closeout and final guard coverage. |
+| Shader/render-manager parity | 75-80% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up. |
+| Final Home visual parity | 80-85% | Canvas-only Home distribution and spotlight/thumb transfer are now guarded; remaining work is final closeout coverage. |
 
 ## Last Closed Batch
 
@@ -62,6 +63,7 @@ The main mid-field Home WebGL distribution residual has been source-fixed throug
 - Initial Home WebGL entry lifecycle is now guarded: source-shaped spotlight prep happens before gallery entry, and active-project reveal is not triggered before gallery entry.
 - `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
 - `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
+- Spotlight/thumb projection transfer is guarded: browser probe confirms source `Lo` raw-to-composite transfer order, `SpotLight.map` receives the thumb composite texture, spotlight position/target/intensity match `SD.init()`, and 3x3 active-bounds projection sampling has nonzero map content.
 
 ## Source Of Truth
 
@@ -75,14 +77,13 @@ The main mid-field Home WebGL distribution residual has been source-fixed throug
 
 ## Next Action
 
-Continue Phase 1 with a projection/closeout batch:
+Continue Phase 1 with a final Home WebGL closeout batch:
 
-1. Re-run and inspect spotlight/thumb projection content and transfer probes after the blocks-color fallback fix.
-2. Confirm no remaining source-owned mismatch in active block reveal/material state at capture time.
-3. If projection remains source-shaped, move to final Home WebGL closeout audit against `PHASE1_AUDIT.md` completion criteria.
-4. Patch only after a concrete source mismatch is identified.
-5. Update `PHASE1_AUDIT.md` with evidence; update `REBUILD_PLAN.md` only if the execution queue changes.
-6. Validate and commit the scoped batch.
+1. Run the final renderer audit, output-color probes, thumb spotlight probe, and relevant page/media probes.
+2. Check the results against `PHASE1_AUDIT.md` completion criteria.
+3. Patch only after a concrete source mismatch is identified.
+4. If no new mismatch appears, document remaining technical bridge boundaries and prepare Phase 1 closeout.
+5. Validate and commit the scoped batch.
 
 Do not spend the next batch first on these guarded areas unless new evidence points back at them:
 
@@ -92,7 +93,7 @@ Do not spend the next batch first on these guarded areas unless new evidence poi
 - Sky composite `V1/H1/z1/B1` target chain and `z1` uniform surface.
 - Renderer constructor clear color/alpha state.
 - `kA/Lu/I1` default visible target transfer.
-- Spotlight-map shader and Three light-chunk multiplication.
+- Spotlight-map shader, Three light-chunk multiplication, thumb transfer order, and projection sampling.
 - `w1.updateGalleryProgress()` centered wrapping.
 - `T1/x1/E1/M1` thumb scene surface.
 - Mouse/fluid feel, unless the batch touches interaction paths.

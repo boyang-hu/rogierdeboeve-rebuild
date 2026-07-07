@@ -46,41 +46,45 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 
 | Area | Estimate | Confidence | Current read |
 | --- | ---: | --- | --- |
-| Architecture/lifecycle | 75-80% | Strong | Broad scene, route, state, and probe surfaces are source-derived. |
-| Shader/render-manager parity | 70-80% | Medium | Many shader surfaces and pass edges are aligned; `kA/Lu/I1` is narrowed to a guarded follow-up. |
-| Final Home visual parity | 70-80% | Medium | Canvas-only Home distribution is now close after source blocks-color fallback parity; projection/transfer closeout remains. |
+| Architecture/lifecycle | 80-85% | Strong | Broad scene, route, state, and probe surfaces are source-derived. |
+| Shader/render-manager parity | 75-80% | Medium | Many shader surfaces and pass edges are aligned; `kA/Lu/I1` is narrowed to a guarded follow-up. |
+| Final Home visual parity | 80-85% | Medium | Canvas-only Home distribution and spotlight/thumb projection transfer are guarded; final closeout coverage remains. |
 | Runtime stability | Good | Strong | Build, renderer audit, and browser probes are currently clean. |
 
 Current decision map:
 
 | Lane | State | Next useful move |
 | --- | --- | --- |
-| Home WebGL distribution | Mostly guarded | Recheck only if projection closeout or final bands reveal a new source-owned mismatch. |
-| Spotlight/thumb projection | Active blocker | Inspect transfer content/brightness/depth after the blocks-color fallback fix. |
+| Home WebGL distribution | Mostly guarded | Recheck only if final closeout bands reveal a new source-owned mismatch. |
+| Spotlight/thumb projection | Guarded | Reopen only if final probes reveal a concrete source-owned transfer or sampling mismatch. |
 | `kA/Lu/I1` transfer | Watchlist | Reopen only if environment/floor evidence points into final work distribution. |
 | Interaction/mouse/fluid | Watchlist | Reopen only when touching interaction paths or when a specific regression is isolated. |
 
 ## Open Blockers
 
-1. Home WebGL distribution residuals.
+1. Final Home WebGL closeout audit.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, renderer constructor clear state, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
    - Current attribution: the mid-field block/projection brightness residual was caused by a source-owned block color fallback mismatch.
    - Guarded fix: source `yD.onProjectActive()` uses `colors.blocks || "#000000"`; rebuild now matches this fallback and probes guard active emissive.
-   - Open: final closeout should confirm no remaining source-owned distribution mismatch after projection review.
+   - Guarded transfer: spotlight/thumb projection content now follows source raw-to-composite transfer and map binding, with runtime projection sampling guardrails.
+   - Open: final closeout should confirm no remaining source-owned distribution mismatch across the full Phase 1 probe set.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
-2. Spotlight/thumb projection transfer feel.
-   - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
-   - Open: projected thumb brightness, depth, content transfer, and timing still do not feel source-exact.
-
-3. `kA/Lu/I1` composite and transfer interpretation.
+2. `kA/Lu/I1` composite and transfer interpretation.
    - Guarded: shader surfaces, pass settings, optional blur chain, resize ownership, runtime uniform order, GPU/LOW_RES bridge, and main/work camera surfaces.
    - Narrowed: source `I1` default `renderToScreen=true` renders C1 directly to screen; `renderTargetComposite` is retained but unused for the default visible Home path.
    - Rule: keep this as a regression guardrail, not the first suspect, unless new evidence contradicts the audit.
 
-4. Mouse/fluid interaction parity.
+3. Mouse/fluid interaction parity.
    - Guarded: `Ka` mouse simulation constructor/update ownership, raycast hit-UV ownership, main-fluid pointer/diff ownership, bounded pass geometry, and interactive probe coverage.
    - Open: final feel remains a regression concern when touching interaction paths.
+
+## Closed Active Blockers
+
+1. Spotlight/thumb projection transfer feel.
+   - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
+   - Closeout evidence: `scripts/probe-thumb-spotlight.mjs` passes after the block fallback fix and confirms raw target render, composite transfer, map ownership, spotlight position/target/intensity, active-project state, thumb scene state, and 3x3 projection sampling.
+   - Rule: reopen only with a concrete source-owned transfer, map, timing, or sampling mismatch.
 
 ## Evidence Register
 
@@ -131,7 +135,7 @@ Current guarded rebuild facts:
 - Light ownership is guarded: rebuild keeps `directionalLight2` out of the scene like source.
 - Initial Home entry now matches source ownership: rebuild prepares the Home spotlight before gallery entry, does not call full active-project reveal before gallery entry, and lets `enterWorkGallery()` own active reveal/look application. Browser output probe guards `homeEntryLifecycle`.
 - Active block color fallback is guarded: rebuild uses source `colors.blocks || "#000000"` fallback, and browser output probes guard active emissive against expected source value.
-- Remaining investigation should focus on spotlight/thumb projection transfer closeout and final P1 completion criteria.
+- Remaining investigation should focus on final P1 completion criteria.
 
 ### Home DOM Screenshot Noise
 
@@ -182,13 +186,19 @@ Current guarded rebuild facts:
 Current source read:
 
 - `SD.init()` owns Home spotlight map, target, position, and intensity setup.
+- Source `SD.init()` binds `J.workScene.spotLight.map` to `J.workThumbScene.renderManager.renderTargetComposite.texture`, sets position `(0, 0, 3.7)`, target `(0, 0, -8)`, intensity `220`, and emits resize before gallery entry.
+- Source thumb render manager `Lo.update()` renders the thumb scene into `renderTargetA`, binds that texture to the composite screen material, renders into `renderTargetComposite`, then resets the renderer target to the canvas.
+- Source `x1` uses one composite screen material for the thumb scene and keeps `renderToScreen=false`.
 - `TD.addEvents()` binds about spotlight map after its delayed setup.
 - `TD.animateOut()` and `TD.destroy()` do not restore the Home thumb composite; `SD.init()` owns the later Home bind.
 
 Current guarded rebuild facts:
 
 - Spotlight constructor defaults, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, shader surfaces, and projection sampling are guarded.
-- The open issue is projection feel: brightness, depth, content transfer, and timing.
+- `scripts/probe-thumb-spotlight.mjs` currently confirms `thumbRenderTransfer.stepsMatchExpected=true`, `spotlightMapReceivesCompositeTexture=true`, `thumbComposite.stateUniformsMatch=true`, and source-shaped thumb target/composite state.
+- The same probe confirms Home spotlight intensity `220`, position `[0,0,3.7]`, target `[0,0,-8]`, shadow camera FOV `90`, map projection through Three r164 `spotLightMap`, and no `castShadow` dependency.
+- Active-bounds projection sampling is guarded with `sampleCount=9`, `inMapCoverage=0.3333`, and `mapLumaMean=0.1441`; the thumb and composite target luma both read `0.5015` in the current desktop run.
+- Interpretation: no current source-owned projection transfer mismatch is identified; keep this lane guarded and move Phase 1 to final closeout audit.
 
 ### Render Managers And Composite Transfer
 
@@ -243,6 +253,8 @@ These are current boundaries, grouped by system instead of discovery time.
 | Camera/block materials | Block materials use Three default `onBeforeCompile` cache key path, no local override. |
 | Spotlight/thumb | Constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
 | Spotlight/thumb | About out/destroy keep the current spotlight map; `SD.init()` owns later Home map bind. |
+| Spotlight/thumb | Thumb render manager transfer follows source `Lo` raw target to composite target order. |
+| Spotlight/thumb | Home `SpotLight.map` receives the thumb composite texture and projection samples the active bounds through the Three r164 spotlight-map path. |
 | Interaction/about | Bounded fluid passes use source geometry and default culling; force pass stays fullscreen. |
 | Interaction/about | About character pan consumes shared source `Pe.mouse.normalized`. |
 
@@ -250,8 +262,8 @@ These are current boundaries, grouped by system instead of discovery time.
 
 Phase 1 can close only when:
 
-- Floor/environment/fog-bed residuals are source-fixed or explicitly proven to be bridge constraints.
-- Remaining spotlight/thumb projection differences are source-fixed or documented as unavoidable technical bridges.
+- Final Home desktop/mobile distribution residuals are source-fixed or explicitly proven to be bridge constraints.
+- Spotlight/thumb projection transfer remains guarded by current runtime probes unless new evidence identifies a concrete source-owned mismatch.
 - `kA/Lu/I1` transfer/composite ownership is source-isomorphic enough that no known source mismatch remains in the active graph.
 - Home desktop/mobile, about, and project media probes pass.
 - Build, renderer audit, recursive false/null extraction, and `git diff --check` pass.

@@ -21,8 +21,8 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Finish Phase 1 Home WebGL source parity.
-2. Close Home WebGL distribution through source-owned evidence.
-3. Close remaining spotlight/thumb projection transfer.
+2. Run final Home WebGL closeout against the current guarded evidence.
+3. Prepare the Phase 1 closeout package if the final probe set stays clean.
 4. Reopen `kA/Lu/I1`, interaction, project media, or about pages only when evidence or touched code requires it.
 
 Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
@@ -43,7 +43,7 @@ Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
 
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
-| 1. Home WebGL source parity | In progress, about 75-80% complete | Close the Phase 1 blockers in `PHASE1_AUDIT.md`. |
+| 1. Home WebGL source parity | In progress, about 80-85% complete | Close the Phase 1 blockers in `PHASE1_AUDIT.md`. |
 | 2. Home DOM/interaction parity | Paused | Resume only after Phase 1 closes. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
@@ -52,15 +52,16 @@ Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
 
 ## Phase 1 Queue
 
-### Active: Spotlight/thumb projection closeout
+### Active: Final Home WebGL closeout audit
 
-Goal: close projected thumb brightness, depth, content transfer, and timing now that the main Home distribution residual is source-fixed.
+Goal: determine whether Phase 1 can close with the current guarded evidence, or identify one concrete source-owned mismatch to patch.
 
 Current read:
 
 - The prior mid-field brightness residual was source-owned by block color fallback: source uses `colors.blocks || "#000000"`, and rebuild now matches.
 - Canvas-only source/rebuild deltas are now close on desktop and mobile after the fallback fix.
-- The active suspect set is now remaining spotlight/thumb projection transfer, then final P1 closeout coverage.
+- Spotlight/thumb projection transfer is guarded: source-shaped `Lo` raw-to-composite transfer, `SpotLight.map` composite binding, spotlight state, thumb scene state, and active-bounds projection sampling all pass runtime probes.
+- The active suspect set is now final P1 closeout coverage, not a specific visual-tuning lane.
 - The current attribution basis lives in `PHASE1_AUDIT.md`.
 - Do not promote a visual tweak into production unless the source path owns it.
 
@@ -79,17 +80,18 @@ Already guarded for this lane:
 - Home active CTA desktop visibility as screenshot-noise guard: parent hidden until hover, mobile visible.
 - Initial Home entry lifecycle: `SD.init()`-shaped spotlight prep happens before gallery entry, while WebGL active-project reveal waits for gallery entry.
 - Active block emissive fallback: `colors.blocks || "#000000"`.
+- Spotlight/thumb transfer order, composite map ownership, active-project spotlight state, and 3x3 projection sampling.
 
 Next source candidates, in order:
 
-1. Spotlight/thumb projection content, brightness, depth, and timing.
-2. Final Home WebGL closeout audit against `PHASE1_AUDIT.md`.
-3. Environment/floor or final target distribution only if the closeout audit reveals a new source-owned mismatch.
-4. Renderer state not yet covered by existing output-color audit guards.
+1. Final Home WebGL closeout audit against `PHASE1_AUDIT.md`.
+2. Environment/floor or final target distribution only if the closeout audit reveals a new source-owned mismatch.
+3. Renderer state not yet covered by existing output-color audit guards.
+4. Phase 1 closeout documentation and regression probe package.
 
 Rules:
 
-- Continue source-backed attribution in project activation/reveal ownership, spotlight/thumb transfer, `a1/i1/o1/t1`, `h1/u1/l1/c1`, environment target contents, and final work target distribution.
+- Continue source-backed attribution in project activation/reveal ownership, `a1/i1/o1/t1`, `h1/u1/l1/c1`, environment target contents, and final work target distribution.
 - Treat current structural guardrails as closed unless new evidence contradicts them.
 - Do not tune horizon, fog, brightness, or floor color by eye.
 - Keep detailed findings in `PHASE1_AUDIT.md`; keep this file as the next-action queue.
@@ -102,13 +104,14 @@ Required validation:
 - Project media probe if shared render/media paths change.
 - Focused band/capture attribution when the candidate source chain affects final color distribution.
 
-### Next: Spotlight/thumb projection content and transfer
+### Guarded: Spotlight/thumb projection content and transfer
 
-Goal: close projected thumb brightness, depth, content transfer, and timing.
+Goal: keep projected thumb brightness, depth, content transfer, and timing guarded while final closeout proceeds.
 
 Current boundary:
 
 - Shader, light-chunk, and `T1/x1/E1/M1` scene-surface evidence currently looks source-shaped.
+- Runtime probe confirms source `Lo` transfer order, `SpotLight.map` composite texture ownership, spotlight state, thumb composite state, and 3x3 projection sampling.
 - Do not repeat the already-verified spotlight-map shader/light-chunk path unless new evidence appears.
 
 Required validation:
