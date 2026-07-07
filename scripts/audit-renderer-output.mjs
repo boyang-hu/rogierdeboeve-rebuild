@@ -271,6 +271,7 @@ const rebuildSetSpotLightIntensity = extractBlock(rebuildWebgl, "private setSpot
 const rebuildSetDirectionalLightIntensity = extractBlock(rebuildWebgl, "private setDirectionalLightIntensity(");
 const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private setDirectionalLight2Intensity(");
 const rebuildUpdateHomeCamera = extractBlock(rebuildWebgl, "private updateHomeCamera(");
+const rebuildSourceWorkViewportCoords = extractBlock(rebuildWebgl, "function sourceWorkViewportCoords()");
 const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private updateWorkSceneForNextFrame(");
 const rebuildUpdateVisibleWorkItems = extractBlock(rebuildWebgl, "private updateVisibleWorkItems(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
@@ -4655,7 +4656,7 @@ const summary = {
         "item.mousePlane.material.uniforms.uTime.value = time",
         "item.material.uniforms.tDisplacement.value = this.displacementTarget.texture",
         "sourceGAUpdateMode: \"source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal\"",
-        "sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\"",
+        "sourceUCoordsMode: \"source-VA-XA-update-Pe-width-height-times-capped-dpr-direct-no-rebuild-Math.max-clamp\"",
         "sourceRayPlaneScale: [sourceRayPlaneSize.x, sourceRayPlaneSize.y, MOUSE_RAY_SCALE]",
         "&& Math.abs(active.rayPlane.scale.z - MOUSE_RAY_SCALE) < 1e-6",
         "targetSizingMode: \"source-GA-mouseSim-onResize-plane-scale-no-clamp\"",
@@ -4681,6 +4682,9 @@ const summary = {
         sourceWorkAndAboutRuntimeWrite:
           sourceVA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true
           && sourceXA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true,
+        sourceDirectPeNoClamp:
+          sourceVA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true
+          && sourceXA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true,
         sourceConstructorZero:
           sourceVA?.text.includes("uCoords:new I(new Q)") === true
           && sourceXABody.includes("uCoords:new I(new Q)")
@@ -4694,7 +4698,14 @@ const summary = {
         rebuildWorkAndAboutRuntimeWrite:
           rebuildWebgl.includes("function sourceWorkViewportCoords()")
           && rebuildWebgl.includes("material.uniforms.uCoords.value.set(coords.width, coords.height)")
-          && rebuildWebgl.includes("sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\""),
+          && rebuildWebgl.includes("sourceUCoordsMode: \"source-VA-XA-update-Pe-width-height-times-capped-dpr-direct-no-rebuild-Math.max-clamp\""),
+        rebuildDirectViewportNoClamp:
+          Boolean(rebuildSourceWorkViewportCoords)
+          && rebuildSourceWorkViewportCoords.includes("width: window.innerWidth * workDpr")
+          && rebuildSourceWorkViewportCoords.includes("height: window.innerHeight * workDpr")
+          && !rebuildSourceWorkViewportCoords.includes("Math.max(1, window.innerWidth * workDpr)")
+          && !rebuildSourceWorkViewportCoords.includes("Math.max(1, window.innerHeight * workDpr)")
+          && rebuildWebgl.includes("sourceUCoordsDirectViewportMatches:"),
         rebuildConstructorZero:
           rebuildWebgl.includes("uCoords: { value: new Vector2(0, 0) }")
           && rebuildWebgl.includes("sourceUCoordsConstructorMode = \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"")
@@ -4708,7 +4719,8 @@ const summary = {
           && rebuildOutputProbe.includes("auxUCoordsConstructorMode")
           && rebuildOutputProbe.includes("floatingAuxUCoordsConstructorMode")
           && rebuildOutputProbe.includes("floatingAuxRuntimeUCoordsMode")
-          && rebuildOutputProbe.includes("floatingAuxUCoordsRuntimeStaysConstructorZero"),
+          && rebuildOutputProbe.includes("floatingAuxUCoordsRuntimeStaysConstructorZero")
+          && rebuildOutputProbe.includes("sourceUCoordsDirectViewportMatches"),
       },
       uUvOffsetOwnership: {
         sourceShaderVec3:

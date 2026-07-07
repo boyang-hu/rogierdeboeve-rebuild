@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `IT` camera update denominator ownership. Source `IT.update()` uses direct `Pe.w/Pe.h` denominators for camera target mapping and roll input, with no `Math.max(1, ...)` clamp. The rebuild now removes that local clamp from `updateHomeCamera()` and guards the direct denominator path through output probes and renderer audit. This is a camera-controller runtime math guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `VA/XA` runtime `uCoords` direct viewport ownership. Source `VA.update()` and about `XA.update()` write direct `Pe.w*i,Pe.h*i` coords, with no `Math.max(1, ...)` clamp. The rebuild now removes that local clamp from `sourceWorkViewportCoords()` and guards the direct viewport*capped-DPR path through output probes and renderer audit. This is a block-material runtime coordinate guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -191,13 +191,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `IT` camera update denominator ownership.
-- Source evidence: `IT.update()` destructures `Pe.w/Pe.h` and feeds those values directly into `uc(...)` target mapping plus `uc(Math.abs(delta.x)/Pe.w,...)` roll input.
-- Removed rebuild-owned `Math.max(1, window.innerWidth/innerHeight)` clamps from `updateHomeCamera()`.
-- `__rogierOutputProbe.camera` now reports `updateDenominatorMode`, `rollDenominatorMode`, direct denominator values, and viewport parity.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the camera denominator clamp.
-- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, and desktop/mobile output probes.
-- This is camera-controller runtime math ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `VA/XA` runtime `uCoords` direct viewport ownership.
+- Source evidence: `VA.update()` and about `XA.update()` write `uCoords` directly from `Pe.w*i,Pe.h*i`.
+- Removed rebuild-owned `Math.max(1, window.innerWidth * workDpr)` / `Math.max(1, window.innerHeight * workDpr)` clamps from `sourceWorkViewportCoords()`.
+- `__rogierOutputProbe.settings.work.p1UpdateCulling.items[]` now reports the direct no-clamp mode, expected coords, direct viewport parity, and rounded render-target divergence diagnostics.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the runtime `uCoords` clamp.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, desktop/mobile output probes, and mobile DPR `1.25` output probe.
+- This is block-material runtime coordinate ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -208,25 +208,26 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-it-camera-denominator-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-it-camera-denominator-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-ucoords-direct-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-ucoords-direct-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-it-camera-denominator-output-desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-it-camera-denominator-output-mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-ucoords-direct-output-desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-ucoords-direct-output-mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 OUT_DIR=/tmp/rd-ucoords-direct-output-mobile-dpr125 node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed for the `IT` camera update denominator ownership batch before commit. Renderer audit wrote `/tmp/rd-it-camera-denominator-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for direct `Pe.w/Pe.h` denominator ownership. Desktop and mobile output probes verified the direct camera denominator markers with zero failures, exceptions, or console messages.
+All relevant checks passed for the `VA/XA` runtime `uCoords` direct viewport ownership batch before commit. Renderer audit wrote `/tmp/rd-ucoords-direct-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for direct `Pe.w*i,Pe.h*i` coord ownership. Desktop, mobile, and mobile DPR `1.25` output probes verified the direct `uCoords` markers with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this camera denominator ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this runtime `uCoords` ownership batch.
 
 Project-media was not rerun for this batch because production project-media code and route data were untouched; project pages remain regression gates, not proof of Home parity.
 
 Verified:
 
-- Renderer audit passed for the camera denominator ownership batch: `/tmp/rd-it-camera-denominator-audit.json`.
+- Renderer audit passed for the runtime `uCoords` direct viewport ownership batch: `/tmp/rd-ucoords-direct-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source direct camera denominator markers.
+- Desktop, mobile, and mobile DPR `1.25` output probes passed with the source direct `uCoords` markers.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
@@ -267,7 +268,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `SD.init()` Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership and application order, source `p1` desktop/mobile spotlight parallax branch, source `IT` direct camera update denominator ownership, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `SD.init()` Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership and application order, source `p1` desktop/mobile spotlight parallax branch, source `IT` direct camera update denominator ownership, source `VA/XA` direct runtime `uCoords` ownership, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.

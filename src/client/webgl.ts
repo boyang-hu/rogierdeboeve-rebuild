@@ -5036,8 +5036,8 @@ function sourceWorkDpr() {
 function sourceWorkViewportCoords() {
   const workDpr = sourceWorkDpr();
   return {
-    width: Math.max(1, window.innerWidth * workDpr),
-    height: Math.max(1, window.innerHeight * workDpr),
+    width: window.innerWidth * workDpr,
+    height: window.innerHeight * workDpr,
   };
 }
 
@@ -8876,8 +8876,12 @@ void main() {
         revealSpreadSidesInSourceRange:
           item.material.uniforms.uRevealSpreadSides.value >= 0 && item.material.uniforms.uRevealSpreadSides.value <= 1,
         sourceGAUpdateMode: "source-GA-update-material-then-local-Ka-then-bindings-before-p1-side-reveal",
-        sourceUCoordsMode: "source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding",
+        sourceUCoordsMode: "source-VA-XA-update-Pe-width-height-times-capped-dpr-direct-no-rebuild-Math.max-clamp",
         sourceUCoordsExpected: [sourceCoords.width, sourceCoords.height],
+        sourceUCoordsDpr: sourceWorkDpr(),
+        sourceUCoordsDirectViewportMatches:
+          Math.abs(sourceCoords.width - window.innerWidth * sourceWorkDpr()) < 1e-6
+          && Math.abs(sourceCoords.height - window.innerHeight * sourceWorkDpr()) < 1e-6,
         uCoords: item.material.uniforms.uCoords.value.toArray(),
         uCoordsMatchesSource:
           Math.abs(item.material.uniforms.uCoords.value.x - sourceCoords.width) < 1e-6
