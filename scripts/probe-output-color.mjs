@@ -1278,6 +1278,9 @@ async function runProbe() {
   }
   const sizingErrors = [];
   if (workRenderSizing?.bloomStartMode !== "source-Lu-Fa-render-size-div-4") sizingErrors.push("workBloomStartMode");
+  if (mainRenderSizing?.c1RatioResizeOrder !== "source-I1-resize-writes-C1-uRatio-before-target-resize") {
+    sizingErrors.push("mainC1RatioResizeOrder");
+  }
   if (mainRenderSizing?.bloomStartMode !== "source-I1-Fa-render-size-div-2") sizingErrors.push("mainBloomStartMode");
   if (mainRenderSizing?.fluidSizeMode !== "source-I1-Fa-render-size-div-2-then-div-3") sizingErrors.push("mainFluidSizeMode");
   if (sizingErrors.length) {
@@ -1366,6 +1369,12 @@ async function runProbe() {
   if (preCompositeUniforms?.tSceneIsCompositeTarget !== false) materialSurfaceErrors.push("preCompositeSceneCompositeSelfBinding");
   if (preCompositeUniforms?.uTimeUpdateOrder !== "source-U1-C1-update-after-I1-render") {
     materialSurfaceErrors.push("preCompositeUTimeUpdateOrder");
+  }
+  if (preCompositeUniforms?.uRatioResizeOrder !== "source-I1-resize-writes-C1-uRatio-before-target-resize") {
+    materialSurfaceErrors.push("preCompositeURatioResizeOrder");
+  }
+  if (preCompositeUniforms?.uContainerSizeResizeOrder !== "source-U1-resize-calls-C1-resize-after-I1-super-resize") {
+    materialSurfaceErrors.push("preCompositeUContainerSizeResizeOrder");
   }
   const expectedC1UniformKeys = [
     "tScene",

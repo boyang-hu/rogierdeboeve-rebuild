@@ -8553,6 +8553,7 @@ void main() {
     const height = window.innerHeight;
     const dpr = sourceDpr();
     const workDpr = sourceWorkDpr();
+    this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.markSourceSkyResizeTicking();
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(dpr);
@@ -8635,7 +8636,6 @@ void main() {
     this.mainCamera.updateProjectionMatrix();
     this.cameraOrigin.z = width >= BREAKPOINT_MD ? 5.5 : 5;
     this.cameraControllerGroup.lookAt(this.cameraLookAt);
-    this.preCompositeMaterial.uniforms.uRatio.value = width / height;
     this.preCompositeMaterial.uniforms.uContainerSize.value.set(width, height);
     this.displacementMaterial.uniforms.uRatio.value = width / height;
     const displacementSize = Math.max(1, Math.round((height / 10) * dpr));
@@ -10451,6 +10451,7 @@ void main() {
           renderManagerSizing: {
             primaryDepthBuffer: this.mainRawTarget.depthBuffer,
             renderTargetSize: { width: this.mainRawTarget.width, height: this.mainRawTarget.height },
+            c1RatioResizeOrder: "source-I1-resize-writes-C1-uRatio-before-target-resize",
             fxaaResizeInputMode: "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
             bloomStart: this.mainBloomHorizontalTargets[0]
               ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
@@ -10618,6 +10619,9 @@ void main() {
           uBgColor: (this.preCompositeMaterial.uniforms.uBgColor.value as Color).toArray(),
           uTime: this.preCompositeMaterial.uniforms.uTime.value,
           uTimeUpdateOrder: "source-U1-C1-update-after-I1-render",
+          uRatio: this.preCompositeMaterial.uniforms.uRatio.value,
+          uRatioResizeOrder: "source-I1-resize-writes-C1-uRatio-before-target-resize",
+          uContainerSizeResizeOrder: "source-U1-resize-calls-C1-resize-after-I1-super-resize",
           uContrast: this.preCompositeMaterial.uniforms.uContrast.value,
           uFluidStrength: this.preCompositeMaterial.uniforms.uFluidStrength.value,
           uFluidStrengthConstructorDefault: this.preCompositeMaterial.userData.sourceFluidStrengthConstructorDefault,

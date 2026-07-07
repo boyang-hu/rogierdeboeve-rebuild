@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch in progress: source `Lu/I1` FXAA resize input ownership. The mirrored bundle sizes `renderTargetFXAA` and writes `ig.uResolution` with `e*n,t*n` before the later rounded render-size assignment (`e=Math.round(e*n),t=Math.round(t*n)`). Local Three `RenderTarget.setSize()` preserves those fractional inputs on the target/texture state, so the rebuild now uses `width * dpr` / `width * workDpr` for the disabled-by-default FXAA branches instead of the already rounded render sizes. This is a source-shape guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `I1/C1` resize order ownership. Source `I1.resize()` writes `C1.uRatio=e/t` before target resizing, while source `U1.resize()` calls `C1.resize(e,t)` after the inherited `I1`/camera resize to write `uContainerSize`. The rebuild now separates those writes: `uRatio` is updated at the top of `resize()`, and `uContainerSize` stays in the later `C1.resize`-equivalent section. This is a resize-order guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -188,13 +188,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source texture constructor ownership for Home preloaded textures.
-- Source evidence: `Qe.init()` resolves `k0("lossy")` before `Xt.init()`, `Xt.preloadTextures()` immediately creates `Xt.blueNoise`, `Xt.floorNormal`, `Xt.perlin1`, and `Xt.perlin2`, `VA/XA/KA` construct `tPerlin:new I(Xt.perlin1)`, `C1` constructs `tPerlin:new I(Xt.perlin2)`, and `a1.init()` awaits `Xt.floorNormal` before constructing `o1`.
-- Production `initWebGL()` now awaits `prepareSourceTextureAssets()` before `new WebGLBackdrop(root, sourceTextureAssets)`.
-- `WebGLBackdrop` applies those source texture objects before material construction, so `C1.tPerlin`, `VA/XA/KA.tPerlin`, and the floor normal map construct from source immediate texture objects instead of local placeholders.
-- `__rogierOutputProbe` now reports `sourceTextureAssetMode=source-Qe-webp-before-Xt-preloadTextures-before-J-init`, constructor-immediate markers for `perlin1`, `perlin2`, active/auxiliary/floating materials, and `floor.normalMap.constructorMode=source-a1-await-Xt-floorNormal-before-o1-construction`.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old source-texture constructor placeholders and the old instance-local preload ordering returning.
-- This is texture constructor ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `I1/C1` resize-order ownership for the Home main pre-composite material.
+- Source evidence: `I1.resize(e,t,n)` writes `this.compositeMaterial.uniforms.uRatio.value=e/t` before renderer/target sizing, while `U1.resize(e,t,n)` later calls `this.renderManager.compositeMaterial.resize(e,t)` and source `C1.resize(e,t)` writes `uContainerSize`.
+- Production `resize()` now writes `preCompositeMaterial.uRatio` at the top of the resize path before renderer and render-target sizing.
+- `preCompositeMaterial.uContainerSize` remains in the later `C1.resize`-equivalent section after the main camera resize.
+- `__rogierOutputProbe` now reports `settings.main.renderManagerSizing.c1RatioResizeOrder`, `uniforms.preComposite.uRatio`, `uRatioResizeOrder`, and `uContainerSizeResizeOrder`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject recombining the source-split `uRatio` and `uContainerSize` resize writes.
+- Verification passed: `git diff --check`, syntax checks, renderer audit with recursive false/null count `0`, build, desktop/mobile output probes, desktop thumb spotlight probe, and project-media probe. `/gc-2026/` and `/hashgraph-vc/` retained `5/5` visible media.
+- This is resize-order ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -202,29 +203,30 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
+node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-source-texture-constructor-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-source-texture-constructor-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-c1-resize-order-final2-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-c1-resize-order-final2-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-output-desktop CDP_PORT=9420 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-output-mobile CDP_PORT=9421 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-thumb CDP_PORT=9422 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-media CDP_PORT=9423 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-output-desktop CDP_PORT=9478 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-output-mobile CDP_PORT=9479 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile DEVICE_SCALE_FACTOR=2 node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-thumb CDP_PORT=9480 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-c1-resize-order-media CDP_PORT=9481 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the source texture constructor ownership batch before commit. Renderer audit wrote `/tmp/rd-source-texture-constructor-audit.json`; recursive false/null extraction printed `false/null entries 0`, and the audit/probe surface reported source/rebuild/probe coverage for the `Qe/Xt` prepared texture asset path, `C1.tPerlin`, `VA/XA/KA.tPerlin`, and floor normal constructor ownership. Desktop and mobile output probes verified `sourceTextureAssetMode=source-Qe-webp-before-Xt-preloadTextures-before-J-init`, prepared-before-constructor markers, immediate `perlin1/perlin2` constructor bindings, and floor normal constructor binding with zero failures, exceptions, or console messages.
+All relevant checks passed for the `I1/C1` resize-order ownership batch before commit. Renderer audit wrote `/tmp/rd-c1-resize-order-final2-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the source split between `I1.resize()` writing `C1.uRatio` before target sizing and `U1.resize -> C1.resize` writing `uContainerSize` later. Desktop and mobile output probes verified `c1RatioResizeOrder`, `uRatioResizeOrder`, and `uContainerSizeResizeOrder` with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this source texture constructor ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `I1/C1` resize-order ownership batch.
 
-Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages, `projectMediaShaderMode=source-UD-ID-LD-ShaderMaterial-glsl3`, `projectMediaGlslVersion=300 es`, and zero failures, exceptions, or console messages.
+Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages with zero failures, exceptions, or console messages.
 
 Verified:
 
-- Renderer audit passed for the source texture constructor ownership batch: `/tmp/rd-source-texture-constructor-audit.json`.
+- Renderer audit passed for the `I1/C1` resize-order ownership batch: `/tmp/rd-c1-resize-order-final2-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source texture asset preparation, `C1/VA/XA/KA` `tPerlin`, and floor normal constructor ownership markers.
+- Desktop and mobile output probes passed with the source resize-order markers.
 - Desktop thumb spotlight probe passed.
 - Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
 - Project media remains a regression gate, not proof of Home parity.

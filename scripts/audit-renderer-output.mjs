@@ -274,6 +274,7 @@ const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private u
 const rebuildUpdateVisibleWorkItems = extractBlock(rebuildWebgl, "private updateVisibleWorkItems(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildOnMouseMove = extractBlock(rebuildWebgl, "private onMouseMove =");
+const rebuildResize = extractBlock(rebuildWebgl, "private resize =");
 const rebuildHomeGalleryTick = extractBlock(rebuildMain, "const tick = (now: number)");
 const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
   ? rebuildTick.slice(0, rebuildTick.indexOf("this.renderer.setRenderTarget(this.mainRawTarget);"))
@@ -2351,6 +2352,29 @@ const summary = {
           "this.preCompositeMaterial.uniforms.tScene.value = this.sourceMainRenderSettings.blur.enabled ? this.mainBlurTargetB.texture : this.mainRawTarget.texture",
           "this.sourceMainRenderSettings.luminosity.enabled ? this.mainBloomBrightTarget : undefined",
         ].every((needle) => rebuildWebgl.includes(needle)),
+        sourceC1ResizeRatioBeforeTargetResize:
+          orderedIncludes(sourceMainI1.text, [
+            "resize=(e,t,n)=>{if(this.compositeMaterial.uniforms.uRatio.value=e/t",
+            "this.renderTargetA.setSize(e,t)",
+          ]),
+        rebuildC1ResizeRatioBeforeTargetResize:
+          Boolean(rebuildResize)
+          && orderedIncludes(rebuildResize, [
+            "this.preCompositeMaterial.uniforms.uRatio.value = width / height;",
+            "this.renderer.setSize(width, height);",
+            "this.mainRawTarget.setSize(renderWidth, renderHeight);",
+          ])
+          && (rebuildResize.match(/preCompositeMaterial\.uniforms\.uRatio\.value/g)?.length ?? 0) === 1
+          && rebuildWebgl.includes("c1RatioResizeOrder: \"source-I1-resize-writes-C1-uRatio-before-target-resize\""),
+        rebuildC1ContainerResizeAfterMainResize:
+          Boolean(rebuildResize)
+          && orderedIncludes(rebuildResize, [
+            "this.preCompositeMaterial.uniforms.uRatio.value = width / height;",
+            "this.mainRawTarget.setSize(renderWidth, renderHeight);",
+            "this.mainCamera.updateProjectionMatrix();",
+            "this.preCompositeMaterial.uniforms.uContainerSize.value.set(width, height);",
+          ])
+          && rebuildWebgl.includes("uContainerSizeResizeOrder: \"source-U1-resize-calls-C1-resize-after-I1-super-resize\""),
         sourceC1RuntimeUniformOrder:
           orderedIncludes(sourceMainI1.text, [
             "this.settings.fluid.enabled&&(this.compositeMaterial.uniforms.uFluidStrength.value>0&&this.fluidSimulation.update()",
@@ -2479,6 +2503,8 @@ const summary = {
         mainRawCameraMode: rebuildWebgl.includes("mainRawCameraMode: \"source-yg-perspective-distance-1000-no-camera-controller\""),
         mainRawRenderCamera: rebuildWebgl.includes("mainRawRenderCamera: \"source-U1-I1-renderTargetA-uses-yg-camera\""),
         c1UpdateOrder: rebuildWebgl.includes("uTimeUpdateOrder: \"source-U1-C1-update-after-I1-render\""),
+        c1ContainerResizeOrder:
+          rebuildWebgl.includes("uContainerSizeResizeOrder: \"source-U1-resize-calls-C1-resize-after-I1-super-resize\""),
         lensflareMouseMoveInput:
           rebuildWebgl.includes("this.setMainLensflareLightPosition(0, 1 - event.clientY / window.innerHeight);") &&
           !rebuildWebgl.includes("this.setMainLensflareLightPosition(0, 1 - event.clientY / Math.max(1, window.innerHeight));") &&
