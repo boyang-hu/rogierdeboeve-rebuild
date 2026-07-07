@@ -73,6 +73,11 @@ function closeTo(actual, expected, epsilon = 0.001) {
   return Math.abs((actual ?? NaN) - expected) <= epsilon;
 }
 
+function distance2(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return Number.POSITIVE_INFINITY;
+  return Math.hypot((a[0] ?? 0) - (b[0] ?? 0), (a[1] ?? 0) - (b[1] ?? 0));
+}
+
 function sourceRound(value, precision = 4) {
   const multiplier = 10 ** precision;
   return Math.round(value * multiplier) / multiplier;
@@ -1915,6 +1920,22 @@ async function runProbe() {
     }
   }
   if (mainFluidMaterials.force?.blending !== 2) materialSurfaceErrors.push("mainFluidForceBlending");
+  const mainFluidInteraction = mainFluid.interaction || {};
+  const mainFluidPointerDenominatorMode = mainFluidInteraction.pointerDenominatorMode;
+  const mainFluidDiffMode = mainFluidInteraction.diffMode;
+  const mainFluidCenterClampMode = mainFluidInteraction.centerClampMode;
+  const mainFluidForceMode = mainFluidInteraction.forceMode;
+  if (mainFluidInteraction.source !== "source-ag-qT-window-mousemove-force-pass") materialSurfaceErrors.push("mainFluidInteractionSource");
+  if (mainFluidPointerDenominatorMode !== "source-qT-onMouseMove-Pe-w-h-direct-no-rebuild-Math.max-clamp") {
+    materialSurfaceErrors.push("mainFluidPointerDenominatorMode");
+  }
+  if (mainFluidDiffMode !== "source-qT-updateMouseDiff-subVectors-copyOld-then-zero-current-origin") {
+    materialSurfaceErrors.push("mainFluidDiffMode");
+  }
+  if (mainFluidCenterClampMode !== "source-qT-update-center-Math.min-Math.max-cellScale-cursor-padding") {
+    materialSurfaceErrors.push("mainFluidCenterClampMode");
+  }
+  if (mainFluidForceMode !== "source-qT-update-force-diff-half-times-mouseForce") materialSurfaceErrors.push("mainFluidForceMode");
   const mainFluidTargets = mainFluid.targets || {};
   for (const key of expectedMainFluidTargetKeys) {
     if (mainFluidTargets[key]?.texture?.type !== 1015) materialSurfaceErrors.push(`mainFluid${key}FloatType`);
@@ -1932,6 +1953,10 @@ async function runProbe() {
     if (mainFluidSizing.fboSizeMatchesSource !== true) materialSurfaceErrors.push("mainFluidRawFboSize");
     if (mainFluidSizing.cellScaleMatchesSource !== true) materialSurfaceErrors.push("mainFluidRawCellScale");
     if (mainFluidSizing.targetsMatchFboSize !== true) materialSurfaceErrors.push("mainFluidRawTargetSize");
+    if (distance2(mainFluid.pointer, [0, 0]) <= 0.000001) {
+      if (distance2(mainFluid.pointerDiff, [0, 0]) > 0.000001) materialSurfaceErrors.push("mainFluidOriginPointerDiff");
+      if (distance2(mainFluidInteraction.force, [0, 0]) > 0.000001) materialSurfaceErrors.push("mainFluidOriginForce");
+    }
   }
   if (materialSurfaceErrors.length) {
     throw new Error(`Composite material source-shape mismatch: ${materialSurfaceErrors.join(", ")}`);

@@ -70,7 +70,40 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults including zero-vector `uCoords` construction, source `$A` about local `Ka` runtime writeback, source `ZA/KA` floating no-sampler-write and no-`uCoords` runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence plus `scroll.active` restore preservation ownership are guarded; source `qw` renderer constructor/resize ownership is guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing and source-rounded `uScrollOpacity=Cs(scroll,0,Pe.h*.25,1,0,!0)` ownership are guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `yD/Qe.workState` restore now preserves the restored `scroll.active` value instead of forcing it inactive in the rebuild. The output probe can seed an active saved work state and verifies the restored active flag survives through Home gallery initialization; renderer audit guards the source restore marker and rejects `scroll.active = false;`. This is route-state restore parity only; Phase 1 remains open.
+Latest accepted batch: source `ag/qT` main-fluid pointer and diff ownership now matches the mirrored force-pass behavior. The rebuild uses direct `Pe.w/Pe.h`-equivalent denominators for main-fluid pointer coords, keeps a persistent diff vector, copies old coords before applying the source current-origin zero-diff guard, and exposes denominator/diff/center/force modes through runtime probes. This is main-fluid interaction parity only; Phase 1 remains open.
+
+### S1-350 `ag/qT` Main-Fluid Pointer Diff Ownership
+
+This batch aligns one source-backed interaction edge in the main fluid force pass. It does not change shader text, render targets, GPU-tier fluid enablement, visual constants, project data, route behavior, or the source `I1/C1` fluid binding order.
+
+Source evidence:
+
+- Source `qT.onMouseMove({x:e,y:t})` writes `this.mouse.coords.set(e/Pe.w*2-1,-(t/Pe.h)*2+1)`.
+- Source `qT.updateMouseDiff()` runs `this.mouse.diff.subVectors(this.mouse.coords,this.mouse.coordsOld)`, then `this.mouse.coordsOld.copy(this.mouse.coords)`, then clears diff when `coordsOld` is `(0,0)`. Because that check happens after the copy, it suppresses diff when the current normalized coords are `(0,0)`.
+- Source `qT.update()` computes force as `diff / 2 * mouseForce`, clamps `center` with `Math.min(Math.max(...))` plus cursor/cell-scale padding, writes `force`, `center`, and `scale`, then renders the pass.
+
+Runtime and tooling changes:
+
+- `MainFluidPass` now keeps persistent `pointerDiff`, matching source `mouse.diff`.
+- `updateMainFluidPass()` no longer uses the rebuild-only main-fluid `Math.max(1, window.innerWidth/Height)` denominator guard or pointer `MathUtils.clamp(...)`; it uses direct `window.innerWidth/window.innerHeight`, matching source `Pe.w/Pe.h`.
+- `updateMainFluidPass()` now updates `pointerDiff` with `subVectors(pointer, pointerOld)`, copies `pointerOld`, and applies the source current-origin zero-diff guard before writing the force uniform.
+- The main-fluid center clamp now uses the source-shaped `Math.min(Math.max(...))` expression.
+- `mainFluidProbe()` exposes `pointerDiff` plus pointer denominator, diff, center clamp, and force mode markers.
+- `scripts/probe-output-color.mjs`, `scripts/probe-interactive-mouse.mjs`, and `scripts/audit-renderer-output.mjs` assert the new source markers and reject restoring the old denominator clamp or clone-diff path.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-main-fluid-qt-audit-postdocs.json` passed; recursive false/null review printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed at `/tmp/rd-main-fluid-qt-output`.
+- Interactive mouse probe passed at `/tmp/rd-main-fluid-qt-interactive`.
+- Project media probe passed at `/tmp/rd-main-fluid-qt-project-media`; `gc-2026` and `hashgraph-vc` both retained `5/5` visible media with zero failures, exceptions, or console messages.
+
+Decision: keep the main-fluid `ag/qT` pointer/diff path source-shaped. Do not restore the rebuild-only main-fluid pointer denominator clamp or transient clone-diff path without mirrored-bundle evidence. Phase 1 remains open because this closes one fluid interaction ownership mismatch only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-349 `yD/Qe.workState` Restore Preserves `scroll.active`
 

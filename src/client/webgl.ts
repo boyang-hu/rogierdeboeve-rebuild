@@ -459,6 +459,7 @@ type MainFluidPass = {
   bounds: Vector2;
   pointerOld: Vector2;
   pointer: Vector2;
+  pointerDiff: Vector2;
   enabled: boolean;
 };
 
@@ -7630,6 +7631,7 @@ void main() {
       bounds,
       pointerOld: new Vector2(),
       pointer: new Vector2(),
+      pointerDiff: new Vector2(),
       enabled: settings.enabled && this.debugMainFluid !== "off",
     };
   }
@@ -9061,11 +9063,15 @@ void main() {
     const settings = this.sourceMainRenderSettings.fluid;
     const pointer = pass.pointer;
     pointer.set(
-      MathUtils.clamp((this.pointerPixels.x / Math.max(1, window.innerWidth)) * 2 - 1, -1, 1),
-      MathUtils.clamp(-(this.pointerPixels.y / Math.max(1, window.innerHeight)) * 2 + 1, -1, 1),
+      (this.pointerPixels.x / window.innerWidth) * 2 - 1,
+      -(this.pointerPixels.y / window.innerHeight) * 2 + 1,
     );
-    const diff = pointer.clone().sub(pass.pointerOld);
+    const diff = pass.pointerDiff;
+    diff.subVectors(pointer, pass.pointerOld);
     pass.pointerOld.copy(pointer);
+    if (pass.pointerOld.x === 0 && pass.pointerOld.y === 0) {
+      diff.set(0, 0);
+    }
     pass.bounds.copy(settings.bounce ? new Vector2(0, 0) : pass.cellScale);
 
     pass.advectionMaterial.uniforms.velocity.value = pass.targets.main.texture;
@@ -9075,8 +9081,8 @@ void main() {
 
     const cursorX = settings.cursorSize * pass.cellScale.x;
     const cursorY = settings.cursorSize * pass.cellScale.y;
-    const centerX = MathUtils.clamp(pointer.x, -1 + cursorX + pass.cellScale.x * 2, 1 - cursorX - pass.cellScale.x * 2);
-    const centerY = MathUtils.clamp(pointer.y, -1 + cursorY + pass.cellScale.y * 2, 1 - cursorY - pass.cellScale.y * 2);
+    const centerX = Math.min(Math.max(pointer.x, -1 + cursorX + pass.cellScale.x * 2), 1 - cursorX - pass.cellScale.x * 2);
+    const centerY = Math.min(Math.max(pointer.y, -1 + cursorY + pass.cellScale.y * 2), 1 - cursorY - pass.cellScale.y * 2);
     pass.forceMaterial.uniforms.force.value.set((diff.x / 2) * settings.mouseForce, (diff.y / 2) * settings.mouseForce);
     pass.forceMaterial.uniforms.center.value.set(centerX, centerY);
     pass.forceMaterial.uniforms.scale.value.set(settings.cursorSize, settings.cursorSize);
@@ -11569,8 +11575,13 @@ void main() {
       },
       pointer: pass.pointer.toArray(),
       pointerOld: pass.pointerOld.toArray(),
+      pointerDiff: pass.pointerDiff.toArray(),
       interaction: {
         source: "source-ag-qT-window-mousemove-force-pass",
+        pointerDenominatorMode: "source-qT-onMouseMove-Pe-w-h-direct-no-rebuild-Math.max-clamp",
+        diffMode: "source-qT-updateMouseDiff-subVectors-copyOld-then-zero-current-origin",
+        centerClampMode: "source-qT-update-center-Math.min-Math.max-cellScale-cursor-padding",
+        forceMode: "source-qT-update-force-diff-half-times-mouseForce",
         force: (pass.forceMaterial.uniforms.force.value as Vector2).toArray(),
         center: (pass.forceMaterial.uniforms.center.value as Vector2).toArray(),
         scale: (pass.forceMaterial.uniforms.scale.value as Vector2).toArray(),

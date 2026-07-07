@@ -153,6 +153,7 @@ function assertInteractiveResponse(before, after, finalPoint) {
     mainFluidPointerBefore: beforeMainFluid.pointer,
     mainFluidPointerAfter: mainFluid.pointer,
     mainFluidPointerOldAfter: mainFluid.pointerOld,
+    mainFluidPointerDiffAfter: mainFluid.pointerDiff,
     mainFluidCenterAfter: mainFluid.interaction?.center,
     screenSpeed: screen.speed,
     activeUniformSpeed: active.uniformSpeed,
@@ -209,6 +210,18 @@ function assertInteractiveResponse(before, after, finalPoint) {
 
   if (mainFluid.enabled) {
     if (mainFluid.interaction?.source !== "source-ag-qT-window-mousemove-force-pass") errors.push("main-fluid-interaction-source");
+    if (mainFluid.interaction?.pointerDenominatorMode !== "source-qT-onMouseMove-Pe-w-h-direct-no-rebuild-Math.max-clamp") {
+      errors.push("main-fluid-pointer-denominator-mode");
+    }
+    if (mainFluid.interaction?.diffMode !== "source-qT-updateMouseDiff-subVectors-copyOld-then-zero-current-origin") {
+      errors.push("main-fluid-diff-mode");
+    }
+    if (mainFluid.interaction?.centerClampMode !== "source-qT-update-center-Math.min-Math.max-cellScale-cursor-padding") {
+      errors.push("main-fluid-center-clamp-mode");
+    }
+    if (mainFluid.interaction?.forceMode !== "source-qT-update-force-diff-half-times-mouseForce") {
+      errors.push("main-fluid-force-mode");
+    }
     if (distance2(mainFluid.pointer, expectedFluidPointer) > 0.02) errors.push(`main-fluid-pointer=${JSON.stringify(mainFluid.pointer)}`);
     if (distance2(mainFluid.pointerOld, expectedFluidPointer) > 0.02) errors.push(`main-fluid-pointer-old=${JSON.stringify(mainFluid.pointerOld)}`);
     if (distance2(mainFluid.interaction?.center, expectedFluidPointer) > 0.08) errors.push(`main-fluid-center=${JSON.stringify(mainFluid.interaction?.center)}`);
@@ -297,6 +310,7 @@ function consoleSummary(summary) {
       pointerBefore: beforeProbe.mainFluid?.pointer,
       pointerAfter: afterProbe.mainFluid?.pointer,
       pointerOldAfter: afterProbe.mainFluid?.pointerOld,
+      pointerDiffAfter: afterProbe.mainFluid?.pointerDiff,
       interactionAfter: afterProbe.mainFluid?.interaction,
     },
     failures: summary.failures.length,

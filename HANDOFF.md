@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: `yD/Qe.workState` restore now preserves the restored Home gallery `scroll.active` value. Source `yD.init()` restores `this.scroll=Qe.workState.scroll` directly, and source `yD.destroy()` saves the full scroll object by reference, so the rebuild no longer forces `scroll.active=false` after session-backed restore. Output probes now expose the restore mode and can seed an active work state; renderer audit rejects reintroducing the inactive reset. This is route-state restore parity only. Phase 1 is still open.
+Latest Phase 1 batch: `ag/qT` main-fluid pointer and diff ownership now follows the mirrored source. Source `qT.onMouseMove()` stores mouse coords with direct `Pe.w/Pe.h` denominators, and source `qT.updateMouseDiff()` computes `diff.subVectors(coords, coordsOld)`, copies `coordsOld`, then clears diff when the current coords are `(0,0)`. The rebuild no longer uses the main-fluid-only `Math.max(1, window.innerWidth/Height)` denominator clamp or transient `pointer.clone()` diff path; probes and renderer audit guard the source denominator, diff, center clamp, and force modes. This is one main-fluid interaction edge only. Phase 1 is still open.
 
 ## Chosen Stack
 
