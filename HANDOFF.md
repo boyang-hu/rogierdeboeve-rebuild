@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `VA/XA/KA` block material program-cache-key ownership. Source `VA`, `XA`, and `KA` assign shader text in `onBeforeCompile` but have no `customProgramCacheKey` override, so the rebuild now removes local material-level overrides and relies on Three's default `onBeforeCompile.toString()` cache-key path. Auxiliary about/floating materials keep distinct default keys through branch-specific `onBeforeCompile` functions. This is a block material runtime-object guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `IT` camera update denominator ownership. Source `IT.update()` uses direct `Pe.w/Pe.h` denominators for camera target mapping and roll input, with no `Math.max(1, ...)` clamp. The rebuild now removes that local clamp from `updateHomeCamera()` and guards the direct denominator path through output probes and renderer audit. This is a camera-controller runtime math guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -177,6 +177,7 @@ Known remaining gaps:
 - Source `h1/u1` environment program-cache-key ownership is now guarded: source `u1` sets `onBeforeCompile` but does not override `customProgramCacheKey`, so the rebuild relies on Three's default `onBeforeCompile.toString()` cache-key path and rejects the old local `source-u1-environment-standard` override.
 - Source `VA/XA/KA` block material program-cache-key ownership is now guarded: source ordinary and auxiliary block materials set `onBeforeCompile` but do not override `customProgramCacheKey`, so the rebuild relies on Three's default `onBeforeCompile.toString()` cache-key path and keeps auxiliary `XA/KA` keys distinct through branch-specific default key functions.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
+- Source `IT` camera update denominator ownership is now guarded: source `IT.update()` uses `Pe.w/Pe.h` directly for mouse target mapping and roll-input division, so the rebuild rejects the old local `Math.max(1, window.innerWidth/innerHeight)` clamp in `updateHomeCamera()`.
 - Source `yD.onProjectActive()` active-project spotlight, application-order, and woosh ownership are now guarded: `SD.init()` keeps the fixed Home entry `220` baseline, then active-project order runs spotlight payload-or-max, reveal spread, source-owned woosh, active `uReveal` tweens, project look setters, and final directional light `1.5`; current local project data has no spotlight payloads, so the expected runtime spotlight value remains `220`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
 - Source `V1` low-res sky ticking lifecycle is now aligned and guarded: source `V1.resize()` sets `this.ticking=true` when `Le.LOW_RES`, waits `100ms`, then sets `this.ticking=false`; source `V1.update()` renders sky only while `this.ticking` is true and writes `z1.uTime` after that render. The rebuild now gates sky raw/composite rendering the same way and exposes `skyTickingLifecycle` through the output probe.
@@ -190,14 +191,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `VA/XA/KA` block material program-cache-key ownership.
-- Source evidence: `VA`, `XA`, and `KA` assign shader text in `onBeforeCompile`, but have no `customProgramCacheKey` override.
-- Removed rebuild-only material-level `customProgramCacheKey` overrides from `createWorkBlockMaterial()` and `createAuxiliaryBlockMaterial()`.
-- Split auxiliary about/floating `onBeforeCompile` functions so Three's default `onBeforeCompile.toString()` cache key remains distinct for source `XA` and `KA` without own overrides.
-- `__rogierOutputProbe.settings.work.activeMaterial`, `.auxiliaryMaterial`, and `.floatingAuxiliaryMaterial` now report program-cache-key mode, own-property absence, default parity, and auxiliary key separation.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring material cache-key overrides.
+- Aligned source `IT` camera update denominator ownership.
+- Source evidence: `IT.update()` destructures `Pe.w/Pe.h` and feeds those values directly into `uc(...)` target mapping plus `uc(Math.abs(delta.x)/Pe.w,...)` roll input.
+- Removed rebuild-owned `Math.max(1, window.innerWidth/innerHeight)` clamps from `updateHomeCamera()`.
+- `__rogierOutputProbe.camera` now reports `updateDenominatorMode`, `rollDenominatorMode`, direct denominator values, and viewport parity.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the camera denominator clamp.
 - Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, and desktop/mobile output probes.
-- This is block material runtime-object ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- This is camera-controller runtime math ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -208,25 +208,25 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-block-cache-key-audit-final.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-block-cache-key-audit-final.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-it-camera-denominator-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-it-camera-denominator-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-block-cache-key-output-desktop-final node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-block-cache-key-output-mobile-final node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-it-camera-denominator-output-desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-it-camera-denominator-output-mobile node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed for the `VA/XA/KA` block material program-cache-key ownership batch before commit. Renderer audit wrote `/tmp/rd-block-cache-key-audit-final.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the no-`customProgramCacheKey` override ownership plus distinct auxiliary default keys. Desktop and mobile output probes verified the default program-cache-key markers with zero failures, exceptions, or console messages.
+All relevant checks passed for the `IT` camera update denominator ownership batch before commit. Renderer audit wrote `/tmp/rd-it-camera-denominator-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for direct `Pe.w/Pe.h` denominator ownership. Desktop and mobile output probes verified the direct camera denominator markers with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this block material program-cache-key ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this camera denominator ownership batch.
 
 Project-media was not rerun for this batch because production project-media code and route data were untouched; project pages remain regression gates, not proof of Home parity.
 
 Verified:
 
-- Renderer audit passed for the block material program-cache-key ownership batch: `/tmp/rd-block-cache-key-audit-final.json`.
+- Renderer audit passed for the camera denominator ownership batch: `/tmp/rd-it-camera-denominator-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source block-material no-custom-program-cache-key markers.
+- Desktop and mobile output probes passed with the source direct camera denominator markers.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
@@ -267,7 +267,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `SD.init()` Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership and application order, source `p1` desktop/mobile spotlight parallax branch, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `SD.init()` Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership and application order, source `p1` desktop/mobile spotlight parallax branch, source `IT` direct camera update denominator ownership, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.

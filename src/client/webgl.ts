@@ -5366,6 +5366,7 @@ export class WebGLBackdrop {
   private cameraRoll = 0;
   private cameraRotateAngle = MathUtils.degToRad(10);
   private cameraLastLerp = 0.01;
+  private cameraUpdateDenominator = new Vector2(document.documentElement.clientWidth, document.documentElement.clientHeight);
   private cameraControllerGroup = new Object3D();
   private cameraRotateGroup = new Object3D();
   private cameraInnerGroup = new Object3D();
@@ -9199,11 +9200,12 @@ void main() {
   }
 
   private updateHomeCamera(delta: number) {
-    const width = Math.max(1, window.innerWidth);
-    const height = Math.max(1, window.innerHeight);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     const fps = 1 / delta;
     const cameraLerp = Math.min(Math.round(2 / (fps / 60)), 2) * 0.01 || 0.01;
     this.cameraLastLerp = cameraLerp;
+    this.cameraUpdateDenominator.set(width, height);
     this.pointerDeltaPixels.subVectors(this.pointerPixels, this.lastPointerPixels);
     this.lastPointerPixels.copy(this.pointerPixels);
 
@@ -10038,6 +10040,12 @@ void main() {
         matrixMode: "source-IT-group-rotateGroup-innerGroup-manual-matrices",
         mouseEventMode: "source-Pe-window-mousemove-only",
         mouseNormalizationMode: "source-Pe-gl-root-width-height",
+        updateDenominatorMode: "source-IT-update-Pe-width-height-direct-no-rebuild-Math.max-clamp",
+        updateDenominator: this.cameraUpdateDenominator.toArray(),
+        updateDenominatorMatchesViewport:
+          Math.abs(this.cameraUpdateDenominator.x - window.innerWidth) < 1e-6
+          && Math.abs(this.cameraUpdateDenominator.y - window.innerHeight) < 1e-6,
+        rollDenominatorMode: "source-IT-roll-uses-Pe-width-direct-no-rebuild-Math.max-clamp",
         lastLerp: this.cameraLastLerp,
         mousePixels: this.pointerPixels.toArray(),
         pointerRay: this.pointerRay.toArray(),

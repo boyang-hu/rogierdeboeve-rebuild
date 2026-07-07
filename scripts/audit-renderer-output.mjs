@@ -270,6 +270,7 @@ const rebuildSetThumbMouseLightness = extractBlock(rebuildWebgl, "private setThu
 const rebuildSetSpotLightIntensity = extractBlock(rebuildWebgl, "private setSpotLightIntensity(");
 const rebuildSetDirectionalLightIntensity = extractBlock(rebuildWebgl, "private setDirectionalLightIntensity(");
 const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private setDirectionalLight2Intensity(");
+const rebuildUpdateHomeCamera = extractBlock(rebuildWebgl, "private updateHomeCamera(");
 const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private updateWorkSceneForNextFrame(");
 const rebuildUpdateVisibleWorkItems = extractBlock(rebuildWebgl, "private updateVisibleWorkItems(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
@@ -3056,7 +3057,9 @@ const summary = {
         "this.rotateAngle=Xc(20)",
         "this.origin.z=this.group.position.z",
         "const{w:r,h:o}=Pe,a=i!==void 0?Math.min(Fn(2/(i/60),0),2)*.01:.01",
+        "const c=uc(this.mouse.x,0,r,-1,1),u=uc(this.mouse.y,0,o,1,-1)",
         "this.target.z=this.origin.z+this.targetXY.y*(u*1.25)",
+        "const d=uc(Math.abs(this.delta.x)/r,0,.02,0,.5)",
         "this.group.position.lerp(this.target,a)",
         "this.rotateGroup.rotation.z+=(this.rotation-this.rotateGroup.rotation.z)*a",
         "this.innerGroup.matrixWorld.decompose(this.camera.position,this.camera.quaternion,this.camera.scale)",
@@ -3067,7 +3070,27 @@ const summary = {
         "private cameraInnerGroup = new Object3D()",
         "controllerObjectMode: \"source-IT-rt-object3d-containers\"",
         "controllerObjectTypes:",
+        "updateDenominatorMode: \"source-IT-update-Pe-width-height-direct-no-rebuild-Math.max-clamp\"",
+        "rollDenominatorMode: \"source-IT-roll-uses-Pe-width-direct-no-rebuild-Math.max-clamp\"",
       ]),
+      denominatorOwnership: {
+        sourceDirectPeWidthHeight:
+          sourceIT.text.includes("const{w:r,h:o}=Pe")
+          && sourceIT.text.includes("uc(this.mouse.x,0,r,-1,1)")
+          && sourceIT.text.includes("uc(this.mouse.y,0,o,1,-1)")
+          && sourceIT.text.includes("uc(Math.abs(this.delta.x)/r,0,.02,0,.5)"),
+        rebuildDirectViewportWidthHeight: Boolean(rebuildUpdateHomeCamera)
+          && rebuildUpdateHomeCamera.includes("const width = window.innerWidth;")
+          && rebuildUpdateHomeCamera.includes("const height = window.innerHeight;")
+          && rebuildUpdateHomeCamera.includes("this.cameraUpdateDenominator.set(width, height);")
+          && !rebuildUpdateHomeCamera.includes("Math.max(1, window.innerWidth)")
+          && !rebuildUpdateHomeCamera.includes("Math.max(1, window.innerHeight)"),
+        probeCoverage:
+          rebuildWebgl.includes("updateDenominatorMode: \"source-IT-update-Pe-width-height-direct-no-rebuild-Math.max-clamp\"")
+          && rebuildWebgl.includes("rollDenominatorMode: \"source-IT-roll-uses-Pe-width-direct-no-rebuild-Math.max-clamp\"")
+          && rebuildOutputProbe.includes("updateDenominatorMode")
+          && rebuildOutputProbe.includes("rollDenominatorMode"),
+      },
       excerpt: compact(sourceIT.text),
     },
     homeGalleryAnimateIn: sourceYDAnimateIn && {

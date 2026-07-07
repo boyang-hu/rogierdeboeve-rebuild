@@ -403,6 +403,15 @@ async function runProbe() {
   if (camera.updateTargetMode !== "source-IT-origin-plus-targetXY-and-y-z-depth-coupling") resizeErrors.push("updateTargetMode");
   if (camera.entrySettingsMode !== "source-SD-yD-targetXY-1-0_5-rotateAngle-20") resizeErrors.push("entrySettingsMode");
   if (camera.matrixMode !== "source-IT-group-rotateGroup-innerGroup-manual-matrices") resizeErrors.push("matrixMode");
+  if (camera.updateDenominatorMode !== "source-IT-update-Pe-width-height-direct-no-rebuild-Math.max-clamp") {
+    resizeErrors.push("updateDenominatorMode");
+  }
+  if (camera.rollDenominatorMode !== "source-IT-roll-uses-Pe-width-direct-no-rebuild-Math.max-clamp") {
+    resizeErrors.push("rollDenominatorMode");
+  }
+  if (camera.updateDenominatorMatchesViewport !== true) resizeErrors.push("updateDenominatorMatchesViewport");
+  if (Math.abs((camera.updateDenominator?.[0] ?? 0) - viewport.width) > 0.001) resizeErrors.push("updateDenominatorWidth");
+  if (Math.abs((camera.updateDenominator?.[1] ?? 0) - viewport.height) > 0.001) resizeErrors.push("updateDenominatorHeight");
   if (Math.abs((camera.targetXY?.[0] ?? 0) - 1) > 0.001) resizeErrors.push("targetXYX");
   if (Math.abs((camera.targetXY?.[1] ?? 0) - 0.5) > 0.001) resizeErrors.push("targetXYY");
   if (Math.abs((camera.rotateAngle ?? 0) - 20) > 0.001) resizeErrors.push("rotateAngle");
