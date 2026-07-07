@@ -1071,6 +1071,12 @@ async function runProbe() {
   const workClearing = parsed.probe.settings?.work?.renderManagerClearing;
   const mainClearing = parsed.probe.settings?.main?.renderManagerClearing;
   const bloomClearingErrors = [];
+  if (workRenderSizing?.fxaaResizeInputMode !== "source-Lu-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled") {
+    bloomClearingErrors.push("workFxaaResizeInputMode");
+  }
+  if (mainRenderSizing?.fxaaResizeInputMode !== "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled") {
+    bloomClearingErrors.push("mainFxaaResizeInputMode");
+  }
   if (workRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workBloomPassClearing");
   if (mainRenderSizing?.bloomPassClearing !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("mainBloomPassClearing");
   if (workClearing?.rawPass !== "source-Lu-no-explicit-clear") bloomClearingErrors.push("workRawPassClearing");
@@ -1874,9 +1880,9 @@ async function runProbe() {
     if (JSON.stringify(blur.vertical?.direction) !== JSON.stringify([0, 1])) materialSurfaceErrors.push(`${group}VerticalDirection`);
   }
   for (const [group, fxaa, expectedScreenMode, expectedResizeMode] of [
-    ["fxaa", passMaterials.fxaa, "source-I1-mainPostScreen-material-swap", "source-I1-ig-resize-render-size-when-fxaa-enabled"],
-    ["workFxaa", passMaterials.workFxaa, "source-Lu-workPostScreen-material-swap", "source-Lu-ig-resize-work-render-size-when-fxaa-enabled"],
-    ["mainFxaa", passMaterials.mainFxaa, "source-I1-mainPostScreen-material-swap", "source-I1-ig-resize-render-size-when-fxaa-enabled"],
+    ["fxaa", passMaterials.fxaa, "source-I1-mainPostScreen-material-swap", "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled"],
+    ["workFxaa", passMaterials.workFxaa, "source-Lu-workPostScreen-material-swap", "source-Lu-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled"],
+    ["mainFxaa", passMaterials.mainFxaa, "source-I1-mainPostScreen-material-swap", "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled"],
   ]) {
     if (fxaa?.materialMode !== "source-ig-raw-glsl3") materialSurfaceErrors.push(`${group}MaterialMode`);
     if (fxaa?.glslVersion !== "300 es") materialSurfaceErrors.push(`${group}GlslVersion`);

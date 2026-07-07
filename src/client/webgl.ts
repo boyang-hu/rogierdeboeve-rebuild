@@ -8556,17 +8556,21 @@ void main() {
     this.markSourceSkyResizeTicking();
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(dpr);
+    const sourceFxaaWidth = width * dpr;
+    const sourceFxaaHeight = height * dpr;
+    const sourceWorkFxaaWidth = width * workDpr;
+    const sourceWorkFxaaHeight = height * workDpr;
     const renderWidth = Math.max(1, Math.round(width * dpr));
     const renderHeight = Math.max(1, Math.round(height * dpr));
     const workRenderWidth = Math.max(1, Math.round(width * workDpr));
     const workRenderHeight = Math.max(1, Math.round(height * workDpr));
     if (this.renderSettings.fxaa.enabled) {
-      this.workFxaaTarget.setSize(workRenderWidth, workRenderHeight);
-      this.workFxaaMaterial.uniforms.uResolution.value.set(workRenderWidth, workRenderHeight);
+      this.workFxaaTarget.setSize(sourceWorkFxaaWidth, sourceWorkFxaaHeight);
+      this.workFxaaMaterial.uniforms.uResolution.value.set(sourceWorkFxaaWidth, sourceWorkFxaaHeight);
     }
     if (this.sourceMainRenderSettings.fxaa.enabled) {
-      this.mainFxaaTarget.setSize(renderWidth, renderHeight);
-      this.mainFxaaMaterial.uniforms.uResolution.value.set(renderWidth, renderHeight);
+      this.mainFxaaTarget.setSize(sourceFxaaWidth, sourceFxaaHeight);
+      this.mainFxaaMaterial.uniforms.uResolution.value.set(sourceFxaaWidth, sourceFxaaHeight);
     }
     if (this.renderSettings.blur.enabled) {
       const workBlurWidth = Math.max(1, Math.round(width * this.renderSettings.blur.scale));
@@ -10046,6 +10050,7 @@ void main() {
           renderManagerSizing: {
             primaryDepthBuffer: this.workRawTarget.depthBuffer,
             renderTargetSize: { width: this.workRawTarget.width, height: this.workRawTarget.height },
+            fxaaResizeInputMode: "source-Lu-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
             bloomStart: this.workBloomHorizontalTargets[0]
               ? { width: this.workBloomHorizontalTargets[0].width, height: this.workBloomHorizontalTargets[0].height }
               : null,
@@ -10446,6 +10451,7 @@ void main() {
           renderManagerSizing: {
             primaryDepthBuffer: this.mainRawTarget.depthBuffer,
             renderTargetSize: { width: this.mainRawTarget.width, height: this.mainRawTarget.height },
+            fxaaResizeInputMode: "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
             bloomStart: this.mainBloomHorizontalTargets[0]
               ? { width: this.mainBloomHorizontalTargets[0].width, height: this.mainBloomHorizontalTargets[0].height }
               : null,
@@ -10905,17 +10911,17 @@ void main() {
           fxaa: fxaaProbe(
             this.mainFxaaMaterial,
             "source-I1-mainPostScreen-material-swap",
-            "source-I1-ig-resize-render-size-when-fxaa-enabled",
+            "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
           ),
           workFxaa: fxaaProbe(
             this.workFxaaMaterial,
             "source-Lu-workPostScreen-material-swap",
-            "source-Lu-ig-resize-work-render-size-when-fxaa-enabled",
+            "source-Lu-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
           ),
           mainFxaa: fxaaProbe(
             this.mainFxaaMaterial,
             "source-I1-mainPostScreen-material-swap",
-            "source-I1-ig-resize-render-size-when-fxaa-enabled",
+            "source-I1-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
           ),
           skyComposite: {
             blending: this.skyCompositeMaterial.blending,

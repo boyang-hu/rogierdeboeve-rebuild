@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `XA/KA` auxiliary reveal uniform surface is now class-owned instead of shared. Source `XA` about material constructs only `uReveal` and `uRevealSpread=1` for the reveal surface, with no `uRevealProject`, `uRevealSides`, or `uRevealSpreadSides`. Source `KA` floating material constructs `uRevealSpread=10`, `uRevealProject=1`, and `uRevealSides=1`, with no `uRevealSpreadSides`. The rebuild now branches those uniforms in `createAuxiliaryBlockMaterial(kind)`, exposes/asserts the about/floating reveal surface separately in `__rogierOutputProbe`, and keeps Phase 1 open.
+Latest Phase 1 batch in progress: source `Lu/I1` FXAA resize input ownership. The mirrored bundle sizes `renderTargetFXAA` and writes `ig.uResolution` with `e*n,t*n` before the later rounded render-size assignment (`e=Math.round(e*n),t=Math.round(t*n)`). Local Three `RenderTarget.setSize()` preserves those fractional inputs on the target/texture state, so the rebuild now uses `width * dpr` / `width * workDpr` for the disabled-by-default FXAA branches instead of the already rounded render sizes. This is a source-shape guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 

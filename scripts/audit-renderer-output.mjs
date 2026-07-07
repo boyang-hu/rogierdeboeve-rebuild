@@ -878,10 +878,14 @@ const summary = {
         sourceFxaaResizeResolution:
           sourceLu.text.includes("this.settings.fxaa.enabled&&(this.renderTargetFXAA.setSize(e*n,t*n),this.FxaaMaterial.uniforms.uResolution.value.set(e*n,t*n))"),
         rebuildFxaaResizeResolution: [
-          "this.workFxaaTarget.setSize(workRenderWidth, workRenderHeight);",
-          "this.workFxaaMaterial.uniforms.uResolution.value.set(workRenderWidth, workRenderHeight);",
-          "source-Lu-ig-resize-work-render-size-when-fxaa-enabled",
-        ].every((needle) => rebuildWebgl.includes(needle)),
+          "const sourceWorkFxaaWidth = width * workDpr;",
+          "const sourceWorkFxaaHeight = height * workDpr;",
+          "this.workFxaaTarget.setSize(sourceWorkFxaaWidth, sourceWorkFxaaHeight);",
+          "this.workFxaaMaterial.uniforms.uResolution.value.set(sourceWorkFxaaWidth, sourceWorkFxaaHeight);",
+          "source-Lu-ig-resize-css-dpr-product-before-render-size-round-when-fxaa-enabled",
+        ].every((needle) => rebuildWebgl.includes(needle))
+          && !rebuildWebgl.includes("this.workFxaaTarget.setSize(workRenderWidth, workRenderHeight);")
+          && !rebuildWebgl.includes("this.workFxaaMaterial.uniforms.uResolution.value.set(workRenderWidth, workRenderHeight);"),
         sourceFxaaBranchRender:
           sourceLu.text.includes("this.settings.fxaa.enabled&&(o.setRenderTarget(v),o.render(this.screen,this.screenCamera),this.FxaaMaterial.uniforms.tMap.value=v.texture,this.screen.material=this.FxaaMaterial)")
           && sourceLu.text.includes("o.setRenderTarget(h),o.render(this.screen,this.screenCamera)"),
