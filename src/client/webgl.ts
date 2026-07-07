@@ -6595,12 +6595,10 @@ export class WebGLBackdrop {
   }
 
   private createAuxiliaryBlockMaterial(kind: "about" | "floating") {
-    const uniforms = {
+    const uniforms: Record<string, { value: any }> = {
       uGridSize: { value: kind === "about" ? new Vector3(23, 23, this.gridLayers) : new Vector3(30, 30, 1) },
       uGridOffset: { value: new Vector3(0, 0, 0) },
       uReveal: { value: 0 },
-      uRevealProject: { value: 1 },
-      uRevealSides: { value: 1 },
       uRevealSpread: { value: kind === "about" ? 1 : 10 },
       uMouseSpeed: { value: null },
       uMouseLightness: { value: 1 },
@@ -6616,6 +6614,10 @@ export class WebGLBackdrop {
       uCoords: { value: new Vector2(0, 0) },
       uTime: { value: 0 },
     };
+    if (kind === "floating") {
+      uniforms.uRevealProject = { value: 1 };
+      uniforms.uRevealSides = { value: 1 };
+    }
     const material = new MeshStandardMaterial({
       color: colorFrom("#808080", "#808080"),
       emissive: sourceRgbColor("#000000", "#000000"),
@@ -6633,7 +6635,14 @@ export class WebGLBackdrop {
       ? "source-XA-jA-WA-direct-shader"
       : "source-KA-YA-qA-direct-shader";
     material.userData.sourceBlockMaterialConstructorMode = "source-VA-XA-KA-default-uniform-constructors";
+    material.userData.sourceRevealUniformSurfaceMode = kind === "about"
+      ? "source-XA-uReveal-uRevealSpread-only-no-project-or-side"
+      : "source-KA-uRevealSpread10-uRevealProject-uRevealSides-no-spreadSides";
+    material.userData.sourceHasURevealProject = Object.hasOwn(uniforms, "uRevealProject");
+    material.userData.sourceHasURevealSides = Object.hasOwn(uniforms, "uRevealSides");
+    material.userData.sourceHasURevealSpreadSides = Object.hasOwn(uniforms, "uRevealSpreadSides");
     material.userData.sourceURevealConstructorWasZero = uniforms.uReveal.value === 0;
+    material.userData.sourceURevealSpreadConstructor = uniforms.uRevealSpread.value;
     material.userData.sourceUMouseLightnessConstructorWasOne = uniforms.uMouseLightness.value === 1;
     material.userData.sourceUCoordsConstructorMode = "source-VA-XA-KA-uCoords-construct-new-Q-zero";
     material.userData.sourceUCoordsConstructorWasZero = uniforms.uCoords.value.x === 0 && uniforms.uCoords.value.y === 0;
@@ -10305,6 +10314,7 @@ void main() {
           auxiliaryMaterial: this.aboutBlocks ? {
             mode: "source-XA-about-material-state",
             shaderMode: this.aboutBlocks.material.userData.sourceShaderMode,
+            uniformKeys: Object.keys(this.aboutBlocks.material.uniforms),
             toneMapped: this.aboutBlocks.material.toneMapped,
             transparent: this.aboutBlocks.material.transparent,
             depthWrite: this.aboutBlocks.material.depthWrite,
@@ -10318,7 +10328,12 @@ void main() {
             uMouse: this.aboutBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.aboutBlocks.material.uniforms.uUvOffsetScale.value,
             constructorDefaultsMode: this.aboutBlocks.material.userData.sourceBlockMaterialConstructorMode,
+            revealUniformSurfaceMode: this.aboutBlocks.material.userData.sourceRevealUniformSurfaceMode,
+            hasURevealProject: Object.hasOwn(this.aboutBlocks.material.uniforms, "uRevealProject"),
+            hasURevealSides: Object.hasOwn(this.aboutBlocks.material.uniforms, "uRevealSides"),
+            hasURevealSpreadSides: Object.hasOwn(this.aboutBlocks.material.uniforms, "uRevealSpreadSides"),
             uRevealConstructorWasZero: this.aboutBlocks.material.userData.sourceURevealConstructorWasZero,
+            uRevealSpreadConstructor: this.aboutBlocks.material.userData.sourceURevealSpreadConstructor,
             uMouseLightnessConstructorWasOne: this.aboutBlocks.material.userData.sourceUMouseLightnessConstructorWasOne,
             uCoordsConstructorMode: this.aboutBlocks.material.userData.sourceUCoordsConstructorMode,
             uCoordsConstructorWasZero: this.aboutBlocks.material.userData.sourceUCoordsConstructorWasZero,
@@ -10347,6 +10362,7 @@ void main() {
           floatingAuxiliaryMaterial: this.floatingBlocks ? {
             mode: "source-KA-floating-material-state",
             shaderMode: this.floatingBlocks.material.userData.sourceShaderMode,
+            uniformKeys: Object.keys(this.floatingBlocks.material.uniforms),
             toneMapped: this.floatingBlocks.material.toneMapped,
             transparent: this.floatingBlocks.material.transparent,
             depthWrite: this.floatingBlocks.material.depthWrite,
@@ -10360,7 +10376,16 @@ void main() {
             uMouse: this.floatingBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.floatingBlocks.material.uniforms.uUvOffsetScale.value,
             constructorDefaultsMode: this.floatingBlocks.material.userData.sourceBlockMaterialConstructorMode,
+            revealUniformSurfaceMode: this.floatingBlocks.material.userData.sourceRevealUniformSurfaceMode,
+            hasURevealProject: Object.hasOwn(this.floatingBlocks.material.uniforms, "uRevealProject"),
+            hasURevealSides: Object.hasOwn(this.floatingBlocks.material.uniforms, "uRevealSides"),
+            hasURevealSpreadSides: Object.hasOwn(this.floatingBlocks.material.uniforms, "uRevealSpreadSides"),
+            uRevealProjectConstructor:
+              this.floatingBlocks.material.uniforms.uRevealProject?.value ?? null,
+            uRevealSidesConstructor:
+              this.floatingBlocks.material.uniforms.uRevealSides?.value ?? null,
             uRevealConstructorWasZero: this.floatingBlocks.material.userData.sourceURevealConstructorWasZero,
+            uRevealSpreadConstructor: this.floatingBlocks.material.userData.sourceURevealSpreadConstructor,
             uMouseLightnessConstructorWasOne: this.floatingBlocks.material.userData.sourceUMouseLightnessConstructorWasOne,
             uCoordsConstructorMode: this.floatingBlocks.material.userData.sourceUCoordsConstructorMode,
             uCoordsConstructorWasZero: this.floatingBlocks.material.userData.sourceUCoordsConstructorWasZero,

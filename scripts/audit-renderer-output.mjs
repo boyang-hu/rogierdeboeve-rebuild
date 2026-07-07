@@ -215,6 +215,7 @@ const rebuildCreateMediaCompositeMaterial = extractBlock(rebuildWebgl, "private 
 const rebuildCreateMediaMaterial = extractBlock(rebuildWebgl, "private createMediaMaterial()");
 const rebuildCreateWorkScene = extractBlock(rebuildWebgl, "private createWorkScene()");
 const rebuildCreateWorkBlockMaterial = extractBlock(rebuildWebgl, "private createWorkBlockMaterial()");
+const rebuildCreateAuxiliaryBlockMaterial = extractBlock(rebuildWebgl, "private createAuxiliaryBlockMaterial(");
 const rebuildWorkBlockSourceHaVertexShader = extractConstTemplate(rebuildWebgl, "workBlockSourceHaVertexShader");
 const rebuildWorkBlockVertexPars = extractConstTemplate(rebuildWebgl, "workBlockVertexPars");
 const rebuildProjectMediaVertex = extractConstTemplate(rebuildWebgl, "projectMediaVertex");
@@ -4654,12 +4655,17 @@ const summary = {
           && sourceXABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
           && sourceXABody.includes("uMouseLightness:new I(1)")
           && sourceXABody.includes("uReveal:new I(0),uRevealSpread:new I(1)")
+          && !sourceXABody.includes("uRevealProject")
+          && !sourceXABody.includes("uRevealSides")
+          && !sourceXABody.includes("uRevealSpreadSides")
           && sourceXABody.includes("uCoords:new I(new Q)")
           && sourceXABody.includes("tPerlin:new I(Xt.perlin1)")
           && sourceXABody.includes("tDisplacement:new I(null)")
           && sourceKABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
           && sourceKABody.includes("uMouseLightness:new I(1)")
           && sourceKABody.includes("uReveal:new I(0),uRevealSpread:new I(10)")
+          && sourceKABody.includes("uRevealProject:new I(1),uRevealSides:new I(1)")
+          && !sourceKABody.includes("uRevealSpreadSides")
           && sourceKABody.includes("uCoords:new I(new Q)")
           && sourceKABody.includes("tPerlin:new I(Xt.perlin1)")
           && sourceKABody.includes("tDisplacement:new I(null)"),
@@ -4795,6 +4801,12 @@ const summary = {
           depthWriteFalse: sourceXABody.includes("this.depthWrite=!1"),
           renderOrder10: sourceXABody.includes("this.renderOrder=10"),
         },
+        revealUniformSurface: {
+          onlyRevealAndRevealSpread: sourceXABody.includes("uReveal:new I(0),uRevealSpread:new I(1)")
+            && !sourceXABody.includes("uRevealProject")
+            && !sourceXABody.includes("uRevealSides")
+            && !sourceXABody.includes("uRevealSpreadSides"),
+        },
       },
       sourceKA: sourceKA && {
         index: sourceKA.index,
@@ -4819,6 +4831,11 @@ const summary = {
           keepsDepthTestDefault: !sourceKABody.includes("this.depthTest=!1"),
           keepsDepthWriteDefault: !sourceKABody.includes("this.depthWrite=!1"),
           keepsRenderOrderDefault: !sourceKABody.includes("this.renderOrder=10"),
+        },
+        revealUniformSurface: {
+          projectAndSidesOnly: sourceKABody.includes("uRevealSpread:new I(10)")
+            && sourceKABody.includes("uRevealProject:new I(1),uRevealSides:new I(1)")
+            && !sourceKABody.includes("uRevealSpreadSides"),
         },
         excerpt: compact(sourceKABody),
       },
@@ -4854,6 +4871,18 @@ const summary = {
         "source-KA-YA-qA-direct-shader",
         "patchWorkBlockShader(shader, uniforms, kind === \"about\" ? \"aboutAuxiliary\" : \"floatingAuxiliary\")",
       ]),
+      rebuildRevealUniformSurface: {
+        branchOwned: Boolean(rebuildCreateAuxiliaryBlockMaterial)
+          && rebuildCreateAuxiliaryBlockMaterial.includes("if (kind === \"floating\")")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("uniforms.uRevealProject = { value: 1 };")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("uniforms.uRevealSides = { value: 1 };")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("sourceRevealUniformSurfaceMode = kind === \"about\"")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("source-XA-uReveal-uRevealSpread-only-no-project-or-side")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("source-KA-uRevealSpread10-uRevealProject-uRevealSides-no-spreadSides")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("sourceHasURevealSpreadSides = Object.hasOwn(uniforms, \"uRevealSpreadSides\")"),
+        noAboutProjectOrSideUniforms: Boolean(rebuildCreateAuxiliaryBlockMaterial)
+          && !rebuildCreateAuxiliaryBlockMaterial.includes("uRevealProject: { value: 1 },\n      uRevealSides: { value: 1 }"),
+      },
       probeChecks: checks(rebuildOutputProbe, [
         "auxiliaryMaterial?.mode !== \"source-XA-about-material-state\"",
         "auxiliaryMaterial?.shaderMode !== \"source-XA-jA-WA-direct-shader\"",
@@ -4892,6 +4921,16 @@ const summary = {
         "floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0",
         "auxiliaryLifecycle.floatingEntryVisibilityMode !== \"source-Fg-animateIn-onStart-visible-not-enter-state\"",
         "auxiliaryLifecycle.floatingScrollVelocityMode !== \"source-Fg-onRaf-page-scroll-velocity\"",
+      ]),
+      revealUniformProbeChecks: checks(rebuildOutputProbe, [
+        "auxiliaryMaterial?.revealUniformSurfaceMode !== \"source-XA-uReveal-uRevealSpread-only-no-project-or-side\"",
+        "auxiliaryMaterial?.hasURevealProject !== false",
+        "auxiliaryMaterial?.hasURevealSides !== false",
+        "auxiliaryMaterial?.hasURevealSpreadSides !== false",
+        "floatingAuxiliaryMaterial?.revealUniformSurfaceMode !== \"source-KA-uRevealSpread10-uRevealProject-uRevealSides-no-spreadSides\"",
+        "floatingAuxiliaryMaterial?.hasURevealProject !== true",
+        "floatingAuxiliaryMaterial?.hasURevealSides !== true",
+        "floatingAuxiliaryMaterial?.hasURevealSpreadSides !== false",
       ]),
     },
     auxiliaryBlockShaders: {

@@ -606,6 +606,15 @@ async function runProbe() {
   if (auxiliaryMaterial?.renderOrder !== 10) materialErrors.push("auxRenderOrder");
   if (auxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("auxMouseUniform");
   if (Math.abs((auxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("auxUvOffsetScale");
+  if (auxiliaryMaterial?.revealUniformSurfaceMode !== "source-XA-uReveal-uRevealSpread-only-no-project-or-side") {
+    materialErrors.push("auxRevealUniformSurfaceMode");
+  }
+  if (auxiliaryMaterial?.hasURevealProject !== false) materialErrors.push("auxURevealProjectAbsent");
+  if (auxiliaryMaterial?.hasURevealSides !== false) materialErrors.push("auxURevealSidesAbsent");
+  if (auxiliaryMaterial?.hasURevealSpreadSides !== false) materialErrors.push("auxURevealSpreadSidesAbsent");
+  if (Math.abs((auxiliaryMaterial?.uRevealSpreadConstructor ?? 0) - 1) > 0.001) {
+    materialErrors.push("auxURevealSpreadConstructor");
+  }
   if (auxiliaryMaterial?.constructorDefaultsMode !== "source-VA-XA-KA-default-uniform-constructors") {
     materialErrors.push("auxConstructorDefaultsMode");
   }
@@ -650,6 +659,21 @@ async function runProbe() {
   if ((floatingAuxiliaryMaterial?.renderOrder ?? null) !== null) materialErrors.push("floatingAuxRenderOrder");
   if (floatingAuxiliaryMaterial?.uMouseType !== "Vector2") materialErrors.push("floatingAuxMouseUniform");
   if (Math.abs((floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0) - 1) > 0.001) materialErrors.push("floatingAuxUvOffsetScale");
+  if (floatingAuxiliaryMaterial?.revealUniformSurfaceMode !== "source-KA-uRevealSpread10-uRevealProject-uRevealSides-no-spreadSides") {
+    materialErrors.push("floatingAuxRevealUniformSurfaceMode");
+  }
+  if (floatingAuxiliaryMaterial?.hasURevealProject !== true) materialErrors.push("floatingAuxURevealProjectPresent");
+  if (floatingAuxiliaryMaterial?.hasURevealSides !== true) materialErrors.push("floatingAuxURevealSidesPresent");
+  if (floatingAuxiliaryMaterial?.hasURevealSpreadSides !== false) materialErrors.push("floatingAuxURevealSpreadSidesAbsent");
+  if (Math.abs((floatingAuxiliaryMaterial?.uRevealProjectConstructor ?? 0) - 1) > 0.001) {
+    materialErrors.push("floatingAuxURevealProjectConstructor");
+  }
+  if (Math.abs((floatingAuxiliaryMaterial?.uRevealSidesConstructor ?? 0) - 1) > 0.001) {
+    materialErrors.push("floatingAuxURevealSidesConstructor");
+  }
+  if (Math.abs((floatingAuxiliaryMaterial?.uRevealSpreadConstructor ?? 0) - 10) > 0.001) {
+    materialErrors.push("floatingAuxURevealSpreadConstructor");
+  }
   if (floatingAuxiliaryMaterial?.constructorDefaultsMode !== "source-VA-XA-KA-default-uniform-constructors") {
     materialErrors.push("floatingAuxConstructorDefaultsMode");
   }
