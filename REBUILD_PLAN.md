@@ -21,8 +21,8 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Finish Phase 1 Home WebGL source parity.
-2. Close floor/environment distribution through source-owned evidence.
-3. Close spotlight/thumb projection transfer.
+2. Close Home WebGL distribution through source-owned evidence.
+3. Close remaining spotlight/thumb projection transfer.
 4. Reopen `kA/Lu/I1`, interaction, project media, or about pages only when evidence or touched code requires it.
 
 Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
@@ -52,13 +52,14 @@ Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
 
 ## Phase 1 Queue
 
-### Active: Floor/environment distribution
+### Active: Home WebGL distribution attribution
 
-Goal: explain and fix the remaining hard horizon and fog-bed residual from source-owned behavior.
+Goal: explain and fix the remaining hard horizon, fog-bed, block silhouette, and projection-transfer residuals from source-owned behavior.
 
 Current read:
 
-- The active suspect set is environment target contents, floor reflection contribution, final work target distribution, and renderer state not yet covered by existing guards.
+- Canvas-only source/rebuild captures removed DOM noise and still show the rebuild lighter or more transparent through mid-field block/projection areas.
+- The active suspect set is Home entry/project activation timing, active block reveal/material state, spotlight/thumb projection inputs, environment target contents, floor reflection contribution, final work target distribution, and renderer state not yet covered by existing guards.
 - The current attribution basis lives in `PHASE1_AUDIT.md`.
 - Do not promote a visual tweak into production unless the source path owns it.
 
@@ -78,14 +79,16 @@ Already guarded for this lane:
 
 Next source candidates, in order:
 
-1. Environment target contents beyond the guarded sky composite input.
-2. Floor reflection contribution and environment input through `a1/i1/o1/t1`.
-3. Final work target distribution.
-4. Renderer state not yet covered by existing output-color audit guards.
+1. Source Home entry and project activation lifecycle: `setProject`, `animateIn`, `enterWorkGallery`, and `yD.onProjectActive`.
+2. Runtime active block reveal/material state and spotlight/thumb projection inputs at capture time.
+3. Environment target contents beyond the guarded sky composite input.
+4. Floor reflection contribution and environment input through `a1/i1/o1/t1`.
+5. Final work target distribution.
+6. Renderer state not yet covered by existing output-color audit guards.
 
 Rules:
 
-- Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, environment target contents, and final work target distribution.
+- Continue source-backed attribution in project activation/reveal ownership, spotlight/thumb transfer, `a1/i1/o1/t1`, `h1/u1/l1/c1`, environment target contents, and final work target distribution.
 - Treat current structural guardrails as closed unless new evidence contradicts them.
 - Do not tune horizon, fog, brightness, or floor color by eye.
 - Keep detailed findings in `PHASE1_AUDIT.md`; keep this file as the next-action queue.

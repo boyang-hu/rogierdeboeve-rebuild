@@ -55,17 +55,17 @@ Current decision map:
 
 | Lane | State | Next useful move |
 | --- | --- | --- |
-| Floor/environment distribution | Active blocker | Trace environment target contents and floor reflection contribution before changing visuals. |
-| Spotlight/thumb projection | Next blocker | Return after the active floor/environment lane is either fixed or bridged. |
+| Home WebGL distribution | Active blocker | First separate active block reveal/projection state from environment/floor contribution; change visuals only after source ownership is identified. |
+| Spotlight/thumb projection | Active evidence path | Inspect as part of the distribution lane when projection transfer or block reveal state is implicated. |
 | `kA/Lu/I1` transfer | Watchlist | Reopen only if environment/floor evidence points into final work distribution. |
 | Interaction/mouse/fluid | Watchlist | Reopen only when touching interaction paths or when a specific regression is isolated. |
 
 ## Open Blockers
 
-1. Floor/environment residuals.
+1. Home WebGL distribution residuals.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, renderer constructor clear state, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
-   - Current attribution: environment-off and floor-reflection-off make the largest distribution moves; sky-off is not the first suspect after the sky composite guard.
-   - Open: hard horizon and fog-bed distribution still differ.
+   - Current attribution: environment-off and floor-reflection-off make the largest distribution moves; canvas-only captures now show the residual also includes lighter or more transparent mid-field block/projection reads.
+   - Open: hard horizon, fog-bed distribution, block silhouette weight, and projected content transfer still differ.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
 2. Spotlight/thumb projection transfer feel.
@@ -83,7 +83,7 @@ Current decision map:
 
 ## Evidence Register
 
-### Floor And Environment
+### Home WebGL Distribution
 
 Current attribution read:
 
@@ -91,11 +91,16 @@ Current attribution read:
 - Captured source-vs-rebuild bands show the rebuild remains brighter through mid bands and shifted/darker around the lower floor band.
 - Desktop band deltas after the Home CTA visibility cleanup: center `-0.0066`, bands `0.35 +0.0155`, `0.45 +0.0214`, `0.55 +0.0102`, `0.75 -0.0299`.
 - Mobile band deltas after the Home CTA visibility cleanup: center `+0.0188`, bands `0.35 +0.0635`, `0.45 +0.0590`, `0.55 +0.0557`, `0.75 -0.0218`, `0.85 +0.0629`.
+- Canvas-only source/rebuild captures still show the residual with DOM hidden. Desktop canvas-only deltas: center `-0.0013`, bands `0.15 -0.0086`, `0.25 +0.0041`, `0.35 +0.0200`, `0.45 +0.0181`, `0.55 +0.0146`, `0.65 -0.0019`, `0.75 -0.0302`, `0.85 -0.0128`.
+- Mobile canvas-only deltas: center `+0.0158`, bands `0.15 -0.0110`, `0.25 +0.0298`, `0.35 +0.0691`, `0.45 +0.0524`, `0.55 +0.0508`, `0.65 +0.0076`, `0.75 -0.0208`, `0.85 +0.0024`.
 - Interpretation: the prior desktop CTA visibility mismatch was screenshot noise, not the cause of the floor/environment distribution residual.
-- Interpretation: keep investigating environment target contents, floor reflection contribution, and final distribution before considering any visual tuning.
+- Interpretation: the next source-backed split should include active block reveal/material state and spotlight/thumb projection transfer, not only environment target contents and floor reflection contribution.
+- Interpretation: keep investigating source-owned distribution inputs before considering any visual tuning.
 
 Current source read:
 
+- Source `yD.animateIn()` sets all block `uReveal=0`, tweens all `uRevealProject -> 1` over `.5`, then calls `onProjectActive(current || first)` and activates scroll.
+- Source `yD.onProjectActive()` sets spotlight intensity, clears reveal spread, hides non-active blocks with `uReveal -> 0`, reveals the active block with `uReveal -> 1` after `.2` seconds over `4` seconds, then applies ambient/main/darken/saturation/contrast/thumb/block color/directional-light state.
 - `p1.init()` calls `addEnvironment()` without awaiting the cubemap load, then continues the Home scene setup.
 - `addEnvironment()` awaits the cubemap internally and later assigns `scene.environment`.
 - In source order, `p1.init()` calls `addEnvironment()` after blocks/about/floating setup and `sceneWrap.add(blocksWrap)`, before `a1` floor and `h1` environment are attached to `sceneWrap`.
@@ -119,7 +124,7 @@ Current guarded rebuild facts:
 - Sky composite target contents are guarded for source `V1/H1/z1/B1` render-manager shape, height-based square sizing, no explicit clear, post-render `uTime` write, delayed `tSky` repeat binding, and source `z1` declared-only uniform oddities.
 - Work-render-before-environment-update order is guarded by runtime probe.
 - Light ownership is guarded: rebuild keeps `directionalLight2` out of the scene like source.
-- Remaining investigation should focus on environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state.
+- Remaining investigation should first compare Home entry/project activation timing and active block reveal/projection runtime state, then return to environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state if needed.
 
 ### Home DOM Screenshot Noise
 
@@ -211,12 +216,12 @@ These are current boundaries, grouped by system instead of discovery time.
 
 | System | Guarded source edge |
 | --- | --- |
-| Floor/environment | `Lo` resize inputs pass direct source dimensions for sky, displacement, thumb, and floor reflection. |
-| Floor/environment | `h1/u1` environment material uses source no-custom-cache-key ownership. |
-| Floor/environment | Cubemap loader defaults and `scene.environment` sampling fields are guarded by browser probe. |
-| Floor/environment | `p1.addEnvironment()` starts cubemap loading fire-and-forget before floor/env sceneWrap attachment. |
-| Floor/environment | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
-| Floor/environment | Sky composite `V1/H1/z1/B1` target chain and source `z1` missing-uniform behavior are guarded by audit and browser probe. |
+| Home WebGL distribution | `Lo` resize inputs pass direct source dimensions for sky, displacement, thumb, and floor reflection. |
+| Home WebGL distribution | `h1/u1` environment material uses source no-custom-cache-key ownership. |
+| Home WebGL distribution | Cubemap loader defaults and `scene.environment` sampling fields are guarded by browser probe. |
+| Home WebGL distribution | `p1.addEnvironment()` starts cubemap loading fire-and-forget before floor/env sceneWrap attachment. |
+| Home WebGL distribution | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
+| Home WebGL distribution | Sky composite `V1/H1/z1/B1` target chain and source `z1` missing-uniform behavior are guarded by audit and browser probe. |
 | Home DOM screenshot noise | Desktop active CTA parent remains hidden until hover while its inner button animation can complete; mobile CTA remains visible. |
 | Renderer state | Renderer constructor has no source `setClearColor`; probes guard default clear color `[0,0,0]` and clear alpha `0`. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |

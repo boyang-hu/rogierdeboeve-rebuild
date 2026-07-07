@@ -28,8 +28,8 @@ It is not a timeline. Use git for history.
 | --- | --- |
 | Active phase | Phase 1, Home WebGL source parity |
 | Phase 1 status | Open, roughly 65-70% complete |
-| Current production priority | Floor/environment distribution residuals |
-| Next secondary priority | Spotlight/thumb projection transfer feel |
+| Current production priority | Home WebGL distribution residuals |
+| Next secondary priority | Spotlight/thumb projection transfer attribution |
 | Last committed source-backed batch | Home CTA default visibility/source guard |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
@@ -52,11 +52,12 @@ The latest source-backed batch removed a DOM visibility mismatch that was pollut
 
 ## Current Evidence
 
-The remaining visible gap points back to distribution through environment/floor/final work contents, not to the now-guarded sky target.
+The remaining visible gap points back to Home WebGL distribution through environment/floor, active block reveal/material state, spotlight/thumb projection transfer, or final work contents. It does not currently point back to the now-guarded sky target.
 
 - Variant attribution showed environment-off and floor-reflection-off make the largest brightness-distribution moves.
 - Sky-off moved the output, but in the opposite direction from the likely residual; sky is not the first suspect.
 - Source-vs-rebuild band analysis showed the rebuild is still too bright in mid bands and darker/shifted around the lower floor band.
+- Canvas-only Home captures removed DOM noise and still show the residual: the rebuild mid field/block projection reads lighter or more transparent, while source has heavier cube silhouettes and projection through the mid/lower bands.
 - A desktop CTA DOM visibility mismatch has been cleared; after that cleanup, the same floor/environment distribution residual remains.
 - `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
 - `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
@@ -73,14 +74,15 @@ The remaining visible gap points back to distribution through environment/floor/
 
 ## Next Action
 
-Continue Phase 1 with a floor/environment distribution batch:
+Continue Phase 1 with a Home WebGL distribution batch:
 
-1. Trace environment target contents beyond the guarded sky composite input.
-2. Trace how the floor reflection path receives environment contribution through `a1/i1/o1/t1`.
-3. Only if those remain source-shaped, inspect final work distribution and renderer state not yet covered by output-color guards.
-4. Patch only after a concrete source mismatch is identified.
-5. Update `PHASE1_AUDIT.md` with evidence; update `REBUILD_PLAN.md` only if the execution queue changes.
-6. Validate and commit the scoped batch.
+1. Trace source Home entry lifecycle around project activation: `setProject`, `animateIn`, `enterWorkGallery`, and `yD.onProjectActive`.
+2. Compare runtime active block uniforms/material state at capture time: `uReveal`, `uRevealProject`, reveal spread, block alpha/opacity, and spotlight/thumb projection inputs.
+3. If the block/projection path remains source-shaped, return to environment target contents and floor reflection contribution through `a1/i1/o1/t1`.
+4. Only if those remain source-shaped, inspect final work distribution and renderer state not yet covered by output-color guards.
+5. Patch only after a concrete source mismatch is identified.
+6. Update `PHASE1_AUDIT.md` with evidence; update `REBUILD_PLAN.md` only if the execution queue changes.
+7. Validate and commit the scoped batch.
 
 Do not spend the next batch first on these guarded areas unless new evidence points back at them:
 
