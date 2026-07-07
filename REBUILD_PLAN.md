@@ -43,7 +43,7 @@ Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
 
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
-| 1. Home WebGL source parity | In progress, about 65-70% complete | Close the Phase 1 blockers in `PHASE1_AUDIT.md`. |
+| 1. Home WebGL source parity | In progress, about 75-80% complete | Close the Phase 1 blockers in `PHASE1_AUDIT.md`. |
 | 2. Home DOM/interaction parity | Paused | Resume only after Phase 1 closes. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
@@ -52,14 +52,15 @@ Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
 
 ## Phase 1 Queue
 
-### Active: Home WebGL distribution attribution
+### Active: Spotlight/thumb projection closeout
 
-Goal: explain and fix the remaining hard horizon, fog-bed, block silhouette, and projection-transfer residuals from source-owned behavior.
+Goal: close projected thumb brightness, depth, content transfer, and timing now that the main Home distribution residual is source-fixed.
 
 Current read:
 
-- Canvas-only source/rebuild captures removed DOM noise and still show the rebuild lighter or more transparent through mid-field block/projection areas.
-- The active suspect set is Home entry/project activation timing, active block reveal/material state, spotlight/thumb projection inputs, environment target contents, floor reflection contribution, final work target distribution, and renderer state not yet covered by existing guards.
+- The prior mid-field brightness residual was source-owned by block color fallback: source uses `colors.blocks || "#000000"`, and rebuild now matches.
+- Canvas-only source/rebuild deltas are now close on desktop and mobile after the fallback fix.
+- The active suspect set is now remaining spotlight/thumb projection transfer, then final P1 closeout coverage.
 - The current attribution basis lives in `PHASE1_AUDIT.md`.
 - Do not promote a visual tweak into production unless the source path owns it.
 
@@ -77,14 +78,14 @@ Already guarded for this lane:
 - Texture-object await semantics for `nD.animateIn()`.
 - Home active CTA desktop visibility as screenshot-noise guard: parent hidden until hover, mobile visible.
 - Initial Home entry lifecycle: `SD.init()`-shaped spotlight prep happens before gallery entry, while WebGL active-project reveal waits for gallery entry.
+- Active block emissive fallback: `colors.blocks || "#000000"`.
 
 Next source candidates, in order:
 
-1. Runtime active block reveal/material state and spotlight/thumb projection inputs at capture time.
-2. Environment target contents beyond the guarded sky composite input.
-3. Floor reflection contribution and environment input through `a1/i1/o1/t1`.
-4. Final work target distribution.
-5. Renderer state not yet covered by existing output-color audit guards.
+1. Spotlight/thumb projection content, brightness, depth, and timing.
+2. Final Home WebGL closeout audit against `PHASE1_AUDIT.md`.
+3. Environment/floor or final target distribution only if the closeout audit reveals a new source-owned mismatch.
+4. Renderer state not yet covered by existing output-color audit guards.
 
 Rules:
 

@@ -508,6 +508,7 @@ const SOURCE_HOME_THUMB_DARKNESS_FALLBACK = 0;
 const SOURCE_INITIAL_THUMB_DARKNESS_COLOR = "#000000";
 const SOURCE_INITIAL_THUMB_SATURATION = 1;
 const SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS = 1;
+const SOURCE_BLOCKS_COLOR_FALLBACK = "#000000";
 const SOURCE_THUMB_BACKGROUND = "#222222";
 const SOURCE_THUMB_TRANSFER_STEPS = [
   "setRenderTarget(renderTargetA)",
@@ -5743,7 +5744,7 @@ export class WebGLBackdrop {
     this.setThumbDarknessColor(payload.darknessColor ?? SOURCE_INITIAL_THUMB_DARKNESS_COLOR);
     this.setThumbSaturation(numeric(payload.thumbSaturation, SOURCE_INITIAL_THUMB_SATURATION));
     this.setThumbMouseLightness(numeric(payload.mouseLightness, SOURCE_INITIAL_THUMB_MOUSE_LIGHTNESS));
-    this.setBlocksColor(payload.blocks ?? DEFAULT_BG);
+    this.setBlocksColor(payload.blocks ?? SOURCE_BLOCKS_COLOR_FALLBACK);
   }
 
   private prepareHomeLighting() {
@@ -8343,7 +8344,7 @@ void main() {
   }
 
   private setBlocksColor(value?: string, duration = 1.6) {
-    const next = sourceRgbColor(value, DEFAULT_BG);
+    const next = sourceRgbColor(value, SOURCE_BLOCKS_COLOR_FALLBACK);
     this.workItems.forEach((item) => {
       gsap.to(item.material.emissive, { r: next.r, g: next.g, b: next.b, duration, ease: "expo.out" });
     });
@@ -10047,6 +10048,8 @@ void main() {
       };
     });
     const activeWorkEmissive = activeWorkItem?.material.emissive ?? null;
+    const activeBlocksColor = activeWorkItem?.payload.blocks ?? SOURCE_BLOCKS_COLOR_FALLBACK;
+    const expectedActiveBlocksEmissive = sourceRgbColor(activeBlocksColor, SOURCE_BLOCKS_COLOR_FALLBACK);
     const aboutScrollOpacityScroll = this.auxiliaryPageScrollActive ? this.auxiliaryPageScroll : window.scrollY;
     const aboutScrollOpacityExpectedMobile = sourceMapClampRound(aboutScrollOpacityScroll, 0, window.innerHeight * 0.25, 1, 0);
     const aboutScrollOpacityExpected = window.innerWidth >= BREAKPOINT_LG ? 1 : aboutScrollOpacityExpectedMobile;
@@ -10321,9 +10324,16 @@ void main() {
           blocksColorOwnership: {
             mode: "source-Se-setBlocksColor-tweens-all-work-material-emissive",
             targetMode: "source-VA-MeshStandardMaterial-emissive",
+            fallbackMode: "source-yD-onProjectActive-colors-blocks-or-black",
+            fallback: SOURCE_BLOCKS_COLOR_FALLBACK,
+            activePayloadBlocks: activeWorkItem?.payload.blocks ?? null,
+            expectedActiveEmissive: expectedActiveBlocksEmissive.toArray(),
             killMode: "source-no-kill-for-setBlocksColor",
             workItemCount: this.workItems.length,
             activeEmissive: activeWorkEmissive ? activeWorkEmissive.toArray() : null,
+            activeEmissiveMatchesExpected: activeWorkEmissive
+              ? activeWorkEmissive.equals(expectedActiveBlocksEmissive)
+              : false,
             allWorkEmissiveMatchesActive: activeWorkEmissive
               ? this.workItems.every((item) => (
                 Math.abs(item.material.emissive.r - activeWorkEmissive.r) < 1e-6

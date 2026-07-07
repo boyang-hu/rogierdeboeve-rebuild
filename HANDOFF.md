@@ -27,10 +27,10 @@ It is not a timeline. Use git for history.
 | Item | Value |
 | --- | --- |
 | Active phase | Phase 1, Home WebGL source parity |
-| Phase 1 status | Open, roughly 65-70% complete |
-| Current production priority | Home WebGL distribution residuals |
-| Next secondary priority | Spotlight/thumb projection transfer attribution |
-| Last committed source-backed batch | Home entry spotlight/reveal lifecycle guard |
+| Phase 1 status | Open, roughly 75-80% complete |
+| Current production priority | Spotlight/thumb projection transfer closeout |
+| Next secondary priority | Final Home WebGL distribution audit |
+| Last committed source-backed batch | Home blocks-color fallback parity |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -38,28 +38,27 @@ Estimated parity:
 
 | Area | Estimate | Current read |
 | --- | ---: | --- |
-| Architecture/lifecycle | 75-80% | Broad scene structure, route ownership, probes, and source guardrails are in place. |
-| Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up. |
-| Final Home visual parity | 55-65% | Home still diverges in spotlight/thumb projection feel and floor/environment distribution. |
+| Architecture/lifecycle | 80-85% | Broad scene structure, route ownership, probes, and source guardrails are in place. |
+| Shader/render-manager parity | 70-80% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up. |
+| Final Home visual parity | 70-80% | Canvas-only Home distribution is now close; remaining work is projection/transfer closeout and final guard coverage. |
 
 ## Last Closed Batch
 
-The latest source-backed batch aligned Home entry lifecycle with source `SD.init()` / `yD.animateIn()` ownership.
+The latest source-backed batch fixed a source-owned active block material mismatch.
 
-- Source `SD.init()` prepares the Home spotlight map, target, position, and intensity before gallery reveal.
-- Source `yD` does not listen to the DOM `PROJECT_ACTIVE` event; WebGL active-project reveal is owned by `yD.animateIn()` and later `setProjectActive()`.
-- Rebuild no longer calls full `setProject()` before Home gallery entry on initial load. It only prepares Home spotlight, then lets `enterWorkGallery()` own reveal/look application.
-- Browser output probe guards that initial Home entry prepares spotlight before gallery, does not trigger active-project reveal before gallery, and enters gallery before active reveal state settles.
+- Source `yD.onProjectActive()` calls `Se.setBlocksColor(t.data.colors.blocks || "#000000")`.
+- Hashgraph has no `colors.blocks`, so the source fallback is black.
+- Rebuild was falling back to `SOURCE_WORK_BG` (`#1a1a1a`), which made the active cube field and projection read too light.
+- Rebuild now uses the source black fallback, and browser probes guard expected active emissive.
 
 ## Current Evidence
 
-The remaining visible gap points back to Home WebGL distribution through environment/floor, active block reveal/material state, spotlight/thumb projection transfer, or final work contents. It does not currently point back to the now-guarded sky target.
+The main mid-field Home WebGL distribution residual has been source-fixed through active block material fallback parity. Remaining P1 work should confirm projection/transfer closeout and final guard coverage.
 
-- Variant attribution showed environment-off and floor-reflection-off make the largest brightness-distribution moves.
-- Sky-off moved the output, but in the opposite direction from the likely residual; sky is not the first suspect.
-- Source-vs-rebuild band analysis showed the rebuild is still too bright in mid bands and darker/shifted around the lower floor band.
-- Canvas-only Home captures removed DOM noise and still show the residual: the rebuild mid field/block projection reads lighter or more transparent, while source has heavier cube silhouettes and projection through the mid/lower bands.
-- A desktop CTA DOM visibility mismatch has been cleared; after that cleanup, the same floor/environment distribution residual remains.
+- Before this batch, canvas-only desktop bands were about `+0.061/+0.068` at `0.45/0.55`; mobile was about `+0.10` at `0.35-0.55`.
+- After the source fallback fix, canvas-only desktop center delta is `+0.0027`, with bands within about `-0.0017` to `+0.0040`.
+- After the source fallback fix, canvas-only mobile center delta is `-0.0042`, with bands within about `-0.0089` to `+0.0012`.
+- A desktop CTA DOM visibility mismatch has been cleared; it was screenshot noise, not the WebGL residual.
 - Initial Home WebGL entry lifecycle is now guarded: source-shaped spotlight prep happens before gallery entry, and active-project reveal is not triggered before gallery entry.
 - `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
 - `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
@@ -76,11 +75,11 @@ The remaining visible gap points back to Home WebGL distribution through environ
 
 ## Next Action
 
-Continue Phase 1 with a Home WebGL distribution batch:
+Continue Phase 1 with a projection/closeout batch:
 
-1. Compare runtime active block uniforms/material state at capture time: `uReveal`, `uRevealProject`, reveal spread, block alpha/opacity, and spotlight/thumb projection inputs.
-2. If the block/projection path remains source-shaped, return to environment target contents and floor reflection contribution through `a1/i1/o1/t1`.
-3. Only if those remain source-shaped, inspect final work distribution and renderer state not yet covered by output-color guards.
+1. Re-run and inspect spotlight/thumb projection content and transfer probes after the blocks-color fallback fix.
+2. Confirm no remaining source-owned mismatch in active block reveal/material state at capture time.
+3. If projection remains source-shaped, move to final Home WebGL closeout audit against `PHASE1_AUDIT.md` completion criteria.
 4. Patch only after a concrete source mismatch is identified.
 5. Update `PHASE1_AUDIT.md` with evidence; update `REBUILD_PLAN.md` only if the execution queue changes.
 6. Validate and commit the scoped batch.

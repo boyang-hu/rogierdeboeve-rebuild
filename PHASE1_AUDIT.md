@@ -47,16 +47,16 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 | Area | Estimate | Confidence | Current read |
 | --- | ---: | --- | --- |
 | Architecture/lifecycle | 75-80% | Strong | Broad scene, route, state, and probe surfaces are source-derived. |
-| Shader/render-manager parity | 65-75% | Medium | Many shader surfaces and pass edges are aligned; `kA/Lu/I1` is narrowed to a guarded follow-up. |
-| Final Home visual parity | 55-65% | Medium-low | Home still diverges in projection feel and floor/environment blend. |
+| Shader/render-manager parity | 70-80% | Medium | Many shader surfaces and pass edges are aligned; `kA/Lu/I1` is narrowed to a guarded follow-up. |
+| Final Home visual parity | 70-80% | Medium | Canvas-only Home distribution is now close after source blocks-color fallback parity; projection/transfer closeout remains. |
 | Runtime stability | Good | Strong | Build, renderer audit, and browser probes are currently clean. |
 
 Current decision map:
 
 | Lane | State | Next useful move |
 | --- | --- | --- |
-| Home WebGL distribution | Active blocker | Compare capture-time active block reveal/material state and projection inputs before returning to environment/floor contribution; change visuals only after source ownership is identified. |
-| Spotlight/thumb projection | Active evidence path | Inspect as part of the distribution lane when projection transfer or block reveal state is implicated. |
+| Home WebGL distribution | Mostly guarded | Recheck only if projection closeout or final bands reveal a new source-owned mismatch. |
+| Spotlight/thumb projection | Active blocker | Inspect transfer content/brightness/depth after the blocks-color fallback fix. |
 | `kA/Lu/I1` transfer | Watchlist | Reopen only if environment/floor evidence points into final work distribution. |
 | Interaction/mouse/fluid | Watchlist | Reopen only when touching interaction paths or when a specific regression is isolated. |
 
@@ -64,8 +64,9 @@ Current decision map:
 
 1. Home WebGL distribution residuals.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, renderer constructor clear state, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
-   - Current attribution: environment-off and floor-reflection-off make the largest distribution moves; canvas-only captures now show the residual also includes lighter or more transparent mid-field block/projection reads.
-   - Open: hard horizon, fog-bed distribution, block silhouette weight, and projected content transfer still differ.
+   - Current attribution: the mid-field block/projection brightness residual was caused by a source-owned block color fallback mismatch.
+   - Guarded fix: source `yD.onProjectActive()` uses `colors.blocks || "#000000"`; rebuild now matches this fallback and probes guard active emissive.
+   - Open: final closeout should confirm no remaining source-owned distribution mismatch after projection review.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
 2. Spotlight/thumb projection transfer feel.
@@ -87,20 +88,22 @@ Current decision map:
 
 Current attribution read:
 
-- Rebuild variant attribution points at environment and floor reflection as the dominant distribution levers.
-- Captured source-vs-rebuild bands show the rebuild remains brighter through mid bands and shifted/darker around the lower floor band.
+- Earlier variant attribution pointed at environment/floor reflection, but later canvas-only evidence isolated the largest practical residual to active block/projection brightness.
 - Desktop band deltas after the Home CTA visibility cleanup: center `-0.0066`, bands `0.35 +0.0155`, `0.45 +0.0214`, `0.55 +0.0102`, `0.75 -0.0299`.
 - Mobile band deltas after the Home CTA visibility cleanup: center `+0.0188`, bands `0.35 +0.0635`, `0.45 +0.0590`, `0.55 +0.0557`, `0.75 -0.0218`, `0.85 +0.0629`.
 - Canvas-only source/rebuild captures still show the residual with DOM hidden. Desktop canvas-only deltas: center `-0.0013`, bands `0.15 -0.0086`, `0.25 +0.0041`, `0.35 +0.0200`, `0.45 +0.0181`, `0.55 +0.0146`, `0.65 -0.0019`, `0.75 -0.0302`, `0.85 -0.0128`.
 - Mobile canvas-only deltas: center `+0.0158`, bands `0.15 -0.0110`, `0.25 +0.0298`, `0.35 +0.0691`, `0.45 +0.0524`, `0.55 +0.0508`, `0.65 +0.0076`, `0.75 -0.0208`, `0.85 +0.0024`.
-- Interpretation: the prior desktop CTA visibility mismatch was screenshot noise, not the cause of the floor/environment distribution residual.
-- Interpretation: the next source-backed split should include active block reveal/material state and spotlight/thumb projection transfer, not only environment target contents and floor reflection contribution.
+- After fixing the source blocks-color fallback, canvas-only desktop deltas are now center `+0.0027`, bands `0.15 +0.0040`, `0.25 +0.0037`, `0.35 -0.0017`, `0.45 +0.0007`, `0.55 +0.0035`, `0.65 +0.0028`, `0.75 -0.0005`, `0.85 +0.0026`.
+- After fixing the source blocks-color fallback, canvas-only mobile deltas are now center `-0.0042`, bands `0.15 -0.0079`, `0.25 -0.0089`, `0.35 -0.0011`, `0.45 -0.0043`, `0.55 +0.0012`, `0.65 -0.0031`, `0.75 -0.0016`, `0.85 -0.0025`.
+- Interpretation: the prior desktop CTA visibility mismatch was screenshot noise, not the cause of the WebGL distribution residual.
+- Interpretation: the block/projection brightness residual was source-owned by active block material color fallback, not by visual tuning.
 - Interpretation: keep investigating source-owned distribution inputs before considering any visual tuning.
 
 Current source read:
 
 - Source `yD.animateIn()` sets all block `uReveal=0`, tweens all `uRevealProject -> 1` over `.5`, then calls `onProjectActive(current || first)` and activates scroll.
 - Source `yD.onProjectActive()` sets spotlight intensity, clears reveal spread, hides non-active blocks with `uReveal -> 0`, reveals the active block with `uReveal -> 1` after `.2` seconds over `4` seconds, then applies ambient/main/darken/saturation/contrast/thumb/block color/directional-light state.
+- Source `yD.onProjectActive()` applies block color with `t.data.colors.blocks || "#000000"`. Projects without `colors.blocks`, including Hashgraph, use black emissive.
 - Source `SD.init()` prepares the Home spotlight map from `workThumbScene.renderManager.renderTargetComposite.texture`, sets spotlight position/target/intensity, and emits resize before `SD.animateIn()`.
 - Source `SD.animateIn()` emits `PROJECT_ACTIVE` for DOM components after `super.animateIn()`, but source `yD` does not listen to `PROJECT_ACTIVE`; WebGL reveal remains owned by `yD.animateIn()` and later `setProjectActive()`.
 - `p1.init()` calls `addEnvironment()` without awaiting the cubemap load, then continues the Home scene setup.
@@ -127,7 +130,8 @@ Current guarded rebuild facts:
 - Work-render-before-environment-update order is guarded by runtime probe.
 - Light ownership is guarded: rebuild keeps `directionalLight2` out of the scene like source.
 - Initial Home entry now matches source ownership: rebuild prepares the Home spotlight before gallery entry, does not call full active-project reveal before gallery entry, and lets `enterWorkGallery()` own active reveal/look application. Browser output probe guards `homeEntryLifecycle`.
-- Remaining investigation should compare active block reveal/projection runtime state at capture time, then return to environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state if needed.
+- Active block color fallback is guarded: rebuild uses source `colors.blocks || "#000000"` fallback, and browser output probes guard active emissive against expected source value.
+- Remaining investigation should focus on spotlight/thumb projection transfer closeout and final P1 completion criteria.
 
 ### Home DOM Screenshot Noise
 
@@ -226,6 +230,7 @@ These are current boundaries, grouped by system instead of discovery time.
 | Home WebGL distribution | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
 | Home WebGL distribution | Sky composite `V1/H1/z1/B1` target chain and source `z1` missing-uniform behavior are guarded by audit and browser probe. |
 | Home WebGL distribution | Initial Home entry does not run WebGL active-project reveal before gallery entry; source-shaped spotlight prep is guarded by browser probe. |
+| Home WebGL distribution | Active block emissive uses source `colors.blocks || "#000000"` fallback and is guarded by browser probe. |
 | Home DOM screenshot noise | Desktop active CTA parent remains hidden until hover while its inner button animation can complete; mobile CTA remains visible. |
 | Renderer state | Renderer constructor has no source `setClearColor`; probes guard default clear color `[0,0,0]` and clear alpha `0`. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |

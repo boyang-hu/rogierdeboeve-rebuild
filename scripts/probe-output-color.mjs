@@ -226,6 +226,8 @@ function outputProbeSettled(parsed) {
     && ambient.environmentDarkenMatchesAmbientColor === true
     && blocksColor.mode === "source-Se-setBlocksColor-tweens-all-work-material-emissive"
     && blocksColor.killMode === "source-no-kill-for-setBlocksColor"
+    && blocksColor.fallbackMode === "source-yD-onProjectActive-colors-blocks-or-black"
+    && blocksColor.activeEmissiveMatchesExpected === true
     && blocksColor.allWorkEmissiveMatchesActive === true
   );
 }
@@ -674,9 +676,15 @@ async function runProbe() {
   const blocksColor = workSettings.blocksColorOwnership || {};
   if (blocksColor.mode !== "source-Se-setBlocksColor-tweens-all-work-material-emissive") materialErrors.push("blocksColorMode");
   if (blocksColor.targetMode !== "source-VA-MeshStandardMaterial-emissive") materialErrors.push("blocksColorTargetMode");
+  if (blocksColor.fallbackMode !== "source-yD-onProjectActive-colors-blocks-or-black") materialErrors.push("blocksColorFallbackMode");
+  if (blocksColor.fallback !== "#000000") materialErrors.push("blocksColorFallback");
   if (blocksColor.killMode !== "source-no-kill-for-setBlocksColor") materialErrors.push("blocksColorKillMode");
   if ((blocksColor.workItemCount ?? 0) !== 10) materialErrors.push("blocksColorWorkItemCount");
   if (!Array.isArray(blocksColor.activeEmissive) || blocksColor.activeEmissive.length !== 3) materialErrors.push("blocksColorActiveEmissive");
+  if (!Array.isArray(blocksColor.expectedActiveEmissive) || blocksColor.expectedActiveEmissive.length !== 3) {
+    materialErrors.push("blocksColorExpectedActiveEmissive");
+  }
+  if (blocksColor.activeEmissiveMatchesExpected !== true) materialErrors.push("blocksColorActiveEmissiveExpected");
   if (blocksColor.allWorkEmissiveMatchesActive !== true) materialErrors.push("blocksColorFanout");
   if (!auxiliaryMaterial) materialErrors.push("auxiliaryMaterialMissing");
   if (auxiliaryMaterial?.mode !== "source-XA-about-material-state") materialErrors.push("auxMode");
