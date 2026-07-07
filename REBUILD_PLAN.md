@@ -21,17 +21,19 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1 closed unless new source-owned evidence requires reopening.
-2. Review the Phase 1 closeout evidence in `PHASE1_AUDIT.md`.
-3. Start Phase 2 Home DOM/interaction parity only after user confirmation.
+2. Run the Phase 2 Home DOM/interaction audit against the online site and source bundle.
+3. Convert the audit into one small source-backed Home fix batch at a time.
 4. Keep project media, about, and interaction probes as regression gates when shared paths change.
 
-Everything else stays paused until Phase 2 is explicitly started or the scope is changed.
+Everything outside Home DOM/interaction stays paused unless the audit identifies a shared-path dependency.
 
 ## Execution Rules
 
 - Source bundle is the implementation spec:
   - `legacy-mirror/public/assets/bundle.250f01b7.js`
   - `legacy-mirror/public/assets/bundle.87ba3613.css`
+- Online site is the final visual acceptance baseline: `https://rogierdeboeve.com/`.
+- Local mirror is a source oracle with known local-serving rewrites in the JS bundle; do not treat those rewrites as visual product requirements without separate evidence.
 - Keep the stack: Astro, TypeScript, Three.js, GSAP, Lenis, Howler.
 - Audio must use Howler.
 - Do not delete `public/` or `legacy-mirror/`.
@@ -44,7 +46,7 @@ Everything else stays paused until Phase 2 is explicitly started or the scope is
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
-| 2. Home DOM/interaction parity | Ready, not started | Start after user confirmation. |
+| 2. Home DOM/interaction parity | Audit started | First pass identifies source-backed DOM/interaction gaps before production edits. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 2-4 scope is accepted. |
@@ -59,6 +61,8 @@ Goal: keep the closeout evidence easy to verify and avoid reopening guarded Phas
 Current read:
 
 - The prior mid-field brightness residual was source-owned by block color fallback: source uses `colors.blocks || "#000000"`, and rebuild now matches.
+- The later page-composite brightness residual was caused by a rebuild-only `.gl::after` dark overlay; source has no matching overlay, and rebuild now removes it.
+- Online site is the final visual baseline. Local source mirror remains usable as a source oracle, with known local JS rewrites for service worker, `detect-gpu` benchmark URL, and GPU-check fallback.
 - Canvas-only source/rebuild deltas are now close on desktop and mobile after the fallback fix.
 - Spotlight/thumb projection transfer is guarded: source-shaped `Lo` raw-to-composite transfer, `SpotLight.map` composite binding, spotlight state, thumb scene state, and active-bounds projection sampling all pass runtime probes.
 - Final closeout probes passed for Home desktop/mobile, thumb projection, project media, about desktop/mobile, and interactive mouse.
@@ -128,13 +132,23 @@ Required validation:
 
 ### Phase 2 Home DOM/interaction parity
 
-Use this as the next production lane only after the user confirms Phase 2 should start.
+This is the active production lane. Start with audit-only work before production edits.
 
 Initial boundary:
 
 - Keep Phase 1 WebGL probes as regression gates.
 - Start from Home DOM state, interaction affordances, and route-level user-visible behavior.
 - Do not reopen WebGL source parity unless a Phase 2 finding identifies a concrete shared-path mismatch.
+
+Audit checklist:
+
+- Home DOM structure and text against online/source.
+- Header, nav, mobile menu, and footer visible states.
+- Preloader and sound-choice flow.
+- Work list active state, CTA visibility, progress bar, and pointer affordances.
+- Wheel, keyboard, touch, drag, hover, and click behavior.
+- Home-to-project/about route behavior and state restoration.
+- Howler sound event timing only where source behavior is observable or source-owned.
 
 ### `kA/Lu/I1` composite and transfer
 
@@ -155,14 +169,13 @@ Current boundary:
 - Existing `Ka`, `ag`, and `qT` guardrails remain active.
 - Run `scripts/probe-interactive-mouse.mjs` for mouse/fluid path changes.
 
-## Non-Goals For The Active Phase 1 Batch
+## Non-Goals For The Active Phase 2 Audit
 
-- Do not start Phase 2.
-- Do not accept visual deviations as Phase 1 closeout.
-- Do not introduce screenshot-driven production tuning.
-- Do not refactor unrelated WebGL systems while chasing one source chain.
-- Do not change project-detail media behavior unless source evidence requires it.
-- Do not repeat already-verified `I1` default screen/render-target behavior without new evidence.
+- Do not make production edits before a source-backed Phase 2 finding is isolated.
+- Do not reopen Phase 1 WebGL systems for DOM or interaction differences without a concrete shared-path mismatch.
+- Do not introduce screenshot-driven tuning.
+- Do not refactor project-detail, about, audio, or transition systems unless Home audit evidence points to a shared owner.
+- Do not treat local mirror JS rewrites as product behavior without checking the online site or original source ownership.
 
 ## Validation Profiles
 

@@ -28,6 +28,8 @@ Phase 1 covers Home WebGL source parity against:
 - `legacy-mirror/public/assets/bundle.250f01b7.js`
 - `legacy-mirror/public/assets/bundle.87ba3613.css`
 
+The online site, `https://rogierdeboeve.com/`, is the final visual acceptance baseline. The local mirror remains the implementation source oracle, with known local-serving JS rewrites recorded below.
+
 Primary source areas:
 
 - `p1`: home work scene, lights, carousel, floor, environment, about/floating blocks
@@ -51,6 +53,12 @@ Phase 1 is closed. Closeout is based on source-backed parity evidence plus expli
 | Final Home visual parity | Closed/guarded | Strong | Canvas-only Home distribution and spotlight/thumb projection transfer are guarded by the final probe set. |
 | Runtime stability | Clean | Strong | Build, renderer audit, and browser probes passed during final closeout. |
 
+Current baseline policy:
+
+- Use the online site as the final visual acceptance baseline.
+- Use the local mirror bundle as the implementation source oracle.
+- Account for known mirror JS rewrites before treating online/local differences as product differences.
+
 Current decision map:
 
 | Lane | State | Next useful move |
@@ -70,6 +78,8 @@ None for Phase 1.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, renderer constructor clear state, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
    - Closed attribution: the mid-field block/projection brightness residual was caused by a source-owned block color fallback mismatch.
    - Guarded fix: source `yD.onProjectActive()` uses `colors.blocks || "#000000"`; rebuild now matches this fallback and probes guard active emissive.
+   - Closed attribution: the later page-composite brightness residual was caused by a rebuild-only `.gl::after` dark overlay, not by Home WebGL source behavior.
+   - Guarded fix: rebuild removed the non-source overlay; debug-only C1 target and band probes remain available for attribution.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
 2. Spotlight/thumb projection transfer feel.
@@ -99,8 +109,11 @@ Current attribution read:
 - Mobile canvas-only deltas: center `+0.0158`, bands `0.15 -0.0110`, `0.25 +0.0298`, `0.35 +0.0691`, `0.45 +0.0524`, `0.55 +0.0508`, `0.65 +0.0076`, `0.75 -0.0208`, `0.85 +0.0024`.
 - After fixing the source blocks-color fallback, canvas-only desktop deltas are now center `+0.0027`, bands `0.15 +0.0040`, `0.25 +0.0037`, `0.35 -0.0017`, `0.45 +0.0007`, `0.55 +0.0035`, `0.65 +0.0028`, `0.75 -0.0005`, `0.85 +0.0026`.
 - After fixing the source blocks-color fallback, canvas-only mobile deltas are now center `-0.0042`, bands `0.15 -0.0079`, `0.25 -0.0089`, `0.35 -0.0011`, `0.45 -0.0043`, `0.55 +0.0012`, `0.65 -0.0031`, `0.75 -0.0016`, `0.85 -0.0025`.
+- Online site versus local source mirror after the mirror drift audit was visually close in the checked center luma samples: desktop `-0.0012`, mobile `-0.0005`.
+- Online site versus rebuild after removing the rebuild-only Home overlay was visually close in the checked center luma samples: desktop `-0.0047`, mobile `-0.0027`.
 - Interpretation: the prior desktop CTA visibility mismatch was screenshot noise, not the cause of the WebGL distribution residual.
 - Interpretation: the block/projection brightness residual was source-owned by active block material color fallback, not by visual tuning.
+- Interpretation: the final page-composite brightness residual was source-owned by absence of a source overlay, not by visual tuning.
 - Interpretation: no active Phase 1 source-owned distribution mismatch remains after final closeout validation.
 
 Current source read:
@@ -125,6 +138,8 @@ Current source read:
 Current guarded rebuild facts:
 
 - Browser output probe reports production debug clean.
+- Rebuild no longer applies a non-source `.gl::after` dark overlay over the Home WebGL canvas.
+- Debug-only C1 render-target and Home band probe data are exposed for attribution checks without changing production rendering.
 - Scene background/fog, floor hierarchy/material, environment hierarchy/material, floor reflection draw-state, reflector target sizing, environment rotation, and low-res SwiftShader branch are source-shaped.
 - Cubemap `scene.environment` is guarded beyond load success: source `CubeTextureLoader` creates a `CubeTexture`, assigns `SRGBColorSpace`, fills six images, and uses `CubeTexture` defaults for reflection mapping and `flipY=false`; the browser probe confirms those runtime fields plus default wrap/filter/mipmap/type/format and six loaded images.
 - `p1.addEnvironment()` cubemap loading now starts as a source-shaped fire-and-forget call before floor/env sceneWrap attachment. The texture preload binder no longer owns cubemap startup, and browser output probes guard `sceneEnvironmentStartOrder`.
@@ -151,6 +166,27 @@ Current guarded rebuild facts:
 - Rebuild desktop active CTA parent remains `opacity:0` by default and uses source-shaped active pointer events.
 - Browser output probe now records and guards Home CTA parent opacity, pointer events, inner button opacity, and nonzero layout rect.
 - The current desktop screenshot no longer shows the default "View project" CTA; remaining band deltas still point back to the WebGL floor/environment lane.
+
+### Online Baseline And Mirror Drift
+
+Current source read:
+
+- Online `https://rogierdeboeve.com/` is the final visual acceptance baseline.
+- The local mirror is still the source oracle for implementation attribution.
+- Online HTML/CSS/service-worker assets matched the mirror during the drift audit.
+- Online `/assets/bundle.250f01b7.js` differs from `legacy-mirror/public/assets/bundle.250f01b7.js` because the mirror script rewrites local-serving behavior.
+
+Known local JS rewrites:
+
+- Service-worker registration is disabled locally.
+- `detect-gpu` benchmark URLs are rewritten from the remote unpkg path to `/vendor/detect-gpu/benchmarks`.
+- The local mirror wraps GPU check failure with a tier-3 fallback for local robustness.
+
+Current guarded rebuild facts:
+
+- Local `public/vendor/detect-gpu/benchmarks` matched the remote benchmark JSON during the drift audit.
+- The known rewrites did not produce meaningful visual drift in the checked Home desktop/mobile brightness probes.
+- Future visual acceptance should compare against the online site first, then use the source bundle to attribute and implement any supported differences.
 
 ### Renderer State
 
@@ -255,6 +291,12 @@ Browser probes:
 - About mobile probe: `0` failures, `0` exceptions, `0` shader console messages; scroll opacity matches source `0.3507`, and destroy keeps the current spotlight map.
 - Interactive mouse probe: `0` failures, `0` exceptions, `0` shader console messages; mouse simulation, active raycast target ownership, and main-fluid pointer response are guarded.
 
+Post-close online baseline evidence:
+
+- Online site versus local source mirror: desktop center luma delta `-0.0012`, mobile center luma delta `-0.0005`.
+- Online site versus rebuild after overlay removal: desktop center luma delta `-0.0047`, mobile center luma delta `-0.0027`.
+- This closed the user-visible Home brightness gap without parameter tuning.
+
 Renderer audit evidence:
 
 - Three revision is `164`.
@@ -275,6 +317,7 @@ These are current boundaries, grouped by system instead of discovery time.
 | Home WebGL distribution | Sky composite `V1/H1/z1/B1` target chain and source `z1` missing-uniform behavior are guarded by audit and browser probe. |
 | Home WebGL distribution | Initial Home entry does not run WebGL active-project reveal before gallery entry; source-shaped spotlight prep is guarded by browser probe. |
 | Home WebGL distribution | Active block emissive uses source `colors.blocks || "#000000"` fallback and is guarded by browser probe. |
+| Home WebGL distribution | Rebuild has no non-source `.gl::after` Home dark overlay; online site remains the final visual baseline. |
 | Home DOM screenshot noise | Desktop active CTA parent remains hidden until hover while its inner button animation can complete; mobile CTA remains visible. |
 | Renderer state | Renderer constructor has no source `setClearColor`; probes guard default clear color `[0,0,0]` and clear alpha `0`. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |

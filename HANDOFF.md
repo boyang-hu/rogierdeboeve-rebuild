@@ -26,12 +26,12 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 1, Home WebGL source parity |
-| Phase 1 status | Closed on 2026-07-07 |
-| Current production priority | Hold for review, then Phase 2 scoping |
-| Next secondary priority | Home DOM/interaction parity after user confirmation |
-| Last committed source-backed code batch | Home blocks-color fallback parity |
-| Last closed evidence batch | Final Phase 1 closeout validation |
+| Active phase | Phase 2, Home DOM/interaction parity audit |
+| Phase 1 status | Closed/guarded on 2026-07-07 |
+| Current production priority | Phase 2 audit-only pass against online/source behavior |
+| Next secondary priority | First source-backed Home DOM/interaction fix batch |
+| Last committed source-backed code batch | Home brightness overlay parity, `416c43d` |
+| Last closed evidence batch | Online baseline/source mirror drift audit plus Phase 1 closeout |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -45,26 +45,27 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest evidence batch closed Phase 1 without a production code change.
+The latest committed batch aligned Home page brightness with the source-owned page overlay behavior.
 
-- Final renderer audit, build, diff check, Home desktop/mobile probes, thumb spotlight probe, project media probe, about desktop/mobile probes, and interactive mouse probe passed.
-- Project media was rerun serially after a parallel CDP noise check; the final media evidence is `0` failures, `0` exceptions, and `0` shader console messages for `gc-2026` and `hashgraph-vc`.
-- Phase 1 now has no active blockers in `PHASE1_AUDIT.md`.
+- Rebuild removed the non-source `.gl::after` dark overlay from `src/styles/global.css`.
+- `src/client/webgl.ts` now exposes debug-only C1 render-target and Home band probe data for attribution checks.
+- Online site versus local source mirror remains visually close in the checked center luma samples: desktop `-0.0012`, mobile `-0.0005`.
+- Online site versus rebuild after the overlay removal remains close in the checked center luma samples: desktop `-0.0047`, mobile `-0.0027`.
 
-The latest source-backed code batch fixed a source-owned active block material mismatch.
+The earlier Phase 1 closeout remains guarded.
 
-- Source `yD.onProjectActive()` calls `Se.setBlocksColor(t.data.colors.blocks || "#000000")`.
-- Hashgraph has no `colors.blocks`, so the source fallback is black.
-- Rebuild was falling back to `SOURCE_WORK_BG` (`#1a1a1a`), which made the active cube field and projection read too light.
-- Rebuild now uses the source black fallback, and browser probes guard expected active emissive.
+- Source `yD.onProjectActive()` uses `colors.blocks || "#000000"`; rebuild matches this active block fallback.
+- Final renderer audit, build, Home desktop/mobile probes, thumb spotlight probe, project media probe, about desktop/mobile probes, and interactive mouse probe passed during closeout.
+- Phase 1 has no active blockers in `PHASE1_AUDIT.md`.
 
 ## Current Evidence
 
-The main mid-field Home WebGL distribution residual has been source-fixed through active block material fallback parity, and Phase 1 closeout probes are clean.
+The main Home brightness residual has been closed through two source-owned findings: active block material fallback parity and removal of a rebuild-only page overlay.
 
 - Before this batch, canvas-only desktop bands were about `+0.061/+0.068` at `0.45/0.55`; mobile was about `+0.10` at `0.35-0.55`.
-- After the source fallback fix, canvas-only desktop center delta is `+0.0027`, with bands within about `-0.0017` to `+0.0040`.
-- After the source fallback fix, canvas-only mobile center delta is `-0.0042`, with bands within about `-0.0089` to `+0.0012`.
+- After the source fallback fix, canvas-only desktop center delta was `+0.0027`, with bands within about `-0.0017` to `+0.0040`.
+- After the source fallback fix, canvas-only mobile center delta was `-0.0042`, with bands within about `-0.0089` to `+0.0012`.
+- After removing the rebuild-only Home overlay, online-versus-rebuild center luma deltas were desktop `-0.0047` and mobile `-0.0027` in the latest attribution run.
 - A desktop CTA DOM visibility mismatch has been cleared; it was screenshot noise, not the WebGL residual.
 - Initial Home WebGL entry lifecycle is now guarded: source-shaped spotlight prep happens before gallery entry, and active-project reveal is not triggered before gallery entry.
 - `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
@@ -74,8 +75,10 @@ The main mid-field Home WebGL distribution residual has been source-fixed throug
 
 ## Source Of Truth
 
-- JavaScript bundle: `legacy-mirror/public/assets/bundle.250f01b7.js`
-- CSS bundle: `legacy-mirror/public/assets/bundle.87ba3613.css`
+- Final visual acceptance baseline: `https://rogierdeboeve.com/`.
+- Implementation source bundle: `legacy-mirror/public/assets/bundle.250f01b7.js`.
+- Implementation CSS bundle: `legacy-mirror/public/assets/bundle.87ba3613.css`.
+- Local mirror note: online HTML/CSS/service-worker assets matched the mirror during the drift audit; the local JS bundle intentionally differs where `scripts/mirror-site.mjs` rewrites service-worker registration, `detect-gpu` benchmark URLs, and GPU-check fallback behavior for local serving.
 - Screenshots and probes are attribution/regression aids only.
 - Do not tune horizon, fog, floor color, brightness, or projection by eye.
 - Keep the stack: Astro, TypeScript, Three.js, GSAP, Lenis, Howler.
@@ -88,9 +91,9 @@ Phase 1 is closed. Do not reopen it unless a concrete source-owned mismatch appe
 
 Recommended next move:
 
-1. Review the Phase 1 closeout evidence in `PHASE1_AUDIT.md`.
-2. If continuing, start Phase 2 with Home DOM/interaction parity.
-3. Keep project media and about probes as regression gates when shared render or lifecycle paths change.
+1. Run a Phase 2 audit-only pass on Home DOM, interaction affordances, and route-level user-visible behavior.
+2. Convert audit findings into a short source-backed fix queue before editing production code.
+3. Keep Phase 1 WebGL, project media, about, and interaction probes as regression gates when shared render or lifecycle paths change.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:
 
