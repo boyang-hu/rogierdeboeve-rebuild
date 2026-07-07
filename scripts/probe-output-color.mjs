@@ -23,6 +23,7 @@ const stableTimeout = Number(process.env.PROBE_STABLE_TIMEOUT || 30000);
 const deviceScaleFactor = Number(process.env.DEVICE_SCALE_FACTOR || 1);
 const skipScreenshot = process.env.SKIP_SCREENSHOT === "1";
 const viewportName = process.env.VIEWPORT || "desktop";
+const seedWorkStateActive = process.env.SEED_WORK_STATE_ACTIVE === "1";
 const viewports = {
   desktop: { width: 1440, height: 900, mobile: false },
   mobile: { width: 390, height: 844, mobile: true },
@@ -232,6 +233,41 @@ async function runProbe() {
   await send(ws, "Page.enable");
   await send(ws, "Runtime.enable");
   await send(ws, "Network.enable");
+  if (seedWorkStateActive) {
+    const seededWorkState = {
+      slug: "hashgraph-vc",
+      activeProject: "hashgraph-vc",
+      index: { current: 0, prev: 13, next: 1 },
+      scroll: {
+        virtual: 1400000,
+        target: 1400000,
+        animated: 1400000,
+        diff: 0,
+        current: 0,
+        progress: 0,
+        targetPlusDiff: 1400000,
+        remainder: 1400000,
+        limit: 14000,
+        step: 1000,
+        offset: 0,
+        velocity: 0,
+        active: true,
+      },
+      activeHook: 1400000,
+      targetHook: 1400000,
+      sceneRotation: 0,
+    };
+    await send(ws, "Page.addScriptToEvaluateOnNewDocument", {
+      source: `
+        try {
+          sessionStorage.setItem("rd:work-state", ${JSON.stringify(JSON.stringify(seededWorkState))});
+          window.__rdSeededWorkStateActive = true;
+        } catch (error) {
+          console.warn("Unable to seed rd:work-state", error);
+        }
+      `,
+    });
+  }
   await send(ws, "Emulation.setDeviceMetricsOverride", {
     width: viewport.width,
     height: viewport.height,
@@ -381,6 +417,15 @@ async function runProbe() {
   if (parsed.homeGalleryRuntime?.deltaClampApplied !== false) resizeErrors.push("homeGalleryRuntimeDeltaClampApplied");
   if (parsed.homeGalleryRuntime?.lastDeltaFinite !== true) resizeErrors.push("homeGalleryRuntimeLastDeltaFinite");
   if (!Number.isFinite(parsed.homeGalleryRuntime?.lastDelta) || parsed.homeGalleryRuntime.lastDelta < 0) resizeErrors.push("homeGalleryRuntimeLastDelta");
+  if (parsed.homeGalleryRuntime?.workStateRestoreMode !== "source-yD-Qe-workState-preserves-scroll-active") {
+    resizeErrors.push("homeGalleryRuntimeWorkStateRestoreMode");
+  }
+  if (parsed.homeGalleryRuntime?.restoredScrollActivePreserved !== true) resizeErrors.push("homeGalleryRuntimeActivePreserved");
+  if (seedWorkStateActive) {
+    if (parsed.homeGalleryRuntime?.workStateRestored !== true) resizeErrors.push("homeGalleryRuntimeSeedRestored");
+    if (parsed.homeGalleryRuntime?.restoredScrollActive !== true) resizeErrors.push("homeGalleryRuntimeSeedActive");
+    if (parsed.homeGalleryRuntime?.scrollActive !== true) resizeErrors.push("homeGalleryRuntimeSeedScrollActive");
+  }
   if (galleryDynamics.sceneRotationRounded !== true) resizeErrors.push("gallerySceneRotationRounded");
   if (galleryDynamics.zoomRounded !== true) resizeErrors.push("galleryZoomRounded");
   if (galleryDynamics.rotationMatchesSourceState !== true) resizeErrors.push("galleryRotationMatchesSourceState");

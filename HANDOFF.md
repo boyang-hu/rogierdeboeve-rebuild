@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: shader dump QA hardening. `scripts/dump-va-shader.mjs` now fails when Chrome lands on a `neterror` page, when the ordinary work `VA` dump is missing, when no generic shader dumps are captured, or when shader/runtime console errors appear; renderer audit guards those failure checks. This is QA harness hardening only, not production WebGL parity. Static checks, renderer audit with recursive false/null review, build, expected-failing neterror dump, and valid localhost shader dump passed. Phase 1 is still open.
+Latest Phase 1 batch: `yD/Qe.workState` restore now preserves the restored Home gallery `scroll.active` value. Source `yD.init()` restores `this.scroll=Qe.workState.scroll` directly, and source `yD.destroy()` saves the full scroll object by reference, so the rebuild no longer forces `scroll.active=false` after session-backed restore. Output probes now expose the restore mode and can seed an active work state; renderer audit rejects reintroducing the inactive reset. This is route-state restore parity only. Phase 1 is still open.
 
 ## Chosen Stack
 
@@ -160,7 +160,7 @@ Known remaining gaps:
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Source `Ka.raycast()` direct hit-UV target writes are guarded without a rebuild-owned clamp. Source `Ka` constructor/null sampler ownership is now guarded: `uTexture` and `uNoiseTexture` construct as `null`, `uCoords` constructs from `innerWidth/innerHeight`, `uPosOld/uPosNew` construct as zero vectors, and no runtime path binds blue-noise to `Ka.uNoiseTexture`. Exact final Home visual/feel parity is still open.
 - Source `Ka.update()` mouse-position uniform ownership is now guarded: `uPosNew.value` and `uPosOld.value` receive direct vector references before the simulation render, and `oldPos` is replaced with `newPos.clone()` after the render instead of mutating the previous object through `.copy(...)`.
 - Source `yD` gallery scroll runtime rounding and RAF delta ownership are now guarded: source `onRaf()` uses raw `Bt` `delta` in `Yi(...)` for `scroll.diff` and `scroll.animated`, then passes that same delta into `updateScene(t)` for roll/zoom dynamics; the rebuild uses source-rounded helpers for those paths and no longer clamps the Home gallery RAF delta to `0.001..0.05`.
-- Source `yD/Qe.workState` gallery scroll persistence is now guarded: the session-backed rebuild state carries source runtime scroll fields including `diff`, `velocity`, and `targetPlusDiff`, plus index/hooks/active project/scene rotation.
+- Source `yD/Qe.workState` gallery scroll persistence is now guarded: the session-backed rebuild state carries source runtime scroll fields including `diff`, `velocity`, and `targetPlusDiff`, plus index/hooks/active project/scene rotation. Restore also preserves the saved `scroll.active` value like source `this.scroll=Qe.workState.scroll`; the previous rebuild-only `scroll.active=false` reset is removed and guarded against returning.
 - Renderer audit render-target default diagnostics now distinguish expected false values from failed checks: `generateMipmaps`, `depthBuffer`, and `stencilBuffer` defaults are reported as `actual` / `expected` / `matchesExpected`, and the Node-only renderer probe reports `status:"unavailable"` when `OffscreenCanvas` is absent instead of `null`.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`. The `rg/Na/ig` helper constructor surface is also guarded: source zero-vector `uResolution` defaults are preserved, and `rg` keeps source unused null samplers plus constructor direction `[0.5,0.5]`. Source `Lu/I1` runtime ownership of `rg.uDirection` is guarded as shared direction-vector assignment, while standard blur `Na.uDirection` remains constructor-owned.
 - Source `p1.setMouseFactor()` ownership of ordinary work `VA.uMouseFactor` is now guarded for constructor default `0`, gallery entry `0 -> 1`, preview hover `.25 -> 1`, active uniform parity, and all-work uniform fan-out.
@@ -188,11 +188,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Hardened `scripts/dump-va-shader.mjs` so invalid dumps fail instead of producing empty or misleading Phase 1 shader summaries.
-- The script now throws on `body=neterror`, missing ordinary work `VA` shader dump, `shaderDumpCount=0`, and shader/runtime console errors.
-- `scripts/audit-renderer-output.mjs` now checks those guard strings so the dump cannot silently return to accepting empty captures.
-- Valid localhost dump still reports `body=is-home is-ready has-entered has-webgl`, `dumpCount=3`, `shaderDumpCount=27`, and no shader/runtime console errors; the focused Phase 1 shader surfaces remain source-shaped in that generated dump.
-- This is QA harness hardening only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Removed the rebuild-only inactive reset from Home gallery work-state restore.
+- Source evidence is the `yD.init()` direct `this.scroll=Qe.workState.scroll` restore plus `yD.destroy()` saving the full scroll object by reference.
+- `__rogierOutputProbe.homeGalleryRuntime` now reports `workStateRestoreMode`, restore presence, restored active value, active-preservation parity, and current `scroll.active`.
+- `scripts/probe-output-color.mjs` supports `SEED_WORK_STATE_ACTIVE=1` and verifies a seeded saved `scroll.active:true` remains true after restore.
+- `scripts/audit-renderer-output.mjs` checks the source save/restore anchors, runtime markers, and rejects `scroll.active = false;`.
+- This is route-state restore parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -200,30 +201,28 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check scripts/dump-va-shader.mjs
+node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-shader-dump-hardfail-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-shader-dump-hardfail-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-workstate-active-audit-postdocs.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-workstate-active-audit-postdocs.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5176 OUT_DIR=/tmp/rd-shader-dump-hardfail-neterror CDP_PORT=9320 node scripts/dump-va-shader.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-shader-dump-hardfail-ok CDP_PORT=9321 node scripts/dump-va-shader.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-workstate-active-output-seeded-postdocs CDP_PORT=9332 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 SEED_WORK_STATE_ACTIVE=1 node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed for the shader dump hard-fail batch. Renderer audit wrote `/tmp/rd-shader-dump-hardfail-audit.json`; recursive false/null extraction printed `false/null entries 0`. The negative dump against unreachable `http://127.0.0.1:5176` failed as expected with `Shader dump page failed to load: body=neterror`. The valid dump against `http://localhost:5176` succeeded with `body=is-home is-ready has-entered has-webgl`, `dumpCount=3`, `shaderDumpCount=27`, and no shader/runtime console errors.
+All relevant checks passed for the work-state active restore batch before commit. Renderer audit wrote `/tmp/rd-workstate-active-audit-postdocs.json`; recursive false/null extraction printed `false/null entries 0`. The seeded output probe verified `workStateRestored=true`, `restoredScrollActive=true`, `restoredScrollActivePreserved=true`, and `scrollActive=true`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this shader dump QA batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this work-state restore batch.
 
-Project-media, thumb, full capture, and output-color probes were not rerun because this batch touched only shader dump/audit tooling and documentation, not production WebGL rendering, route data, source content, thumb render targets, or project media.
+Project-media, thumb, full capture, and shader dump probes were not rerun because this batch touched only Home gallery route-state restore, the common output probe, renderer audit, and documentation.
 
 Verified:
 
-- Renderer audit passed for the shader dump hard-fail batch: `/tmp/rd-shader-dump-hardfail-audit.json`.
+- Renderer audit passed for the work-state active restore batch: `/tmp/rd-workstate-active-audit-postdocs.json`.
 - Recursive false/null audit output is empty.
-- Neterror shader dump fails nonzero instead of producing an empty successful summary.
-- Valid localhost shader dump passes and still reports the focused Phase 1 shader surfaces as source-shaped.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
+- Seeded output probe passed and proved source-shaped active restore behavior.
 - Project media remains a regression gate, not proof of Home parity.
-- Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
+- Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
 

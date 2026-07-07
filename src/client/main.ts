@@ -58,6 +58,11 @@ type HomeGalleryRuntimeProbe = {
   deltaClampApplied: false;
   lastDelta: number;
   lastDeltaFinite: boolean;
+  workStateRestoreMode: "source-yD-Qe-workState-preserves-scroll-active";
+  workStateRestored: boolean;
+  restoredScrollActive: boolean | null;
+  restoredScrollActivePreserved: boolean;
+  scrollActive: boolean;
 };
 
 type HomeGalleryProbeWindow = Window & {
@@ -403,6 +408,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   let targetHook = activeHook;
   let sceneRotation = 0;
   let activeProjectId = cardsArray[activeIndex]?.dataset.slug ?? "";
+  let restoredWorkState = false;
+  let restoredScrollActive: boolean | null = null;
+  let restoredScrollActivePreserved = true;
   const scroll: WorkGalleryScrollState = {
     virtual: cardsArray.length * 100000,
     target: cardsArray.length * 100000,
@@ -434,13 +442,16 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restored?.slug);
     if (restored && restoredIndex >= 0) {
       activeIndex = restoredIndex;
+      const sourceRestoredActive = typeof restored.scroll?.active === "boolean" ? restored.scroll.active : scroll.active;
       Object.assign(indexState, restored.index);
       Object.assign(scroll, restored.scroll);
       activeHook = typeof restored.activeHook === "number" ? restored.activeHook : restoredIndex * step + scroll.remainder;
       targetHook = typeof restored.targetHook === "number" ? restored.targetHook : activeHook;
       sceneRotation = typeof restored.sceneRotation === "number" && Math.abs(restored.sceneRotation) <= 30 ? restored.sceneRotation : 0;
       activeProjectId = restored.activeProject ?? restored.slug ?? cardsArray[restoredIndex]?.dataset.slug ?? "";
-      scroll.active = false;
+      restoredWorkState = true;
+      restoredScrollActive = scroll.active;
+      restoredScrollActivePreserved = scroll.active === sourceRestoredActive;
       scroll.current = wrap(scroll.animated || scroll.target || restoredIndex * step, limit);
       scroll.progress = scroll.current / limit;
       scroll.remainder = scroll.target - (scroll.target % limit);
@@ -872,6 +883,11 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
       deltaClampApplied: false,
       lastDelta: delta,
       lastDeltaFinite: Number.isFinite(delta),
+      workStateRestoreMode: "source-yD-Qe-workState-preserves-scroll-active",
+      workStateRestored: restoredWorkState,
+      restoredScrollActive,
+      restoredScrollActivePreserved,
+      scrollActive: scroll.active,
     };
     scroll.velocity = scroll.target - scroll.animated;
     checkSpeed();

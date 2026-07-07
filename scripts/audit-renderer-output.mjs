@@ -2789,7 +2789,10 @@ const summary = {
           && rebuildMain.includes("targetPlusDiff: scroll.targetPlusDiff,")
           && rebuildMain.includes("velocity: scroll.velocity,")
           && rebuildMain.includes("active: scroll.active,")
-          && rebuildMain.includes("sceneRotation,"),
+          && rebuildMain.includes("sceneRotation,")
+          && rebuildMain.includes("workStateRestoreMode: \"source-yD-Qe-workState-preserves-scroll-active\"")
+          && rebuildMain.includes("restoredScrollActivePreserved = scroll.active === sourceRestoredActive")
+          && !rebuildMain.includes("scroll.active = false;"),
       },
       sourceOrder: {
         sceneWrapBeforeTransform:
