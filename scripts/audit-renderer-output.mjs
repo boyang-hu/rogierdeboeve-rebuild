@@ -4802,6 +4802,30 @@ const summary = {
           && rebuildOutputProbe.includes("activeTMouseSimRuntimeLocal")
           && rebuildOutputProbe.includes("activeUMouseLightnessRuntimeThumbState"),
       },
+      blockMaterialProgramCacheKeyOwnership: {
+        sourceNoCustomProgramCacheKeyOverride:
+          sourceVA?.text.includes("customProgramCacheKey") === false
+          && !sourceXABody.includes("customProgramCacheKey")
+          && !sourceKABody.includes("customProgramCacheKey"),
+        rebuildNoCustomProgramCacheKeyOverride:
+          Boolean(rebuildCreateWorkBlockMaterial)
+          && Boolean(rebuildCreateAuxiliaryBlockMaterial)
+          && !rebuildCreateWorkBlockMaterial.includes("customProgramCacheKey")
+          && !rebuildCreateAuxiliaryBlockMaterial.includes("customProgramCacheKey"),
+        rebuildAuxiliaryDefaultKeysKeepDistinctShaderFunctions:
+          Boolean(rebuildCreateAuxiliaryBlockMaterial)
+          && rebuildCreateAuxiliaryBlockMaterial.includes("if (kind === \"about\")")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("patchWorkBlockShader(shader, uniforms, \"aboutAuxiliary\")")
+          && rebuildCreateAuxiliaryBlockMaterial.includes("patchWorkBlockShader(shader, uniforms, \"floatingAuxiliary\")"),
+        probeCoverage:
+          rebuildWebgl.includes("programCacheKeyMode: \"source-VA-XA-KA-no-customProgramCacheKey-override-three-default-onBeforeCompile\"")
+          && rebuildWebgl.includes("customProgramCacheKeyOwnProperty: Object.hasOwn(activeWorkItem.material, \"customProgramCacheKey\")")
+          && rebuildWebgl.includes("programCacheKeyDiffersFromFloating:")
+          && rebuildWebgl.includes("programCacheKeyDiffersFromAbout:")
+          && rebuildOutputProbe.includes("activeProgramCacheKeyOwnProperty")
+          && rebuildOutputProbe.includes("auxProgramCacheKeyDiffersFromFloating")
+          && rebuildOutputProbe.includes("floatingAuxProgramCacheKeyDiffersFromAbout"),
+      },
       mouseFactorOwnership: {
         sourceConstructorDefault:
           sourceVA?.text.includes("uMouseFactor:new I(0)") === true,
@@ -4951,7 +4975,8 @@ const summary = {
         "uCoordsStaysConstructorZero:",
         "source-XA-jA-WA-direct-shader",
         "source-KA-YA-qA-direct-shader",
-        "patchWorkBlockShader(shader, uniforms, kind === \"about\" ? \"aboutAuxiliary\" : \"floatingAuxiliary\")",
+        "patchWorkBlockShader(shader, uniforms, \"aboutAuxiliary\")",
+        "patchWorkBlockShader(shader, uniforms, \"floatingAuxiliary\")",
       ]),
       rebuildRevealUniformSurface: {
         branchOwned: Boolean(rebuildCreateAuxiliaryBlockMaterial)

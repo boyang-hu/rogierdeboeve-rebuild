@@ -6544,7 +6544,6 @@ export class WebGLBackdrop {
     material.onBeforeCompile = (shader) => {
       patchWorkBlockShader(shader, uniforms, "work");
     };
-    material.customProgramCacheKey = () => "source-va-work-block-chunks";
     return material;
   }
 
@@ -6655,10 +6654,15 @@ export class WebGLBackdrop {
       ? "source-XA-tPerlin-construct-Xt-perlin1-immediate"
       : "source-KA-tPerlin-construct-Xt-perlin1-immediate";
     material.userData.sourceTPerlinConstructorIsImmediate = uniforms.tPerlin.value === this.sourcePerlin1Texture;
-    material.onBeforeCompile = (shader) => {
-      patchWorkBlockShader(shader, uniforms, kind === "about" ? "aboutAuxiliary" : "floatingAuxiliary");
-    };
-    material.customProgramCacheKey = () => material.userData.sourceShaderMode;
+    if (kind === "about") {
+      material.onBeforeCompile = (shader) => {
+        patchWorkBlockShader(shader, uniforms, "aboutAuxiliary");
+      };
+    } else {
+      material.onBeforeCompile = (shader) => {
+        patchWorkBlockShader(shader, uniforms, "floatingAuxiliary");
+      };
+    }
     return material;
   }
 
@@ -10278,6 +10282,10 @@ void main() {
               : false,
             hasPhysicalDefine: Object.hasOwn(activeWorkItem.material.defines ?? {}, "PHYSICAL"),
             physicalBranchMode: "source-VA-standard-material-PHYSICAL-inactive",
+            programCacheKeyMode: "source-VA-XA-KA-no-customProgramCacheKey-override-three-default-onBeforeCompile",
+            customProgramCacheKeyOwnProperty: Object.hasOwn(activeWorkItem.material, "customProgramCacheKey"),
+            programCacheKeyMatchesDefaultOnBeforeCompile:
+              activeWorkItem.material.customProgramCacheKey() === activeWorkItem.material.onBeforeCompile.toString(),
             constructorDefaultsMode: activeWorkItem.material.userData.sourceBlockMaterialConstructorMode,
             emissiveConstructorMode: activeWorkItem.material.userData.sourceEmissiveConstructorMode,
             emissiveConstructorWasBlack: activeWorkItem.material.userData.sourceEmissiveConstructorWasBlack,
@@ -10361,6 +10369,13 @@ void main() {
             roughness: this.aboutBlocks.material.roughness,
             metalness: this.aboutBlocks.material.metalness,
             renderOrder: this.aboutBlocks.material.renderOrder,
+            programCacheKeyMode: "source-VA-XA-KA-no-customProgramCacheKey-override-three-default-onBeforeCompile",
+            customProgramCacheKeyOwnProperty: Object.hasOwn(this.aboutBlocks.material, "customProgramCacheKey"),
+            programCacheKeyMatchesDefaultOnBeforeCompile:
+              this.aboutBlocks.material.customProgramCacheKey() === this.aboutBlocks.material.onBeforeCompile.toString(),
+            programCacheKeyDiffersFromFloating: this.floatingBlocks
+              ? this.aboutBlocks.material.customProgramCacheKey() !== this.floatingBlocks.material.customProgramCacheKey()
+              : null,
             uMouseType: this.aboutBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
             uMouse: this.aboutBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.aboutBlocks.material.uniforms.uUvOffsetScale.value,
@@ -10409,6 +10424,13 @@ void main() {
             roughness: this.floatingBlocks.material.roughness,
             metalness: this.floatingBlocks.material.metalness,
             renderOrder: this.floatingBlocks.material.renderOrder ?? null,
+            programCacheKeyMode: "source-VA-XA-KA-no-customProgramCacheKey-override-three-default-onBeforeCompile",
+            customProgramCacheKeyOwnProperty: Object.hasOwn(this.floatingBlocks.material, "customProgramCacheKey"),
+            programCacheKeyMatchesDefaultOnBeforeCompile:
+              this.floatingBlocks.material.customProgramCacheKey() === this.floatingBlocks.material.onBeforeCompile.toString(),
+            programCacheKeyDiffersFromAbout: this.aboutBlocks
+              ? this.floatingBlocks.material.customProgramCacheKey() !== this.aboutBlocks.material.customProgramCacheKey()
+              : null,
             uMouseType: this.floatingBlocks.material.uniforms.uMouse?.value?.isVector2 ? "Vector2" : "non-source",
             uMouse: this.floatingBlocks.material.uniforms.uMouse?.value?.toArray?.() ?? null,
             uUvOffsetScale: this.floatingBlocks.material.uniforms.uUvOffsetScale.value,

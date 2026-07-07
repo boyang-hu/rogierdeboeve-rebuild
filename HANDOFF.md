@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `h1/u1` environment program-cache-key ownership. Source `u1` owns `customUniforms` plus `onBeforeCompile` but has no `customProgramCacheKey` override, so the rebuild now removes the local `source-u1-environment-standard` override and relies on Three's default `onBeforeCompile.toString()` cache-key path. Output/reflection probes expose and assert `customProgramCacheKeyOwnProperty=false` plus default cache-key parity. This is an environment material runtime-object guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `VA/XA/KA` block material program-cache-key ownership. Source `VA`, `XA`, and `KA` assign shader text in `onBeforeCompile` but have no `customProgramCacheKey` override, so the rebuild now removes local material-level overrides and relies on Three's default `onBeforeCompile.toString()` cache-key path. Auxiliary about/floating materials keep distinct default keys through branch-specific `onBeforeCompile` functions. This is a block material runtime-object guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -175,6 +175,7 @@ Known remaining gaps:
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
 - Source `h1/u1` environment program-cache-key ownership is now guarded: source `u1` sets `onBeforeCompile` but does not override `customProgramCacheKey`, so the rebuild relies on Three's default `onBeforeCompile.toString()` cache-key path and rejects the old local `source-u1-environment-standard` override.
+- Source `VA/XA/KA` block material program-cache-key ownership is now guarded: source ordinary and auxiliary block materials set `onBeforeCompile` but do not override `customProgramCacheKey`, so the rebuild relies on Three's default `onBeforeCompile.toString()` cache-key path and keeps auxiliary `XA/KA` keys distinct through branch-specific default key functions.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
 - Source `yD.onProjectActive()` active-project spotlight, application-order, and woosh ownership are now guarded: `SD.init()` keeps the fixed Home entry `220` baseline, then active-project order runs spotlight payload-or-max, reveal spread, source-owned woosh, active `uReveal` tweens, project look setters, and final directional light `1.5`; current local project data has no spotlight payloads, so the expected runtime spotlight value remains `220`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
@@ -189,13 +190,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `h1/u1` environment program-cache-key ownership.
-- Source evidence: `u1` owns `customUniforms` and assigns shader text in `onBeforeCompile`, but has no `customProgramCacheKey` override.
-- Removed the rebuild-only `material.customProgramCacheKey = () => "source-u1-environment-standard"` path from `createEnvironmentMaterial()`.
-- `__rogierOutputProbe.uniforms.environment` and `reflectionState.environment.material` now report `programCacheKeyMode`, `customProgramCacheKeyOwnProperty=false`, and default `onBeforeCompile` cache-key parity.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the custom key override.
-- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, and desktop/mobile output probes. The first parallel mobile probe hit a CDP timeout before assertions and passed when rerun singly.
-- This is environment material runtime-object ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `VA/XA/KA` block material program-cache-key ownership.
+- Source evidence: `VA`, `XA`, and `KA` assign shader text in `onBeforeCompile`, but have no `customProgramCacheKey` override.
+- Removed rebuild-only material-level `customProgramCacheKey` overrides from `createWorkBlockMaterial()` and `createAuxiliaryBlockMaterial()`.
+- Split auxiliary about/floating `onBeforeCompile` functions so Three's default `onBeforeCompile.toString()` cache key remains distinct for source `XA` and `KA` without own overrides.
+- `__rogierOutputProbe.settings.work.activeMaterial`, `.auxiliaryMaterial`, and `.floatingAuxiliaryMaterial` now report program-cache-key mode, own-property absence, default parity, and auxiliary key separation.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring material cache-key overrides.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, and desktop/mobile output probes.
+- This is block material runtime-object ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -206,25 +208,25 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-env-cache-key-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-env-cache-key-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-block-cache-key-audit-final.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-block-cache-key-audit-final.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-env-cache-key-output-desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-env-cache-key-output-mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-block-cache-key-output-desktop-final node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-block-cache-key-output-mobile-final node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed for the `h1/u1` environment program-cache-key ownership batch before commit. Renderer audit wrote `/tmp/rd-env-cache-key-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the no-`customProgramCacheKey` override ownership. Desktop and mobile output probes verified the default program-cache-key markers with zero failures, exceptions, or console messages.
+All relevant checks passed for the `VA/XA/KA` block material program-cache-key ownership batch before commit. Renderer audit wrote `/tmp/rd-block-cache-key-audit-final.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the no-`customProgramCacheKey` override ownership plus distinct auxiliary default keys. Desktop and mobile output probes verified the default program-cache-key markers with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this environment program-cache-key ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this block material program-cache-key ownership batch.
 
 Project-media was not rerun for this batch because production project-media code and route data were untouched; project pages remain regression gates, not proof of Home parity.
 
 Verified:
 
-- Renderer audit passed for the environment program-cache-key ownership batch: `/tmp/rd-env-cache-key-audit.json`.
+- Renderer audit passed for the block material program-cache-key ownership batch: `/tmp/rd-block-cache-key-audit-final.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source no-custom-program-cache-key markers.
+- Desktop and mobile output probes passed with the source block-material no-custom-program-cache-key markers.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
@@ -275,7 +277,7 @@ Continue source-driven implementation in this order:
    - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, or camera-surface ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` root scene direct-child order, source `p1.init()` sceneWrap child attach order, final `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, source `h1/u1` environment custom-uniform/dithering/no-custom-program-cache-key ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
+   - Current rebuild now guards source `p1` root scene direct-child order, source `p1.init()` sceneWrap child attach order, final `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, source `h1/u1` environment custom-uniform/dithering/no-custom-program-cache-key ownership, source `VA/XA/KA` block material no-custom-program-cache-key ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

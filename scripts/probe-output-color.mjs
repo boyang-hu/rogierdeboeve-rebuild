@@ -455,6 +455,13 @@ async function runProbe() {
   if (activeMaterial?.isMeshPhysicalMaterial !== false) materialErrors.push("activeIsMeshPhysicalMaterial");
   if (activeMaterial?.hasPhysicalDefine !== false) materialErrors.push("activePhysicalDefine");
   if (activeMaterial?.physicalBranchMode !== "source-VA-standard-material-PHYSICAL-inactive") materialErrors.push("activePhysicalBranchMode");
+  if (activeMaterial?.programCacheKeyMode !== "source-VA-XA-KA-no-customProgramCacheKey-override-three-default-onBeforeCompile") {
+    materialErrors.push("activeProgramCacheKeyMode");
+  }
+  if (activeMaterial?.customProgramCacheKeyOwnProperty !== false) materialErrors.push("activeProgramCacheKeyOwnProperty");
+  if (activeMaterial?.programCacheKeyMatchesDefaultOnBeforeCompile !== true) {
+    materialErrors.push("activeProgramCacheKeyDefault");
+  }
   if (activeMaterial?.constructorDefaultsMode !== "source-VA-XA-KA-default-uniform-constructors") {
     materialErrors.push("activeConstructorDefaultsMode");
   }
@@ -595,6 +602,16 @@ async function runProbe() {
   if (!auxiliaryMaterial) materialErrors.push("auxiliaryMaterialMissing");
   if (auxiliaryMaterial?.mode !== "source-XA-about-material-state") materialErrors.push("auxMode");
   if (auxiliaryMaterial?.shaderMode !== "source-XA-jA-WA-direct-shader") materialErrors.push("auxShaderMode");
+  if (auxiliaryMaterial?.programCacheKeyMode !== "source-VA-XA-KA-no-customProgramCacheKey-override-three-default-onBeforeCompile") {
+    materialErrors.push("auxProgramCacheKeyMode");
+  }
+  if (auxiliaryMaterial?.customProgramCacheKeyOwnProperty !== false) materialErrors.push("auxProgramCacheKeyOwnProperty");
+  if (auxiliaryMaterial?.programCacheKeyMatchesDefaultOnBeforeCompile !== true) {
+    materialErrors.push("auxProgramCacheKeyDefault");
+  }
+  if (auxiliaryMaterial?.programCacheKeyDiffersFromFloating !== true) {
+    materialErrors.push("auxProgramCacheKeyDiffersFromFloating");
+  }
   if (auxiliaryMaterial?.toneMapped !== true) materialErrors.push("auxToneMapped");
   if (auxiliaryMaterial?.transparent !== true) materialErrors.push("auxTransparent");
   if (auxiliaryMaterial?.depthWrite !== false) materialErrors.push("auxDepthWrite");
@@ -648,6 +665,18 @@ async function runProbe() {
   if (!floatingAuxiliaryMaterial) materialErrors.push("floatingAuxiliaryMaterialMissing");
   if (floatingAuxiliaryMaterial?.mode !== "source-KA-floating-material-state") materialErrors.push("floatingAuxMode");
   if (floatingAuxiliaryMaterial?.shaderMode !== "source-KA-YA-qA-direct-shader") materialErrors.push("floatingAuxShaderMode");
+  if (floatingAuxiliaryMaterial?.programCacheKeyMode !== "source-VA-XA-KA-no-customProgramCacheKey-override-three-default-onBeforeCompile") {
+    materialErrors.push("floatingAuxProgramCacheKeyMode");
+  }
+  if (floatingAuxiliaryMaterial?.customProgramCacheKeyOwnProperty !== false) {
+    materialErrors.push("floatingAuxProgramCacheKeyOwnProperty");
+  }
+  if (floatingAuxiliaryMaterial?.programCacheKeyMatchesDefaultOnBeforeCompile !== true) {
+    materialErrors.push("floatingAuxProgramCacheKeyDefault");
+  }
+  if (floatingAuxiliaryMaterial?.programCacheKeyDiffersFromAbout !== true) {
+    materialErrors.push("floatingAuxProgramCacheKeyDiffersFromAbout");
+  }
   if (floatingAuxiliaryMaterial?.toneMapped !== true) materialErrors.push("floatingAuxToneMapped");
   if (floatingAuxiliaryMaterial?.transparent !== true) materialErrors.push("floatingAuxTransparent");
   if (floatingAuxiliaryMaterial?.depthWrite !== true) materialErrors.push("floatingAuxDepthWrite");
