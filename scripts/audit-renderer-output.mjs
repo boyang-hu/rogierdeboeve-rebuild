@@ -286,6 +286,7 @@ const rebuildResizeBloomMipChain = extractBlock(rebuildWebgl, "private resizeBlo
 const rebuildRenderBloomChain = extractBlock(rebuildWebgl, "private renderBloomChain(");
 const rebuildRenderWorkBlurPass = extractBlock(rebuildWebgl, "private renderWorkBlurPass()");
 const rebuildRenderHomeBlurPass = extractBlock(rebuildWebgl, "private renderHomeBlurPass()");
+const rebuildRenderWorkLuminosityPass = extractBlock(rebuildWebgl, "private renderWorkLuminosityPass(");
 const rebuildRenderHomeBloomPass = extractBlock(rebuildWebgl, "private renderHomeBloomPass(");
 const rebuildCreateMainFluidPass = extractBlock(rebuildWebgl, "private createMainFluidPass()");
 const rebuildResizeMainFluidPass = extractBlock(rebuildWebgl, "private resizeMainFluidPass(");
@@ -879,7 +880,9 @@ const summary = {
           && rebuildRenderWorkBlurPass?.includes("this.workPostScreen.material = this.workBlurVerticalMaterial;")
           && rebuildRenderWorkBlurPass?.includes("this.renderer.setRenderTarget(this.workBlurTargetB);")
           && rebuildTick?.includes("if (this.renderSettings.blur.enabled) {\n            this.renderWorkBlurPass();\n          }\n          const workSceneTarget = this.renderSettings.blur.enabled ? this.workBlurTargetB : this.workRawTarget;")
-          && rebuildTick?.includes("this.renderHomeBloomPass(this.workRawTarget, workSceneTarget);")
+          && rebuildRenderWorkLuminosityPass?.includes("this.workLuminosityMaterial.uniforms.tMap.value = sourceTarget.texture;")
+          && rebuildTick?.includes("this.renderWorkLuminosityPass(workSceneTarget);")
+          && rebuildTick?.includes("this.renderHomeBloomPass(this.workRawTarget);")
           && rebuildTick?.includes("this.compositeMaterial.uniforms.tScene.value = workSceneTarget.texture;")
           && rebuildWebgl.includes("luminositySource: \"source-Lu-renderTargetBlurB-if-blur-else-renderTargetA\""),
         sourceBlurinessInitOnly:
@@ -912,9 +915,24 @@ const summary = {
           && rebuildWebgl.includes("sourceFinalTargetReset: \"source-Lu-renderToScreen-false-renderTargetComposite-then-null\""),
         sourceBloomBranchBinding: sourceLu.text.includes("this.compositeMaterial.uniforms.tBloom.value=d[0].texture"),
         rebuildBloomBranchBinding:
-          rebuildTick?.includes("if (this.renderSettings.bloom.enabled) {\n            this.renderHomeBloomPass(this.workRawTarget, workSceneTarget);\n            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;\n          }")
-          && rebuildRenderHomeBloomPass?.includes("private renderHomeBloomPass(sourceTarget: WebGLRenderTarget, luminositySourceTarget = sourceTarget)")
-          && rebuildRenderHomeBloomPass?.includes("this.workLuminosityMaterial.uniforms.tMap.value = luminositySourceTarget.texture;"),
+          rebuildTick?.includes("this.renderWorkLuminosityPass(workSceneTarget);\n          if (this.renderSettings.bloom.enabled) {\n            this.renderHomeBloomPass(this.workRawTarget);\n            this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;\n          }")
+          && rebuildRenderHomeBloomPass?.includes("private renderHomeBloomPass(sourceTarget: WebGLRenderTarget)")
+          && rebuildRenderHomeBloomPass?.includes("this.renderSettings.luminosity.enabled ? this.workBloomBrightTarget : undefined")
+          && !rebuildRenderHomeBloomPass?.includes("workLuminosityMaterial.uniforms.tMap.value"),
+        sourceLuminosityBranchBeforeBloom:
+          orderedIncludes(sourceLu.text, [
+            "this.settings.luminosity.enabled&&(this.luminosityMaterial.uniforms.tMap.value=this.settings.blur.enabled?g.texture:c.texture",
+            "this.settings.bloom.enabled){",
+          ]),
+        rebuildLuminosityBranchBeforeBloom:
+          Boolean(rebuildTick)
+          && orderedIncludes(rebuildTick, [
+            "this.renderWorkLuminosityPass(workSceneTarget);",
+            "if (this.renderSettings.bloom.enabled) {",
+            "this.renderHomeBloomPass(this.workRawTarget);",
+          ])
+          && rebuildWebgl.includes("luminosityBranchMode: \"source-Lu-luminosity-branch-before-bloom-independent-of-bloom-enabled\"")
+          && rebuildWebgl.includes("bloomBranchMode: \"source-Lu-bloom-branch-consumes-existing-renderTargetBright-or-renderTargetA\""),
         sourceBloomBlurResizeResolution:
           sourceLu.text.includes("this.blurMaterials[i].uniforms.uResolution.value.set(e,t),e/=2,t/=2")
           && !sourceLu.text.includes("this.blurMaterials[p].uniforms.uResolution"),
@@ -2669,8 +2687,8 @@ const summary = {
       })),
       rebuildOrderChecks: checks(rebuildWebgl, [
         "rebuildSceneOrder: [\"sky\", \"media\", \"work\", \"main\", \"workthumb\", \"wavves\", \"character\"]",
-        "rebuildFrameOrder: [\"media-position\", \"sky\", \"media\", \"work-raw\", \"work-bloom\", \"work-mousesim\", \"work-composite\", \"p1-post-render\", \"main-raw\", \"main-blur\", \"main-lensflare\", \"main-luminosity\", \"main-bloom\", \"main-fluid\", \"main-C1-runtime-uniforms\", \"main-C1\", \"main-final-screen\", \"workthumb\", \"wavves\", \"character-when-about\"]",
-        "workUpdateOrder: [\"Lu.renderManager.raw\", \"Lu.renderManager.bloom\", \"Ka.mouseSimulation\", \"Lu.renderManager.composite\", \"IT.cameraController\", \"p1.components\"]",
+        "rebuildFrameOrder: [\"media-position\", \"sky\", \"media\", \"work-raw\", \"work-blur\", \"work-luminosity\", \"work-bloom\", \"work-mousesim\", \"work-composite\", \"p1-post-render\", \"main-raw\", \"main-blur\", \"main-lensflare\", \"main-luminosity\", \"main-bloom\", \"main-fluid\", \"main-C1-runtime-uniforms\", \"main-C1\", \"main-final-screen\", \"workthumb\", \"wavves\", \"character-when-about\"]",
+        "workUpdateOrder: [\"Lu.raw\", \"Lu.optional-blur\", \"Lu.optional-luminosity\", \"Lu.optional-bloom\", \"Ka.mouseSimulation\", \"Lu.composite\", \"IT.cameraController\", \"p1.components\"]",
         "mainUpdateOrder: [\"I1.raw\", \"I1.optional-blur\", \"I1.optional-lensflare\", \"I1.optional-luminosity\", \"I1.optional-bloom\", \"I1.fluid\", \"I1.C1-runtime-uniforms\", \"I1.C1-screen\"]",
         "mouseSimulationOrder: \"source-Lu-mousesim-after-raw-bloom-before-composite\"",
         "environmentUpdateOrder: \"source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks\"",

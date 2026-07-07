@@ -10144,7 +10144,9 @@ void main() {
           renderManagerPassInputs: {
             blurSource: "source-Lu-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB",
             luminositySource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
+            luminosityBranchMode: "source-Lu-luminosity-branch-before-bloom-independent-of-bloom-enabled",
             bloomSource: "source-Lu-renderTargetBright-if-luminosity-else-renderTargetA",
+            bloomBranchMode: "source-Lu-bloom-branch-consumes-existing-renderTargetBright-or-renderTargetA",
             oaSceneSource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
             blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
           },
@@ -10609,8 +10611,8 @@ void main() {
           source: this.sourceUpdateOrder,
           sourceSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
           rebuildSceneOrder: ["sky", "media", "work", "main", "workthumb", "wavves", "character"],
-          rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1-runtime-uniforms", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"],
-          workUpdateOrder: ["Lu.renderManager.raw", "Lu.renderManager.bloom", "Ka.mouseSimulation", "Lu.renderManager.composite", "IT.cameraController", "p1.components"],
+          rebuildFrameOrder: ["media-position", "sky", "media", "work-raw", "work-blur", "work-luminosity", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1-runtime-uniforms", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"],
+          workUpdateOrder: ["Lu.raw", "Lu.optional-blur", "Lu.optional-luminosity", "Lu.optional-bloom", "Ka.mouseSimulation", "Lu.composite", "IT.cameraController", "p1.components"],
           mainUpdateOrder: ["I1.raw", "I1.optional-blur", "I1.optional-lensflare", "I1.optional-luminosity", "I1.optional-bloom", "I1.fluid", "I1.C1-runtime-uniforms", "I1.C1-screen"],
           mainCompositeUpdateOrder: "source-U1-super-update-renders-I1-before-C1-update",
           frameTail: "source-work-renderManager-then-p1-update-before-main",
@@ -12292,6 +12294,14 @@ void main() {
     this.renderer.render(this.mainPostScreen, this.backgroundCamera);
   }
 
+  private renderWorkLuminosityPass(sourceTarget: WebGLRenderTarget) {
+    if (!this.renderSettings.luminosity.enabled) return;
+    this.workLuminosityMaterial.uniforms.tMap.value = sourceTarget.texture;
+    this.workPostScreen.material = this.workLuminosityMaterial;
+    this.renderer.setRenderTarget(this.workBloomBrightTarget);
+    this.renderer.render(this.workPostScreen, this.backgroundCamera);
+  }
+
   private renderBloomChain(
     sourceTarget: WebGLRenderTarget,
     horizontalTargets: WebGLRenderTarget[],
@@ -12323,15 +12333,7 @@ void main() {
     this.renderer.render(screen, this.backgroundCamera);
   }
 
-  private renderHomeBloomPass(sourceTarget: WebGLRenderTarget, luminositySourceTarget = sourceTarget) {
-    let brightTarget: WebGLRenderTarget | undefined;
-    if (this.renderSettings.luminosity.enabled) {
-      this.workLuminosityMaterial.uniforms.tMap.value = luminositySourceTarget.texture;
-      this.workPostScreen.material = this.workLuminosityMaterial;
-      this.renderer.setRenderTarget(this.workBloomBrightTarget);
-      this.renderer.render(this.workPostScreen, this.backgroundCamera);
-      brightTarget = this.workBloomBrightTarget;
-    }
+  private renderHomeBloomPass(sourceTarget: WebGLRenderTarget) {
     this.renderBloomChain(
       sourceTarget,
       this.workBloomHorizontalTargets,
@@ -12341,7 +12343,7 @@ void main() {
       this.bloomCompositeMaterial,
       this.sourceWorkBloomHorizontalDirection,
       this.sourceWorkBloomVerticalDirection,
-      brightTarget,
+      this.renderSettings.luminosity.enabled ? this.workBloomBrightTarget : undefined,
     );
   }
 
@@ -12412,8 +12414,9 @@ void main() {
             this.renderWorkBlurPass();
           }
           const workSceneTarget = this.renderSettings.blur.enabled ? this.workBlurTargetB : this.workRawTarget;
+          this.renderWorkLuminosityPass(workSceneTarget);
           if (this.renderSettings.bloom.enabled) {
-            this.renderHomeBloomPass(this.workRawTarget, workSceneTarget);
+            this.renderHomeBloomPass(this.workRawTarget);
             this.compositeMaterial.uniforms.tBloom.value = this.workBloomHorizontalTargets[0].texture;
           }
           this.updateScreenMouseSimulation(time, delta);

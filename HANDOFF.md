@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `Lu/I1` optional blur target resize pre-clamp ownership. Source `Lu.resize(e,t,n)` and `I1.resize(e,t,n)` compute optional `renderTargetBlurA/B` sizes from direct `Math.round(e*this.settings.blur.scale)` / `Math.round(t*this.settings.blur.scale)`, with no `Math.max(1, ...)` pre-clamp; the rebuild now mirrors that for work and main optional blur targets while keeping existing CSS `Na.uResolution` writes. Output probes expose `source-Lu-Na-target-size-round-css-scale-no-rebuild-pre-clamp` and `source-I1-Na-target-size-round-css-scale-no-rebuild-pre-clamp`; renderer audit rejects restoring the old clamp. This is default-disabled helper-pass parity only; Phase 1 remains open.
+Latest Phase 1 batch: source `Lu` work luminosity branch ownership. Source `Lu.update()` runs optional luminosity as its own branch before bloom, binding `sg.tMap` from `renderTargetBlurB` when blur is enabled and otherwise `renderTargetA`; the bloom branch then consumes `renderTargetBright` when luminosity is enabled or `renderTargetA` otherwise. The rebuild now mirrors that by calling `renderWorkLuminosityPass(workSceneTarget)` before `renderHomeBloomPass(this.workRawTarget)`. Output probes expose `source-Lu-luminosity-branch-before-bloom-independent-of-bloom-enabled` and `source-Lu-bloom-branch-consumes-existing-renderTargetBright-or-renderTargetA`; renderer audit rejects moving work luminosity back into the bloom helper. This is work render-manager branch-order parity only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -191,13 +191,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Lu/I1` optional `Na` blur target resize input ownership.
-- Source evidence: `Lu.resize(e,t,n)` and `I1.resize(e,t,n)` size optional blur targets with direct `Math.round(e*this.settings.blur.scale)` / `Math.round(t*this.settings.blur.scale)` and no `Math.max(1, ...)` pre-clamp.
-- Removed the rebuild-owned work/main optional blur target clamps from `resize()`.
-- `__rogierOutputProbe.settings.work.renderManagerSizing.blurResizeInputMode` and `.main.renderManagerSizing.blurResizeInputMode` now expose the source no-pre-clamp modes.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the old work/main optional blur target clamp.
-- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, `git diff --check`, build, desktop/mobile output probes, and thumb spotlight probe. Project media material/visibility assertions passed and retained `5/5` visible tracks on `/gc-2026/` and `/hashgraph-vc/`; `hashgraph-vc` still reported eight non-blocking captured promise exceptions with zero failed requests and zero filtered console errors.
-- This is default-disabled helper-pass source-shape parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `Lu` work luminosity branch ownership.
+- Source evidence: `Lu.update()` runs optional luminosity before bloom and independently of `bloom.enabled`; bloom chooses `renderTargetBright` when luminosity is enabled and `renderTargetA` otherwise.
+- Moved work luminosity rendering into `renderWorkLuminosityPass(workSceneTarget)` before the work bloom branch.
+- `renderHomeBloomPass()` no longer owns luminosity rendering; it only consumes the already-rendered bright target when luminosity is enabled.
+- `__rogierOutputProbe.settings.work.renderManagerPassInputs` now exposes `luminosityBranchMode=source-Lu-luminosity-branch-before-bloom-independent-of-bloom-enabled` and `bloomBranchMode=source-Lu-bloom-branch-consumes-existing-renderTargetBright-or-renderTargetA`; work update order now records `Lu.raw -> Lu.optional-blur -> Lu.optional-luminosity -> Lu.optional-bloom -> Ka.mouseSimulation -> Lu.composite -> IT.cameraController -> p1.components`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject moving work luminosity back inside the bloom helper.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, `git diff --check`, build, desktop/mobile output probes, and thumb spotlight probe. Project media material/visibility assertions passed and retained `5/5` visible tracks on `/gc-2026/` and `/hashgraph-vc/`; the probe still captured non-blocking promise noise (`4` entries on `/gc-2026/`, `5` on `/hashgraph-vc/`) with zero failures and zero console messages.
+- This is active work render-manager branch-order parity only. With current default work settings (`luminosity.enabled=true`, `bloom.enabled=true`, `blur.enabled=false`) it should not change default Home output. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -208,13 +209,14 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-blur-target-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-blur-target-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-lu-luminosity-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-lu-luminosity-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5178 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-blur-target-output-desktop CDP_PORT=9278 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-blur-target-output-mobile CDP_PORT=9279 VIEWPORT=mobile REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-blur-target-thumb CDP_PORT=9280 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-desktop CDP_PORT=9278 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-mobile CDP_PORT=9279 VIEWPORT=mobile REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-thumb CDP_PORT=9280 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-lu-luminosity-media CDP_PORT=9281 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-project-media.mjs
 CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 OUT_DIR=/tmp/rd-ucoords-direct-output-mobile-dpr125 node scripts/probe-output-color.mjs
 ```
 

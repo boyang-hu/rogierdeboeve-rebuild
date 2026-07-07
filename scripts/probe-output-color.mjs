@@ -1323,7 +1323,9 @@ async function runProbe() {
   for (const [key, expected] of Object.entries({
     blurSource: "source-Lu-renderTargetA-to-renderTargetBlurA-then-renderTargetBlurB",
     luminositySource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
+    luminosityBranchMode: "source-Lu-luminosity-branch-before-bloom-independent-of-bloom-enabled",
     bloomSource: "source-Lu-renderTargetBright-if-luminosity-else-renderTargetA",
+    bloomBranchMode: "source-Lu-bloom-branch-consumes-existing-renderTargetBright-or-renderTargetA",
     oaSceneSource: "source-Lu-renderTargetBlurB-if-blur-else-renderTargetA",
     blurinessUpdateMode: "source-Na-uBluriness-init-zero-no-update-write",
   })) {
@@ -2173,11 +2175,11 @@ async function runProbe() {
   if (JSON.stringify(updateOrder?.rebuildSceneOrder) !== JSON.stringify(expectedSourceSceneOrder)) {
     throw new Error(`Rebuild scene order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildSceneOrder || null)}`);
   }
-  const expectedRebuildFrameOrder = ["media-position", "sky", "media", "work-raw", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1-runtime-uniforms", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"];
+  const expectedRebuildFrameOrder = ["media-position", "sky", "media", "work-raw", "work-blur", "work-luminosity", "work-bloom", "work-mousesim", "work-composite", "p1-post-render", "main-raw", "main-blur", "main-lensflare", "main-luminosity", "main-bloom", "main-fluid", "main-C1-runtime-uniforms", "main-C1", "main-final-screen", "workthumb", "wavves", "character-when-about"];
   if (JSON.stringify(updateOrder?.rebuildFrameOrder) !== JSON.stringify(expectedRebuildFrameOrder)) {
     throw new Error(`Rebuild frame order source-shape mismatch: ${JSON.stringify(updateOrder?.rebuildFrameOrder || null)}`);
   }
-  const expectedWorkUpdateOrder = ["Lu.renderManager.raw", "Lu.renderManager.bloom", "Ka.mouseSimulation", "Lu.renderManager.composite", "IT.cameraController", "p1.components"];
+  const expectedWorkUpdateOrder = ["Lu.raw", "Lu.optional-blur", "Lu.optional-luminosity", "Lu.optional-bloom", "Ka.mouseSimulation", "Lu.composite", "IT.cameraController", "p1.components"];
   if (JSON.stringify(updateOrder?.workUpdateOrder) !== JSON.stringify(expectedWorkUpdateOrder)) {
     throw new Error(`Work update order source-shape mismatch: ${JSON.stringify(updateOrder?.workUpdateOrder || null)}`);
   }
