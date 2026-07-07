@@ -20,12 +20,12 @@ Use git for history. Do not maintain a second timeline here.
 
 The current order is intentionally narrow:
 
-1. Finish Phase 1 Home WebGL source parity.
-2. Run final Home WebGL closeout against the current guarded evidence.
-3. Prepare the Phase 1 closeout package if the final probe set stays clean.
-4. Reopen `kA/Lu/I1`, interaction, project media, or about pages only when evidence or touched code requires it.
+1. Keep Phase 1 closed unless new source-owned evidence requires reopening.
+2. Review the Phase 1 closeout evidence in `PHASE1_AUDIT.md`.
+3. Start Phase 2 Home DOM/interaction parity only after user confirmation.
+4. Keep project media, about, and interaction probes as regression gates when shared paths change.
 
-Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
+Everything else stays paused until Phase 2 is explicitly started or the scope is changed.
 
 ## Execution Rules
 
@@ -43,25 +43,25 @@ Everything else stays paused until Phase 1 is closed or explicitly re-scoped.
 
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
-| 1. Home WebGL source parity | In progress, about 80-85% complete | Close the Phase 1 blockers in `PHASE1_AUDIT.md`. |
-| 2. Home DOM/interaction parity | Paused | Resume only after Phase 1 closes. |
+| 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
+| 2. Home DOM/interaction parity | Ready, not started | Start after user confirmation. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
 | 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
-| 5. Transitions/audio/Lenis lifecycle | Pending | Do not start before Phase 1 closes. |
+| 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 2-4 scope is accepted. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
-## Phase 1 Queue
+## Phase 1 Closed Record
 
-### Active: Final Home WebGL closeout audit
+### Closed: Final Home WebGL closeout audit
 
-Goal: determine whether Phase 1 can close with the current guarded evidence, or identify one concrete source-owned mismatch to patch.
+Goal: keep the closeout evidence easy to verify and avoid reopening guarded Phase 1 systems without new source-owned evidence.
 
 Current read:
 
 - The prior mid-field brightness residual was source-owned by block color fallback: source uses `colors.blocks || "#000000"`, and rebuild now matches.
 - Canvas-only source/rebuild deltas are now close on desktop and mobile after the fallback fix.
 - Spotlight/thumb projection transfer is guarded: source-shaped `Lo` raw-to-composite transfer, `SpotLight.map` composite binding, spotlight state, thumb scene state, and active-bounds projection sampling all pass runtime probes.
-- The active suspect set is now final P1 closeout coverage, not a specific visual-tuning lane.
+- Final closeout probes passed for Home desktop/mobile, thumb projection, project media, about desktop/mobile, and interactive mouse.
 - The current attribution basis lives in `PHASE1_AUDIT.md`.
 - Do not promote a visual tweak into production unless the source path owns it.
 
@@ -82,27 +82,29 @@ Already guarded for this lane:
 - Active block emissive fallback: `colors.blocks || "#000000"`.
 - Spotlight/thumb transfer order, composite map ownership, active-project spotlight state, and 3x3 projection sampling.
 
-Next source candidates, in order:
+Reopen candidates, in order:
 
-1. Final Home WebGL closeout audit against `PHASE1_AUDIT.md`.
-2. Environment/floor or final target distribution only if the closeout audit reveals a new source-owned mismatch.
-3. Renderer state not yet covered by existing output-color audit guards.
-4. Phase 1 closeout documentation and regression probe package.
+1. Home WebGL distribution only if a new capture/probe reveals a source-owned mismatch.
+2. Environment/floor or final target distribution only if the evidence points there.
+3. Renderer state only if output-color audit guards fail.
+4. Spotlight/thumb projection only if transfer, map, or sampling guards fail.
 
 Rules:
 
-- Continue source-backed attribution in project activation/reveal ownership, `a1/i1/o1/t1`, `h1/u1/l1/c1`, environment target contents, and final work target distribution.
+- Continue source-backed attribution if Phase 1 is reopened.
 - Treat current structural guardrails as closed unless new evidence contradicts them.
 - Do not tune horizon, fog, brightness, or floor color by eye.
 - Keep detailed findings in `PHASE1_AUDIT.md`; keep this file as the next-action queue.
 
-Required validation:
+Closeout validation:
 
 - Build.
 - Renderer audit.
-- Desktop/mobile output probes when production behavior changes.
-- Project media probe if shared render/media paths change.
-- Focused band/capture attribution when the candidate source chain affects final color distribution.
+- Desktop/mobile output probes.
+- Thumb spotlight probe.
+- Project media probe.
+- About desktop/mobile probes.
+- Interactive mouse probe.
 
 ### Guarded: Spotlight/thumb projection content and transfer
 
@@ -123,6 +125,16 @@ Required validation:
 - Project media probe.
 
 ## Watchlist
+
+### Phase 2 Home DOM/interaction parity
+
+Use this as the next production lane only after the user confirms Phase 2 should start.
+
+Initial boundary:
+
+- Keep Phase 1 WebGL probes as regression gates.
+- Start from Home DOM state, interaction affordances, and route-level user-visible behavior.
+- Do not reopen WebGL source parity unless a Phase 2 finding identifies a concrete shared-path mismatch.
 
 ### `kA/Lu/I1` composite and transfer
 

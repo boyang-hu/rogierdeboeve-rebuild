@@ -4,7 +4,7 @@ Last updated: 2026-07-07
 
 ## Purpose
 
-This file is the Phase 1 evidence register. It records current source facts, guarded conclusions, open blockers, and closeout criteria.
+This file is the Phase 1 evidence register. It records current source facts, guarded conclusions, closeout evidence, and reopen criteria.
 
 Keep it current-only: when a source fact is guarded, place it in the relevant system section and remove stale "latest batch" wording. It is not a chronological work log. Use git for older states:
 
@@ -16,8 +16,8 @@ git show <commit>:PHASE1_AUDIT.md
 | Section | Purpose |
 | --- | --- |
 | Scope | What Phase 1 is allowed to cover. |
-| Current Status | Current parity estimate and closeout state. |
-| Open Blockers | Problems that still prevent Phase 1 closeout. |
+| Current Status | Current closeout state. |
+| Open Blockers | Current Phase 1 blockers, if any. |
 | Evidence Register | Current source facts and guarded rebuild facts by system. |
 | Guarded Edges | Source-backed areas that should not be reopened first without new evidence. |
 
@@ -42,49 +42,49 @@ Primary source areas:
 
 ## Current Status
 
-Phase 1 is open. Closeout requires source-backed parity or explicit technical bridge documentation.
+Phase 1 is closed. Closeout is based on source-backed parity evidence plus explicit guarded boundaries for areas that should only be reopened with new source-owned mismatch evidence.
 
-| Area | Estimate | Confidence | Current read |
-| --- | ---: | --- | --- |
-| Architecture/lifecycle | 80-85% | Strong | Broad scene, route, state, and probe surfaces are source-derived. |
-| Shader/render-manager parity | 75-80% | Medium | Many shader surfaces and pass edges are aligned; `kA/Lu/I1` is narrowed to a guarded follow-up. |
-| Final Home visual parity | 80-85% | Medium | Canvas-only Home distribution and spotlight/thumb projection transfer are guarded; final closeout coverage remains. |
-| Runtime stability | Good | Strong | Build, renderer audit, and browser probes are currently clean. |
+| Area | State | Confidence | Current read |
+| --- | --- | --- | --- |
+| Architecture/lifecycle | Closed/guarded | Strong | Broad scene, route, state, and probe surfaces are source-derived. |
+| Shader/render-manager parity | Closed/guarded | Strong | Shader surfaces and pass edges are aligned; `kA/Lu/I1` has no active Phase 1 mismatch. |
+| Final Home visual parity | Closed/guarded | Strong | Canvas-only Home distribution and spotlight/thumb projection transfer are guarded by the final probe set. |
+| Runtime stability | Clean | Strong | Build, renderer audit, and browser probes passed during final closeout. |
 
 Current decision map:
 
 | Lane | State | Next useful move |
 | --- | --- | --- |
-| Home WebGL distribution | Mostly guarded | Recheck only if final closeout bands reveal a new source-owned mismatch. |
+| Home WebGL distribution | Closed/guarded | Reopen only if a new source-owned mismatch is isolated. |
 | Spotlight/thumb projection | Guarded | Reopen only if final probes reveal a concrete source-owned transfer or sampling mismatch. |
-| `kA/Lu/I1` transfer | Watchlist | Reopen only if environment/floor evidence points into final work distribution. |
-| Interaction/mouse/fluid | Watchlist | Reopen only when touching interaction paths or when a specific regression is isolated. |
+| `kA/Lu/I1` transfer | Guarded | Reopen only if environment/floor evidence points into final work distribution. |
+| Interaction/mouse/fluid | Guarded | Reopen only when touching interaction paths or when a specific regression is isolated. |
 
 ## Open Blockers
 
-1. Final Home WebGL closeout audit.
+None for Phase 1.
+
+## Guarded Closeout Boundaries
+
+1. Final Home WebGL distribution.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, renderer constructor clear state, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
-   - Current attribution: the mid-field block/projection brightness residual was caused by a source-owned block color fallback mismatch.
+   - Closed attribution: the mid-field block/projection brightness residual was caused by a source-owned block color fallback mismatch.
    - Guarded fix: source `yD.onProjectActive()` uses `colors.blocks || "#000000"`; rebuild now matches this fallback and probes guard active emissive.
-   - Guarded transfer: spotlight/thumb projection content now follows source raw-to-composite transfer and map binding, with runtime projection sampling guardrails.
-   - Open: final closeout should confirm no remaining source-owned distribution mismatch across the full Phase 1 probe set.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
-2. `kA/Lu/I1` composite and transfer interpretation.
+2. Spotlight/thumb projection transfer feel.
+   - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
+   - Closeout evidence: `scripts/probe-thumb-spotlight.mjs` confirms raw target render, composite transfer, map ownership, spotlight position/target/intensity, active-project state, thumb scene state, and 3x3 projection sampling.
+   - Rule: reopen only with a concrete source-owned transfer, map, timing, or sampling mismatch.
+
+3. `kA/Lu/I1` composite and transfer interpretation.
    - Guarded: shader surfaces, pass settings, optional blur chain, resize ownership, runtime uniform order, GPU/LOW_RES bridge, and main/work camera surfaces.
    - Narrowed: source `I1` default `renderToScreen=true` renders C1 directly to screen; `renderTargetComposite` is retained but unused for the default visible Home path.
    - Rule: keep this as a regression guardrail, not the first suspect, unless new evidence contradicts the audit.
 
-3. Mouse/fluid interaction parity.
+4. Mouse/fluid interaction parity.
    - Guarded: `Ka` mouse simulation constructor/update ownership, raycast hit-UV ownership, main-fluid pointer/diff ownership, bounded pass geometry, and interactive probe coverage.
-   - Open: final feel remains a regression concern when touching interaction paths.
-
-## Closed Active Blockers
-
-1. Spotlight/thumb projection transfer feel.
-   - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
-   - Closeout evidence: `scripts/probe-thumb-spotlight.mjs` passes after the block fallback fix and confirms raw target render, composite transfer, map ownership, spotlight position/target/intensity, active-project state, thumb scene state, and 3x3 projection sampling.
-   - Rule: reopen only with a concrete source-owned transfer, map, timing, or sampling mismatch.
+   - Rule: keep it guarded; rerun `scripts/probe-interactive-mouse.mjs` when touching interaction paths.
 
 ## Evidence Register
 
@@ -101,7 +101,7 @@ Current attribution read:
 - After fixing the source blocks-color fallback, canvas-only mobile deltas are now center `-0.0042`, bands `0.15 -0.0079`, `0.25 -0.0089`, `0.35 -0.0011`, `0.45 -0.0043`, `0.55 +0.0012`, `0.65 -0.0031`, `0.75 -0.0016`, `0.85 -0.0025`.
 - Interpretation: the prior desktop CTA visibility mismatch was screenshot noise, not the cause of the WebGL distribution residual.
 - Interpretation: the block/projection brightness residual was source-owned by active block material color fallback, not by visual tuning.
-- Interpretation: keep investigating source-owned distribution inputs before considering any visual tuning.
+- Interpretation: no active Phase 1 source-owned distribution mismatch remains after final closeout validation.
 
 Current source read:
 
@@ -135,7 +135,7 @@ Current guarded rebuild facts:
 - Light ownership is guarded: rebuild keeps `directionalLight2` out of the scene like source.
 - Initial Home entry now matches source ownership: rebuild prepares the Home spotlight before gallery entry, does not call full active-project reveal before gallery entry, and lets `enterWorkGallery()` own active reveal/look application. Browser output probe guards `homeEntryLifecycle`.
 - Active block color fallback is guarded: rebuild uses source `colors.blocks || "#000000"` fallback, and browser output probes guard active emissive against expected source value.
-- Remaining investigation should focus on final P1 completion criteria.
+- Final Phase 1 closeout probes passed on Home desktop and mobile.
 
 ### Home DOM Screenshot Noise
 
@@ -227,6 +227,40 @@ Current guarded rebuild facts:
 - About lifecycle probes and renderer audit guard this ownership edge.
 - Keep about probes in the validation set when touching `TD`, `Fg`, `Q1`, `eD`, spotlight map ownership, or auxiliary blocks.
 
+## Final Closeout Evidence
+
+Final closeout was run against the current build on 2026-07-07.
+
+Static/build checks:
+
+- `node --check src/client/webgl.ts`
+- `node --check scripts/dump-va-shader.mjs`
+- `node --check scripts/audit-renderer-output.mjs`
+- `node --check scripts/probe-output-color.mjs`
+- `node --check scripts/probe-thumb-spotlight.mjs`
+- `node --check scripts/probe-project-media.mjs`
+- `node --check scripts/probe-about-scroll-opacity.mjs`
+- `node --check scripts/probe-interactive-mouse.mjs`
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-final-phase1-audit.json`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `git diff --check`
+
+Browser probes:
+
+- Home desktop output probe: `0` failures, `0` exceptions, `0` shader console messages; renderer clear state, Home entry lifecycle, and active block emissive fallback are guarded.
+- Home mobile output probe: `0` failures, `0` exceptions, `0` shader console messages; renderer clear state, Home entry lifecycle, and active block emissive fallback are guarded.
+- Thumb spotlight probe: `0` failures, `0` exceptions; raw-to-composite transfer order, composite map ownership, spotlight state, thumb composite state, and 3x3 projection sampling are guarded.
+- Project media probe: final serial run has `0` failures, `0` exceptions, and `0` shader console messages for `gc-2026` and `hashgraph-vc`; both report `5` visible media planes with source-shaped shader surfaces, constructor defaults, and background state.
+- About desktop probe: `0` failures, `0` exceptions, `0` shader console messages; scroll opacity matches source `1`, and destroy keeps the current spotlight map.
+- About mobile probe: `0` failures, `0` exceptions, `0` shader console messages; scroll opacity matches source `0.3507`, and destroy keeps the current spotlight map.
+- Interactive mouse probe: `0` failures, `0` exceptions, `0` shader console messages; mouse simulation, active raycast target ownership, and main-fluid pointer response are guarded.
+
+Renderer audit evidence:
+
+- Three revision is `164`.
+- Composite-transfer debug rejection guards are clean: no rejected composite transfer, spotlight map off, or thumb colorspace shortcuts.
+- Recursive false/null constructor and runtime sampler surfaces are covered by audit paths for `Lo`, `C1`, helper materials, fluid, spotlight defaults, environment, floor, thumb, sky, and auxiliary materials.
+
 ## Guarded Edges
 
 These are current boundaries, grouped by system instead of discovery time.
@@ -260,14 +294,14 @@ These are current boundaries, grouped by system instead of discovery time.
 
 ## Completion Criteria
 
-Phase 1 can close only when:
+Phase 1 is closed because:
 
-- Final Home desktop/mobile distribution residuals are source-fixed or explicitly proven to be bridge constraints.
-- Spotlight/thumb projection transfer remains guarded by current runtime probes unless new evidence identifies a concrete source-owned mismatch.
+- Final Home desktop/mobile distribution residuals are source-fixed or guarded by source evidence.
+- Spotlight/thumb projection transfer remains guarded by current runtime probes.
 - `kA/Lu/I1` transfer/composite ownership is source-isomorphic enough that no known source mismatch remains in the active graph.
-- Home desktop/mobile, about, and project media probes pass.
+- Home desktop/mobile, about, project media, and interactive mouse probes pass.
 - Build, renderer audit, recursive false/null extraction, and `git diff --check` pass.
-- Documentation records the final source evidence and known bridge boundaries.
+- Documentation records the final source evidence and guarded reopen boundaries.
 
 ## Verification Commands
 

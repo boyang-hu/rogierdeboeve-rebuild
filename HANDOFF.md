@@ -27,25 +27,31 @@ It is not a timeline. Use git for history.
 | Item | Value |
 | --- | --- |
 | Active phase | Phase 1, Home WebGL source parity |
-| Phase 1 status | Open, roughly 80-85% complete |
-| Current production priority | Final Home WebGL closeout audit |
-| Next secondary priority | Phase 1 completion package and regression probes |
+| Phase 1 status | Closed on 2026-07-07 |
+| Current production priority | Hold for review, then Phase 2 scoping |
+| Next secondary priority | Home DOM/interaction parity after user confirmation |
 | Last committed source-backed code batch | Home blocks-color fallback parity |
-| Last closed evidence batch | Spotlight/thumb projection transfer guard |
+| Last closed evidence batch | Final Phase 1 closeout validation |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
-Estimated parity:
+Closeout state:
 
-| Area | Estimate | Current read |
-| --- | ---: | --- |
-| Architecture/lifecycle | 80-85% | Broad scene structure, route ownership, probes, and source guardrails are in place. |
-| Shader/render-manager parity | 75-80% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up. |
-| Final Home visual parity | 80-85% | Canvas-only Home distribution and spotlight/thumb transfer are now guarded; remaining work is final closeout coverage. |
+| Area | State | Current read |
+| --- | --- | --- |
+| Architecture/lifecycle | Guarded | Broad scene structure, route ownership, probes, and source guardrails are in place. |
+| Shader/render-manager parity | Guarded | Shader surfaces and pass edges are source-shaped; `kA/Lu/I1` has no active Phase 1 mismatch. |
+| Final Home visual parity | Guarded | Canvas-only Home distribution and spotlight/thumb transfer are source-guarded; final probe set is clean. |
 
 ## Last Closed Batch
 
-The latest source-backed batch fixed a source-owned active block material mismatch.
+The latest evidence batch closed Phase 1 without a production code change.
+
+- Final renderer audit, build, diff check, Home desktop/mobile probes, thumb spotlight probe, project media probe, about desktop/mobile probes, and interactive mouse probe passed.
+- Project media was rerun serially after a parallel CDP noise check; the final media evidence is `0` failures, `0` exceptions, and `0` shader console messages for `gc-2026` and `hashgraph-vc`.
+- Phase 1 now has no active blockers in `PHASE1_AUDIT.md`.
+
+The latest source-backed code batch fixed a source-owned active block material mismatch.
 
 - Source `yD.onProjectActive()` calls `Se.setBlocksColor(t.data.colors.blocks || "#000000")`.
 - Hashgraph has no `colors.blocks`, so the source fallback is black.
@@ -54,7 +60,7 @@ The latest source-backed batch fixed a source-owned active block material mismat
 
 ## Current Evidence
 
-The main mid-field Home WebGL distribution residual has been source-fixed through active block material fallback parity. Remaining P1 work should confirm projection/transfer closeout and final guard coverage.
+The main mid-field Home WebGL distribution residual has been source-fixed through active block material fallback parity, and Phase 1 closeout probes are clean.
 
 - Before this batch, canvas-only desktop bands were about `+0.061/+0.068` at `0.45/0.55`; mobile was about `+0.10` at `0.35-0.55`.
 - After the source fallback fix, canvas-only desktop center delta is `+0.0027`, with bands within about `-0.0017` to `+0.0040`.
@@ -64,6 +70,7 @@ The main mid-field Home WebGL distribution residual has been source-fixed throug
 - `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
 - `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
 - Spotlight/thumb projection transfer is guarded: browser probe confirms source `Lo` raw-to-composite transfer order, `SpotLight.map` receives the thumb composite texture, spotlight position/target/intensity match `SD.init()`, and 3x3 active-bounds projection sampling has nonzero map content.
+- About lifecycle, project media material lifecycle, and interactive mouse/fluid paths passed their current guard probes.
 
 ## Source Of Truth
 
@@ -77,15 +84,15 @@ The main mid-field Home WebGL distribution residual has been source-fixed throug
 
 ## Next Action
 
-Continue Phase 1 with a final Home WebGL closeout batch:
+Phase 1 is closed. Do not reopen it unless a concrete source-owned mismatch appears.
 
-1. Run the final renderer audit, output-color probes, thumb spotlight probe, and relevant page/media probes.
-2. Check the results against `PHASE1_AUDIT.md` completion criteria.
-3. Patch only after a concrete source mismatch is identified.
-4. If no new mismatch appears, document remaining technical bridge boundaries and prepare Phase 1 closeout.
-5. Validate and commit the scoped batch.
+Recommended next move:
 
-Do not spend the next batch first on these guarded areas unless new evidence points back at them:
+1. Review the Phase 1 closeout evidence in `PHASE1_AUDIT.md`.
+2. If continuing, start Phase 2 with Home DOM/interaction parity.
+3. Keep project media and about probes as regression gates when shared render or lifecycle paths change.
+
+Guarded Phase 1 areas should not be reopened first without new evidence:
 
 - Cubemap `scene.environment` loader defaults and sampling surface.
 - `p1.addEnvironment()` fire-and-forget cubemap start order.
