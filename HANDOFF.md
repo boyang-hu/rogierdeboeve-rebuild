@@ -156,7 +156,7 @@ Known remaining gaps:
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Source `Ka.raycast()` direct hit-UV target writes are guarded without a rebuild-owned clamp. Source `Ka` constructor/null sampler ownership is now guarded: `uTexture` and `uNoiseTexture` construct as `null`, `uCoords` constructs from `innerWidth/innerHeight`, `uPosOld/uPosNew` construct as zero vectors, and no runtime path binds blue-noise to `Ka.uNoiseTexture`. Exact final Home visual/feel parity is still open.
 - Source `Ka.update()` mouse-position uniform ownership is now guarded: `uPosNew.value` and `uPosOld.value` receive direct vector references before the simulation render, and `oldPos` is replaced with `newPos.clone()` after the render instead of mutating the previous object through `.copy(...)`.
-- Source `yD` gallery scroll runtime rounding is now guarded: source `onRaf()` uses `Yi(...)` for `scroll.diff` and `scroll.animated`, and source `updateScene()` persists roll `sceneRotation` through `bo(...)` plus `Yi(...)`; the rebuild uses source-rounded helpers for those paths instead of an unrounded local `lerp`.
+- Source `yD` gallery scroll runtime rounding and RAF delta ownership are now guarded: source `onRaf()` uses raw `Bt` `delta` in `Yi(...)` for `scroll.diff` and `scroll.animated`, then passes that same delta into `updateScene(t)` for roll/zoom dynamics; the rebuild uses source-rounded helpers for those paths and no longer clamps the Home gallery RAF delta to `0.001..0.05`.
 - Source `yD/Qe.workState` gallery scroll persistence is now guarded: the session-backed rebuild state carries source runtime scroll fields including `diff`, `velocity`, and `targetPlusDiff`, plus index/hooks/active project/scene rotation.
 - Renderer audit render-target default diagnostics now distinguish expected false values from failed checks: `generateMipmaps`, `depthBuffer`, and `stencilBuffer` defaults are reported as `actual` / `expected` / `matchesExpected`, and the Node-only renderer probe reports `status:"unavailable"` when `OffscreenCanvas` is absent instead of `null`.
 - Helper pass shader text for `ig` FXAA, `sg` luminosity, `rg` bloom blur, `Na` standard blur, `cg` bloom composite, and `Ka/rA/oA` mouse simulation now dumps source-shaped with vertex/fragment deltas `0`. The `rg/Na/ig` helper constructor surface is also guarded: source zero-vector `uResolution` defaults are preserved, and `rg` keeps source unused null samplers plus constructor direction `[0.5,0.5]`. Source `Lu/I1` runtime ownership of `rg.uDirection` is guarded as shared direction-vector assignment, while standard blur `Na.uDirection` remains constructor-owned.
@@ -181,12 +181,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Tightened source `Iu/p1/h1` component update ordering without changing shader text, render targets, visual constants, route data, input normalization, RAF timing, or scene order.
-- Source evidence: `Iu.update()` runs render-manager, then camera-controller, then component updates; `h1` is a `p1` component whose `u1.update()` writes environment `uTime`; `p1.update()` runs spotlight parallax, visible work items, and about blocks after `super.update(...)`.
-- The rebuild now calls `updateHomeCamera(delta)` before `environmentMaterial.customUniforms.uTime.value = time`, then continues with spotlight parallax, visible work items, and auxiliary blocks.
-- Output probes expose/assert `environmentUpdateOrder=source-Iu-cameraController-before-h1-component-before-p1-spotlight-blocks`.
-- Renderer audit extracts the mirrored `Iu.update()` / `p1.update()` ordered anchors, extracts rebuild `updateWorkSceneForNextFrame()`, and rejects restoring the old environment-before-camera order.
-- Previous committed batch was `15f0243 Align RAF elapsed frame time`.
+- Aligned source `yD` Home gallery RAF raw delta ownership without changing shader text, render targets, visual constants, route data, pointer normalization, WebGL `Bt/w0` timing, or scene order.
+- Source evidence: `yD.addEvents()` registers `Bt.add(this.onRaf,this.id)`; `yD.onRaf({delta:t})` uses raw `t` in `Yi(...)` for `scroll.diff` and `scroll.animated`, then calls `updateScene(t)`; `yD.updateScene(e)` uses that same `e` in roll/zoom `Yi(...)`.
+- The rebuild Home gallery tick now uses `(now - lastFrame) / 1000` directly instead of `Math.min(0.05, Math.max(0.001, ...))`, passes the same raw delta into `setGalleryProgress(...)`, and exposes `source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp`.
+- Output/thumb probes assert the WebGL gallery dynamics marker, and the output probe also reads `window.__rogierHomeGalleryRuntime` from `main.ts`.
+- Renderer audit extracts source `yD` anchors, extracts the rebuild Home gallery tick, and rejects restoring the old gallery delta clamp.
+- Previous committed batch was `4aa9ade Align Iu component update order`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -200,30 +200,30 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-interactive-mouse.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-project-media.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-component-order-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-component-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-gallery-raf-delta-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-gallery-raf-delta-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-output-desktop VIEWPORT=desktop CDP_PORT=9381 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-output-mobile VIEWPORT=mobile CDP_PORT=9382 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-interactive VIEWPORT=desktop CDP_PORT=9383 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-thumb VIEWPORT=desktop CDP_PORT=9384 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-component-order-media CDP_PORT=9385 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-output-desktop VIEWPORT=desktop CDP_PORT=9397 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-output-mobile VIEWPORT=mobile CDP_PORT=9398 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-interactive VIEWPORT=desktop CDP_PORT=9399 PROBE_WAIT=30000 node scripts/probe-interactive-mouse.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-thumb VIEWPORT=desktop CDP_PORT=9400 PROBE_WAIT=30000 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-gallery-raf-delta-media CDP_PORT=9401 PROBE_WAIT=30000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed in the `Iu/p1/h1` component update-order batch. Renderer audit wrote `/tmp/rd-component-order-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the stricter environment-update marker. Interactive mouse probe passed with source mouse/fluid guardrails retained. Thumb spotlight probe passed. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
+All relevant checks passed in the `yD` Home gallery RAF raw-delta batch. Renderer audit wrote `/tmp/rd-gallery-raf-delta-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop/mobile output probes passed with no failures/exceptions/console messages and confirmed the raw gallery delta marker from both WebGL gallery dynamics and `window.__rogierHomeGalleryRuntime`. Interactive mouse probe passed with source mouse/fluid guardrails retained. Thumb spotlight probe passed with the raw-delta gallery dynamics marker retained. Project-media probe passed, and project media retained `5/5` visible media tracks on `/gc-2026/` and `/hashgraph-vc/`.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this component update-order batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this gallery RAF delta batch.
 
-Runtime QA was run because the batch touched Home WebGL frame update ordering.
+Runtime QA was run because the batch touched Home gallery frame delta passed into WebGL gallery dynamics.
 
 Verified:
 
-- Renderer audit passed for the component update-order batch: `/tmp/rd-component-order-audit.json`.
+- Renderer audit passed for the gallery RAF raw-delta batch: `/tmp/rd-gallery-raf-delta-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop and mobile output probes passed: `/tmp/rd-component-order-output-desktop`, `/tmp/rd-component-order-output-mobile`.
-- Interactive mouse probe passed: `/tmp/rd-component-order-interactive`.
-- Thumb spotlight probe passed: `/tmp/rd-component-order-thumb`.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-component-order-media`.
+- Desktop and mobile output probes passed: `/tmp/rd-gallery-raf-delta-output-desktop`, `/tmp/rd-gallery-raf-delta-output-mobile`.
+- Interactive mouse probe passed: `/tmp/rd-gallery-raf-delta-interactive`.
+- Thumb spotlight probe passed: `/tmp/rd-gallery-raf-delta-thumb`.
+- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, both retaining `5/5` visible media tracks: `/tmp/rd-gallery-raf-delta-media`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
 

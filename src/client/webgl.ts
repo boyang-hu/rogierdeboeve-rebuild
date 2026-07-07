@@ -230,8 +230,11 @@ type ThumbProbeWindow = Window & {
       rollTargetMode: string;
       zoomTargetMode: string;
       lerpMode: string;
+      deltaMode: string;
+      deltaClampApplied: boolean;
       velocity: number;
       delta: number;
+      deltaFinite: boolean;
       rollTarget: number;
       zoomTarget: number;
       sceneRotation: number;
@@ -5735,8 +5738,11 @@ export class WebGLBackdrop {
       rollTargetMode: "source-bo-clamp-minus4-plus4-Fn4",
       zoomTargetMode: "source-bo-clamp-0-1-Fn4",
       lerpMode: "source-Yi-PT-Fn4-exponential-lerp",
+      deltaMode: "source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp",
+      deltaClampApplied: false,
       velocity: this.galleryDynamicsVelocity,
       delta: this.galleryDynamicsDelta,
+      deltaFinite: Number.isFinite(this.galleryDynamicsDelta),
       rollTarget: this.galleryRollTarget,
       zoomTarget: this.galleryZoomTarget,
       sceneRotation: this.sceneRotation,

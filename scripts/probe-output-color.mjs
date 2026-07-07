@@ -138,6 +138,7 @@ async function readProbeSummary(ws) {
       ready: document.readyState,
       active: document.querySelector('[data-project-card].is-active')?.dataset.slug || null,
       probe: window.__rogierOutputProbe || null,
+      homeGalleryRuntime: window.__rogierHomeGalleryRuntime || null,
       canvas: [...document.querySelectorAll('canvas')].map((canvas) => {
         const rect = canvas.getBoundingClientRect();
         return { width: canvas.width, height: canvas.height, rectWidth: rect.width, rectHeight: rect.height };
@@ -351,6 +352,14 @@ async function runProbe() {
   if (galleryDynamics.rollTargetMode !== "source-bo-clamp-minus4-plus4-Fn4") resizeErrors.push("galleryRollTargetMode");
   if (galleryDynamics.zoomTargetMode !== "source-bo-clamp-0-1-Fn4") resizeErrors.push("galleryZoomTargetMode");
   if (galleryDynamics.lerpMode !== "source-Yi-PT-Fn4-exponential-lerp") resizeErrors.push("galleryLerpMode");
+  if (galleryDynamics.deltaMode !== "source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp") resizeErrors.push("galleryDeltaMode");
+  if (galleryDynamics.deltaClampApplied !== false) resizeErrors.push("galleryDeltaClampApplied");
+  if (galleryDynamics.deltaFinite !== true) resizeErrors.push("galleryDeltaFinite");
+  if (!Number.isFinite(galleryDynamics.delta) || galleryDynamics.delta < 0) resizeErrors.push("galleryDelta");
+  if (parsed.homeGalleryRuntime?.deltaMode !== "source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp") resizeErrors.push("homeGalleryRuntimeDeltaMode");
+  if (parsed.homeGalleryRuntime?.deltaClampApplied !== false) resizeErrors.push("homeGalleryRuntimeDeltaClampApplied");
+  if (parsed.homeGalleryRuntime?.lastDeltaFinite !== true) resizeErrors.push("homeGalleryRuntimeLastDeltaFinite");
+  if (!Number.isFinite(parsed.homeGalleryRuntime?.lastDelta) || parsed.homeGalleryRuntime.lastDelta < 0) resizeErrors.push("homeGalleryRuntimeLastDelta");
   if (galleryDynamics.sceneRotationRounded !== true) resizeErrors.push("gallerySceneRotationRounded");
   if (galleryDynamics.zoomRounded !== true) resizeErrors.push("galleryZoomRounded");
   if (galleryDynamics.rotationMatchesSourceState !== true) resizeErrors.push("galleryRotationMatchesSourceState");

@@ -309,6 +309,15 @@ async function runProbe() {
   if (galleryDynamics.lerpMode !== "source-Yi-PT-Fn4-exponential-lerp") {
     sourceShapeErrors.push(`galleryLerpMode=${galleryDynamics.lerpMode}`);
   }
+  if (galleryDynamics.deltaMode !== "source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp") {
+    sourceShapeErrors.push(`galleryDeltaMode=${galleryDynamics.deltaMode}`);
+  }
+  if (galleryDynamics.deltaClampApplied !== false) {
+    sourceShapeErrors.push(`galleryDeltaClampApplied=${galleryDynamics.deltaClampApplied}`);
+  }
+  if (galleryDynamics.deltaFinite !== true || !Number.isFinite(galleryDynamics.delta) || galleryDynamics.delta < 0) {
+    sourceShapeErrors.push(`galleryDelta=${galleryDynamics.delta}`);
+  }
   if (!closeTo(galleryDynamics.rollTarget ?? NaN, 0)) {
     sourceShapeErrors.push(`galleryRollTarget=${galleryDynamics.rollTarget}`);
   }

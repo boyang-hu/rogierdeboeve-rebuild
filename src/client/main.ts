@@ -53,6 +53,17 @@ type PageScrollDetail = {
   velocity?: number;
 };
 
+type HomeGalleryRuntimeProbe = {
+  deltaMode: "source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp";
+  deltaClampApplied: false;
+  lastDelta: number;
+  lastDeltaFinite: boolean;
+};
+
+type HomeGalleryProbeWindow = Window & {
+  __rogierHomeGalleryRuntime?: HomeGalleryRuntimeProbe;
+};
+
 type TransitionMode = "home" | "project" | "about" | "work" | "default";
 type AppNavigate = (url: string, mode?: TransitionMode, historyMode?: "push" | "replace") => void;
 
@@ -854,8 +865,14 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   });
 
   const tick = (now: number) => {
-    const delta = Math.min(0.05, Math.max(0.001, (now - lastFrame) / 1000));
+    const delta = (now - lastFrame) / 1000;
     lastFrame = now;
+    (window as HomeGalleryProbeWindow).__rogierHomeGalleryRuntime = {
+      deltaMode: "source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp",
+      deltaClampApplied: false,
+      lastDelta: delta,
+      lastDeltaFinite: Number.isFinite(delta),
+    };
     scroll.velocity = scroll.target - scroll.animated;
     checkSpeed();
     if (snap) scroll.diff = sourceDamp(scroll.diff, 0, 5, delta);

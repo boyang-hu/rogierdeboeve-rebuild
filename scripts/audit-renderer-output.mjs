@@ -241,6 +241,7 @@ const rebuildSetDirectionalLightIntensity = extractBlock(rebuildWebgl, "private 
 const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private setDirectionalLight2Intensity(");
 const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private updateWorkSceneForNextFrame(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
+const rebuildHomeGalleryTick = extractBlock(rebuildMain, "const tick = (now: number)");
 const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
   ? rebuildTick.slice(0, rebuildTick.indexOf("this.renderer.setRenderTarget(this.mainRawTarget);"))
   : "";
@@ -2701,6 +2702,34 @@ const summary = {
           && !rebuildMain.includes("if (snap) scroll.diff = lerp(scroll.diff, 0, 5, delta);")
           && !rebuildMain.includes("scroll.animated = lerp(scroll.animated, targetPlusDiff, 5, delta);")
           && !rebuildMain.includes("sceneRotation = lerp(sceneRotation, rollTarget, 5, delta);"),
+      },
+      rafDeltaOwnership: {
+        source:
+          sourceYDClass?.text.includes("Bt.add(this.onRaf,this.id)") === true
+          && sourceYDClass.text.includes("onRaf({time:e,delta:t,frame:n,fps:i})")
+          && sourceYDClass.text.includes("this.scroll.diff=Yi(this.scroll.diff,0,5,t)")
+          && sourceYDClass.text.includes("this.scroll.animated=Yi(this.scroll.animated,this.scroll.targetPlusDiff,5,t)")
+          && sourceYDClass.text.includes("this.updateScene(t)"),
+        rebuild:
+          Boolean(rebuildHomeGalleryTick)
+          && rebuildHomeGalleryTick.includes("const delta = (now - lastFrame) / 1000;")
+          && rebuildHomeGalleryTick.includes("lastFrame = now;")
+          && rebuildHomeGalleryTick.includes("deltaMode: \"source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp\"")
+          && rebuildHomeGalleryTick.includes("deltaClampApplied: false")
+          && rebuildHomeGalleryTick.includes("lastDeltaFinite: Number.isFinite(delta)")
+          && rebuildHomeGalleryTick.includes("if (snap) scroll.diff = sourceDamp(scroll.diff, 0, 5, delta);")
+          && rebuildHomeGalleryTick.includes("scroll.animated = sourceDamp(scroll.animated, scroll.targetPlusDiff, 5, delta);")
+          && rebuildHomeGalleryTick.includes("getWebgl()?.setGalleryProgress?.(scroll.progress, scroll.velocity, delta)")
+          && !rebuildHomeGalleryTick.includes("Math.min(0.05")
+          && !rebuildHomeGalleryTick.includes("Math.max(0.001"),
+        probe:
+          rebuildWebgl.includes("deltaMode: \"source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp\"")
+          && rebuildWebgl.includes("deltaClampApplied: false")
+          && rebuildWebgl.includes("deltaFinite: Number.isFinite(this.galleryDynamicsDelta)")
+          && rebuildOutputProbe.includes("homeGalleryRuntime: window.__rogierHomeGalleryRuntime || null")
+          && rebuildOutputProbe.includes("homeGalleryRuntimeDeltaMode")
+          && rebuildOutputProbe.includes("homeGalleryRuntimeLastDelta")
+          && rebuildThumbProbe.includes("galleryDeltaMode"),
       },
       workStatePersistence: {
         source:

@@ -70,9 +70,46 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `Iu/p1/h1` component update ordering is now guarded at the stricter camera/component boundary: Home post-render update now runs the camera controller first, then writes environment `h1/u1` `uTime`, then runs `p1` spotlight/work/about-block logic. This tightens the older S1-102 post-render timing alignment; Phase 1 remains open.
+Latest accepted batch: source `yD` Home gallery RAF delta ownership is now guarded: the Home gallery tick uses raw `(now - lastFrame) / 1000` delta instead of the rebuild-only `0.001..0.05` clamp, passes that same raw delta into `setGalleryProgress(...)`, and exposes the no-gallery-clamp marker through runtime/output/thumb probes. This extends the earlier `Bt/w0` raw frame timing work to the source `yD.onRaf({delta:t}) -> Yi(...) -> updateScene(t)` gallery chain; Phase 1 remains open.
 
 Batch cadence update: each commit can contain up to ten related source-proven differences when they belong to one rendering chain. Shader/render-target work should still stop early if QA shows a regression, but isolated one-line fixes should be grouped with nearby source-alignment work before the build/capture/document/commit cycle. Per the latest user instruction, use "up to ten" as the default upper bound for a coherent batch, not one diff per commit.
+
+### S1-338 `yD` Home Gallery RAF Raw Delta Ownership
+
+This batch aligns one source gallery-frame ownership edge in the `Bt/w0 -> yD.onRaf() -> updateScene()` chain. It does not change shader text, render targets, visual constants, project data, route behavior, pointer normalization, WebGL `Bt/w0` timing, or scene order.
+
+Source evidence:
+
+- Source `yD.addEvents()` registers `Bt.add(this.onRaf,this.id)`.
+- Source `Bt.frame(...)` passes raw `delta` from `w0.getDelta()` into handlers.
+- Source `yD.onRaf({time:e,delta:t,frame:n,fps:i})` uses that raw `t` in `Yi(...)` for `scroll.diff` and `scroll.animated`, then calls `this.updateScene(t)`.
+- Source `yD.updateScene(e)` uses that same `e` in the roll/zoom `Yi(...)` calls.
+
+Runtime and tooling changes:
+
+- The Home gallery tick in `src/client/main.ts` now uses `(now - lastFrame) / 1000` directly, removing the rebuild-only `Math.min(0.05, Math.max(0.001, ...))` gallery clamp.
+- The same raw delta is passed into `getWebgl()?.setGalleryProgress(scroll.progress, scroll.velocity, delta)`.
+- `window.__rogierHomeGalleryRuntime` and `sourceGalleryDynamicsProbe()` expose `deltaMode=source-yD-onRaf-uses-Bt-raw-delta-no-gallery-clamp`, `deltaClampApplied=false`, and finite raw-delta values.
+- `scripts/probe-output-color.mjs` asserts both WebGL gallery dynamics and the `main.ts` runtime marker.
+- `scripts/probe-thumb-spotlight.mjs` asserts the gallery dynamics raw-delta marker.
+- `scripts/audit-renderer-output.mjs` checks source `yD` anchors, the rebuild Home gallery tick body, and probe coverage while rejecting the old gallery delta clamp.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node --check scripts/probe-interactive-mouse.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- `node --check scripts/probe-project-media.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-gallery-raf-delta-audit.json` passed; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop and mobile output probes passed with raw-gallery-delta runtime markers and no failures/exceptions/console messages: `/tmp/rd-gallery-raf-delta-output-desktop`, `/tmp/rd-gallery-raf-delta-output-mobile`.
+- Interactive mouse probe passed with existing source mouse/fluid guardrails retained: `/tmp/rd-gallery-raf-delta-interactive`.
+- Thumb spotlight probe passed with the gallery raw-delta marker and existing thumb transfer guardrails retained: `/tmp/rd-gallery-raf-delta-thumb`.
+- Project media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining five visible media tracks on both pages: `/tmp/rd-gallery-raf-delta-media`.
+
+Decision: keep Home gallery RAF dynamics on the source raw `yD.onRaf` delta path. Do not restore the rebuild-only `0.001..0.05` gallery delta clamp without mirrored-bundle evidence. Phase 1 remains open because this closes one gallery RAF ownership edge only; spotlight/thumb projection feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-337 `Iu/p1/h1` Component Update Order Guardrail
 
