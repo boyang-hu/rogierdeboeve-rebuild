@@ -155,6 +155,22 @@ async function readProbeSummary(ws) {
       body: document.body.className,
       ready: document.readyState,
       active: document.querySelector('[data-project-card].is-active')?.dataset.slug || null,
+      homeCta: (() => {
+        const activeCard = document.querySelector('[data-project-card].is-active');
+        const cta = activeCard?.querySelector('.ui-work-cta');
+        const button = cta?.querySelector('.c-button');
+        if (!cta) return null;
+        const ctaStyle = getComputedStyle(cta);
+        const buttonStyle = button ? getComputedStyle(button) : null;
+        const rect = cta.getBoundingClientRect();
+        return {
+          sourceMode: "source-gD-active-button-anim-parent-hover-reveals",
+          parentOpacity: Number(ctaStyle.opacity),
+          pointerEvents: ctaStyle.pointerEvents,
+          buttonOpacity: buttonStyle ? Number(buttonStyle.opacity) : null,
+          rect: { width: rect.width, height: rect.height },
+        };
+      })(),
       probe: window.__rogierOutputProbe || null,
       homeGalleryRuntime: window.__rogierHomeGalleryRuntime || null,
       canvas: [...document.querySelectorAll('canvas')].map((canvas) => {
@@ -288,6 +304,20 @@ async function runProbe() {
   await wait(waitAfter);
   const parsed = await waitForOutputProbeSettled(ws);
   if (!parsed.probe) throw new Error("No __rogierOutputProbe data found");
+  const homeCta = parsed.homeCta;
+  const homeCtaErrors = [];
+  if (!homeCta) homeCtaErrors.push("missing");
+  if (homeCta?.sourceMode !== "source-gD-active-button-anim-parent-hover-reveals") homeCtaErrors.push("sourceMode");
+  if (viewportName === "desktop") {
+    if (!closeTo(homeCta?.parentOpacity, 0)) homeCtaErrors.push(`desktopParentOpacity=${homeCta?.parentOpacity}`);
+    if (!["all", "auto"].includes(homeCta?.pointerEvents)) homeCtaErrors.push(`desktopPointerEvents=${homeCta?.pointerEvents}`);
+  } else if (viewportName === "mobile") {
+    if (!closeTo(homeCta?.parentOpacity, 1)) homeCtaErrors.push(`mobileParentOpacity=${homeCta?.parentOpacity}`);
+  }
+  if ((homeCta?.rect?.width ?? 0) <= 0 || (homeCta?.rect?.height ?? 0) <= 0) homeCtaErrors.push("rect");
+  if (homeCtaErrors.length) {
+    throw new Error(`Home CTA source-shape mismatch: ${homeCtaErrors.join(", ")}`);
+  }
   const sourceDefaults = parsed.probe.sourceDefaults || {};
   const sourceDefaultErrors = [];
   if (sourceDefaults.darken !== 0.2) sourceDefaultErrors.push("darken");

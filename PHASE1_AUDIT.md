@@ -89,8 +89,9 @@ Current attribution read:
 
 - Rebuild variant attribution points at environment and floor reflection as the dominant distribution levers.
 - Captured source-vs-rebuild bands show the rebuild remains brighter through mid bands and shifted/darker around the lower floor band.
-- Desktop band deltas from the current comparison data: center `-0.0046`, bands `0.35 +0.0240`, `0.45 +0.0235`, `0.55 +0.0180`, `0.75 -0.0299`.
-- Mobile band deltas from the current comparison data: center `+0.0170`, bands `0.35 +0.0625`, `0.45 +0.0499`, `0.55 +0.0531`, `0.75 -0.0237`, `0.85 +0.0585`.
+- Desktop band deltas after the Home CTA visibility cleanup: center `-0.0066`, bands `0.35 +0.0155`, `0.45 +0.0214`, `0.55 +0.0102`, `0.75 -0.0299`.
+- Mobile band deltas after the Home CTA visibility cleanup: center `+0.0188`, bands `0.35 +0.0635`, `0.45 +0.0590`, `0.55 +0.0557`, `0.75 -0.0218`, `0.85 +0.0629`.
+- Interpretation: the prior desktop CTA visibility mismatch was screenshot noise, not the cause of the floor/environment distribution residual.
 - Interpretation: keep investigating environment target contents, floor reflection contribution, and final distribution before considering any visual tuning.
 
 Current source read:
@@ -119,6 +120,21 @@ Current guarded rebuild facts:
 - Work-render-before-environment-update order is guarded by runtime probe.
 - Light ownership is guarded: rebuild keeps `directionalLight2` out of the scene like source.
 - Remaining investigation should focus on environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state.
+
+### Home DOM Screenshot Noise
+
+Current source read:
+
+- Source desktop CSS keeps `.ui-work-cta` at `opacity:0`; `.ui-work-cta:hover` reveals it.
+- Source active state enables CTA interaction through `.ui-work-ul li.is-active a{pointer-events:all}` but does not set active CTA parent opacity.
+- Source `gD.animateIn()` animates the inner `.c-button` opacity and text for the active item, so the button content can be ready while the parent link remains hidden until hover.
+- Mobile source CSS sets `.ui-work-cta{opacity:1}`, so the mobile active CTA remains visible.
+
+Current guarded rebuild facts:
+
+- Rebuild desktop active CTA parent remains `opacity:0` by default and uses source-shaped active pointer events.
+- Browser output probe now records and guards Home CTA parent opacity, pointer events, inner button opacity, and nonzero layout rect.
+- The current desktop screenshot no longer shows the default "View project" CTA; remaining band deltas still point back to the WebGL floor/environment lane.
 
 ### Renderer State
 
@@ -201,6 +217,7 @@ These are current boundaries, grouped by system instead of discovery time.
 | Floor/environment | `p1.addEnvironment()` starts cubemap loading fire-and-forget before floor/env sceneWrap attachment. |
 | Floor/environment | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
 | Floor/environment | Sky composite `V1/H1/z1/B1` target chain and source `z1` missing-uniform behavior are guarded by audit and browser probe. |
+| Home DOM screenshot noise | Desktop active CTA parent remains hidden until hover while its inner button animation can complete; mobile CTA remains visible. |
 | Renderer state | Renderer constructor has no source `setClearColor`; probes guard default clear color `[0,0,0]` and clear alpha `0`. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |
 | Render managers | Work luminosity branch runs before and independently of bloom. |

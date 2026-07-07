@@ -74,6 +74,7 @@ Already guarded for this lane:
 - Renderer constructor clear state: source `qw` has no `setClearColor`, and probes guard default clear color/alpha.
 - Floor material inputs, reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
 - Texture-object await semantics for `nD.animateIn()`.
+- Home active CTA desktop visibility as screenshot-noise guard: parent hidden until hover, mobile visible.
 
 Next source candidates, in order:
 

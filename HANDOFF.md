@@ -30,7 +30,7 @@ It is not a timeline. Use git for history.
 | Phase 1 status | Open, roughly 65-70% complete |
 | Current production priority | Floor/environment distribution residuals |
 | Next secondary priority | Spotlight/thumb projection transfer feel |
-| Last committed source-backed batch | `d910163` sky composite `V1/H1/z1/B1` target chain and `z1` uniform surface |
+| Last committed source-backed batch | Home CTA default visibility/source guard |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -44,11 +44,11 @@ Estimated parity:
 
 ## Last Closed Batch
 
-The committed source-backed batch closed the sky-composite target-content candidate, not the remaining floor/environment residual.
+The latest source-backed batch removed a DOM visibility mismatch that was polluting Home screenshots, not the remaining WebGL floor/environment residual.
 
-- Source `V1/H1/z1/B1` renders the sky raw target and cloned composite through `Lo`, using height `*.75` square sizing and no explicit clear.
-- Source `z1` declares `uShader1Mix3`, `uShader3Scale`, and `uShaderMix`, but only binds `uShaderMix`; because `Zs.SHADER_1_MIX_3` is missing, the source runtime value is undefined.
-- Rebuild already follows this behavior; the audit now rejects reopening that candidate first without new source evidence.
+- Source desktop CSS keeps `.ui-work-cta` at `opacity:0` by default and reveals it on hover.
+- Source `gD/vD` still animates the active CTA button contents, but the parent link remains visually hidden until hover.
+- Rebuild now keeps the active CTA parent hidden on desktop, with a browser probe guard so default Home captures do not show the CTA.
 
 ## Current Evidence
 
@@ -57,6 +57,7 @@ The remaining visible gap points back to distribution through environment/floor/
 - Variant attribution showed environment-off and floor-reflection-off make the largest brightness-distribution moves.
 - Sky-off moved the output, but in the opposite direction from the likely residual; sky is not the first suspect.
 - Source-vs-rebuild band analysis showed the rebuild is still too bright in mid bands and darker/shifted around the lower floor band.
+- A desktop CTA DOM visibility mismatch has been cleared; after that cleanup, the same floor/environment distribution residual remains.
 - `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
 - `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
 

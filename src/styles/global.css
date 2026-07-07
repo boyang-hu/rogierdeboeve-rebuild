@@ -477,8 +477,7 @@ body.is-project .ui-header-description {
 }
 
 .ui-work-ul li.is-active .ui-work-cta {
-  opacity: 1;
-  pointer-events: auto;
+  pointer-events: all;
 }
 
 .ui-work-ul li.is-active .ui-work-cta:hover {
