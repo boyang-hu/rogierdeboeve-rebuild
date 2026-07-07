@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `p1/SD/TD` spotlight init lifecycle ownership. Source `p1.setLights()` constructs the spotlight with position, angle, and penumbra only; it does not bind `spotLight.map` and does not move `spotLight.target.position`. Source `SD.init()` owns the later Home entry map, position, target, and intensity writes, while direct `/about/` keeps the constructor-null previous map during the initial `TD` delay. Output/thumb/about probes expose these lifecycle markers; renderer audit rejects restoring constructor-time map or target-position ownership. This is spotlight lifecycle parity only; Phase 1 remains open.
+Latest Phase 1 batch: source `TD` about destroy spotlight-map ownership. Source `TD.addEvents()` binds the character composite texture to `J.workScene.spotLight.map` after the `100ms` delay, but source `TD.animateOut()` and `TD.destroy()` never restore that map to the Home thumb composite; the later Home map bind is owned by `SD.init()`. The rebuild now leaves the current spotlight map untouched during about out/destroy, and the direct about probe verifies destroy-time map retention. This is about-route lifecycle parity only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -155,7 +155,7 @@ Known remaining gaps:
 - Source `XA/KA` auxiliary material constructor state, reveal uniform surface, and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state, direct `jA/WA` shader surfaces, and only `uReveal/uRevealSpread=1` for reveal uniforms; floating keeps `KA` default depth state, no material `renderOrder`, direct `YA/qA` shader surfaces, and `uRevealSpread=10` plus `uRevealProject/uRevealSides=1`; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults and neither auxiliary surface has `uRevealSpreadSides`.
 - Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `uCoords:new Q` zero vectors, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. Ordinary `GA/VA` work material emissive construction is now also source-owned as the default black `MeshStandardMaterial` emissive from `new VA({color:new ye("#808080")})`, with `Se.setBlocksColor()` owning the later all-work emissive fan-out. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement` and source `XA` viewport-sized `uCoords`; floating `ZA/KA` sampler uniforms and `uCoords` stay at constructor defaults because source `ZA.update()` / `KA.update()` do not write them.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
-- Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, direct `/about/` starts from the source `p1.setLights()` constructor-null previous map, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
+- Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, direct `/about/` starts from the source `p1.setLights()` constructor-null previous map, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state. About out/destroy now also keeps the current spotlight map, matching source `TD`; later Home thumb-map restoration remains `SD.init()` ownership.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
 - `Ka` mouse simulation now uses source `rA/oA` shader surfaces and guarded source comments/placeholders; the interactive probe verifies source-shaped screen/local mouse response and `ag/qT` fluid pointer/center response. Active screen/local mouse-simulation resize ownership is also guarded: source `Lu` passes render size divided by `10`, source `GA` passes plane scale, and source `Ka` forwards those values without rebuild clamps or post-rounding. Source `Ka.raycast()` direct hit-UV target writes are guarded without a rebuild-owned clamp. Source `Ka` constructor/null sampler ownership is now guarded: `uTexture` and `uNoiseTexture` construct as `null`, `uCoords` constructs from `innerWidth/innerHeight`, `uPosOld/uPosNew` construct as zero vectors, and no runtime path binds blue-noise to `Ka.uNoiseTexture`. Exact final Home visual/feel parity is still open.
 - Source `Ka.update()` mouse-position uniform ownership is now guarded: `uPosNew.value` and `uPosOld.value` receive direct vector references before the simulation render, and `oldPos` is replaced with `newPos.clone()` after the render instead of mutating the previous object through `.copy(...)`.
@@ -177,7 +177,7 @@ Known remaining gaps:
 - Source `h1/u1` environment program-cache-key ownership is now guarded: source `u1` sets `onBeforeCompile` but does not override `customProgramCacheKey`, so the rebuild relies on Three's default `onBeforeCompile.toString()` cache-key path and rejects the old local `source-u1-environment-standard` override.
 - Source `VA/XA/KA` block material program-cache-key ownership is now guarded: source ordinary and auxiliary block materials set `onBeforeCompile` but do not override `customProgramCacheKey`, so the rebuild relies on Three's default `onBeforeCompile.toString()` cache-key path and keeps auxiliary `XA/KA` keys distinct through branch-specific default key functions.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
-- Source `p1/SD/TD` spotlight init lifecycle ownership is now guarded: source `p1.setLights()` constructs the spotlight without `map` or target-position writes, source `SD.init()` later owns Home map/position/target/intensity setup, and direct `/about/` preserves the constructor-null previous map during the initial `TD` delay.
+- Source `p1/SD/TD` spotlight lifecycle ownership is now guarded: source `p1.setLights()` constructs the spotlight without `map` or target-position writes, source `SD.init()` later owns Home map/position/target/intensity setup, direct `/about/` preserves the constructor-null previous map during the initial `TD` delay, and source `TD` about out/destroy does not restore the Home map.
 - Source `IT` camera update denominator ownership is now guarded: source `IT.update()` uses `Pe.w/Pe.h` directly for mouse target mapping and roll-input division, so the rebuild rejects the old local `Math.max(1, window.innerWidth/innerHeight)` clamp in `updateHomeCamera()`.
 - Source `yD.onProjectActive()` active-project spotlight, application-order, and woosh ownership are now guarded: `SD.init()` keeps the fixed Home entry `220` baseline, then active-project order runs spotlight payload-or-max, reveal spread, source-owned woosh, active `uReveal` tweens, project look setters, and final directional light `1.5`; current local project data has no spotlight payloads, so the expected runtime spotlight value remains `220`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
@@ -193,16 +193,15 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `p1/SD/TD` spotlight init lifecycle ownership.
-- Source evidence: `p1.setLights()` constructs `this.spotLight=new Qm(16777215,this.maxSpotLightIntensity)`, sets position `(0,0,3.7)`, angle `Math.PI/4`, and penumbra `.95`, but does not assign `spotLight.map` and does not move `spotLight.target.position`.
-- Source `SD.init()` owns the later Home entry spotlight setup: map from `J.workThumbScene.renderManager.renderTargetComposite.texture`, position `(0,0,3.7)`, target `(0,0,-8)`, and intensity `220`.
-- Direct `/about/` keeps the previous spotlight map during the initial source `TD` `100ms` delay; without prior Home entry, that previous map is the source constructor `null`.
-- `src/client/webgl.ts` now leaves constructor map/target-position ownership at source defaults and records constructor lifecycle markers.
-- `initHomeSpotlight()` remains the explicit source `SD.init()` owner for Home map/position/target/intensity writes.
-- Output/thumb/about probes expose and assert constructor map-null state, constructor target `[0,0,0]`, Home init mode, and direct-about previous-map mode.
-- `scripts/audit-renderer-output.mjs` rejects restoring constructor-time spotlight map or target-position assignment and checks ordered `initHomeSpotlight()` ownership.
-- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, `git diff --check`, build, desktop/mobile output probes, thumb spotlight probe, direct about scroll/lifecycle probe, and project-media material/visibility probe. Project media probe still captured non-blocking page promise noise with zero failures and zero console messages.
-- This is spotlight lifecycle ownership parity only. It is not a closeout for projected thumb transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals.
+- Aligned source `TD` about destroy spotlight-map ownership.
+- Source evidence: `TD.addEvents()` binds `J.workScene.spotLight.map` to the character composite texture after `100ms`; `TD.animateOut()` only tweens reveal state and calls `Se.setSpotLightIntensity(0)`; `TD.destroy()` removes about RAF, clears about block visibility/tracking, restores `spotLightParallax=true`, and removes character rotatable events.
+- Source `TD.animateOut()` and `TD.destroy()` do not write `spotLight.map`; source `SD.init()` owns the later Home thumb-map restore.
+- `animateAboutVisualOut()` and `destroyAboutVisualState()` no longer assign `this.spotLight.map = this.homeSpotlightMap()`.
+- Output/about probes expose `source-TD-destroy-keeps-current-spotLight-map-SD-init-restores-home-map` and destroy-time map retention state.
+- `scripts/probe-about-scroll-opacity.mjs` now normalizes root `REBUILD_URL` to `/about/`, waits for about visibility plus source map/initial-scroll delays, and asserts that destroy keeps the character composite map.
+- `scripts/audit-renderer-output.mjs` rejects reintroducing Home map assignment in about out/destroy.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, direct about scroll/lifecycle probe, desktop/mobile output probes, thumb spotlight probe, and project-media material/visibility probe. Project media probe still captured non-blocking page promise noise with zero failures and zero console messages.
+- This is about-route spotlight lifecycle parity only. It is not a closeout for projected thumb transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, or floor/environment residuals.
 
 ## Validation Status
 
@@ -215,30 +214,31 @@ node --check scripts/probe-output-color.mjs
 node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/probe-about-scroll-opacity.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-spotlight-init-lifecycle-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-spotlight-init-lifecycle-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-about-destroy-map-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-about-destroy-map-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 PORT=5178 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-spotlight-init-lifecycle-desktop CDP_PORT=9290 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-spotlight-init-lifecycle-thumb CDP_PORT=9291 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-spotlight-init-lifecycle-about CDP_PORT=9294 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-about-scroll-opacity.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-spotlight-init-lifecycle-mobile CDP_PORT=9295 VIEWPORT=mobile REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-spotlight-init-lifecycle-media CDP_PORT=9296 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-project-media.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about-destroy-map-about CDP_PORT=9301 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-about-scroll-opacity.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about-destroy-map-desktop CDP_PORT=9302 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about-destroy-map-mobile CDP_PORT=9303 VIEWPORT=mobile REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-output-color.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about-destroy-map-thumb CDP_PORT=9304 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about-destroy-map-media CDP_PORT=9305 REBUILD_URL=http://127.0.0.1:5178 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the `p1/SD/TD` spotlight init lifecycle ownership batch before commit. Renderer audit wrote `/tmp/rd-spotlight-init-lifecycle-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for constructor-null spotlight map, constructor target `[0,0,0]`, Home `SD.init()` ownership, and direct-about previous-map lifecycle. Desktop/mobile output probes, thumb spotlight, and direct about scroll/lifecycle probes passed with zero failures, exceptions, or console messages. Project media probe passed material/visibility assertions; it captured non-blocking page promise noise with zero failures and zero console messages.
+All relevant checks passed for the `TD` about destroy spotlight-map ownership batch before commit. Renderer audit wrote `/tmp/rd-about-destroy-map-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for `TD.animateOut()` / `TD.destroy()` no-map-restore ownership plus root-URL `/about/` probe normalization. Direct about lifecycle probe verified the spotlight map was character composite before destroy and remained character composite after destroy. Desktop/mobile output probes, thumb spotlight, and project-media probes passed with zero failures, exceptions, or console messages. Project media probe passed material/visibility assertions; it captured non-blocking page promise noise with zero failures and zero console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this spotlight lifecycle ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this about destroy spotlight-map ownership batch.
 
 Project pages remain regression gates, not proof of Home parity.
 
 Verified:
 
-- Renderer audit passed for the `p1/SD/TD` spotlight init lifecycle ownership batch: `/tmp/rd-spotlight-init-lifecycle-audit.json`.
+- Renderer audit passed for the `TD` about destroy spotlight-map ownership batch: `/tmp/rd-about-destroy-map-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop/mobile output probes passed with the source spotlight constructor/Home lifecycle markers.
-- Thumb spotlight, direct about scroll/lifecycle, and project-media probes passed as regression gates.
+- Direct about scroll/lifecycle probe passed with source destroy-time map retention.
+- Desktop/mobile output probes passed with the source about destroy lifecycle marker.
+- Thumb spotlight and project-media probes passed as regression gates.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
 Screenshots from the prior machine were stored under `/tmp/...`; do not rely on them after moving machines.
@@ -278,7 +278,7 @@ Continue source-driven implementation in this order:
 
 1. Continue spotlight/thumb projection content and transfer evidence.
    - Original: `SD.init()` assigns `J.workScene.spotLight.map = J.workThumbScene.renderManager.renderTargetComposite.texture`.
-   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1.setLights()` constructor no-map/no-target-position ownership, source `SD.init()` Home map/position/target/intensity ownership, source `TD` direct-about previous constructor-null map lifecycle, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership and application order, source `p1` desktop/mobile spotlight parallax branch, source `IT` direct camera update denominator ownership, source `VA/XA` direct runtime `uCoords` ownership, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
+   - Current rebuild now guards the no-explicit-`castShadow` `SpotLight.map` projection path, source `p1.setLights()` constructor no-map/no-target-position ownership, source `SD.init()` Home map/position/target/intensity ownership, source `TD` direct-about previous constructor-null map lifecycle, source `TD` about out/destroy no-Home-map-restore ownership, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership and application order, source `p1` desktop/mobile spotlight parallax branch, source `IT` direct camera update denominator ownership, source `VA/XA` direct runtime `uCoords` ownership, source `yD.updateScene()` gallery-progress order and roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, and source-shaped `M1/x1` thumb shader text, but the projected thumb content/transfer feel is still not exact.
 2. Continue remaining composite/render-manager transfer evidence from `bundle.250f01b7.js`.
    - `A1-pre-composite` and `OA-work-composite` shader fragments are now source-shaped.
    - `u1-environment` and `z1-sky-composite` shader fragments are now source-shaped.
@@ -326,7 +326,7 @@ Current state:
 - Build previously passed with `npm run build`.
 - `git diff --check` previously passed.
 - Home WebGL is source-derived but not 1:1 yet.
-- Latest batch aligned source `p1/SD/TD` spotlight init lifecycle ownership.
+- Latest batch aligned source `TD` about destroy spotlight-map ownership.
 - Project detail media pages are closer and should not regress.
 
 Next focus:

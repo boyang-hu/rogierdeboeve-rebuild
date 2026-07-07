@@ -150,6 +150,7 @@ type ShaderDumpWindow = Window & {
 type OutputProbeWindow = Window & {
   __rogierOutputProbe?: Record<string, any>;
   __rogierAboutScrollProbeSet?: (scroll: number, velocity?: number) => void;
+  __rogierAboutLifecycleDestroyProbe?: () => Record<string, any>;
 };
 
 type SourceGpuBridgeState = {
@@ -5417,9 +5418,11 @@ export class WebGLBackdrop {
     mapBindingMode: "source-TD-after-100ms-character-composite-not-enter-state",
     resizeMode: "source-TD-pe-FORCE_RESIZE-after-character-map",
     initialScrollMode: "source-TD-await-200ms-after-map-then-onScroll",
+    destroyMapOwnershipMode: "source-TD-destroy-keeps-current-spotLight-map-SD-init-restores-home-map",
     setupKeepsPreviousSpotlightMap: true,
     previousSpotlightMapMode: "source-p1-setLights-null-map-before-TD-delay",
     previousSpotlightMapWasNull: false,
+    destroyKeepsCurrentSpotlightMap: false,
     rafActiveAfterMapDelay: false,
     mapBoundAfterDelay: false,
     forceResizeAfterMapBind: false,
@@ -6009,6 +6012,7 @@ export class WebGLBackdrop {
     this.aboutVisualLifecycle.initialScrollAfterDelay = false;
     this.aboutVisualLifecycle.characterRotatableAddAfterMapDelay = false;
     this.aboutVisualLifecycle.characterRotatableRemoveOnDestroy = false;
+    this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap = false;
     this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap = previousMap !== this.characterTarget.texture;
     this.aboutVisualLifecycle.previousSpotlightMapWasNull = previousMap === null;
     this.aboutVisualLifecycle.previousSpotlightMapMode = previousMap === null
@@ -6237,10 +6241,11 @@ export class WebGLBackdrop {
     }
     this.setSpotLightIntensity(0);
     this.spotLightParallax = true;
-    this.spotLight.map = this.homeSpotlightMap();
+    this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap = this.spotLight.map === this.characterTarget.texture;
   }
 
   destroyAboutVisualState() {
+    const previousMap = this.spotLight.map;
     this.clearAboutVisualLifecycleTimers();
     this.aboutVisualRafActive = false;
     this.sourceRemoveCharacterRotatableEvents();
@@ -6261,7 +6266,7 @@ export class WebGLBackdrop {
     this.auxiliaryScrollLast = window.scrollY;
     this.setSpotLightIntensity(0, 0);
     this.spotLightParallax = true;
-    this.spotLight.map = this.homeSpotlightMap();
+    this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap = this.spotLight.map === previousMap;
   }
 
   leaveAboutVisualState() {
@@ -9981,6 +9986,20 @@ void main() {
       : null;
     const probeWindow = window as OutputProbeWindow;
     probeWindow.__rogierAboutScrollProbeSet = (scroll: number, velocity = 0) => this.setAboutScrollState(scroll, velocity);
+    probeWindow.__rogierAboutLifecycleDestroyProbe = () => {
+      const before = this.spotLight.map;
+      this.destroyAboutVisualState();
+      return {
+        mode: this.aboutVisualLifecycle.destroyMapOwnershipMode,
+        mapBeforeDestroyWasCharacter: before === this.characterTarget.texture,
+        mapAfterDestroyWasCharacter: this.spotLight.map === this.characterTarget.texture,
+        mapAfterDestroyMatchesBefore: this.spotLight.map === before,
+        destroyKeepsCurrentSpotlightMap: this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap,
+        parallaxAfterDestroy: this.spotLightParallax,
+        aboutVisibleAfterDestroy: this.aboutBlocks?.group.visible ?? null,
+        characterRotatableEventsActiveAfterDestroy: this.characterRotatableEventsActive,
+      };
+    };
     probeWindow.__rogierOutputProbe = {
       activeSlug: this.activeSlug,
       bodyClass: document.body.className,
@@ -10368,9 +10387,11 @@ void main() {
             aboutMapBindingMode: this.aboutVisualLifecycle.mapBindingMode,
             aboutResizeMode: this.aboutVisualLifecycle.resizeMode,
             aboutInitialScrollMode: this.aboutVisualLifecycle.initialScrollMode,
+            aboutDestroyMapOwnershipMode: this.aboutVisualLifecycle.destroyMapOwnershipMode,
             aboutSetupKeepsPreviousSpotlightMap: this.aboutVisualLifecycle.setupKeepsPreviousSpotlightMap,
             aboutPreviousSpotlightMapMode: this.aboutVisualLifecycle.previousSpotlightMapMode,
             aboutPreviousSpotlightMapWasNull: this.aboutVisualLifecycle.previousSpotlightMapWasNull,
+            aboutDestroyKeepsCurrentSpotlightMap: this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap,
             aboutRafActiveAfterMapDelay: this.aboutVisualLifecycle.rafActiveAfterMapDelay,
             aboutMapBoundAfterDelay: this.aboutVisualLifecycle.mapBoundAfterDelay,
             aboutForceResizeAfterMapBind: this.aboutVisualLifecycle.forceResizeAfterMapBind,
@@ -11654,10 +11675,12 @@ void main() {
         aboutSpotlightLifecycleMode: this.aboutVisualLifecycle.mode,
         aboutMapDelayMs: this.aboutVisualLifecycle.mapDelayMs,
         aboutInitialScrollDelayMs: this.aboutVisualLifecycle.initialScrollDelayMs,
+        aboutDestroyMapOwnershipMode: this.aboutVisualLifecycle.destroyMapOwnershipMode,
         aboutMapBoundAfterDelay: this.aboutVisualLifecycle.mapBoundAfterDelay,
         aboutInitialScrollAfterDelay: this.aboutVisualLifecycle.initialScrollAfterDelay,
         aboutPreviousSpotlightMapMode: this.aboutVisualLifecycle.previousSpotlightMapMode,
         aboutPreviousSpotlightMapWasNull: this.aboutVisualLifecycle.previousSpotlightMapWasNull,
+        aboutDestroyKeepsCurrentSpotlightMap: this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap,
         aboutSpotlightMapMode: this.spotLight.map === this.characterTarget.texture
           ? "source-TD-character-composite-after-delay"
           : "source-TD-not-bound-during-initial-100ms",

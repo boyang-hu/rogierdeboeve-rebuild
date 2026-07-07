@@ -277,6 +277,8 @@ const rebuildUpdateVisibleWorkItems = extractBlock(rebuildWebgl, "private update
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildOnMouseMove = extractBlock(rebuildWebgl, "private onMouseMove =");
 const rebuildUpdateSourceCharacterScene = extractBlock(rebuildWebgl, "private updateSourceCharacterScene(");
+const rebuildAnimateAboutVisualOut = extractBlock(rebuildWebgl, "  animateAboutVisualOut()");
+const rebuildDestroyAboutVisualState = extractBlock(rebuildWebgl, "  destroyAboutVisualState()");
 const rebuildResize = extractBlock(rebuildWebgl, "private resize =");
 const rebuildHomeGalleryTick = extractBlock(rebuildMain, "const tick = (now: number)");
 const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
@@ -5312,6 +5314,23 @@ const summary = {
         "Bt.remove(\"aboutVisual\")",
         "J.characterScene.character.rotatableMesh.removeEvents()",
       ]),
+      mapOwnershipOnDestroy: {
+        sourceDestroyKeepsCurrentMap:
+          !sourceTDSpotlight.text
+            .slice(sourceTDSpotlight.text.indexOf("destroy(){"), sourceTDSpotlight.text.indexOf("updateSpotLight(){"))
+            .includes("spotLight.map")
+          && !sourceTDSpotlight.text
+            .slice(sourceTDSpotlight.text.indexOf("animateOut(){"), sourceTDSpotlight.text.indexOf("animateIn(){"))
+            .includes("spotLight.map"),
+        rebuildKeepsCurrentMap:
+          Boolean(rebuildAnimateAboutVisualOut)
+          && Boolean(rebuildDestroyAboutVisualState)
+          && rebuildAnimateAboutVisualOut.includes("this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap = this.spotLight.map === this.characterTarget.texture;")
+          && rebuildDestroyAboutVisualState.includes("const previousMap = this.spotLight.map;")
+          && rebuildDestroyAboutVisualState.includes("this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap = this.spotLight.map === previousMap;")
+          && !rebuildAnimateAboutVisualOut.includes("this.spotLight.map = this.homeSpotlightMap()")
+          && !rebuildDestroyAboutVisualState.includes("this.spotLight.map = this.homeSpotlightMap()"),
+      },
       rebuildChecks: checks(rebuildWebgl, [
         "const SOURCE_TD_SPOTLIGHT_MAP_DELAY_MS = 100",
         "const SOURCE_TD_INITIAL_SCROLL_DELAY_MS = 200",
@@ -5319,7 +5338,9 @@ const summary = {
         "mapBindingMode: \"source-TD-after-100ms-character-composite-not-enter-state\"",
         "resizeMode: \"source-TD-pe-FORCE_RESIZE-after-character-map\"",
         "initialScrollMode: \"source-TD-await-200ms-after-map-then-onScroll\"",
+        "destroyMapOwnershipMode: \"source-TD-destroy-keeps-current-spotLight-map-SD-init-restores-home-map\"",
         "previousSpotlightMapMode: \"source-p1-setLights-null-map-before-TD-delay\"",
+        "destroyKeepsCurrentSpotlightMap: false",
         "private scheduleAboutVisualLifecycle()",
         "this.aboutSpotlightMapTimer = window.setTimeout(() => {",
         "this.spotLight.map = this.characterTarget.texture",
@@ -5334,6 +5355,7 @@ const summary = {
         "aboutScrollOpacityMode: \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"",
         "aboutScrollOpacityMatchesSource:",
         "probeWindow.__rogierAboutScrollProbeSet = (scroll: number, velocity = 0) => this.setAboutScrollState(scroll, velocity);",
+        "probeWindow.__rogierAboutLifecycleDestroyProbe = () => {",
         "this.clearAboutVisualLifecycleTimers();",
         "previousMap === null",
         "source-p1-setLights-null-map-before-TD-delay",
@@ -5360,7 +5382,9 @@ const summary = {
         "auxiliaryLifecycle.aboutMapBindingMode !== \"source-TD-after-100ms-character-composite-not-enter-state\"",
         "auxiliaryLifecycle.aboutResizeMode !== \"source-TD-pe-FORCE_RESIZE-after-character-map\"",
         "auxiliaryLifecycle.aboutInitialScrollMode !== \"source-TD-await-200ms-after-map-then-onScroll\"",
+        "auxiliaryLifecycle.aboutDestroyMapOwnershipMode !== \"source-TD-destroy-keeps-current-spotLight-map-SD-init-restores-home-map\"",
         "auxiliaryLifecycle.aboutPreviousSpotlightMapMode",
+        "auxiliaryLifecycle.aboutDestroyKeepsCurrentSpotlightMap",
         "auxiliaryLifecycle.aboutCharacterRotatableMode !== \"source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy\"",
         "const sourceAboutScrollOpacityMode = \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"",
         "const aboutScrollOpacityExpectedMobile = sourceMapClampRound(",
@@ -5369,13 +5393,21 @@ const summary = {
       ]),
       aboutScrollProbeChecks: checks(rebuildAboutScrollProbe, [
         "const sourceAboutScrollOpacityMode = \"source-TD-onScroll-uScrollOpacity-Cs-scroll-0-PeH025-1-0-Fn4\"",
+        "if (parsed.pathname === \"/\" || parsed.pathname === \"\") parsed.pathname = \"/about/\";",
         "const aboutScrollOpacityProbeScroll = 137.1373",
         "window.__rogierAboutScrollProbeSet?.",
+        "window.__rogierAboutLifecycleDestroyProbe?.()",
         "window.dispatchEvent(new CustomEvent(\"rd:page-scroll\"",
+        "parsed.aboutVisible !== true",
+        "parsed.lifecycle.aboutMapBoundAfterDelay !== true",
+        "parsed.lifecycle.aboutInitialScrollAfterDelay !== true",
         "const expectedMobile = sourceMapClampRound(",
         "lifecycle.aboutScrollOpacityMode !== sourceAboutScrollOpacityMode",
         "lifecycle.aboutPreviousSpotlightMapMode !== \"source-p1-setLights-null-map-before-TD-delay\"",
         "lifecycle.aboutPreviousSpotlightMapWasNull !== true",
+        "destroyLifecycle.mode !== \"source-TD-destroy-keeps-current-spotLight-map-SD-init-restores-home-map\"",
+        "destroyLifecycle.mapAfterDestroyWasCharacter !== true",
+        "destroyLifecycle.mapAfterDestroyMatchesBefore !== true",
         "lifecycle.aboutScrollOpacityMatchesSource !== true",
         "message !== \"Failed to get subsystem status for purpose Object\"",
         "if (lifecycle.aboutScrollOpacityDesktopOverride !== (viewport.width >= sourceBreakpointLg)) errors.push(\"desktopOverride\")",

@@ -558,11 +558,17 @@ async function runProbe() {
   if (auxiliaryLifecycle.aboutInitialScrollMode !== "source-TD-await-200ms-after-map-then-onScroll") {
     materialErrors.push("auxiliaryAboutInitialScrollMode");
   }
+  if (auxiliaryLifecycle.aboutDestroyMapOwnershipMode !== "source-TD-destroy-keeps-current-spotLight-map-SD-init-restores-home-map") {
+    materialErrors.push("auxiliaryAboutDestroyMapOwnershipMode");
+  }
   if (typeof auxiliaryLifecycle.aboutPreviousSpotlightMapMode !== "string") {
     materialErrors.push("auxiliaryAboutPreviousSpotlightMapMode");
   }
   if (typeof auxiliaryLifecycle.aboutPreviousSpotlightMapWasNull !== "boolean") {
     materialErrors.push("auxiliaryAboutPreviousSpotlightMapWasNull");
+  }
+  if (typeof auxiliaryLifecycle.aboutDestroyKeepsCurrentSpotlightMap !== "boolean") {
+    materialErrors.push("auxiliaryAboutDestroyKeepsCurrentSpotlightMap");
   }
   if (auxiliaryLifecycle.aboutCharacterRotatableMode !== "source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy") {
     materialErrors.push("auxiliaryAboutCharacterRotatableMode");

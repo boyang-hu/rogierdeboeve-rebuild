@@ -51,6 +51,7 @@ function sourceMapClampRound(value, inMin, inMax, outMin, outMax) {
 
 function withProbeParams(url) {
   const parsed = new URL(url);
+  if (parsed.pathname === "/" || parsed.pathname === "") parsed.pathname = "/about/";
   parsed.searchParams.set("skip-preloader", "");
   parsed.searchParams.set("debug-output-probe", "1");
   return parsed.toString();
@@ -130,6 +131,9 @@ async function waitForAboutScrollProbe(ws) {
       !parsed.lifecycle
       || parsed.lifecycle.aboutSpotlightLifecycleMode !== "source-TD-addEvents-100ms-map-resize-200ms-initial-scroll"
       || parsed.lifecycle.aboutScrollOpacityMode !== sourceAboutScrollOpacityMode
+      || parsed.aboutVisible !== true
+      || parsed.lifecycle.aboutMapBoundAfterDelay !== true
+      || parsed.lifecycle.aboutInitialScrollAfterDelay !== true
       || !Number.isFinite(parsed.lifecycle.aboutScrollOpacityScroll)
       || parsed.lifecycle.aboutScrollOpacityScroll <= 0
     )
@@ -191,6 +195,17 @@ async function runProbe() {
     expression: "window.clearInterval(window.__rdAboutScrollOpacityProbeInterval);",
   });
   const lifecycle = parsed.lifecycle || {};
+  let screenshotFile = null;
+  if (!skipScreenshot) {
+    const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+    screenshotFile = path.join(outDir, `about-scroll-opacity-${viewportName}.png`);
+    writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
+  }
+  const destroyProbe = await send(ws, "Runtime.evaluate", {
+    expression: "window.__rogierAboutLifecycleDestroyProbe?.()",
+    returnByValue: true,
+  });
+  const destroyLifecycle = destroyProbe.result?.value || {};
   const actualScroll = lifecycle.aboutScrollOpacityScroll;
   const actualViewportHeight = lifecycle.aboutScrollOpacityViewportHeight;
   const expectedMobile = sourceMapClampRound(actualScroll, 0, actualViewportHeight * 0.25, 1, 0);
@@ -205,6 +220,16 @@ async function runProbe() {
   if (lifecycle.aboutPreviousSpotlightMapWasNull !== true) {
     errors.push(`previousMapWasNull=${lifecycle.aboutPreviousSpotlightMapWasNull}`);
   }
+  if (destroyLifecycle.mode !== "source-TD-destroy-keeps-current-spotLight-map-SD-init-restores-home-map") {
+    errors.push(`destroyMapMode=${destroyLifecycle.mode}`);
+  }
+  if (destroyLifecycle.mapBeforeDestroyWasCharacter !== true) errors.push("destroyBeforeMap");
+  if (destroyLifecycle.mapAfterDestroyWasCharacter !== true) errors.push("destroyAfterMap");
+  if (destroyLifecycle.mapAfterDestroyMatchesBefore !== true) errors.push("destroyMapChanged");
+  if (destroyLifecycle.destroyKeepsCurrentSpotlightMap !== true) errors.push("destroyKeepsMap");
+  if (destroyLifecycle.parallaxAfterDestroy !== true) errors.push("destroyParallax");
+  if (destroyLifecycle.aboutVisibleAfterDestroy !== false) errors.push("destroyAboutVisible");
+  if (destroyLifecycle.characterRotatableEventsActiveAfterDestroy !== false) errors.push("destroyRotatableEvents");
   if (!Number.isFinite(actualScroll) || actualScroll <= 0) errors.push("scroll");
   if (lifecycle.aboutScrollOpacityDesktopOverride !== (viewport.width >= sourceBreakpointLg)) errors.push("desktopOverride");
   if (!closeTo(lifecycle.aboutScrollOpacityExpectedMobile, expectedMobile)) errors.push("expectedMobile");
@@ -221,22 +246,18 @@ async function runProbe() {
   if (errors.length) {
     throw new Error(`About scroll opacity source-shape mismatch: ${errors.join(", ")} ${JSON.stringify({
       lifecycle,
+      destroyLifecycle,
       helperType: parsed.helperType,
       expectedMobile,
       expected,
       consoleMessages: unexpectedConsoleMessages,
     })}`);
   }
-  let screenshotFile = null;
-  if (!skipScreenshot) {
-    const screenshot = await send(ws, "Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
-    screenshotFile = path.join(outDir, `about-scroll-opacity-${viewportName}.png`);
-    writeFileSync(screenshotFile, Buffer.from(screenshot.data, "base64"));
-  }
   ws.close();
   return {
     screenshot: screenshotFile,
     ...parsed,
+    destroyLifecycle,
     expectedMobile,
     expected,
     failures: failures.filter((failure) => !failure.canceled).map((failure) => ({ type: failure.type, errorText: failure.errorText })),
