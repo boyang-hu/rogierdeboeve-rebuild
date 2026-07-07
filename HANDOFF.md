@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: `ag/qT` main-fluid pointer coordinates are now mousemove-owned like source. Source `qT.addEvents()` registers `MOUSE_MOVE`, `qT.onMouseMove()` stores normalized coords with direct `Pe.w/Pe.h` denominators, and `qT.update()` consumes those stored coords. The rebuild now writes `mainFluidPass.pointer` from the shared mousemove event path and `updateMainFluidPass()` only consumes `pass.pointer`; it no longer recomputes main-fluid coords each RAF/update from `pointerPixels`. Probes and renderer audit guard the source event-owned pointer update, denominator, diff, center clamp, and force modes. This is one main-fluid interaction edge only. Phase 1 is still open.
+Latest Phase 1 batch: `ag/qT` main-fluid force material now keeps the source default transparent state. Source `qT` constructs its additive force `RawShaderMaterial` with `glslVersion`, `depthWrite:false`, `depthTest:false`, `vertexShader`, `fragmentShader`, `blending:Uc`, and uniforms, but no `transparent` override, so Three's default `transparent=false` applies. The rebuild removed the non-source `transparent:true` from `forceMaterial`, and output/audit tooling now rejects restoring it. This is one main-fluid material-state edge only. Phase 1 is still open.
 
 ## Chosen Stack
 

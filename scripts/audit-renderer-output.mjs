@@ -1836,7 +1836,11 @@ const summary = {
             "updateMouseDiff(){this.mouse.diff.subVectors(this.mouse.coords,this.mouse.coordsOld),this.mouse.coordsOld.copy(this.mouse.coords),this.mouse.coordsOld.x===0&&this.mouse.coordsOld.y===0&&this.mouse.diff.set(0,0)}",
             "const{cellScale:e,mouseForce:t,cursorSize:n}=this.props,i=this.mouse.diff.x/2*t,r=this.mouse.diff.y/2*t,o=n*e.x,a=n*e.y,c=Math.min(Math.max(this.mouse.coords.x,-1+o+e.x*2),1-o-e.x*2),u=Math.min(Math.max(this.mouse.coords.y,-1+a+e.y*2),1-a-e.y*2)",
           ]),
+          sourceTransparencyDefault: !sourceQT.text.includes("transparent"),
           rebuildChecks: {
+            forceMaterialTransparentDefault: Boolean(rebuildCreateMainFluidPass)
+              && !rebuildCreateMainFluidPass.includes("transparent: true")
+              && rebuildOutputProbe.includes("mainFluidForceTransparentDefault"),
             pointerState: Boolean(rebuildCreateMainFluidPass)
               && rebuildCreateMainFluidPass.includes("pointerOld: new Vector2(),")
               && rebuildCreateMainFluidPass.includes("pointer: new Vector2(),")

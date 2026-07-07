@@ -1920,6 +1920,7 @@ async function runProbe() {
     }
   }
   if (mainFluidMaterials.force?.blending !== 2) materialSurfaceErrors.push("mainFluidForceBlending");
+  if (mainFluidMaterials.force?.transparent !== false) materialSurfaceErrors.push("mainFluidForceTransparentDefault");
   const mainFluidInteraction = mainFluid.interaction || {};
   const mainFluidPointerUpdateMode = mainFluidInteraction.pointerUpdateMode;
   const mainFluidPointerDenominatorMode = mainFluidInteraction.pointerDenominatorMode;

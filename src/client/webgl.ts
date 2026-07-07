@@ -7532,7 +7532,6 @@ void main() {
       blending: AdditiveBlending,
       depthWrite: false,
       depthTest: false,
-      transparent: true,
       uniforms: {
         center: { value: new Vector2() },
         scale: { value: new Vector2(settings.cursorSize, settings.cursorSize) },
