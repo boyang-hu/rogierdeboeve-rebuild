@@ -26,14 +26,14 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 3 next; Phase 2 is closed/guarded |
+| Active phase | Phase 3 in progress; first project-detail shell/media DOM batch is source-aligned |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
 | Phase 2 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Start Phase 3 project-detail media/scroll/route audit |
+| Current production priority | Continue Phase 3 with project-detail scroll-state, next-project state, custom scrollbar, and route behavior audit |
 | Next secondary priority | Keep Phase 1 and Phase 2 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 2 sound, route/runtime state, and Home interaction closeout |
-| Last closed evidence batch | Phase 2 sound, route/runtime state, and remaining Home interaction closeout |
-| Local service | Running at `http://localhost:5174/` while reviewing |
+| Last committed source-backed code batch | Phase 3 project-detail shell/media DOM source alignment |
+| Last closed evidence batch | Phase 3 project-detail shell/media DOM source alignment |
+| Local service | `scripts/serve.mjs` instances were running at `http://localhost:5173/` and `http://localhost:5174/` during validation |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
 Closeout state:
@@ -46,28 +46,29 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch closes Phase 2 by aligning sound choice, audio lifecycle, route/runtime Work state, and remaining Home interaction details with the source read.
+The latest production batch starts Phase 3 by aligning the project-detail shell and media DOM with the source HTML/CSS read.
 
-- `src/client/audio.ts` now follows source `ln`: sound starts disabled, Howler sounds are lazy, ambient and drones fade to source volumes, visibility pause/resume is source-shaped, and the sound button rects animate from runtime intensity.
-- `src/client/main.ts` no longer persists preloader entry, sound mode, or Work state in storage. Work state is runtime-only, matching source `Qe.workState`, and full reloads reset to a fresh preloader.
-- Preloader sound CTA order now matches source `iD`: non-mobile sound entry initializes/toggles/clicks sound; no-sound entry initializes only; mobile skips sound init/toggle.
-- Home Work CTA/progress/keyboard details were tightened to the source interaction read, and sound click bindings are rebound after route DOM swaps.
-- The `?skip-preloader` and `?disable-webgl` queries remain audit hooks only.
+- `src/pages/[slug].astro` now emits the source-shaped project root, header back link, content/header wrappers, info items, desktop/mobile media roots, next-project wrapper, and scroll CTA grid.
+- `src/components/MediaBlock.astro` now matches source project media attributes: desktop tracks use `[data-media]` without `media-block`/`data-media-type`; mobile fallback videos use `autoplay loop muted playsinline` plus the source inline object-fit style.
+- `src/styles/global.css` now includes the source responsive utility classes used by project pages and replaces rebuild-only project media shadows/filters with source project header/content/media/next styling.
+- `src/client/main.ts` resolves project payloads from local project data when the source-shaped DOM only exposes `data-project` or `data-project-slug`.
+- `src/client/webgl.ts` now applies project-detail darkness from `darkenDetail` on project views and keeps `darkenOverview` for Home.
+- Removed obsolete `media-block`, `data-mobile-media`, and `data-webgl-project` hooks from the project path.
 
-Phase 1 remains closed/guarded in `PHASE1_AUDIT.md`. Phase 2 is now closed/guarded in `REBUILD_PLAN.md`.
+Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
 ## Current Evidence
 
-Latest Phase 2 evidence:
+Latest Phase 3 evidence:
 
-- DOM audit with WebGL disabled for test stability: `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`.
-- Desktop WebGL output probe: `/tmp/rd-output-p2-preloader-desktop`.
-- Mobile WebGL output probe: `/tmp/rd-output-p2-preloader-mobile`.
-- DOM audit result: online and rebuild both removed the preloader after entry, both activated `hashgraph-vc`, both moved to `gc-2026` after wheel input, and both reported `0` checked network failures/runtime exceptions.
-- Mobile DOM audit result: title display/visibility, card opacity, link opacity/pointer-events, active link visibility, and active CTA pointer-events matched online.
-- WebGL output probes reported no failures/exceptions and preserved active `hashgraph-vc` after entry on desktop and mobile.
-- Closeout state audit result: desktop fresh load shows the preloader and no active Work item; sound entry activates the sound toggle; no-sound entry leaves it inactive; full reload shows the preloader again; no `rd:has-entered`, `rd:sound-enabled`, or `rd:work-state` session keys are written; SPA Home -> About -> Home restores `gc-2026` from runtime memory.
-- Mobile touch-emulated closeout audit result: `(pointer: coarse)` is true, `.preloader-cta-2` and `.ui-sound-toggle` are hidden, Enter does not activate sound, and no session keys are written.
+- Source project HTML/CSS checked against `legacy-mirror/public/gc-2026/index.html`, `legacy-mirror/public/hashgraph-vc/index.html`, and `legacy-mirror/public/assets/bundle.87ba3613.css`.
+- Build output DOM assertion: 30/30 passed for `gc-2026` and `hashgraph-vc` against source-shaped root, header link, content wrappers, media roots, mobile video attributes, next-project wrapper, and absence of rebuild-only project data attributes.
+- Project media probe passed with `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome`, `REBUILD_URL=http://127.0.0.1:5173`, `PROJECT_SLUGS=gc-2026,hashgraph-vc`, `OUT_DIR=/tmp/rd-phase3-project-media-probe`.
+- Output color/state probe passed with `OUT_DIR=/tmp/rd-phase3-output-color-probe`.
+- Static renderer audit passed: `node scripts/audit-renderer-output.mjs`.
+- Build passed: `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
+
+Phase 2 regression evidence remains available in `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`, `/tmp/rd-output-p2-preloader-desktop`, and `/tmp/rd-output-p2-preloader-mobile`.
 
 Audit method note:
 
@@ -93,7 +94,7 @@ Phase 1 and Phase 2 are closed. Do not reopen either one unless a concrete sourc
 
 Recommended next move:
 
-1. Start Phase 3 with source/online audit of project-detail pages: media block structure, image/video sizing, autoplay/pause behavior, scroll-state visual updates, next-project section, and project-to-project/Home/About route behavior.
+1. Continue Phase 3 with project-detail scroll-state visuals, source scrollbar behavior, next-project state switching, and project-to-project/Home/About route behavior.
 2. Convert only source-backed Phase 3 findings into scoped fixes.
 3. Keep Phase 1 WebGL and Phase 2 Home DOM/interaction probes as regression gates when shared render, router, audio, or lifecycle paths change.
 4. After Phase 3 is clean or guarded, move to Phase 4 About/auxiliary pages.

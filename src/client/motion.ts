@@ -224,38 +224,11 @@ function initFooterContactLabel() {
   };
 }
 
-function initMediaReveals() {
-  const blocks = document.querySelectorAll<HTMLElement>("[data-mobile-media]");
-  if (!blocks.length) return;
-
-  if (prefersReducedMotion() || !("IntersectionObserver" in window)) {
-    blocks.forEach((block) => block.classList.add("is-revealed"));
-    return;
-  }
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      const block = entry.target as HTMLElement;
-      block.classList.add("is-revealed");
-      gsap.fromTo(
-        block,
-        { autoAlpha: 0, y: 44 },
-        { autoAlpha: 1, y: 0, duration: 1.6, ease: "expo.out" },
-      );
-      observer.unobserve(block);
-    });
-  }, { rootMargin: "0px 0px -14% 0px", threshold: 0.12 });
-
-  blocks.forEach((block) => observer.observe(block));
-}
-
 export function initMotion() {
   const cleanupLenis = initLenis();
   const cleanupFooter = initFooterContactLabel();
   const cleanupIntro = initIntroAnimations();
   initProjectHeaderAnimation();
-  initMediaReveals();
   return () => {
     cleanupIntro();
     cleanupLenis();

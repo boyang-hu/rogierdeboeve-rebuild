@@ -21,8 +21,8 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1 and Phase 2 closed unless new source-owned evidence requires reopening.
-2. Start Phase 3 with a source/online audit of project-detail media, scroll, and next-project behavior.
-3. Convert Phase 3 findings into one small project-detail fix batch at a time.
+2. Continue Phase 3 after the first source-backed project-detail shell/media DOM alignment batch.
+3. Convert the remaining Phase 3 findings into one small project-detail fix batch at a time.
 4. Move to Phase 4 only after project-detail media and route behavior are clean or explicitly guarded.
 5. Keep Phase 1 WebGL and Phase 2 Home interaction probes as regression gates when shared paths change.
 
@@ -48,7 +48,7 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
-| 3. Project detail media | Next active lane | Audit project pages against source/online, then close media sizing/playback, scroll-state, next-project, and project route behavior. |
+| 3. Project detail media | Active; first shell/media DOM batch closed on 2026-07-07 | Close remaining scroll-state, next-project state switching, custom scrollbar, and project route behavior against source/online. |
 | 4. About and auxiliary pages | Pending with partial guardrails | Start after Phase 3 is clean or guarded. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
@@ -128,6 +128,39 @@ Required validation:
 - Desktop/mobile output probes.
 - Thumb spotlight probe.
 - Project media probe.
+
+## Phase 3 Active Record
+
+### Closed: Project detail shell/media DOM source alignment
+
+Goal: make project-detail pages structurally source-shaped before deeper scroll and route behavior work.
+
+Current read:
+
+- Source project root is only `div[data-view="project"].ui-project[data-project]`; rebuild no longer adds project-private data attributes or `data-webgl-project`.
+- Source `.ui-project-header`, `.c-link` hover shell, `.ui-project-text`, content grid wrappers, info item wrappers, desktop/mobile media roots, next-project wrapper, and scroll CTA grid are now mirrored in the Astro template.
+- Source desktop media tracks are empty `[data-media]` elements with `data-media-src`, `data-media-width`, `data-media-height`, and no `data-media-type`.
+- Source mobile fallback videos are DOM videos with `autoplay loop muted playsinline` and inline `object-fit: cover; width: 100%; height: 100%;`.
+- Source CSS owns the project header/content/media/next geometry and responsive utilities; rebuild-only mobile media shadows, filters, and `data-mobile-media` reveal hooks were removed from the project path.
+- Project and next-project WebGL payloads now come from local project data by slug, matching source ownership where DOM exposes only the slug.
+- Project-view darkness now uses `darkenDetail`; Home keeps `darkenOverview`.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase3-project-media-probe node scripts/probe-project-media.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-phase3-output-color-probe node scripts/probe-output-color.mjs`
+- `node scripts/audit-renderer-output.mjs`
+- Build-output DOM assertion: 30/30 passed for `gc-2026` and `hashgraph-vc`.
+
+Remaining Phase 3 queue:
+
+1. Audit and align project-detail scroll-state visuals owned by source `RD`.
+2. Audit and align source custom scrollbar behavior owned by `wD`.
+3. Audit and align next-project state switching owned by source `CD`, including bottom-of-page color/media transitions.
+4. Audit project-to-project, project-to-Home, and project-to-About route behavior against source transitions.
+5. Re-run project media, output color/state, renderer audit, and focused DOM assertions after each production batch.
 
 ## Watchlist
 

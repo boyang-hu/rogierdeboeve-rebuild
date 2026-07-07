@@ -3,7 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Button from "../components/Button.astro";
 import Footer from "../components/Footer.astro";
 import MediaBlock from "../components/MediaBlock.astro";
-import { getNextProject, getProjectBySlug, projects, thumbSrc } from "../data/site";
+import { getNextProject, getProjectBySlug, projects } from "../data/site";
 
 export function getStaticPaths() {
   return projects.map((project) => ({
@@ -19,136 +19,138 @@ if (!project) {
 }
 const nextProject = getNextProject(project);
 const [hero, ...restMedia] = project.data.content;
-const colorValue = (value?: string) => {
-  if (!value) return undefined;
-  return value.startsWith("#") ? value : `#${value}`;
-};
-const projectColor = colorValue(project.data.colors.primary) ?? "#bcbcbc";
-const projectSecondary = colorValue(project.data.colors.secondary) ?? projectColor;
-const projectMedia = colorValue(project.data.colors.media) ?? projectColor;
-const projectBlocks = colorValue(project.data.colors.blocks);
-const nextProjectColor = colorValue(nextProject.data.colors.primary) ?? "#bcbcbc";
-const nextProjectSecondary = colorValue(nextProject.data.colors.secondary) ?? nextProjectColor;
-const nextProjectMedia = colorValue(nextProject.data.colors.media) ?? nextProjectColor;
 ---
 
 <BaseLayout title={`${project.data.title} - Rogier de Boevé`} description={project.data.description.replace(/<[^>]+>/g, "")}>
-  <section
-    data-view="project"
-    class="ui-project"
-    data-project={project.data.slug}
-    data-webgl-project
-    data-color={projectColor}
-    data-secondary={projectSecondary}
-    data-invert={colorValue(project.data.colors.invert)}
-    data-media-color={projectMedia}
-    data-blocks={projectBlocks}
-    data-thumb={thumbSrc(project)}
-    data-darkness={project.data.darkenDetail}
-    data-overview-darkness={project.data.darkenDetail}
-    data-thumb-darkness={project.data.thumbnail.darkness}
-    data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
-    data-saturation={project.data.saturation}
-    data-thumb-saturation={project.data.thumbnail.saturation}
-    data-contrast={project.data.contrast}
-    data-mouse-lightness={project.data.thumbnail.mouseLightness}
-    data-ambient={project.data.ambient}
-    data-spotlight={project.data.spotlight}
-    style={`--project-color:${projectColor};--project-secondary:${projectSecondary};--project-media:${projectMedia}`}
-  >
+  <div data-view="project" class="ui-project" data-project={project.data.slug}>
     <div class="ui-project-header c-color">
       <div class="wrap">
         <a href="/" data-transition="work" class="c-link" data-sound data-sound-click>
-          <span class="c-link-icon" aria-hidden="true">
+          <span class="c-link-icon">
             <span class="c-link-icon-bg">
-              <svg class="c-icon-arrow" width="28" height="28" viewBox="0 0 28 28">
-                <rect x="0.5" y="0.5" width="27" height="27" fill="none" stroke="currentColor" stroke-dasharray="2 2"></rect>
+              <svg class="c-icon-arrow" width="28" height="28" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" xml:space="preserve">
+                <rect class="c-icon-arrow-border" x="0" y="0" width="28" height="28" fill="transparent" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1"></rect>
+                <rect class="c-icon-arrow-border-hover" x="0" y="0" width="28" height="28" fill="transparent" stroke="currentColor" stroke-width="1"></rect>
               </svg>
             </span>
             <span class="c-link-icon-static">
-              <svg class="c-icon-arrow" width="28" height="28" viewBox="0 0 28 28">
-                <g fill="currentColor">
-                  <rect rx="1" x="11.3" y="11" width="2" height="2"></rect>
-                  <rect rx="1" x="14.7" y="13" width="2" height="2"></rect>
-                  <rect rx="1" x="11.3" y="15" width="2" height="2"></rect>
+              <svg class="c-icon-arrow" width="28" height="28" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" xml:space="preserve">
+                <g class="c-icon-arrow-shape" fill="currentColor">
+                  <rect rx="1" ry="1" x="11.3" y="11" width="2" height="2"></rect>
+                  <rect rx="1" ry="1" x="14.7" y="13" width="2" height="2"></rect>
+                  <rect rx="1" ry="1" x="11.3" y="15" width="2" height="2"></rect>
+                </g>
+              </svg>
+            </span>
+            <span class="c-link-icon-hover">
+              <svg class="c-icon-arrow" width="28" height="28" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" xml:space="preserve">
+                <g class="c-icon-arrow-shape" fill="currentColor">
+                  <rect rx="1" ry="1" x="11.3" y="11" width="2" height="2"></rect>
+                  <rect rx="1" ry="1" x="14.7" y="13" width="2" height="2"></rect>
+                  <rect rx="1" ry="1" x="11.3" y="15" width="2" height="2"></rect>
                 </g>
               </svg>
             </span>
           </span>
-          <span class="c-link-text">To index</span>
+          <span class="c-link-text">
+            <span class="c-link-text-outer">
+              <span class="c-link-text-inner">
+                <span class="c-link-text-static"><span>To index</span></span>
+                <span class="c-link-text-hover"><span>To index</span></span>
+              </span>
+            </span>
+          </span>
         </a>
       </div>
     </div>
 
     <div class="wrap wrap--md">
-      <div class="grid grid-cols-24 gap-24">
-        <div class="col-span-20 col-start-5 ui-project-content">
+      <div class="lg:grid grid-cols-24 gap-24">
+        <div class="col-span-24 lg:col-span-20 lg:col-start-5 ui-project-content">
           <div class="ui-project-content-header">
-            <div class="grid grid-cols-20 gap-24">
-              <div class="col-span-6">
-                <h1 class="ts-2 c-color"><span>{project.data.title}</span></h1>
-              </div>
-              <div class="col-span-12 col-start-7">
-                <p class="ts-p c-color" set:html={project.data.description}></p>
-              </div>
-            </div>
+            <div class="ui-project-text">
+              <div class="lg:grid lg:grid-cols-20 gap-24">
+                <div class="col-span-24 lg:col-span-6">
+                  <h2 class="ts-2 c-color"><span>{project.data.title}</span></h2>
+                </div>
 
-            {hero && <MediaBlock item={hero} class="ui-project-media-mobile" mode="mobile" />}
+                {hero && <MediaBlock item={hero} class="ui-project-media-mobile lg:hidden" mode="mobile" />}
 
-            <div class="ui-project-info grid grid-cols-20 gap-24">
-              <div class="col-span-6">
-                {project.data.url && <Button text="View live" href={project.data.url} target="_blank" rel="noopener" />}
+                <div class="col-span-24 lg:col-span-12 lg:col-start-7 grid grid-cols-12 gap-x-24 c-color" data-split-articles>
+                  <p class="ts-p col-span-12 lg:col-span-11 xl:col-span-10" set:html={project.data.description}></p>
+                </div>
               </div>
-              <div class="ui-project-info-items col-span-12 col-start-7 c-color">
-                {project.data.client && <div class="ui-project-info-item"><span>Client:</span><span>{project.data.client}</span></div>}
-                {project.data.agency && <div class="ui-project-info-item"><span>Agency:</span><span>{project.data.agency}</span></div>}
-                {project.data.role && <div class="ui-project-info-item"><span>Role:</span><span>{project.data.role}</span></div>}
-                {project.data.year && <div class="ui-project-info-item"><span>Year:</span><span>{project.data.year}</span></div>}
+              <div class="ui-project-info lg:grid lg:grid-cols-20 gap-24">
+                <div class="tablet:hidden lg:col-span-6">
+                  <div class="ui-project-links c-color">
+                    {project.data.url && <Button text="View live" href={project.data.url} target="_blank" rel="noopener" />}
+                  </div>
+                </div>
+                <div class="ui-project-info-items lg:col-start-7 lg:col-span-12 c-color">
+                  {project.data.client && (
+                    <div class="ui-project-info-item">
+                      <div class="ui-project-info-item-title"><span>Client:</span></div>
+                      <div class="ui-project-info-item-description"><span>{project.data.client}</span></div>
+                    </div>
+                  )}
+                  {project.data.agency && (
+                    <div class="ui-project-info-item">
+                      <div class="ui-project-info-item-title"><span>Agency:</span></div>
+                      <div class="ui-project-info-item-description"><span>{project.data.agency}</span></div>
+                    </div>
+                  )}
+                  {project.data.role && (
+                    <div class="ui-project-info-item">
+                      <div class="ui-project-info-item-title"><span>Role:</span></div>
+                      <div class="ui-project-info-item-description"><span>{project.data.role}</span></div>
+                    </div>
+                  )}
+                  {project.data.year && (
+                    <div class="ui-project-info-item">
+                      <div class="ui-project-info-item-title"><span>Year:</span></div>
+                      <div class="ui-project-info-item-description"><span>{project.data.year}</span></div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="ui-project-media-items ui-project-media-items--desktop grid grid-cols-20 gap-24">
+          <div class="ui-project-media-items lg:grid lg:grid-cols-20 tablet:hidden">
             {project.data.content.map((item, index) => (
-              <MediaBlock item={item} class={index === 0 ? "ui-project-media col-span-12 col-start-7" : "ui-project-media col-span-18"} />
+              <MediaBlock item={item} class={index === 0 ? "ui-project-media col-span-24 lg:col-start-7 lg:col-span-12" : "ui-project-media col-span-24 lg:col-span-18"} />
             ))}
           </div>
 
-          <div class="ui-project-media-items ui-project-media-items--mobile">
+          <div class="ui-project-media-items lg:hidden">
             {restMedia.map((item) => (
-              <MediaBlock item={item} class="ui-project-media-mobile" mode="mobile" />
+              <MediaBlock item={item} class="ui-project-media-mobile undefined" mode="mobile" />
             ))}
           </div>
 
-          <div
-            class="ui-project-next"
-            data-project-slug={nextProject.data.slug}
-            data-color={nextProjectColor}
-            data-secondary={nextProjectSecondary}
-            data-invert={colorValue(nextProject.data.colors.invert)}
-            data-media-color={nextProjectMedia}
-            data-saturation={nextProject.data.saturation}
-            data-contrast={nextProject.data.contrast}
-            data-ambient={nextProject.data.ambient}
-          >
-            <a href={`/${nextProject.data.slug}/`} class="ui-project-next-link c-color">
-              <span class="ts-m">Next project</span>
-              <h2 class="ts-3">{nextProject.data.title}</h2>
-              {nextProject.data.content[0] && (
-                <>
-                  <MediaBlock item={nextProject.data.content[0]} class="ui-project-next-image" parallax="bottom" />
-                  <MediaBlock item={nextProject.data.content[0]} class="ui-project-media-mobile ui-project-next-mobile" mode="mobile" />
-                </>
-              )}
-            </a>
+          <div class="ui-project-next" data-project-slug={nextProject.data.slug}>
+            <div class="lg:grid grid-cols-20 gap-24">
+              <div class="lg:col-span-6 lg:col-start-10">
+                <a href={`/${nextProject.data.slug}/`} class="ui-project-next-link c-color">
+                  <span class="ts-m">Next project</span>
+                  <h3 class="ts-3">{nextProject.data.title}</h3>
+                  {nextProject.data.content[0] && (
+                    <>
+                      <MediaBlock item={nextProject.data.content[0]} class="ui-project-next-image tablet:hidden" parallax="bottom" />
+                      <MediaBlock item={nextProject.data.content[0]} class="ui-project-media-mobile lg:hidden" mode="mobile" />
+                    </>
+                  )}
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
     <div class="c-scroll-cta c-color">
       <div class="wrap wrap--md">
-        <div class="grid grid-cols-24 gap-24">
-          <div class="col-span-8 col-start-5">
+        <div class="lg:grid grid-cols-24 gap-24">
+          <div class="lg:col-span-8 lg:col-start-5">
             <div class="c-scroll-cta-inner">
               <span class="c-scroll-cta-icon" aria-hidden="true">
                 <svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6">
@@ -168,5 +170,5 @@ const nextProjectMedia = colorValue(nextProject.data.colors.media) ?? nextProjec
       <div class="ui-scrollbar-thumb"><div class="ui-scrollbar-thumb-inner"></div></div>
       <div class="ui-scrollbar-total"></div>
     </div>
-  </section>
+  </div>
 </BaseLayout>

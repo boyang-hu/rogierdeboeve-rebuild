@@ -1,4 +1,6 @@
 import gsap from "gsap";
+import projectsData from "../data/projects.json";
+import type { Project } from "../types";
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -107,25 +109,60 @@ type RuntimeWorkState = {
 let runtimeWorkState: RuntimeWorkState | null = null;
 let currentProjectId: string | null = null;
 
+const colorValue = (value?: string) => {
+  if (!value) return undefined;
+  return value.startsWith("#") ? value : `#${value}`;
+};
+
+const dataValue = (value?: string | number | null) => (value == null ? undefined : String(value));
+
+const projectPayloadsBySlug = new Map(
+  (projectsData as Project[]).map((project) => [
+    project.data.slug,
+    {
+      slug: project.data.slug,
+      color: colorValue(project.data.colors.primary),
+      secondary: colorValue(project.data.colors.secondary),
+      invert: colorValue(project.data.colors.invert),
+      mediaColor: colorValue(project.data.colors.media),
+      thumb: `/images/thumbs/${project.data.thumbnail.src}.${project.data.thumbnail.type ?? "webp"}`,
+      blocks: colorValue(project.data.colors.blocks),
+      ambient: dataValue(project.data.ambient),
+      darkness: dataValue(project.data.darkenDetail),
+      overviewDarkness: dataValue(project.data.darkenOverview),
+      thumbDarkness: dataValue(project.data.thumbnail.darkness),
+      darknessColor: colorValue(project.data.thumbnail.darknessColor),
+      saturation: dataValue(project.data.saturation),
+      thumbSaturation: dataValue(project.data.thumbnail.saturation),
+      contrast: dataValue(project.data.contrast),
+      mouseLightness: dataValue(project.data.thumbnail.mouseLightness),
+      spotlight: dataValue(project.data.spotlight),
+    },
+  ] as const),
+);
+
 function projectPayloadFromElement(element?: HTMLElement | null) {
+  const slug = element?.dataset.slug ?? element?.dataset.project ?? element?.dataset.projectSlug;
+  const fallback = slug ? projectPayloadsBySlug.get(slug) : undefined;
+
   return {
-    slug: element?.dataset.slug ?? element?.dataset.project,
-    color: element?.dataset.color,
-    secondary: element?.dataset.secondary,
-    invert: element?.dataset.invert,
-    mediaColor: element?.dataset.mediaColor,
-    thumb: element?.dataset.thumb,
-    blocks: element?.dataset.blocks,
-    ambient: element?.dataset.ambient,
-    darkness: element?.dataset.darkness,
-    overviewDarkness: element?.dataset.overviewDarkness,
-    thumbDarkness: element?.dataset.thumbDarkness,
-    darknessColor: element?.dataset.darknessColor,
-    saturation: element?.dataset.saturation,
-    thumbSaturation: element?.dataset.thumbSaturation,
-    contrast: element?.dataset.contrast,
-    mouseLightness: element?.dataset.mouseLightness,
-    spotlight: element?.dataset.spotlight,
+    slug,
+    color: element?.dataset.color ?? fallback?.color,
+    secondary: element?.dataset.secondary ?? fallback?.secondary,
+    invert: element?.dataset.invert ?? fallback?.invert,
+    mediaColor: element?.dataset.mediaColor ?? fallback?.mediaColor,
+    thumb: element?.dataset.thumb ?? fallback?.thumb,
+    blocks: element?.dataset.blocks ?? fallback?.blocks,
+    ambient: element?.dataset.ambient ?? fallback?.ambient,
+    darkness: element?.dataset.darkness ?? fallback?.darkness,
+    overviewDarkness: element?.dataset.overviewDarkness ?? fallback?.overviewDarkness,
+    thumbDarkness: element?.dataset.thumbDarkness ?? fallback?.thumbDarkness,
+    darknessColor: element?.dataset.darknessColor ?? fallback?.darknessColor,
+    saturation: element?.dataset.saturation ?? fallback?.saturation,
+    thumbSaturation: element?.dataset.thumbSaturation ?? fallback?.thumbSaturation,
+    contrast: element?.dataset.contrast ?? fallback?.contrast,
+    mouseLightness: element?.dataset.mouseLightness ?? fallback?.mouseLightness,
+    spotlight: element?.dataset.spotlight ?? fallback?.spotlight,
   };
 }
 
@@ -1077,38 +1114,8 @@ function initScrollState() {
   };
 }
 
-function initProjectMedia() {
-  const videos = document.querySelectorAll<HTMLVideoElement>(".media-block video");
-  if (!videos.length) return () => {};
-
-  const playVideo = (video: HTMLVideoElement) => {
-    video.play().catch(() => {});
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      const video = entry.target as HTMLVideoElement;
-      if (entry.isIntersecting) {
-        playVideo(video);
-      } else {
-        video.pause();
-      }
-    });
-  }, { threshold: 0.25 });
-
-  videos.forEach((video) => {
-    video.muted = true;
-    video.playsInline = true;
-    observer.observe(video);
-  });
-  return () => {
-    observer.disconnect();
-    videos.forEach((video) => video.pause());
-  };
-}
-
 function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
-  const project = document.querySelector<HTMLElement>("[data-webgl-project]");
+  const project = document.querySelector<HTMLElement>("[data-view='project'][data-project]");
   const next = document.querySelector<HTMLElement>(".ui-project-next[data-project-slug]");
   if (!project || !next) return;
 
@@ -1165,7 +1172,7 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
 }
 
 function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
-  const project = document.querySelector<HTMLElement>("[data-webgl-project]");
+  const project = document.querySelector<HTMLElement>("[data-view='project'][data-project]");
   if (!project) return () => {};
 
   const cleanups: Array<() => void> = [];
@@ -1364,7 +1371,7 @@ function boot() {
   };
   const initWebglForCurrentPage = (callbacks: Array<() => void>) => {
     const active = document.querySelector<HTMLElement>("[data-project-card].is-active");
-    const project = document.querySelector<HTMLElement>("[data-webgl-project]");
+    const project = document.querySelector<HTMLElement>("[data-view='project'][data-project]");
     const payload = projectPayloadFromElement(active ?? project);
     applyActiveColor(payload.color);
     if (document.querySelector("[data-view='home']")) {
@@ -1415,7 +1422,6 @@ function boot() {
     cleanupPageCallbacks.push(initButtons());
     window.dispatchEvent(new CustomEvent("rd:bind-sound-items"));
     cleanupPageCallbacks.push(initWorkPreview(() => webgl, navigateTo));
-    cleanupPageCallbacks.push(initProjectMedia());
     cleanupPageCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
     cleanupPageCallbacks.push(initProjectLeave(() => webgl));
     cleanupPageCallbacks.push(initAboutLeave(() => webgl, navigateTo));

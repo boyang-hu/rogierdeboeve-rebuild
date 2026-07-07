@@ -5770,8 +5770,8 @@ export class WebGLBackdrop {
   private applyProjectLook(payload: ProjectPayload) {
     const ambientIntensity = numeric(payload.ambient, 0.5);
     const ambientColor = ambientIntensity < 0 && payload.invert ? payload.invert : payload.secondary;
-    const sceneDarkness = payload.overviewDarkness ?? payload.darkness;
     const isProjectView = document.body.classList.contains("is-project");
+    const sceneDarkness = isProjectView ? payload.darkness : payload.overviewDarkness ?? payload.darkness;
     this.activeSlug = payload.slug ?? this.activeSlug;
     this.setAmbientLight(ambientColor, ambientIntensity);
     this.setMainColor(payload.color);

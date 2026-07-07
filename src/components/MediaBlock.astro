@@ -16,22 +16,21 @@ const jpg = item.src.replace(/\.(webp|jpg|jpeg)$/i, ".jpg");
 
 {mode === "track" ? (
   <div
-    class={`media-block ${className}`}
+    class={className}
     data-media
     data-media-parallax={parallax}
     data-media-src={item.src}
-    data-media-type={item.type}
     data-media-width={width}
     data-media-height={height}
-    style={`aspect-ratio:${ratio}`}
+    style={`aspect-ratio: ${ratio};`}
   />
 ) : (
-  <div class={`media-block ${className}`} data-mobile-media style={`aspect-ratio:${ratio}`}>
+  <div class={className} style={`aspect-ratio: ${ratio};`}>
     {item.type === "video" ? (
-      <video src={item.src} muted loop playsinline preload="metadata"></video>
+      <video src={item.src} autoplay muted loop playsinline style="object-fit: cover; width: 100%; height: 100%;"></video>
     ) : (
       <picture>
-        <source srcset={item.src} type={item.src.endsWith(".webp") ? "image/webp" : "image/jpeg"} />
+        <source srcset={item.src} type="image/webp" />
         <source srcset={jpg} type="image/jpeg" />
         <img src={item.src} loading="lazy" alt={item.alt} />
       </picture>
