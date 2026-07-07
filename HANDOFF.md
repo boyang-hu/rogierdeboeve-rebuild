@@ -8,27 +8,37 @@ Last updated: 2026-07-07
 2. `PHASE1_AUDIT.md` - current Phase 1 source-parity audit.
 3. `REBUILD_PLAN.md` - execution order and validation matrix.
 
-Historical append-only timelines are not repeated in these docs. Use git only when older archaeology is needed:
+These docs are intentionally state-based, not append-only timelines:
+
+- `HANDOFF.md` answers "where are we and what should happen next?"
+- `PHASE1_AUDIT.md` answers "what is still blocking Phase 1, and what source evidence is already closed?"
+- `REBUILD_PLAN.md` answers "what order should the next batches run in, and how do we validate them?"
+
+Use git only when older archaeology is needed:
 
 ```sh
 git show 9986590:PHASE1_AUDIT.md
 git show 9986590:REBUILD_PLAN.md
 ```
 
-## Current Snapshot
+## Resume Snapshot
 
-- Latest production source-alignment batch: `9986590 Align about destroy spotlight map ownership`.
-- Active phase: Phase 1, Home WebGL source parity.
-- Phase 1 status: open, roughly 65-70% complete.
-- Current working tree expectation: clean unless a new batch is in progress.
-- Local service expectation: no dev server should be left running after handoff.
+| Item | Current value |
+| --- | --- |
+| Active phase | Phase 1, Home WebGL source parity |
+| Phase 1 status | Open, roughly 65-70% complete |
+| Last code-changing source batch | `9986590 Align about destroy spotlight map ownership` |
+| Last investigation/doc anchor | `53b13f4 Narrow Phase 1 render-manager follow-up` |
+| Expected worktree | Clean unless a new batch is in progress |
+| Expected local service | Stopped after review |
+| Next production batch | Floor/environment distribution attribution |
 
 Estimated parity:
 
 | Area | Estimate | Read |
 | --- | ---: | --- |
 | Architecture/lifecycle | 75-80% | Broad scene structure, route ownership, probes, and source guardrails are in place. |
-| Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; the full `kA/Lu/I1` transfer graph remains open. |
+| Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is now a guarded follow-up, not the first suspect. |
 | Final Home visual parity | 55-65% | Home still diverges in spotlight/thumb projection feel and floor/environment distribution. |
 
 ## Source Of Truth
@@ -55,23 +65,14 @@ Estimated parity:
   - `scripts/probe-about-scroll-opacity.mjs`
   - `scripts/probe-project-media.mjs`
 
-## Current Evidence
+## Evidence Location
 
-Latest production batch, `9986590`, aligned source `TD` about destroy spotlight-map ownership:
+Use `PHASE1_AUDIT.md` for the active evidence set:
 
-- `TD.addEvents()` binds `J.workScene.spotLight.map` to the character composite texture after the `100ms` delay.
-- `TD.animateOut()` and `TD.destroy()` do not restore the Home thumb composite map.
-- `SD.init()` owns the later Home map bind.
-- Runtime probes and renderer audit now guard against reintroducing Home map assignment in about out/destroy.
-
-Latest local investigation after that batch:
-
-- `VA-work` shader dump matched the source-shaped vertex and fragment text with zero recorded deltas.
-- Work composite, main pre-composite, thumb, floor, environment, media, and fluid shaders were source-shaped.
-- Source bundle light chunks and local Three light chunks matched for the relevant spotlight-map path.
-- Source `I1` default target behavior was traced: `renderToScreen=true` renders C1 directly to the canvas, and `renderTargetComposite` is unused in the default visible Home path.
-- Source `nD` delayed C1 bindings were traced: after the `100ms` delay, `tWork`, `tMedia`, and the initial work mouse-simulation output bind once.
-- Full renderer audit currently has zero recursive false/null findings. Browser output and thumb probes pass with source-shaped `I1`, `T1/x1`, floor-reflection, and environment guardrails.
+- Current blockers and their priority order.
+- Source edges already closed.
+- Narrowed non-primary suspects.
+- Phase 1 closeout criteria.
 
 ## Next Action
 

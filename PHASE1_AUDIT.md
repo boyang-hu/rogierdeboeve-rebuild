@@ -6,7 +6,7 @@ Last updated: 2026-07-07
 
 This is the canonical active audit for Phase 1. It records current parity, open blockers, closed source edges, and closeout criteria.
 
-It is not an append-only work log. The old long-form timelines remain available in git when needed:
+It is not an append-only work log. Blockers are ordered by current priority, not by discovery date. The old long-form timelines remain available in git when needed:
 
 ```sh
 git show 9986590:PHASE1_AUDIT.md
@@ -38,33 +38,33 @@ Phase 1 is open. Earlier closeout language accepted too many visible deviations;
 | Area | Estimate | Confidence | Current read |
 | --- | ---: | --- | --- |
 | Architecture/lifecycle | 75-80% | Strong | Broad scene, route, state, and probe surfaces are source-derived. |
-| Shader/render-manager parity | 65-75% | Medium | Many shader surfaces and pass edges are aligned; full transfer interpretation remains open. |
+| Shader/render-manager parity | 65-75% | Medium | Many shader surfaces and pass edges are aligned; `kA/Lu/I1` is narrowed to a guarded follow-up. |
 | Final Home visual parity | 55-65% | Medium-low | Home still diverges in projection feel and floor/environment blend. |
 | Runtime stability | Good | Strong | Build, renderer audit, and browser probes are currently clean. |
 
 ## Active Blockers
 
-1. Spotlight/thumb projection transfer feel.
+1. Floor/environment residuals.
+   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
+   - Open: hard horizon/fog-bed distribution still differs. Do not tune brightness or fog visually without source ownership evidence.
+
+2. Spotlight/thumb projection transfer feel.
    - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about previous map, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
    - Open: projected thumb brightness, depth, content transfer, and timing still do not feel source-exact.
 
-2. `kA/Lu/I1` composite and transfer interpretation.
+3. `kA/Lu/I1` composite and transfer interpretation.
    - Guarded: many source-shaped shader surfaces, pass settings, optional blur chain, resize ownership, runtime uniform order, GPU/LOW_RES bridge, and main/work camera surfaces.
    - Narrowed: source `I1` default `renderToScreen=true` path renders C1 directly to screen; `renderTargetComposite` is retained but unused for the default visible Home path.
    - Narrowed: source `nD` delayed C1 bindings are one-time `tWork`, `tMedia`, and initial work mouse-simulation output bindings after the `100ms` delay.
    - Open: keep this as a regression guardrail, but do not treat default render-target transfer as the current primary suspect unless new evidence contradicts the audit.
 
-3. Floor/environment residuals.
-   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
-   - Open: hard horizon/fog-bed distribution still differs. Do not tune brightness or fog visually without source ownership evidence.
-
 4. Mouse/fluid interaction parity.
    - Guarded: `Ka` mouse simulation constructor/update ownership, raycast hit-UV ownership, main-fluid pointer/diff ownership, bounded pass geometry, and interactive probe coverage.
    - Open: final feel remains a regression concern when touching interaction paths.
 
-## Latest Evidence
+## Current Evidence Anchors
 
-Production batch `9986590 Align about destroy spotlight map ownership` closed the latest source edge:
+Last code-changing source edge: `9986590 Align about destroy spotlight map ownership`.
 
 - Source `TD.addEvents()` binds `J.workScene.spotLight.map` to `J.characterScene.renderManager.renderTargetComposite.texture` after the `100ms` delay.
 - Source `TD.animateOut()` only tweens about reveal uniforms and calls `Se.setSpotLightIntensity(0)`.
@@ -72,7 +72,7 @@ Production batch `9986590 Align about destroy spotlight map ownership` closed th
 - Neither source method restores `J.workScene.spotLight.map` to the Home thumb composite; `SD.init()` owns that later Home bind.
 - Rebuild about lifecycle probes and renderer audit now guard this ownership edge.
 
-Post-batch investigation showed:
+Most recent investigation narrowed `kA/Lu/I1` without changing production code:
 
 - `VA-work` shader dump matched source-shaped vertex and fragment text with zero recorded deltas.
 - `OA-work-composite`, `A1-pre-composite`, thumb, floor, environment, media, and fluid shaders were source-shaped.
@@ -84,7 +84,7 @@ Post-batch investigation showed:
 
 ## Closed Source Edges
 
-Keep this table short and current. For full historical detail, use the git version noted above.
+Keep this table short and current. It is a lookup table for recently closed edges, not the forward plan. For full historical detail, use the git version noted above.
 
 | Commit | Area | Closed edge |
 | --- | --- | --- |
@@ -122,9 +122,9 @@ These areas are still guarded, but should not be the first place to spend anothe
 
 Phase 1 can close only when:
 
+- Floor/environment/fog-bed residuals are source-fixed or explicitly proven to be bridge constraints.
 - Remaining spotlight/thumb projection differences are source-fixed or documented as unavoidable technical bridges.
 - `kA/Lu/I1` transfer/composite ownership is source-isomorphic enough that no known source mismatch remains in the active graph.
-- Floor/environment/fog-bed residuals are source-fixed or explicitly proven to be bridge constraints.
 - Home desktop/mobile, about, and project media probes pass.
 - Build, renderer audit, recursive false/null extraction, and `git diff --check` pass.
 - Documentation records the final source evidence and known bridge boundaries.
@@ -135,21 +135,22 @@ Default validation for a Phase 1 rendering batch:
 
 ```sh
 node --check src/client/webgl.ts
-node --check scripts/probe-output-color.mjs
-node --check scripts/probe-thumb-spotlight.mjs
-node --check scripts/probe-about-scroll-opacity.mjs
 node --check scripts/audit-renderer-output.mjs
 node scripts/audit-renderer-output.mjs > /tmp/rd-phase1-audit.json
 git diff --check
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 ```
 
-Browser probes should be selected by touched area:
+Syntax-check and run browser probes selected by touched area:
 
 ```sh
 PORT=5173 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
+node --check scripts/probe-output-color.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-output CDP_PORT=9301 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-output-color.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-thumb CDP_PORT=9302 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about CDP_PORT=9303 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-about-scroll-opacity.mjs
-CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-media CDP_PORT=9304 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-project-media.mjs
+node --check scripts/probe-project-media.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-media CDP_PORT=9303 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-project-media.mjs
+node --check scripts/probe-about-scroll-opacity.mjs
+CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about CDP_PORT=9304 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-about-scroll-opacity.mjs
 ```

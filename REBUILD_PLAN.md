@@ -4,7 +4,7 @@ Last updated: 2026-07-07
 
 ## Purpose
 
-This file is the forward execution plan. It does not track historical batch detail; closed source edges live in `PHASE1_AUDIT.md`, and quick resume context lives in `HANDOFF.md`.
+This file is the forward execution plan. It is ordered by execution priority, not chronology. It does not track historical batch detail; closed source edges live in `PHASE1_AUDIT.md`, and quick resume context lives in `HANDOFF.md`.
 
 ## Document Map
 
@@ -36,6 +36,8 @@ This file is the forward execution plan. It does not track historical batch deta
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
 ## Phase 1 Work Queue
+
+The first incomplete item is the next production batch unless new source evidence changes priority.
 
 1. Floor/environment distribution.
    - Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
@@ -79,19 +81,24 @@ git diff --check
 ASTRO_TELEMETRY_DISABLED=1 npm run build
 ```
 
-Run relevant browser probes while a local server is active:
+Syntax-check and run relevant browser probes while a local server is active:
 
 ```sh
 PORT=5173 ENABLE_CONTENT_JSON_FALLBACK=1 node scripts/serve.mjs
+node --check scripts/probe-output-color.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-output CDP_PORT=9301 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-output-color.mjs
+node --check scripts/probe-thumb-spotlight.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-thumb CDP_PORT=9302 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-thumb-spotlight.mjs
+node --check scripts/probe-project-media.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-media CDP_PORT=9303 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-project-media.mjs
 ```
 
 Add these when relevant:
 
 ```sh
+node --check scripts/probe-about-scroll-opacity.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-about CDP_PORT=9304 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-about-scroll-opacity.mjs
+node --check scripts/probe-interactive-mouse.mjs
 CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome OUT_DIR=/tmp/rd-mouse CDP_PORT=9305 REBUILD_URL=http://127.0.0.1:5173 node scripts/probe-interactive-mouse.mjs
 ```
 
