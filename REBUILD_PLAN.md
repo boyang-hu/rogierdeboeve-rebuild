@@ -21,8 +21,8 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1, Phase 2, and Phase 3 closed unless new source-owned evidence requires reopening.
-2. Keep the closed Phase 4 About shell/footer/credits modal and title/intro/footer animation batches closed unless a concrete source-owned mismatch appears.
-3. Continue Phase 4 with About route entry/leave, scroll CTA, custom scrollbar, remaining auxiliary lifecycle, and mobile About layout.
+2. Keep the closed Phase 4 About shell/footer/credits modal, title/intro/footer animation, and route leave/entry lifecycle batches closed unless a concrete source-owned mismatch appears.
+3. Continue Phase 4 with About scroll CTA, custom scrollbar, remaining auxiliary lifecycle, and mobile About layout.
 4. Convert Phase 4 findings into one scoped source-backed fix batch at a time.
 5. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project-detail probes as regression gates when shared paths change.
 6. Move to Phase 5 only after About/auxiliary page parity is clean or explicitly guarded.
@@ -50,7 +50,7 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
 | 3. Project detail media/routes | Closed/guarded on 2026-07-07 | Reopen only with concrete project-detail media, scroll, or route mismatch evidence. |
-| 4. About and auxiliary pages | Active; shell/modal and title/intro/footer animation batches closed on 2026-07-07 | Continue auditing About route entry/leave, scroll CTA, custom scrollbar, mobile layout, and remaining auxiliary WebGL behavior against source. |
+| 4. About and auxiliary pages | Active; shell/modal, title/intro/footer animation, and route leave/entry lifecycle batches closed on 2026-07-07 | Continue auditing About scroll CTA, custom scrollbar, mobile layout, and remaining auxiliary WebGL behavior against source. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
@@ -249,14 +249,40 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/ OUT_DIR=/tmp/rd-phase4-split-output-probe CDP_PORT=9443 node scripts/probe-output-color.mjs`
 - `OUT_DIR=/tmp/rd-phase4-split-renderer-audit node scripts/audit-renderer-output.mjs`
 
+### Closed: About route leave/entry lifecycle source alignment
+
+Goal: close the About route entry/leave queue item against source router and view lifecycle behavior.
+
+Current read:
+
+- Source `Sg.leave()` calls the current view `onLeave()` before transition leave; source `sl.onLeave()` fades the view and calls component `animateOut` hooks.
+- Source `BD` default transition emits `WORK_GALLERY_OUT` only when leaving Home, waits `500ms`, then enters the next view after `100ms` and emits `ANIMATE_IN`.
+- Source `zD` project transition always emits `WORK_GALLERY_OUT`; source `HD` work transition only waits and enters.
+- Rebuild now runs current view component leave from the unified router path, not from page-local link handlers.
+- About visual/floating leave is now covered for About header/nav links, page links, and popstate paths.
+- Project visual leave is now covered for project header/nav links, project page links, and popstate paths.
+- Home work-gallery out remains transition-mode owned for Home/default and project CTA paths.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Focused route CDP probe:
+  - Home -> About, About -> Work, and Project -> About all reached the expected path/view/html class.
+  - About visual became visible on About entry and false after About -> Work.
+  - Runtime exceptions: `0`.
+  - Material network failures: `0`; canceled project media loads during navigation were filtered as expected media aborts.
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-route-about-scroll-probe CDP_PORT=9447 node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/ OUT_DIR=/tmp/rd-phase4-route-output-probe CDP_PORT=9448 node scripts/probe-output-color.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase4-route-project-media-probe CDP_PORT=9449 node scripts/probe-project-media.mjs`
+
 ### Next Phase 4 Queue
 
 Patch only source-owned findings:
 
-1. Audit About route entry/leave behavior for Home <-> About and project -> About now that Phase 3 router behavior is guarded.
-2. Audit About scroll CTA fade, custom scrollbar drag, and mobile About layout against source CSS and `wD`.
-3. Audit any remaining auxiliary visual lifecycle edge against source `TD` and `Fg`; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline guard.
-4. Validate each production batch with build, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
+1. Audit About scroll CTA fade, custom scrollbar drag, and mobile About layout against source CSS and `wD`.
+2. Audit any remaining auxiliary visual lifecycle edge against source `TD` and `Fg`; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline guard.
+3. Validate each production batch with build, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
 
 ## Watchlist
 

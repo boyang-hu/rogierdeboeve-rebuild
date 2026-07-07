@@ -306,19 +306,20 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
   webgl?.hideWorkScene?.();
 }
 
-function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike, navigate?: AppNavigate) {
-  if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
-  window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
-  if (navigate) navigate(url, "home");
-  else window.setTimeout(() => window.location.assign(url), 500);
-}
-
 function animateCurrentViewOut() {
   if (prefersReducedMotion()) return;
   const view = document.querySelector<HTMLElement>("[data-view]");
   if (!view) return;
   gsap.killTweensOf(view);
   gsap.to(view, { opacity: 0, duration: 0.5, ease: "linear" });
+}
+
+function runCurrentViewComponentLeave(webgl?: WebGLLike) {
+  const view = document.querySelector<HTMLElement>("[data-view]");
+  const viewName = view?.dataset.view;
+  // Source sl.onLeave() runs component animateOut hooks before the transition leave delay.
+  if (viewName === "about") webgl?.animateAboutVisualOut?.();
+  if (viewName === "project") webgl?.projectLeave?.();
 }
 
 function dispatchSoundMode(enabled: boolean) {
@@ -598,7 +599,7 @@ function initMenu() {
   };
 }
 
-function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
+function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
   document.documentElement.classList.remove("is-work-gallery-leaving");
   const cards = document.querySelectorAll<HTMLElement>("[data-project-card]");
   const progressItems = document.querySelectorAll<HTMLElement>("[data-progress-slug]");
@@ -1303,68 +1304,6 @@ function initProjectNextState(getWebgl: () => WebGLLike | undefined) {
   };
 }
 
-function initProjectLeave(getWebgl: () => WebGLLike | undefined) {
-  const project = document.querySelector<HTMLElement>("[data-view='project'][data-project]");
-  if (!project) return () => {};
-
-  const cleanups: Array<() => void> = [];
-  project.querySelectorAll<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])").forEach((link) => {
-    const onClick = (event: MouseEvent) => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
-      const target = new URL(link.href, window.location.href);
-      if (target.origin !== window.location.origin || target.href === window.location.href) return;
-      if (event.defaultPrevented) return;
-      getWebgl()?.projectLeave?.();
-    };
-    link.addEventListener("click", onClick);
-    cleanups.push(() => link.removeEventListener("click", onClick));
-  });
-  return () => cleanups.splice(0).forEach((cleanup) => cleanup());
-}
-
-function initAboutLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
-  const about = document.querySelector<HTMLElement>("[data-view='about']");
-  if (!about) return () => {};
-
-  const cleanups: Array<() => void> = [];
-  about.querySelectorAll<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])").forEach((link) => {
-    const onClick = (event: MouseEvent) => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
-      const target = new URL(link.href, window.location.href);
-      if (target.origin !== window.location.origin || target.href === window.location.href) return;
-      event.preventDefault();
-      animateCurrentViewOut();
-      getWebgl()?.animateAboutVisualOut?.();
-      if (navigate) navigate(target.href, "about");
-      else window.setTimeout(() => window.location.assign(target.href), 500);
-    };
-    link.addEventListener("click", onClick);
-    cleanups.push(() => link.removeEventListener("click", onClick));
-  });
-  return () => cleanups.splice(0).forEach((cleanup) => cleanup());
-}
-
-function initHomeRouteLeave(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
-  const home = document.querySelector<HTMLElement>("[data-view='home']");
-  if (!home) return () => {};
-
-  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]:not([target]):not([href^='#']):not([data-router-ignore])"));
-  const cleanups: Array<() => void> = [];
-  links.forEach((link) => {
-    if (link.closest(".ui-work-content")) return;
-    const onClick = (event: MouseEvent) => {
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
-      const target = new URL(link.href, window.location.href);
-      if (target.origin !== window.location.origin || target.href === window.location.href) return;
-      event.preventDefault();
-      navigateWithWorkSceneOut(target.href, getWebgl(), navigate);
-    };
-    link.addEventListener("click", onClick);
-    cleanups.push(() => link.removeEventListener("click", onClick));
-  });
-  return () => cleanups.splice(0).forEach((cleanup) => cleanup());
-}
-
 function initModals() {
   const view = document.querySelector<HTMLElement>("[data-view]");
   if (!view) return () => {};
@@ -1648,11 +1587,8 @@ function boot() {
     cleanupPageCallbacks.push(initMenu() ?? (() => {}));
     cleanupPageCallbacks.push(initButtons());
     window.dispatchEvent(new CustomEvent("rd:bind-sound-items"));
-    cleanupPageCallbacks.push(initWorkPreview(() => webgl, navigateTo));
+    cleanupPageCallbacks.push(initWorkPreview(() => webgl));
     cleanupPageCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
-    cleanupPageCallbacks.push(initProjectLeave(() => webgl));
-    cleanupPageCallbacks.push(initAboutLeave(() => webgl, navigateTo));
-    cleanupPageCallbacks.push(initHomeRouteLeave(() => webgl, navigateTo));
     cleanupPageCallbacks.push(initModals());
     cleanupPageCallbacks.push(initScrollState());
   };
@@ -1672,10 +1608,11 @@ function boot() {
     const routeUrl = normalizeRouteUrl(url);
     const routePromise = loadRoute(routeUrl);
     const leavePromise = new Promise((resolve) => window.setTimeout(resolve, transitionDelay(mode)));
+    runCurrentViewComponentLeave(webgl);
+    animateCurrentViewOut();
     if ((mode === "home" || mode === "project") && !document.documentElement.classList.contains("is-work-gallery-leaving")) {
       window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
     }
-    animateCurrentViewOut();
     Promise.all([routePromise, leavePromise])
       .then(([nextDoc]) => {
         document.documentElement.classList.add("is-route-swapping");

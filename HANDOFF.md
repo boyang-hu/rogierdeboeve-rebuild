@@ -26,14 +26,14 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 4 active; About shell/footer/credits modal and title/intro/footer animation source alignment are closed and guarded |
+| Active phase | Phase 4 active; About shell/modal, title/intro/footer animation, and route leave/entry lifecycle source alignment are closed and guarded |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
 | Phase 2 status | Closed/guarded on 2026-07-07 |
 | Phase 3 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Continue Phase 4 with About route entry/leave, scroll CTA, custom scrollbar, mobile layout, and remaining auxiliary visual lifecycle audit |
+| Current production priority | Continue Phase 4 with About scroll CTA, custom scrollbar, mobile layout, and remaining auxiliary visual lifecycle audit |
 | Next secondary priority | Keep Phase 1-3 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 4 About title/intro split and footer animation source alignment |
-| Last closed evidence batch | Phase 4 About title/intro split and footer animation source alignment |
+| Last committed source-backed code batch | Phase 4 About route leave/entry lifecycle source alignment |
+| Last closed evidence batch | Phase 4 About route leave/entry lifecycle source alignment |
 | Local service | Local rebuild service was available at `http://127.0.0.1:5173/` during validation |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -47,13 +47,14 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch closes the Phase 4 About title/intro split and footer animation alignment against source `DD`, `Rg`, `Ou`, and split-text behavior.
+The latest production batch closes the Phase 4 About route leave/entry lifecycle alignment against source `sl`, `BD`, `zD`, `HD`, `TD`, `Fg`, and `OD`.
 
-- About intro paragraphs under `data-split-articles` now split into source-shaped `.line > .line-inner` wrappers and resplit on resize.
-- About title `.line-inner` animation now follows source `DD/Rg`: `opacity: 0`, `y: 80%` into visible, with the source duration, stagger, and easing.
-- About intro paragraph lines now follow source `DD`: per-paragraph delayed `line-inner` reveal with source timing.
-- Footer socials/contact spans now start at `translateY(102%)` and animate with source `Ou` timing instead of rebuild-only generic content motion.
-- The earlier About shell/footer/credits modal batch remains closed and guarded.
+- Route leave now has one source-shaped router entry point instead of separate page-local link handlers.
+- Current view component leave runs before the route transition delay, matching source `sl.onLeave()` component `animateOut` ordering.
+- About route leave now calls About visual/floating block out for header/nav, page links, and popstate paths instead of only links inside the About view.
+- Project route leave now calls project visual leave for header/nav, project links, and popstate paths instead of only links inside the project view.
+- Home work-gallery out remains transition-owned for `home` and `project` transitions, matching source `BD/zD` ownership.
+- Earlier About shell/footer/credits modal and title/intro/footer animation batches remain closed and guarded.
 
 Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
@@ -63,18 +64,17 @@ Latest Phase 4 evidence:
 
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
-- Focused About split/animation CDP probe passed and wrote `/tmp/rd-phase4-about-split-probe/summary.json`:
-  - About split root exists.
-  - Intro paragraph count is `3`.
-  - Title split line count is `3`.
-  - Paragraph split line count is `7`.
-  - Every `.line` has one `.line-inner`.
-  - Title, intro, and footer final transforms settle near zero.
-  - `.c-list-section` has no rebuild-only inline transform/opacity from the removed generic animation.
+- Focused route CDP probe passed:
+  - Home -> About reaches `/about/`, `view=about`, `html.is-about`, and About visual becomes visible.
+  - About -> Work reaches `/`, `view=home`, `html.is-home`, and About visual is no longer visible.
+  - Project -> About reaches `/about/`, `view=about`, `html.is-about`.
+  - Runtime exceptions: `0`.
+  - Material network failures: `0`; two canceled project media requests were filtered as expected `Media net::ERR_ABORTED` during navigation.
 - About scroll/auxiliary visual lifecycle probe passed:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-split-about-scroll-probe CDP_PORT=9442 node scripts/probe-about-scroll-opacity.mjs`
-- Home output color/state probe passed with `OUT_DIR=/tmp/rd-phase4-split-output-probe`, `CDP_PORT=9443`.
-- Static renderer audit passed with `OUT_DIR=/tmp/rd-phase4-split-renderer-audit`.
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-route-about-scroll-probe CDP_PORT=9447 node scripts/probe-about-scroll-opacity.mjs`
+- Home output color/state probe passed with `OUT_DIR=/tmp/rd-phase4-route-output-probe`, `CDP_PORT=9448`.
+- Project media probe passed with `OUT_DIR=/tmp/rd-phase4-route-project-media-probe`, `CDP_PORT=9449`.
+- Earlier focused About split/animation CDP probe passed and wrote `/tmp/rd-phase4-about-split-probe/summary.json`.
 - Earlier About DOM/modal CDP probe passed and wrote `/tmp/rd-phase4-about-modal-probe/summary.json`.
 
 Phase 2 regression evidence remains available in `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`, `/tmp/rd-output-p2-preloader-desktop`, and `/tmp/rd-output-p2-preloader-mobile`.
@@ -99,12 +99,12 @@ Audit method note:
 
 ## Next Action
 
-Phase 1, Phase 2, and Phase 3 are closed. Do not reopen them unless a concrete source-owned mismatch appears. The Phase 4 About shell/footer/modal and title/intro/footer animation batches are also closed.
+Phase 1, Phase 2, and Phase 3 are closed. Do not reopen them unless a concrete source-owned mismatch appears. The Phase 4 About shell/footer/modal, title/intro/footer animation, and route leave/entry lifecycle batches are also closed.
 
 Recommended next move:
 
-1. Continue Phase 4 by auditing About route entry/leave from Home and project pages against source transitions.
-2. Audit remaining About auxiliary visual edges not covered by the closed batches: scroll CTA fade, scrollbar drag, and mobile About layout.
+1. Audit remaining About auxiliary visual edges not covered by the closed batches: scroll CTA fade, scrollbar drag, and mobile About layout.
+2. Audit any remaining About auxiliary visual lifecycle edge against source `TD` and `Fg`.
 3. Convert only source-backed findings into one scoped fix batch at a time.
 4. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project route/media probes as regression gates when shared render, router, audio, or lifecycle paths change.
 5. Leave broad transitions/audio/Lenis lifecycle cleanup for Phase 5 unless a shared bug blocks Phase 4.
