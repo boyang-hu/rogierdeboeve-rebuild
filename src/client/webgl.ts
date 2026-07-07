@@ -596,6 +596,11 @@ function sourceClampRound(value: number, min: number, max: number) {
   return sourceRound(MathUtils.clamp(value, min, max));
 }
 
+function sourceMapClampRound(value: number, inMin: number, inMax: number, outMin: number, outMax: number) {
+  const mapped = ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+  return sourceClampRound(mapped, Math.min(outMin, outMax), Math.max(outMin, outMax));
+}
+
 type SourceRenderSettings = {
   renderToScreen: boolean;
   fxaa: { enabled: boolean };
@@ -8743,8 +8748,8 @@ void main() {
       item.mousePlane.material.uniforms.uTime.value = time;
       item.material.uniforms.tDisplacement.value = this.displacementTarget.texture;
 
-      const sideReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 0, 5, 0, 1), 0, 1);
-      const sideSpreadReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 2, 6, 0, 1), 0, 1);
+      const sideReveal = sourceMapClampRound(Math.abs(world.x), 0, 5, 1, 0);
+      const sideSpreadReveal = sourceMapClampRound(Math.abs(world.x), 2, 6, 1, 0);
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
       item.material.uniforms.uMouseFactor.value = this.mouseFactor;
@@ -8772,6 +8777,8 @@ void main() {
       expectedLookAt.position.copy(expectedPosition);
       expectedLookAt.lookAt(this.blocksWrap.position);
       item.group.getWorldPosition(world);
+      const expectedRevealSides = sourceMapClampRound(Math.abs(world.x), 0, 5, 1, 0);
+      const expectedRevealSpreadSides = sourceMapClampRound(Math.abs(world.x), 2, 6, 1, 0);
       const culledBySourceBounds = world.x > 5.5 || world.x < -5.5 || world.z > 5;
       return {
         slug: item.slug,
@@ -8788,8 +8795,15 @@ void main() {
         visible: item.group.visible,
         culledBySourceBounds,
         sourceVisibilityMatches: item.group.visible === !culledBySourceBounds,
+        revealSidesMode: "source-Cs-abs-world-x-0-5-1-0-clamped-Fn4",
         revealSides: item.material.uniforms.uRevealSides.value,
+        expectedRevealSides,
+        revealSidesMatchesSource: Math.abs(item.material.uniforms.uRevealSides.value - expectedRevealSides) < 1e-6,
+        revealSpreadSidesMode: "source-Cs-abs-world-x-2-6-1-0-clamped-Fn4",
         revealSpreadSides: item.material.uniforms.uRevealSpreadSides.value,
+        expectedRevealSpreadSides,
+        revealSpreadSidesMatchesSource:
+          Math.abs(item.material.uniforms.uRevealSpreadSides.value - expectedRevealSpreadSides) < 1e-6,
         revealSidesInSourceRange: item.material.uniforms.uRevealSides.value >= 0 && item.material.uniforms.uRevealSides.value <= 1,
         revealSpreadSidesInSourceRange:
           item.material.uniforms.uRevealSpreadSides.value >= 0 && item.material.uniforms.uRevealSpreadSides.value <= 1,
@@ -8860,7 +8874,9 @@ void main() {
       sourceVisibilityAllMatch: items.every((item) => item.sourceVisibilityMatches),
       visibleUpdateShapeAllMatch: visible.every((item) =>
         item.revealSidesInSourceRange
-        && item.revealSpreadSidesInSourceRange,
+        && item.revealSpreadSidesInSourceRange
+        && item.revealSidesMatchesSource
+        && item.revealSpreadSidesMatchesSource,
       ),
       items,
     };

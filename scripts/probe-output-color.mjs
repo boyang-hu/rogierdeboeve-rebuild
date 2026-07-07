@@ -70,6 +70,16 @@ function closeTo(actual, expected, epsilon = 0.001) {
   return Math.abs((actual ?? NaN) - expected) <= epsilon;
 }
 
+function sourceRound(value, precision = 4) {
+  const multiplier = 10 ** precision;
+  return Math.round(value * multiplier) / multiplier;
+}
+
+function sourceMapClampRound(value, inMin, inMax, outMin, outMax) {
+  const mapped = ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin;
+  return sourceRound(Math.min(Math.max(Math.min(outMin, outMax), mapped), Math.max(outMin, outMax)));
+}
+
 function sourceProjectSpotlightUsesPayload(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed !== 0;
@@ -769,6 +779,23 @@ async function runProbe() {
         || item.expectedSourcePosition.some((value, positionIndex) => Math.abs(value - expectedPosition[positionIndex]) > 0.0001)
       ) {
         cullingErrors.push(`${item.slug}:expectedSourcePosition`);
+      }
+      if (item.visible) {
+        const worldX = Array.isArray(item.world) ? item.world[0] : NaN;
+        const expectedRevealSides = sourceMapClampRound(Math.abs(worldX), 0, 5, 1, 0);
+        const expectedRevealSpreadSides = sourceMapClampRound(Math.abs(worldX), 2, 6, 1, 0);
+        if (item.revealSidesMode !== "source-Cs-abs-world-x-0-5-1-0-clamped-Fn4") cullingErrors.push(`${item.slug}:revealSidesMode`);
+        if (item.revealSpreadSidesMode !== "source-Cs-abs-world-x-2-6-1-0-clamped-Fn4") cullingErrors.push(`${item.slug}:revealSpreadSidesMode`);
+        if (Math.abs((item.expectedRevealSides ?? NaN) - expectedRevealSides) > 0.0001) cullingErrors.push(`${item.slug}:expectedRevealSides`);
+        if (Math.abs((item.expectedRevealSpreadSides ?? NaN) - expectedRevealSpreadSides) > 0.0001) {
+          cullingErrors.push(`${item.slug}:expectedRevealSpreadSides`);
+        }
+        if (Math.abs((item.revealSides ?? NaN) - expectedRevealSides) > 0.0001) cullingErrors.push(`${item.slug}:revealSides`);
+        if (Math.abs((item.revealSpreadSides ?? NaN) - expectedRevealSpreadSides) > 0.0001) {
+          cullingErrors.push(`${item.slug}:revealSpreadSides`);
+        }
+        if (item.revealSidesMatchesSource !== true) cullingErrors.push(`${item.slug}:revealSidesMatchesSource`);
+        if (item.revealSpreadSidesMatchesSource !== true) cullingErrors.push(`${item.slug}:revealSpreadSidesMatchesSource`);
       }
     }
   }

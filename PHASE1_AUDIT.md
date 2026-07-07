@@ -70,7 +70,38 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults including zero-vector `uCoords` construction, source `$A` about local `Ka` runtime writeback, source `ZA/KA` floating no-sampler-write and no-`uCoords` runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; source `qw` renderer constructor/resize ownership is guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `qw` renderer constructor/resize ownership is now aligned and guarded. Source constructs the renderer without an initial DPR write, then `qw.resize(e,t,n)` calls `setSize(e,t)` before `setPixelRatio(n)` and uses the default `updateStyle=true` path. The rebuild now removes the constructor-time `setPixelRatio`, follows source resize order, lets Three write the canvas style dimensions, and probes canvas attribute/drawing-buffer/style/rect parity. This is one renderer resize ownership edge only; Phase 1 remains open.
+Latest accepted batch: source `p1.update()` side reveal ownership is now aligned and guarded. Source writes `uRevealSides` and `uRevealSpreadSides` through `Cs(Math.abs(world.x), ...)`, and `Cs` rounds through `Fn(...,4)` after clamping. The rebuild now uses the same four-decimal source mapping for visible work items and probes exact formula parity instead of only checking the `0..1` range. This is one runtime uniform ownership edge only; Phase 1 remains open.
+
+### S1-345 `p1.update()` Side Reveal `Cs/Fn4` Ownership
+
+This batch aligns one source runtime-uniform ownership edge in the Home work-block update path. It does not change shader text, render targets, visual constants, route behavior, spotlight/thumb formulas, project data, or pass execution.
+
+Source evidence:
+
+- Source `p1.update()` writes `uRevealSides` as `Cs(Math.abs(a.x),0,5,1,0,!0)`.
+- Source `p1.update()` writes `uRevealSpreadSides` as `Cs(Math.abs(a.x),2,6,1,0,!0)`.
+- Source `Cs(...)` clamps through `bo(...)`, and `bo(...)` calls `Fn(...)`.
+- Source `Fn(s,e=4)` rounds to four decimal places, so the side reveal uniforms are source-rounded, not continuous `MathUtils.clamp/mapLinear` floats.
+
+Runtime and tooling changes:
+
+- Added `sourceMapClampRound(...)` as the rebuild equivalent of source `Cs(...,!0)` plus `Fn(...,4)`.
+- `updateVisibleWorkItems()` now writes `uRevealSides` and `uRevealSpreadSides` through `sourceMapClampRound(Math.abs(world.x), ...)`.
+- `__rogierOutputProbe.settings.work.p1UpdateCulling.items[]` now exposes source mode markers, expected source values, and exact parity booleans for both uniforms.
+- `scripts/probe-output-color.mjs` recomputes the source formula from each visible item world position and fails on mismatched mode, expected value, actual value, or parity boolean.
+- `scripts/audit-renderer-output.mjs` now checks the source `Cs/Fn4` anchors, rejects the old continuous clamp/mapLinear implementation, and verifies probe coverage.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-p1-cs-reveal-audit.json` passed; recursive false/null review printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed at `/tmp/rd-p1-cs-reveal-output-desktop` with no failed requests, runtime exceptions, or console messages.
+- Mobile output probe passed at `/tmp/rd-p1-cs-reveal-output-mobile` with no failed requests, runtime exceptions, or console messages.
+
+Decision: keep `p1.update()` side reveal uniforms on the source `Cs(abs(world.x), ...)->Fn4` path. Do not restore unrounded `MathUtils.clamp/mapLinear` side reveal writes or range-only probe coverage without mirrored-bundle evidence. Phase 1 remains open because this closes one runtime uniform ownership mismatch only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-344 `qw` Renderer Resize Ownership
 

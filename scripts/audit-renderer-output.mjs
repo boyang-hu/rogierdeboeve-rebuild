@@ -3815,6 +3815,36 @@ const summary = {
         "o.instance.update(e,t,n,Math.min(Pe.dpr,1.5))",
         "this.aboutBlocks.visible&&(this.aboutBlocks.update(e,t,n,Math.min(Pe.dpr,1.5))",
       ]),
+      sideRevealOwnership: {
+        sourceUsesCs:
+          sourceP1Update.text.includes("o.instance.material.customUniforms.uRevealSides.value=Cs(Math.abs(a.x),0,5,1,0,!0)")
+          && sourceP1Update.text.includes("o.instance.material.customUniforms.uRevealSpreadSides.value=Cs(Math.abs(a.x),2,6,1,0,!0)"),
+        sourceCsRoundsWithFn4:
+          bundle.includes("function Cs(s,e,t,n,i,r){const o=(s-e)*(i-n)/(t-e)+n;if(r!==null&&r){const a=n>i?n:i,c=n>i?i:n;return bo(o,c,a)}return Fn(o)}")
+          && bundle.includes("function bo(s,e,t){return Fn(Math.min(Math.max(e,s),t))}")
+          && bundle.includes("function Fn(s,e=4){const t=Math.pow(10,e);return Math.round(s*t)/t}"),
+        rebuildUsesSourceRoundHelper:
+          rebuildWebgl.includes("function sourceMapClampRound(value: number, inMin: number, inMax: number, outMin: number, outMax: number)")
+          && rebuildWebgl.includes("return sourceClampRound(mapped, Math.min(outMin, outMax), Math.max(outMin, outMax));"),
+        rebuildRuntimeUsesCsEquivalent:
+          rebuildWebgl.includes("const sideReveal = sourceMapClampRound(Math.abs(world.x), 0, 5, 1, 0);")
+          && rebuildWebgl.includes("const sideSpreadReveal = sourceMapClampRound(Math.abs(world.x), 2, 6, 1, 0);")
+          && !rebuildWebgl.includes("const sideReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 0, 5, 0, 1), 0, 1);")
+          && !rebuildWebgl.includes("const sideSpreadReveal = MathUtils.clamp(1 - MathUtils.mapLinear(Math.abs(world.x), 2, 6, 0, 1), 0, 1);"),
+        rebuildProbeExposesExactValues:
+          rebuildWebgl.includes("revealSidesMode: \"source-Cs-abs-world-x-0-5-1-0-clamped-Fn4\"")
+          && rebuildWebgl.includes("expectedRevealSides")
+          && rebuildWebgl.includes("revealSidesMatchesSource")
+          && rebuildWebgl.includes("revealSpreadSidesMode: \"source-Cs-abs-world-x-2-6-1-0-clamped-Fn4\"")
+          && rebuildWebgl.includes("expectedRevealSpreadSides")
+          && rebuildWebgl.includes("revealSpreadSidesMatchesSource"),
+        outputProbeRecomputesCsEquivalent:
+          rebuildOutputProbe.includes("function sourceMapClampRound(value, inMin, inMax, outMin, outMax)")
+          && rebuildOutputProbe.includes("const expectedRevealSides = sourceMapClampRound(Math.abs(worldX), 0, 5, 1, 0);")
+          && rebuildOutputProbe.includes("const expectedRevealSpreadSides = sourceMapClampRound(Math.abs(worldX), 2, 6, 1, 0);")
+          && rebuildOutputProbe.includes("item.revealSidesMatchesSource !== true")
+          && rebuildOutputProbe.includes("item.revealSpreadSidesMatchesSource !== true"),
+      },
       updateOrder: orderedIncludes(sourceP1Update.text, [
         "update(e,t,n,i){super.update(e,t,n,i),",
         "this.spotLight&&this.spotLightParallax",
