@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `Lu/I1` bloom mip direct halving resize ownership. Source `Lu.resize()` starts work bloom mips from `Fa(renderSize)/4`, source `I1.resize()` starts main bloom mips from `Fa(renderSize)/2`, and both source loops set horizontal/vertical mip targets plus `rg.uResolution` before directly applying `e/=2,t/=2`. The rebuild now removes local per-mip `Math.round(...)` / `Math.max(1, ...)` halving ownership from `resizeBloomMipChain()` and guards work/main bloom mip target-resolution parity. This is a bloom mip resize-step guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `h1/u1` environment program-cache-key ownership. Source `u1` owns `customUniforms` plus `onBeforeCompile` but has no `customProgramCacheKey` override, so the rebuild now removes the local `source-u1-environment-standard` override and relies on Three's default `onBeforeCompile.toString()` cache-key path. Output/reflection probes expose and assert `customProgramCacheKeyOwnProperty=false` plus default cache-key parity. This is an environment material runtime-object guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -174,6 +174,7 @@ Known remaining gaps:
 - Source `Qe/Xt` texture preload ordering and `Xt.loadTexture()` immediate texture-object ownership are now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: WebP support is resolved before the Home WebGL constructor, immediate `Texture` objects are applied before `C1`, `VA`, `XA`, `KA`, and floor material construction, uniforms receive those objects before image onload, and probes verify onload does not replace them.
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
+- Source `h1/u1` environment program-cache-key ownership is now guarded: source `u1` sets `onBeforeCompile` but does not override `customProgramCacheKey`, so the rebuild relies on Three's default `onBeforeCompile.toString()` cache-key path and rejects the old local `source-u1-environment-standard` override.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
 - Source `yD.onProjectActive()` active-project spotlight, application-order, and woosh ownership are now guarded: `SD.init()` keeps the fixed Home entry `220` baseline, then active-project order runs spotlight payload-or-max, reveal spread, source-owned woosh, active `uReveal` tweens, project look setters, and final directional light `1.5`; current local project data has no spotlight payloads, so the expected runtime spotlight value remains `220`.
 - Source `nD/u1` sky composite binding lifecycle is now guarded: source `u1` constructs `customUniforms.tSky` as `null`; source `nD.init()` performs first resize, waits `100ms`, binds `C1.tWork/tMedia/tMouseSim`, sets sky composite repeat wrapping, binds env `tSky`, resizes again, then starts RAF.
@@ -188,14 +189,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Lu/I1` bloom mip direct halving resize ownership for work and main render managers.
-- Source evidence: `Lu.resize(e,t,n)` uses `Fa(renderSize)/4` before the work bloom loop; `I1.resize(e,t,n)` uses `Fa(renderSize)/2` before the main bloom loop; both source loops write horizontal/vertical mip target sizes and `rg.uResolution`, then directly apply `e/=2,t/=2`.
-- Production `resizeBloomMipChain()` now uses direct `mipWidth /= 2` and `mipHeight /= 2` after each mip target/resolution write.
-- The old rebuild-owned per-mip `Math.round(...)` and `Math.max(1, ...)` halving step is removed from that path.
-- `__rogierOutputProbe` now reports `resizeStepMode`, `targetSizes`, `targetHalvingMatchesSource`, `resolutionHalvingMatchesSource`, and `targetsMatchResolutions` for work and main bloom blur materials.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring rounded/clamped bloom mip halving.
-- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, and desktop/mobile output probes.
-- This is bloom mip resize-step ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `h1/u1` environment program-cache-key ownership.
+- Source evidence: `u1` owns `customUniforms` and assigns shader text in `onBeforeCompile`, but has no `customProgramCacheKey` override.
+- Removed the rebuild-only `material.customProgramCacheKey = () => "source-u1-environment-standard"` path from `createEnvironmentMaterial()`.
+- `__rogierOutputProbe.uniforms.environment` and `reflectionState.environment.material` now report `programCacheKeyMode`, `customProgramCacheKeyOwnProperty=false`, and default `onBeforeCompile` cache-key parity.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring the custom key override.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, and desktop/mobile output probes. The first parallel mobile probe hit a CDP timeout before assertions and passed when rerun singly.
+- This is environment material runtime-object ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -206,25 +206,25 @@ git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-bloom-mip-halving-final-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-bloom-mip-halving-final-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-env-cache-key-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-env-cache-key-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9500 OUT_DIR=/tmp/rd-bloom-mip-halving-output-desktop PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9501 OUT_DIR=/tmp/rd-bloom-mip-halving-output-mobile PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile DEVICE_SCALE_FACTOR=2 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 OUT_DIR=/tmp/rd-env-cache-key-output-desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable BASE_URL=http://localhost:5178 VIEWPORT=mobile OUT_DIR=/tmp/rd-env-cache-key-output-mobile node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed for the `Lu/I1` bloom mip direct halving resize ownership batch before commit. Renderer audit wrote `/tmp/rd-bloom-mip-halving-final-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for direct `/= 2` bloom mip halving on work and main render managers. Desktop and mobile output probes verified the bloom mip target/resolution parity markers with zero failures, exceptions, or console messages.
+All relevant checks passed for the `h1/u1` environment program-cache-key ownership batch before commit. Renderer audit wrote `/tmp/rd-env-cache-key-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the no-`customProgramCacheKey` override ownership. Desktop and mobile output probes verified the default program-cache-key markers with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this bloom mip resize-step ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this environment program-cache-key ownership batch.
 
 Project-media was not rerun for this batch because production project-media code and route data were untouched; project pages remain regression gates, not proof of Home parity.
 
 Verified:
 
-- Renderer audit passed for the bloom mip halving ownership batch: `/tmp/rd-bloom-mip-halving-final-audit.json`.
+- Renderer audit passed for the environment program-cache-key ownership batch: `/tmp/rd-env-cache-key-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source bloom mip halving markers.
+- Desktop and mobile output probes passed with the source no-custom-program-cache-key markers.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 
@@ -275,7 +275,7 @@ Continue source-driven implementation in this order:
    - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, or camera-surface ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` root scene direct-child order, source `p1.init()` sceneWrap child attach order, final `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
+   - Current rebuild now guards source `p1` root scene direct-child order, source `p1.init()` sceneWrap child attach order, final `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, source `h1/u1` environment custom-uniform/dithering/no-custom-program-cache-key ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.

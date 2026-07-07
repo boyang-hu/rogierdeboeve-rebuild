@@ -2232,6 +2232,13 @@ async function runProbe() {
   if (environmentUniforms?.materialMode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("materialMode");
   if (environmentUniforms?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("customUniformsMode");
   if (environmentUniforms?.hasMaterialUniformsAlias !== false) environmentErrors.push("materialUniformsAlias");
+  if (environmentUniforms?.programCacheKeyMode !== "source-u1-no-customProgramCacheKey-override-three-default-onBeforeCompile") {
+    environmentErrors.push("programCacheKeyMode");
+  }
+  if (environmentUniforms?.customProgramCacheKeyOwnProperty !== false) environmentErrors.push("programCacheKeyOwnProperty");
+  if (environmentUniforms?.programCacheKeyMatchesDefaultOnBeforeCompile !== true) {
+    environmentErrors.push("programCacheKeyDefault");
+  }
   if (environmentUniforms?.tSkyConstructorMode !== "source-u1-constructor-tSky-null") environmentErrors.push("tSkyConstructorMode");
   if (environmentUniforms?.tSkyConstructorWasNull !== true) environmentErrors.push("tSkyConstructorWasNull");
   if (environmentUniforms?.tSkyDelayedBindingMode !== "source-nD-after-first-resize-100ms-bind-repeat-composite") environmentErrors.push("tSkyDelayedBindingMode");
@@ -2311,6 +2318,15 @@ async function runProbe() {
   if (environmentHierarchy?.material?.mode !== "source-u1-meshstandard-onBeforeCompile") environmentErrors.push("reflectionMaterialMode");
   if (environmentHierarchy?.material?.customUniformsMode !== "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias") environmentErrors.push("reflectionCustomUniformsMode");
   if (environmentHierarchy?.material?.hasMaterialUniformsAlias !== false) environmentErrors.push("reflectionMaterialUniformsAlias");
+  if (environmentHierarchy?.material?.programCacheKeyMode !== "source-u1-no-customProgramCacheKey-override-three-default-onBeforeCompile") {
+    environmentErrors.push("reflectionProgramCacheKeyMode");
+  }
+  if (environmentHierarchy?.material?.customProgramCacheKeyOwnProperty !== false) {
+    environmentErrors.push("reflectionProgramCacheKeyOwnProperty");
+  }
+  if (environmentHierarchy?.material?.programCacheKeyMatchesDefaultOnBeforeCompile !== true) {
+    environmentErrors.push("reflectionProgramCacheKeyDefault");
+  }
   if (environmentHierarchy?.material?.constructorParamsMode !== "source-h1-passes-side-envMapIntensity-fog-only") environmentErrors.push("reflectionConstructorParamsMode");
   if (environmentHierarchy?.material?.ditheringOwnershipMode !== "source-u1-constructor-sets-dithering-after-super") {
     environmentErrors.push("reflectionDitheringOwnership");

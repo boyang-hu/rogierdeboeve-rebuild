@@ -3819,6 +3819,9 @@ const summary = {
         customUniformsOnly: Boolean(rebuildEnvironmentMaterialFactory)
           && rebuildEnvironmentMaterialFactory.includes("material.customUniforms = uniforms;")
           && !rebuildEnvironmentMaterialFactory.includes("material.uniforms = uniforms;"),
+        sourceNoCustomProgramCacheKeyOverride: !sourceU1.text.includes("customProgramCacheKey"),
+        factoryNoCustomProgramCacheKeyOverride: Boolean(rebuildEnvironmentMaterialFactory)
+          && !rebuildEnvironmentMaterialFactory.includes("customProgramCacheKey"),
         constructorTSkyNull: Boolean(rebuildEnvironmentMaterialFactory)
           && rebuildEnvironmentMaterialFactory.includes("tSky: { value: null as Texture | null }")
           && rebuildEnvironmentMaterialFactory.includes("sourceConstructorTSkyMode = \"source-u1-constructor-tSky-null\"")
@@ -3826,6 +3829,9 @@ const summary = {
           && !rebuildEnvironmentMaterialFactory.includes("tSky: { value: this.environmentSkyTexture() }"),
         runtimeProbe: rebuildWebgl.includes("customUniformsMode: \"source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias\"")
           && rebuildWebgl.includes("hasMaterialUniformsAlias: \"uniforms\" in this.environmentMaterial")
+          && rebuildWebgl.includes("programCacheKeyMode: \"source-u1-no-customProgramCacheKey-override-three-default-onBeforeCompile\"")
+          && rebuildWebgl.includes("customProgramCacheKeyOwnProperty: Object.hasOwn(this.environmentMaterial, \"customProgramCacheKey\")")
+          && rebuildWebgl.includes("programCacheKeyMatchesDefaultOnBeforeCompile:")
           && rebuildWebgl.includes("tSkyConstructorMode: this.environmentMaterial.userData.sourceConstructorTSkyMode")
           && rebuildWebgl.includes("tSkyDelayedBindingMode: this.environmentMaterial.userData.sourceDelayedTSkyBindingMode"),
         updatePathsUseCustomUniforms: [

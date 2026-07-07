@@ -7837,7 +7837,6 @@ void main() {
     material.onBeforeCompile = (shader) => {
       patchEnvironmentShader(shader, material.customUniforms);
     };
-    material.customProgramCacheKey = () => "source-u1-environment-standard";
     return material;
   }
 
@@ -11124,6 +11123,10 @@ void main() {
           materialMode: "source-u1-meshstandard-onBeforeCompile",
           customUniformsMode: "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias",
           hasMaterialUniformsAlias: "uniforms" in this.environmentMaterial,
+          programCacheKeyMode: "source-u1-no-customProgramCacheKey-override-three-default-onBeforeCompile",
+          customProgramCacheKeyOwnProperty: Object.hasOwn(this.environmentMaterial, "customProgramCacheKey"),
+          programCacheKeyMatchesDefaultOnBeforeCompile:
+            this.environmentMaterial.customProgramCacheKey() === this.environmentMaterial.onBeforeCompile.toString(),
           geometry: {
             mode: "source-Du-icosahedron",
             type: this.environmentPlane.geometry.type,
@@ -11653,6 +11656,10 @@ void main() {
           mode: "source-u1-meshstandard-onBeforeCompile",
           customUniformsMode: "source-u1-customUniforms-injected-onBeforeCompile-no-material-uniforms-alias",
           hasMaterialUniformsAlias: "uniforms" in this.environmentMaterial,
+          programCacheKeyMode: "source-u1-no-customProgramCacheKey-override-three-default-onBeforeCompile",
+          customProgramCacheKeyOwnProperty: Object.hasOwn(this.environmentMaterial, "customProgramCacheKey"),
+          programCacheKeyMatchesDefaultOnBeforeCompile:
+            this.environmentMaterial.customProgramCacheKey() === this.environmentMaterial.onBeforeCompile.toString(),
           transparent: this.environmentMaterial.transparent,
           depthWrite: this.environmentMaterial.depthWrite,
           depthTest: this.environmentMaterial.depthTest,
