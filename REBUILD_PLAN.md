@@ -21,11 +21,11 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1, Phase 2, and Phase 3 closed unless new source-owned evidence requires reopening.
-2. Keep the closed Phase 4 About shell/footer/credits modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, mobile CSS, and auxiliary lifecycle batches closed unless a concrete source-owned mismatch appears.
-3. Run a Phase 4 closeout review across About DOM/CSS, motion, route lifecycle, and auxiliary WebGL lifecycle.
-4. Convert Phase 4 closeout findings into one scoped source-backed fix batch at a time.
-5. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project-detail probes as regression gates when shared paths change.
-6. Move to Phase 5 only after About/auxiliary page parity is clean or explicitly guarded.
+2. Keep Phase 4 closed unless concrete About or auxiliary page evidence requires reopening.
+3. Start Phase 5 with a source audit of shared transitions, audio, and Lenis lifecycle behavior.
+4. Convert only source-backed Phase 5 findings into one scoped fix batch at a time.
+5. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project-detail, and Phase 4 About probes as regression gates when shared paths change.
+6. Move to Phase 6 only after Phase 5 shared lifecycle parity is clean or explicitly guarded.
 
 Everything outside the active phase stays paused unless the audit identifies a shared-path dependency.
 
@@ -50,8 +50,8 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
 | 3. Project detail media/routes | Closed/guarded on 2026-07-07 | Reopen only with concrete project-detail media, scroll, or route mismatch evidence. |
-| 4. About and auxiliary pages | Active; shell/modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, mobile CSS, and auxiliary lifecycle batches closed on 2026-07-07 | Run Phase 4 closeout review, then close Phase 4 if no source-owned mismatch remains. |
-| 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
+| 4. About and auxiliary pages | Closed/guarded on 2026-07-07 | Reopen only with concrete About DOM, CSS, motion, route lifecycle, or auxiliary visual mismatch evidence. |
+| 5. Transitions/audio/Lenis lifecycle | Active | Audit source transitions, Lenis/page scroll lifecycle, and audio lifecycle; patch only source-owned findings. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
 ## Phase 1 Closed Record
@@ -204,9 +204,9 @@ Phase 3 closeout state:
 - Project route behavior is source-shaped for project-to-project, project-to-Home, project-to-About, and Home CTA project entry.
 - Reopen Phase 3 only with concrete source-owned mismatch evidence.
 
-## Phase 4 Active Queue
+## Phase 4 Closed Record
 
-Goal: bring About and auxiliary pages to the same source-backed standard as Home and project-detail pages.
+Goal: keep About and auxiliary pages closed at the same source-backed standard as Home and project-detail pages.
 
 ### Closed: About shell/footer/credits modal source alignment
 
@@ -314,13 +314,41 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase4-lifecycle-output-probe-localhost CDP_PORT=9473 node scripts/probe-output-color.mjs`
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase4-lifecycle-project-media-probe-localhost CDP_PORT=9474 node scripts/probe-project-media.mjs`
 
-### Next Phase 4 Queue
+### Closed: Phase 4 closeout DOM/source review
+
+Goal: close the remaining About surface by diffing rebuild DOM against the mirrored source About document and keeping only source-owned fixes.
+
+Current read:
+
+- Static `.ui-about` parser diff against `legacy-mirror/public/about/index.html` is `0`.
+- The closeout review removed a rebuild-only `data-about-model` attribute on `.ui-about-hero-visual`.
+- The rebuild now preserves the source trailing `<br>` in the brands paragraph.
+- Source scroll CTA wrappers are `div.c-scroll-cta-icon` and `div.c-scroll-cta-text`; rebuild now matches.
+- Rebuild-only `aria-hidden` attributes were removed from About-local scrollbar and modal icons.
+- Source SVG attributes for the checked About-local icons, including `xmlns`, `xml:space`, `ry`, and `stroke-width`, are now mirrored.
+- Reopen Phase 4 only with concrete About or auxiliary-page evidence.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Parse5 static DOM audit: `.ui-about` subtree diff between source mirror and `dist/about/index.html` returned `diffCount: 0`.
+- `OUT_DIR=/tmp/rd-phase4-closeout-renderer-audit node scripts/audit-renderer-output.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase4-closeout-about-desktop CDP_PORT=9481 node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase4-closeout-about-mobile CDP_PORT=9482 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase4-closeout-output CDP_PORT=9483 node scripts/probe-output-color.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase4-closeout-project-media CDP_PORT=9484 node scripts/probe-project-media.mjs`
+
+## Phase 5 Active Queue
+
+Goal: close shared transition, scroll, and audio lifecycle behavior against the source bundle before final QA.
 
 Patch only source-owned findings:
 
-1. Run the Phase 4 closeout review; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline About auxiliary guard.
-2. If the closeout review is clean, mark Phase 4 closed and move to Phase 5.
-3. Validate each production batch with build, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
+1. Audit transition ownership and ordering against source `BD`, `zD`, `HD`, `Sg`, and `sl`.
+2. Audit Lenis/page scroll setup, teardown, reset, RAF ordering, and scrollbar ownership against source `Ug` and `wD`.
+3. Audit audio lifecycle against source `ln`: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
+4. Validate each batch with build, route assertions, output state probes, and About/project/Home regression probes for shared paths.
 
 ## Watchlist
 

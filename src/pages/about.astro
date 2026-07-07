@@ -8,7 +8,7 @@ import { recognitionSummary } from "../data/site";
   <div data-view="about" class="ui-about">
     <div class="wrap wrap--md">
       <div class="ui-about-hero lg:grid grid-cols-24 gap-24">
-        <div class="ui-about-hero-visual lg:col-span-8 lg:col-start-6 xl:col-span-7 xl:col-start-6" data-about-model></div>
+        <div class="ui-about-hero-visual lg:col-span-8 lg:col-start-6 xl:col-span-7 xl:col-start-6"></div>
         <div class="lg:col-start-14 lg:col-span-10 xl:col-span-8 xl:col-start-14">
           <h1 class="ui-title ts-m c-color"><span class="ui-title-inner">About me</span></h1>
           <div class="ui-about-intro" data-split-articles>
@@ -22,7 +22,7 @@ import { recognitionSummary } from "../data/site";
       <div class="ui-about-collab flex flex-col md:grid md:grid-cols-24">
         <div class="ui-about-brands md:col-span-9 lg:col-span-8 lg:col-start-6 xl:col-start-6">
           <h2 class="ts-m">Brands I've worked for</h2>
-          <p class="ts-p">Marvel Studios, Coca-Cola, Nike,<br />Jaeger-LeCoultre, ABC TV,<br />T-Mobile, Postman, De Morgen,<br />DreamWorks, On Running.</p>
+          <p class="ts-p">Marvel Studios, Coca-Cola, Nike,<br />Jaeger-LeCoultre, ABC TV,<br />T-Mobile, Postman, De Morgen,<br />DreamWorks, On Running.<br /></p>
         </div>
         <div class="ui-about-agencies md:col-span-9 md:col-start-13 lg:col-span-8 lg:col-start-14 xl:col-start-14">
           <h2 class="ts-m">Agencies I've worked with</h2>
@@ -72,21 +72,21 @@ import { recognitionSummary } from "../data/site";
         <div class="lg:grid grid-cols-24 gap-24">
           <div class="lg:col-start-14 lg:col-span-10 xl:col-span-8 xl:col-start-14">
             <div class="c-scroll-cta-inner">
-              <span class="c-scroll-cta-icon" aria-hidden="true">
-                <svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6">
-                  <rect rx="1" width="2" height="2" fill="currentColor"></rect>
-                  <rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect>
-                  <rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect>
+              <div class="c-scroll-cta-icon">
+                <svg class="c-icon-arrow-xs" width="6" height="6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 6">
+                  <rect rx="1" ry="1" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
+                  <rect rx="1" ry="1" x="3.4" y="2" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
+                  <rect rx="1" ry="1" y="4" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
                 </svg>
-              </span>
-              <span class="c-scroll-cta-text ts-m">Scroll Down</span>
+              </div>
+              <div class="c-scroll-cta-text ts-m">Scroll Down</div>
             </div>
           </div>
         </div>
       </div>
     </div>
     <Footer credits />
-    <div class="ui-scrollbar c-color" aria-hidden="true">
+    <div class="ui-scrollbar c-color">
       <div class="ui-scrollbar-thumb"><div class="ui-scrollbar-thumb-inner"></div></div>
       <div class="ui-scrollbar-total"></div>
     </div>
@@ -135,18 +135,18 @@ import { recognitionSummary } from "../data/site";
       <span class="c-link c-modal-close" data-sound data-sound-click>
         <span class="c-link-icon">
           <span class="c-link-icon-bg">
-            <svg class="c-icon-arrow" width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+            <svg class="c-icon-arrow" width="28" height="28" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" xml:space="preserve">
               <rect class="c-icon-arrow-border" x="0" y="0" width="28" height="28" fill="transparent" stroke="currentColor" stroke-dasharray="2 2" stroke-width="1"></rect>
               <rect class="c-icon-arrow-border-hover" x="0" y="0" width="28" height="28" fill="transparent" stroke="currentColor" stroke-width="1"></rect>
             </svg>
           </span>
           <span class="c-link-icon">
-            <svg class="c-icon-close" width="6" height="6" viewBox="0 0 6 6" aria-hidden="true">
-              <rect rx="1" x="4" width="2" height="2" fill="currentColor"></rect>
-              <rect rx="1" width="2" height="2" fill="currentColor"></rect>
-              <rect rx="1" x="2" y="2" width="2" height="2" fill="currentColor"></rect>
-              <rect rx="1" y="4" x="4" width="2" height="2" fill="currentColor"></rect>
-              <rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect>
+            <svg class="c-icon-close" width="6" height="6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 6 6">
+              <rect rx="1" ry="1" x="4" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
+              <rect rx="1" ry="1" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
+              <rect rx="1" ry="1" x="2" y="2" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
+              <rect rx="1" ry="1" y="4" x="4" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
+              <rect rx="1" ry="1" y="4" width="2" height="2" fill="currentColor" stroke-width="0"></rect>
             </svg>
           </span>
         </span>
