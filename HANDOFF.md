@@ -178,15 +178,16 @@ Known remaining gaps:
 - Source `ag/eA` main-fluid viscosity topology is now guarded: source `ag` constructs seven FloatType/depthless FBOs including `viscosity_0/1`, always constructs `eA`, and keeps the viscosity branch default-disabled with intensity `30` and iterations `5`.
 - Source `I1/ag` raw main-fluid resize ownership is now guarded: source `I1.resize()` passes `Fa(renderSize) / 2 / 3` into `ag.onResize(...)`, and source `ag.calcSizes(e,t)` preserves raw incoming `e,t` for `fboSize`, `cellScale`, and target `setSize(...)` while rounding only internal simulation fields through `resolution`.
 - Source `a1/i1` floor-reflection draw-state and `i1` renderer-state are now guarded: floor `onBeforeRender` hides only the floor component group while reflecting the full Home scene, `sceneWrap`/blocks/environment remain visible in the reflected scene, the reflector raw/blur pass disables source-owned renderer state, and visibility plus renderer state restore after the reflector update.
+- Source `qw` renderer constructor/resize ownership is now guarded: no constructor-time DPR write, `resize(e,t,n)` calls `setSize(e,t)` before `setPixelRatio(n)`, and canvas style dimensions are owned by Three's default `setSize` update-style path.
 
 Latest Phase 1 batch:
 
-- Aligned source `VA/XA/KA` `uCoords` constructor defaults and floating `KA` runtime ownership without changing shader text, render targets, visual constants, route behavior, spotlight/thumb formulas, or project data.
-- Source evidence: `VA`, `XA`, and `KA` all construct `uCoords:new I(new Q)`; `VA/XA.update()` later write `Pe.w*i,Pe.h*i`; `KA.update()` and `ZA.update()` do not write `uCoords`.
-- `src/client/webgl.ts` now constructs ordinary/about/floating block-material `uCoords` as zero vectors, keeps ordinary/about on the existing source viewport-coordinate writer, and no longer writes floating `uCoords` from rounded render dimensions during resize.
-- `scripts/probe-output-color.mjs` now asserts floating `runtimeUCoordsMode=source-ZA-KA-update-uTime-only-no-uCoords-resize`, `uCoords=[0,0]`, and constructor-zero markers.
-- `scripts/audit-renderer-output.mjs` now checks source `VA/XA/KA/ZA` anchors and rejects the old floating resize-owned `uCoords` path.
-- Previous committed batch was `67f23c9 Align p1 init sceneWrap attach order`.
+- Aligned source `qw` renderer constructor/resize ownership without changing shader text, render targets, visual constants, route behavior, spotlight/thumb formulas, project data, or pass execution.
+- Source evidence: `qw.constructor` sets renderer options, `autoClear=false`, `outputColorSpace=Gt`, and appends the canvas with no `setPixelRatio()` call; `qw.resize(e,t,n)` calls `setSize(e,t)` before `setPixelRatio(n)`.
+- `src/client/webgl.ts` now removes constructor-time `renderer.setPixelRatio(sourceDpr())`, calls `renderer.setSize(width,height)` before `renderer.setPixelRatio(dpr)`, and exposes canvas attribute/drawing-buffer/style/rect parity in `__rogierOutputProbe.renderer`.
+- `scripts/probe-output-color.mjs` now asserts renderer constructor/resize/style markers plus DPR, drawing buffer, canvas attributes, style dimensions, and viewport rect parity.
+- `scripts/audit-renderer-output.mjs` now checks source `qw.resize`, rebuild resize order, absence of constructor-time DPR, default-style `setSize`, and probe coverage.
+- Previous committed batch was `f7d5189 Align KA floating uCoords ownership`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -197,23 +198,28 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-p1-ka-ucoords-audit-final.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-p1-ka-ucoords-audit-final.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-qw-resize-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-qw-resize-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-p1-ka-ucoords-output-desktop CDP_PORT=9234 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-qw-resize-output-desktop CDP_PORT=9262 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-qw-resize-output-mobile-dpr125 CDP_PORT=9263 VIEWPORT=mobile DEVICE_SCALE_FACTOR=1.25 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-qw-resize-thumb-desktop CDP_PORT=9264 PROBE_WAIT=30000 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-qw-resize-thumb-mobile CDP_PORT=9265 PROBE_WAIT=30000 VIEWPORT=mobile node scripts/probe-thumb-spotlight.mjs
 ```
 
-All relevant checks passed in the `VA/XA/KA` `uCoords` constructor/floating-runtime batch. Renderer audit wrote `/tmp/rd-p1-ka-ucoords-audit-final.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.GA.uCoordsOwnership` reported source constructor zero, source floating no-write, rebuild constructor zero, rebuild floating no-resize-write, and probe coverage all true. Desktop output probe wrote `/tmp/rd-p1-ka-ucoords-output-desktop`, reported floating `uCoords=[0,0]` with `uCoordsStaysConstructorZero=true`, and had no failed requests, exceptions, or console messages.
+All relevant checks passed in the `qw` renderer resize ownership batch. Renderer audit wrote `/tmp/rd-qw-resize-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.renderer` reported the source resize order, rebuild resize order, constructor-DPR rejection, default-style `setSize`, and probe coverage as true. Desktop output probe wrote `/tmp/rd-qw-resize-output-desktop` and reported canvas style/rect/drawing buffer `1440x900`; mobile DPR `1.25` output probe wrote `/tmp/rd-qw-resize-output-mobile-dpr125` and reported canvas attribute/drawing buffer `487x1055` with style/rect `390x844`. Desktop/mobile thumb probes retained source thumb targets `900x900` and `844x844`. No probes reported failed requests, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `uCoords` batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this renderer resize batch.
 
-Project media, thumb, mobile, and full output probes were not rerun because this batch touched only Home block-material `uCoords` constructor/runtime ownership, not project media, shader text, render targets, spotlight/thumb state, or mobile-specific resize logic.
+Project-media and full capture probes were not rerun because this batch touched only top-level renderer/canvas resize ownership, not project media, shader text, route data, or source content. Desktop/mobile output probes and desktop/mobile thumb probes were rerun because canvas sizing was in scope.
 
 Verified:
 
-- Renderer audit passed for the `uCoords` constructor/floating-runtime batch: `/tmp/rd-p1-ka-ucoords-audit-final.json`.
+- Renderer audit passed for the `qw` renderer resize batch: `/tmp/rd-qw-resize-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop output probe passed: `/tmp/rd-p1-ka-ucoords-output-desktop`.
+- Desktop output probe passed: `/tmp/rd-qw-resize-output-desktop`.
+- Mobile DPR `1.25` output probe passed: `/tmp/rd-qw-resize-output-mobile-dpr125`.
+- Desktop/mobile thumb spotlight probes passed: `/tmp/rd-qw-resize-thumb-desktop`, `/tmp/rd-qw-resize-thumb-mobile`.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

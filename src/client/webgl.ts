@@ -5514,7 +5514,6 @@ export class WebGLBackdrop {
       depth: false,
     });
     this.renderer.setClearColor(colorFrom(SOURCE_WORK_BG), 0);
-    this.renderer.setPixelRatio(sourceDpr());
     this.renderer.outputColorSpace = this.debugRendererOutput === "linear" ? LinearSRGBColorSpace : SRGBColorSpace;
     this.renderer.autoClear = false;
     this.renderer.domElement.className = "gl-canvas";
@@ -8488,8 +8487,8 @@ void main() {
     const dpr = sourceDpr();
     const workDpr = sourceWorkDpr();
     this.markSourceSkyResizeTicking();
+    this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(dpr);
-    this.renderer.setSize(width, height, false);
     const renderWidth = Math.max(1, Math.round(width * dpr));
     const renderHeight = Math.max(1, Math.round(height * dpr));
     const workRenderWidth = Math.max(1, Math.round(width * workDpr));
@@ -9631,6 +9630,8 @@ void main() {
     const drawingBufferSize = new Vector2();
     this.renderer.getSize(rendererSize);
     this.renderer.getDrawingBufferSize(drawingBufferSize);
+    const canvas = this.renderer.domElement;
+    const canvasRect = canvas.getBoundingClientRect();
     const mouseSimProbe = this.renderSettings.mousesim.enabled
       ? renderTargetProbe(this.renderer, this.screenMouseSimulationTargets[this.screenMouseSimulationIndex])
       : null;
@@ -9811,6 +9812,10 @@ void main() {
         toneMapping: this.renderer.toneMapping,
         autoClear: this.renderer.autoClear,
         pixelRatio: this.renderer.getPixelRatio(),
+        constructorDprMode: "source-qw-constructor-no-initial-setPixelRatio-resize-owns-dpr",
+        resizeMode: "source-qw-resize-setSize-before-setPixelRatio-default-updateStyle",
+        resizeOrder: "setSize-then-setPixelRatio",
+        canvasStyleUpdateMode: "source-qw-setSize-default-updateStyle-true",
         gpuBridge: sourceGpuBridgeSnapshot(),
         dprPolicy: {
           devicePixelRatio: window.devicePixelRatio || 1,
@@ -9823,6 +9828,20 @@ void main() {
         },
         size: { width: rendererSize.x, height: rendererSize.y },
         drawingBufferSize: { width: drawingBufferSize.x, height: drawingBufferSize.y },
+        canvas: {
+          width: canvas.width,
+          height: canvas.height,
+          styleWidth: canvas.style.width,
+          styleHeight: canvas.style.height,
+          clientWidth: canvas.clientWidth,
+          clientHeight: canvas.clientHeight,
+          rectWidth: canvasRect.width,
+          rectHeight: canvasRect.height,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          cssWidthMatchesViewport: Math.abs(canvasRect.width - window.innerWidth) < 0.5,
+          cssHeightMatchesViewport: Math.abs(canvasRect.height - window.innerHeight) < 0.5,
+        },
       },
       camera: {
         surfaceMode: "source-p1-Ya-perspective-55-inner-aspect-near1-far2000-position-5_5",

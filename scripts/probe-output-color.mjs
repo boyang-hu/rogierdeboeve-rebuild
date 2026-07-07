@@ -141,7 +141,14 @@ async function readProbeSummary(ws) {
       homeGalleryRuntime: window.__rogierHomeGalleryRuntime || null,
       canvas: [...document.querySelectorAll('canvas')].map((canvas) => {
         const rect = canvas.getBoundingClientRect();
-        return { width: canvas.width, height: canvas.height, rectWidth: rect.width, rectHeight: rect.height };
+        return {
+          width: canvas.width,
+          height: canvas.height,
+          styleWidth: canvas.style.width,
+          styleHeight: canvas.style.height,
+          rectWidth: rect.width,
+          rectHeight: rect.height,
+        };
       })
     })`,
     returnByValue: true,
@@ -925,6 +932,27 @@ async function runProbe() {
   const workOwnership = parsed.probe.settings?.work?.renderManagerOwnership;
   const mainOwnership = parsed.probe.settings?.main?.renderManagerOwnership;
   const mainSettings = parsed.probe.settings?.main || {};
+  const renderer = parsed.probe.renderer || {};
+  const rendererCanvas = renderer.canvas || {};
+  const rendererErrors = [];
+  const expectedCanvasWidth = Math.floor((renderer.size?.width || 0) * (renderer.dprPolicy?.globalDpr || 1));
+  const expectedCanvasHeight = Math.floor((renderer.size?.height || 0) * (renderer.dprPolicy?.globalDpr || 1));
+  if (renderer.constructorDprMode !== "source-qw-constructor-no-initial-setPixelRatio-resize-owns-dpr") rendererErrors.push("constructorDprMode");
+  if (renderer.resizeMode !== "source-qw-resize-setSize-before-setPixelRatio-default-updateStyle") rendererErrors.push("resizeMode");
+  if (renderer.resizeOrder !== "setSize-then-setPixelRatio") rendererErrors.push("resizeOrder");
+  if (renderer.canvasStyleUpdateMode !== "source-qw-setSize-default-updateStyle-true") rendererErrors.push("canvasStyleUpdateMode");
+  if (!closeTo(renderer.pixelRatio, renderer.dprPolicy?.globalDpr || 1, 0.001)) rendererErrors.push("pixelRatio");
+  if (rendererCanvas.width !== expectedCanvasWidth) rendererErrors.push("canvasWidth");
+  if (rendererCanvas.height !== expectedCanvasHeight) rendererErrors.push("canvasHeight");
+  if (renderer.drawingBufferSize?.width !== expectedCanvasWidth) rendererErrors.push("drawingBufferWidth");
+  if (renderer.drawingBufferSize?.height !== expectedCanvasHeight) rendererErrors.push("drawingBufferHeight");
+  if (rendererCanvas.styleWidth !== `${rendererCanvas.viewportWidth}px`) rendererErrors.push("styleWidth");
+  if (rendererCanvas.styleHeight !== `${rendererCanvas.viewportHeight}px`) rendererErrors.push("styleHeight");
+  if (rendererCanvas.cssWidthMatchesViewport !== true) rendererErrors.push("cssWidthMatchesViewport");
+  if (rendererCanvas.cssHeightMatchesViewport !== true) rendererErrors.push("cssHeightMatchesViewport");
+  if (rendererErrors.length) {
+    throw new Error(`Renderer qw resize source-shape mismatch: ${rendererErrors.join(", ")}`);
+  }
   const gpuBridge = parsed.probe.renderer?.gpuBridge || {};
   const gpuBridgeErrors = [];
   if (gpuBridge.mode !== "source-Qe-gpuCheck-XD-detect-gpu-5_0_38") gpuBridgeErrors.push("mode");
