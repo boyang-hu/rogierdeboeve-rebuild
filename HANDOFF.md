@@ -26,12 +26,13 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 2, Home DOM/interaction parity follow-up |
+| Active phase | Phase 3 next; Phase 2 is closed/guarded |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Route/session, sound-choice, and remaining Home interaction checks |
-| Next secondary priority | Decide whether Phase 2 can close or needs one more narrow fix batch |
-| Last committed source-backed code batch | Phase 2 Home preloader and mobile work-state parity |
-| Last closed evidence batch | Phase 2 Home preloader/mobile DOM audit plus WebGL output probes |
+| Phase 2 status | Closed/guarded on 2026-07-07 |
+| Current production priority | Start Phase 3 project-detail media/scroll/route audit |
+| Next secondary priority | Keep Phase 1 and Phase 2 probes as regression gates when shared paths change |
+| Last committed source-backed code batch | Phase 2 sound, route/runtime state, and Home interaction closeout |
+| Last closed evidence batch | Phase 2 sound, route/runtime state, and remaining Home interaction closeout |
 | Local service | Running at `http://localhost:5174/` while reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -45,15 +46,15 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch aligned Home preloader and mobile work-state behavior with the online/source read.
+The latest production batch closes Phase 2 by aligning sound choice, audio lifecycle, route/runtime Work state, and remaining Home interaction details with the source read.
 
-- Preloader markup now uses the source-shaped `.preloader`, `.preloader-cta[data-sound="true"]`, `.preloader-cta-2[data-sound="false"]`, progress text, circle, footer text, and dots structure.
-- Preloader timing now waits for WebGL readiness before CTA activation, uses source-shaped progress/CTA intro motion, and removes the preloader through the source `scale: 1.2`, `opacity: 0`, `expo.out` reveal path.
-- Home no longer server-renders or immediately initializes an active work item before preloader entry; gallery entry owns the first active state.
-- Mobile work title/list behavior now matches the observed online/source computed state: title remains in layout but hidden, cards stay opaque, inactive links are hidden/non-interactive, active link is visible, and the active CTA owns pointer interaction.
-- The `?disable-webgl` query is available for DOM audits only; normal users still run WebGL, and visual/WebGL validation remains covered by output probes.
+- `src/client/audio.ts` now follows source `ln`: sound starts disabled, Howler sounds are lazy, ambient and drones fade to source volumes, visibility pause/resume is source-shaped, and the sound button rects animate from runtime intensity.
+- `src/client/main.ts` no longer persists preloader entry, sound mode, or Work state in storage. Work state is runtime-only, matching source `Qe.workState`, and full reloads reset to a fresh preloader.
+- Preloader sound CTA order now matches source `iD`: non-mobile sound entry initializes/toggles/clicks sound; no-sound entry initializes only; mobile skips sound init/toggle.
+- Home Work CTA/progress/keyboard details were tightened to the source interaction read, and sound click bindings are rebound after route DOM swaps.
+- The `?skip-preloader` and `?disable-webgl` queries remain audit hooks only.
 
-Phase 1 remains closed/guarded in `PHASE1_AUDIT.md`.
+Phase 1 remains closed/guarded in `PHASE1_AUDIT.md`. Phase 2 is now closed/guarded in `REBUILD_PLAN.md`.
 
 ## Current Evidence
 
@@ -65,6 +66,8 @@ Latest Phase 2 evidence:
 - DOM audit result: online and rebuild both removed the preloader after entry, both activated `hashgraph-vc`, both moved to `gc-2026` after wheel input, and both reported `0` checked network failures/runtime exceptions.
 - Mobile DOM audit result: title display/visibility, card opacity, link opacity/pointer-events, active link visibility, and active CTA pointer-events matched online.
 - WebGL output probes reported no failures/exceptions and preserved active `hashgraph-vc` after entry on desktop and mobile.
+- Closeout state audit result: desktop fresh load shows the preloader and no active Work item; sound entry activates the sound toggle; no-sound entry leaves it inactive; full reload shows the preloader again; no `rd:has-entered`, `rd:sound-enabled`, or `rd:work-state` session keys are written; SPA Home -> About -> Home restores `gc-2026` from runtime memory.
+- Mobile touch-emulated closeout audit result: `(pointer: coarse)` is true, `.preloader-cta-2` and `.ui-sound-toggle` are hidden, Enter does not activate sound, and no session keys are written.
 
 Audit method note:
 
@@ -86,17 +89,15 @@ Audit method note:
 
 ## Next Action
 
-Phase 1 is closed. Do not reopen it unless a concrete source-owned mismatch appears.
-
-Phase 2 Home shell/preloader/mobile-list parity is now closed by the latest batch. Do not call all of Phase 2 complete until the remaining observable Home flows are either matched or explicitly deferred.
+Phase 1 and Phase 2 are closed. Do not reopen either one unless a concrete source-owned mismatch appears.
 
 Recommended next move:
 
-1. Audit sound choice and audio lifecycle from source/online: preloader sound opt-in/out, persisted sound state, Howler resume/mute behavior, and sound-toggle state after route/session restore.
-2. Audit route/session restore: Home to project/about, browser back/forward, `skip-preloader`, re-entry after `rd:has-entered`, and active work restoration.
-3. Sweep remaining Home interaction affordances: desktop hover CTA, progressbar click state, touch/drag/keyboard behavior, mobile menu close/open state, and footer/header animation details.
-4. Only after those checks are clean, decide whether Phase 2 is complete and move to Phase 3 project-detail media parity.
-5. Keep Phase 1 WebGL, project media, about, and interaction probes as regression gates when shared render or lifecycle paths change.
+1. Start Phase 3 with source/online audit of project-detail pages: media block structure, image/video sizing, autoplay/pause behavior, scroll-state visual updates, next-project section, and project-to-project/Home/About route behavior.
+2. Convert only source-backed Phase 3 findings into scoped fixes.
+3. Keep Phase 1 WebGL and Phase 2 Home DOM/interaction probes as regression gates when shared render, router, audio, or lifecycle paths change.
+4. After Phase 3 is clean or guarded, move to Phase 4 About/auxiliary pages.
+5. Leave broad transitions/audio/Lenis lifecycle cleanup for Phase 5 unless a shared bug blocks Phase 3 or Phase 4.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:
 

@@ -20,13 +20,13 @@ Use git for history. Do not maintain a second timeline here.
 
 The current order is intentionally narrow:
 
-1. Keep Phase 1 closed unless new source-owned evidence requires reopening.
-2. Finish remaining Phase 2 Home DOM/interaction follow-up checks.
-3. Convert any remaining source-backed finding into one small Home fix batch at a time.
-4. Decide whether Phase 2 can close after route/session, sound-choice, and remaining interaction checks are clean or explicitly deferred.
-5. Keep project media, about, and interaction probes as regression gates when shared paths change.
+1. Keep Phase 1 and Phase 2 closed unless new source-owned evidence requires reopening.
+2. Start Phase 3 with a source/online audit of project-detail media, scroll, and next-project behavior.
+3. Convert Phase 3 findings into one small project-detail fix batch at a time.
+4. Move to Phase 4 only after project-detail media and route behavior are clean or explicitly guarded.
+5. Keep Phase 1 WebGL and Phase 2 Home interaction probes as regression gates when shared paths change.
 
-Everything outside Home DOM/interaction stays paused unless the audit identifies a shared-path dependency.
+Everything outside the active phase stays paused unless the audit identifies a shared-path dependency.
 
 ## Execution Rules
 
@@ -47,10 +47,10 @@ Everything outside Home DOM/interaction stays paused unless the audit identifies
 | Phase | Status | Gate to advance |
 | --- | --- | --- |
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
-| 2. Home DOM/interaction parity | Shell, preloader, and mobile work states closed; follow-up checks remain | Close or defer sound-choice/audio lifecycle, route/session restore, and remaining Home interaction details. |
-| 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
-| 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
-| 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 2-4 scope is accepted. |
+| 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
+| 3. Project detail media | Next active lane | Audit project pages against source/online, then close media sizing/playback, scroll-state, next-project, and project route behavior. |
+| 4. About and auxiliary pages | Pending with partial guardrails | Start after Phase 3 is clean or guarded. |
+| 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
 ## Phase 1 Closed Record
@@ -133,13 +133,13 @@ Required validation:
 
 ### Phase 2 Home DOM/interaction parity
 
-This is the active production lane. The first audit pass is complete.
+This phase is closed and guarded as of 2026-07-07.
 
-Initial boundary:
+Closed boundary:
 
 - Keep Phase 1 WebGL probes as regression gates.
-- Start from Home DOM state, interaction affordances, and route-level user-visible behavior.
-- Do not reopen WebGL source parity unless a Phase 2 finding identifies a concrete shared-path mismatch.
+- Home DOM state, interaction affordances, and route-level user-visible behavior are guarded.
+- Do not reopen WebGL source parity unless a future finding identifies a concrete shared-path mismatch.
 
 Audit evidence:
 
@@ -165,17 +165,24 @@ Closed source-backed batches:
 4. Mobile work list/title CSS.
    - Source keeps `.ui-title` hidden by visibility/pointer behavior on mobile and handles inactive mobile cards mainly through link opacity/pointer state.
    - Done: rebuild now keeps the title in layout but hidden, keeps cards opaque, hides inactive links through opacity/pointer state, and leaves the active CTA interactive.
+5. Sound choice and audio lifecycle.
+   - Source `ln` starts sound disabled, lazily creates Howler `ambient`, `drones`, `hover`, `click`, `woosh`, `plucks`, and `softWoosh`, fades ambient/drones only after sound opt-in, and animates `.ui-sound-toggle-rects` from runtime intensity.
+   - Done: rebuild now uses source-shaped Howler setup, no `Howler` global mute shim, no stored sound preference, source fade volumes/timing, visibility pause/resume, and route re-binding for new `[data-sound-click]` items.
+6. Preloader sound choice.
+   - Source sound CTA on non-mobile runs `ln.initSounds()`, `ln.toggleSound()`, then `ln.playClick()`; no-sound CTA only initializes sounds; mobile skips sound init/toggle and hides the second CTA.
+   - Done: rebuild now follows that event order, keeps `?skip-preloader` only as an explicit audit hook, and never skips the preloader from session state.
+7. Route/runtime Home state.
+   - Source uses runtime-only `Qe.currentProject` and `Qe.workState`; there is no `sessionStorage` or `localStorage` for preloader entry, sound choice, or work state.
+   - Done: rebuild now stores Work state only in module runtime memory during SPA route transitions, restores `gc-2026` after Home -> About -> Home, and resets to a fresh preloader after a full reload.
+8. Remaining Home interaction affordances.
+   - Source Work CTA click prevents navigation and plays click sound; progress click prevents default; arrow-key handling advances the gallery without source-owned `preventDefault`.
+   - Done: rebuild now matches these Home interaction details and keeps sound items rebound after route DOM replacement.
 
-Open Phase 2 follow-up queue:
+Phase 2 reopen queue:
 
-1. Sound choice and audio lifecycle.
-   - Verify source/online behavior for preloader sound opt-in/out, persisted sound setting, Howler resume/mute, and sound-toggle state after route/session restore.
-2. Route/session restore.
-   - Verify Home to project/about, browser back/forward, `skip-preloader`, re-entry after `rd:has-entered`, and active work restoration.
-3. Remaining Home interaction affordances.
-   - Verify desktop hover CTA, progressbar click state, touch/drag/keyboard behavior, mobile menu close/open state, and header/footer animation details.
-4. Phase 2 close decision.
-   - Close Phase 2 only after the checks above are clean or explicitly deferred with source-backed rationale.
+1. Reopen sound/preloader only if online/source evidence contradicts the guarded `ln`/`iD` behavior.
+2. Reopen Home route state only if an SPA transition fails to preserve active Work state or a full reload incorrectly preserves it.
+3. Reopen Home interactions only with a concrete source-owned mismatch in Work list, progressbar, keyboard, touch/drag, mobile menu, header, or footer behavior.
 
 Original audit checklist:
 
@@ -194,6 +201,8 @@ Latest validation:
 - `node --check src/client/webgl.ts`
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Desktop CDP state audit on `http://127.0.0.1:5174/?disable-webgl`: fresh preloader present, sound opt-in activates toggle, no-sound entry leaves toggle inactive, full reload shows preloader again, no `rd:has-entered`/`rd:sound-enabled`/`rd:work-state` session keys, Home -> About -> Home restores `gc-2026`, and checked failures/exceptions are `0`.
+- Mobile touch-emulated CDP state audit on `http://127.0.0.1:5174/?disable-webgl`: `(pointer: coarse)` true, second CTA hidden, sound toggle hidden, Enter does not activate sound, no session keys.
 - Phase 2 shell audit: `/tmp/rd-phase2-home-audit-after-shell-final/home-dom-interaction-audit.json`
 - Phase 2 preloader/mobile DOM audit: `/tmp/rd-phase2-home-audit-mobile-final2/home-dom-interaction-audit.json`
 - Home output probes after shell batch: desktop `/tmp/rd-output-p2-shell-desktop`, mobile `/tmp/rd-output-p2-shell-mobile`
@@ -218,12 +227,12 @@ Current boundary:
 - Existing `Ka`, `ag`, and `qT` guardrails remain active.
 - Run `scripts/probe-interactive-mouse.mjs` for mouse/fluid path changes.
 
-## Non-Goals For The Active Phase 2 Audit
+## Non-Goals For The Active Phase
 
-- Do not make production edits before a source-backed Phase 2 finding is isolated.
+- Do not make production edits before a source-backed finding is isolated.
 - Do not reopen Phase 1 WebGL systems for DOM or interaction differences without a concrete shared-path mismatch.
 - Do not introduce screenshot-driven tuning.
-- Do not refactor project-detail, about, audio, or transition systems unless Home audit evidence points to a shared owner.
+- Do not refactor inactive phases unless active-phase evidence points to a shared owner.
 - Do not treat local mirror JS rewrites as product behavior without checking the online site or original source ownership.
 
 ## Validation Profiles

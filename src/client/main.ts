@@ -72,6 +72,41 @@ type HomeGalleryProbeWindow = Window & {
 type TransitionMode = "home" | "project" | "about" | "work" | "default";
 type AppNavigate = (url: string, mode?: TransitionMode, historyMode?: "push" | "replace") => void;
 
+type WorkGalleryIndexState = {
+  current: number;
+  prev: number;
+  next: number;
+};
+
+type WorkGalleryScrollState = {
+  virtual: number;
+  target: number;
+  animated: number;
+  diff: number;
+  current: number;
+  progress: number;
+  limit: number;
+  remainder: number;
+  step: number;
+  offset: number;
+  velocity: number;
+  active: boolean;
+  targetPlusDiff?: number;
+};
+
+type RuntimeWorkState = {
+  slug?: string;
+  index: WorkGalleryIndexState;
+  scroll: WorkGalleryScrollState;
+  activeHook: number;
+  targetHook: number;
+  activeProject?: string;
+  sceneRotation: number;
+};
+
+let runtimeWorkState: RuntimeWorkState | null = null;
+let currentProjectId: string | null = null;
+
 function projectPayloadFromElement(element?: HTMLElement | null) {
   return {
     slug: element?.dataset.slug ?? element?.dataset.project,
@@ -185,7 +220,6 @@ function runWorkGalleryOut(webgl?: WebGLLike) {
 
 function navigateWithWorkSceneOut(url: string, webgl?: WebGLLike, navigate?: AppNavigate) {
   if (document.documentElement.classList.contains("is-work-gallery-leaving")) return;
-  persistEnteredSession();
   window.dispatchEvent(new CustomEvent("rd:work-gallery-out", { detail: { url } }));
   if (navigate) navigate(url, "home");
   else window.setTimeout(() => window.location.assign(url), 500);
@@ -201,31 +235,6 @@ function animateCurrentViewOut() {
 
 function dispatchSoundMode(enabled: boolean) {
   window.dispatchEvent(new CustomEvent("rd:sound-mode", { detail: { enabled } }));
-}
-
-function getSessionValue(key: string) {
-  try {
-    return window.sessionStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function setSessionValue(key: string, value: string) {
-  try {
-    window.sessionStorage.setItem(key, value);
-  } catch {
-    // Storage can be unavailable in restricted browsing contexts.
-  }
-}
-
-function persistSoundMode(enabled: boolean) {
-  setSessionValue("rd:sound-enabled", String(enabled));
-}
-
-function persistEnteredSession() {
-  setSessionValue("rd:has-entered", "true");
-  document.documentElement.classList.add("has-session-entered");
 }
 
 function formatButton(button: HTMLElement) {
@@ -269,14 +278,8 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
   const ctaTextInner = document.querySelector<HTMLElement>(".preloader-cta-text-inner");
   const ctaTextInner2 = document.querySelector<HTMLElement>(".preloader-cta-text-2-inner");
   const footerTextInner = document.querySelector<HTMLElement>(".preloader-footer-text-inner");
-  const soundToggle = document.querySelector<HTMLElement>(".ui-sound-toggle");
-  const hasEntered = () => getSessionValue("rd:has-entered") === "true";
-  const getSessionSoundMode = () => getSessionValue("rd:sound-enabled") !== "false";
-  const setSessionState = (soundEnabled: boolean) => {
-    persistEnteredSession();
-    setSessionValue("rd:sound-enabled", String(soundEnabled));
-  };
-  const skipPreloader = new URLSearchParams(window.location.search).has("skip-preloader") || hasEntered();
+  const isMobile = () => window.matchMedia("(pointer: coarse)").matches;
+  const skipPreloader = new URLSearchParams(window.location.search).has("skip-preloader");
   const progressState = {
     progress: 0,
     progressCircleR: progressCircle?.r.baseVal.value ?? 230,
@@ -298,13 +301,14 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
     window.clearTimeout(activeTimer);
     rotationTween?.kill();
     progressTween?.kill();
-    setSessionState(soundEnabled);
-    dispatchSoundMode(soundEnabled);
-    soundToggle?.classList.toggle("is-active", soundEnabled);
-    if (soundToggle) {
-      soundToggle.style.pointerEvents = "auto";
-      gsap.to(soundToggle, { opacity: 1, duration: 0.5, ease: "none" });
+    if (!isMobile()) {
+      window.dispatchEvent(new CustomEvent("rd:sound-init"));
+      if (soundEnabled) {
+        dispatchSoundMode(true);
+        window.dispatchEvent(new CustomEvent("rd:sound-click"));
+      }
     }
+    window.dispatchEvent(new CustomEvent("rd:sound-show-button"));
     document.body.classList.remove("is-preloading");
     document.body.classList.add("has-entered");
     if (preloader) preloader.style.pointerEvents = "none";
@@ -333,9 +337,6 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
   };
 
   if (skipPreloader) {
-    setSessionState(getSessionSoundMode());
-    dispatchSoundMode(getSessionSoundMode());
-    soundToggle?.classList.toggle("is-active", getSessionSoundMode());
     document.body.classList.remove("is-preloading");
     document.body.classList.add("has-entered");
     preloader?.remove();
@@ -460,17 +461,6 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
   }, 100);
 }
 
-function initSoundToggle() {
-  const toggle = document.querySelector<HTMLElement>(".ui-sound-toggle");
-  if (!toggle) return;
-  toggle.addEventListener("click", () => {
-    const enabled = !toggle.classList.contains("is-active");
-    toggle.classList.toggle("is-active", enabled);
-    persistSoundMode(enabled);
-    dispatchSoundMode(enabled);
-  });
-}
-
 function initMenu() {
   const nav = document.querySelector<HTMLElement>(".ui-nav-mobile");
   const toggle = document.querySelector<HTMLElement>(".ui-nav-mobile-toggle");
@@ -522,7 +512,6 @@ function initMenu() {
 
 function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNavigate) {
   document.documentElement.classList.remove("is-work-gallery-leaving");
-  const stateKey = "rd:work-state";
   const cards = document.querySelectorAll<HTMLElement>("[data-project-card]");
   const progressItems = document.querySelectorAll<HTMLElement>("[data-progress-slug]");
   const cardsArray = Array.from(cards);
@@ -533,22 +522,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   const totalItems = cardsArray.length - 1;
   const step = 1000;
   const limit = cardsArray.length * step;
-  type WorkGalleryScrollState = {
-    virtual: number;
-    target: number;
-    animated: number;
-    diff: number;
-    current: number;
-    progress: number;
-    limit: number;
-    remainder: number;
-    step: number;
-    offset: number;
-    velocity: number;
-    active: boolean;
-    targetPlusDiff?: number;
-  };
-  const indexState = {
+  const indexState: WorkGalleryIndexState = {
     current: activeIndex,
     prev: activeIndex === 0 ? totalItems : activeIndex - 1,
     next: activeIndex === totalItems ? 0 : activeIndex + 1,
@@ -576,37 +550,25 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   };
   const galleryElement = document.querySelector<HTMLElement>(".ui-work-content") ?? document.querySelector<HTMLElement>("[data-view='home']");
   const wrap = (value: number, max: number) => ((value % max) + max) % max;
-  try {
-    const restored = JSON.parse(sessionStorage.getItem(stateKey) ?? "null") as
-      | {
-          slug?: string;
-          index?: Partial<typeof indexState>;
-          scroll?: Partial<typeof scroll>;
-          activeHook?: number;
-          targetHook?: number;
-          activeProject?: string;
-          sceneRotation?: number;
-        }
-      | null;
-    const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restored?.slug);
-    if (restored && restoredIndex >= 0) {
-      activeIndex = restoredIndex;
-      const sourceRestoredActive = typeof restored.scroll?.active === "boolean" ? restored.scroll.active : scroll.active;
-      Object.assign(indexState, restored.index);
-      Object.assign(scroll, restored.scroll);
-      activeHook = typeof restored.activeHook === "number" ? restored.activeHook : restoredIndex * step + scroll.remainder;
-      targetHook = typeof restored.targetHook === "number" ? restored.targetHook : activeHook;
-      sceneRotation = typeof restored.sceneRotation === "number" && Math.abs(restored.sceneRotation) <= 30 ? restored.sceneRotation : 0;
-      activeProjectId = restored.activeProject ?? restored.slug ?? cardsArray[restoredIndex]?.dataset.slug ?? "";
-      restoredWorkState = true;
-      restoredScrollActive = scroll.active;
-      restoredScrollActivePreserved = scroll.active === sourceRestoredActive;
-      scroll.current = wrap(scroll.animated || scroll.target || restoredIndex * step, limit);
-      scroll.progress = scroll.current / limit;
-      scroll.remainder = scroll.target - (scroll.target % limit);
-    }
-  } catch {
-    sessionStorage.removeItem(stateKey);
+  const restored = runtimeWorkState;
+  const restoredSlug = restored?.activeProject ?? restored?.slug ?? currentProjectId ?? undefined;
+  const restoredIndex = cardsArray.findIndex((card) => card.dataset.slug === restoredSlug);
+  if (restored && restoredIndex >= 0) {
+    activeIndex = restoredIndex;
+    const sourceRestoredActive = restored.scroll.active;
+    Object.assign(indexState, restored.index);
+    Object.assign(scroll, restored.scroll);
+    activeHook = typeof restored.activeHook === "number" ? restored.activeHook : restoredIndex * step + scroll.remainder;
+    targetHook = typeof restored.targetHook === "number" ? restored.targetHook : activeHook;
+    sceneRotation = typeof restored.sceneRotation === "number" && Math.abs(restored.sceneRotation) <= 30 ? restored.sceneRotation : 0;
+    activeProjectId = restored.activeProject ?? restored.slug ?? cardsArray[restoredIndex]?.dataset.slug ?? "";
+    currentProjectId = activeProjectId || currentProjectId;
+    restoredWorkState = true;
+    restoredScrollActive = scroll.active;
+    restoredScrollActivePreserved = scroll.active === sourceRestoredActive;
+    scroll.current = wrap(scroll.animated || scroll.target || restoredIndex * step, limit);
+    scroll.progress = scroll.current / limit;
+    scroll.remainder = scroll.target - (scroll.target % limit);
   }
   indexState.current = activeIndex;
   indexState.prev = activeIndex === 0 ? totalItems : activeIndex - 1;
@@ -677,6 +639,7 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     const changedProject = nextProjectId !== activeProjectId;
     if (!changedProject && !force) return;
     activeProjectId = nextProjectId;
+    currentProjectId = nextProjectId;
     const payload = projectPayloadFromElement(card);
     applyActiveColor(payload.color);
     if (emitEvents) window.dispatchEvent(new CustomEvent("rd:project-active", { detail: nextProjectId }));
@@ -783,32 +746,31 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   const saveWorkState = () => {
     const card = cardsArray[activeIndex];
     if (!card) return;
-    sessionStorage.setItem(
-      stateKey,
-      JSON.stringify({
-        slug: card.dataset.slug,
-        activeProject: card.dataset.slug,
-        index: indexState,
-        scroll: {
-          virtual: scroll.virtual,
-          target: scroll.target,
-          animated: scroll.animated,
-          diff: scroll.diff,
-          current: scroll.current,
-          progress: scroll.progress,
-          targetPlusDiff: scroll.targetPlusDiff,
-          remainder: scroll.remainder,
-          limit: scroll.limit,
-          step: scroll.step,
-          offset: scroll.offset,
-          velocity: scroll.velocity,
-          active: scroll.active,
-        },
-        activeHook,
-        targetHook,
-        sceneRotation,
-      }),
-    );
+    const slug = card.dataset.slug;
+    currentProjectId = slug ?? activeProjectId;
+    runtimeWorkState = {
+      slug,
+      activeProject: slug,
+      index: { ...indexState },
+      scroll: {
+        virtual: scroll.virtual,
+        target: scroll.target,
+        animated: scroll.animated,
+        diff: scroll.diff,
+        current: scroll.current,
+        progress: scroll.progress,
+        targetPlusDiff: scroll.targetPlusDiff,
+        remainder: scroll.remainder,
+        limit: scroll.limit,
+        step: scroll.step,
+        offset: scroll.offset,
+        velocity: scroll.velocity,
+        active: scroll.active,
+      },
+      activeHook,
+      targetHook,
+      sceneRotation,
+    };
   };
 
   const previewWork = (enabled: boolean) => {
@@ -817,10 +779,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
   };
 
   const enterWorkGallery = () => {
-    if (!scroll.active) {
-      activateIndex(activeIndex, false, true, true);
-      scroll.active = true;
-    }
+    activateIndex(activeIndex, false, true, true);
+    scroll.active = true;
     const webgl = getWebgl();
     if (!webgl) return;
     if (webglGalleryEntered) return;
@@ -858,6 +818,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
     };
     const cta = card.querySelector<HTMLElement>(".ui-work-cta");
     const onCtaClick = (event: MouseEvent) => {
+      event.preventDefault();
+      window.dispatchEvent(new CustomEvent("rd:sound-click"));
       if (performance.now() - lastTouchSelect < 500) return;
       setDomActiveIndex(index);
     };
@@ -894,7 +856,8 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
         scrollToIndex(index);
       }
     };
-    const onProgressClick = () => {
+    const onProgressClick = (event: MouseEvent) => {
+      event.preventDefault();
       if (performance.now() - lastTouchSelect < 500) return;
       selectProgressItem();
     };
@@ -919,7 +882,6 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined, navigate?: AppNa
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    event.preventDefault();
     if (event.key === "ArrowRight" || event.key === "ArrowDown") next();
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") prev();
   };
@@ -1382,7 +1344,7 @@ function boot() {
     });
     document.body.classList.add("is-ready", "has-entered");
     document.body.classList.remove("is-preloading");
-    document.documentElement.classList.add("js", "has-session-entered");
+    document.documentElement.classList.add("js");
   };
   const replacePageDom = (doc: Document) => {
     const nextBody = doc.body;
@@ -1451,6 +1413,7 @@ function boot() {
     initWebglForCurrentPage(cleanupPageCallbacks);
     cleanupPageCallbacks.push(initMenu() ?? (() => {}));
     cleanupPageCallbacks.push(initButtons());
+    window.dispatchEvent(new CustomEvent("rd:bind-sound-items"));
     cleanupPageCallbacks.push(initWorkPreview(() => webgl, navigateTo));
     cleanupPageCallbacks.push(initProjectMedia());
     cleanupPageCallbacks.push(initProjectNextState(() => webgl) ?? (() => {}));
@@ -1472,7 +1435,6 @@ function boot() {
   const navigateTo: AppNavigate = (url, mode = "default", historyMode = "push") => {
     if (routing) return;
     routing = true;
-    persistEnteredSession();
     const routeUrl = normalizeRouteUrl(url);
     const routePromise = loadRoute(routeUrl);
     const leavePromise = new Promise((resolve) => window.setTimeout(resolve, transitionDelay(mode)));
@@ -1527,14 +1489,12 @@ function boot() {
     webgl = instance;
     initWebglForCurrentPage(cleanupPageCallbacks);
   });
-
-  initPreloader(webglReady);
-  void import("./audio").then(({ initAudio }) => {
+  const audioReady = import("./audio").then(({ initAudio }) => {
     initAudio();
     if (homeGalleryEntered) window.dispatchEvent(new CustomEvent("rd:home-gallery-in"));
   });
 
-  initSoundToggle();
+  initPreloader(Promise.all([webglReady, audioReady]));
   initCurrentPage();
   preloadRoutes();
   document.addEventListener("click", onRouterClick);

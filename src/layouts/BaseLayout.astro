@@ -18,11 +18,6 @@ const pageClass = pathname === "/" ? "is-home" : pathname.startsWith("/about") ?
     <meta name="viewport" content="width=device-width" />
     <script is:inline>
       document.documentElement.classList.add("js");
-      try {
-        if (window.sessionStorage.getItem("rd:has-entered") === "true") {
-          document.documentElement.classList.add("has-session-entered");
-        }
-      } catch {}
     </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -36,15 +31,6 @@ const pageClass = pathname === "/" ? "is-home" : pathname.startsWith("/about") ?
     <meta property="og:image" content="/open-graph.jpg" />
   </head>
   <body class={`is-preloading ${pageClass}`}>
-    <script is:inline>
-      try {
-        if (window.sessionStorage.getItem("rd:has-entered") === "true") {
-          document.documentElement.classList.add("has-session-entered");
-          document.body.classList.remove("is-preloading");
-          document.body.classList.add("has-entered");
-        }
-      } catch {}
-    </script>
     <div class="preloader c-color">
       <div class="preloader-progress">
         <div class="preloader-cta" data-sound="true">

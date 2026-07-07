@@ -1,25 +1,48 @@
-import { Howl, Howler } from "howler";
+import gsap from "gsap";
+import { Howl } from "howler";
 
-let unlocked = false;
 let ambient: Howl | null = null;
 let click: Howl | null = null;
+let drones: Howl | null = null;
 let hover: Howl | null = null;
 let plucks: Howl | null = null;
 let softWoosh: Howl | null = null;
 let woosh: Howl | null = null;
-let enabled = true;
-let homePlucksPlayed = false;
+let enabled = false;
+let intensity = 0;
+let initialized = false;
+let soundsInitialized = false;
+let soundToggle: HTMLElement | null = null;
+let soundToggleRects: NodeListOf<SVGRectElement> | [] = [];
+const boundSoundItems = new WeakSet<HTMLElement>();
 
-export function initAudio() {
-  click = new Howl({
-    src: ["/audio/eerie.webm", "/audio/eerie.ogg", "/audio/eerie.mp3"],
-    volume: 0.15,
-    rate: 0.75,
+function initSounds() {
+  if (soundsInitialized) return;
+  soundsInitialized = true;
+  drones = new Howl({
+    src: ["/audio/drones.webm", "/audio/drones.ogg", "/audio/drones.mp3"],
+    volume: 0,
+    loop: true,
+  });
+  ambient = new Howl({
+    src: ["/audio/ambient.webm", "/audio/ambient.ogg", "/audio/ambient-2.mp3"],
+    volume: 0,
+    loop: true,
   });
   hover = new Howl({
     src: ["/audio/eerie.webm", "/audio/eerie.ogg", "/audio/eerie.mp3"],
     volume: 0.65,
     rate: 0.25,
+  });
+  click = new Howl({
+    src: ["/audio/eerie.webm", "/audio/eerie.ogg", "/audio/eerie.mp3"],
+    volume: 0.15,
+    rate: 0.75,
+  });
+  woosh = new Howl({
+    src: ["/audio/woosh.webm", "/audio/woosh.ogg", "/audio/woosh.mp3"],
+    volume: 0.25,
+    rate: 1.8,
   });
   plucks = new Howl({
     src: ["/audio/plucks.webm", "/audio/plucks.ogg", "/audio/plucks.mp3"],
@@ -30,61 +53,135 @@ export function initAudio() {
     volume: 0.25,
     rate: 1.5,
   });
-  woosh = new Howl({
-    src: ["/audio/woosh.webm", "/audio/woosh.ogg", "/audio/woosh.mp3"],
-    volume: 0.25,
-    rate: 1.8,
-  });
-  ambient = new Howl({
-    src: ["/audio/ambient.webm", "/audio/ambient.ogg", "/audio/ambient-2.mp3"],
-    volume: 0,
-    loop: true,
-  });
+}
 
-  const unlock = () => {
-    if (unlocked) return;
-    unlocked = true;
-    Howler.volume(enabled ? 1 : 0);
-    if (enabled) {
-      ambient?.play();
-      ambient?.fade(0, 0.18, 2400);
-    }
-    window.removeEventListener("pointerdown", unlock);
-    window.removeEventListener("keydown", unlock);
-  };
+function playAmbient() {
+  initSounds();
+  ambient?.play();
+  drones?.play();
+  ambient?.fade(0, 0.2, 5000);
+  drones?.fade(0, 0.1, 5000);
+}
 
-  window.addEventListener("pointerdown", unlock, { once: true });
-  window.addEventListener("keydown", unlock, { once: true });
+function stopAmbient() {
+  ambient?.fade(ambient.volume(), 0, 500);
+  drones?.fade(drones.volume(), 0, 500);
+}
+
+function startAnimateSoundButton() {
+  gsap.to({ value: intensity }, {
+    value: 1,
+    duration: 1,
+    onUpdate() {
+      intensity = this.targets()[0].value;
+    },
+  });
+  soundToggle?.classList.add("is-active");
+}
+
+function stopAnimateSoundButton() {
+  gsap.to({ value: intensity }, {
+    value: 0,
+    duration: 1,
+    onUpdate() {
+      intensity = this.targets()[0].value;
+    },
+  });
+  soundToggle?.classList.remove("is-active");
+}
+
+function setSoundMode(nextEnabled: boolean) {
+  if (!soundsInitialized) initSounds();
+  enabled = nextEnabled;
+  if (enabled) {
+    playAmbient();
+    startAnimateSoundButton();
+    return;
+  }
+  stopAmbient();
+  stopAnimateSoundButton();
+}
+
+function toggleSoundMode() {
+  setSoundMode(!enabled);
+}
+
+function showSoundButton() {
+  if (!soundToggle) return;
+  soundToggle.style.pointerEvents = "auto";
+  gsap.to(soundToggle, { opacity: 1, duration: 0.5, ease: "none" });
+}
+
+function playHover() {
+  if (!enabled) return;
+  initSounds();
+  hover?.play();
+  hover?.fade(0.6, 0, 1000);
+}
+
+function playClick() {
+  if (!enabled) return;
+  initSounds();
+  click?.play();
+}
+
+function bindSoundItems(root: ParentNode = document) {
+  root.querySelectorAll<HTMLElement>("[data-sound-click]").forEach((element) => {
+    if (boundSoundItems.has(element)) return;
+    boundSoundItems.add(element);
+    element.addEventListener("click", playClick);
+    element.addEventListener("mouseenter", playHover);
+  });
+}
+
+function animateSoundRects(time: number) {
+  if (intensity === 0) return;
+  soundToggleRects.forEach((rect, index) => {
+    const offset = Math.cos(time * 3 + index * 0.5) * 2.5 * intensity;
+    rect.style.transform = `translateY(${offset}px)`;
+  });
+}
+
+export function initAudio() {
+  if (initialized) {
+    bindSoundItems();
+    return;
+  }
+  initialized = true;
+  soundToggle = document.querySelector(".ui-sound-toggle");
+  soundToggleRects = soundToggle?.querySelectorAll<SVGRectElement>(".ui-sound-toggle-rects > rect") ?? [];
+  bindSoundItems();
+  gsap.ticker.add(animateSoundRects);
+  document.addEventListener("visibilitychange", () => {
+    if (!enabled) return;
+    if (document.hidden) stopAmbient();
+    else playAmbient();
+  });
+  soundToggle?.addEventListener("click", toggleSoundMode);
+  window.addEventListener("rd:sound-init", initSounds);
+  window.addEventListener("rd:sound-show-button", showSoundButton);
   window.addEventListener("rd:sound-mode", (event) => {
     const mode = (event as CustomEvent<{ enabled: boolean }>).detail.enabled;
-    enabled = mode;
-    Howler.volume(enabled ? 1 : 0);
-    if (!enabled) {
-      ambient?.fade(ambient?.volume() ?? 0, 0, 350);
-      return;
-    }
-    if (unlocked && ambient && !ambient.playing()) ambient.play();
-    ambient?.fade(ambient?.volume() ?? 0, 0.18, 900);
+    setSoundMode(mode);
+  });
+  window.addEventListener("rd:sound-click", playClick);
+  window.addEventListener("rd:sound-hover", playHover);
+  window.addEventListener("rd:bind-sound-items", (event) => {
+    bindSoundItems((event as CustomEvent<{ root?: ParentNode }>).detail?.root ?? document);
   });
   window.addEventListener("rd:soft-woosh", () => {
+    initSounds();
     if (enabled) softWoosh?.play();
   });
   window.addEventListener("rd:woosh", () => {
+    initSounds();
     if (enabled) woosh?.play();
   });
   window.addEventListener("rd:plucks", () => {
+    initSounds();
     if (enabled) plucks?.play();
   });
   window.addEventListener("rd:home-gallery-in", () => {
-    if (homePlucksPlayed) return;
-    homePlucksPlayed = true;
     window.dispatchEvent(new CustomEvent("rd:plucks"));
-  });
-
-  document.querySelectorAll<HTMLElement>("[data-sound], [data-sound-click]").forEach((element) => {
-    element.addEventListener("mouseenter", () => enabled && hover?.play());
-  });
-  document.querySelectorAll<HTMLElement>("[data-sound-click]").forEach((element) => {
-    element.addEventListener("click", () => enabled && click?.play());
   });
 }
