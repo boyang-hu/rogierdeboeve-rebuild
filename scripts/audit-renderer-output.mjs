@@ -246,6 +246,7 @@ const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private
 const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private updateWorkSceneForNextFrame(");
 const rebuildUpdateVisibleWorkItems = extractBlock(rebuildWebgl, "private updateVisibleWorkItems(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
+const rebuildOnMouseMove = extractBlock(rebuildWebgl, "private onMouseMove =");
 const rebuildHomeGalleryTick = extractBlock(rebuildMain, "const tick = (now: number)");
 const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
   ? rebuildTick.slice(0, rebuildTick.indexOf("this.renderer.setRenderTarget(this.mainRawTarget);"))
@@ -1830,6 +1831,7 @@ const summary = {
             "fragmentShader:$T",
             "blending:Uc",
             "this.mouse={coords:new Q,coordsOld:new Q,diff:new Q}",
+            "addEvents(){pe.on(xe.MOUSE_MOVE,this.onMouseMove.bind(this))}",
             "onMouseMove({x:e,y:t}){this.mouse.coords.set(e/Pe.w*2-1,-(t/Pe.h)*2+1)}",
             "updateMouseDiff(){this.mouse.diff.subVectors(this.mouse.coords,this.mouse.coordsOld),this.mouse.coordsOld.copy(this.mouse.coords),this.mouse.coordsOld.x===0&&this.mouse.coordsOld.y===0&&this.mouse.diff.set(0,0)}",
             "const{cellScale:e,mouseForce:t,cursorSize:n}=this.props,i=this.mouse.diff.x/2*t,r=this.mouse.diff.y/2*t,o=n*e.x,a=n*e.y,c=Math.min(Math.max(this.mouse.coords.x,-1+o+e.x*2),1-o-e.x*2),u=Math.min(Math.max(this.mouse.coords.y,-1+a+e.y*2),1-a-e.y*2)",
@@ -1839,9 +1841,15 @@ const summary = {
               && rebuildCreateMainFluidPass.includes("pointerOld: new Vector2(),")
               && rebuildCreateMainFluidPass.includes("pointer: new Vector2(),")
               && rebuildCreateMainFluidPass.includes("pointerDiff: new Vector2(),"),
-            directPeDenominator: Boolean(rebuildUpdateMainFluidPass)
-              && rebuildUpdateMainFluidPass.includes("(this.pointerPixels.x / window.innerWidth) * 2 - 1")
-              && rebuildUpdateMainFluidPass.includes("-(this.pointerPixels.y / window.innerHeight) * 2 + 1")
+            eventOwnedPointerCoords: Boolean(rebuildOnMouseMove) && Boolean(rebuildUpdateMainFluidPass)
+              && rebuildWebgl.includes("private updateMainFluidPointerFromMouse(x: number, y: number)")
+              && rebuildOnMouseMove.includes("this.updateMainFluidPointerFromMouse(event.clientX, event.clientY);")
+              && rebuildWebgl.includes("if (!this.mainFluidPass.enabled) return;\n    this.mainFluidPass.pointer.set(\n      (x / window.innerWidth) * 2 - 1,\n      -(y / window.innerHeight) * 2 + 1,\n    );")
+              && rebuildUpdateMainFluidPass.includes("const pointer = pass.pointer;")
+              && !rebuildUpdateMainFluidPass.includes("this.pointerPixels")
+              && !rebuildUpdateMainFluidPass.includes("pointer.set("),
+            directPeDenominator: rebuildWebgl.includes("(x / window.innerWidth) * 2 - 1")
+              && rebuildWebgl.includes("-(y / window.innerHeight) * 2 + 1")
               && !rebuildUpdateMainFluidPass.includes("Math.max(1, window.innerWidth)")
               && !rebuildUpdateMainFluidPass.includes("Math.max(1, window.innerHeight)")
               && !rebuildUpdateMainFluidPass.includes("MathUtils.clamp((this.pointerPixels.x")
@@ -1857,15 +1865,18 @@ const summary = {
               && rebuildUpdateMainFluidPass.includes("const centerY = Math.min(Math.max(pointer.y, -1 + cursorY + pass.cellScale.y * 2), 1 - cursorY - pass.cellScale.y * 2);"),
             probeMarkers: Boolean(rebuildMainFluidProbe)
               && rebuildMainFluidProbe.includes("pointerDiff: pass.pointerDiff.toArray(),")
+              && rebuildMainFluidProbe.includes("pointerUpdateMode: \"source-qT-addEvents-MOUSE_MOVE-writes-coords-update-consumes-stored-coords\"")
               && rebuildMainFluidProbe.includes("pointerDenominatorMode: \"source-qT-onMouseMove-Pe-w-h-direct-no-rebuild-Math.max-clamp\"")
               && rebuildMainFluidProbe.includes("diffMode: \"source-qT-updateMouseDiff-subVectors-copyOld-then-zero-current-origin\"")
               && rebuildMainFluidProbe.includes("centerClampMode: \"source-qT-update-center-Math.min-Math.max-cellScale-cursor-padding\"")
               && rebuildMainFluidProbe.includes("forceMode: \"source-qT-update-force-diff-half-times-mouseForce\""),
-            outputProbeMarkers: rebuildOutputProbe.includes("mainFluidPointerDenominatorMode")
+            outputProbeMarkers: rebuildOutputProbe.includes("mainFluidPointerUpdateMode")
+              && rebuildOutputProbe.includes("mainFluidPointerDenominatorMode")
               && rebuildOutputProbe.includes("mainFluidDiffMode")
               && rebuildOutputProbe.includes("mainFluidCenterClampMode")
               && rebuildOutputProbe.includes("mainFluidForceMode"),
-            interactiveProbeMarkers: rebuildInteractiveMouseProbe.includes("main-fluid-pointer-denominator-mode")
+            interactiveProbeMarkers: rebuildInteractiveMouseProbe.includes("main-fluid-pointer-update-mode")
+              && rebuildInteractiveMouseProbe.includes("main-fluid-pointer-denominator-mode")
               && rebuildInteractiveMouseProbe.includes("main-fluid-diff-mode")
               && rebuildInteractiveMouseProbe.includes("main-fluid-center-clamp-mode")
               && rebuildInteractiveMouseProbe.includes("main-fluid-force-mode"),

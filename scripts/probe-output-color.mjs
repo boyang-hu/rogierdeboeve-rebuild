@@ -1921,11 +1921,15 @@ async function runProbe() {
   }
   if (mainFluidMaterials.force?.blending !== 2) materialSurfaceErrors.push("mainFluidForceBlending");
   const mainFluidInteraction = mainFluid.interaction || {};
+  const mainFluidPointerUpdateMode = mainFluidInteraction.pointerUpdateMode;
   const mainFluidPointerDenominatorMode = mainFluidInteraction.pointerDenominatorMode;
   const mainFluidDiffMode = mainFluidInteraction.diffMode;
   const mainFluidCenterClampMode = mainFluidInteraction.centerClampMode;
   const mainFluidForceMode = mainFluidInteraction.forceMode;
   if (mainFluidInteraction.source !== "source-ag-qT-window-mousemove-force-pass") materialSurfaceErrors.push("mainFluidInteractionSource");
+  if (mainFluidPointerUpdateMode !== "source-qT-addEvents-MOUSE_MOVE-writes-coords-update-consumes-stored-coords") {
+    materialSurfaceErrors.push("mainFluidPointerUpdateMode");
+  }
   if (mainFluidPointerDenominatorMode !== "source-qT-onMouseMove-Pe-w-h-direct-no-rebuild-Math.max-clamp") {
     materialSurfaceErrors.push("mainFluidPointerDenominatorMode");
   }

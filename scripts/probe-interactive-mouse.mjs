@@ -210,6 +210,9 @@ function assertInteractiveResponse(before, after, finalPoint) {
 
   if (mainFluid.enabled) {
     if (mainFluid.interaction?.source !== "source-ag-qT-window-mousemove-force-pass") errors.push("main-fluid-interaction-source");
+    if (mainFluid.interaction?.pointerUpdateMode !== "source-qT-addEvents-MOUSE_MOVE-writes-coords-update-consumes-stored-coords") {
+      errors.push("main-fluid-pointer-update-mode");
+    }
     if (mainFluid.interaction?.pointerDenominatorMode !== "source-qT-onMouseMove-Pe-w-h-direct-no-rebuild-Math.max-clamp") {
       errors.push("main-fluid-pointer-denominator-mode");
     }

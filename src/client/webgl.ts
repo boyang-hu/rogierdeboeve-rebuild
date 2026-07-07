@@ -8473,6 +8473,7 @@ void main() {
     const sourceWidth = Math.max(1, this.root.offsetWidth || window.innerWidth);
     const sourceHeight = Math.max(1, this.root.offsetHeight || window.innerHeight);
     this.pointerPixels.set(event.clientX, event.clientY);
+    this.updateMainFluidPointerFromMouse(event.clientX, event.clientY);
     this.targetPointer.x = (event.clientX / sourceWidth - 0.5) * 2;
     this.targetPointer.y = -(event.clientY / sourceHeight - 0.5) * 2;
     this.pointerRay.set(this.targetPointer.x, this.targetPointer.y);
@@ -8480,6 +8481,14 @@ void main() {
     this.setMainLensflareLightPosition(0, 1 - event.clientY / window.innerHeight);
     this.updatePointerProjection();
   };
+
+  private updateMainFluidPointerFromMouse(x: number, y: number) {
+    if (!this.mainFluidPass.enabled) return;
+    this.mainFluidPass.pointer.set(
+      (x / window.innerWidth) * 2 - 1,
+      -(y / window.innerHeight) * 2 + 1,
+    );
+  }
 
   private setMainLensflareLightPosition(x: number, y: number) {
     if (!SOURCE_MAIN_LENSFLARE_SETTINGS.enabled || !this.mainLensflareMaterial) return;
@@ -9062,10 +9071,6 @@ void main() {
     if (!pass.enabled) return this.fluidPlaceholder;
     const settings = this.sourceMainRenderSettings.fluid;
     const pointer = pass.pointer;
-    pointer.set(
-      (this.pointerPixels.x / window.innerWidth) * 2 - 1,
-      -(this.pointerPixels.y / window.innerHeight) * 2 + 1,
-    );
     const diff = pass.pointerDiff;
     diff.subVectors(pointer, pass.pointerOld);
     pass.pointerOld.copy(pointer);
@@ -11578,6 +11583,7 @@ void main() {
       pointerDiff: pass.pointerDiff.toArray(),
       interaction: {
         source: "source-ag-qT-window-mousemove-force-pass",
+        pointerUpdateMode: "source-qT-addEvents-MOUSE_MOVE-writes-coords-update-consumes-stored-coords",
         pointerDenominatorMode: "source-qT-onMouseMove-Pe-w-h-direct-no-rebuild-Math.max-clamp",
         diffMode: "source-qT-updateMouseDiff-subVectors-copyOld-then-zero-current-origin",
         centerClampMode: "source-qT-update-center-Math.min-Math.max-cellScale-cursor-padding",
