@@ -117,9 +117,78 @@ function initLenis() {
   };
 }
 
+function splitParagraphIntoSourceLines(paragraph: HTMLElement) {
+  const text = paragraph.textContent?.replace(/\s+/g, " ").trim() ?? "";
+  if (!text) return;
+
+  const words = text.split(" ");
+  paragraph.textContent = "";
+
+  const measureSpans = words.map((word, index) => {
+    const span = document.createElement("span");
+    span.textContent = index === words.length - 1 ? word : `${word} `;
+    paragraph.append(span);
+    return span;
+  });
+
+  const lines: string[][] = [];
+  let previousTop: number | null = null;
+  measureSpans.forEach((span, index) => {
+    const top = Math.round(span.offsetTop);
+    if (previousTop === null || Math.abs(top - previousTop) > 1) {
+      lines.push([]);
+      previousTop = top;
+    }
+    lines[lines.length - 1].push(words[index]);
+  });
+
+  paragraph.replaceChildren();
+  lines.forEach((lineWords) => {
+    const line = document.createElement("div");
+    line.className = "line";
+    const inner = document.createElement("div");
+    inner.className = "line-inner";
+    inner.textContent = lineWords.join(" ");
+    line.append(inner);
+    paragraph.append(line);
+  });
+}
+
+function initAboutSplitArticles() {
+  const articles = gsap.utils.toArray<HTMLElement>(".ui-about [data-split-articles]");
+  const paragraphs = articles.flatMap((article) => gsap.utils.toArray<HTMLElement>("p", article));
+  if (!paragraphs.length) return () => {};
+
+  const cache = paragraphs.map((paragraph) => ({
+    paragraph,
+    html: paragraph.innerHTML,
+  }));
+  let resizeTimer = 0;
+
+  const split = () => {
+    cache.forEach(({ paragraph, html }) => {
+      paragraph.innerHTML = html;
+      splitParagraphIntoSourceLines(paragraph);
+    });
+  };
+  const onResize = () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(split, 100);
+  };
+
+  split();
+  window.addEventListener("resize", onResize, { passive: true });
+  return () => {
+    window.clearTimeout(resizeTimer);
+    window.removeEventListener("resize", onResize);
+    cache.forEach(({ paragraph, html }) => {
+      paragraph.innerHTML = html;
+    });
+  };
+}
+
 function initIntroAnimations() {
   const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary");
-  const contentTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro > *, .c-list-section");
   const navInnerTargets = gsap.utils.toArray<HTMLElement>(".ui-nav-a-inner");
   const navLinkTargets = gsap.utils.toArray<HTMLElement>(".ui-nav-a");
   const headerDescriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
@@ -127,6 +196,8 @@ function initIntroAnimations() {
   const titleTargets = gsap.utils.toArray<HTMLElement>(".ui-title-inner");
   const footerSocialTargets = gsap.utils.toArray<HTMLElement>(".social-a > span");
   const footerContactTargets = gsap.utils.toArray<HTMLElement>(".ui-footer-contact a > span");
+  const aboutIntroTitleTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro .ts-1 .line-inner");
+  const aboutIntroTextTargets = gsap.utils.toArray<HTMLElement>(".ui-about-intro .ts-p");
   const tweens: gsap.core.Tween[] = [];
 
   if (prefersReducedMotion()) {
@@ -137,11 +208,25 @@ function initIntroAnimations() {
       target.style.opacity = "1";
       target.style.transform = "translate3d(0, 0, 0)";
     });
+    [...titleTargets, ...footerSocialTargets, ...footerContactTargets, ...aboutIntroTitleTargets].forEach((target) => {
+      target.style.opacity = "1";
+      target.style.transform = "translate3d(0, 0, 0)";
+    });
+    aboutIntroTextTargets.forEach((paragraph) => {
+      paragraph.querySelectorAll<HTMLElement>(".line-inner").forEach((target) => {
+        target.style.opacity = "1";
+        target.style.transform = "translate3d(0, 0, 0)";
+      });
+    });
     return () => {
       navLinkTargets.forEach((link) => {
         link.style.pointerEvents = "";
       });
       navInnerTargets.forEach((target) => {
+        target.style.opacity = "";
+        target.style.transform = "";
+      });
+      [...titleTargets, ...footerSocialTargets, ...footerContactTargets, ...aboutIntroTitleTargets].forEach((target) => {
         target.style.opacity = "";
         target.style.transform = "";
       });
@@ -177,13 +262,23 @@ function initIntroAnimations() {
     ));
   }
 
-  if (contentTargets.length) {
+  if (aboutIntroTitleTargets.length) {
     tweens.push(gsap.fromTo(
-      contentTargets,
-      { y: 26, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.15, stagger: 0.045, ease: "expo.out", delay: 0.2 },
+      aboutIntroTitleTargets,
+      { opacity: 0, y: "80%" },
+      { opacity: 1, y: 0, duration: 1.8, stagger: 0.05, ease: "expo.out" },
     ));
   }
+
+  aboutIntroTextTargets.forEach((paragraph, index) => {
+    const lines = gsap.utils.toArray<HTMLElement>(".line-inner", paragraph);
+    if (!lines.length) return;
+    tweens.push(gsap.fromTo(
+      lines,
+      { y: "80%", opacity: 0 },
+      { y: 0, opacity: 1, duration: 1.8, delay: 0.3 + index * 0.1, stagger: 0.05, ease: "expo.out" },
+    ));
+  });
 
   if (headerDescriptionTargets.length) {
     tweens.push(gsap.fromTo(
@@ -300,10 +395,12 @@ function initFooterContactLabel() {
 export function initMotion() {
   const cleanupLenis = initLenis();
   const cleanupFooter = initFooterContactLabel();
+  const cleanupSplitArticles = initAboutSplitArticles();
   const cleanupIntro = initIntroAnimations();
   initProjectHeaderAnimation();
   return () => {
     cleanupIntro();
+    cleanupSplitArticles();
     cleanupLenis();
     cleanupFooter();
   };

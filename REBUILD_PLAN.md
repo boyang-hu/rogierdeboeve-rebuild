@@ -21,8 +21,8 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1, Phase 2, and Phase 3 closed unless new source-owned evidence requires reopening.
-2. Keep the first Phase 4 About shell/footer/credits modal batch closed unless a concrete source-owned mismatch appears.
-3. Continue Phase 4 with About route entry/leave, split/scroll/footer animation details, and mobile About layout.
+2. Keep the closed Phase 4 About shell/footer/credits modal and title/intro/footer animation batches closed unless a concrete source-owned mismatch appears.
+3. Continue Phase 4 with About route entry/leave, scroll CTA, custom scrollbar, remaining auxiliary lifecycle, and mobile About layout.
 4. Convert Phase 4 findings into one scoped source-backed fix batch at a time.
 5. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project-detail probes as regression gates when shared paths change.
 6. Move to Phase 5 only after About/auxiliary page parity is clean or explicitly guarded.
@@ -50,7 +50,7 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
 | 3. Project detail media/routes | Closed/guarded on 2026-07-07 | Reopen only with concrete project-detail media, scroll, or route mismatch evidence. |
-| 4. About and auxiliary pages | Active; first shell/modal batch closed on 2026-07-07 | Continue auditing About route entry/leave, split/scroll/footer animation details, mobile layout, and remaining auxiliary WebGL behavior against source. |
+| 4. About and auxiliary pages | Active; shell/modal and title/intro/footer animation batches closed on 2026-07-07 | Continue auditing About route entry/leave, scroll CTA, custom scrollbar, mobile layout, and remaining auxiliary WebGL behavior against source. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
@@ -229,15 +229,34 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/ OUT_DIR=/tmp/rd-phase4-output-color-probe CDP_PORT=9433 node scripts/probe-output-color.mjs`
 - `OUT_DIR=/tmp/rd-phase4-renderer-audit node scripts/audit-renderer-output.mjs`
 
+### Closed: About title/intro split and footer animation source alignment
+
+Goal: replace rebuild-only generic About content motion with source-shaped split-text and footer reveal behavior.
+
+Current read:
+
+- Source `mD` splits `[data-split-articles]` paragraphs into `.line > .line-inner`; rebuild now does the same for About intro paragraphs and resplits on resize.
+- Source `DD.animateIn()` reveals the About title and intro paragraph line inners with `opacity`, `y`, `duration`, `delay`, `stagger`, and `expo.out` timing; rebuild now mirrors those observable animation contracts.
+- Source `Rg/Ou` initialize title and footer spans at `translateY(102%)`; rebuild CSS now owns those initial transforms and rebuild no longer applies a generic `.ui-about-intro > *, .c-list-section` reveal.
+- The split implementation is intentionally scoped to `.ui-about [data-split-articles]` because it rebuilds paragraphs from `textContent`; do not broaden it without a DOM-preserving splitter.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Focused About split/animation CDP probe: `/tmp/rd-phase4-about-split-probe/summary.json`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-split-about-scroll-probe CDP_PORT=9442 node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/ OUT_DIR=/tmp/rd-phase4-split-output-probe CDP_PORT=9443 node scripts/probe-output-color.mjs`
+- `OUT_DIR=/tmp/rd-phase4-split-renderer-audit node scripts/audit-renderer-output.mjs`
+
 ### Next Phase 4 Queue
 
 Patch only source-owned findings:
 
 1. Audit About route entry/leave behavior for Home <-> About and project -> About now that Phase 3 router behavior is guarded.
-2. Audit About title/intro split animation and footer animation against source `DD`, `Rg`, `Ou`, and split-text behavior.
-3. Audit About scroll CTA fade, custom scrollbar drag, and mobile About layout against source CSS and `wD`.
-4. Audit any remaining auxiliary visual lifecycle edge against source `TD` and `Fg`; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline guard.
-5. Validate each production batch with build, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
+2. Audit About scroll CTA fade, custom scrollbar drag, and mobile About layout against source CSS and `wD`.
+3. Audit any remaining auxiliary visual lifecycle edge against source `TD` and `Fg`; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline guard.
+4. Validate each production batch with build, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
 
 ## Watchlist
 

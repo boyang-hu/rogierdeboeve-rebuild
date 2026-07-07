@@ -598,6 +598,12 @@ body.is-project .ui-header-description {
   display: block;
 }
 
+.ui-title-inner,
+.social-a > span,
+.ui-footer-contact a > span {
+  transform: translateY(102%);
+}
+
 .ui-work {
   min-height: 100vh;
   overflow: hidden;
@@ -1384,6 +1390,19 @@ html.is-mobile .preloader-cta-2 {
 
 .ui-about-intro .ts-p + .ts-p {
   margin-top: 1rem;
+}
+
+.ui-about-intro .line {
+  display: inline-flex;
+  overflow: hidden;
+  white-space: nowrap;
+  margin: -0.3rem 0;
+}
+
+.ui-about-intro .line-inner {
+  display: block;
+  padding: 0.15rem 0;
+  will-change: transform, opacity;
 }
 
 .ui-about-collab {
