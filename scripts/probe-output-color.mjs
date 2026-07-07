@@ -2815,6 +2815,9 @@ async function runProbe() {
   if (environmentUniforms?.tSkyIsComposite !== true || environmentUniforms?.skyCompositeBindingMatchesUniform !== true) skyUniformErrors.push("environmentCompositeBinding");
   if (environmentUniforms?.tSkyWrapS !== RepeatWrapping || environmentUniforms?.tSkyWrapT !== RepeatWrapping) skyUniformErrors.push("environmentSkyWrap");
   if (environmentUniforms?.sceneEnvironmentLoadMode !== "source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback") skyUniformErrors.push("sceneEnvironmentLoadMode");
+  if (environmentUniforms?.sceneEnvironmentStartOrder !== "source-p1-init-addEnvironment-before-a1-h1-sceneWrap-attach") {
+    skyUniformErrors.push("sceneEnvironmentStartOrder");
+  }
   if (environmentUniforms?.sceneEnvironmentExt !== updateOrder?.sourceAssetExt) skyUniformErrors.push("sceneEnvironmentExt");
   if (environmentUniforms?.sceneEnvironmentLoaded !== true) skyUniformErrors.push("sceneEnvironmentLoaded");
   if (environmentUniforms?.sceneEnvironmentFailed !== false) skyUniformErrors.push("sceneEnvironmentFailed");

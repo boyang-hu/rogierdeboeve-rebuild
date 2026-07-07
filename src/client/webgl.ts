@@ -5482,6 +5482,7 @@ export class WebGLBackdrop {
   private directionalLight = new DirectionalLight(colorFrom("white"), 1.5);
   private directionalLight2 = new DirectionalLight(colorFrom("white"), 1);
   private sourceTexturePreloadPromise: Promise<void> = Promise.resolve();
+  private sourceTextureAssetsPromise?: Promise<SourceTextureAssets>;
   private sourceTexturePreloadState = {
     blueNoise: false,
     floorNormal: false,
@@ -5507,17 +5508,20 @@ export class WebGLBackdrop {
   private sourceAssetExt: "webp" | "jpg" | null = null;
   private sourceCubemapLoadState: {
     mode: string;
+    startOrder: string;
     ext: "webp" | "jpg" | null;
     loaded: boolean;
     failed: boolean;
     urls: string[];
   } = {
     mode: "pending-source-p1-addEnvironment",
+    startOrder: "pending-source-p1-addEnvironment",
     ext: null,
     loaded: false,
     failed: false,
     urls: [],
   };
+  private sourceEnvironmentCubemapStarted = false;
   private canvasAnimateInPromise?: Promise<void>;
   private canvasAnimateInStarted = false;
   private canvasFadeCompleted = false;
@@ -5676,6 +5680,7 @@ export class WebGLBackdrop {
     this.createWorkScene();
     this.createAuxiliaryBlocks();
     this.sceneWrap.add(this.blocksWrap);
+    this.addEnvironment();
     this.sceneWrap.add(this.floorGroup);
     this.sceneWrap.add(this.environmentGroup);
     this.homeScene.add(this.sceneWrap);
@@ -7300,9 +7305,17 @@ export class WebGLBackdrop {
   }
 
   private async loadCompositeTexturesFromSourceWebpState() {
-    const assets = await prepareSourceTextureAssets();
-    this.sourceTextureAssets = assets;
+    const assets = await this.getSourceTextureAssets();
     return this.bindPreparedSourceTextures(assets);
+  }
+
+  private getSourceTextureAssets() {
+    if (this.sourceTextureAssets) return Promise.resolve(this.sourceTextureAssets);
+    this.sourceTextureAssetsPromise ??= prepareSourceTextureAssets().then((assets) => {
+      this.sourceTextureAssets = assets;
+      return assets;
+    });
+    return this.sourceTextureAssetsPromise;
   }
 
   private applySourceTextureConstructorObjects(assets: SourceTextureAssets) {
@@ -7356,11 +7369,31 @@ export class WebGLBackdrop {
       this.characterMaterial.uniforms.tMap.value = texture;
     });
     this.loadCharacterModel();
+    await Promise.all([blueNoise, floorNormal, perlin1, perlin2]);
+  }
+
+  private addEnvironment() {
+    if (this.sourceAssetExt) {
+      this.loadSourceEnvironmentCubemap(this.sourceAssetExt);
+      return;
+    }
+    void this.getSourceTextureAssets()
+      .then((assets) => this.loadSourceEnvironmentCubemap(assets.assetExt))
+      .catch((error) => {
+        this.sourceCubemapLoadState.failed = true;
+        console.error("Source p1.addEnvironment cubemap extension resolution failed", error);
+      });
+  }
+
+  private loadSourceEnvironmentCubemap(assetExt: "webp" | "jpg") {
+    if (this.sourceEnvironmentCubemapStarted) return;
+    this.sourceEnvironmentCubemapStarted = true;
     const cubeBase = "/images/cubemaps/01";
-    const cubeUrls = ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${assets.assetExt}`);
+    const cubeUrls = ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${assetExt}`);
     this.sourceCubemapLoadState = {
       mode: "source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback",
-      ext: assets.assetExt,
+      startOrder: "source-p1-init-addEnvironment-before-a1-h1-sceneWrap-attach",
+      ext: assetExt,
       loaded: false,
       failed: false,
       urls: cubeUrls,
@@ -7377,7 +7410,6 @@ export class WebGLBackdrop {
         console.error("Source p1.addEnvironment cubemap load failed", error);
       },
     );
-    await Promise.all([blueNoise, floorNormal, perlin1, perlin2]);
   }
 
   private createSkyCompositeMaterial() {
@@ -11304,6 +11336,7 @@ void main() {
               && sceneEnvironmentImageDimensions.every((image) => image.complete !== false),
           } : null,
           sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode,
+          sceneEnvironmentStartOrder: this.sourceCubemapLoadState.startOrder,
           sceneEnvironmentExt: this.sourceCubemapLoadState.ext,
           sceneEnvironmentLoaded: this.sourceCubemapLoadState.loaded,
           sceneEnvironmentFailed: this.sourceCubemapLoadState.failed,

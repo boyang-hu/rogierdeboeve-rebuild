@@ -50,12 +50,13 @@ Already guarded for this lane:
 - Environment hierarchy/material ownership.
 - `u1` environment shader surface: source `l1` fragment and source `c1` vertex.
 - Cubemap `scene.environment` loader defaults and sampling fields.
+- `p1.addEnvironment()` fire-and-forget cubemap start order before floor/env sceneWrap attachment.
 - Floor material inputs, reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
 - Texture-object await semantics for `nD.animateIn()`.
 
 Next source candidates:
 
-1. Sky/environment timing.
+1. Remaining sky/environment frame timing beyond cubemap startup.
 2. Environment target contents.
 3. Final work target distribution.
 4. Renderer state not yet covered by the audit.

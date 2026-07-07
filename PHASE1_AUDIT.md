@@ -54,7 +54,7 @@ Phase 1 is open. Closeout requires source-backed parity or explicit technical br
 ## Open Blockers
 
 1. Floor/environment residuals.
-   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
+   - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, `u1` shader surface, `p1.addEnvironment()` cubemap start order, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, cubemap sampling, and target sizing.
    - Open: hard horizon and fog-bed distribution still differ.
    - Rule: do not tune brightness, fog, or floor color visually without source ownership evidence.
 
@@ -79,6 +79,7 @@ Current source read:
 
 - `p1.init()` calls `addEnvironment()` without awaiting the cubemap load, then continues the Home scene setup.
 - `addEnvironment()` awaits the cubemap internally and later assigns `scene.environment`.
+- In source order, `p1.init()` calls `addEnvironment()` after blocks/about/floating setup and `sceneWrap.add(blocksWrap)`, before `a1` floor and `h1` environment are attached to `sceneWrap`.
 - Source floor `a1` creates `new i1`, uses `Xt.floorNormal`, sets `repeat` to `45,45`, creates `new Tu(60,32)`, and uses `o1` with `color:"#4a4a4a"`, `uMirror:1`, `reflectivity:.97`, and `uFloorMixStrength:15`.
 - Source floor reflection assigns `tReflect` and `uMatrix` from the reflector, rotates the floor to `-PI/2`, hides the floor group during reflection render, updates the reflector, then restores visibility.
 - Source environment `h1/u1` uses an icosahedron `Du(300,10)`, `side: BackSide`, `envMapIntensity:1`, `fog:false`, `dithering:true`, and `speed=5e-5`.
@@ -89,6 +90,7 @@ Current guarded rebuild facts:
 - Browser output probe reports production debug clean.
 - Scene background/fog, floor hierarchy/material, environment hierarchy/material, floor reflection draw-state, reflector target sizing, environment rotation, and low-res SwiftShader branch are source-shaped.
 - Cubemap `scene.environment` is guarded beyond load success: source `CubeTextureLoader` creates a `CubeTexture`, assigns `SRGBColorSpace`, fills six images, and uses `CubeTexture` defaults for reflection mapping and `flipY=false`; the browser probe confirms those runtime fields plus default wrap/filter/mipmap/type/format and six loaded images.
+- `p1.addEnvironment()` cubemap loading now starts as a source-shaped fire-and-forget call before floor/env sceneWrap attachment. The texture preload binder no longer owns cubemap startup, and browser output probes guard `sceneEnvironmentStartOrder`.
 - `u1-environment` shader dump coverage now includes both source `l1` fragment and source `c1` vertex extraction.
 - The environment vertex shader text in rebuild matches the source `c1` surface, including the source `vViewPosition = - mvPosition.xyz` expression and chunk order.
 - Remaining investigation should focus on sky/environment timing, environment target contents, final target distribution, or renderer state not covered by those guards.
@@ -156,6 +158,7 @@ These are current boundaries, grouped by system instead of discovery time.
 | Floor/environment | `Lo` resize inputs pass direct source dimensions for sky, displacement, thumb, and floor reflection. |
 | Floor/environment | `h1/u1` environment material uses source no-custom-cache-key ownership. |
 | Floor/environment | Cubemap loader defaults and `scene.environment` sampling fields are guarded by browser probe. |
+| Floor/environment | `p1.addEnvironment()` starts cubemap loading fire-and-forget before floor/env sceneWrap attachment. |
 | Floor/environment | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |
 | Render managers | Work luminosity branch runs before and independently of bloom. |

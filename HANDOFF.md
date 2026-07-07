@@ -28,7 +28,7 @@ It is not a timeline. Use git for history.
 | Phase 1 status | Open, roughly 65-70% complete |
 | Current production priority | Floor/environment distribution residuals |
 | Next secondary priority | Spotlight/thumb projection transfer feel |
-| Latest source-backed guard batch | `u1` environment shader surface: source `c1` vertex and `l1` fragment coverage |
+| Latest source-backed guard batch | `p1.addEnvironment()` cubemap fire-and-forget start order |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean unless a scoped batch is in progress |
 
@@ -42,11 +42,11 @@ Estimated parity:
 
 ## Current Batch
 
-The current source-backed batch closes a shader-surface gap, not the remaining floor/environment visual residual.
+The current source-backed batch closes a cubemap timing gap, not the remaining floor/environment visual residual.
 
-- `scripts/dump-va-shader.mjs` extracts the source `c1` vertex shader for `u1-environment`.
-- `scripts/audit-renderer-output.mjs` guards both source `l1` fragment and source `c1` vertex coverage.
-- `src/client/webgl.ts` aligns the environment vertex shader text with source `c1`, including `vViewPosition = - mvPosition.xyz`.
+- `src/client/webgl.ts` starts cubemap loading through `addEnvironment()` in the source `p1.init()` position: after blocks/about/floating setup and `sceneWrap.add(blocksWrap)`, before floor/env sceneWrap attachment.
+- Cubemap loading is no longer owned by `bindPreparedSourceTextures()`; that binder now only handles source texture bindings and related load probes.
+- `scripts/audit-renderer-output.mjs` and `scripts/probe-output-color.mjs` guard the fire-and-forget start order and runtime `sceneEnvironmentStartOrder`.
 
 ## Source Of Truth
 
@@ -63,7 +63,7 @@ The current source-backed batch closes a shader-surface gap, not the remaining f
 Continue Phase 1 with floor/environment distribution:
 
 1. Trace the remaining hard horizon and fog-bed difference through source-owned timing, target contents, material inputs, final target distribution, or renderer state.
-2. Treat cubemap sampling and `u1` shader text as guarded unless a new source probe contradicts them.
+2. Treat cubemap sampling, `p1.addEnvironment()` start order, and `u1` shader text as guarded unless a new source probe contradicts them.
 3. Patch only after a concrete source mismatch is identified.
 4. Update `PHASE1_AUDIT.md` with evidence and `REBUILD_PLAN.md` only if the queue changes.
 5. Validate and commit the scoped batch.
@@ -71,6 +71,7 @@ Continue Phase 1 with floor/environment distribution:
 Do not spend the next batch first on these guarded areas unless new evidence points back at them:
 
 - Cubemap `scene.environment` loader defaults and sampling surface.
+- `p1.addEnvironment()` fire-and-forget cubemap start order.
 - `u1` environment vertex/fragment shader text.
 - `kA/Lu/I1` default visible target transfer.
 - Spotlight-map shader and Three light-chunk multiplication.

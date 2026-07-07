@@ -235,6 +235,9 @@ const rebuildApplySourceTextureConstructorObjects = extractBlock(rebuildWebgl, "
 const rebuildBindPreparedSourceTextures = extractBlock(rebuildWebgl, "private async bindPreparedSourceTextures(");
 const rebuildLoadCompositeTextures = extractBlock(rebuildWebgl, "private loadCompositeTextures()");
 const rebuildLoadCompositeTexturesFromSourceWebpState = extractBlock(rebuildWebgl, "private async loadCompositeTexturesFromSourceWebpState()");
+const rebuildGetSourceTextureAssets = extractBlock(rebuildWebgl, "private getSourceTextureAssets()");
+const rebuildAddEnvironment = extractBlock(rebuildWebgl, "private addEnvironment()");
+const rebuildLoadSourceEnvironmentCubemap = extractBlock(rebuildWebgl, "private loadSourceEnvironmentCubemap(");
 const rebuildAnimateIn = extractBlock(rebuildWebgl, "async animateIn()");
 const rebuildInitWebgl = extractBlock(rebuildMain, "async function initWebGL()");
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
@@ -2927,10 +2930,13 @@ const summary = {
             "this.loadCompositeTextures()",
           ]),
         fallbackPreparesBeforeBinding: Boolean(rebuildLoadCompositeTexturesFromSourceWebpState)
-          && orderedIncludes(rebuildLoadCompositeTexturesFromSourceWebpState, [
-            "const assets = await prepareSourceTextureAssets()",
-            "this.sourceTextureAssets = assets",
-            "return this.bindPreparedSourceTextures(assets)",
+          && rebuildLoadCompositeTexturesFromSourceWebpState.includes("const assets = await this.getSourceTextureAssets();")
+          && rebuildLoadCompositeTexturesFromSourceWebpState.includes("return this.bindPreparedSourceTextures(assets);")
+          && Boolean(rebuildGetSourceTextureAssets)
+          && orderedIncludes(rebuildGetSourceTextureAssets, [
+            "this.sourceTextureAssetsPromise ??= prepareSourceTextureAssets().then((assets) =>",
+            "this.sourceTextureAssets = assets;",
+            "return assets;",
           ]),
         loadCompositeUsesPreparedAssets: Boolean(rebuildLoadCompositeTextures)
           && rebuildLoadCompositeTextures.includes("this.sourceTextureAssets\n      ? this.bindPreparedSourceTextures(this.sourceTextureAssets)")
@@ -3030,9 +3036,33 @@ const summary = {
         "const e=Le.WEBP?\"webp\":\"jpg\",t=await f1(\"/images/cubemaps/01\",e);this.scene.environment=t",
       ]),
       rebuildChecks: {
-        cubemapUsesSourceExt: Boolean(rebuildBindPreparedSourceTextures)
-          && rebuildBindPreparedSourceTextures.includes("`${cubeBase}/${side}.${assets.assetExt}`"),
-        sourceLoadModeGuard: rebuildWebgl.includes("sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode"),
+        constructorFireAndForgetOrder: Boolean(rebuildConstructor)
+          && orderedIncludes(rebuildConstructor, [
+            "this.createWorkScene();",
+            "this.createAuxiliaryBlocks();",
+            "this.sceneWrap.add(this.blocksWrap);",
+            "this.addEnvironment();",
+            "this.sceneWrap.add(this.floorGroup);",
+            "this.sceneWrap.add(this.environmentGroup);",
+          ]),
+        addEnvironmentUsesPreparedSourceExt: Boolean(rebuildAddEnvironment)
+          && orderedIncludes(rebuildAddEnvironment, [
+            "if (this.sourceAssetExt) {",
+            "this.loadSourceEnvironmentCubemap(this.sourceAssetExt);",
+            "return;",
+          ])
+          && rebuildAddEnvironment.includes("void this.getSourceTextureAssets()")
+          && rebuildAddEnvironment.includes(".then((assets) => this.loadSourceEnvironmentCubemap(assets.assetExt))"),
+        cubemapUsesSourceExt: Boolean(rebuildLoadSourceEnvironmentCubemap)
+          && rebuildLoadSourceEnvironmentCubemap.includes("assetExt: \"webp\" | \"jpg\"")
+          && rebuildLoadSourceEnvironmentCubemap.includes("`${cubeBase}/${side}.${assetExt}`"),
+        cubemapSeparatedFromTextureBinder: Boolean(rebuildBindPreparedSourceTextures)
+          && !rebuildBindPreparedSourceTextures.includes("/images/cubemaps/01")
+          && !rebuildBindPreparedSourceTextures.includes("this.cubeLoader.load"),
+        sourceLoadModeGuard:
+          rebuildWebgl.includes("sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode")
+          && rebuildWebgl.includes("sceneEnvironmentStartOrder: this.sourceCubemapLoadState.startOrder")
+          && rebuildOutputProbe.includes("sceneEnvironmentStartOrder"),
         cubeTextureLoaderDefaults: checks(threeCubeTextureLoaderSource, [
           "const texture = new CubeTexture();",
           "texture.colorSpace = SRGBColorSpace;",
@@ -3051,7 +3081,9 @@ const summary = {
           && rebuildOutputProbe.includes("sceneEnvironment.imagesAreLoaded !== true"),
         noHardcodedCubeExt: !rebuildWebgl.includes("const cubeExt = \"webp\""),
         noRuntimeJpgFallback: !rebuildWebgl.includes("`${cubeBase}/${side}.jpg`"),
-        runtimeGuard: rebuildWebgl.includes("source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback"),
+        runtimeGuard:
+          rebuildWebgl.includes("source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback")
+          && rebuildWebgl.includes("source-p1-init-addEnvironment-before-a1-h1-sceneWrap-attach"),
       },
       excerpt: compact(sourceP1AddEnvironment.text),
     },
