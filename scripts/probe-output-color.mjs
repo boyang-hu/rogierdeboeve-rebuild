@@ -1770,8 +1770,8 @@ async function runProbe() {
     let height = start?.height ?? 0;
     for (let index = 0; index < expectedBloomKernels.length; index += 1) {
       out.push([width, height]);
-      width = Math.max(1, Math.round(width / 2));
-      height = Math.max(1, Math.round(height / 2));
+      width /= 2;
+      height /= 2;
     }
     return out;
   };
@@ -1825,11 +1825,27 @@ async function runProbe() {
     if (material?.resolutionResizeMode !== "source-Lu-I1-rg-uResolution-resize-loop") {
       materialSurfaceErrors.push(`${key}ResolutionResizeMode`);
     }
+    if (material?.resizeStepMode !== "source-Lu-I1-bloom-mip-loop-divide-by-2-no-round-or-clamp") {
+      materialSurfaceErrors.push(`${key}ResizeStepMode`);
+    }
     if (material?.resolutionUpdateMode !== "source-Lu-I1-rg-update-keeps-resize-resolution") {
       materialSurfaceErrors.push(`${key}ResolutionUpdateMode`);
     }
     if (JSON.stringify(material?.resolutions) !== JSON.stringify(expectedBloomResolutions(expectedStart, bloomEnabled))) {
       materialSurfaceErrors.push(`${key}Resolutions`);
+    }
+    if (bloomEnabled) {
+      if (material?.targetHalvingMatchesSource !== true) materialSurfaceErrors.push(`${key}TargetHalving`);
+      if (material?.resolutionHalvingMatchesSource !== true) materialSurfaceErrors.push(`${key}ResolutionHalving`);
+      if (material?.targetsMatchResolutions !== true) materialSurfaceErrors.push(`${key}TargetResolutionParity`);
+      if (!Array.isArray(material?.targetSizes) || material.targetSizes.length !== expectedBloomKernels.length) {
+        materialSurfaceErrors.push(`${key}TargetSizes`);
+      }
+    } else {
+      const disabledMarker = "source-disabled-bloom-loop-not-run";
+      if (material?.targetHalvingMatchesSource !== disabledMarker) materialSurfaceErrors.push(`${key}TargetHalvingDisabled`);
+      if (material?.resolutionHalvingMatchesSource !== disabledMarker) materialSurfaceErrors.push(`${key}ResolutionHalvingDisabled`);
+      if (material?.targetsMatchResolutions !== disabledMarker) materialSurfaceErrors.push(`${key}TargetResolutionParityDisabled`);
     }
   }
   for (const key of ["bloomComposite", "mainBloomComposite"]) {

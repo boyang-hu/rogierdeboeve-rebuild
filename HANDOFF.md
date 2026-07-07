@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `Lo`-derived direct resize input ownership. Source `V1.resize()`, `k1.resize()`, and `T1.resize()` pass direct square inputs into their `Lo` render managers, source `Lo.resize()` owns DPR rounding, and source `i1.setSize()` uses CSS viewport `0.75` sizing directly for floor reflection. The rebuild now removes local `Math.max(1, ...)` pre-clamps from sky, displacement, thumb, and floor reflection sizing and guards those paths with runtime/audit markers. This is a resize-input guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `Lu/I1` bloom mip direct halving resize ownership. Source `Lu.resize()` starts work bloom mips from `Fa(renderSize)/4`, source `I1.resize()` starts main bloom mips from `Fa(renderSize)/2`, and both source loops set horizontal/vertical mip targets plus `rg.uResolution` before directly applying `e/=2,t/=2`. The rebuild now removes local per-mip `Math.round(...)` / `Math.max(1, ...)` halving ownership from `resizeBloomMipChain()` and guards work/main bloom mip target-resolution parity. This is a bloom mip resize-step guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -188,14 +188,14 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `Lo`-derived direct resize input ownership for sky, displacement, thumb, and floor reflection targets.
-- Source evidence: `V1.resize(e,t,n)` passes `t*.75,t*.75,1` into `H1/Lo`, `k1.resize(e,t,n)` passes `t/10,t/10,n` into `O1/Lo`, `T1.resize(e,t,n)` passes `t,t,1` into `x1/Lo`, source `Lo.resize()` owns `Math.round(input * dpr)`, and source `i1.setSize(e,t,n)` uses `e*.75` / `t*.75` directly.
-- Production `resize()` now uses `Math.round(height * 0.75)` for sky, `Math.round((height / 10) * dpr)` for displacement, `Math.round(height)` for thumb, and direct `width * 0.75` / `height * 0.75` for floor reflection.
-- The old rebuild-owned `Math.max(1, ...)` pre-clamps are removed from those paths.
-- `__rogierOutputProbe` and `__rogierThumbProbe` now report `resizeClampMode` / `resizeInputMode` markers for `V1/H1/Lo`, `k1/O1/Lo`, `T1/x1/Lo`, and `i1.setSize()`.
-- `scripts/probe-output-color.mjs`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` reject restoring the old pre-clamped resize paths.
-- Verification passed: `git diff --check`, syntax checks, renderer audit with recursive false/null count `0`, build, desktop/mobile output probes, desktop thumb spotlight probe, and project-media probe. `/gc-2026/` and `/hashgraph-vc/` retained `5/5` visible media.
-- This is resize-input ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
+- Aligned source `Lu/I1` bloom mip direct halving resize ownership for work and main render managers.
+- Source evidence: `Lu.resize(e,t,n)` uses `Fa(renderSize)/4` before the work bloom loop; `I1.resize(e,t,n)` uses `Fa(renderSize)/2` before the main bloom loop; both source loops write horizontal/vertical mip target sizes and `rg.uResolution`, then directly apply `e/=2,t/=2`.
+- Production `resizeBloomMipChain()` now uses direct `mipWidth /= 2` and `mipHeight /= 2` after each mip target/resolution write.
+- The old rebuild-owned per-mip `Math.round(...)` and `Math.max(1, ...)` halving step is removed from that path.
+- `__rogierOutputProbe` now reports `resizeStepMode`, `targetSizes`, `targetHalvingMatchesSource`, `resolutionHalvingMatchesSource`, and `targetsMatchResolutions` for work and main bloom blur materials.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject restoring rounded/clamped bloom mip halving.
+- Verification passed: syntax checks, renderer audit with recursive false/null count `0`, build, and desktop/mobile output probes.
+- This is bloom mip resize-step ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -205,31 +205,26 @@ Last verified in the latest session:
 git diff --check
 node --check src/client/webgl.ts
 node --check scripts/probe-output-color.mjs
-node --check scripts/probe-thumb-spotlight.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-target-direct-resize-final-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-target-direct-resize-final-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-bloom-mip-halving-final-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-bloom-mip-halving-final-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9490 OUT_DIR=/tmp/rd-target-direct-resize-output-desktop PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9491 OUT_DIR=/tmp/rd-target-direct-resize-output-mobile PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile DEVICE_SCALE_FACTOR=2 node scripts/probe-output-color.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9492 OUT_DIR=/tmp/rd-target-direct-resize-thumb PROBE_WAIT=8000 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9493 OUT_DIR=/tmp/rd-target-direct-resize-media PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9500 OUT_DIR=/tmp/rd-bloom-mip-halving-output-desktop PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/opt/google/chrome/chrome REBUILD_URL=http://127.0.0.1:5176 CDP_PORT=9501 OUT_DIR=/tmp/rd-bloom-mip-halving-output-mobile PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile DEVICE_SCALE_FACTOR=2 node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed for the `Lo`-derived direct resize input ownership batch before commit. Renderer audit wrote `/tmp/rd-target-direct-resize-final-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for the no-pre-clamp resize input paths on sky, displacement, thumb, and floor reflection. Desktop and mobile output probes verified the displacement/sky/floor markers, and the thumb spotlight probe verified the thumb target marker with zero failures, exceptions, or console messages.
+All relevant checks passed for the `Lu/I1` bloom mip direct halving resize ownership batch before commit. Renderer audit wrote `/tmp/rd-bloom-mip-halving-final-audit.json`; recursive false/null extraction printed zero entries, and the audit/probe surface reported source/rebuild/probe coverage for direct `/= 2` bloom mip halving on work and main render managers. Desktop and mobile output probes verified the bloom mip target/resolution parity markers with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this direct resize input ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this bloom mip resize-step ownership batch.
 
-Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages with zero failures, exceptions, or console messages.
+Project-media was not rerun for this batch because production project-media code and route data were untouched; project pages remain regression gates, not proof of Home parity.
 
 Verified:
 
-- Renderer audit passed for the direct resize input ownership batch: `/tmp/rd-target-direct-resize-final-audit.json`.
+- Renderer audit passed for the bloom mip halving ownership batch: `/tmp/rd-bloom-mip-halving-final-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source resize input markers.
-- Desktop thumb spotlight probe passed with the source thumb target resize marker.
-- Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
+- Desktop and mobile output probes passed with the source bloom mip halving markers.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, shader dump, and project-media guardrails remain in the audit/probe surface.
 

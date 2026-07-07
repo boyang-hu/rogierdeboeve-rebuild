@@ -737,6 +737,7 @@ const summary = {
         "this.hBlurMaterial.uniforms.uResolution.value.set(e,t)",
         "this.vBlurMaterial.uniforms.uResolution.value.set(e,t)",
         "e=Fa(e)/4,t=Fa(t)/4",
+        "this.blurMaterials[i].uniforms.uResolution.value.set(e,t),e/=2,t/=2",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
         "this.screen.material=this.luminosityMaterial",
         "this.screen.material=this.BloomMaterial",
@@ -905,8 +906,20 @@ const summary = {
           && !sourceLu.text.includes("this.blurMaterials[p].uniforms.uResolution"),
         rebuildBloomBlurResizeResolution:
           rebuildResizeBloomMipChain?.includes("blurMaterials[index]?.uniforms.uResolution.value.set(mipWidth, mipHeight);")
+          && rebuildResizeBloomMipChain?.includes("mipWidth /= 2;")
+          && rebuildResizeBloomMipChain?.includes("mipHeight /= 2;")
+          && !rebuildResizeBloomMipChain?.includes("Math.round(mipWidth / 2)")
+          && !rebuildResizeBloomMipChain?.includes("Math.max(1")
+          && rebuildWebgl.includes("resizeStepMode: \"source-Lu-I1-bloom-mip-loop-divide-by-2-no-round-or-clamp\"")
           && rebuildWebgl.includes("this.resizeBloomMipChain(\n        this.workBloomHorizontalTargets,\n        this.workBloomVerticalTargets,\n        this.bloomBlurMaterials,")
           && !rebuildRenderBloomChain?.includes("blurMaterial.uniforms.uResolution.value.set"),
+        rebuildProbeChecks:
+          rebuildOutputProbe.includes("source-Lu-I1-bloom-mip-loop-divide-by-2-no-round-or-clamp")
+          && rebuildOutputProbe.includes("targetHalvingMatchesSource")
+          && rebuildOutputProbe.includes("resolutionHalvingMatchesSource")
+          && rebuildOutputProbe.includes("targetsMatchResolutions")
+          && !rebuildOutputProbe.includes("Math.round(width / 2)")
+          && !rebuildOutputProbe.includes("Math.max(1, Math.round(width / 2))"),
       },
       excerpt: compact(sourceLu.text),
     },
@@ -2255,6 +2268,7 @@ const summary = {
         "setLightPosition(e,t){this.settings.lensflare.enabled&&this.lensflareMaterial.uniforms.uLightPosition.value.set(e,t)}",
         "this.settings.lensflare.enabled&&this.lensflareMaterial.uniforms.uResolution.value.set(e/8,t/8)",
         "e=Fa(e)/2,t=Fa(t)/2",
+        "this.blurMaterials[i].uniforms.uResolution.value.set(e,t),e/=2,t/=2",
         "this.settings.fluid.enabled&&this.fluidSimulation&&this.fluidSimulation.onResize(e/3,t/3)",
         "this.compositeMaterial.uniforms.tLensflare.value=v.texture",
         "this.compositeMaterial.uniforms.tBloom.value=u[0].texture",
@@ -2474,8 +2488,20 @@ const summary = {
           && !sourceMainI1.text.includes("this.blurMaterials[p].uniforms.uResolution"),
         rebuildBloomBlurResizeResolution:
           rebuildResizeBloomMipChain?.includes("blurMaterials[index]?.uniforms.uResolution.value.set(mipWidth, mipHeight);")
+          && rebuildResizeBloomMipChain?.includes("mipWidth /= 2;")
+          && rebuildResizeBloomMipChain?.includes("mipHeight /= 2;")
+          && !rebuildResizeBloomMipChain?.includes("Math.round(mipWidth / 2)")
+          && !rebuildResizeBloomMipChain?.includes("Math.max(1")
+          && rebuildWebgl.includes("resizeStepMode: \"source-Lu-I1-bloom-mip-loop-divide-by-2-no-round-or-clamp\"")
           && rebuildWebgl.includes("this.resizeBloomMipChain(\n        this.mainBloomHorizontalTargets,\n        this.mainBloomVerticalTargets,\n        this.mainBloomBlurMaterials,")
           && !rebuildRenderBloomChain?.includes("blurMaterial.uniforms.uResolution.value.set"),
+        rebuildProbeChecks:
+          rebuildOutputProbe.includes("source-Lu-I1-bloom-mip-loop-divide-by-2-no-round-or-clamp")
+          && rebuildOutputProbe.includes("targetHalvingMatchesSource")
+          && rebuildOutputProbe.includes("resolutionHalvingMatchesSource")
+          && rebuildOutputProbe.includes("targetsMatchResolutions")
+          && !rebuildOutputProbe.includes("Math.round(width / 2)")
+          && !rebuildOutputProbe.includes("Math.max(1, Math.round(width / 2))"),
       },
       excerpt: compact(sourceMainI1.text),
     },

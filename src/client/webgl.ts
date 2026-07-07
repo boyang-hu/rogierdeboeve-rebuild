@@ -8718,8 +8718,8 @@ void main() {
       target.setSize(mipWidth, mipHeight);
       verticalTargets[index].setSize(mipWidth, mipHeight);
       blurMaterials[index]?.uniforms.uResolution.value.set(mipWidth, mipHeight);
-      mipWidth = Math.max(1, Math.round(mipWidth / 2));
-      mipHeight = Math.max(1, Math.round(mipHeight / 2));
+      mipWidth /= 2;
+      mipHeight /= 2;
     });
   }
 
@@ -9738,48 +9738,80 @@ void main() {
       horizontalDirection: Vector2,
       verticalDirection: Vector2,
       bloomEnabled: boolean,
-    ) => ({
-      blending: materials[0]?.blending ?? null,
-      materialMode: "source-rg-raw-glsl3",
-      glslVersion: (materials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
-      tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
-      constructorResolution: materials[0]?.userData.sourceConstructorResolution ?? null,
-      constructorDirection: materials[0]?.userData.sourceConstructorDirection ?? null,
-      hasSourceUnusedSamplers: materials.every((material) => (
-        "tDetail" in material.uniforms
-        && "tOverview" in material.uniforms
-        && "tOverviewMask" in material.uniforms
-      )),
-      unusedSamplerConstructorNull: materials.every((material) => (
-        material.uniforms.tDetail?.value === null
-        && material.uniforms.tOverview?.value === null
-        && material.uniforms.tOverviewMask?.value === null
-      )),
-      materialCount: materials.length,
-      kernelDefines: materials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
-      sigmaDefines: materials.map((material) => material.defines?.SIGMA ?? null),
-      runtimeKernelUniforms: materials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
-      directionAssignmentMode: "source-Lu-I1-rg-uDirection-value-shared-vector-assignment",
-      runtimeDirectionMode: bloomEnabled
-        ? "source-enabled-loop-leaves-each-rg-on-shared-vertical-direction"
-        : "source-disabled-loop-not-run-keeps-constructor-direction",
-      runtimeDirections: materials.map((material) => (material.uniforms.uDirection.value as Vector2).toArray()),
-      runtimeUsesSourceVerticalDirection: bloomEnabled
-        ? materials.every((material) => material.uniforms.uDirection.value === verticalDirection)
-        : null,
-      runtimeUsesSourceHorizontalDirection: bloomEnabled
-        ? materials.every((material) => material.uniforms.uDirection.value === horizontalDirection)
-        : null,
-      runtimeKeepsConstructorDirectionWhenDisabled: !bloomEnabled
-        ? materials.every((material) => {
-          const direction = (material.uniforms.uDirection.value as Vector2).toArray();
-          return JSON.stringify(direction) === JSON.stringify(material.userData.sourceConstructorDirection);
-        })
-        : null,
-      resolutionResizeMode: "source-Lu-I1-rg-uResolution-resize-loop",
-      resolutionUpdateMode: "source-Lu-I1-rg-update-keeps-resize-resolution",
-      resolutions: materials.map((material) => (material.uniforms.uResolution.value as Vector2).toArray()),
-    });
+      horizontalTargets: WebGLRenderTarget[],
+      verticalTargets: WebGLRenderTarget[],
+    ) => {
+      const resolutions = materials.map((material) => (material.uniforms.uResolution.value as Vector2).toArray());
+      const targetSizes = horizontalTargets.map((target, index) => ({
+        horizontal: [target.width, target.height],
+        vertical: [verticalTargets[index]?.width ?? 0, verticalTargets[index]?.height ?? 0],
+      }));
+      const pairHalves = (pairs: number[][]) => pairs.slice(1).every((pair, index) => (
+        Math.abs(pair[0] - pairs[index][0] / 2) < 1e-6
+        && Math.abs(pair[1] - pairs[index][1] / 2) < 1e-6
+      ));
+      const targetHalvingMatchesSource = bloomEnabled
+        ? pairHalves(targetSizes.map((size) => size.horizontal))
+          && pairHalves(targetSizes.map((size) => size.vertical))
+        : "source-disabled-bloom-loop-not-run";
+      const resolutionHalvingMatchesSource = bloomEnabled
+        ? pairHalves(resolutions)
+        : "source-disabled-bloom-loop-not-run";
+      return {
+        blending: materials[0]?.blending ?? null,
+        materialMode: "source-rg-raw-glsl3",
+        glslVersion: (materials[0] as RawShaderMaterial | undefined)?.glslVersion ?? null,
+        tMapConstructorMode: "source-rg-tMap-construct-null-branch-owned-binding",
+        constructorResolution: materials[0]?.userData.sourceConstructorResolution ?? null,
+        constructorDirection: materials[0]?.userData.sourceConstructorDirection ?? null,
+        hasSourceUnusedSamplers: materials.every((material) => (
+          "tDetail" in material.uniforms
+          && "tOverview" in material.uniforms
+          && "tOverviewMask" in material.uniforms
+        )),
+        unusedSamplerConstructorNull: materials.every((material) => (
+          material.uniforms.tDetail?.value === null
+          && material.uniforms.tOverview?.value === null
+          && material.uniforms.tOverviewMask?.value === null
+        )),
+        materialCount: materials.length,
+        kernelDefines: materials.map((material) => material.defines?.KERNEL_RADIUS ?? null),
+        sigmaDefines: materials.map((material) => material.defines?.SIGMA ?? null),
+        runtimeKernelUniforms: materials.some((material) => "uKernelRadius" in material.uniforms || "uSigma" in material.uniforms),
+        directionAssignmentMode: "source-Lu-I1-rg-uDirection-value-shared-vector-assignment",
+        runtimeDirectionMode: bloomEnabled
+          ? "source-enabled-loop-leaves-each-rg-on-shared-vertical-direction"
+          : "source-disabled-loop-not-run-keeps-constructor-direction",
+        runtimeDirections: materials.map((material) => (material.uniforms.uDirection.value as Vector2).toArray()),
+        runtimeUsesSourceVerticalDirection: bloomEnabled
+          ? materials.every((material) => material.uniforms.uDirection.value === verticalDirection)
+          : null,
+        runtimeUsesSourceHorizontalDirection: bloomEnabled
+          ? materials.every((material) => material.uniforms.uDirection.value === horizontalDirection)
+          : null,
+        runtimeKeepsConstructorDirectionWhenDisabled: !bloomEnabled
+          ? materials.every((material) => {
+            const direction = (material.uniforms.uDirection.value as Vector2).toArray();
+            return JSON.stringify(direction) === JSON.stringify(material.userData.sourceConstructorDirection);
+          })
+          : null,
+        resolutionResizeMode: "source-Lu-I1-rg-uResolution-resize-loop",
+        resizeStepMode: "source-Lu-I1-bloom-mip-loop-divide-by-2-no-round-or-clamp",
+        resolutionUpdateMode: "source-Lu-I1-rg-update-keeps-resize-resolution",
+        resolutions,
+        targetSizes,
+        targetHalvingMatchesSource,
+        resolutionHalvingMatchesSource,
+        targetsMatchResolutions: bloomEnabled
+          ? targetSizes.every((size, index) => (
+            Math.abs(size.horizontal[0] - resolutions[index][0]) < 1e-6
+            && Math.abs(size.horizontal[1] - resolutions[index][1]) < 1e-6
+            && Math.abs(size.vertical[0] - resolutions[index][0]) < 1e-6
+            && Math.abs(size.vertical[1] - resolutions[index][1]) < 1e-6
+          ))
+          : "source-disabled-bloom-loop-not-run",
+      };
+    };
     const standardBlurProbe = (
       horizontalMaterial: ShaderMaterial,
       verticalMaterial: ShaderMaterial,
@@ -10852,6 +10884,8 @@ void main() {
             this.sourceWorkBloomHorizontalDirection,
             this.sourceWorkBloomVerticalDirection,
             this.renderSettings.bloom.enabled,
+            this.workBloomHorizontalTargets,
+            this.workBloomVerticalTargets,
           ),
           bloomComposite: {
             blending: this.bloomCompositeMaterial.blending,
@@ -10876,6 +10910,8 @@ void main() {
             this.sourceMainBloomHorizontalDirection,
             this.sourceMainBloomVerticalDirection,
             this.sourceMainRenderSettings.bloom.enabled,
+            this.mainBloomHorizontalTargets,
+            this.mainBloomVerticalTargets,
           ),
           mainBloomComposite: {
             blending: this.mainBloomCompositeMaterial.blending,
