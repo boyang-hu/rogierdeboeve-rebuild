@@ -87,6 +87,23 @@ type SourceProjectThumb = {
   bindingMode: "source-Xt-projectThumbs-src-promise";
 };
 
+type SourceImmediateTextureLoad = {
+  texture: Texture;
+  loaded: Promise<Texture>;
+  src: string;
+  objectBindingMode: "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
+};
+
+type SourceTextureAssets = {
+  mode: "source-Qe-webp-before-Xt-preloadTextures-before-J-init";
+  webpSupport: boolean;
+  assetExt: "webp" | "jpg";
+  blueNoise: SourceImmediateTextureLoad;
+  floorNormal: SourceImmediateTextureLoad;
+  perlin1: SourceImmediateTextureLoad;
+  perlin2: SourceImmediateTextureLoad;
+};
+
 type WorkItem = {
   slug: string;
   payload: ProjectPayload;
@@ -4918,6 +4935,32 @@ function applySourceLoadedTextureState(texture: Texture, colorSpace: typeof SRGB
   texture.colorSpace = colorSpace;
 }
 
+function sourceLoadedTextureColorSpace() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("debug-texture-colorspace") === "srgb" ? SRGBColorSpace : "";
+}
+
+function loadSourceTextureImmediate(
+  loader: TextureLoader,
+  src: string,
+  colorSpace: typeof SRGBColorSpace | typeof NoColorSpace | "" = sourceLoadedTextureColorSpace(),
+): SourceImmediateTextureLoad {
+  let texture!: Texture;
+  const loaded = new Promise<Texture>((resolve, reject) => {
+    texture = loader.load(src, (loadedTexture) => {
+      applySourceLoadedTextureState(loadedTexture, colorSpace);
+      resolve(loadedTexture);
+    }, undefined, reject);
+  });
+  applySourceLoadedTextureState(texture, colorSpace);
+  return {
+    texture,
+    loaded,
+    src,
+    objectBindingMode: "source-Xt-loadTexture-immediate-texture-object-bound-before-onload",
+  };
+}
+
 let sourceWebpSupportPromise: Promise<boolean> | null = null;
 
 function detectSourceWebpSupport() {
@@ -4930,6 +4973,35 @@ function detectSourceWebpSupport() {
     });
   }
   return sourceWebpSupportPromise;
+}
+
+export async function prepareSourceTextureAssets(): Promise<SourceTextureAssets> {
+  const webpSupport = await detectSourceWebpSupport();
+  const assetExt: "webp" | "jpg" = webpSupport ? "webp" : "jpg";
+  const loader = new TextureLoader();
+  const blueNoise = loadSourceTextureImmediate(loader, "/images/textures/blue-noise.png");
+  blueNoise.texture.wrapS = RepeatWrapping;
+  blueNoise.texture.wrapT = RepeatWrapping;
+  const floorNormal = loadSourceTextureImmediate(loader, `/images/textures/floor-normal.${assetExt}`, NoColorSpace);
+  floorNormal.texture.wrapS = RepeatWrapping;
+  floorNormal.texture.wrapT = RepeatWrapping;
+  floorNormal.texture.repeat.set(45, 45);
+  floorNormal.texture.updateMatrix();
+  const perlin1 = loadSourceTextureImmediate(loader, `/images/textures/perlin-1.${assetExt}`);
+  perlin1.texture.wrapS = MirroredRepeatWrapping;
+  perlin1.texture.wrapT = MirroredRepeatWrapping;
+  const perlin2 = loadSourceTextureImmediate(loader, `/images/textures/perlin-2.${assetExt}`);
+  perlin2.texture.wrapS = RepeatWrapping;
+  perlin2.texture.wrapT = RepeatWrapping;
+  return {
+    mode: "source-Qe-webp-before-Xt-preloadTextures-before-J-init",
+    webpSupport,
+    assetExt,
+    blueNoise,
+    floorNormal,
+    perlin1,
+    perlin2,
+  };
 }
 
 function sourceTextureProbe(texture: Texture) {
@@ -5405,6 +5477,7 @@ export class WebGLBackdrop {
     perlin1: false,
     perlin2: false,
   };
+  private sourceTextureAssets?: SourceTextureAssets;
   private sourceBlueNoiseTexture: Texture | null = null;
   private sourceBlueNoiseLoadedTexture: Texture | null = null;
   private sourceBlueNoiseObjectBindingMode = "pending-source-Xt-blueNoise";
@@ -5461,11 +5534,13 @@ export class WebGLBackdrop {
   private destroyed = false;
 
   private loadedTextureColorSpace() {
-    return this.debugTextureColorSpace === "srgb" ? SRGBColorSpace : "";
+    return sourceLoadedTextureColorSpace();
   }
 
-  constructor(root: HTMLElement) {
+  constructor(root: HTMLElement, sourceTextureAssets?: SourceTextureAssets) {
     this.root = root;
+    this.sourceTextureAssets = sourceTextureAssets;
+    if (sourceTextureAssets) this.applySourceTextureConstructorObjects(sourceTextureAssets);
     this.renderer = new WebGLRenderer({
       alpha: true,
       antialias: false,
@@ -6235,11 +6310,14 @@ export class WebGLBackdrop {
     window.removeEventListener("resize", this.resize);
     window.removeEventListener("mousemove", this.onMouseMove);
     window.removeEventListener("scroll", this.onScroll);
-    this.textureCache.forEach((texture) => texture.dispose());
-    this.noiseTexture.dispose();
-    this.fluidPlaceholder.dispose();
-    this.perlinTexture.dispose();
-    this.workPerlinTexture.dispose();
+    const disposableTextures = new Set<Texture>(this.textureCache.values());
+    disposableTextures.add(this.noiseTexture);
+    disposableTextures.add(this.fluidPlaceholder);
+    disposableTextures.add(this.perlinTexture);
+    disposableTextures.add(this.workPerlinTexture);
+    const floorNormalTexture = this.floorMaterial.uniforms.tNormalMap.value as Texture | null;
+    if (floorNormalTexture && floorNormalTexture !== this.placeholder) disposableTextures.add(floorNormalTexture);
+    disposableTextures.forEach((texture) => texture.dispose());
     this.mediaPlanes.forEach((plane) => {
       plane.video?.pause();
       plane.texture?.dispose();
@@ -6461,6 +6539,8 @@ export class WebGLBackdrop {
     material.userData.sourceTDisplacementConstructorWasNull = uniforms.tDisplacement.value === null;
     material.userData.sourceUMouseSpeedConstructorMode = "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime";
     material.userData.sourceUMouseSpeedConstructorWasNull = uniforms.uMouseSpeed.value === null;
+    material.userData.sourceTPerlinConstructorMode = "source-VA-tPerlin-construct-Xt-perlin1-immediate";
+    material.userData.sourceTPerlinConstructorIsImmediate = uniforms.tPerlin.value === this.sourcePerlin1Texture;
     material.onBeforeCompile = (shader) => {
       patchWorkBlockShader(shader, uniforms, "work");
     };
@@ -6562,6 +6642,10 @@ export class WebGLBackdrop {
     material.userData.sourceTDisplacementConstructorWasNull = uniforms.tDisplacement.value === null;
     material.userData.sourceUMouseSpeedConstructorMode = "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime";
     material.userData.sourceUMouseSpeedConstructorWasNull = uniforms.uMouseSpeed.value === null;
+    material.userData.sourceTPerlinConstructorMode = kind === "about"
+      ? "source-XA-tPerlin-construct-Xt-perlin1-immediate"
+      : "source-KA-tPerlin-construct-Xt-perlin1-immediate";
+    material.userData.sourceTPerlinConstructorIsImmediate = uniforms.tPerlin.value === this.sourcePerlin1Texture;
     material.onBeforeCompile = (shader) => {
       patchWorkBlockShader(shader, uniforms, kind === "about" ? "aboutAuxiliary" : "floatingAuxiliary");
     };
@@ -6938,6 +7022,8 @@ export class WebGLBackdrop {
     material.userData.sourceFluidStrengthStateDivergenceMode = "source-C1-constructor-0_5-Se-settings-initial-0";
     material.userData.sourceTNoiseConstructorWasNull = material.uniforms.tNoise.value === null;
     material.userData.sourceTNoiseRuntimeOwnership = "source-I1-constructor-after-initRenderer-binds-Xt-blueNoise";
+    material.userData.sourceTPerlinConstructorMode = "source-C1-tPerlin-construct-Xt-perlin2-immediate";
+    material.userData.sourceTPerlinConstructorIsImmediate = material.uniforms.tPerlin.value === this.sourcePerlin2Texture;
     return material;
   }
 
@@ -7166,66 +7252,61 @@ export class WebGLBackdrop {
   }
 
   private loadCompositeTextures() {
-    this.sourceTexturePreloadPromise = this.loadCompositeTexturesFromSourceWebpState();
+    this.sourceTexturePreloadPromise = this.sourceTextureAssets
+      ? this.bindPreparedSourceTextures(this.sourceTextureAssets)
+      : this.loadCompositeTexturesFromSourceWebpState();
   }
 
   private async loadCompositeTexturesFromSourceWebpState() {
-    this.sourceWebpSupport = await detectSourceWebpSupport();
-    const sourceExt: "webp" | "jpg" = this.sourceWebpSupport ? "webp" : "jpg";
-    this.sourceAssetExt = sourceExt;
-    const blueNoiseLoad = this.loadTextureImmediate("/images/textures/blue-noise.png");
-    const blueNoiseTexture = blueNoiseLoad.texture;
-    blueNoiseTexture.wrapS = RepeatWrapping;
-    blueNoiseTexture.wrapT = RepeatWrapping;
-    this.sourceBlueNoiseTexture = blueNoiseTexture;
-    this.sourceBlueNoiseObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
-    this.noiseTexture = blueNoiseTexture;
-    this.preCompositeMaterial.uniforms.tNoise.value = blueNoiseTexture;
-    const blueNoise = blueNoiseLoad.loaded.then((texture) => {
+    const assets = await prepareSourceTextureAssets();
+    this.sourceTextureAssets = assets;
+    return this.bindPreparedSourceTextures(assets);
+  }
+
+  private applySourceTextureConstructorObjects(assets: SourceTextureAssets) {
+    this.sourceWebpSupport = assets.webpSupport;
+    this.sourceAssetExt = assets.assetExt;
+    this.sourceBlueNoiseTexture = assets.blueNoise.texture;
+    this.sourceBlueNoiseObjectBindingMode = assets.blueNoise.objectBindingMode;
+    this.noiseTexture = assets.blueNoise.texture;
+    this.sourcePerlin2Texture = assets.perlin2.texture;
+    this.sourcePerlin2ObjectBindingMode = assets.perlin2.objectBindingMode;
+    this.perlinTexture = assets.perlin2.texture;
+    this.sourcePerlin1Texture = assets.perlin1.texture;
+    this.sourcePerlin1ObjectBindingMode = assets.perlin1.objectBindingMode;
+    this.workPerlinTexture = assets.perlin1.texture;
+    this.sourceFloorNormalTexture = assets.floorNormal.texture;
+    this.sourceFloorNormalObjectBindingMode = assets.floorNormal.objectBindingMode;
+  }
+
+  private async bindPreparedSourceTextures(assets: SourceTextureAssets) {
+    this.applySourceTextureConstructorObjects(assets);
+    this.preCompositeMaterial.uniforms.tNoise.value = assets.blueNoise.texture;
+    this.preCompositeMaterial.uniforms.tPerlin.value = assets.perlin2.texture;
+    this.workItems.forEach((item) => {
+      item.material.uniforms.tPerlin.value = assets.perlin1.texture;
+    });
+    if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = assets.perlin1.texture;
+    if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = assets.perlin1.texture;
+    this.floorMaterial.uniforms.tNormalMap.value = assets.floorNormal.texture;
+    this.floorMaterial.uniforms.uMapTransform.value = assets.floorNormal.texture.matrix;
+
+    const blueNoise = assets.blueNoise.loaded.then((texture) => {
       this.sourceBlueNoiseLoadedTexture = texture;
       this.sourceTexturePreloadState.blueNoise = true;
     });
 
-    const perlin2Load = this.loadTextureImmediate(`/images/textures/perlin-2.${sourceExt}`);
-    const perlin2Texture = perlin2Load.texture;
-    perlin2Texture.wrapS = RepeatWrapping;
-    perlin2Texture.wrapT = RepeatWrapping;
-    this.sourcePerlin2Texture = perlin2Texture;
-    this.sourcePerlin2ObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
-    this.perlinTexture = perlin2Texture;
-    this.preCompositeMaterial.uniforms.tPerlin.value = perlin2Texture;
-    const perlin2 = perlin2Load.loaded.then((texture) => {
+    const perlin2 = assets.perlin2.loaded.then((texture) => {
       this.sourcePerlin2LoadedTexture = texture;
       this.sourceTexturePreloadState.perlin2 = true;
     });
 
-    const perlin1Load = this.loadTextureImmediate(`/images/textures/perlin-1.${sourceExt}`);
-    const perlin1Texture = perlin1Load.texture;
-    perlin1Texture.wrapS = MirroredRepeatWrapping;
-    perlin1Texture.wrapT = MirroredRepeatWrapping;
-    this.sourcePerlin1Texture = perlin1Texture;
-    this.sourcePerlin1ObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
-    this.workPerlinTexture = perlin1Texture;
-    this.workItems.forEach((item) => {
-      item.material.uniforms.tPerlin.value = perlin1Texture;
-    });
-    if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = perlin1Texture;
-    if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = perlin1Texture;
-    const perlin1 = perlin1Load.loaded.then((texture) => {
+    const perlin1 = assets.perlin1.loaded.then((texture) => {
       this.sourcePerlin1LoadedTexture = texture;
       this.sourceTexturePreloadState.perlin1 = true;
     });
-    const floorNormalLoad = this.loadTextureImmediate(`/images/textures/floor-normal.${sourceExt}`, NoColorSpace);
-    const floorNormalTexture = floorNormalLoad.texture;
-    floorNormalTexture.wrapS = RepeatWrapping;
-    floorNormalTexture.wrapT = RepeatWrapping;
-    floorNormalTexture.repeat.set(45, 45);
-    floorNormalTexture.updateMatrix();
-    this.sourceFloorNormalTexture = floorNormalTexture;
-    this.sourceFloorNormalObjectBindingMode = "source-Xt-loadTexture-immediate-texture-object-bound-before-onload";
-    this.floorMaterial.uniforms.tNormalMap.value = floorNormalTexture;
-    this.floorMaterial.uniforms.uMapTransform.value = floorNormalTexture.matrix;
-    const floorNormal = floorNormalLoad.loaded.then((texture) => {
+
+    const floorNormal = assets.floorNormal.loaded.then((texture) => {
       this.sourceFloorNormalLoadedTexture = texture;
       this.sourceTexturePreloadState.floorNormal = true;
     });
@@ -7234,10 +7315,10 @@ export class WebGLBackdrop {
     });
     this.loadCharacterModel();
     const cubeBase = "/images/cubemaps/01";
-    const cubeUrls = ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${sourceExt}`);
+    const cubeUrls = ["px", "nx", "ny", "py", "pz", "nz"].map((side) => `${cubeBase}/${side}.${assets.assetExt}`);
     this.sourceCubemapLoadState = {
       mode: "source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback",
-      ext: sourceExt,
+      ext: assets.assetExt,
       loaded: false,
       failed: false,
       urls: cubeUrls,
@@ -7677,8 +7758,9 @@ void main() {
 
   private createFloorMaterial() {
     this.updateFloorReflectionRenderTargetUniform(this.floorReflectionReadTarget.texture);
+    const normalMap = this.sourceFloorNormalTexture ?? this.placeholder;
     dumpShader("o1-floor-material", floorVertex, floorFragment);
-    return new RawShaderMaterial({
+    const material = new RawShaderMaterial({
       glslVersion: GLSL3,
       blending: NoBlending,
       defines: {
@@ -7693,12 +7775,16 @@ void main() {
         uMirror: { value: 1 },
         uFloorMixStrength: { value: 15 },
         uNormalDistortionStrength: { value: 2.5 },
-        tNormalMap: { value: this.placeholder },
+        tNormalMap: { value: normalMap },
         uNormalScale: { value: new Vector2(1, 1) },
       },
       vertexShader: floorVertex,
       fragmentShader: floorFragment,
     });
+    material.userData.sourceNormalMapConstructorMode = "source-a1-await-Xt-floorNormal-before-o1-construction";
+    material.userData.sourceNormalMapConstructorIsImmediate = normalMap === this.sourceFloorNormalTexture;
+    material.uniforms.uMapTransform.value = normalMap.matrix;
+    return material;
   }
 
   private updateFloorReflectionRenderTargetUniform(texture: Texture) {
@@ -10158,6 +10244,8 @@ void main() {
             tMouseSimConstructorWasNull: activeWorkItem.material.userData.sourceTMouseSimConstructorWasNull,
             tMouseSim2ConstructorWasNull: activeWorkItem.material.userData.sourceTMouseSim2ConstructorWasNull,
             tDisplacementConstructorWasNull: activeWorkItem.material.userData.sourceTDisplacementConstructorWasNull,
+            tPerlinConstructorMode: activeWorkItem.material.userData.sourceTPerlinConstructorMode,
+            tPerlinConstructorIsImmediate: activeWorkItem.material.userData.sourceTPerlinConstructorIsImmediate,
             tMouseSimRuntimeIsLocal:
               activeWorkItem.material.uniforms.tMouseSim.value
               === (activeWorkItem.mouseTargets[activeWorkItem.mouseIndex]?.texture ?? this.placeholder),
@@ -10239,6 +10327,8 @@ void main() {
             tMouseSimConstructorWasNull: this.aboutBlocks.material.userData.sourceTMouseSimConstructorWasNull,
             tMouseSim2ConstructorWasNull: this.aboutBlocks.material.userData.sourceTMouseSim2ConstructorWasNull,
             tDisplacementConstructorWasNull: this.aboutBlocks.material.userData.sourceTDisplacementConstructorWasNull,
+            tPerlinConstructorMode: this.aboutBlocks.material.userData.sourceTPerlinConstructorMode,
+            tPerlinConstructorIsImmediate: this.aboutBlocks.material.userData.sourceTPerlinConstructorIsImmediate,
             runtimeBindingMode: "source-XA-$A-update-local-tMouseSim-uMouseSpeed-tDisplacement-p1-update-tMouseSim2",
             tMouseSimRuntimeIsLocal: this.aboutBlocks.group.visible && this.aboutBlocks.mouseTargets && this.aboutBlocks.mouseIndex !== undefined
               ? this.aboutBlocks.material.uniforms.tMouseSim.value === (this.aboutBlocks.mouseTargets[this.aboutBlocks.mouseIndex]?.texture ?? this.placeholder)
@@ -10284,6 +10374,8 @@ void main() {
             tMouseSimConstructorWasNull: this.floatingBlocks.material.userData.sourceTMouseSimConstructorWasNull,
             tMouseSim2ConstructorWasNull: this.floatingBlocks.material.userData.sourceTMouseSim2ConstructorWasNull,
             tDisplacementConstructorWasNull: this.floatingBlocks.material.userData.sourceTDisplacementConstructorWasNull,
+            tPerlinConstructorMode: this.floatingBlocks.material.userData.sourceTPerlinConstructorMode,
+            tPerlinConstructorIsImmediate: this.floatingBlocks.material.userData.sourceTPerlinConstructorIsImmediate,
             runtimeBindingMode: "source-ZA-update-material-time-position-no-sampler-writes",
             tMouseSimRuntimeStaysConstructorNull: this.floatingBlocks.material.uniforms.tMouseSim.value === null,
             tMouseSim2RuntimeStaysConstructorNull: this.floatingBlocks.material.uniforms.tMouseSim2.value === null,
@@ -10442,6 +10534,8 @@ void main() {
           animateInResolvedMode: "source-nD-animateIn-resolves-after-fade-scheduled",
           canvasFadeCompleted: this.canvasFadeCompleted,
           sourceWebpDetectionMode: "source-Qe-k0-lossy-before-Xt-and-p1-assets",
+          sourceTextureAssetMode: this.sourceTextureAssets?.mode ?? "fallback-instance-preload",
+          sourceTextureAssetsPreparedBeforeConstructor: this.sourceTextureAssets?.mode === "source-Qe-webp-before-Xt-preloadTextures-before-J-init",
           sourceWebpSupport: this.sourceWebpSupport,
           sourceAssetExt: this.sourceAssetExt,
           sourceTexturePreloadState: { ...this.sourceTexturePreloadState },
@@ -10562,6 +10656,8 @@ void main() {
             tNoiseConstructorWasNull: this.preCompositeMaterial.userData.sourceTNoiseConstructorWasNull,
             tNoiseRuntimeOwnership: this.preCompositeMaterial.userData.sourceTNoiseRuntimeOwnership,
             tNoiseIsBlueNoiseImmediate: c1Uniforms.tNoise.value === this.sourceBlueNoiseTexture,
+            tPerlinConstructorMode: this.preCompositeMaterial.userData.sourceTPerlinConstructorMode,
+            tPerlinConstructorIsImmediate: this.preCompositeMaterial.userData.sourceTPerlinConstructorIsImmediate,
             tPerlinIsLoadedTexture: c1Uniforms.tPerlin.value === this.perlinTexture,
             uDisplacementSizeMode: "source-C1-constructor-default-new-Vector2-no-runtime-write",
             uDisplacement: c1Uniforms.uDisplacement.value,
@@ -10926,6 +11022,8 @@ void main() {
           blurResolution: (this.floorReflectionBlurMaterial.uniforms.uResolution.value as Vector2).toArray(),
           normalMap: {
             bindingMode: "source-a1-Xt-floorNormal-repeat-45-updateMatrix",
+            constructorMode: this.floorMaterial.userData.sourceNormalMapConstructorMode,
+            constructorIsImmediateTexture: this.floorMaterial.userData.sourceNormalMapConstructorIsImmediate,
             objectBindingMode: this.sourceFloorNormalObjectBindingMode,
             isLoadedTexture: this.floorMaterial.uniforms.tNormalMap.value !== this.placeholder,
             uniformIsImmediateTexture: this.floorMaterial.uniforms.tNormalMap.value === this.sourceFloorNormalTexture,
@@ -11041,6 +11139,8 @@ void main() {
       textures: {
         sourceLoadedTextureMode: "source-Xt-TextureLoader-default-sampling-wrap-only-overrides",
         sourceWebpDetectionMode: "source-Qe-k0-lossy-before-Xt-preloadTextures",
+        sourceTextureAssetMode: this.sourceTextureAssets?.mode ?? "fallback-instance-preload",
+        sourceTextureAssetsPreparedBeforeConstructor: this.sourceTextureAssets?.mode === "source-Qe-webp-before-Xt-preloadTextures-before-J-init",
         sourceWebpSupport: this.sourceWebpSupport,
         sourceAssetExt: this.sourceAssetExt,
         sourceImmediateTextureBindings: {
@@ -11059,6 +11159,8 @@ void main() {
           },
           perlin2: {
             objectBindingMode: this.sourcePerlin2ObjectBindingMode,
+            constructorMode: this.preCompositeMaterial.userData.sourceTPerlinConstructorMode,
+            c1TPerlinConstructorIsImmediate: this.preCompositeMaterial.userData.sourceTPerlinConstructorIsImmediate,
             stateIsImmediateTexture: this.perlinTexture === this.sourcePerlin2Texture,
             c1TPerlinIsImmediateTexture: this.preCompositeMaterial.uniforms.tPerlin.value === this.sourcePerlin2Texture,
             loadedSameImmediateTexture: this.sourceTexturePreloadState.perlin2
@@ -11067,6 +11169,11 @@ void main() {
           },
           perlin1: {
             objectBindingMode: this.sourcePerlin1ObjectBindingMode,
+            constructorMode: "source-VA-XA-KA-tPerlin-construct-Xt-perlin1-immediate",
+            allWorkConstructorsImmediate: this.workItems.every((item) => item.material.userData.sourceTPerlinConstructorIsImmediate === true),
+            auxiliaryConstructorsImmediate:
+              (!this.aboutBlocks || this.aboutBlocks.material.userData.sourceTPerlinConstructorIsImmediate === true)
+              && (!this.floatingBlocks || this.floatingBlocks.material.userData.sourceTPerlinConstructorIsImmediate === true),
             stateIsImmediateTexture: this.workPerlinTexture === this.sourcePerlin1Texture,
             allWorkUniformsImmediate: allWorkPerlinUniformsImmediate,
             auxiliaryUniformsImmediate: auxiliaryPerlinUniformsImmediate,

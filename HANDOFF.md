@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `C1/I1` `tNoise` constructor/runtime ownership is now matched more closely. Source `C1` constructs `tNoise:new I(null)`, while source `I1` later binds `C1.tNoise` to `Xt.blueNoise` after renderer setup. The rebuild now constructs `C1.tNoise` as `null`, records the source `I1` runtime ownership boundary, and exposes/asserts `source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise`. This is constructor/runtime ownership parity only; `tPerlin` constructor parity remains a separate future bridge because the rebuild still carries a WebP/preload placeholder path before binding the source texture object. Phase 1 is still open.
+Latest Phase 1 batch: source texture constructor ownership is now matched more closely across the Home texture preloads. Source `Qe.init()` resolves WebP support before `Xt.init()`, `Xt.preloadTextures()` immediately creates `blueNoise`, `floorNormal`, `perlin1`, and `perlin2`, then `C1`, `VA`, `XA`, `KA`, and `a1/o1` constructors receive those immediate texture objects. The rebuild now prepares source texture assets before `new WebGLBackdrop(...)`, applies them before material construction, constructs `C1.tPerlin` from source `perlin2`, constructs `VA/XA/KA.tPerlin` from source `perlin1`, and constructs the floor normal map from source `floorNormal`. Phase 1 is still open.
 
 ## Chosen Stack
 
@@ -171,7 +171,7 @@ Known remaining gaps:
 - Source `p1/Ya` home camera construction and resize projection ownership is now guarded: home camera stays `Ya(55, innerWidth / innerHeight, 1, 2e3)`, initial z `5.5`, and resize projection stays on the `Ya.resize()` plus `Iu.resize()` aspect/update path.
 - Source `yg/U1/I1` main raw camera construction and resize projection ownership is now guarded: main raw camera stays `Ya(Ef(...), Pe.aspect, 1, distance*2)` with distance `1000`, and resize projection stays on the source `yg.resize()` `Ef(...)` FOV/aspect/update path.
 - Source `I1/C1` main composite runtime uniform order is now guarded: source `I1.update()` runs optional fluid, then writes `C1.tScene`, the four bool uniforms, and `tLensflare` immediately before assigning/rendering the `C1` screen path, while `U1.update()` still owns the later `C1.uTime` write. Source `C1/I1` `tNoise` constructor/runtime ownership is also guarded: `C1` constructs `tNoise` as `null`, and `I1` binds the source blue-noise texture after renderer setup.
-- Source `Xt.loadTexture()` immediate texture-object binding is now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: uniforms receive the immediate `Texture` object before image onload, and probes verify onload does not replace that object.
+- Source `Qe/Xt` texture preload ordering and `Xt.loadTexture()` immediate texture-object ownership are now guarded for blue-noise, perlin-1, perlin-2, and floor-normal: WebP support is resolved before the Home WebGL constructor, immediate `Texture` objects are applied before `C1`, `VA`, `XA`, `KA`, and floor material construction, uniforms receive those objects before image onload, and probes verify onload does not replace them.
 - Source `u1` environment shader constants are now guarded against the misleading nearby `BA/Z1` constant groups: active `u1` reads `Qn`, so `uShader1Speed` remains `0.5`, `uShader1Mix3` remains `1.5`, and declared-only `uShader1Mix2` stays unbound at runtime.
 - Source `u1` environment material dithering ownership is now guarded: source `h1` constructs `new u1({side:hn,envMapIntensity:Qn.ENVMAP_INTENSITY,fog:!1})` without a `dithering` constructor param, and source `u1` sets `this.dithering=true` after `super(e)`.
 - Source `Qm/Iw` spotlight defaults and shadow projection ownership are now guarded: source `Qm` keeps distance `0`, decay `2`, `map=null`, and `shadow=new Iw`; source `Iw` keeps focus `1`, camera `50/1/.5/500`, shadow map size `512x512`, and updates projection FOV/far from angle/focus and `distance || camera.far`.
@@ -188,12 +188,13 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned `C1/I1` `tNoise` constructor/runtime ownership in the Home main pre-composite material.
-- Source evidence: `C1` constructs `tNoise:new I(null)`, while the same constructor keeps `tPerlin:new I(Xt.perlin2)`; source `I1` then runs `initSettings()`, `initRenderer()`, and binds `this.compositeMaterial.uniforms.tNoise.value=Xt.blueNoise`.
-- Production `createPreCompositeMaterial()` now constructs `tNoise` as `null`, records `sourceTNoiseConstructorWasNull`, and records the runtime owner as `source-I1-constructor-after-initRenderer-binds-Xt-blueNoise`.
-- `__rogierOutputProbe.settings.work.materialSurface` now reports `tNoiseConstructorMode=source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise`, `tNoiseConstructorWasNull=true`, `tNoiseRuntimeOwnership=source-I1-constructor-after-initRenderer-binds-Xt-blueNoise`, and immediate blue-noise binding.
-- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old constructor-time `tNoise` texture binding returning.
-- This is constructor/runtime ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, floor/environment residuals, and the still-separate `tPerlin` preload bridge.
+- Aligned source texture constructor ownership for Home preloaded textures.
+- Source evidence: `Qe.init()` resolves `k0("lossy")` before `Xt.init()`, `Xt.preloadTextures()` immediately creates `Xt.blueNoise`, `Xt.floorNormal`, `Xt.perlin1`, and `Xt.perlin2`, `VA/XA/KA` construct `tPerlin:new I(Xt.perlin1)`, `C1` constructs `tPerlin:new I(Xt.perlin2)`, and `a1.init()` awaits `Xt.floorNormal` before constructing `o1`.
+- Production `initWebGL()` now awaits `prepareSourceTextureAssets()` before `new WebGLBackdrop(root, sourceTextureAssets)`.
+- `WebGLBackdrop` applies those source texture objects before material construction, so `C1.tPerlin`, `VA/XA/KA.tPerlin`, and the floor normal map construct from source immediate texture objects instead of local placeholders.
+- `__rogierOutputProbe` now reports `sourceTextureAssetMode=source-Qe-webp-before-Xt-preloadTextures-before-J-init`, constructor-immediate markers for `perlin1`, `perlin2`, active/auxiliary/floating materials, and `floor.normalMap.constructorMode=source-a1-await-Xt-floorNormal-before-o1-construction`.
+- `scripts/probe-output-color.mjs` and `scripts/audit-renderer-output.mjs` reject the old source-texture constructor placeholders and the old instance-local preload ordering returning.
+- This is texture constructor ownership parity only. Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
 
@@ -203,27 +204,27 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/probe-output-color.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-c1-tnoise-audit.json
-node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-c1-tnoise-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
+node scripts/audit-renderer-output.mjs > /tmp/rd-source-texture-constructor-audit.json
+node -e 'const fs=require("fs"); const v=JSON.parse(fs.readFileSync("/tmp/rd-source-texture-constructor-audit.json","utf8")); const hits=[]; function walk(x,p){ if(x===false||x===null) hits.push({path:p,value:x}); else if(Array.isArray(x)) x.forEach((y,i)=>walk(y,p.concat(i))); else if(x&&typeof x==="object") for(const [k,y] of Object.entries(x)) walk(y,p.concat(k)); } walk(v,[]); console.log(`false/null entries ${hits.length}`); if(hits.length){ console.log(JSON.stringify(hits.slice(0,20),null,2)); process.exit(1); }'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-output-desktop CDP_PORT=9410 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-output-mobile CDP_PORT=9411 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-thumb CDP_PORT=9412 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-c1-tnoise-media CDP_PORT=9413 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-output-desktop CDP_PORT=9420 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=desktop node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-output-mobile CDP_PORT=9421 PROBE_WAIT=8000 SKIP_SCREENSHOT=1 VIEWPORT=mobile node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-thumb CDP_PORT=9422 VIEWPORT=desktop node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://localhost:5176 OUT_DIR=/tmp/rd-source-texture-constructor-media CDP_PORT=9423 PROJECT_SLUGS=gc-2026,hashgraph-vc PROBE_WAIT=8000 node scripts/probe-project-media.mjs
 ```
 
-All relevant checks passed for the `C1/I1` `tNoise` constructor ownership batch before commit. Renderer audit wrote `/tmp/rd-c1-tnoise-audit.json`; recursive false/null extraction printed `false/null entries 0`, and the audit/probe surface reported source/rebuild/probe coverage for the `tNoise` constructor/runtime boundary. Desktop and mobile output probes verified `tNoiseConstructorMode=source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise`, `tNoiseConstructorWasNull=true`, `tNoiseRuntimeOwnership=source-I1-constructor-after-initRenderer-binds-Xt-blueNoise`, and immediate blue-noise binding with zero failures, exceptions, or console messages.
+All relevant checks passed for the source texture constructor ownership batch before commit. Renderer audit wrote `/tmp/rd-source-texture-constructor-audit.json`; recursive false/null extraction printed `false/null entries 0`, and the audit/probe surface reported source/rebuild/probe coverage for the `Qe/Xt` prepared texture asset path, `C1.tPerlin`, `VA/XA/KA.tPerlin`, and floor normal constructor ownership. Desktop and mobile output probes verified `sourceTextureAssetMode=source-Qe-webp-before-Xt-preloadTextures-before-J-init`, prepared-before-constructor markers, immediate `perlin1/perlin2` constructor bindings, and floor normal constructor binding with zero failures, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `tNoise` constructor ownership batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this source texture constructor ownership batch.
 
 Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/`, retaining `5/5` visible media tracks on both pages, `projectMediaShaderMode=source-UD-ID-LD-ShaderMaterial-glsl3`, `projectMediaGlslVersion=300 es`, and zero failures, exceptions, or console messages.
 
 Verified:
 
-- Renderer audit passed for the `C1/I1` `tNoise` constructor ownership batch: `/tmp/rd-c1-tnoise-audit.json`.
+- Renderer audit passed for the source texture constructor ownership batch: `/tmp/rd-source-texture-constructor-audit.json`.
 - Recursive false/null audit output is empty.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
-- Desktop and mobile output probes passed with the source `C1/I1` `tNoise` constructor/runtime ownership markers.
+- Desktop and mobile output probes passed with the source texture asset preparation, `C1/VA/XA/KA` `tPerlin`, and floor normal constructor ownership markers.
 - Desktop thumb spotlight probe passed.
 - Project-media probe passed for `/gc-2026/` and `/hashgraph-vc/` with five visible media tracks each.
 - Project media remains a regression gate, not proof of Home parity.

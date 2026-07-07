@@ -475,6 +475,10 @@ async function runProbe() {
   if (activeMaterial?.tMouseSimConstructorWasNull !== true) materialErrors.push("activeTMouseSimConstructorWasNull");
   if (activeMaterial?.tMouseSim2ConstructorWasNull !== true) materialErrors.push("activeTMouseSim2ConstructorWasNull");
   if (activeMaterial?.tDisplacementConstructorWasNull !== true) materialErrors.push("activeTDisplacementConstructorWasNull");
+  if (activeMaterial?.tPerlinConstructorMode !== "source-VA-tPerlin-construct-Xt-perlin1-immediate") {
+    materialErrors.push("activeTPerlinConstructorMode");
+  }
+  if (activeMaterial?.tPerlinConstructorIsImmediate !== true) materialErrors.push("activeTPerlinConstructorImmediate");
   if (activeMaterial?.tMouseSimRuntimeIsLocal !== true) materialErrors.push("activeTMouseSimRuntimeLocal");
   if (activeMaterial?.tMouseSim2RuntimeIsScreen !== true) materialErrors.push("activeTMouseSim2RuntimeScreen");
   if (activeMaterial?.tDisplacementRuntimeIsWavves !== true) materialErrors.push("activeTDisplacementRuntimeWavves");
@@ -618,6 +622,10 @@ async function runProbe() {
   if (auxiliaryMaterial?.tMouseSimConstructorWasNull !== true) materialErrors.push("auxTMouseSimConstructorWasNull");
   if (auxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true) materialErrors.push("auxTMouseSim2ConstructorWasNull");
   if (auxiliaryMaterial?.tDisplacementConstructorWasNull !== true) materialErrors.push("auxTDisplacementConstructorWasNull");
+  if (auxiliaryMaterial?.tPerlinConstructorMode !== "source-XA-tPerlin-construct-Xt-perlin1-immediate") {
+    materialErrors.push("auxTPerlinConstructorMode");
+  }
+  if (auxiliaryMaterial?.tPerlinConstructorIsImmediate !== true) materialErrors.push("auxTPerlinConstructorImmediate");
   if (
     auxiliaryMaterial?.runtimeBindingMode
     !== "source-XA-$A-update-local-tMouseSim-uMouseSpeed-tDisplacement-p1-update-tMouseSim2"
@@ -678,6 +686,12 @@ async function runProbe() {
   }
   if (floatingAuxiliaryMaterial?.tDisplacementConstructorWasNull !== true) {
     materialErrors.push("floatingAuxTDisplacementConstructorWasNull");
+  }
+  if (floatingAuxiliaryMaterial?.tPerlinConstructorMode !== "source-KA-tPerlin-construct-Xt-perlin1-immediate") {
+    materialErrors.push("floatingAuxTPerlinConstructorMode");
+  }
+  if (floatingAuxiliaryMaterial?.tPerlinConstructorIsImmediate !== true) {
+    materialErrors.push("floatingAuxTPerlinConstructorImmediate");
   }
   if (floatingAuxiliaryMaterial?.runtimeBindingMode !== "source-ZA-update-material-time-position-no-sampler-writes") {
     materialErrors.push("floatingAuxRuntimeBindingMode");
@@ -1484,6 +1498,12 @@ async function runProbe() {
   if (c1MaterialSurface.tNoiseIsBlueNoiseImmediate !== true) {
     materialSurfaceErrors.push("preCompositeC1TNoiseImmediateBinding");
   }
+  if (c1MaterialSurface.tPerlinConstructorMode !== "source-C1-tPerlin-construct-Xt-perlin2-immediate") {
+    materialSurfaceErrors.push("preCompositeC1TPerlinConstructorMode");
+  }
+  if (c1MaterialSurface.tPerlinConstructorIsImmediate !== true) {
+    materialSurfaceErrors.push("preCompositeC1TPerlinConstructorImmediate");
+  }
   if (c1MaterialSurface.tPerlinIsLoadedTexture !== true) materialSurfaceErrors.push("preCompositeC1TPerlinBinding");
   if (c1MaterialSurface.uDisplacementSizeMode !== "source-C1-constructor-default-new-Vector2-no-runtime-write") {
     materialSurfaceErrors.push("preCompositeC1UDisplacementSizeMode");
@@ -2091,6 +2111,8 @@ async function runProbe() {
   const preloadState = updateOrder?.sourceTexturePreloadState || {};
   const preloadErrors = [];
   if (updateOrder?.sourceWebpDetectionMode !== "source-Qe-k0-lossy-before-Xt-and-p1-assets") preloadErrors.push("sourceWebpDetectionMode");
+  if (updateOrder?.sourceTextureAssetMode !== "source-Qe-webp-before-Xt-preloadTextures-before-J-init") preloadErrors.push("sourceTextureAssetMode");
+  if (updateOrder?.sourceTextureAssetsPreparedBeforeConstructor !== true) preloadErrors.push("sourceTextureAssetsPreparedBeforeConstructor");
   if (![true, false].includes(updateOrder?.sourceWebpSupport)) preloadErrors.push("sourceWebpSupport");
   if (!["webp", "jpg"].includes(updateOrder?.sourceAssetExt)) preloadErrors.push("sourceAssetExt");
   if (updateOrder?.sourceAssetExt !== (updateOrder?.sourceWebpSupport ? "webp" : "jpg")) preloadErrors.push("sourceAssetExtSupportMismatch");
@@ -2290,6 +2312,10 @@ async function runProbe() {
   }
   if (floorUniforms?.matchesSourceOrder !== true) floorErrors.push("floorUniformOrder");
   if (floorUniforms?.normalMap?.bindingMode !== "source-a1-Xt-floorNormal-repeat-45-updateMatrix") floorErrors.push("floorNormalBindingMode");
+  if (floorUniforms?.normalMap?.constructorMode !== "source-a1-await-Xt-floorNormal-before-o1-construction") {
+    floorErrors.push("floorNormalConstructorMode");
+  }
+  if (floorUniforms?.normalMap?.constructorIsImmediateTexture !== true) floorErrors.push("floorNormalConstructorImmediate");
   if (floorUniforms?.normalMap?.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") {
     floorErrors.push("floorNormalObjectBindingMode");
   }
@@ -2608,6 +2634,8 @@ async function runProbe() {
   const textureWrappingErrors = [];
   if (textures.sourceLoadedTextureMode !== "source-Xt-TextureLoader-default-sampling-wrap-only-overrides") textureWrappingErrors.push("sourceLoadedTextureMode");
   if (textures.sourceWebpDetectionMode !== "source-Qe-k0-lossy-before-Xt-preloadTextures") textureWrappingErrors.push("sourceWebpDetectionMode");
+  if (textures.sourceTextureAssetMode !== "source-Qe-webp-before-Xt-preloadTextures-before-J-init") textureWrappingErrors.push("sourceTextureAssetMode");
+  if (textures.sourceTextureAssetsPreparedBeforeConstructor !== true) textureWrappingErrors.push("sourceTextureAssetsPreparedBeforeConstructor");
   if (textures.sourceWebpSupport !== updateOrder?.sourceWebpSupport) textureWrappingErrors.push("sourceWebpSupport");
   if (textures.sourceAssetExt !== updateOrder?.sourceAssetExt) textureWrappingErrors.push("sourceAssetExt");
   const immediateBindings = textures.sourceImmediateTextureBindings || {};
@@ -2626,10 +2654,15 @@ async function runProbe() {
   if (blueNoiseImmediate.allWorkMouseNoiseUniformsSourceNull !== true) immediateBindingErrors.push("blueNoiseWorkMouseSourceNull");
   if (blueNoiseImmediate.loadedSameImmediateTexture !== true) immediateBindingErrors.push("blueNoiseLoadedSame");
   if (perlin2Immediate.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") immediateBindingErrors.push("perlin2ObjectMode");
+  if (perlin2Immediate.constructorMode !== "source-C1-tPerlin-construct-Xt-perlin2-immediate") immediateBindingErrors.push("perlin2ConstructorMode");
+  if (perlin2Immediate.c1TPerlinConstructorIsImmediate !== true) immediateBindingErrors.push("perlin2ConstructorImmediate");
   if (perlin2Immediate.stateIsImmediateTexture !== true) immediateBindingErrors.push("perlin2StateImmediate");
   if (perlin2Immediate.c1TPerlinIsImmediateTexture !== true) immediateBindingErrors.push("perlin2C1Immediate");
   if (perlin2Immediate.loadedSameImmediateTexture !== true) immediateBindingErrors.push("perlin2LoadedSame");
   if (perlin1Immediate.objectBindingMode !== "source-Xt-loadTexture-immediate-texture-object-bound-before-onload") immediateBindingErrors.push("perlin1ObjectMode");
+  if (perlin1Immediate.constructorMode !== "source-VA-XA-KA-tPerlin-construct-Xt-perlin1-immediate") immediateBindingErrors.push("perlin1ConstructorMode");
+  if (perlin1Immediate.allWorkConstructorsImmediate !== true) immediateBindingErrors.push("perlin1WorkConstructorsImmediate");
+  if (perlin1Immediate.auxiliaryConstructorsImmediate !== true) immediateBindingErrors.push("perlin1AuxConstructorsImmediate");
   if (perlin1Immediate.stateIsImmediateTexture !== true) immediateBindingErrors.push("perlin1StateImmediate");
   if (perlin1Immediate.allWorkUniformsImmediate !== true) immediateBindingErrors.push("perlin1WorkImmediate");
   if (perlin1Immediate.auxiliaryUniformsImmediate !== true) immediateBindingErrors.push("perlin1AuxImmediate");

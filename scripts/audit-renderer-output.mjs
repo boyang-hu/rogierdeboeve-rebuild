@@ -197,7 +197,7 @@ const rebuildSpotlightMapCompare = readFileSync(rebuildSpotlightMapComparePath, 
 const rebuildThumbColorspaceCompare = readFileSync(rebuildThumbColorspaceComparePath, "utf8");
 const rebuildCapture = readFileSync(rebuildCapturePath, "utf8");
 const sourceGpuBenchmarkFiles = readdirSync(sourceGpuBenchmarksDir).filter((file) => file.endsWith(".json")).sort();
-const rebuildConstructor = extractBlock(rebuildWebgl, "constructor(root: HTMLElement)");
+const rebuildConstructor = extractBlock(rebuildWebgl, "constructor(root: HTMLElement");
 const rebuildEnvironmentMaterialFactory = extractBlock(rebuildWebgl, "private createEnvironmentMaterial()");
 const rebuildSourceInitLifecycle = extractBlock(rebuildWebgl, "private runSourceInitLifecycle()");
 const rebuildDelayedCompositeSkyBinding = extractBlock(rebuildWebgl, "private bindSourceDelayedCompositeInputsAndSky()");
@@ -226,6 +226,13 @@ const rebuildProjectMediaFragmentExpanded = expandRebuildRuntimeTemplate(`${rebu
 });
 const sourceLoadedTextureHelper = rebuildWebgl.match(/function applySourceLoadedTextureState[^{]*\{([\s\S]*?)\n\}/);
 const sourceLoadedTextureHelperBody = sourceLoadedTextureHelper?.[1] ?? "";
+const rebuildLoadSourceTextureImmediate = extractBlock(rebuildWebgl, "function loadSourceTextureImmediate(");
+const rebuildPrepareSourceTextureAssets = extractBlock(rebuildWebgl, "export async function prepareSourceTextureAssets()");
+const rebuildApplySourceTextureConstructorObjects = extractBlock(rebuildWebgl, "private applySourceTextureConstructorObjects(");
+const rebuildBindPreparedSourceTextures = extractBlock(rebuildWebgl, "private async bindPreparedSourceTextures(");
+const rebuildLoadCompositeTextures = extractBlock(rebuildWebgl, "private loadCompositeTextures()");
+const rebuildLoadCompositeTexturesFromSourceWebpState = extractBlock(rebuildWebgl, "private async loadCompositeTexturesFromSourceWebpState()");
+const rebuildInitWebgl = extractBlock(rebuildMain, "async function initWebGL()");
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
 const rebuildSetProject = extractBlock(rebuildWebgl, "setProject(payload: ProjectPayload)");
 const rebuildApplyActiveProjectSourceOrder = extractBlock(rebuildWebgl, "private applyActiveProjectSourceOrder(");
@@ -689,7 +696,7 @@ const summary = {
           "function sourceGpuTier() {\n  return sourceGpuBridgeState.tier;\n}",
           "function sourceLowRes() {\n  return sourceGpuBridgeState.lowRes;\n}",
           "gpuBridge: sourceGpuBridgeSnapshot()",
-          "const { WebGLBackdrop, initializeSourceGpuTier } = await import(\"./webgl\");",
+          "const { WebGLBackdrop, initializeSourceGpuTier, prepareSourceTextureAssets } = await import(\"./webgl\");",
           "await initializeSourceGpuTier();",
         ]),
         rejectsDeviceMemoryHeuristic: !rebuildWebgl.includes("deviceMemory"),
@@ -1119,13 +1126,18 @@ const summary = {
           "boolFxaa: { value: false }",
           "tPortal: { value: null }",
           "tNoise: { value: null }",
+          "tPerlin: { value: this.perlinTexture }",
           "sourceTNoiseConstructorWasNull = material.uniforms.tNoise.value === null",
           "sourceTNoiseRuntimeOwnership = \"source-I1-constructor-after-initRenderer-binds-Xt-blueNoise\"",
+          "sourceTPerlinConstructorMode = \"source-C1-tPerlin-construct-Xt-perlin2-immediate\"",
+          "sourceTPerlinConstructorIsImmediate = material.uniforms.tPerlin.value === this.sourcePerlin2Texture",
           "samplerConstructorMode: \"source-C1-sampler-uniforms-construct-null-branch-owned-bindings\"",
           "tNoiseConstructorMode: \"source-C1-tNoise-construct-null-I1-constructor-binds-Xt-blueNoise\"",
           "tNoiseConstructorWasNull: this.preCompositeMaterial.userData.sourceTNoiseConstructorWasNull",
           "tNoiseRuntimeOwnership: this.preCompositeMaterial.userData.sourceTNoiseRuntimeOwnership",
           "tNoiseIsBlueNoiseImmediate: c1Uniforms.tNoise.value === this.sourceBlueNoiseTexture",
+          "tPerlinConstructorMode: this.preCompositeMaterial.userData.sourceTPerlinConstructorMode",
+          "tPerlinConstructorIsImmediate: this.preCompositeMaterial.userData.sourceTPerlinConstructorIsImmediate",
           "const SOURCE_C1_FLUID_STRENGTH_DEFAULT = 0.5",
           "uFluidStrength: { value: SOURCE_C1_FLUID_STRENGTH_DEFAULT }",
           "sourceFluidStrengthConstructorDefault = SOURCE_C1_FLUID_STRENGTH_DEFAULT",
@@ -1178,6 +1190,11 @@ const summary = {
           && rebuildOutputProbe.includes("preCompositeC1TNoiseConstructorNull")
           && rebuildOutputProbe.includes("preCompositeC1TNoiseRuntimeOwnership")
           && rebuildOutputProbe.includes("preCompositeC1TNoiseImmediateBinding"),
+        tPerlinProbeCoverage:
+          rebuildOutputProbe.includes("preCompositeC1TPerlinConstructorMode")
+          && rebuildOutputProbe.includes("preCompositeC1TPerlinConstructorImmediate")
+          && rebuildOutputProbe.includes("perlin2ConstructorMode")
+          && rebuildOutputProbe.includes("perlin2ConstructorImmediate"),
         noHomeFluidStrengthCompensationSetter: Boolean(rebuildPrepareHomeLighting)
           && !rebuildPrepareHomeLighting.includes("this.setFluidStrength("),
         noGalleryFluidStrengthCompensationSetter: Boolean(rebuildEnterWorkGallery)
@@ -2708,26 +2725,82 @@ const summary = {
       ]),
       rebuildLoadedTextureDefaults: {
         sourceLoadedTextureHelper: rebuildWebgl.includes("function applySourceLoadedTextureState(texture: Texture"),
-        sourceImmediateTextureLoadHelper: rebuildWebgl.includes("private loadTextureImmediate(src: string")
-          && rebuildWebgl.includes("texture = this.loader.load(src")
+        sourceImmediateTextureLoadHelper: Boolean(rebuildLoadSourceTextureImmediate)
+          && rebuildLoadSourceTextureImmediate.includes("texture = loader.load(src")
+          && rebuildLoadSourceTextureImmediate.includes("applySourceLoadedTextureState(loadedTexture, colorSpace)")
+          && rebuildLoadSourceTextureImmediate.includes("applySourceLoadedTextureState(texture, colorSpace)")
+          && rebuildLoadSourceTextureImmediate.includes("objectBindingMode: \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\""),
+        instanceTextureCacheStillOwnedByFallbackAssets: rebuildWebgl.includes("private loadTextureImmediate(src: string")
           && rebuildWebgl.includes("this.textureCache.set(src, texture)")
-          && rebuildWebgl.includes("this.textureLoadPromises.set(src, loaded)"),
+          && rebuildWebgl.includes("this.textureLoadPromises.set(src, loaded)")
+          && rebuildWebgl.includes("private loadTextureAsync(src: string)"),
         noLoadedTextureFilterOverride: !rebuildWebgl.includes("function setTextureQuality")
           && !sourceLoadedTextureHelperBody.includes("texture.minFilter")
           && !sourceLoadedTextureHelperBody.includes("texture.magFilter")
           && !sourceLoadedTextureHelperBody.includes("texture.anisotropy"),
         runtimeGuard: rebuildWebgl.includes("sourceLoadedTextureMode: \"source-Xt-TextureLoader-default-sampling-wrap-only-overrides\""),
       },
+      rebuildPreConstructorTextureAssets: {
+        mainPreparesBeforeConstruction: Boolean(rebuildInitWebgl)
+          && orderedIncludes(rebuildInitWebgl, [
+            "const { WebGLBackdrop, initializeSourceGpuTier, prepareSourceTextureAssets } = await import(\"./webgl\")",
+            "await initializeSourceGpuTier()",
+            "const sourceTextureAssets = await prepareSourceTextureAssets()",
+            "return new WebGLBackdrop(root, sourceTextureAssets)",
+          ]),
+        prepareSourceOrder: Boolean(rebuildPrepareSourceTextureAssets)
+          && orderedIncludes(rebuildPrepareSourceTextureAssets, [
+            "const webpSupport = await detectSourceWebpSupport()",
+            "const assetExt: \"webp\" | \"jpg\" = webpSupport ? \"webp\" : \"jpg\"",
+            "const loader = new TextureLoader()",
+            "const blueNoise = loadSourceTextureImmediate(loader, \"/images/textures/blue-noise.png\")",
+            "const floorNormal = loadSourceTextureImmediate(loader, `/images/textures/floor-normal.${assetExt}`, NoColorSpace)",
+            "floorNormal.texture.repeat.set(45, 45)",
+            "floorNormal.texture.updateMatrix()",
+            "const perlin1 = loadSourceTextureImmediate(loader, `/images/textures/perlin-1.${assetExt}`)",
+            "perlin1.texture.wrapS = MirroredRepeatWrapping",
+            "const perlin2 = loadSourceTextureImmediate(loader, `/images/textures/perlin-2.${assetExt}`)",
+            "perlin2.texture.wrapS = RepeatWrapping",
+            "mode: \"source-Qe-webp-before-Xt-preloadTextures-before-J-init\"",
+          ]),
+        constructorAppliesBeforeMaterials: Boolean(rebuildConstructor)
+          && orderedIncludes(rebuildConstructor, [
+            "this.sourceTextureAssets = sourceTextureAssets",
+            "if (sourceTextureAssets) this.applySourceTextureConstructorObjects(sourceTextureAssets)",
+            "this.renderer = new WebGLRenderer({",
+            "this.skyCompositeMaterial = this.createSkyCompositeMaterial()",
+            "this.preCompositeMaterial = this.createPreCompositeMaterial()",
+            "this.floorMaterial = this.createFloorMaterial()",
+            "this.createWorkScene()",
+            "this.createAuxiliaryBlocks()",
+            "this.loadCompositeTextures()",
+          ]),
+        fallbackPreparesBeforeBinding: Boolean(rebuildLoadCompositeTexturesFromSourceWebpState)
+          && orderedIncludes(rebuildLoadCompositeTexturesFromSourceWebpState, [
+            "const assets = await prepareSourceTextureAssets()",
+            "this.sourceTextureAssets = assets",
+            "return this.bindPreparedSourceTextures(assets)",
+          ]),
+        loadCompositeUsesPreparedAssets: Boolean(rebuildLoadCompositeTextures)
+          && rebuildLoadCompositeTextures.includes("this.sourceTextureAssets\n      ? this.bindPreparedSourceTextures(this.sourceTextureAssets)")
+          && rebuildLoadCompositeTextures.includes(": this.loadCompositeTexturesFromSourceWebpState()"),
+      },
       rebuildImmediateTextureBindings: {
-        blueNoise: orderedIncludes(rebuildWebgl, [
-          "const blueNoiseLoad = this.loadTextureImmediate(\"/images/textures/blue-noise.png\")",
-          "const blueNoiseTexture = blueNoiseLoad.texture",
-          "blueNoiseTexture.wrapS = RepeatWrapping",
-          "this.sourceBlueNoiseTexture = blueNoiseTexture",
-          "this.sourceBlueNoiseObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
-          "this.noiseTexture = blueNoiseTexture",
-          "this.preCompositeMaterial.uniforms.tNoise.value = blueNoiseTexture",
-          "const blueNoise = blueNoiseLoad.loaded.then((texture) =>",
+        applyConstructorObjects: Boolean(rebuildApplySourceTextureConstructorObjects)
+          && orderedIncludes(rebuildApplySourceTextureConstructorObjects, [
+            "this.sourceWebpSupport = assets.webpSupport",
+            "this.sourceAssetExt = assets.assetExt",
+            "this.sourceBlueNoiseTexture = assets.blueNoise.texture",
+            "this.noiseTexture = assets.blueNoise.texture",
+            "this.sourcePerlin2Texture = assets.perlin2.texture",
+            "this.perlinTexture = assets.perlin2.texture",
+            "this.sourcePerlin1Texture = assets.perlin1.texture",
+            "this.workPerlinTexture = assets.perlin1.texture",
+            "this.sourceFloorNormalTexture = assets.floorNormal.texture",
+          ]),
+        blueNoise: Boolean(rebuildBindPreparedSourceTextures) && orderedIncludes(rebuildBindPreparedSourceTextures, [
+          "this.preCompositeMaterial.uniforms.tNoise.value = assets.blueNoise.texture",
+          "const blueNoise = assets.blueNoise.loaded.then((texture) =>",
           "this.sourceBlueNoiseLoadedTexture = texture",
           "this.sourceTexturePreloadState.blueNoise = true",
         ]),
@@ -2735,40 +2808,38 @@ const summary = {
           rebuildWebgl.includes("kaNoiseTextureBindingMode: \"source-Ka-uNoiseTexture-constructor-null-no-runtime-writer\"")
           && !rebuildWebgl.includes("this.screenMouseSimulationMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture")
           && !rebuildWebgl.includes("item.mouseMaterial.uniforms.uNoiseTexture.value = blueNoiseTexture"),
-        perlin2: orderedIncludes(rebuildWebgl, [
-          "const perlin2Load = this.loadTextureImmediate(`/images/textures/perlin-2.${sourceExt}`)",
-          "const perlin2Texture = perlin2Load.texture",
-          "perlin2Texture.wrapS = RepeatWrapping",
-          "this.sourcePerlin2Texture = perlin2Texture",
-          "this.sourcePerlin2ObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
-          "this.perlinTexture = perlin2Texture",
-          "this.preCompositeMaterial.uniforms.tPerlin.value = perlin2Texture",
-          "const perlin2 = perlin2Load.loaded.then((texture) =>",
+        perlin2: Boolean(rebuildBindPreparedSourceTextures) && orderedIncludes(rebuildBindPreparedSourceTextures, [
+          "this.preCompositeMaterial.uniforms.tPerlin.value = assets.perlin2.texture",
+          "const perlin2 = assets.perlin2.loaded.then((texture) =>",
           "this.sourcePerlin2LoadedTexture = texture",
           "this.sourceTexturePreloadState.perlin2 = true",
         ]),
-        perlin1: orderedIncludes(rebuildWebgl, [
-          "const perlin1Load = this.loadTextureImmediate(`/images/textures/perlin-1.${sourceExt}`)",
-          "const perlin1Texture = perlin1Load.texture",
-          "perlin1Texture.wrapS = MirroredRepeatWrapping",
-          "this.sourcePerlin1Texture = perlin1Texture",
-          "this.sourcePerlin1ObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
-          "this.workPerlinTexture = perlin1Texture",
-          "item.material.uniforms.tPerlin.value = perlin1Texture",
-          "if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = perlin1Texture",
-          "if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = perlin1Texture",
-          "const perlin1 = perlin1Load.loaded.then((texture) =>",
+        perlin1: Boolean(rebuildBindPreparedSourceTextures) && orderedIncludes(rebuildBindPreparedSourceTextures, [
+          "item.material.uniforms.tPerlin.value = assets.perlin1.texture",
+          "if (this.aboutBlocks) this.aboutBlocks.material.uniforms.tPerlin.value = assets.perlin1.texture",
+          "if (this.floatingBlocks) this.floatingBlocks.material.uniforms.tPerlin.value = assets.perlin1.texture",
+          "const perlin1 = assets.perlin1.loaded.then((texture) =>",
           "this.sourcePerlin1LoadedTexture = texture",
           "this.sourceTexturePreloadState.perlin1 = true",
         ]),
         runtimeProbe: rebuildWebgl.includes("sourceImmediateTextureBindings")
           && rebuildWebgl.includes("c1TNoiseIsImmediateTexture")
+          && rebuildWebgl.includes("c1TPerlinConstructorIsImmediate")
           && rebuildWebgl.includes("c1TPerlinIsImmediateTexture")
+          && rebuildWebgl.includes("allWorkConstructorsImmediate")
+          && rebuildWebgl.includes("auxiliaryConstructorsImmediate")
           && rebuildWebgl.includes("allWorkUniformsImmediate")
           && rebuildOutputProbe.includes("immediateBindingMode")
+          && rebuildOutputProbe.includes("sourceTextureAssetMode")
+          && rebuildOutputProbe.includes("sourceTextureAssetsPreparedBeforeConstructor")
           && rebuildOutputProbe.includes("blueNoiseC1TNoiseImmediate")
           && rebuildOutputProbe.includes("blueNoiseKaNoiseMode")
+          && rebuildOutputProbe.includes("perlin2ConstructorMode")
+          && rebuildOutputProbe.includes("perlin2ConstructorImmediate")
           && rebuildOutputProbe.includes("perlin2C1Immediate")
+          && rebuildOutputProbe.includes("perlin1ConstructorMode")
+          && rebuildOutputProbe.includes("perlin1WorkConstructorsImmediate")
+          && rebuildOutputProbe.includes("perlin1AuxConstructorsImmediate")
           && rebuildOutputProbe.includes("perlin1WorkImmediate"),
       },
       webpDetection: sourceWebpDetection && {
@@ -2778,10 +2849,23 @@ const summary = {
         ]),
         rebuildChecks: {
           detector: rebuildWebgl.includes("function detectSourceWebpSupport()"),
-          sharedTextureExt: rebuildWebgl.includes("const sourceExt: \"webp\" | \"jpg\" = this.sourceWebpSupport ? \"webp\" : \"jpg\""),
-          floorNormalUsesSourceExt: rebuildWebgl.includes("`/images/textures/floor-normal.${sourceExt}`"),
-          perlin1UsesSourceExt: rebuildWebgl.includes("`/images/textures/perlin-1.${sourceExt}`"),
-          perlin2UsesSourceExt: rebuildWebgl.includes("`/images/textures/perlin-2.${sourceExt}`"),
+          preparedAssetExt: Boolean(rebuildPrepareSourceTextureAssets)
+            && rebuildPrepareSourceTextureAssets.includes("const assetExt: \"webp\" | \"jpg\" = webpSupport ? \"webp\" : \"jpg\""),
+          floorNormalUsesAssetExt: Boolean(rebuildPrepareSourceTextureAssets)
+            && rebuildPrepareSourceTextureAssets.includes("`/images/textures/floor-normal.${assetExt}`"),
+          perlin1UsesAssetExt: Boolean(rebuildPrepareSourceTextureAssets)
+            && rebuildPrepareSourceTextureAssets.includes("`/images/textures/perlin-1.${assetExt}`"),
+          perlin2UsesAssetExt: Boolean(rebuildPrepareSourceTextureAssets)
+            && rebuildPrepareSourceTextureAssets.includes("`/images/textures/perlin-2.${assetExt}`"),
+          mainAwaitsWebpBeforeConstruction: Boolean(rebuildInitWebgl)
+            && orderedIncludes(rebuildInitWebgl, [
+              "await initializeSourceGpuTier()",
+              "const sourceTextureAssets = await prepareSourceTextureAssets()",
+              "return new WebGLBackdrop(root, sourceTextureAssets)",
+            ]),
+          assetModeProbe: rebuildWebgl.includes("sourceTextureAssetMode: this.sourceTextureAssets?.mode ?? \"fallback-instance-preload\"")
+            && rebuildOutputProbe.includes("sourceTextureAssetMode")
+            && rebuildOutputProbe.includes("sourceTextureAssetsPreparedBeforeConstructor"),
           runtimeGuard: rebuildWebgl.includes("sourceWebpDetectionMode: \"source-Qe-k0-lossy-before-Xt-preloadTextures\""),
         },
         excerpt: compact(sourceWebpDetection.text),
@@ -2795,7 +2879,8 @@ const summary = {
         "const e=Le.WEBP?\"webp\":\"jpg\",t=await f1(\"/images/cubemaps/01\",e);this.scene.environment=t",
       ]),
       rebuildChecks: {
-        cubemapUsesSourceExt: rebuildWebgl.includes("`${cubeBase}/${side}.${sourceExt}`"),
+        cubemapUsesSourceExt: Boolean(rebuildBindPreparedSourceTextures)
+          && rebuildBindPreparedSourceTextures.includes("`${cubeBase}/${side}.${assets.assetExt}`"),
         sourceLoadModeGuard: rebuildWebgl.includes("sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode"),
         noHardcodedCubeExt: !rebuildWebgl.includes("const cubeExt = \"webp\""),
         noRuntimeJpgFallback: !rebuildWebgl.includes("`${cubeBase}/${side}.jpg`"),
@@ -3740,6 +3825,8 @@ const summary = {
         "uMatrix: this.floorReflectionTextureMatrixUniform",
         "sourceFloorNormalObjectBindingMode = \"pending-source-Xt-floorNormal\"",
         "objectBindingMode: this.sourceFloorNormalObjectBindingMode",
+        "constructorMode: this.floorMaterial.userData.sourceNormalMapConstructorMode",
+        "constructorIsImmediateTexture: this.floorMaterial.userData.sourceNormalMapConstructorIsImmediate",
         "uniformIsImmediateTexture: this.floorMaterial.uniforms.tNormalMap.value === this.sourceFloorNormalTexture",
         "loadedSameImmediateTexture: this.sourceTexturePreloadState.floorNormal",
         "groupType: this.floorGroup.type",
@@ -3761,18 +3848,24 @@ const summary = {
         "this.floorGroup.visible = true",
         "this.floorReflectionDrawState.after = this.floorReflectionVisibilitySnapshot()",
       ]),
-      floorNormalImmediateBinding: orderedIncludes(rebuildWebgl, [
-        "const floorNormalLoad = this.loadTextureImmediate(`/images/textures/floor-normal.${sourceExt}`, NoColorSpace)",
-        "const floorNormalTexture = floorNormalLoad.texture",
-        "floorNormalTexture.repeat.set(45, 45)",
-        "this.sourceFloorNormalTexture = floorNormalTexture",
-        "this.sourceFloorNormalObjectBindingMode = \"source-Xt-loadTexture-immediate-texture-object-bound-before-onload\"",
-        "this.floorMaterial.uniforms.tNormalMap.value = floorNormalTexture",
-        "this.floorMaterial.uniforms.uMapTransform.value = floorNormalTexture.matrix",
-        "const floorNormal = floorNormalLoad.loaded.then((texture) =>",
-        "this.sourceFloorNormalLoadedTexture = texture",
-        "this.sourceTexturePreloadState.floorNormal = true",
-      ]),
+      floorNormalImmediateBinding: Boolean(rebuildBindPreparedSourceTextures)
+        && orderedIncludes(rebuildBindPreparedSourceTextures, [
+          "this.floorMaterial.uniforms.tNormalMap.value = assets.floorNormal.texture",
+          "this.floorMaterial.uniforms.uMapTransform.value = assets.floorNormal.texture.matrix",
+          "const floorNormal = assets.floorNormal.loaded.then((texture) =>",
+          "this.sourceFloorNormalLoadedTexture = texture",
+          "this.sourceTexturePreloadState.floorNormal = true",
+        ]),
+      floorNormalConstructorBinding: Boolean(rebuildCreateFloorMaterial)
+        && orderedIncludes(rebuildCreateFloorMaterial, [
+          "const normalMap = this.sourceFloorNormalTexture ?? this.placeholder",
+          "tNormalMap: { value: normalMap }",
+          "material.userData.sourceNormalMapConstructorMode = \"source-a1-await-Xt-floorNormal-before-o1-construction\"",
+          "material.userData.sourceNormalMapConstructorIsImmediate = normalMap === this.sourceFloorNormalTexture",
+          "material.uniforms.uMapTransform.value = normalMap.matrix",
+        ])
+        && rebuildOutputProbe.includes("floorNormalConstructorMode")
+        && rebuildOutputProbe.includes("floorNormalConstructorImmediate"),
       excerpt: compact(sourceA1Floor.text),
     },
     floorO1Material: sourceO1FloorMaterial && {
@@ -3806,7 +3899,7 @@ const summary = {
         "uMirror: { value: 1 }",
         "uFloorMixStrength: { value: 15 }",
         "uNormalDistortionStrength: { value: 2.5 }",
-        "tNormalMap: { value: this.placeholder }",
+        "tNormalMap: { value: normalMap }",
         "uNormalScale: { value: new Vector2(1, 1) }",
       ]),
       rebuildProbeOrder: rebuildWebgl.includes("const SOURCE_O1_FLOOR_UNIFORM_KEYS = [")
@@ -4555,17 +4648,20 @@ const summary = {
           && sourceVA?.text.includes("uMouseLightness:new I(1)") === true
           && sourceVA?.text.includes("uReveal:new I(0),uRevealProject:new I(1)") === true
           && sourceVA?.text.includes("uCoords:new I(new Q)") === true
+          && sourceVA?.text.includes("tPerlin:new I(Xt.perlin1)") === true
           && sourceVA?.text.includes("tDisplacement:new I(null)") === true
           && sourceGA.text.includes("this.material=new VA({color:new ye(\"#808080\")})")
           && sourceXABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
           && sourceXABody.includes("uMouseLightness:new I(1)")
           && sourceXABody.includes("uReveal:new I(0),uRevealSpread:new I(1)")
           && sourceXABody.includes("uCoords:new I(new Q)")
+          && sourceXABody.includes("tPerlin:new I(Xt.perlin1)")
           && sourceXABody.includes("tDisplacement:new I(null)")
           && sourceKABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
           && sourceKABody.includes("uMouseLightness:new I(1)")
           && sourceKABody.includes("uReveal:new I(0),uRevealSpread:new I(10)")
           && sourceKABody.includes("uCoords:new I(new Q)")
+          && sourceKABody.includes("tPerlin:new I(Xt.perlin1)")
           && sourceKABody.includes("tDisplacement:new I(null)"),
         sourceRuntimeWrites:
           sourceGA.text.includes("this.material.customUniforms.tMouseSim.value=this.mouseSim.bufferSim.output.texture")
@@ -4581,7 +4677,10 @@ const summary = {
           && rebuildCreateWorkBlockMaterial.includes("sourceUCoordsConstructorMode = \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"")
           && rebuildCreateWorkBlockMaterial.includes("tMouseSim: { value: null }")
           && rebuildCreateWorkBlockMaterial.includes("tMouseSim2: { value: null }")
+          && rebuildCreateWorkBlockMaterial.includes("tPerlin: { value: this.workPerlinTexture }")
           && rebuildCreateWorkBlockMaterial.includes("tDisplacement: { value: null }")
+          && rebuildCreateWorkBlockMaterial.includes("sourceTPerlinConstructorMode = \"source-VA-tPerlin-construct-Xt-perlin1-immediate\"")
+          && rebuildCreateWorkBlockMaterial.includes("sourceTPerlinConstructorIsImmediate = uniforms.tPerlin.value === this.sourcePerlin1Texture")
           && rebuildCreateWorkBlockMaterial.includes("emissive: sourceRgbColor(\"#000000\", \"#000000\")")
           && rebuildCreateWorkBlockMaterial.includes("sourceEmissiveConstructorMode = \"source-VA-new-VA-color-only-emissive-default-black\"")
           && rebuildCreateWorkBlockMaterial.includes("sourceEmissiveConstructorWasBlack = material.emissive.equals(new Color(0, 0, 0))")
@@ -4604,10 +4703,14 @@ const summary = {
           && rebuildWebgl.includes("emissiveConstructorWasBlack: activeWorkItem.material.userData.sourceEmissiveConstructorWasBlack")
           && rebuildWebgl.includes("uCoordsConstructorMode: activeWorkItem.material.userData.sourceUCoordsConstructorMode")
           && rebuildWebgl.includes("tMouseSimRuntimeIsLocal:")
+          && rebuildWebgl.includes("tPerlinConstructorMode: activeWorkItem.material.userData.sourceTPerlinConstructorMode")
+          && rebuildWebgl.includes("tPerlinConstructorIsImmediate: activeWorkItem.material.userData.sourceTPerlinConstructorIsImmediate")
           && rebuildOutputProbe.includes("activeConstructorDefaultsMode")
           && rebuildOutputProbe.includes("activeEmissiveConstructorWasBlack")
           && rebuildOutputProbe.includes("activeUCoordsConstructorWasZero")
           && rebuildOutputProbe.includes("activeTMouseSimConstructorWasNull")
+          && rebuildOutputProbe.includes("activeTPerlinConstructorMode")
+          && rebuildOutputProbe.includes("activeTPerlinConstructorImmediate")
           && rebuildOutputProbe.includes("activeTMouseSimRuntimeLocal")
           && rebuildOutputProbe.includes("activeUMouseLightnessRuntimeThumbState"),
       },
@@ -4682,6 +4785,7 @@ const summary = {
           "uMouseLightness:new I(1)",
           "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
           "uReveal:new I(0),uRevealSpread:new I(1)",
+          "tPerlin:new I(Xt.perlin1)",
           "tDisplacement:new I(null)",
           "uScrollOpacity:new I(1)",
           "t.vertexShader=jA,t.fragmentShader=WA",
@@ -4706,6 +4810,7 @@ const summary = {
           "uUvOffset:new I(new Q),uUvOffsetScale:new I(1)",
           "uReveal:new I(0),uRevealSpread:new I(10)",
           "uRevealProject:new I(1),uRevealSides:new I(1)",
+          "tPerlin:new I(Xt.perlin1)",
           "tDisplacement:new I(null)",
           "uScrollOpacity:new I(1)",
           "t.vertexShader=YA,t.fragmentShader=qA",
@@ -4724,12 +4829,17 @@ const summary = {
         "tMouseSim: { value: null }",
         "tMouseSim2: { value: null }",
         "tDisplacement: { value: null }",
+        "tPerlin: { value: this.workPerlinTexture }",
         "sourceBlockMaterialConstructorMode = \"source-VA-XA-KA-default-uniform-constructors\"",
         "sourceUCoordsConstructorMode = \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"",
         "sourceUCoordsConstructorWasZero",
         "sourceTMouseSimConstructorWasNull",
         "sourceTMouseSim2ConstructorWasNull",
         "sourceTDisplacementConstructorWasNull",
+        "sourceTPerlinConstructorMode = kind === \"about\"",
+        "sourceTPerlinConstructorIsImmediate = uniforms.tPerlin.value === this.sourcePerlin1Texture",
+        "tPerlinConstructorMode: this.aboutBlocks.material.userData.sourceTPerlinConstructorMode",
+        "tPerlinConstructorMode: this.floatingBlocks.material.userData.sourceTPerlinConstructorMode",
         "uUvOffsetScale: { value: 1 }",
         "...(kind === \"about\" ? { depthWrite: false, depthTest: false } : {})",
         "if (kind === \"about\") material.renderOrder = 10",
@@ -4755,6 +4865,8 @@ const summary = {
         "auxiliaryMaterial?.tMouseSimConstructorWasNull !== true",
         "auxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true",
         "auxiliaryMaterial?.tDisplacementConstructorWasNull !== true",
+        "auxiliaryMaterial?.tPerlinConstructorMode !== \"source-XA-tPerlin-construct-Xt-perlin1-immediate\"",
+        "auxiliaryMaterial?.tPerlinConstructorIsImmediate !== true",
         "auxiliaryMaterial?.runtimeBindingMode",
         "auxiliaryMaterial?.tMouseSimRuntimeIsLocal === false",
         "auxiliaryMaterial?.uUvOffsetScale ?? 0",
@@ -4773,6 +4885,8 @@ const summary = {
         "floatingAuxiliaryMaterial?.tMouseSimConstructorWasNull !== true",
         "floatingAuxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true",
         "floatingAuxiliaryMaterial?.tDisplacementConstructorWasNull !== true",
+        "floatingAuxiliaryMaterial?.tPerlinConstructorMode !== \"source-KA-tPerlin-construct-Xt-perlin1-immediate\"",
+        "floatingAuxiliaryMaterial?.tPerlinConstructorIsImmediate !== true",
         "floatingAuxiliaryMaterial?.runtimeBindingMode !== \"source-ZA-update-material-time-position-no-sampler-writes\"",
         "floatingAuxiliaryMaterial?.tMouseSimRuntimeStaysConstructorNull !== true",
         "floatingAuxiliaryMaterial?.uUvOffsetScale ?? 0",
