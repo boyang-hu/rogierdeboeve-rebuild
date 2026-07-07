@@ -876,6 +876,19 @@ async function runProbe() {
   if (workSettings.activeProjectRevealOwnership !== "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out") {
     activeRevealErrors.push("ownership");
   }
+  const homeEntryLifecycle = workSettings.homeEntryLifecycle || {};
+  if (homeEntryLifecycle.mode !== "source-SD-init-spotlight-before-yD-animateIn-reveal") {
+    activeRevealErrors.push("homeEntryLifecycleMode");
+  }
+  if (homeEntryLifecycle.initHomeSpotlightBeforeGalleryIn !== true) {
+    activeRevealErrors.push("homeEntrySpotlightBeforeGallery");
+  }
+  if (homeEntryLifecycle.initialProjectRevealBeforeGalleryIn !== false) {
+    activeRevealErrors.push("homeEntryProjectRevealBeforeGallery");
+  }
+  if (homeEntryLifecycle.enterWorkGalleryCalled !== true) {
+    activeRevealErrors.push("homeEntryGalleryCalled");
+  }
   const activeProjectApplicationOrder = workSettings.activeProjectApplicationOrder || {};
   if (activeProjectApplicationOrder.mode !== sourceActiveProjectApplicationOrderMode) activeRevealErrors.push("activeProjectApplicationOrderMode");
   if (activeProjectApplicationOrder.wooshMode !== sourceActiveProjectWooshMode) activeRevealErrors.push("activeProjectWooshMode");

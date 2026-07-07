@@ -30,7 +30,7 @@ It is not a timeline. Use git for history.
 | Phase 1 status | Open, roughly 65-70% complete |
 | Current production priority | Home WebGL distribution residuals |
 | Next secondary priority | Spotlight/thumb projection transfer attribution |
-| Last committed source-backed batch | Home CTA default visibility/source guard |
+| Last committed source-backed batch | Home entry spotlight/reveal lifecycle guard |
 | Local service | Stopped unless actively reviewing |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -44,11 +44,12 @@ Estimated parity:
 
 ## Last Closed Batch
 
-The latest source-backed batch removed a DOM visibility mismatch that was polluting Home screenshots, not the remaining WebGL floor/environment residual.
+The latest source-backed batch aligned Home entry lifecycle with source `SD.init()` / `yD.animateIn()` ownership.
 
-- Source desktop CSS keeps `.ui-work-cta` at `opacity:0` by default and reveals it on hover.
-- Source `gD/vD` still animates the active CTA button contents, but the parent link remains visually hidden until hover.
-- Rebuild now keeps the active CTA parent hidden on desktop, with a browser probe guard so default Home captures do not show the CTA.
+- Source `SD.init()` prepares the Home spotlight map, target, position, and intensity before gallery reveal.
+- Source `yD` does not listen to the DOM `PROJECT_ACTIVE` event; WebGL active-project reveal is owned by `yD.animateIn()` and later `setProjectActive()`.
+- Rebuild no longer calls full `setProject()` before Home gallery entry on initial load. It only prepares Home spotlight, then lets `enterWorkGallery()` own reveal/look application.
+- Browser output probe guards that initial Home entry prepares spotlight before gallery, does not trigger active-project reveal before gallery, and enters gallery before active reveal state settles.
 
 ## Current Evidence
 
@@ -59,6 +60,7 @@ The remaining visible gap points back to Home WebGL distribution through environ
 - Source-vs-rebuild band analysis showed the rebuild is still too bright in mid bands and darker/shifted around the lower floor band.
 - Canvas-only Home captures removed DOM noise and still show the residual: the rebuild mid field/block projection reads lighter or more transparent, while source has heavier cube silhouettes and projection through the mid/lower bands.
 - A desktop CTA DOM visibility mismatch has been cleared; after that cleanup, the same floor/environment distribution residual remains.
+- Initial Home WebGL entry lifecycle is now guarded: source-shaped spotlight prep happens before gallery entry, and active-project reveal is not triggered before gallery entry.
 - `p1.update()` order is guarded: work renders first, then camera/components update for the next frame, so environment `uTime` is next-frame in both source and rebuild.
 - `p1.setLights()` is guarded: source adds ambient, spot, spot target, and `directionalLight1`; `directionalLight2` exists but is not added to the scene.
 
@@ -76,13 +78,12 @@ The remaining visible gap points back to Home WebGL distribution through environ
 
 Continue Phase 1 with a Home WebGL distribution batch:
 
-1. Trace source Home entry lifecycle around project activation: `setProject`, `animateIn`, `enterWorkGallery`, and `yD.onProjectActive`.
-2. Compare runtime active block uniforms/material state at capture time: `uReveal`, `uRevealProject`, reveal spread, block alpha/opacity, and spotlight/thumb projection inputs.
-3. If the block/projection path remains source-shaped, return to environment target contents and floor reflection contribution through `a1/i1/o1/t1`.
-4. Only if those remain source-shaped, inspect final work distribution and renderer state not yet covered by output-color guards.
-5. Patch only after a concrete source mismatch is identified.
-6. Update `PHASE1_AUDIT.md` with evidence; update `REBUILD_PLAN.md` only if the execution queue changes.
-7. Validate and commit the scoped batch.
+1. Compare runtime active block uniforms/material state at capture time: `uReveal`, `uRevealProject`, reveal spread, block alpha/opacity, and spotlight/thumb projection inputs.
+2. If the block/projection path remains source-shaped, return to environment target contents and floor reflection contribution through `a1/i1/o1/t1`.
+3. Only if those remain source-shaped, inspect final work distribution and renderer state not yet covered by output-color guards.
+4. Patch only after a concrete source mismatch is identified.
+5. Update `PHASE1_AUDIT.md` with evidence; update `REBUILD_PLAN.md` only if the execution queue changes.
+6. Validate and commit the scoped batch.
 
 Do not spend the next batch first on these guarded areas unless new evidence points back at them:
 

@@ -76,15 +76,15 @@ Already guarded for this lane:
 - Floor material inputs, reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
 - Texture-object await semantics for `nD.animateIn()`.
 - Home active CTA desktop visibility as screenshot-noise guard: parent hidden until hover, mobile visible.
+- Initial Home entry lifecycle: `SD.init()`-shaped spotlight prep happens before gallery entry, while WebGL active-project reveal waits for gallery entry.
 
 Next source candidates, in order:
 
-1. Source Home entry and project activation lifecycle: `setProject`, `animateIn`, `enterWorkGallery`, and `yD.onProjectActive`.
-2. Runtime active block reveal/material state and spotlight/thumb projection inputs at capture time.
-3. Environment target contents beyond the guarded sky composite input.
-4. Floor reflection contribution and environment input through `a1/i1/o1/t1`.
-5. Final work target distribution.
-6. Renderer state not yet covered by existing output-color audit guards.
+1. Runtime active block reveal/material state and spotlight/thumb projection inputs at capture time.
+2. Environment target contents beyond the guarded sky composite input.
+3. Floor reflection contribution and environment input through `a1/i1/o1/t1`.
+4. Final work target distribution.
+5. Renderer state not yet covered by existing output-color audit guards.
 
 Rules:
 

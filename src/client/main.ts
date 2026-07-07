@@ -1256,7 +1256,7 @@ function boot() {
     if (document.querySelector("[data-view='home']")) {
       const routeSwapping = document.documentElement.classList.contains("is-route-swapping");
       if (routeSwapping) webgl?.prepareHomeVisualState?.(payload);
-      else webgl?.setProject(payload);
+      else webgl?.initHomeSpotlight?.();
       onPageEntered(() => {
         void webgl?.animateIn?.();
         const enter = () => {

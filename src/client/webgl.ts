@@ -5546,6 +5546,12 @@ export class WebGLBackdrop {
     secondResizeAfterDelayedBindings: false,
     started: false,
   };
+  private sourceHomeEntryLifecycle = {
+    mode: "source-SD-init-spotlight-before-yD-animateIn-reveal",
+    initHomeSpotlightBeforeGalleryIn: false,
+    initialProjectRevealBeforeGalleryIn: false,
+    enterWorkGalleryCalled: false,
+  };
   private sourceInitLifecyclePromise: Promise<void> = Promise.resolve();
   private sourceInitLifecycleTimer: ReturnType<typeof window.setTimeout> | null = null;
   private destroyed = false;
@@ -5693,6 +5699,9 @@ export class WebGLBackdrop {
   }
 
   setProject(payload: ProjectPayload) {
+    if (!this.sourceHomeEntryLifecycle.enterWorkGalleryCalled) {
+      this.sourceHomeEntryLifecycle.initialProjectRevealBeforeGalleryIn = true;
+    }
     this.prepareHomeLighting();
     const active = this.workItems.find((item) => item.slug === (payload.slug ?? this.activeSlug));
     this.applyActiveProjectSourceOrder(payload, active);
@@ -5868,6 +5877,7 @@ export class WebGLBackdrop {
   }
 
   enterWorkGallery(activeSlug = this.activeSlug) {
+    this.sourceHomeEntryLifecycle.enterWorkGalleryCalled = true;
     this.projectRevealTweens.forEach((tween) => tween.kill());
     this.projectRevealProjectTweens.forEach((tween) => tween.kill());
     this.projectRevealTweens = [];
@@ -5910,6 +5920,9 @@ export class WebGLBackdrop {
   }
 
   initHomeSpotlight() {
+    if (!this.sourceHomeEntryLifecycle.enterWorkGalleryCalled) {
+      this.sourceHomeEntryLifecycle.initHomeSpotlightBeforeGalleryIn = true;
+    }
     this.spotLightParallax = true;
     this.spotLight.map = this.homeSpotlightMap();
     this.spotLight.position.set(0, 0, 3.7);
@@ -10271,6 +10284,7 @@ void main() {
             floorMaterialFogBranch: Object.hasOwn(this.floorMaterial.defines ?? {}, "USE_FOG"),
             environmentMaterialFog: this.environmentMaterial.fog,
           },
+          homeEntryLifecycle: { ...this.sourceHomeEntryLifecycle },
           activeProjectRevealOwnership: "source-yD-onProjectActive-uReveal-only-uRevealProject-owned-by-gallery-enter-out",
           activeProjectApplicationOrder: this.sourceActiveProjectApplicationOrderProbe(),
           activeProjectRevealTweenCount: this.projectRevealTweens.length,

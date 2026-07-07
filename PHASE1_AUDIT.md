@@ -55,7 +55,7 @@ Current decision map:
 
 | Lane | State | Next useful move |
 | --- | --- | --- |
-| Home WebGL distribution | Active blocker | First separate active block reveal/projection state from environment/floor contribution; change visuals only after source ownership is identified. |
+| Home WebGL distribution | Active blocker | Compare capture-time active block reveal/material state and projection inputs before returning to environment/floor contribution; change visuals only after source ownership is identified. |
 | Spotlight/thumb projection | Active evidence path | Inspect as part of the distribution lane when projection transfer or block reveal state is implicated. |
 | `kA/Lu/I1` transfer | Watchlist | Reopen only if environment/floor evidence points into final work distribution. |
 | Interaction/mouse/fluid | Watchlist | Reopen only when touching interaction paths or when a specific regression is isolated. |
@@ -101,6 +101,8 @@ Current source read:
 
 - Source `yD.animateIn()` sets all block `uReveal=0`, tweens all `uRevealProject -> 1` over `.5`, then calls `onProjectActive(current || first)` and activates scroll.
 - Source `yD.onProjectActive()` sets spotlight intensity, clears reveal spread, hides non-active blocks with `uReveal -> 0`, reveals the active block with `uReveal -> 1` after `.2` seconds over `4` seconds, then applies ambient/main/darken/saturation/contrast/thumb/block color/directional-light state.
+- Source `SD.init()` prepares the Home spotlight map from `workThumbScene.renderManager.renderTargetComposite.texture`, sets spotlight position/target/intensity, and emits resize before `SD.animateIn()`.
+- Source `SD.animateIn()` emits `PROJECT_ACTIVE` for DOM components after `super.animateIn()`, but source `yD` does not listen to `PROJECT_ACTIVE`; WebGL reveal remains owned by `yD.animateIn()` and later `setProjectActive()`.
 - `p1.init()` calls `addEnvironment()` without awaiting the cubemap load, then continues the Home scene setup.
 - `addEnvironment()` awaits the cubemap internally and later assigns `scene.environment`.
 - In source order, `p1.init()` calls `addEnvironment()` after blocks/about/floating setup and `sceneWrap.add(blocksWrap)`, before `a1` floor and `h1` environment are attached to `sceneWrap`.
@@ -124,7 +126,8 @@ Current guarded rebuild facts:
 - Sky composite target contents are guarded for source `V1/H1/z1/B1` render-manager shape, height-based square sizing, no explicit clear, post-render `uTime` write, delayed `tSky` repeat binding, and source `z1` declared-only uniform oddities.
 - Work-render-before-environment-update order is guarded by runtime probe.
 - Light ownership is guarded: rebuild keeps `directionalLight2` out of the scene like source.
-- Remaining investigation should first compare Home entry/project activation timing and active block reveal/projection runtime state, then return to environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state if needed.
+- Initial Home entry now matches source ownership: rebuild prepares the Home spotlight before gallery entry, does not call full active-project reveal before gallery entry, and lets `enterWorkGallery()` own active reveal/look application. Browser output probe guards `homeEntryLifecycle`.
+- Remaining investigation should compare active block reveal/projection runtime state at capture time, then return to environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state if needed.
 
 ### Home DOM Screenshot Noise
 
@@ -222,6 +225,7 @@ These are current boundaries, grouped by system instead of discovery time.
 | Home WebGL distribution | `p1.addEnvironment()` starts cubemap loading fire-and-forget before floor/env sceneWrap attachment. |
 | Home WebGL distribution | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
 | Home WebGL distribution | Sky composite `V1/H1/z1/B1` target chain and source `z1` missing-uniform behavior are guarded by audit and browser probe. |
+| Home WebGL distribution | Initial Home entry does not run WebGL active-project reveal before gallery entry; source-shaped spotlight prep is guarded by browser probe. |
 | Home DOM screenshot noise | Desktop active CTA parent remains hidden until hover while its inner button animation can complete; mobile CTA remains visible. |
 | Renderer state | Renderer constructor has no source `setClearColor`; probes guard default clear color `[0,0,0]` and clear alpha `0`. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |
