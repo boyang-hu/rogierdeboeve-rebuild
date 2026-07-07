@@ -1472,7 +1472,7 @@ html.is-mobile .preloader-cta-2 {
 
   .ui-about-contact .ts-2 {
     line-height: 1;
-    letter-spacing: 0;
+    letter-spacing: -0.03em;
     font-size: 2rem;
   }
 }

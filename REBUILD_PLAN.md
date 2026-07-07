@@ -21,8 +21,8 @@ Use git for history. Do not maintain a second timeline here.
 The current order is intentionally narrow:
 
 1. Keep Phase 1, Phase 2, and Phase 3 closed unless new source-owned evidence requires reopening.
-2. Keep the closed Phase 4 About shell/footer/credits modal, title/intro/footer animation, and route leave/entry lifecycle batches closed unless a concrete source-owned mismatch appears.
-3. Continue Phase 4 with About scroll CTA, custom scrollbar, remaining auxiliary lifecycle, and mobile About layout.
+2. Keep the closed Phase 4 About shell/footer/credits modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, and mobile CSS batches closed unless a concrete source-owned mismatch appears.
+3. Continue Phase 4 with the remaining About auxiliary lifecycle audit.
 4. Convert Phase 4 findings into one scoped source-backed fix batch at a time.
 5. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project-detail probes as regression gates when shared paths change.
 6. Move to Phase 5 only after About/auxiliary page parity is clean or explicitly guarded.
@@ -50,7 +50,7 @@ Everything outside the active phase stays paused unless the audit identifies a s
 | 1. Home WebGL source parity | Closed on 2026-07-07 | Reopen only with concrete source-owned mismatch evidence. |
 | 2. Home DOM/interaction parity | Closed on 2026-07-07 | Reopen only with concrete Home DOM, preloader, sound, route, or interaction mismatch evidence. |
 | 3. Project detail media/routes | Closed/guarded on 2026-07-07 | Reopen only with concrete project-detail media, scroll, or route mismatch evidence. |
-| 4. About and auxiliary pages | Active; shell/modal, title/intro/footer animation, and route leave/entry lifecycle batches closed on 2026-07-07 | Continue auditing About scroll CTA, custom scrollbar, mobile layout, and remaining auxiliary WebGL behavior against source. |
+| 4. About and auxiliary pages | Active; shell/modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, and mobile CSS batches closed on 2026-07-07 | Continue auditing remaining auxiliary WebGL behavior against source. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Start after Phase 3-4 page parity is accepted, unless a shared lifecycle bug blocks an earlier phase. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
@@ -276,12 +276,29 @@ Validation passed:
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/ OUT_DIR=/tmp/rd-phase4-route-output-probe CDP_PORT=9448 node scripts/probe-output-color.mjs`
 - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase4-route-project-media-probe CDP_PORT=9449 node scripts/probe-project-media.mjs`
 
+### Closed: About scroll CTA, scrollbar, and mobile CSS source alignment
+
+Goal: close the About scroll CTA, custom scrollbar, and mobile layout queue item against source CSS and source `wD/Ug`.
+
+Current read:
+
+- Source scroll CTA is fixed at the viewport bottom, fades by `html.is-scrolled .c-scroll-cta{opacity:0}`, and is hidden below `1000px`; rebuild CSS already matched.
+- Source scrollbar is fixed at `left: var(--px)`, hidden below `1000px`, uses a `0.125rem` track/thumb, and source `wD` maps pointer drag immediately through page scroll; rebuild CSS/JS already matched the observable behavior.
+- Source `Ug` toggles `html.is-scrolled` at `scroll > 20`; rebuild already matched through `initScrollState()`.
+- Source mobile About contact title uses `.ui-about-contact .ts-2{line-height:1;letter-spacing:-.03em;font-size:2rem}`; rebuild now matches after replacing the rebuild-only `letter-spacing: 0`.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-mobile-layout-about-probe CDP_PORT=9450 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
+
 ### Next Phase 4 Queue
 
 Patch only source-owned findings:
 
-1. Audit About scroll CTA fade, custom scrollbar drag, and mobile About layout against source CSS and `wD`.
-2. Audit any remaining auxiliary visual lifecycle edge against source `TD` and `Fg`; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline guard.
+1. Audit any remaining auxiliary visual lifecycle edge against source `TD` and `Fg`; keep `scripts/probe-about-scroll-opacity.mjs` as the baseline guard.
+2. If the remaining auxiliary lifecycle audit is clean, prepare a Phase 4 closeout review before moving to Phase 5.
 3. Validate each production batch with build, focused route assertions if router paths are touched, output color/state probe if WebGL lifecycle is touched, and renderer audit for shared render changes.
 
 ## Watchlist
