@@ -12,7 +12,7 @@ The user explicitly corrected the approach: do not rely mainly on visual screens
 
 Latest user clarification: the goal is source-site replication, not visual benefit. Prioritize next work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Do not use expected visual payoff as a ranking or rejection criterion.
 
-Latest Phase 1 batch: source `VA/XA` runtime `uCoords` direct viewport ownership. Source `VA.update()` and about `XA.update()` write direct `Pe.w*i,Pe.h*i` coords, with no `Math.max(1, ...)` clamp. The rebuild now removes that local clamp from `sourceWorkViewportCoords()` and guards the direct viewport*capped-DPR path through output probes and renderer audit. This is a block-material runtime coordinate guardrail only; Phase 1 remains open.
+Latest Phase 1 batch: source `eD/Pe` about-character camera-pan normalized mouse ownership. Source `Pe.onMouseMove()` writes `normalized={x:mouse.x/Pe.w,y:1-mouse.y/Pe.h}`, and source `eD.update()` lerps character mouse toward `Pe.mouse.normalized` before applying `-mouse.y+.5` to the camera-pan group. The rebuild now updates shared `sourceMouseNormalized` in `onMouseMove()` and `updateSourceCharacterScene()` consumes that state instead of recomputing `pointerPixels / Math.max(1, window.innerWidth/Height)` with the old non-source y direction. Output, interactive, renderer-audit, and targeted `/about/` CDP probes guard this. This is an about-character input guardrail only; Phase 1 remains open.
 
 ## Chosen Stack
 
@@ -283,7 +283,7 @@ Continue source-driven implementation in this order:
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.
    - Original `GA` uses `Ka` mouse simulation with `tMouseSim`, `tMouseSim2`, and `tDisplacement`.
-   - Rebuild now has the source-shaped render-target structure, `rA/oA` shader surface, and `scripts/probe-interactive-mouse.mjs` for source-shaped screen/local/main-fluid response.
+   - Rebuild now has the source-shaped render-target structure, `rA/oA` shader surface, shared source `Pe.mouse.normalized` input for about-character pan, and `scripts/probe-interactive-mouse.mjs` for source-shaped screen/local/main-fluid response.
    - Future mouse/fluid changes should run the interactive probe, but the current next implementation work should stay on clearer remaining source mismatches unless new mouse/fluid source evidence appears.
 5. Compare against the original mirror only after source behavior changes.
    - Run mirror server if needed:

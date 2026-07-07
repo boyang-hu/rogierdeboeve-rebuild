@@ -134,6 +134,8 @@ function assertInteractiveResponse(before, after, finalPoint) {
   const afterProbe = after.probe || {};
   const mouse = afterProbe.mouseSimulation || {};
   const beforeMouse = beforeProbe.mouseSimulation || {};
+  const input = afterProbe.input || {};
+  const workAuxiliary = afterProbe.settings?.work?.auxiliaryLifecycle || {};
   const screen = mouse.screen || {};
   const beforeScreen = beforeMouse.screen || {};
   const active = mouse.active || {};
@@ -158,6 +160,8 @@ function assertInteractiveResponse(before, after, finalPoint) {
     screenSpeed: screen.speed,
     activeUniformSpeed: active.uniformSpeed,
     mainFluidForce: mainFluid.interaction?.force,
+    sourceMouseNormalized: input.sourceMouseNormalized,
+    characterSourceMouseNormalized: workAuxiliary.aboutCharacterSourceMouseNormalized,
   };
 
   if (!afterProbe || !mouse.enabled) errors.push("missing-mouse-simulation-probe");
@@ -177,6 +181,25 @@ function assertInteractiveResponse(before, after, finalPoint) {
   if (distance2(screen.target, expectedScreenTarget) > 0.015) errors.push(`screen-target=${JSON.stringify(screen.target)}`);
   if (distance2(screen.old, beforeScreen.old) < 0.001 && distance2(screen.new, beforeScreen.new) < 0.001) errors.push("screen-old-new-did-not-move");
   if ((screen.speed ?? 0) <= 0.0001) errors.push(`screen-speed=${screen.speed}`);
+  if (input.mouseEventMode !== "source-Pe-window-mousemove-only") errors.push("input-mouse-event-mode");
+  if (input.mouseNormalizationMode !== "source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h") {
+    errors.push("input-mouse-normalization-mode");
+  }
+  if (input.sourceMouseNormalizedYMode !== "source-Pe-normalized-y-one-minus-clientY-over-height") {
+    errors.push("input-source-mouse-normalized-y-mode");
+  }
+  if (distance2(input.sourceMouseNormalized, expectedScreenTarget) > 0.015) {
+    errors.push(`input-source-mouse-normalized=${JSON.stringify(input.sourceMouseNormalized)}`);
+  }
+  if (workAuxiliary.aboutCharacterCameraPanMouseMode !== "source-eD-lerp-character-mouse-to-Pe.mouse.normalized") {
+    errors.push("about-character-camera-pan-mouse-mode");
+  }
+  if (workAuxiliary.aboutCharacterCameraPanInputMode !== "source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h") {
+    errors.push("about-character-camera-pan-input-mode");
+  }
+  if (distance2(workAuxiliary.aboutCharacterSourceMouseNormalized, expectedScreenTarget) > 0.015) {
+    errors.push(`about-character-source-mouse-normalized=${JSON.stringify(workAuxiliary.aboutCharacterSourceMouseNormalized)}`);
+  }
 
   if (!active) errors.push("missing-active-mouse-probe");
   if (active.raycastMode !== "source-Ka-onMouseMove-per-item-raycast-immediate-pointer") errors.push("active-raycast-mode");
@@ -315,6 +338,12 @@ function consoleSummary(summary) {
       pointerOldAfter: afterProbe.mainFluid?.pointerOld,
       pointerDiffAfter: afterProbe.mainFluid?.pointerDiff,
       interactionAfter: afterProbe.mainFluid?.interaction,
+    },
+    input: {
+      sourceMouseNormalizedBefore: beforeProbe.input?.sourceMouseNormalized,
+      sourceMouseNormalizedAfter: afterProbe.input?.sourceMouseNormalized,
+      characterSourceMouseNormalizedAfter: afterProbe.settings?.work?.auxiliaryLifecycle?.aboutCharacterSourceMouseNormalized,
+      characterMouseAfter: afterProbe.settings?.work?.auxiliaryLifecycle?.aboutCharacterMouse,
     },
     failures: summary.failures.length,
     exceptions: summary.exceptions.length,

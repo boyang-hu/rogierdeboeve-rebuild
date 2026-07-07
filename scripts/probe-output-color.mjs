@@ -370,6 +370,7 @@ async function runProbe() {
   if (spotlightErrors.length) {
     throw new Error(`Spotlight/thumb projection source-shape mismatch: ${spotlightErrors.join(", ")}`);
   }
+  const input = parsed.probe.input || {};
   const camera = parsed.probe.camera || {};
   const resizeErrors = [];
   const expectedOriginZ = expectedMobile ? 5 : 5.5;
@@ -419,6 +420,16 @@ async function runProbe() {
   if (!Array.isArray(camera.rotateGroupRotation) || camera.rotateGroupRotation.length !== 3) resizeErrors.push("rotateGroupRotation");
   if (Math.abs((camera.rotateGroupRotation?.[1] ?? 0) - Math.PI) > 0.001) resizeErrors.push("rotateGroupRotationY");
   if ((camera.lastLerp ?? 0) <= 0 || (camera.lastLerp ?? 0) > 0.021) resizeErrors.push("lastLerp");
+  if (input.mouseEventMode !== "source-Pe-window-mousemove-only") resizeErrors.push("inputMouseEventMode");
+  if (input.mouseNormalizationMode !== "source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h") {
+    resizeErrors.push("inputMouseNormalizationMode");
+  }
+  if (input.sourceMouseNormalizedYMode !== "source-Pe-normalized-y-one-minus-clientY-over-height") {
+    resizeErrors.push("inputSourceMouseNormalizedYMode");
+  }
+  if (!Array.isArray(input.sourceMouseNormalized) || input.sourceMouseNormalized.length !== 2) {
+    resizeErrors.push("inputSourceMouseNormalized");
+  }
   if (!Array.isArray(camera.mousePixels) || camera.mousePixels.length !== 2) resizeErrors.push("mousePixels");
   if (!Array.isArray(camera.mouseDeltaPixels) || camera.mouseDeltaPixels.length !== 2) resizeErrors.push("mouseDeltaPixels");
   const galleryDynamics = camera.galleryDynamics || {};
@@ -558,6 +569,18 @@ async function runProbe() {
   if (auxiliaryLifecycle.aboutCharacterRotatableVertical !== false) materialErrors.push("auxiliaryAboutCharacterRotatableVertical");
   if (auxiliaryLifecycle.aboutCharacterRotatableDamping !== 5) materialErrors.push("auxiliaryAboutCharacterRotatableDamping");
   if (auxiliaryLifecycle.aboutCharacterAutoRotateSpeed !== 1) materialErrors.push("auxiliaryAboutCharacterAutoRotateSpeed");
+  if (auxiliaryLifecycle.aboutCharacterCameraPanMouseMode !== "source-eD-lerp-character-mouse-to-Pe.mouse.normalized") {
+    materialErrors.push("auxiliaryAboutCharacterCameraPanMouseMode");
+  }
+  if (auxiliaryLifecycle.aboutCharacterCameraPanInputMode !== "source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h") {
+    materialErrors.push("auxiliaryAboutCharacterCameraPanInputMode");
+  }
+  if (!Array.isArray(auxiliaryLifecycle.aboutCharacterSourceMouseNormalized) || auxiliaryLifecycle.aboutCharacterSourceMouseNormalized.length !== 2) {
+    materialErrors.push("auxiliaryAboutCharacterSourceMouseNormalized");
+  }
+  if (!Array.isArray(auxiliaryLifecycle.aboutCharacterMouse) || auxiliaryLifecycle.aboutCharacterMouse.length !== 2) {
+    materialErrors.push("auxiliaryAboutCharacterMouse");
+  }
   if (
     !Array.isArray(auxiliaryLifecycle.aboutCharacterCameraPanClamp)
     || auxiliaryLifecycle.aboutCharacterCameraPanClamp[0] !== -0.15

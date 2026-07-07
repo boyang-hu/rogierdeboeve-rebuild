@@ -5337,6 +5337,7 @@ export class WebGLBackdrop {
   private targetPointer = new Vector2();
   private pointerRay = new Vector2();
   private pointerPixels = new Vector2(document.documentElement.clientWidth / 2, document.documentElement.clientHeight / 2);
+  private sourceMouseNormalized = new Vector2(0.5, 0.5);
   private lastPointerPixels = this.pointerPixels.clone();
   private pointerDeltaPixels = new Vector2();
   private screenMouseSimOldPos = new Vector2(0.5, 0.5);
@@ -6073,12 +6074,12 @@ export class WebGLBackdrop {
     );
     this.characterMouse.x = MathUtils.lerp(
       this.characterMouse.x,
-      MathUtils.clamp(this.pointerPixels.x / Math.max(1, window.innerWidth), 0, 1),
+      this.sourceMouseNormalized.x,
       SOURCE_CHARACTER_CAMERA_PAN_LERP,
     );
     this.characterMouse.y = MathUtils.lerp(
       this.characterMouse.y,
-      MathUtils.clamp(this.pointerPixels.y / Math.max(1, window.innerHeight), 0, 1),
+      this.sourceMouseNormalized.y,
       SOURCE_CHARACTER_CAMERA_PAN_LERP,
     );
     this.characterCameraPanGroup.rotation.x = sourceClampRound(
@@ -8526,6 +8527,7 @@ void main() {
     const sourceWidth = Math.max(1, this.root.offsetWidth || window.innerWidth);
     const sourceHeight = Math.max(1, this.root.offsetHeight || window.innerHeight);
     this.pointerPixels.set(event.clientX, event.clientY);
+    this.sourceMouseNormalized.set(event.clientX / sourceWidth, 1 - event.clientY / sourceHeight);
     this.updateMainFluidPointerFromMouse(event.clientX, event.clientY);
     this.targetPointer.x = (event.clientX / sourceWidth - 0.5) * 2;
     this.targetPointer.y = -(event.clientY / sourceHeight - 0.5) * 2;
@@ -10010,6 +10012,13 @@ void main() {
           cssHeightMatchesViewport: Math.abs(canvasRect.height - window.innerHeight) < 0.5,
         },
       },
+      input: {
+        mouseEventMode: "source-Pe-window-mousemove-only",
+        mouseNormalizationMode: "source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h",
+        mousePixels: this.pointerPixels.toArray(),
+        sourceMouseNormalized: this.sourceMouseNormalized.toArray(),
+        sourceMouseNormalizedYMode: "source-Pe-normalized-y-one-minus-clientY-over-height",
+      },
       camera: {
         surfaceMode: "source-p1-Ya-perspective-55-inner-aspect-near1-far2000-position-5_5",
         resizeProjectionMode: "source-Ya-resize-updateProjectionMatrix-plus-Iu-aspect-update",
@@ -10351,6 +10360,10 @@ void main() {
             aboutCharacterRotatableVertical: false,
             aboutCharacterRotatableDamping: SOURCE_CHARACTER_ROTATABLE_DAMPING,
             aboutCharacterAutoRotateSpeed: SOURCE_CHARACTER_AUTO_ROTATE_SPEED,
+            aboutCharacterCameraPanMouseMode: "source-eD-lerp-character-mouse-to-Pe.mouse.normalized",
+            aboutCharacterCameraPanInputMode: "source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h",
+            aboutCharacterSourceMouseNormalized: this.sourceMouseNormalized.toArray(),
+            aboutCharacterMouse: this.characterMouse.toArray(),
             aboutCharacterCameraPanClamp: [SOURCE_CHARACTER_CAMERA_PAN_MIN, SOURCE_CHARACTER_CAMERA_PAN_MAX],
             floatingEntryVisibilityMode: "source-Fg-animateIn-onStart-visible-not-enter-state",
             floatingExitVisibilityMode: "source-Fg-animateOut-onComplete-hidden",
@@ -11624,6 +11637,10 @@ void main() {
         characterCameraPanGroupChildren: this.characterCameraPanGroup.children.length,
         characterRotatableMeshChildren: this.characterRotatableMesh.children.length,
         characterBodyChildren: this.characterBodyGroup.children.length,
+        characterCameraPanMouseMode: "source-eD-lerp-character-mouse-to-Pe.mouse.normalized",
+        characterCameraPanInputMode: "source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h",
+        characterSourceMouseNormalized: this.sourceMouseNormalized.toArray(),
+        characterMouse: this.characterMouse.toArray(),
         characterRotatableRotationY: this.characterRotatableMesh.rotation.y,
         characterBodyRotationY: this.characterBodyGroup.rotation.y,
         characterCameraPanRotationX: this.characterCameraPanGroup.rotation.x,

@@ -276,6 +276,7 @@ const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private u
 const rebuildUpdateVisibleWorkItems = extractBlock(rebuildWebgl, "private updateVisibleWorkItems(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildOnMouseMove = extractBlock(rebuildWebgl, "private onMouseMove =");
+const rebuildUpdateSourceCharacterScene = extractBlock(rebuildWebgl, "private updateSourceCharacterScene(");
 const rebuildResize = extractBlock(rebuildWebgl, "private resize =");
 const rebuildHomeGalleryTick = extractBlock(rebuildMain, "const tick = (now: number)");
 const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
@@ -2964,8 +2965,10 @@ const summary = {
       ]),
       rebuildMouseChecks: checks(rebuildWebgl, [
         "window.addEventListener(\"mousemove\", this.onMouseMove, { passive: true })",
+        "private sourceMouseNormalized = new Vector2(0.5, 0.5);",
         "const sourceWidth = Math.max(1, this.root.offsetWidth || window.innerWidth)",
         "const sourceHeight = Math.max(1, this.root.offsetHeight || window.innerHeight)",
+        "this.sourceMouseNormalized.set(event.clientX / sourceWidth, 1 - event.clientY / sourceHeight);",
         "this.targetPointer.x = (event.clientX / sourceWidth - 0.5) * 2",
         "this.targetPointer.y = -(event.clientY / sourceHeight - 0.5) * 2",
         "this.screenMouseSimTargetPos.set(event.clientX / sourceWidth, 1 - event.clientY / sourceHeight)",
@@ -5312,14 +5315,33 @@ const summary = {
         "private sourceRemoveCharacterRotatableEvents()",
         "private updateSourceCharacterScene(delta: number)",
         "this.characterRotatableMesh.rotation.y = sourceDamp(",
+        "this.characterMouse.x = MathUtils.lerp(\n      this.characterMouse.x,\n      this.sourceMouseNormalized.x,",
+        "this.characterMouse.y = MathUtils.lerp(\n      this.characterMouse.y,\n      this.sourceMouseNormalized.y,",
         "this.characterBodyGroup.rotation.y += delta * SOURCE_CHARACTER_AUTO_ROTATE_SPEED;",
       ]),
+      rebuildCharacterPanOwnership: {
+        consumesPeMouseNormalizedState: Boolean(rebuildUpdateSourceCharacterScene)
+          && rebuildUpdateSourceCharacterScene.includes("this.sourceMouseNormalized.x")
+          && rebuildUpdateSourceCharacterScene.includes("this.sourceMouseNormalized.y"),
+        rejectsOldPointerPixelsViewportClamp: Boolean(rebuildUpdateSourceCharacterScene)
+          && !rebuildUpdateSourceCharacterScene.includes("this.pointerPixels.x / Math.max(1, window.innerWidth)")
+          && !rebuildUpdateSourceCharacterScene.includes("this.pointerPixels.y / Math.max(1, window.innerHeight)")
+          && !rebuildUpdateSourceCharacterScene.includes("MathUtils.clamp(this.pointerPixels"),
+      },
       outputProbeChecks: checks(rebuildOutputProbe, [
         "auxiliaryLifecycle.aboutCharacterRotatableMode !== \"source-TD-character-rotatableMesh-addEvents-after-map-remove-on-destroy\"",
         "auxiliaryLifecycle.aboutCharacterRotatableWrapperMode !== \"source-eD-cameraPanGroup-rotatableMesh-character\"",
         "auxiliaryLifecycle.aboutCharacterRotatableEventMode !== \"source-Q1-window-mouse-touch-passive-events\"",
         "auxiliaryLifecycle.aboutCharacterRotatableUpdateMode !== \"source-eD-Q1-update-horizontal-damped-rotation-and-auto-rotate\"",
         "auxiliaryLifecycle.aboutCharacterRotatableDamping !== 5",
+        "auxiliaryLifecycle.aboutCharacterCameraPanMouseMode !== \"source-eD-lerp-character-mouse-to-Pe.mouse.normalized\"",
+        "auxiliaryLifecycle.aboutCharacterCameraPanInputMode !== \"source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h\"",
+      ]),
+      interactiveProbeChecks: checks(rebuildInteractiveMouseProbe, [
+        "input.mouseNormalizationMode !== \"source-Pe-onMouseMove-normalized-x-over-w-y-one-minus-y-over-h\"",
+        "distance2(input.sourceMouseNormalized, expectedScreenTarget) > 0.015",
+        "workAuxiliary.aboutCharacterCameraPanMouseMode !== \"source-eD-lerp-character-mouse-to-Pe.mouse.normalized\"",
+        "distance2(workAuxiliary.aboutCharacterSourceMouseNormalized, expectedScreenTarget) > 0.015",
       ]),
       excerpt: compact(`${sourceCharacterRotatable.text} ${sourceCharacterScene.text}`),
     },
