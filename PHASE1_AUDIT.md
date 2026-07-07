@@ -2,17 +2,15 @@
 
 Last updated: 2026-07-07
 
-## How To Read This
+## Purpose
 
-This file is the current Phase 1 audit. The old append-only audit had more than 10,000 lines and mixed active status with historical batch logs, which made the current timeline hard to read.
+This is the canonical active audit for Phase 1. It records current parity, open blockers, closed source edges, and closeout criteria.
 
-The last full historical version is preserved in git:
+It is not an append-only work log. The old long-form timelines remain available in git when needed:
 
 ```sh
 git show 9986590:PHASE1_AUDIT.md
 ```
-
-Use that command only when an older S1 entry needs detailed archaeology. The current file below is the canonical active audit.
 
 ## Scope
 
@@ -33,20 +31,18 @@ Primary source areas:
 - `Se`: visual state setter ownership
 - `TD/Fg/Q1/eD`: about and auxiliary visual ownership
 
-## Current Status
+## Status Snapshot
 
-Phase 1 is open. The older closeout standard accepted too many visible deviations; current closeout requires source-backed parity or explicit technical bridge documentation.
+Phase 1 is open. Earlier closeout language accepted too many visible deviations; current closeout requires source-backed parity or explicit technical bridge documentation.
 
-Estimated progress:
+| Area | Estimate | Confidence | Current read |
+| --- | ---: | --- | --- |
+| Architecture/lifecycle | 75-80% | Strong | Broad scene, route, state, and probe surfaces are source-derived. |
+| Shader/render-manager parity | 65-75% | Medium | Many shader surfaces and pass edges are aligned; full transfer interpretation remains open. |
+| Final Home visual parity | 55-65% | Medium-low | Home still diverges in projection feel and floor/environment blend. |
+| Runtime stability | Good | Strong | Build, renderer audit, and browser probes are currently clean. |
 
-| Area | Status | Confidence |
-| --- | --- | --- |
-| Architecture/lifecycle | 75-80% | Strong. Broad scene, route, state, and probe surfaces are source-derived. |
-| Shader/render-manager parity | 65-75% | Medium. Many shader surfaces and pass edges are aligned, but full transfer interpretation remains open. |
-| Final Home visual parity | 55-65% | Medium-low. Home still visibly diverges in projection feel and floor/environment blend. |
-| Runtime stability | Good | Build and probes are currently clean. |
-
-## Current Open Blockers
+## Active Blockers
 
 1. Spotlight/thumb projection transfer feel.
    - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about previous map, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
@@ -55,6 +51,7 @@ Estimated progress:
 2. `kA/Lu/I1` composite and transfer interpretation.
    - Guarded: many source-shaped shader surfaces, pass settings, optional blur chain, resize ownership, runtime uniform order, GPU/LOW_RES bridge, and main/work camera surfaces.
    - Open: the whole render-target transfer graph is not yet proven source-isomorphic.
+   - Current lead: shader text and spotlight-map light chunks now look source-shaped, so investigate default render-target behavior, transfer ownership, and timing before further shader work.
 
 3. Floor/environment residuals.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
@@ -64,14 +61,33 @@ Estimated progress:
    - Guarded: `Ka` mouse simulation constructor/update ownership, raycast hit-UV ownership, main-fluid pointer/diff ownership, bounded pass geometry, and interactive probe coverage.
    - Open: final feel remains a regression concern when touching interaction paths.
 
-## Recently Closed Source Edges
+## Latest Evidence
+
+Production batch `9986590 Align about destroy spotlight map ownership` closed the latest source edge:
+
+- Source `TD.addEvents()` binds `J.workScene.spotLight.map` to `J.characterScene.renderManager.renderTargetComposite.texture` after the `100ms` delay.
+- Source `TD.animateOut()` only tweens about reveal uniforms and calls `Se.setSpotLightIntensity(0)`.
+- Source `TD.destroy()` removes the about RAF handler, clears about block visibility/tracking, restores `spotLightParallax=true`, and removes character rotatable events.
+- Neither source method restores `J.workScene.spotLight.map` to the Home thumb composite; `SD.init()` owns that later Home bind.
+- Rebuild about lifecycle probes and renderer audit now guard this ownership edge.
+
+Post-batch investigation showed:
+
+- `VA-work` shader dump matched source-shaped vertex and fragment text with zero recorded deltas.
+- `OA-work-composite`, `A1-pre-composite`, thumb, floor, environment, media, and fluid shaders were source-shaped.
+- Relevant source bundle light chunks and local Three chunks had zero deltas, including the spotlight-map multiplication path.
+- The next likely mismatch is runtime transfer/default-target semantics or timing, not spotlight-map shader text.
+
+## Closed Source Edges
+
+Keep this table short and current. For full historical detail, use the git version noted above.
 
 | Commit | Area | Closed edge |
 | --- | --- | --- |
-| `9986590` | `TD` about destroy spotlight map | Source `TD.animateOut()` / `TD.destroy()` do not restore Home thumb map; `SD.init()` owns later Home map bind. |
-| `a42e975` | `p1/SD/TD` spotlight init lifecycle | Source constructor leaves `spotLight.map=null` and target at default; `SD.init()` owns Home map/target/intensity. |
-| `a69ad3a` | `Ir/GT` main-fluid bounded geometry | Bounded passes use source `PlaneGeometry(2-cellScale*2)` and default culling; force pass stays fullscreen. |
-| `fe213c1` | `Lu` luminosity branch | Work luminosity branch runs before and independently of bloom, matching source ownership. |
+| `9986590` | `TD` about destroy spotlight map | About out/destroy keep the current spotlight map; `SD.init()` owns later Home map bind. |
+| `a42e975` | `p1/SD/TD` spotlight init lifecycle | Constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
+| `a69ad3a` | `Ir/GT` main-fluid bounded geometry | Bounded passes use source geometry and default culling; force pass stays fullscreen. |
+| `fe213c1` | `Lu` luminosity branch | Work luminosity branch runs before and independently of bloom. |
 | `f6e84c4` | `Lu/I1` optional blur target resize | Optional blur follows source target chain and direct resize input ownership. |
 | `cdbbde7` | `eD/Pe` character camera pan | About character pan consumes shared source `Pe.mouse.normalized`. |
 | `dcb3ed6` | `VA/XA` runtime `uCoords` | Work/about coords use direct viewport times capped DPR without rebuild clamp. |
@@ -81,35 +97,7 @@ Estimated progress:
 | `43cf728` | `Lu/I1` bloom mip resize | Bloom mip chain halves directly like source, without per-step round/clamp ownership. |
 | `5bb0264` | `Lo` resize inputs | Sky, displacement, thumb, and floor reflection pass direct inputs through `Lo.resize`. |
 
-## Latest Batch Details
-
-Latest accepted batch: `9986590 Align about destroy spotlight map ownership`.
-
-Source evidence:
-
-- `TD.addEvents()` waits `100ms`, then binds `J.workScene.spotLight.map=J.characterScene.renderManager.renderTargetComposite.texture`.
-- `TD.animateOut()` only tweens about reveal uniforms and calls `Se.setSpotLightIntensity(0)`.
-- `TD.destroy()` removes the about RAF handler, clears about block tracking/visibility, restores `spotLightParallax=true`, and removes character rotatable events.
-- Neither `TD.animateOut()` nor `TD.destroy()` writes `J.workScene.spotLight.map`.
-
-Runtime/tooling result:
-
-- About out/destroy keeps the current spotlight map.
-- `__rogierAboutLifecycleDestroyProbe()` reports map retention, parallax restore, about visibility, and rotatable event state.
-- `scripts/probe-about-scroll-opacity.mjs` normalizes root `REBUILD_URL` to `/about/`, waits for source lifecycle delays, and asserts destroy-time map retention.
-- `scripts/audit-renderer-output.mjs` rejects restoring `this.spotLight.map = this.homeSpotlightMap()` in about out/destroy.
-
-Validation:
-
-- Syntax checks passed.
-- Renderer audit passed with recursive false/null count `0`.
-- `git diff --check` passed.
-- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
-- Browser probes passed before commit: direct about lifecycle, desktop output, mobile output, thumb spotlight, and project media. Project media retained only known non-blocking promise noise with zero failures and zero console messages.
-
 ## Active Guardrails
-
-Keep these guardrails when continuing Phase 1:
 
 - Use source bundle evidence for every production behavior change.
 - Keep visual captures as regression/attribution only.

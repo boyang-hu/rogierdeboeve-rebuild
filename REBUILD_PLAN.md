@@ -2,18 +2,15 @@
 
 Last updated: 2026-07-07
 
+## Purpose
+
+This file is the forward execution plan. It does not track historical batch detail; closed source edges live in `PHASE1_AUDIT.md`, and quick resume context lives in `HANDOFF.md`.
+
 ## Document Map
 
-- `HANDOFF.md`: quick resume document for the current repo state.
-- `PHASE1_AUDIT.md`: active Phase 1 audit and source-parity closeout criteria.
-- `REBUILD_PLAN.md`: forward execution plan and recent clean timeline.
-
-Historical long-form timelines were intentionally collapsed. The last full historical docs are available from commit `9986590`, for example:
-
-```sh
-git show 9986590:REBUILD_PLAN.md
-git show 9986590:PHASE1_AUDIT.md
-```
+- `HANDOFF.md`: current snapshot, immediate next action, run commands.
+- `PHASE1_AUDIT.md`: active Phase 1 audit, blockers, closed source edges, closeout criteria.
+- `REBUILD_PLAN.md`: phase order, next batches, validation matrix.
 
 ## Execution Rules
 
@@ -26,45 +23,29 @@ git show 9986590:PHASE1_AUDIT.md
 - Work in scoped source-backed batches.
 - Each completed batch updates docs, runs validation, and commits code/docs together.
 - Commits use `Boyang Hu <i@boyang.hu>` and no AI co-author.
-- Replace any temporary `current batch` row with the real commit hash before committing. Do not let stale `current batch` rows accumulate.
 
 ## Phase Status
 
-| Phase | Status | Notes |
+| Phase | Status | Next condition |
 | --- | --- | --- |
-| 1. Home WebGL source parity | In progress | Active priority. About 65-70% complete. |
-| 2. Home DOM/interaction parity | Paused | Resume after Phase 1 closes. |
+| 1. Home WebGL source parity | In progress, about 65-70% complete | Close active WebGL blockers below. |
+| 2. Home DOM/interaction parity | Paused | Resume only after Phase 1 closes. |
 | 3. Project detail media | Stable regression gate | Keep checking when shared render/media paths change. |
-| 4. About and auxiliary pages | Partial guardrails in place | About visual lifecycle is guarded; broader page parity is later. |
+| 4. About and auxiliary pages | Partial guardrails in place | Broader page parity waits until Home WebGL is stable. |
 | 5. Transitions/audio/Lenis lifecycle | Pending | Do not start before Phase 1 closes. |
 | 6. Final QA/cleanup | Pending | Requires Phase 1-5 completion. |
 
-## Recent Timeline
+## Phase 1 Work Queue
 
-| Commit | Area | Result |
-| --- | --- | --- |
-| `9986590` | `TD` About Destroy Spotlight Map Ownership | About out/destroy now keeps the current spotlight map, matching source `TD`; `SD.init()` owns the later Home map bind. |
-| `a42e975` | `p1/SD/TD` Spotlight Init Lifecycle Ownership | Spotlight constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
-| `a69ad3a` | `Ir/GT` Main Fluid Bounded Pass Geometry Ownership | Main-fluid bounded passes use source geometry and default culling; force pass remains fullscreen. |
-| `fe213c1` | `Lu` Work Luminosity Branch Ownership | Work luminosity branch runs before bloom and remains independent from bloom enablement. |
-| `f6e84c4` | `Lu/I1` Optional Blur Target Resize Ownership | Optional blur target chain and resize input ownership match source. |
-| `cdbbde7` | `eD/Pe` Character Camera Pan Mouse Ownership | About character camera pan consumes shared source normalized mouse state. |
-| `dcb3ed6` | `VA/XA` uCoords Direct Viewport Ownership | Work/about material coords use direct viewport times capped DPR, no rebuild clamp. |
-| `c0b2e42` | `IT` Camera Update Denominator Ownership | Home camera update uses direct viewport denominators. |
-| `0441731` | `VA/XA/KA` Program Cache Key Ownership | Block materials rely on Three default `onBeforeCompile` cache keys. |
-| `02f0b0d` | `h1/u1` Program Cache Key Ownership | Environment material relies on Three default `onBeforeCompile` cache key. |
+1. `kA/Lu/I1` composite and transfer interpretation.
+   - Inspect source `I1.initSettings()`, `U1`, `C1`, `Lu.update()`, and `kA` defaults before changing production code.
+   - Answer whether the rebuild's visible Home path is using the same default target/screen transfer behavior as source.
+   - Required checks: build, renderer audit, desktop/mobile output probes, project media probe. Add shader dump only if shader or material code changes.
 
-## Active Phase 1 Plan
-
-1. Spotlight/thumb projection content and transfer.
-   - Inspect source around `SD`, `yD`, `T1`, `w1`, `E1`, `M1`, `x1`, `p1`, and the spotlight projection path.
-   - Target remaining mismatches in projected thumb brightness, depth, content transfer, and timing.
+2. Spotlight/thumb projection content and transfer.
+   - Continue only after the render-manager transfer graph is understood, because shader and light-chunk evidence currently looks source-shaped.
+   - Focus on projected thumb brightness, depth, content transfer, and timing.
    - Required checks: build, renderer audit, desktop/mobile output probes, thumb spotlight probe, project media probe.
-
-2. `kA/Lu/I1` composite and transfer interpretation.
-   - Inspect remaining render-target ownership, target inputs, composite texture transfer, and default enabled/disabled branches.
-   - Avoid repeating already guarded settings, GPU bridge, camera surfaces, optional blur target chain, or runtime uniform order.
-   - Required checks: build, renderer audit, desktop/mobile output probes, project media probe. Add shader dump/capture only when shader or transfer surfaces change.
 
 3. Floor/environment distribution.
    - Inspect source-backed differences in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target content.
@@ -81,9 +62,10 @@ git show 9986590:PHASE1_AUDIT.md
 - Do not accept visual deviations as Phase 1 closeout.
 - Do not introduce screenshot-driven production tuning.
 - Do not refactor unrelated WebGL systems while chasing one source chain.
-- Do not change project-detail media behavior unless the source evidence requires it.
+- Do not change project-detail media behavior unless source evidence requires it.
+- Do not repeat the already-verified spotlight-map shader/light-chunk path unless new evidence appears.
 
-## Verification Baseline
+## Validation Matrix
 
 Always run:
 
@@ -117,4 +99,4 @@ Known blocked check:
 npm exec tsc -- --noEmit --pretty false
 ```
 
-This is blocked by the existing TypeScript config deprecation around `baseUrl` under TS7.
+This remains blocked by the existing TypeScript config deprecation around `baseUrl` under TS7.
