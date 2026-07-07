@@ -5622,9 +5622,6 @@ export class WebGLBackdrop {
     this.environmentPlane = new Mesh(new IcosahedronGeometry(300, 10), this.environmentMaterial);
     this.environmentGroup.position.y = -12.65;
     this.environmentGroup.add(this.environmentPlane);
-    this.sceneWrap.add(this.blocksWrap);
-    this.sceneWrap.add(this.floorGroup);
-    this.sceneWrap.add(this.environmentGroup);
     this.thumbScene.background = sourceLinearToSrgbColor(SOURCE_THUMB_BACKGROUND);
     this.thumbWrap.frustumCulled = false;
     this.thumbWrap.add(this.thumbScrollWrap);
@@ -5632,6 +5629,9 @@ export class WebGLBackdrop {
 
     this.createWorkScene();
     this.createAuxiliaryBlocks();
+    this.sceneWrap.add(this.blocksWrap);
+    this.sceneWrap.add(this.floorGroup);
+    this.sceneWrap.add(this.environmentGroup);
     this.homeScene.add(this.sceneWrap);
     this.createMediaPlanes();
     this.loadCompositeTextures();

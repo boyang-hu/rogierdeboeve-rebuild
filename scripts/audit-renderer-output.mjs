@@ -3189,17 +3189,25 @@ const summary = {
         rebuild:
           orderedIncludes(rebuildWebgl, [
             "this.homeScene.add(this.directionalLight);",
+            "this.createWorkScene();",
+            "this.createAuxiliaryBlocks();",
             "this.sceneWrap.add(this.blocksWrap);",
             "this.sceneWrap.add(this.floorGroup);",
             "this.sceneWrap.add(this.environmentGroup);",
-            "this.createWorkScene();",
-            "this.createAuxiliaryBlocks();",
             "this.homeScene.add(this.sceneWrap);",
           ]),
         rejectsOldEarlySceneWrapAdd:
           !orderedIncludes(rebuildWebgl, [
             "this.homeScene.add(this.directionalLight);",
             "this.homeScene.add(this.sceneWrap);",
+            "this.createAuxiliaryBlocks();",
+          ]),
+        rejectsOldEarlySceneWrapChildAttach:
+          !orderedIncludes(rebuildWebgl, [
+            "this.sceneWrap.add(this.blocksWrap);",
+            "this.sceneWrap.add(this.floorGroup);",
+            "this.sceneWrap.add(this.environmentGroup);",
+            "this.createWorkScene();",
             "this.createAuxiliaryBlocks();",
           ]),
         runtimeProbe:

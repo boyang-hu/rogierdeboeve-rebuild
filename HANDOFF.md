@@ -135,7 +135,7 @@ Known remaining gaps:
   - source uses a more complex main composite with bloom, luminosity, RGB shift, fluid/mouse simulation, perlin/noise, and spotlight map behavior.
   - rebuild has source-shaped passes, target clone ownership, work/main pass-material ownership, and source `Lu/kA/I1` settings ownership, but transfer interpretation and exact composite behavior are still not complete.
 - The original projects the thumb render target through `SpotLight.map`. The rebuild now guards the source no-explicit-`castShadow` `SpotLight.map` path, source `Qm/Iw` spotlight default/shadow projection state, source `SD.init()` fixed Home entry intensity `220`, source `yD.onProjectActive()` active-project spotlight payload-or-max ownership, source `yD.onProjectActive()` active-project application order, source `yD -> w1` negative-progress thumb wrapping at nonzero progress, source `yD.updateScene()` gallery-progress update order, source `yD.updateScene()` gallery roll/zoom `bo/Yi` dynamics, source `T1/x1` thumb scene background/camera/settings ownership, source `Lo/x1` raw-to-composite target transfer order, and source spotlight projection sampling through the Three spotlight-map matrix/chunk path, but the projected thumb transfer feel is still not exact.
-- Source `p1` floor/environment hierarchy is guarded for root scene direct child order, `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, source `setLights()` max spotlight scalar ownership, source `SD.init()` Home spotlight intensity ownership, and source `yD.onProjectActive()` active-project spotlight fallback/application-order ownership, but the visible fog-bed/horizon still is not 1:1.
+- Source `p1` floor/environment hierarchy is guarded for root scene direct child order, source `p1.init()` sceneWrap child attach order, final `sceneWrap -> blocksWrap/floor/env` child order, `demorgen`-derived environment rotation, source `setBlocks()` carousel radius/position/lookAt/`sceneWrap.z`/`lightRadius` scalar distribution, source `setLights()` max spotlight scalar ownership, source `SD.init()` Home spotlight intensity ownership, and source `yD.onProjectActive()` active-project spotlight fallback/application-order ownership, but the visible fog-bed/horizon still is not 1:1.
 - Ordinary `VA-work` now uses direct source-shaped `HA/zA` templates, and the generated residual report shows vertex/fragment deltas `0`. The raw `uUvOffset` shader declaration is source-aligned as `vec3`; the documented bridge is runtime-only because mirrored source `VA.customUniforms` constructs `uUvOffset` from `Vector2`, source `GA` writes only `.x/.y`, and the source shader reads `uUvOffset.xy`. The old source `SPECULAR` macro is restored in `zA`; runtime probes guard that ordinary work is `MeshStandardMaterial`, not `MeshPhysicalMaterial`, so `PHYSICAL` is inactive.
 - Source `lA/aA` main composite shader text now dumps as source-shaped, including helper surface, vignette local, uniform order, and the source unused `tMouseSim` material uniform. This is shader/material surface parity, not proof that the whole `kA/Lu/I1` transfer chain is complete.
 - Source `Lu/kA/I1` composite material construction attribution is now guarded: `Lu.initRenderer()` creates `lA`, `kA` immediately replaces it with `OA`, and `I1` directly constructs `C1`, so the rebuild `mainCompositeMaterial` is retained `lA/aA` source-surface evidence and not the active default Home `I1/C1` screen material.
@@ -143,7 +143,7 @@ Known remaining gaps:
 - Source `$1/j1/W1/G1` project-media composite shader text now dumps as source-shaped, including helper surface, `luminance(...)`, source uniform order, and the inert `mixed` pass-through body. This is shader-surface parity, not proof that the whole project-media or `kA/Lu/I1` transfer chain is complete.
 - Source `$1/j1/Lo` project-media clear ownership is now guarded: `j1.settings.clear` is source-present but unused by `Lo.update()`, while source `$1.update()` owns the temporary `renderer.autoClear=true` branch around `super.update(...)` and restores `false`.
 - Source `k1/O1/Lo` displacement target sizing is now guarded: source `k1.resize()` passes `height/10` into `O1/Lo.resize(...)`, and source `Lo.resize()` multiplies by DPR before rounding, so displacement raw/composite targets are `round((height / 10) * dpr)`.
-- Source `p1` root scene direct-child order is now guarded: lights are added first, `setAboutBlocks()`/`setFloatingBlocks()` add their direct scene groups next, and `sceneWrap` is added last after it owns `blocksWrap/floor/env`.
+- Source `p1` root scene direct-child order and sceneWrap child attach order are now guarded: lights are added first, source block/about/floating setup runs before `sceneWrap.add(blocksWrap)`, floor/env are attached after that, and `sceneWrap` is added last to the root scene.
 - Source `i1/a1` floor reflection normal constructor/runtime ownership is now guarded: `i1` constructs the reflection normal as a zero vector, while `i1.update()` owns the later `(0,0,1)` write and reflector-rotation application.
 - Source `i1/a1` floor reflection screen-triangle ownership is now guarded: `i1` constructs `screenTriangle` with `n1()`, creates the blur screen from that owned geometry and blur material, disables frustum culling on the screen, and disposes `screenTriangle` directly in `destroy()`.
 - Source `i1/a1` floor reflection blur target field-swap ownership is now guarded: the normal blur loop reads/writes `renderTargetRead/renderTargetWrite` fields directly, swaps those fields inside the loop, and updates the reflection uniform from the swapped read field after each pass.
@@ -181,11 +181,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `E1` thumb construction order without changing shader text, render targets, visual constants, route behavior, spotlight settings, scene order, or pass execution.
-- Source evidence: `E1` constructs geometry/material, calls `setImage(id)` against `this.material`, and only then creates/scales `this.mesh`.
-- `createThumbPlane(id)` now queues `setSourceThumbImage(id, material, () => mesh)` before creating the mesh; the async helper uses `getMesh()` only to backfill mesh probe metadata after the source thumb promise resolves.
-- `__rogierThumbProbe`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` now guard `source-E1-material-setImage-before-mesh-construction`.
-- Previous committed batch was `a67c05d Guard original capture assets`.
+- Aligned source `p1.init()` sceneWrap child attach order without changing shader text, render targets, visual constants, route behavior, lights, spotlight/thumb formulas, or final hierarchy.
+- Source evidence: `p1.init()` runs `setBlocks()`, `setAboutBlocks()`, and `setFloatingBlocks()` before `sceneWrap.add(blocksWrap)`, then attaches floor/env and finally adds `sceneWrap` to the root scene.
+- `src/client/webgl.ts` now attaches `blocksWrap`, `floorGroup`, and `environmentGroup` only after `createWorkScene()` and `createAuxiliaryBlocks()`.
+- `scripts/audit-renderer-output.mjs` now expects the source attach order and rejects the old early sceneWrap child attach order.
+- Previous committed batch was `03d3df9 Align E1 thumb image binding order`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -195,25 +195,23 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
-node --check scripts/probe-thumb-spotlight.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-e1-constructor-order-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-thumb-e1-constructor-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-p1-init-attach-order-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-p1-init-attach-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-e1-constructor-order-thumb CDP_PORT=9421 PROBE_WAIT=30000 THUMB_PROGRESS=0.27 node scripts/probe-thumb-spotlight.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-p1-init-attach-output-desktop CDP_PORT=9233 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed in the `E1` thumb construction-order batch. Renderer audit wrote `/tmp/rd-thumb-e1-constructor-order-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop thumb spotlight probe wrote `/tmp/rd-thumb-e1-constructor-order-thumb`; all thumbs and the sampled material reported `source-E1-material-setImage-before-mesh-construction`, and the probe had no failed requests, exceptions, or shader/WebGL console messages.
+All relevant checks passed in the `p1.init()` sceneWrap attach-order batch. Renderer audit wrote `/tmp/rd-p1-init-attach-order-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.p1EnvironmentHierarchy.rootSceneDirectChildOrder` reported source order, rebuild order, old-root-order rejection, old-child-attach rejection, and runtime probe coverage all true. Desktop output probe wrote `/tmp/rd-p1-init-attach-output-desktop`, retained source root order and `sceneWrap` child order, and had no failed requests, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this thumb construction-order batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this attach-order batch.
 
-Project media and full output probes were not rerun because this batch touched the Home thumb construction path and its focused thumb spotlight regression gate, not project media, shader text, or render targets.
+Project media, thumb, mobile, and full output probes were not rerun because this batch touched only Home initialization attach order, not project media, shader text, render targets, spotlight/thumb state, or mobile resize logic.
 
 Verified:
 
-- Renderer audit passed for the thumb construction-order batch: `/tmp/rd-thumb-e1-constructor-order-audit.json`.
+- Renderer audit passed for the p1 attach-order batch: `/tmp/rd-p1-init-attach-order-audit.json`.
 - Recursive false/null audit output is empty.
-- `scripts/probe-thumb-spotlight.mjs` syntax check passed.
-- Desktop thumb spotlight probe passed: `/tmp/rd-thumb-e1-constructor-order-thumb`.
+- Desktop output probe passed: `/tmp/rd-p1-init-attach-output-desktop`.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.
@@ -265,7 +263,7 @@ Continue source-driven implementation in this order:
    - Source `Lu/kA/I1` init settings, `I1` lensflare defaults, `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES`, and `yg/U1/I1` main raw camera surface are now guarded; next source work should look at remaining `kA`, `Lu`, and `I1` transfer/target/composite interpretation rather than repeating settings, GPU bridge, or camera-surface ownership.
    - Port only source behavior and values as the 1:1 implementation spec; avoid filtering changes by expected visual payoff.
 3. Revisit floor/environment distribution from source evidence.
-   - Current rebuild now guards source `p1` root scene direct-child order, `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
+   - Current rebuild now guards source `p1` root scene direct-child order, source `p1.init()` sceneWrap child attach order, final `sceneWrap` child order, `p1/Ya` home camera surface ownership, `yg/U1/I1` main raw camera surface ownership, `demorgen`-derived environment rotation, `p1.init()` scene background/fog ownership, `p1.setBlocks()` carousel/lightRadius scalar ownership, `p1.setLights()` max spotlight scalar ownership, `Se.setAmbientLight()` ambient/env color ownership, `Se.setBlocksColor()` all-work emissive fan-out ownership, `Se` thumb state no-kill setter ownership, `Se.settings` scalar/media no-kill versus kill-owned setter ownership, source `a1/i1` floor-reflection draw-state, and source `i1` reflection renderer-state save/disable/raw/blur/restore ownership.
    - The visible fog-bed/horizon still differs from the source.
    - Do not tune brightness or fog visually without bundle-backed ownership.
 4. Keep and extend the mouse/fluid regression guardrail when touching interaction paths.
