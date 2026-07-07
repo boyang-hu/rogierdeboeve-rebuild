@@ -242,6 +242,7 @@ const rebuildSetSpotLightIntensity = extractBlock(rebuildWebgl, "private setSpot
 const rebuildSetDirectionalLightIntensity = extractBlock(rebuildWebgl, "private setDirectionalLightIntensity(");
 const rebuildSetDirectionalLight2Intensity = extractBlock(rebuildWebgl, "private setDirectionalLight2Intensity(");
 const rebuildUpdateWorkSceneForNextFrame = extractBlock(rebuildWebgl, "private updateWorkSceneForNextFrame(");
+const rebuildUpdateVisibleWorkItems = extractBlock(rebuildWebgl, "private updateVisibleWorkItems(");
 const rebuildTick = extractBlock(rebuildWebgl, "private tick =");
 const rebuildHomeGalleryTick = extractBlock(rebuildMain, "const tick = (now: number)");
 const rebuildTickBeforeMainRaw = rebuildTick && rebuildTick.includes("this.renderer.setRenderTarget(this.mainRawTarget);")
@@ -4368,6 +4369,9 @@ const summary = {
         sourceP1SetMouseFactor:
           sourceP1SetBlocks?.text.includes("setMouseFactor(e){this.mouseF=e,this.blocks.forEach") === true
           && sourceP1SetBlocks?.text.includes("t.instance.material.customUniforms.uMouseFactor.value=e") === true,
+        sourceP1UpdateDoesNotWrite:
+          Boolean(sourceP1Update)
+          && !sourceP1Update.text.includes("uMouseFactor"),
         sourceGalleryEntry:
           sourceYDAnimateIn?.text.includes("J.workScene.setMouseFactor(0)") === true
           && sourceYDAnimateIn?.text.includes("mouseF:1,duration:3,ease:\"none\"") === true
@@ -4382,9 +4386,16 @@ const summary = {
           && rebuildWebgl.includes("this.setMouseFactor(1, 3);")
           && rebuildWebgl.includes("this.setMouseFactor(enabled ? 0.25 : 1, 3);")
           && rebuildWebgl.includes("mouseFactorOwnership: {")
+          && rebuildWebgl.includes("updateOwnershipMode: \"source-p1-update-does-not-write-uMouseFactor\"")
+          && rebuildWebgl.includes("p1UpdateDoesNotOwnRuntimeWrite: true")
           && rebuildWebgl.includes("allWorkUniformsMatchState"),
+        rebuildP1UpdateDoesNotWrite:
+          Boolean(rebuildUpdateVisibleWorkItems)
+          && !rebuildUpdateVisibleWorkItems.includes("uMouseFactor.value"),
         probe:
           rebuildOutputProbe.includes("mouseFactor.mode !== \"source-p1-setMouseFactor-updates-VA-uMouseFactor\"")
+          && rebuildOutputProbe.includes("mouseFactor.updateOwnershipMode !== \"source-p1-update-does-not-write-uMouseFactor\"")
+          && rebuildOutputProbe.includes("mouseFactor.p1UpdateDoesNotOwnRuntimeWrite !== true")
           && rebuildOutputProbe.includes("mouseFactor.allWorkUniformsMatchState !== true"),
       },
       rebuildNoSplitLocalMouseUpdate:

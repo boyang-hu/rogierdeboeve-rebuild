@@ -187,6 +187,8 @@ function outputProbeSettled(parsed) {
     && settingsState.matchesUniforms === true
     && closeTo(settingsState.state?.sceneReveal, 1)
     && mouseFactor.mode === "source-p1-setMouseFactor-updates-VA-uMouseFactor"
+    && mouseFactor.updateOwnershipMode === "source-p1-update-does-not-write-uMouseFactor"
+    && mouseFactor.p1UpdateDoesNotOwnRuntimeWrite === true
     && closeTo(mouseFactor.state, 1)
     && closeTo(mouseFactor.activeUniform, mouseFactor.state)
     && mouseFactor.allWorkUniformsMatchState === true
@@ -432,6 +434,7 @@ async function runProbe() {
   if (Math.abs((activeMaterial?.metalness ?? 0) - 0) > 0.001) materialErrors.push("activeMetalness");
   const mouseFactor = workSettings.mouseFactorOwnership || {};
   if (mouseFactor.mode !== "source-p1-setMouseFactor-updates-VA-uMouseFactor") materialErrors.push("mouseFactorMode");
+  if (mouseFactor.updateOwnershipMode !== "source-p1-update-does-not-write-uMouseFactor") materialErrors.push("mouseFactorUpdateOwnershipMode");
   if (mouseFactor.constructorDefault !== 0) materialErrors.push("mouseFactorConstructorDefault");
   if (mouseFactor.galleryEntryMode !== "source-yD-gallery-entry-set-0-then-tween-1") materialErrors.push("mouseFactorGalleryEntryMode");
   if (mouseFactor.previewMode !== "source-work-preview-enter-0_25-leave-1") materialErrors.push("mouseFactorPreviewMode");
@@ -440,6 +443,7 @@ async function runProbe() {
   if (mouseFactor.previewLeaveTarget !== 1) materialErrors.push("mouseFactorPreviewLeaveTarget");
   if (Math.abs((mouseFactor.state ?? NaN) - 1) > 0.001) materialErrors.push("mouseFactorState");
   if (Math.abs((mouseFactor.activeUniform ?? NaN) - (mouseFactor.state ?? NaN)) > 0.001) materialErrors.push("mouseFactorActiveUniform");
+  if (mouseFactor.p1UpdateDoesNotOwnRuntimeWrite !== true) materialErrors.push("mouseFactorP1UpdateOwnership");
   if (mouseFactor.allWorkUniformsMatchState !== true) materialErrors.push("mouseFactorUniformsMatchState");
   if (auxiliaryLifecycle.mode !== "source-TD-Fg-split-about-floating-lifecycle") materialErrors.push("auxiliaryLifecycleMode");
   if (auxiliaryLifecycle.aboutEntryVisibilityMode !== "source-TD-addEvents-visible-before-animateIn") {

@@ -70,7 +70,38 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults including zero-vector `uCoords` construction, source `$A` about local `Ka` runtime writeback, source `ZA/KA` floating no-sampler-write and no-`uCoords` runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; source `qw` renderer constructor/resize ownership is guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source `p1.update()` side reveal ownership is now aligned and guarded. Source writes `uRevealSides` and `uRevealSpreadSides` through `Cs(Math.abs(world.x), ...)`, and `Cs` rounds through `Fn(...,4)` after clamping. The rebuild now uses the same four-decimal source mapping for visible work items and probes exact formula parity instead of only checking the `0..1` range. This is one runtime uniform ownership edge only; Phase 1 remains open.
+Latest accepted batch: source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is now tightened. Source constructs `VA.uMouseFactor` at `0`, writes it through `p1.setMouseFactor(e)`, and does not write `uMouseFactor` from `p1.update()`. The rebuild now removes the extra per-frame visible-work-item write and guards that `setMouseFactor()` remains the fan-out owner. This is one runtime uniform ownership edge only; Phase 1 remains open.
+
+### S1-346 `p1.update()` No `uMouseFactor` Runtime Write
+
+This batch aligns one source runtime-uniform ownership edge in the Home work-block update path. It does not change shader text, render targets, visual constants, route behavior, spotlight/thumb formulas, project data, or pass execution.
+
+Source evidence:
+
+- Source `VA` constructs `uMouseFactor:new I(0)`.
+- Source `p1.setMouseFactor(e)` writes `this.mouseF=e` and fans `e` out to each work block material `customUniforms.uMouseFactor.value`.
+- Source gallery entry and preview hover animate through `J.workScene.setMouseFactor(...)`.
+- Source `p1.update()` writes visible-item `uRevealSides`, `uRevealSpreadSides`, and `tMouseSim2`, but does not write `uMouseFactor`.
+
+Runtime and tooling changes:
+
+- Removed the rebuild-only per-frame `item.material.uniforms.uMouseFactor.value = this.mouseFactor` write from `updateVisibleWorkItems()`.
+- `setMouseFactor()` remains the sole ordinary-work `uMouseFactor` runtime fan-out owner.
+- `__rogierOutputProbe.settings.work.mouseFactorOwnership` now exposes `updateOwnershipMode=source-p1-update-does-not-write-uMouseFactor` and `p1UpdateDoesNotOwnRuntimeWrite=true`.
+- `scripts/probe-output-color.mjs` asserts the new ownership markers while still verifying the active/all-work uniforms match the current source-owned state.
+- `scripts/audit-renderer-output.mjs` now extracts `updateVisibleWorkItems()` and checks both source and rebuild update paths for absence of `uMouseFactor` writes.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-output-color.mjs` passed.
+- `node scripts/audit-renderer-output.mjs > /tmp/rd-mousefactor-update-audit.json` passed; recursive false/null review printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop output probe passed at `/tmp/rd-mousefactor-update-output-desktop` with no failed requests, runtime exceptions, or console messages.
+- Mobile output probe passed at `/tmp/rd-mousefactor-update-output-mobile` with no failed requests, runtime exceptions, or console messages.
+
+Decision: keep `VA.uMouseFactor` runtime writes owned by `p1.setMouseFactor()`, not by `p1.update()`. Do not restore the per-frame visible-item `uMouseFactor` write without mirrored-bundle evidence. Phase 1 remains open because this closes one runtime uniform ownership mismatch only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-345 `p1.update()` Side Reveal `Cs/Fn4` Ownership
 

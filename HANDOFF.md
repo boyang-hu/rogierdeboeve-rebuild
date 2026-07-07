@@ -180,15 +180,16 @@ Known remaining gaps:
 - Source `a1/i1` floor-reflection draw-state and `i1` renderer-state are now guarded: floor `onBeforeRender` hides only the floor component group while reflecting the full Home scene, `sceneWrap`/blocks/environment remain visible in the reflected scene, the reflector raw/blur pass disables source-owned renderer state, and visibility plus renderer state restore after the reflector update.
 - Source `qw` renderer constructor/resize ownership is now guarded: no constructor-time DPR write, `resize(e,t,n)` calls `setSize(e,t)` before `setPixelRatio(n)`, and canvas style dimensions are owned by Three's default `setSize` update-style path.
 - Source `p1.update()` side reveal ownership is now guarded: `uRevealSides` and `uRevealSpreadSides` use source `Cs(Math.abs(world.x), ...)->Fn4` four-decimal rounding rather than continuous clamp/mapLinear floats, and output probes assert exact formula parity for visible work items.
+- Source `p1.setMouseFactor()` runtime ownership is now guarded through the update path: `VA.uMouseFactor` is constructed at `0` and fanned out by `p1.setMouseFactor()`, while `p1.update()` does not write it per frame.
 
 Latest Phase 1 batch:
 
-- Aligned source `p1.update()` side reveal uniform ownership without changing shader text, render targets, visual constants, route behavior, spotlight/thumb formulas, project data, or pass execution.
-- Source evidence: `p1.update()` writes `uRevealSides=Cs(Math.abs(a.x),0,5,1,0,!0)` and `uRevealSpreadSides=Cs(Math.abs(a.x),2,6,1,0,!0)`; source `Cs` clamps through `bo`, and `bo` calls `Fn(...,4)` for four-decimal rounding.
-- `src/client/webgl.ts` now uses `sourceMapClampRound(...)` for those visible-work-item uniforms and exposes source mode markers, expected source values, and exact parity booleans in `__rogierOutputProbe.settings.work.p1UpdateCulling.items[]`.
-- `scripts/probe-output-color.mjs` recomputes the source formula from each visible item world position and hard-fails on mode, expected-value, actual-value, or parity mismatches.
-- `scripts/audit-renderer-output.mjs` now checks source `Cs/Fn4` anchors, rejects the old continuous clamp/mapLinear implementation, and verifies probe coverage.
-- Previous committed batch was `3fae279 Align qw renderer resize ownership`.
+- Aligned source `p1.setMouseFactor()` ownership by removing the rebuild-only per-frame `uMouseFactor` write from `updateVisibleWorkItems()`.
+- Source evidence: `VA` constructs `uMouseFactor:new I(0)`, `p1.setMouseFactor(e)` writes `this.mouseF=e` and fans `e` out to each work material, gallery entry and preview hover animate through `J.workScene.setMouseFactor(...)`, and source `p1.update()` does not write `uMouseFactor`.
+- `src/client/webgl.ts` now keeps `setMouseFactor()` as the only ordinary-work `uMouseFactor` runtime fan-out owner and exposes `updateOwnershipMode=source-p1-update-does-not-write-uMouseFactor` in `__rogierOutputProbe.settings.work.mouseFactorOwnership`.
+- `scripts/probe-output-color.mjs` asserts the new ownership markers while still verifying the active/all-work uniforms match the current source-owned state.
+- `scripts/audit-renderer-output.mjs` now extracts `updateVisibleWorkItems()` and checks both source and rebuild update paths for absence of `uMouseFactor` writes.
+- Previous committed batch was `2359741 Align p1 side reveal rounding`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -199,25 +200,25 @@ Last verified in the latest session:
 git diff --check
 node --check scripts/audit-renderer-output.mjs
 node --check scripts/probe-output-color.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-p1-cs-reveal-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-p1-cs-reveal-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node scripts/audit-renderer-output.mjs > /tmp/rd-mousefactor-update-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-mousefactor-update-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-p1-cs-reveal-output-desktop CDP_PORT=9279 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-p1-cs-reveal-output-mobile CDP_PORT=9280 VIEWPORT=mobile PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-mousefactor-update-output-desktop CDP_PORT=9282 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-mousefactor-update-output-mobile CDP_PORT=9283 VIEWPORT=mobile PROBE_WAIT=30000 node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed in the `p1.update()` side reveal ownership batch. Renderer audit wrote `/tmp/rd-p1-cs-reveal-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.p1Update.sideRevealOwnership` reported the source `Cs/Fn4` anchors, rebuild runtime helper, old clamp rejection, and probe coverage as true. Desktop output probe wrote `/tmp/rd-p1-cs-reveal-output-desktop`; mobile output probe wrote `/tmp/rd-p1-cs-reveal-output-mobile`. Both probes reported no failed requests, runtime exceptions, or console messages.
+All relevant checks passed in the `p1.setMouseFactor()` update-ownership batch. Renderer audit wrote `/tmp/rd-mousefactor-update-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.GA.mouseFactorOwnership` reported source constructor/default, source `p1.setMouseFactor()`, source `p1.update()` no-write, rebuild `updateVisibleWorkItems()` no-write, and probe coverage as true. Desktop output probe wrote `/tmp/rd-mousefactor-update-output-desktop`; mobile output probe wrote `/tmp/rd-mousefactor-update-output-mobile`. Both probes reported no failed requests, runtime exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this side reveal batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this mouse-factor ownership batch.
 
-Project-media, thumb, and full capture probes were not rerun because this batch touched only Home work-block side reveal uniform rounding and output-probe coverage, not project media, thumb render targets, shader text, route data, or source content. Desktop/mobile output probes were rerun because the touched uniform path executes on both viewports.
+Project-media, thumb, and full capture probes were not rerun because this batch touched only Home work-block `uMouseFactor` runtime ownership and output-probe coverage, not project media, thumb render targets, shader text, route data, or source content. Desktop/mobile output probes were rerun because the touched uniform path executes on both viewports.
 
 Verified:
 
-- Renderer audit passed for the `p1.update()` side reveal batch: `/tmp/rd-p1-cs-reveal-audit.json`.
+- Renderer audit passed for the `p1.setMouseFactor()` update-ownership batch: `/tmp/rd-mousefactor-update-audit.json`.
 - Recursive false/null audit output is empty.
-- Desktop output probe passed: `/tmp/rd-p1-cs-reveal-output-desktop`.
-- Mobile output probe passed: `/tmp/rd-p1-cs-reveal-output-mobile`.
+- Desktop output probe passed: `/tmp/rd-mousefactor-update-output-desktop`.
+- Mobile output probe passed: `/tmp/rd-mousefactor-update-output-mobile`.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

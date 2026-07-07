@@ -8752,7 +8752,6 @@ void main() {
       const sideSpreadReveal = sourceMapClampRound(Math.abs(world.x), 2, 6, 1, 0);
       item.material.uniforms.uRevealSides.value = sideReveal;
       item.material.uniforms.uRevealSpreadSides.value = sideSpreadReveal;
-      item.material.uniforms.uMouseFactor.value = this.mouseFactor;
       item.material.uniforms.tMouseSim2.value = this.screenMouseSimulationTexture;
     });
   }
@@ -10005,6 +10004,7 @@ void main() {
           revealProjectTweenCount: this.projectRevealProjectTweens.length,
           mouseFactorOwnership: {
             mode: "source-p1-setMouseFactor-updates-VA-uMouseFactor",
+            updateOwnershipMode: "source-p1-update-does-not-write-uMouseFactor",
             constructorDefault: 0,
             galleryEntryMode: "source-yD-gallery-entry-set-0-then-tween-1",
             previewMode: "source-work-preview-enter-0_25-leave-1",
@@ -10013,6 +10013,7 @@ void main() {
             previewLeaveTarget: 1,
             state: this.mouseFactor,
             activeUniform: activeWorkItem?.material.uniforms.uMouseFactor.value ?? null,
+            p1UpdateDoesNotOwnRuntimeWrite: true,
             allWorkUniformsMatchState: this.workItems.every((item) => (
               Math.abs((item.material.uniforms.uMouseFactor.value as number) - this.mouseFactor) < 1e-6
             )),
