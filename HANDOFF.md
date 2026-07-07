@@ -31,10 +31,10 @@ It is not a timeline. Use git for history.
 | Phase 2 status | Closed/guarded on 2026-07-07 |
 | Phase 3 status | Closed/guarded on 2026-07-07 |
 | Phase 4 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Start Phase 5 with a source audit of shared transition, audio, and Lenis lifecycle behavior |
-| Next secondary priority | Keep Phase 1-3 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 4 closeout About DOM source alignment |
-| Last closed evidence batch | Phase 4 closeout review |
+| Current production priority | Continue Phase 5 with transition and audio lifecycle audit after Lenis/page scroll ownership alignment |
+| Next secondary priority | Keep Phase 1-4 probes as regression gates when shared paths change |
+| Last committed source-backed code batch | Phase 5 Lenis/page scroll ownership source alignment |
+| Last closed evidence batch | Phase 5 Lenis/page scroll ownership source alignment |
 | Local service | Dev server was available at `http://localhost:5173/` during validation; an older static service was also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
@@ -48,20 +48,43 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch closes Phase 4 after a cold About closeout review.
+The latest production batch closes the first Phase 5 Lenis/page scroll ownership finding.
 
-- Static `.ui-about` parser diff against `legacy-mirror/public/about/index.html` is now `0`.
-- The closeout review removed a rebuild-only `data-about-model`, restored the source brands trailing `<br>`, matched source scroll CTA `div` wrappers/SVG attrs, and removed rebuild-only `aria-hidden` attributes from About-local controls.
-- Earlier About shell/footer/credits modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, mobile CSS, and auxiliary visual lifecycle batches remain closed and guarded.
+- Source Home `SD extends sl`, not `Ug`; rebuild no longer creates a page Lenis controller or `is-scrolled` page scroll state on Home.
+- Source About/Project `DD` and `OD` extend `Ug`; rebuild now limits page Lenis, scrollbar state, and `is-scrolled` ownership to About/Project.
+- Source `Ug.setScrollSettings()` returns `{}` and source `Ig` defaults are `lerp: .1`, `wheelMultiplier: 1`, and `touchMultiplier: 1`; rebuild removed the prior custom Lenis values.
+- Source `Ug.resetScroll()` runs before `initScroll()` and sets `history.scrollRestoration = "manual"`; rebuild now resets page scroll before creating the About/Project page scroll controller and clears `is-scrolled` on teardown.
 
 Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
 ## Current Evidence
 
-Latest Phase 4 evidence:
+Latest Phase 5 evidence:
 
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Source audit:
+  - `SD extends sl`
+  - `DD extends Ug`
+  - `OD extends Ug`
+  - `Ug.setScrollSettings(){this.scrollSettings={}}`
+  - `Ug.resetScroll(){window.scrollTo(0,0),document.body.scrollTop=0,history.scrollRestoration&&(history.scrollRestoration="manual")}`
+  - Source `Ig` defaults include `lerp:.1`, `touchMultiplier:1`, and `wheelMultiplier:1`.
+- Focused Lenis ownership CDP probe: `/tmp/rd-phase5-lenis-ownership-probe/summary.json`
+  - Home initial: no `window.__rogierPageScroll`.
+  - About entry: page scroll controller exists, scroll is `0`, `history.scrollRestoration` is `manual`, and `is-scrolled` is false.
+  - About scroll: `is-scrolled` toggles true.
+  - Home return: page scroll controller is gone and `is-scrolled` is false.
+- `OUT_DIR=/tmp/rd-phase5-lenis-renderer-audit node scripts/audit-renderer-output.mjs`
+- About scroll/auxiliary visual lifecycle probes passed on desktop and mobile:
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-lenis-about-desktop CDP_PORT=9491 node scripts/probe-about-scroll-opacity.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-lenis-about-mobile CDP_PORT=9492 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
+- Shared WebGL/project regressions passed:
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-lenis-output CDP_PORT=9493 node scripts/probe-output-color.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-lenis-project-media CDP_PORT=9494 node scripts/probe-project-media.mjs`
+
+Latest Phase 4 closeout evidence remains:
+
 - Parse5 static DOM audit: `.ui-about` subtree diff between source mirror and `dist/about/index.html` returned `diffCount: 0`.
 - `OUT_DIR=/tmp/rd-phase4-closeout-renderer-audit node scripts/audit-renderer-output.mjs`
 - About scroll/auxiliary visual lifecycle probes passed on desktop and mobile:
@@ -103,9 +126,10 @@ Phase 1, Phase 2, Phase 3, and Phase 4 are closed. Do not reopen them unless a c
 
 Recommended next move:
 
-1. Start Phase 5 by auditing source `BD/zD/HD`, `Ug/wD`, Lenis setup/destruction, and `ln` audio lifecycle across route changes.
-2. Convert only source-backed Phase 5 findings into one scoped fix batch at a time.
-3. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project route/media, and Phase 4 About probes as regression gates when shared render, router, audio, or lifecycle paths change.
+1. Continue Phase 5 by auditing source `BD/zD/HD` and `Sg/sl` transition ordering across route changes.
+2. Audit source `ln/lm` audio lifecycle: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
+3. Reopen Lenis/page scroll only if the Phase 5 ownership probe or About/Project scroll probes fail.
+4. Keep Phase 1 WebGL, Phase 2 Home interaction, Phase 3 project route/media, and Phase 4 About probes as regression gates when shared render, router, audio, or lifecycle paths change.
 
 Guarded Phase 1 areas should not be reopened first without new evidence:
 

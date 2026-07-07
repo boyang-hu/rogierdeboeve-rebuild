@@ -1146,6 +1146,9 @@ function initWorkPreview(getWebgl: () => WebGLLike | undefined) {
 }
 
 function initScrollState() {
+  const view = document.querySelector<HTMLElement>("[data-view]");
+  if (view?.dataset.view !== "about" && view?.dataset.view !== "project") return () => {};
+
   const projectHeader = document.querySelector<HTMLElement>(".ui-project-content-header");
   const desktopQuery = window.matchMedia("(min-width: 1000px)");
   const scrollbar = document.querySelector<HTMLElement>(".ui-scrollbar");

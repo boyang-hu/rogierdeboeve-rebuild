@@ -49,7 +49,22 @@ function dispatchPageScroll(detail: PageScrollDetail) {
   }));
 }
 
+function sourceOwnsPageScroll() {
+  const view = document.querySelector<HTMLElement>("[data-view]");
+  return view?.dataset.view === "about" || view?.dataset.view === "project";
+}
+
+function resetPageScroll() {
+  window.scrollTo(0, 0);
+  document.body.scrollTop = 0;
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+}
+
 function initLenis() {
+  if (!sourceOwnsPageScroll()) return () => {};
+
+  resetPageScroll();
+
   if (prefersReducedMotion()) {
     let lastScroll = window.scrollY;
     const controller: PageScrollController = {
@@ -76,14 +91,11 @@ function initLenis() {
     return () => {
       if (window.__rogierPageScroll === controller) delete window.__rogierPageScroll;
       window.removeEventListener("scroll", onScroll);
+      document.documentElement.classList.remove("is-scrolled");
     };
   }
 
-  const lenis = new Lenis({
-    lerp: 0.09,
-    wheelMultiplier: 0.9,
-    touchMultiplier: 1.2,
-  });
+  const lenis = new Lenis();
 
   const lenisState = (): PageScrollDetail => ({
     scroll: lenis.scroll,
@@ -114,6 +126,7 @@ function initLenis() {
     if (window.__rogierPageScroll === controller) delete window.__rogierPageScroll;
     cancelAnimationFrame(rafId);
     lenis.destroy();
+    document.documentElement.classList.remove("is-scrolled");
   };
 }
 

@@ -343,11 +343,37 @@ Validation passed:
 
 Goal: close shared transition, scroll, and audio lifecycle behavior against the source bundle before final QA.
 
+### Closed: Lenis/page scroll ownership source alignment
+
+Goal: align page Lenis creation, reset, and `is-scrolled` ownership with source `Ug` instead of applying page scroll lifecycle globally.
+
+Current read:
+
+- Source Home `SD extends sl`, not `Ug`; Home has no source-owned page Lenis controller.
+- Source About `DD extends Ug` and Project `OD extends Ug`; About/Project own page Lenis, scrollbar state, and `is-scrolled` through `Ug/wD`.
+- Source `Ug.setScrollSettings()` returns `{}` and source `new Ig(this.scrollSettings)` therefore uses source Lenis defaults.
+- Source `Ig` defaults include `lerp: .1`, `wheelMultiplier: 1`, and `touchMultiplier: 1`; rebuild removed the previous custom `0.09/0.9/1.2` values.
+- Source `Ug.resetScroll()` runs before `initScroll()` and sets `history.scrollRestoration = "manual"`; rebuild now mirrors that before creating About/Project page scroll.
+- Source `Ug.destroy()` destroys page scroll and removes `is-scrolled`; rebuild now clears the page scroll controller and `is-scrolled` on teardown.
+
+Validation passed:
+
+- `git diff --check`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
+- Focused Lenis ownership CDP probe: `/tmp/rd-phase5-lenis-ownership-probe/summary.json`
+- `OUT_DIR=/tmp/rd-phase5-lenis-renderer-audit node scripts/audit-renderer-output.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-lenis-about-desktop CDP_PORT=9491 node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase5-lenis-about-mobile CDP_PORT=9492 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase5-lenis-output CDP_PORT=9493 node scripts/probe-output-color.mjs`
+- `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase5-lenis-project-media CDP_PORT=9494 node scripts/probe-project-media.mjs`
+
+### Next Phase 5 Queue
+
 Patch only source-owned findings:
 
 1. Audit transition ownership and ordering against source `BD`, `zD`, `HD`, `Sg`, and `sl`.
-2. Audit Lenis/page scroll setup, teardown, reset, RAF ordering, and scrollbar ownership against source `Ug` and `wD`.
-3. Audit audio lifecycle against source `ln`: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
+2. Reopen Lenis/page scroll only if focused ownership or About/Project scroll probes expose a concrete source-owned mismatch.
+3. Audit audio lifecycle against source `ln` and `lm`: route rebinding, hover/click/woosh ownership, visibility pause/resume, and sound-enabled state.
 4. Validate each batch with build, route assertions, output state probes, and About/project/Home regression probes for shared paths.
 
 ## Watchlist
