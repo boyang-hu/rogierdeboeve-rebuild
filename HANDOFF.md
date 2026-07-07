@@ -26,15 +26,15 @@ It is not a timeline. Use git for history.
 
 | Item | Value |
 | --- | --- |
-| Active phase | Phase 4 active; About shell/modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, and mobile CSS source alignment are closed and guarded |
+| Active phase | Phase 4 active; About shell/modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, mobile CSS, and auxiliary visual lifecycle source alignment are closed and guarded |
 | Phase 1 status | Closed/guarded on 2026-07-07 |
 | Phase 2 status | Closed/guarded on 2026-07-07 |
 | Phase 3 status | Closed/guarded on 2026-07-07 |
-| Current production priority | Continue Phase 4 with the remaining About auxiliary visual lifecycle audit |
+| Current production priority | Run a Phase 4 closeout review before moving to Phase 5 |
 | Next secondary priority | Keep Phase 1-3 probes as regression gates when shared paths change |
-| Last committed source-backed code batch | Phase 4 About scroll CTA, scrollbar, and mobile CSS source alignment |
-| Last closed evidence batch | Phase 4 About scroll CTA, scrollbar, and mobile CSS source alignment |
-| Local service | Local rebuild service was available at `http://127.0.0.1:5173/` during validation |
+| Last committed source-backed code batch | Phase 4 About auxiliary visual lifecycle source alignment |
+| Last closed evidence batch | Phase 4 About auxiliary visual lifecycle source alignment |
+| Local service | Dev server was available at `http://localhost:5173/` during validation; an older static service was also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after each committed batch; dirty means one scoped batch is in progress |
 
 Closeout state:
@@ -47,12 +47,11 @@ Closeout state:
 
 ## Last Closed Batch
 
-The latest production batch closes the Phase 4 About scroll CTA, scrollbar, and mobile CSS audit against source CSS and source `wD/Ug`.
+The latest production batch closes the Phase 4 About auxiliary visual lifecycle audit against source `TD` and `Fg`.
 
-- Scroll CTA CSS matches source: fixed bottom placement, `html.is-scrolled` opacity fade, and mobile hidden state.
-- Custom scrollbar CSS and `wD/Ug` behavior match source: fixed track/thumb geometry, visibility threshold `scroll.limit > innerHeight`, `is-scrolled` at scroll `> 20`, and immediate scroll mapping while dragging.
-- About mobile CSS matched source except one concrete mismatch; `.ui-about-contact .ts-2` mobile `letter-spacing` is now source `-0.03em` instead of rebuild-only `0`.
-- Earlier About shell/footer/credits modal, title/intro/footer animation, and route leave/entry lifecycle batches remain closed and guarded.
+- `animateAboutVisualOut()` now matches source `TD.animateOut()` / `Fg.animateOut()` ownership: it only drives reveal tweens, hides About/floating blocks on tween complete, and sets spotlight intensity to `0`.
+- Timer cleanup, RAF shutdown, character rotatable event removal, track clearing, and `spotLightParallax` restoration stay in `destroyAboutVisualState()`, matching source `TD.destroy()` ownership.
+- Earlier About shell/footer/credits modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, and mobile CSS batches remain closed and guarded.
 
 Earlier Phase 3 batches aligned project-detail shell/media DOM, source `RD`, `wD`, `CD`, `Ug` scroll behavior, and source router behavior. Phase 1 and Phase 2 remain closed/guarded in `PHASE1_AUDIT.md` and `REBUILD_PLAN.md`.
 
@@ -62,9 +61,14 @@ Latest Phase 4 evidence:
 
 - `git diff --check`
 - `ASTRO_TELEMETRY_DISABLED=1 npm run build`
-- Source CSS audit found source `.ui-about-contact .ts-2{line-height:1;letter-spacing:-.03em;font-size:2rem}` and matching source scroll CTA/scrollbar declarations.
-- Mobile About scroll/auxiliary visual lifecycle probe passed:
-  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://127.0.0.1:5173/about/ OUT_DIR=/tmp/rd-phase4-mobile-layout-about-probe CDP_PORT=9450 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
+- `OUT_DIR=/tmp/rd-phase4-lifecycle-renderer-audit node scripts/audit-renderer-output.mjs`
+- About scroll/auxiliary visual lifecycle probes passed on desktop and mobile:
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase4-lifecycle-about-scroll-probe-localhost-rerun2 CDP_PORT=9475 node scripts/probe-about-scroll-opacity.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/about/ OUT_DIR=/tmp/rd-phase4-lifecycle-about-scroll-mobile-probe-localhost CDP_PORT=9472 VIEWPORT=mobile node scripts/probe-about-scroll-opacity.mjs`
+- Shared WebGL regressions passed:
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173/ OUT_DIR=/tmp/rd-phase4-lifecycle-output-probe-localhost CDP_PORT=9473 node scripts/probe-output-color.mjs`
+  - `CHROME_PATH=/home/boyang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome REBUILD_URL=http://localhost:5173 PROJECT_SLUGS=gc-2026,hashgraph-vc OUT_DIR=/tmp/rd-phase4-lifecycle-project-media-probe-localhost CDP_PORT=9474 node scripts/probe-project-media.mjs`
+- Earlier source CSS audit found source `.ui-about-contact .ts-2{line-height:1;letter-spacing:-.03em;font-size:2rem}` and matching source scroll CTA/scrollbar declarations.
 - Earlier focused route CDP probe passed for Home -> About, About -> Work, and Project -> About with `0` runtime exceptions and `0` material network failures.
 - Earlier route-batch About scroll, Home output color, and Project media probes passed with `OUT_DIR=/tmp/rd-phase4-route-*`.
 - Earlier focused About split/animation CDP probe passed and wrote `/tmp/rd-phase4-about-split-probe/summary.json`.
@@ -92,13 +96,13 @@ Audit method note:
 
 ## Next Action
 
-Phase 1, Phase 2, and Phase 3 are closed. Do not reopen them unless a concrete source-owned mismatch appears. The Phase 4 About shell/footer/modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, and mobile CSS batches are also closed.
+Phase 1, Phase 2, and Phase 3 are closed. Do not reopen them unless a concrete source-owned mismatch appears. The Phase 4 About shell/footer/modal, title/intro/footer animation, route leave/entry lifecycle, scroll CTA/scrollbar, mobile CSS, and auxiliary visual lifecycle batches are also closed.
 
 Recommended next move:
 
-1. Audit any remaining About auxiliary visual lifecycle edge against source `TD` and `Fg`.
-2. If that audit is clean, prepare a Phase 4 closeout review before moving to Phase 5.
-3. Convert only source-backed findings into one scoped fix batch at a time.
+1. Run a cold Phase 4 closeout review across About DOM/CSS, About animation, route lifecycle, and auxiliary WebGL lifecycle.
+2. If the closeout review is clean, mark Phase 4 closed and move to Phase 5.
+3. Convert only source-backed closeout findings into one scoped fix batch at a time.
 4. Keep Phase 1 WebGL, Phase 2 Home interaction, and Phase 3 project route/media probes as regression gates when shared render, router, audio, or lifecycle paths change.
 5. Leave broad transitions/audio/Lenis lifecycle cleanup for Phase 5 unless a shared bug blocks Phase 4.
 

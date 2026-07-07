@@ -6269,9 +6269,6 @@ export class WebGLBackdrop {
   }
 
   animateAboutVisualOut() {
-    this.clearAboutVisualLifecycleTimers();
-    this.aboutVisualRafActive = false;
-    this.sourceRemoveCharacterRotatableEvents();
     this.auxiliaryRevealTweens.forEach((tween) => tween.kill());
     this.auxiliaryRevealTweens = [];
     if (this.aboutBlocks) {
@@ -6280,10 +6277,7 @@ export class WebGLBackdrop {
         duration: 1,
         ease: "expo.out",
         onComplete: () => {
-          if (this.aboutBlocks) {
-            this.aboutBlocks.group.visible = false;
-            this.aboutBlocks.track = null;
-          }
+          if (this.aboutBlocks) this.aboutBlocks.group.visible = false;
         },
       }));
       this.auxiliaryRevealTweens.push(gsap.to(this.aboutBlocks.material.uniforms.uRevealSpread, { value: 1, duration: 1, ease: "none" }));
@@ -6294,17 +6288,12 @@ export class WebGLBackdrop {
         duration: 1,
         ease: "expo.out",
         onComplete: () => {
-          if (this.floatingBlocks) {
-            this.floatingBlocks.group.visible = false;
-            this.floatingBlocks.track = null;
-          }
+          if (this.floatingBlocks) this.floatingBlocks.group.visible = false;
         },
       }));
       this.auxiliaryRevealTweens.push(gsap.to(this.floatingBlocks.material.uniforms.uRevealSpread, { value: 0, duration: 1, ease: "none" }));
     }
     this.setSpotLightIntensity(0);
-    this.spotLightParallax = true;
-    this.aboutVisualLifecycle.destroyKeepsCurrentSpotlightMap = this.spotLight.map === this.characterTarget.texture;
   }
 
   destroyAboutVisualState() {
