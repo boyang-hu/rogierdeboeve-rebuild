@@ -390,6 +390,10 @@ async function runProbe() {
   if (activeMaterial?.emissiveConstructorWasBlack !== true) materialErrors.push("activeEmissiveConstructorWasBlack");
   if (activeMaterial?.uRevealConstructorWasZero !== true) materialErrors.push("activeURevealConstructorWasZero");
   if (activeMaterial?.uMouseLightnessConstructorWasOne !== true) materialErrors.push("activeUMouseLightnessConstructorWasOne");
+  if (activeMaterial?.uCoordsConstructorMode !== "source-VA-XA-KA-uCoords-construct-new-Q-zero") {
+    materialErrors.push("activeUCoordsConstructorMode");
+  }
+  if (activeMaterial?.uCoordsConstructorWasZero !== true) materialErrors.push("activeUCoordsConstructorWasZero");
   if (activeMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
     materialErrors.push("activeUMouseSpeedConstructorMode");
   }
@@ -499,6 +503,10 @@ async function runProbe() {
   }
   if (auxiliaryMaterial?.uRevealConstructorWasZero !== true) materialErrors.push("auxURevealConstructorWasZero");
   if (auxiliaryMaterial?.uMouseLightnessConstructorWasOne !== true) materialErrors.push("auxUMouseLightnessConstructorWasOne");
+  if (auxiliaryMaterial?.uCoordsConstructorMode !== "source-VA-XA-KA-uCoords-construct-new-Q-zero") {
+    materialErrors.push("auxUCoordsConstructorMode");
+  }
+  if (auxiliaryMaterial?.uCoordsConstructorWasZero !== true) materialErrors.push("auxUCoordsConstructorWasZero");
   if (auxiliaryMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
     materialErrors.push("auxUMouseSpeedConstructorMode");
   }
@@ -536,6 +544,23 @@ async function runProbe() {
   if (floatingAuxiliaryMaterial?.uRevealConstructorWasZero !== true) materialErrors.push("floatingAuxURevealConstructorWasZero");
   if (floatingAuxiliaryMaterial?.uMouseLightnessConstructorWasOne !== true) {
     materialErrors.push("floatingAuxUMouseLightnessConstructorWasOne");
+  }
+  if (floatingAuxiliaryMaterial?.uCoordsConstructorMode !== "source-VA-XA-KA-uCoords-construct-new-Q-zero") {
+    materialErrors.push("floatingAuxUCoordsConstructorMode");
+  }
+  if (floatingAuxiliaryMaterial?.uCoordsConstructorWasZero !== true) materialErrors.push("floatingAuxUCoordsConstructorWasZero");
+  if (floatingAuxiliaryMaterial?.runtimeUCoordsMode !== "source-ZA-KA-update-uTime-only-no-uCoords-resize") {
+    materialErrors.push("floatingAuxRuntimeUCoordsMode");
+  }
+  if (
+    !Array.isArray(floatingAuxiliaryMaterial?.uCoords)
+    || floatingAuxiliaryMaterial.uCoords.length !== 2
+    || floatingAuxiliaryMaterial.uCoords.some((value) => Math.abs(value) > 0.000001)
+  ) {
+    materialErrors.push("floatingAuxUCoordsZero");
+  }
+  if (floatingAuxiliaryMaterial?.uCoordsStaysConstructorZero !== true) {
+    materialErrors.push("floatingAuxUCoordsRuntimeStaysConstructorZero");
   }
   if (floatingAuxiliaryMaterial?.uMouseSpeedConstructorMode !== "source-VA-XA-KA-uMouseSpeed-construct-null-GA-update-writes-runtime") {
     materialErrors.push("floatingAuxUMouseSpeedConstructorMode");

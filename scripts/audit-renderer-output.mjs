@@ -4174,13 +4174,37 @@ const summary = {
           && !rebuildWebgl.includes("Math.round(item.mousePlane.scale.y)"),
       },
       uCoordsOwnership: {
-        source:
+        sourceWorkAndAboutRuntimeWrite:
           sourceVA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true
           && sourceXA?.text.includes("this.customUniforms.uCoords.value.set(Pe.w*i,Pe.h*i)") === true,
-        rebuild:
+        sourceConstructorZero:
+          sourceVA?.text.includes("uCoords:new I(new Q)") === true
+          && sourceXABody.includes("uCoords:new I(new Q)")
+          && sourceKABody.includes("uCoords:new I(new Q)"),
+        sourceFloatingRuntimeNoWrite:
+          sourceKABody.includes("update(e,t,n){this.mouse.x=zn(this.mouse.x,Pe.mouse.x,.1),this.mouse.y=zn(this.mouse.y,Pe.mouse.y,.1),this.customUniforms.uTime.value=e}")
+          && !sourceKABody.includes("uCoords.value.set"),
+        sourceZANoUCoordsWriter:
+          sourceZABody.includes("update({time:e,delta:t,frame:n}){this.material.update(e,t,n),this.positionOnUpdate(e),this.mesh.instanceMatrix.needsUpdate=!0}")
+          && !sourceZABody.includes("uCoords.value.set"),
+        rebuildWorkAndAboutRuntimeWrite:
           rebuildWebgl.includes("function sourceWorkViewportCoords()")
           && rebuildWebgl.includes("material.uniforms.uCoords.value.set(coords.width, coords.height)")
           && rebuildWebgl.includes("sourceUCoordsMode: \"source-VA-update-Pe-width-height-times-capped-dpr-no-render-target-rounding\""),
+        rebuildConstructorZero:
+          rebuildWebgl.includes("uCoords: { value: new Vector2(0, 0) }")
+          && rebuildWebgl.includes("sourceUCoordsConstructorMode = \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"")
+          && rebuildWebgl.includes("sourceUCoordsConstructorWasZero"),
+        rebuildFloatingNoResizeWrite:
+          !rebuildWebgl.includes("else item.material.uniforms.uCoords.value.set(Math.round(width * dpr), Math.round(height * dpr))")
+          && rebuildWebgl.includes("runtimeUCoordsMode: \"source-ZA-KA-update-uTime-only-no-uCoords-resize\"")
+          && rebuildWebgl.includes("uCoordsStaysConstructorZero:"),
+        probeCoverage:
+          rebuildOutputProbe.includes("activeUCoordsConstructorMode")
+          && rebuildOutputProbe.includes("auxUCoordsConstructorMode")
+          && rebuildOutputProbe.includes("floatingAuxUCoordsConstructorMode")
+          && rebuildOutputProbe.includes("floatingAuxRuntimeUCoordsMode")
+          && rebuildOutputProbe.includes("floatingAuxUCoordsRuntimeStaysConstructorZero"),
       },
       uUvOffsetOwnership: {
         sourceShaderVec3:
@@ -4225,15 +4249,18 @@ const summary = {
           sourceVA?.text.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)") === true
           && sourceVA?.text.includes("uMouseLightness:new I(1)") === true
           && sourceVA?.text.includes("uReveal:new I(0),uRevealProject:new I(1)") === true
+          && sourceVA?.text.includes("uCoords:new I(new Q)") === true
           && sourceVA?.text.includes("tDisplacement:new I(null)") === true
           && sourceGA.text.includes("this.material=new VA({color:new ye(\"#808080\")})")
           && sourceXABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
           && sourceXABody.includes("uMouseLightness:new I(1)")
           && sourceXABody.includes("uReveal:new I(0),uRevealSpread:new I(1)")
+          && sourceXABody.includes("uCoords:new I(new Q)")
           && sourceXABody.includes("tDisplacement:new I(null)")
           && sourceKABody.includes("tMouseSim:new I(null),tMouseSim2:new I(null),uMouseSpeed:new I(null)")
           && sourceKABody.includes("uMouseLightness:new I(1)")
           && sourceKABody.includes("uReveal:new I(0),uRevealSpread:new I(10)")
+          && sourceKABody.includes("uCoords:new I(new Q)")
           && sourceKABody.includes("tDisplacement:new I(null)"),
         sourceRuntimeWrites:
           sourceGA.text.includes("this.material.customUniforms.tMouseSim.value=this.mouseSim.bufferSim.output.texture")
@@ -4245,6 +4272,8 @@ const summary = {
           && rebuildWebgl.includes("sourceBlockMaterialConstructorMode = \"source-VA-XA-KA-default-uniform-constructors\"")
           && rebuildCreateWorkBlockMaterial.includes("uReveal: { value: 0 }")
           && rebuildCreateWorkBlockMaterial.includes("uMouseLightness: { value: 1 }")
+          && rebuildCreateWorkBlockMaterial.includes("uCoords: { value: new Vector2(0, 0) }")
+          && rebuildCreateWorkBlockMaterial.includes("sourceUCoordsConstructorMode = \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"")
           && rebuildCreateWorkBlockMaterial.includes("tMouseSim: { value: null }")
           && rebuildCreateWorkBlockMaterial.includes("tMouseSim2: { value: null }")
           && rebuildCreateWorkBlockMaterial.includes("tDisplacement: { value: null }")
@@ -4268,9 +4297,11 @@ const summary = {
           rebuildWebgl.includes("constructorDefaultsMode: activeWorkItem.material.userData.sourceBlockMaterialConstructorMode")
           && rebuildWebgl.includes("emissiveConstructorMode: activeWorkItem.material.userData.sourceEmissiveConstructorMode")
           && rebuildWebgl.includes("emissiveConstructorWasBlack: activeWorkItem.material.userData.sourceEmissiveConstructorWasBlack")
+          && rebuildWebgl.includes("uCoordsConstructorMode: activeWorkItem.material.userData.sourceUCoordsConstructorMode")
           && rebuildWebgl.includes("tMouseSimRuntimeIsLocal:")
           && rebuildOutputProbe.includes("activeConstructorDefaultsMode")
           && rebuildOutputProbe.includes("activeEmissiveConstructorWasBlack")
+          && rebuildOutputProbe.includes("activeUCoordsConstructorWasZero")
           && rebuildOutputProbe.includes("activeTMouseSimConstructorWasNull")
           && rebuildOutputProbe.includes("activeTMouseSimRuntimeLocal")
           && rebuildOutputProbe.includes("activeUMouseLightnessRuntimeThumbState"),
@@ -4315,6 +4346,7 @@ const summary = {
           "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
           "this.depthTest=!1,this.renderOrder=10,this.depthWrite=!1",
           "uMouse:new I(new Q)",
+          "uCoords:new I(new Q)",
           "tMouseSim:new I(null),tMouseSim2:new I(null)",
           "uMouseSpeed:new I(null)",
           "uMouseFactor:new I(1)",
@@ -4337,6 +4369,7 @@ const summary = {
           "class KA extends Vn",
           "this.dithering=!0,this.transparent=!0,this.envMapIntensity=.75,this.roughness=1",
           "uMouse:new I(new Q)",
+          "uCoords:new I(new Q)",
           "tMouseSim:new I(null),tMouseSim2:new I(null)",
           "uMouseSpeed:new I(null)",
           "uMouseFactor:new I(1)",
@@ -4357,11 +4390,14 @@ const summary = {
       },
       rebuildChecks: checks(rebuildWebgl, [
         "uMouse: { value: new Vector2(0, 0) }",
+        "uCoords: { value: new Vector2(0, 0) }",
         "uMouseSpeed: { value: null }",
         "tMouseSim: { value: null }",
         "tMouseSim2: { value: null }",
         "tDisplacement: { value: null }",
         "sourceBlockMaterialConstructorMode = \"source-VA-XA-KA-default-uniform-constructors\"",
+        "sourceUCoordsConstructorMode = \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"",
+        "sourceUCoordsConstructorWasZero",
         "sourceTMouseSimConstructorWasNull",
         "sourceTMouseSim2ConstructorWasNull",
         "sourceTDisplacementConstructorWasNull",
@@ -4373,6 +4409,8 @@ const summary = {
         "floatingAuxiliaryMaterial: this.floatingBlocks ?",
         "runtimeBindingMode: \"source-XA-$A-update-local-tMouseSim-uMouseSpeed-tDisplacement-p1-update-tMouseSim2\"",
         "runtimeBindingMode: \"source-ZA-update-material-time-position-no-sampler-writes\"",
+        "runtimeUCoordsMode: \"source-ZA-KA-update-uTime-only-no-uCoords-resize\"",
+        "uCoordsStaysConstructorZero:",
         "source-XA-jA-WA-direct-shader",
         "source-KA-YA-qA-direct-shader",
         "patchWorkBlockShader(shader, uniforms, kind === \"about\" ? \"aboutAuxiliary\" : \"floatingAuxiliary\")",
@@ -4383,6 +4421,8 @@ const summary = {
         "auxiliaryMaterial?.renderOrder !== 10",
         "auxiliaryMaterial?.uMouseType !== \"Vector2\"",
         "auxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true",
+        "auxiliaryMaterial?.uCoordsConstructorMode !== \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"",
+        "auxiliaryMaterial?.uCoordsConstructorWasZero !== true",
         "auxiliaryMaterial?.tMouseSimConstructorWasNull !== true",
         "auxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true",
         "auxiliaryMaterial?.tDisplacementConstructorWasNull !== true",
@@ -4396,6 +4436,11 @@ const summary = {
         "floatingAuxiliaryMaterial?.renderOrder ?? null",
         "floatingAuxiliaryMaterial?.uMouseType !== \"Vector2\"",
         "floatingAuxiliaryMaterial?.uMouseSpeedConstructorWasNull !== true",
+        "floatingAuxiliaryMaterial?.uCoordsConstructorMode !== \"source-VA-XA-KA-uCoords-construct-new-Q-zero\"",
+        "floatingAuxiliaryMaterial?.uCoordsConstructorWasZero !== true",
+        "floatingAuxiliaryMaterial?.runtimeUCoordsMode !== \"source-ZA-KA-update-uTime-only-no-uCoords-resize\"",
+        "floatingAuxUCoordsZero",
+        "floatingAuxiliaryMaterial?.uCoordsStaysConstructorZero !== true",
         "floatingAuxiliaryMaterial?.tMouseSimConstructorWasNull !== true",
         "floatingAuxiliaryMaterial?.tMouseSim2ConstructorWasNull !== true",
         "floatingAuxiliaryMaterial?.tDisplacementConstructorWasNull !== true",

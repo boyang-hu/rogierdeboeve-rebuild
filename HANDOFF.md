@@ -150,7 +150,7 @@ Known remaining gaps:
 - Source `i1` floor reflection renderer-state ownership is now guarded: `i1.update()` captures previous render target/XR/shadow state, disables XR and shadow auto-update during raw/blur reflection, conditionally clears the raw target under `autoClear=false`, and restores XR/shadow/previous target afterward.
 - Source `i1` floor reflection camera/texture-matrix/clip-plane update order is now guarded: the reflector update records the source `lookAt -> far -> updateMatrixWorld -> projection copy` order, texture matrix bias/projection/camera-inverse/reflector-matrix multiplication order, and oblique projection-row writes `[2,6,10,14]`.
 - Source `XA/KA` auxiliary material constructor state and shader ownership are now guarded: about keeps `XA` depth-disabled `renderOrder=10` state and direct `jA/WA` shader surfaces, floating keeps `KA` default depth state, no material `renderOrder`, and direct `YA/qA` shader surfaces; both auxiliary materials use source `uMouse` plus `uUvOffsetScale=1` constructor defaults.
-- Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. Ordinary `GA/VA` work material emissive construction is now also source-owned as the default black `MeshStandardMaterial` emissive from `new VA({color:new ye("#808080")})`, with `Se.setBlocksColor()` owning the later all-work emissive fan-out. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement`; floating `ZA/KA` sampler uniforms stay constructor-null because source `ZA.update()` does not write them.
+- Source `VA/XA/KA` block material constructor defaults are now guarded: ordinary work and auxiliary materials construct source-owned `uReveal`, `uMouseLightness`, `uMouseSpeed`, `uCoords:new Q` zero vectors, `tMouseSim`, `tMouseSim2`, and `tDisplacement` defaults, while source `yD`, `Se`, `GA`, `p1`, and `$A` own the later runtime writes. Ordinary `GA/VA` work material emissive construction is now also source-owned as the default black `MeshStandardMaterial` emissive from `new VA({color:new ye("#808080")})`, with `Se.setBlocksColor()` owning the later all-work emissive fan-out. About `$A` now has local `Ka` writeback for `tMouseSim/uMouseSpeed/tDisplacement` and source `XA` viewport-sized `uCoords`; floating `ZA/KA` sampler uniforms and `uCoords` stay at constructor defaults because source `ZA.update()` / `KA.update()` do not write them.
 - Source `Fg` about floating-block lifecycle is now guarded: setup keeps floating hidden, `animateIn` flips visibility in the `uReveal` tween `onStart`, `animateOut` hides on `onComplete`, and `translationZ` receives `.005 * abs(page scroll velocity)` from the Lenis page-scroll state.
 - Source `TD` about visual lifecycle is now guarded: setup keeps the previous spotlight map during the initial source `100ms` delay, then enables the about visual RAF path, binds the character composite texture as `spotLight.map`, forces resize, waits the source nested `200ms`, and only then applies the initial about scroll/spotlight state.
 - Source `Q1/eD/TD` about character rotatable lifecycle is now guarded: character content is wrapped as `cameraPanGroup -> rotatableMesh -> character`, TD enables passive mouse/touch rotatable events after the delayed character spotlight-map bind, TD removes those events on out/destroy, and the character target render path applies source horizontal damping, camera pan clamp, and auto-rotation.
@@ -181,11 +181,12 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Aligned source `p1.init()` sceneWrap child attach order without changing shader text, render targets, visual constants, route behavior, lights, spotlight/thumb formulas, or final hierarchy.
-- Source evidence: `p1.init()` runs `setBlocks()`, `setAboutBlocks()`, and `setFloatingBlocks()` before `sceneWrap.add(blocksWrap)`, then attaches floor/env and finally adds `sceneWrap` to the root scene.
-- `src/client/webgl.ts` now attaches `blocksWrap`, `floorGroup`, and `environmentGroup` only after `createWorkScene()` and `createAuxiliaryBlocks()`.
-- `scripts/audit-renderer-output.mjs` now expects the source attach order and rejects the old early sceneWrap child attach order.
-- Previous committed batch was `03d3df9 Align E1 thumb image binding order`.
+- Aligned source `VA/XA/KA` `uCoords` constructor defaults and floating `KA` runtime ownership without changing shader text, render targets, visual constants, route behavior, spotlight/thumb formulas, or project data.
+- Source evidence: `VA`, `XA`, and `KA` all construct `uCoords:new I(new Q)`; `VA/XA.update()` later write `Pe.w*i,Pe.h*i`; `KA.update()` and `ZA.update()` do not write `uCoords`.
+- `src/client/webgl.ts` now constructs ordinary/about/floating block-material `uCoords` as zero vectors, keeps ordinary/about on the existing source viewport-coordinate writer, and no longer writes floating `uCoords` from rounded render dimensions during resize.
+- `scripts/probe-output-color.mjs` now asserts floating `runtimeUCoordsMode=source-ZA-KA-update-uTime-only-no-uCoords-resize`, `uCoords=[0,0]`, and constructor-zero markers.
+- `scripts/audit-renderer-output.mjs` now checks source `VA/XA/KA/ZA` anchors and rejects the old floating resize-owned `uCoords` path.
+- Previous committed batch was `67f23c9 Align p1 init sceneWrap attach order`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -195,23 +196,24 @@ Last verified in the latest session:
 ```sh
 git diff --check
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-p1-init-attach-order-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-p1-init-attach-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node --check scripts/probe-output-color.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-p1-ka-ucoords-audit-final.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-p1-ka-ucoords-audit-final.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-p1-init-attach-output-desktop CDP_PORT=9233 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-p1-ka-ucoords-output-desktop CDP_PORT=9234 PROBE_WAIT=30000 node scripts/probe-output-color.mjs
 ```
 
-All relevant checks passed in the `p1.init()` sceneWrap attach-order batch. Renderer audit wrote `/tmp/rd-p1-init-attach-order-audit.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.p1EnvironmentHierarchy.rootSceneDirectChildOrder` reported source order, rebuild order, old-root-order rejection, old-child-attach rejection, and runtime probe coverage all true. Desktop output probe wrote `/tmp/rd-p1-init-attach-output-desktop`, retained source root order and `sceneWrap` child order, and had no failed requests, exceptions, or console messages.
+All relevant checks passed in the `VA/XA/KA` `uCoords` constructor/floating-runtime batch. Renderer audit wrote `/tmp/rd-p1-ka-ucoords-audit-final.json`; recursive false/null extraction printed `false/null entries 0`, and `sourceManagers.GA.uCoordsOwnership` reported source constructor zero, source floating no-write, rebuild constructor zero, rebuild floating no-resize-write, and probe coverage all true. Desktop output probe wrote `/tmp/rd-p1-ka-ucoords-output-desktop`, reported floating `uCoords=[0,0]` with `uCoordsStaysConstructorZero=true`, and had no failed requests, exceptions, or console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this attach-order batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this `uCoords` batch.
 
-Project media, thumb, mobile, and full output probes were not rerun because this batch touched only Home initialization attach order, not project media, shader text, render targets, spotlight/thumb state, or mobile resize logic.
+Project media, thumb, mobile, and full output probes were not rerun because this batch touched only Home block-material `uCoords` constructor/runtime ownership, not project media, shader text, render targets, spotlight/thumb state, or mobile-specific resize logic.
 
 Verified:
 
-- Renderer audit passed for the p1 attach-order batch: `/tmp/rd-p1-init-attach-order-audit.json`.
+- Renderer audit passed for the `uCoords` constructor/floating-runtime batch: `/tmp/rd-p1-ka-ucoords-audit-final.json`.
 - Recursive false/null audit output is empty.
-- Desktop output probe passed: `/tmp/rd-p1-init-attach-output-desktop`.
+- Desktop output probe passed: `/tmp/rd-p1-ka-ucoords-output-desktop`.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

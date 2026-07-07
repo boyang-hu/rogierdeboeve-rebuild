@@ -6475,7 +6475,7 @@ export class WebGLBackdrop {
       tMouseSim2: { value: null },
       tDisplacement: { value: null },
       tPerlin: { value: this.workPerlinTexture },
-      uCoords: { value: new Vector2(1, 1) },
+      uCoords: { value: new Vector2(0, 0) },
       uTime: { value: 0 },
     };
     const material = new MeshStandardMaterial({
@@ -6496,6 +6496,8 @@ export class WebGLBackdrop {
     material.userData.sourceEmissiveConstructorWasBlack = material.emissive.equals(new Color(0, 0, 0));
     material.userData.sourceURevealConstructorWasZero = uniforms.uReveal.value === 0;
     material.userData.sourceUMouseLightnessConstructorWasOne = uniforms.uMouseLightness.value === 1;
+    material.userData.sourceUCoordsConstructorMode = "source-VA-XA-KA-uCoords-construct-new-Q-zero";
+    material.userData.sourceUCoordsConstructorWasZero = uniforms.uCoords.value.x === 0 && uniforms.uCoords.value.y === 0;
     material.userData.sourceTMouseSimConstructorWasNull = uniforms.tMouseSim.value === null;
     material.userData.sourceTMouseSim2ConstructorWasNull = uniforms.tMouseSim2.value === null;
     material.userData.sourceTDisplacementConstructorWasNull = uniforms.tDisplacement.value === null;
@@ -6573,7 +6575,7 @@ export class WebGLBackdrop {
       tMouseSim2: { value: null },
       tDisplacement: { value: null },
       tPerlin: { value: this.workPerlinTexture },
-      uCoords: { value: new Vector2(1, 1) },
+      uCoords: { value: new Vector2(0, 0) },
       uTime: { value: 0 },
     };
     const material = new MeshStandardMaterial({
@@ -6595,6 +6597,8 @@ export class WebGLBackdrop {
     material.userData.sourceBlockMaterialConstructorMode = "source-VA-XA-KA-default-uniform-constructors";
     material.userData.sourceURevealConstructorWasZero = uniforms.uReveal.value === 0;
     material.userData.sourceUMouseLightnessConstructorWasOne = uniforms.uMouseLightness.value === 1;
+    material.userData.sourceUCoordsConstructorMode = "source-VA-XA-KA-uCoords-construct-new-Q-zero";
+    material.userData.sourceUCoordsConstructorWasZero = uniforms.uCoords.value.x === 0 && uniforms.uCoords.value.y === 0;
     material.userData.sourceTMouseSimConstructorWasNull = uniforms.tMouseSim.value === null;
     material.userData.sourceTMouseSim2ConstructorWasNull = uniforms.tMouseSim2.value === null;
     material.userData.sourceTDisplacementConstructorWasNull = uniforms.tDisplacement.value === null;
@@ -8863,11 +8867,10 @@ void main() {
     };
   }
 
-  private resizeAuxiliaryBlocks(width: number, height: number, dpr: number) {
+  private resizeAuxiliaryBlocks(width: number, height: number, _dpr: number) {
     const updateTracked = (item?: AuxiliaryBlockItem) => {
       if (!item) return;
       if (item.kind === "about") this.setSourceWorkMaterialUCoords(item.material);
-      else item.material.uniforms.uCoords.value.set(Math.round(width * dpr), Math.round(height * dpr));
       if (!item.track) return;
       const rect = item.track.getBoundingClientRect();
       item.bounds = rect;
@@ -10101,6 +10104,8 @@ void main() {
             emissiveConstructorWasBlack: activeWorkItem.material.userData.sourceEmissiveConstructorWasBlack,
             uRevealConstructorWasZero: activeWorkItem.material.userData.sourceURevealConstructorWasZero,
             uMouseLightnessConstructorWasOne: activeWorkItem.material.userData.sourceUMouseLightnessConstructorWasOne,
+            uCoordsConstructorMode: activeWorkItem.material.userData.sourceUCoordsConstructorMode,
+            uCoordsConstructorWasZero: activeWorkItem.material.userData.sourceUCoordsConstructorWasZero,
             uMouseSpeedConstructorMode: activeWorkItem.material.userData.sourceUMouseSpeedConstructorMode,
             uMouseSpeedConstructorWasNull: activeWorkItem.material.userData.sourceUMouseSpeedConstructorWasNull,
             tMouseSimConstructorWasNull: activeWorkItem.material.userData.sourceTMouseSimConstructorWasNull,
@@ -10170,6 +10175,8 @@ void main() {
             constructorDefaultsMode: this.aboutBlocks.material.userData.sourceBlockMaterialConstructorMode,
             uRevealConstructorWasZero: this.aboutBlocks.material.userData.sourceURevealConstructorWasZero,
             uMouseLightnessConstructorWasOne: this.aboutBlocks.material.userData.sourceUMouseLightnessConstructorWasOne,
+            uCoordsConstructorMode: this.aboutBlocks.material.userData.sourceUCoordsConstructorMode,
+            uCoordsConstructorWasZero: this.aboutBlocks.material.userData.sourceUCoordsConstructorWasZero,
             uMouseSpeedConstructorMode: this.aboutBlocks.material.userData.sourceUMouseSpeedConstructorMode,
             uMouseSpeedConstructorWasNull: this.aboutBlocks.material.userData.sourceUMouseSpeedConstructorWasNull,
             tMouseSimConstructorWasNull: this.aboutBlocks.material.userData.sourceTMouseSimConstructorWasNull,
@@ -10208,6 +10215,13 @@ void main() {
             constructorDefaultsMode: this.floatingBlocks.material.userData.sourceBlockMaterialConstructorMode,
             uRevealConstructorWasZero: this.floatingBlocks.material.userData.sourceURevealConstructorWasZero,
             uMouseLightnessConstructorWasOne: this.floatingBlocks.material.userData.sourceUMouseLightnessConstructorWasOne,
+            uCoordsConstructorMode: this.floatingBlocks.material.userData.sourceUCoordsConstructorMode,
+            uCoordsConstructorWasZero: this.floatingBlocks.material.userData.sourceUCoordsConstructorWasZero,
+            runtimeUCoordsMode: "source-ZA-KA-update-uTime-only-no-uCoords-resize",
+            uCoords: this.floatingBlocks.material.uniforms.uCoords.value.toArray(),
+            uCoordsStaysConstructorZero:
+              this.floatingBlocks.material.uniforms.uCoords.value.x === 0
+              && this.floatingBlocks.material.uniforms.uCoords.value.y === 0,
             uMouseSpeedConstructorMode: this.floatingBlocks.material.userData.sourceUMouseSpeedConstructorMode,
             uMouseSpeedConstructorWasNull: this.floatingBlocks.material.userData.sourceUMouseSpeedConstructorWasNull,
             tMouseSimConstructorWasNull: this.floatingBlocks.material.userData.sourceTMouseSimConstructorWasNull,
