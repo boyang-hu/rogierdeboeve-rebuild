@@ -37,20 +37,21 @@ This file is the forward execution plan. It does not track historical batch deta
 
 ## Phase 1 Work Queue
 
-1. `kA/Lu/I1` composite and transfer interpretation.
-   - Inspect source `I1.initSettings()`, `U1`, `C1`, `Lu.update()`, and `kA` defaults before changing production code.
-   - Answer whether the rebuild's visible Home path is using the same default target/screen transfer behavior as source.
-   - Required checks: build, renderer audit, desktop/mobile output probes, project media probe. Add shader dump only if shader or material code changes.
+1. Floor/environment distribution.
+   - Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
+   - The current structural guardrails pass, so look for content, timing, or source asset/state inputs before changing visual parameters.
+   - Do not tune horizon, fog, brightness, or floor color by eye.
+   - Required checks: build, renderer audit, desktop/mobile output probes, project media probe, and focused band/capture attribution when relevant.
 
 2. Spotlight/thumb projection content and transfer.
-   - Continue only after the render-manager transfer graph is understood, because shader and light-chunk evidence currently looks source-shaped.
+   - Shader, light-chunk, and `T1/x1/E1/M1` scene-surface evidence currently looks source-shaped.
    - Focus on projected thumb brightness, depth, content transfer, and timing.
    - Required checks: build, renderer audit, desktop/mobile output probes, thumb spotlight probe, project media probe.
 
-3. Floor/environment distribution.
-   - Inspect source-backed differences in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target content.
-   - Do not tune horizon, fog, brightness, or floor color by eye.
-   - Required checks: build, renderer audit, desktop/mobile output probes, project media probe, and focused band/capture attribution when relevant.
+3. `kA/Lu/I1` composite and transfer follow-up only if contradicted.
+   - Current source read: default `I1.renderToScreen=true` renders C1 directly to screen; `renderTargetComposite` is unused for the default visible Home path.
+   - Current source read: `nD` binds C1 `tWork`, `tMedia`, and initial work mouse-simulation texture once after the delayed resize/bind phase.
+   - Keep existing audit/probe guardrails; do not repeat this as the primary next batch without new failing evidence.
 
 4. Interaction/mouse/fluid follow-up only if touched.
    - Keep existing `Ka`, `ag`, and `qT` guardrails.
@@ -64,6 +65,7 @@ This file is the forward execution plan. It does not track historical batch deta
 - Do not refactor unrelated WebGL systems while chasing one source chain.
 - Do not change project-detail media behavior unless source evidence requires it.
 - Do not repeat the already-verified spotlight-map shader/light-chunk path unless new evidence appears.
+- Do not repeat the already-verified `I1` default screen/render-target path unless new evidence appears.
 
 ## Validation Matrix
 

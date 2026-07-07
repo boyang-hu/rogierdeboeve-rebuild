@@ -69,16 +69,17 @@ Latest local investigation after that batch:
 - `VA-work` shader dump matched the source-shaped vertex and fragment text with zero recorded deltas.
 - Work composite, main pre-composite, thumb, floor, environment, media, and fluid shaders were source-shaped.
 - Source bundle light chunks and local Three light chunks matched for the relevant spotlight-map path.
-- The active mismatch is therefore more likely in runtime render-manager transfer/default-target semantics or timing than in spotlight shader text or light chunk multiplication.
+- Source `I1` default target behavior was traced: `renderToScreen=true` renders C1 directly to the canvas, and `renderTargetComposite` is unused in the default visible Home path.
+- Source `nD` delayed C1 bindings were traced: after the `100ms` delay, `tWork`, `tMedia`, and the initial work mouse-simulation output bind once.
+- Full renderer audit currently has zero recursive false/null findings. Browser output and thumb probes pass with source-shaped `I1`, `T1/x1`, floor-reflection, and environment guardrails.
 
 ## Next Action
 
 Continue Phase 1 in this order:
 
-1. Inspect source `I1`, `U1`, `C1`, `Lu`, and `kA` default render-target behavior.
-2. Prove whether rebuild `renderHomeCompositePass()` and related probes are naming an unused default target or missing a source transfer edge.
-3. If a concrete mismatch is found, implement a narrow source-backed fix.
-4. If no mismatch is found, document the evidence and move to floor/environment attribution.
+1. Continue floor/environment visible residual attribution from source-backed target content and material inputs.
+2. Re-check spotlight/thumb projected content only after a concrete source-owned content/timing edge is identified.
+3. Keep `kA/Lu/I1` render-target/default-screen behavior as a guardrail, not the primary next suspect, unless new evidence contradicts the current audit.
 
 Do not repeat already-closed checks around spotlight-map multiplication or `w1.updateGalleryProgress()` centered wrapping unless new evidence contradicts the current probes.
 

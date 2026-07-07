@@ -50,8 +50,9 @@ Phase 1 is open. Earlier closeout language accepted too many visible deviations;
 
 2. `kA/Lu/I1` composite and transfer interpretation.
    - Guarded: many source-shaped shader surfaces, pass settings, optional blur chain, resize ownership, runtime uniform order, GPU/LOW_RES bridge, and main/work camera surfaces.
-   - Open: the whole render-target transfer graph is not yet proven source-isomorphic.
-   - Current lead: shader text and spotlight-map light chunks now look source-shaped, so investigate default render-target behavior, transfer ownership, and timing before further shader work.
+   - Narrowed: source `I1` default `renderToScreen=true` path renders C1 directly to screen; `renderTargetComposite` is retained but unused for the default visible Home path.
+   - Narrowed: source `nD` delayed C1 bindings are one-time `tWork`, `tMedia`, and initial work mouse-simulation output bindings after the `100ms` delay.
+   - Open: keep this as a regression guardrail, but do not treat default render-target transfer as the current primary suspect unless new evidence contradicts the audit.
 
 3. Floor/environment residuals.
    - Guarded: root scene and `sceneWrap` hierarchy, Home camera surfaces, environment material ownership, floor reflection draw-state, reflector camera/renderer state, blur/swap ownership, and target sizing.
@@ -76,7 +77,10 @@ Post-batch investigation showed:
 - `VA-work` shader dump matched source-shaped vertex and fragment text with zero recorded deltas.
 - `OA-work-composite`, `A1-pre-composite`, thumb, floor, environment, media, and fluid shaders were source-shaped.
 - Relevant source bundle light chunks and local Three chunks had zero deltas, including the spotlight-map multiplication path.
-- The next likely mismatch is runtime transfer/default-target semantics or timing, not spotlight-map shader text.
+- Source `I1` default target behavior was traced: `settings.renderToScreen` defaults to `true`, C1 renders straight to the canvas, and `renderTargetComposite` is not written in the default visible path.
+- Source `U1.update()` calls `super.update()` before `C1.update()`, so C1 `uTime` updates after the frame render. Rebuild keeps that order.
+- Source `nD.init()` binds C1 `tWork`, `tMedia`, and `tMouseSim` once after the `100ms` delayed resize/bind phase. Rebuild keeps those as delayed one-time bindings.
+- Full renderer audit has zero recursive false/null findings, and desktop browser output/thumb probes pass on these surfaces.
 
 ## Closed Source Edges
 
@@ -96,6 +100,14 @@ Keep this table short and current. For full historical detail, use the git versi
 | `02f0b0d` | `h1/u1` cache key | Environment material uses source no-custom-cache-key ownership. |
 | `43cf728` | `Lu/I1` bloom mip resize | Bloom mip chain halves directly like source, without per-step round/clamp ownership. |
 | `5bb0264` | `Lo` resize inputs | Sky, displacement, thumb, and floor reflection pass direct inputs through `Lo.resize`. |
+
+## Narrowed Non-Primary Suspects
+
+These areas are still guarded, but should not be the first place to spend another batch without new contradictory evidence:
+
+- `I1` default visible target transfer: source renders C1 directly to screen when `renderToScreen=true`; rebuild's unused default `compositeTarget` is expected.
+- Spotlight-map shader and Three light chunk multiplication: source and rebuild shader/chunk evidence currently match.
+- `w1.updateGalleryProgress()` centered wrapping and `T1/x1/E1/M1` thumb scene surface: current thumb probe passes source-shaped positioning, sizing, image binding, material defaults, and composite transfer.
 
 ## Active Guardrails
 
