@@ -181,12 +181,11 @@ Known remaining gaps:
 
 Latest Phase 1 batch:
 
-- Hardened `scripts/capture.mjs` so source-vs-rebuild captures cannot silently use a broken local original mirror.
-- The capture harness now preflights representative original `/images` assets before launching Chrome: `/images/thumbs/thoughtlab.webp`, `/images/textures/perlin-1.webp`, `/images/textures/floor-normal.webp`, and `/images/cubemaps/01/px.webp`.
-- The preflight requires successful `image/*` responses, writes `original-asset-preflight.json`, and fails with the exact fallback-backed mirror command when the local original is invalid.
-- `scripts/audit-renderer-output.mjs` now guards the capture preflight paths, content-type check, artifact, and `FALLBACK_ROOT=public` hint.
-- This was prompted by the resume finding that `/tmp/rd-resume-home-capture` was invalid because `legacy-mirror/public` was served without `FALLBACK_ROOT=public`; `/tmp/rd-resume-home-capture-fallback` was the valid comparison run.
-- Previous committed batch was `01b2562 Guard ag viscosity shader attribution`.
+- Aligned source `E1` thumb construction order without changing shader text, render targets, visual constants, route behavior, spotlight settings, scene order, or pass execution.
+- Source evidence: `E1` constructs geometry/material, calls `setImage(id)` against `this.material`, and only then creates/scales `this.mesh`.
+- `createThumbPlane(id)` now queues `setSourceThumbImage(id, material, () => mesh)` before creating the mesh; the async helper uses `getMesh()` only to backfill mesh probe metadata after the source thumb promise resolves.
+- `__rogierThumbProbe`, `scripts/probe-thumb-spotlight.mjs`, and `scripts/audit-renderer-output.mjs` now guard `source-E1-material-setImage-before-mesh-construction`.
+- Previous committed batch was `a67c05d Guard original capture assets`.
 - Phase 1 remains open for spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals.
 
 ## Validation Status
@@ -195,28 +194,26 @@ Last verified in the latest session:
 
 ```sh
 git diff --check
-node --check scripts/capture.mjs
 node --check scripts/audit-renderer-output.mjs
-node scripts/audit-renderer-output.mjs > /tmp/rd-capture-preflight-audit.json
-node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-capture-preflight-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
+node --check scripts/probe-thumb-spotlight.mjs
+node scripts/audit-renderer-output.mjs > /tmp/rd-thumb-e1-constructor-order-audit.json
+node -e 'const fs=require("fs"); const o=JSON.parse(fs.readFileSync("/tmp/rd-thumb-e1-constructor-order-audit.json","utf8")); const bad=[]; function walk(v,p=[]){ if(v===false||v===null) bad.push([p.join("."),v]); else if(Array.isArray(v)) v.forEach((x,i)=>walk(x,p.concat(i))); else if(v&&typeof v==="object") for(const [k,x] of Object.entries(v)) walk(x,p.concat(k)); } walk(o); console.log(`false/null entries ${bad.length}`); for (const [p,v] of bad) console.log(p,v); if (bad.length) process.exit(1);'
 ASTRO_TELEMETRY_DISABLED=1 npm run build
-CHROME_PATH=/usr/bin/google-chrome-stable ORIGINAL_URL=http://127.0.0.1:5175 REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-capture-preflight-valid-final CDP_PORT=9420 CAPTURE_WAIT=900 CAPTURE_SET=home node scripts/capture.mjs
-CHROME_PATH=/usr/bin/google-chrome-stable ORIGINAL_URL=http://127.0.0.1:5182 REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-capture-preflight-invalid CDP_PORT=9419 CAPTURE_WAIT=100 CAPTURE_SET=home node scripts/capture.mjs
+CHROME_PATH=/usr/bin/google-chrome-stable REBUILD_URL=http://127.0.0.1:5173 OUT_DIR=/tmp/rd-thumb-e1-constructor-order-thumb CDP_PORT=9421 PROBE_WAIT=30000 THUMB_PROGRESS=0.27 node scripts/probe-thumb-spotlight.mjs
 ```
 
-All relevant checks passed in the source mirror asset preflight batch. Renderer audit wrote `/tmp/rd-capture-preflight-audit.json`; recursive false/null extraction printed `false/null entries 0`. Valid fallback-backed home capture wrote `/tmp/rd-capture-preflight-valid-final` with desktop/mobile original/rebuild Home screenshots and no failed requests or runtime exceptions. The negative no-fallback mirror test at `http://127.0.0.1:5182` failed before Chrome capture as expected, reporting HTML content types for the four image asset probes.
+All relevant checks passed in the `E1` thumb construction-order batch. Renderer audit wrote `/tmp/rd-thumb-e1-constructor-order-audit.json`; recursive false/null extraction printed `false/null entries 0`. Desktop thumb spotlight probe wrote `/tmp/rd-thumb-e1-constructor-order-thumb`; all thumbs and the sampled material reported `source-E1-material-setImage-before-mesh-construction`, and the probe had no failed requests, exceptions, or shader/WebGL console messages.
 
-`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this capture preflight batch.
+`npm exec tsc -- --noEmit --pretty false` remains a known blocked check because the existing TypeScript config deprecation for `baseUrl` requires `ignoreDeprecations: "6.0"` under TS7. This is pre-existing and not caused by this thumb construction-order batch.
 
-Runtime production probes were not required for this batch because production runtime code did not change. The local rebuild server at `http://127.0.0.1:5173` and fallback-backed original mirror at `http://127.0.0.1:5175` were used for the home-only capture harness check.
+Project media and full output probes were not rerun because this batch touched the Home thumb construction path and its focused thumb spotlight regression gate, not project media, shader text, or render targets.
 
 Verified:
 
-- Renderer audit passed for the capture preflight batch: `/tmp/rd-capture-preflight-audit.json`.
+- Renderer audit passed for the thumb construction-order batch: `/tmp/rd-thumb-e1-constructor-order-audit.json`.
 - Recursive false/null audit output is empty.
-- `scripts/capture.mjs` syntax check passed.
-- Valid home capture passed and wrote `original-asset-preflight.json`: `/tmp/rd-capture-preflight-valid-final`.
-- Negative no-fallback mirror preflight failed as expected: `/tmp/rd-capture-preflight-invalid`.
+- `scripts/probe-thumb-spotlight.mjs` syntax check passed.
+- Desktop thumb spotlight probe passed: `/tmp/rd-thumb-e1-constructor-order-thumb`.
 - Build passed with `ASTRO_TELEMETRY_DISABLED=1 npm run build`.
 - Project media remains a regression gate, not proof of Home parity.
 - Existing source render-manager, active reveal, spotlight map, color-state, carousel/environment hierarchy, floor reflection, and project-media guardrails remain in the audit/probe surface.

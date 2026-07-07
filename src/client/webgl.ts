@@ -6797,17 +6797,20 @@ export class WebGLBackdrop {
       vertexShader: thumbVertex,
       fragmentShader: thumbFragment,
     });
-    const mesh = new Mesh(new PlaneGeometry(1, 1), material);
     material.userData.sourceConstructorMode = "source-M1-constructor-null-tMap-zero-size-vectors";
     material.userData.sourceConstructorTMapWasNull = material.uniforms.tMap.value === null;
     material.userData.sourceConstructorMapSize = (material.uniforms.uMapSize.value as Vector2).toArray();
     material.userData.sourceConstructorResolution = (material.uniforms.uResolution.value as Vector2).toArray();
     material.userData.sourceUniformOrder = Object.keys(material.uniforms);
     material.userData.sourceSetImageBindingMode = "source-E1-setImage-binds-texture-and-1x1-size-after-Xt-thumbsReady";
+    material.userData.sourceE1ConstructorOrder = "source-E1-material-setImage-before-mesh-construction";
+    let mesh: Mesh<PlaneGeometry, RawShaderMaterial> | null = null;
+    this.setSourceThumbImage(id, material, () => mesh);
+    mesh = new Mesh(new PlaneGeometry(1, 1), material);
     mesh.userData.sourceThumbId = id;
     mesh.userData.sourceThumbMode = "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById";
     mesh.userData.sourceThumbBound = false;
-    this.setSourceThumbImage(id, mesh);
+    mesh.userData.sourceE1ConstructorOrder = material.userData.sourceE1ConstructorOrder;
     mesh.scale.set(2, 2, 2);
     return mesh;
   }
@@ -6854,17 +6857,23 @@ export class WebGLBackdrop {
     return this.sourceProjectThumbs.find((thumb) => thumb.id === id);
   }
 
-  private setSourceThumbImage(id: string, mesh: Mesh<PlaneGeometry, RawShaderMaterial>) {
-    const material = mesh.material;
+  private setSourceThumbImage(
+    id: string,
+    material: RawShaderMaterial,
+    getMesh: () => Mesh<PlaneGeometry, RawShaderMaterial> | null,
+  ) {
     material.userData.sourceThumbId = id;
     material.userData.sourceThumbImageMode = "source-E1-setImage-awaits-Xt-thumbsReady-getProjectThumbById";
     material.userData.sourceThumbBound = false;
     void this.sourceThumbsReady.then(async () => {
       const projectThumb = this.getSourceProjectThumbById(id);
-      mesh.userData.sourceThumbReady = this.sourceThumbsReadyResolved;
-      mesh.userData.sourceThumbUrl = projectThumb?.url ?? null;
-      mesh.userData.sourceThumbLoader = projectThumb?.loader ?? null;
-      mesh.userData.sourceThumbBindingMode = projectThumb?.bindingMode ?? null;
+      const mesh = getMesh();
+      if (mesh) {
+        mesh.userData.sourceThumbReady = this.sourceThumbsReadyResolved;
+        mesh.userData.sourceThumbUrl = projectThumb?.url ?? null;
+        mesh.userData.sourceThumbLoader = projectThumb?.loader ?? null;
+        mesh.userData.sourceThumbBindingMode = projectThumb?.bindingMode ?? null;
+      }
       material.userData.sourceThumbReady = this.sourceThumbsReadyResolved;
       material.userData.sourceThumbUrl = projectThumb?.url ?? null;
       material.userData.sourceThumbLoader = projectThumb?.loader ?? null;
@@ -6875,7 +6884,8 @@ export class WebGLBackdrop {
       material.uniforms.uMapSize.value.set(1, 1);
       material.uniforms.uResolution.value.set(1, 1);
       material.userData.sourceThumbBound = true;
-      mesh.userData.sourceThumbBound = true;
+      const boundMesh = getMesh();
+      if (boundMesh) boundMesh.userData.sourceThumbBound = true;
     });
   }
 
@@ -9509,6 +9519,7 @@ void main() {
         sourceMaterialUrl: item.thumb.material.userData.sourceThumbUrl,
         sourceMaterialLoader: item.thumb.material.userData.sourceThumbLoader,
         sourceMaterialBindingMode: item.thumb.material.userData.sourceThumbBindingMode,
+        constructorOrder: item.thumb.userData.sourceE1ConstructorOrder,
       })),
       thumbMaterial: (() => {
         const first = this.workItems[0]?.thumb.material as RawShaderMaterial | undefined;
@@ -9527,6 +9538,7 @@ void main() {
           constructorResolution: first.userData.sourceConstructorResolution,
           uniformOrder: first.userData.sourceUniformOrder,
           setImageBindingMode: first.userData.sourceSetImageBindingMode,
+          constructorOrder: first.userData.sourceE1ConstructorOrder,
           uProgress: first.uniforms.uProgress.value as number,
           uTransitionCount: first.uniforms.uTransitionCount.value as number,
           uTransitionSmoothness: first.uniforms.uTransitionSmoothness.value as number,

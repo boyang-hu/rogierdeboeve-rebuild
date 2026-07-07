@@ -70,7 +70,38 @@ Recommended cadence:
 
 Current next batch: continue Phase 1 Home WebGL. Prioritize source-backed work by clear mirrored-source mismatch, 1:1 blocker severity, and controllable implementation risk. Current candidate chains remain spotlight/thumb projection content and transfer evidence, remaining `kA/Lu/I1` material/transfer/composite evidence after the now source-shaped shader surfaces, `$1/j1/W1` project-media render-manager transfer/target evidence only where source residuals remain, and floor/environment distribution evidence beyond the source-shaped `u1/z1/o1/t1/N1` shader text surfaces, while keeping the interactive mouse/fluid probe and project pages as regression gates. The helper shader surfaces for `ig`, `sg`, `rg`, `Na`, `cg`, and `Ka` are now source-shaped in the generated shader dump; `rg/Na/ig` helper constructors, source `Lu/I1` `rg.uDirection` runtime vector ownership, active `Lu/GA/Ka` mouse-simulation resize ownership, source `VA/XA/KA` block material constructor defaults, source `$A` about local `Ka` runtime writeback, source `ZA` floating no-sampler-write runtime ownership, source `yD` gallery scroll runtime rounding ownership, and source `yD/Qe.workState` gallery scroll persistence ownership are guarded; renderer-audit render-target default diagnostics now report expected false defaults through explicit `actual` / `expected` / `matchesExpected` objects instead of false/null noise; source `p1` root scene direct child order is guarded as lights -> aboutBlocks -> floatingBlocks -> sceneWrap; source `Qe.gpuCheck()/Le.GPU_TIER/Le.LOW_RES` is guarded through `detect-gpu@5.0.38` and `/vendor/detect-gpu/benchmarks`; source `Qm/Iw` spotlight default distance/decay/map/shadow projection ownership is guarded; source `u1` post-constructor environment material dithering ownership is guarded; source `p1.setMouseFactor()` ownership of `VA.uMouseFactor` is guarded; source `p1/Ya` home camera constructor and resize projection surface is guarded; source `yg/U1/I1` main raw camera `Ef(...)` surface is guarded; source `I1/C1` main composite runtime uniform binding order is guarded; source `Xt.loadTexture()` immediate texture-object binding is guarded for blue-noise/perlin/floor-normal; source `$1/j1/Lo` media clear ownership is guarded as a `$1.update()` temporary `autoClear` branch rather than a consumed `j1.settings.clear` value; source `k1/O1/Lo` displacement target sizing is guarded as `height / 10` passed through `Lo.resize(..., dpr)`, not CSS-only `height / 10`; source `Se.setAmbientLight()` ownership now delegates to source-shaped ambient color/intensity setters; source `Se.setBlocksColor()` ownership now tweens every work material emissive without kill/storage state; source thumb state setters now tween `Se.settings.thumb` without rebuild-owned tween registries; source `Se.settings` scalar/media setters now guard the source no-kill boundary for darken/saturation/contrast/showScene/fluidStrength/mediaOpacity while preserving source kill-owned revealSpread/envRotation; source `ag/eA` main-fluid viscosity topology is guarded as a seven-target default-disabled branch; source `XA/KA` auxiliary block material constructor state and `jA/WA/YA/qA` direct shader surfaces are guarded for about/floating separately; source `Fg` floating block visibility plus page-scroll velocity ownership is guarded for the about route; source `TD` about visual map/resize/initial-scroll timing is guarded for the about route; and source `Q1/eD/TD` character rotatable wrapper/events/update ownership is guarded for the about route. Do not rank next work by visual gain; use visual QA only to locate source mismatches and regressions. Phase 2 should not start yet.
 
-Latest accepted batch: source-vs-rebuild capture now preflights original mirror `/images` assets before launching Chrome. The earlier resume investigation showed that serving `legacy-mirror/public` without `FALLBACK_ROOT=public` makes required Home WebGL image URLs resolve to HTML fallback pages, producing misleading original screenshots and band deltas. `scripts/capture.mjs` now verifies representative thumb, texture, floor-normal, and cubemap WebP assets return `image/*`, writes `original-asset-preflight.json`, and fails with the exact fallback command when the mirror is invalid. Renderer audit guards the preflight surface. This is QA harness parity only; Phase 1 remains open.
+Latest accepted batch: source `E1` thumb construction order is now aligned and guarded. Source constructs `geometry`, `material`, calls `setImage(id)` against the material, and only then creates/scales the mesh; the rebuild previously queued thumb image binding after mesh construction. `createThumbPlane()` now queues source thumb image binding on the material before creating the mesh, while the async path uses a `getMesh()` callback only to backfill probe metadata once the mesh exists. Thumb spotlight probe and renderer audit now guard the source constructor order. This is one thumb lifecycle ownership edge only; Phase 1 remains open.
+
+### S1-341 `E1` Thumb Material-First Image Binding Order
+
+This batch aligns one source constructor-order edge in the `T1/w1/E1/M1` thumb scene chain. It does not change shader text, render targets, visual constants, project data, route behavior, spotlight settings, pointer normalization, scene order, or runtime pass execution.
+
+Source evidence:
+
+- Source `E1` constructor runs `this.geometry=new Rn(1,1)`.
+- It then runs `this.material=new M1`.
+- It calls `this.setImage(e)` before `this.mesh=new at(this.geometry,this.material)`.
+- Source `setImage(e)` only depends on `Xt.thumbsReady`, `Xt.getProjectThumbById(e).src`, and `this.material.uniforms`, so image binding is material-owned and not mesh-owned.
+- Only after queuing `setImage(e)` does source create the mesh and set `mesh.scale` to `2,2,2`.
+
+Runtime and tooling changes:
+
+- `createThumbPlane(id)` now sets `M1` constructor metadata, queues `setSourceThumbImage(id, material, () => mesh)`, then creates and scales the mesh.
+- `setSourceThumbImage()` now receives the `RawShaderMaterial` directly and uses the `getMesh()` callback only to backfill mesh probe metadata when the async source thumb promise resolves.
+- `__rogierThumbProbe` now exposes `constructorOrder=source-E1-material-setImage-before-mesh-construction` on each thumb and the sampled thumb material.
+- `scripts/probe-thumb-spotlight.mjs` asserts the new constructor-order marker.
+- `scripts/audit-renderer-output.mjs` now checks the source order and rejects restoring the old mesh-first binding path.
+
+Verification:
+
+- `git diff --check` passed.
+- `node --check scripts/audit-renderer-output.mjs` passed.
+- `node --check scripts/probe-thumb-spotlight.mjs` passed.
+- Renderer audit passed: `/tmp/rd-thumb-e1-constructor-order-audit.json`; recursive false/null extraction printed `false/null entries 0`.
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` passed.
+- Desktop thumb spotlight probe passed: `/tmp/rd-thumb-e1-constructor-order-thumb`, with all thumbs and the first material reporting `source-E1-material-setImage-before-mesh-construction` and no failures/exceptions/console messages.
+
+Decision: keep `E1` thumb image binding material-first and mesh creation after the source-shaped `setImage` queue. Do not restore a mesh-first thumb image binding helper without mirrored-bundle evidence. Phase 1 remains open because this closes one thumb lifecycle ownership edge only; spotlight/thumb projection transfer feel, broader `kA/Lu/I1` transfer/composite interpretation, and floor/environment residuals remain unresolved.
 
 ### S1-340 Source Mirror Asset Preflight for Capture
 

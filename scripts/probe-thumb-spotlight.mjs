@@ -621,6 +621,9 @@ async function runProbe() {
     if (thumb.sourceMaterialBindingMode !== "source-Xt-projectThumbs-src-promise") {
       sourceShapeErrors.push(`${thumb.slug}:bindingMode=${thumb.sourceMaterialBindingMode}`);
     }
+    if (thumb.constructorOrder !== "source-E1-material-setImage-before-mesh-construction") {
+      sourceShapeErrors.push(`${thumb.slug}:constructorOrder=${thumb.constructorOrder}`);
+    }
     if (typeof thumb.sourceMaterialUrl !== "string" || !thumb.sourceMaterialUrl.endsWith(`.${imageOwnership.assetExt}`)) {
       sourceShapeErrors.push(`${thumb.slug}:materialUrl=${thumb.sourceMaterialUrl}`);
     }
@@ -663,6 +666,9 @@ async function runProbe() {
     }
     if (material.setImageBindingMode !== "source-E1-setImage-binds-texture-and-1x1-size-after-Xt-thumbsReady") {
       sourceShapeErrors.push(`thumbSetImageBindingMode=${material.setImageBindingMode}`);
+    }
+    if (material.constructorOrder !== "source-E1-material-setImage-before-mesh-construction") {
+      sourceShapeErrors.push(`thumbConstructorOrder=${material.constructorOrder}`);
     }
     if (material.uProgress !== 1) sourceShapeErrors.push(`thumbProgressUniform=${material.uProgress}`);
     if (material.uTransitionCount !== 150) sourceShapeErrors.push(`thumbTransitionCount=${material.uTransitionCount}`);

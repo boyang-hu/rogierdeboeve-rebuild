@@ -3860,6 +3860,27 @@ const summary = {
           sourceThumbE1.text.includes("this.mesh=new at(this.geometry,this.material),this.mesh.scale.set(2,2,2)")
           && !sourceThumbE1.text.includes("this.mesh.visible=!1")
           && !sourceThumbE1.text.includes("visible=!1"),
+        sourceE1ConstructorOrder:
+          orderedIncludes(sourceThumbE1.text, [
+            "this.material=new M1",
+            "this.setImage(e)",
+            "this.mesh=new at(this.geometry,this.material)",
+            "this.mesh.scale.set(2,2,2)",
+          ]),
+        rebuildE1ConstructorOrder:
+          Boolean(rebuildCreateThumbPlane)
+          && orderedIncludes(rebuildCreateThumbPlane, [
+            "material.userData.sourceE1ConstructorOrder = \"source-E1-material-setImage-before-mesh-construction\"",
+            "let mesh: Mesh<PlaneGeometry, RawShaderMaterial> | null = null",
+            "this.setSourceThumbImage(id, material, () => mesh);",
+            "mesh = new Mesh(new PlaneGeometry(1, 1), material)",
+            "mesh.userData.sourceE1ConstructorOrder = material.userData.sourceE1ConstructorOrder",
+            "mesh.scale.set(2, 2, 2)",
+          ])
+          && rebuildWebgl.includes("constructorOrder: item.thumb.userData.sourceE1ConstructorOrder")
+          && rebuildWebgl.includes("constructorOrder: first.userData.sourceE1ConstructorOrder")
+          && rebuildThumbProbe.includes("thumb.constructorOrder !== \"source-E1-material-setImage-before-mesh-construction\"")
+          && rebuildThumbProbe.includes("material.constructorOrder !== \"source-E1-material-setImage-before-mesh-construction\""),
         rebuildHasNoInitialHiddenState:
           !rebuildWebgl.includes("mesh.visible = false;")
           && rebuildWebgl.includes("sourceInitialVisibleMode: \"source-E1-no-initial-hidden-state-w1-updateGalleryProgress-owns-visible\""),
@@ -3875,9 +3896,12 @@ const summary = {
           && rebuildWebgl.includes("preloadSourceThumbsFromCards(cards: HTMLElement[])")
           && rebuildWebgl.includes("bindingMode: \"source-Xt-projectThumbs-src-promise\"")
           && rebuildWebgl.includes("private getSourceProjectThumbById(id: string)")
-          && rebuildWebgl.includes("private setSourceThumbImage(id: string, mesh: Mesh<PlaneGeometry, RawShaderMaterial>)")
+          && rebuildWebgl.includes("private setSourceThumbImage(")
+          && rebuildWebgl.includes("material: RawShaderMaterial")
+          && rebuildWebgl.includes("getMesh: () => Mesh<PlaneGeometry, RawShaderMaterial> | null")
           && rebuildWebgl.includes("void this.sourceThumbsReady.then(async () =>")
           && rebuildWebgl.includes("const projectThumb = this.getSourceProjectThumbById(id)")
+          && rebuildWebgl.includes("const mesh = getMesh()")
           && rebuildWebgl.includes("material.uniforms.tMap.value = texture;"),
         rebuildNoDirectPayloadThumbLoadInCreateWorkScene:
           Boolean(rebuildCreateWorkScene)
