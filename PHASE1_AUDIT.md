@@ -87,7 +87,8 @@ Current guarded rebuild facts:
 
 - Browser output probe reports production debug clean.
 - Scene background/fog, floor hierarchy/material, environment hierarchy/material, floor reflection draw-state, reflector target sizing, environment rotation, and low-res SwiftShader branch are currently source-shaped.
-- Remaining investigation should focus on source asset properties, target contents, timing, or renderer state that is not yet covered by those guards.
+- Cubemap `scene.environment` is now guarded beyond load success: source `CubeTextureLoader` creates a `CubeTexture`, assigns `SRGBColorSpace`, fills six images, and uses `CubeTexture` defaults for reflection mapping and `flipY=false`; the browser probe confirms those runtime fields plus default wrap/filter/mipmap/type/format and six loaded images.
+- Remaining investigation should focus on environment shader target contents, sky/environment timing, final target distribution, or renderer state not covered by those guards.
 
 ### Texture And Animate-In Lifecycle
 

@@ -37,6 +37,8 @@ const threeSpotLightShadow = readFileSync("node_modules/three/src/lights/SpotLig
 const threeLightShadow = readFileSync("node_modules/three/src/lights/LightShadow.js", "utf8");
 const threeTextureSource = readFileSync("node_modules/three/src/textures/Texture.js", "utf8");
 const threeVideoTextureSource = readFileSync("node_modules/three/src/textures/VideoTexture.js", "utf8");
+const threeCubeTextureSource = readFileSync("node_modules/three/src/textures/CubeTexture.js", "utf8");
+const threeCubeTextureLoaderSource = readFileSync("node_modules/three/src/loaders/CubeTextureLoader.js", "utf8");
 
 function extractTemplate(bundle, name, terminator) {
   const start = bundle.indexOf(`${name}=\``);
@@ -3030,6 +3032,22 @@ const summary = {
         cubemapUsesSourceExt: Boolean(rebuildBindPreparedSourceTextures)
           && rebuildBindPreparedSourceTextures.includes("`${cubeBase}/${side}.${assets.assetExt}`"),
         sourceLoadModeGuard: rebuildWebgl.includes("sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode"),
+        cubeTextureLoaderDefaults: checks(threeCubeTextureLoaderSource, [
+          "const texture = new CubeTexture();",
+          "texture.colorSpace = SRGBColorSpace;",
+          "texture.images[ i ] = image;",
+          "texture.needsUpdate = true;",
+        ]),
+        cubeTextureDefaults: checks(threeCubeTextureSource, [
+          "mapping = mapping !== undefined ? mapping : CubeReflectionMapping;",
+          "this.isCubeTexture = true;",
+          "this.flipY = false;",
+        ]),
+        runtimeSurfaceGuard: rebuildWebgl.includes("source-CubeTextureLoader-default-CubeTexture-srgb-direct-scene-environment")
+          && rebuildOutputProbe.includes("sceneEnvironment.mapping !== sourceCubeReflectionMapping")
+          && rebuildOutputProbe.includes("sceneEnvironment.flipY !== false")
+          && rebuildOutputProbe.includes("sceneEnvironment.minFilter !== sourceLinearMipmapLinearFilter")
+          && rebuildOutputProbe.includes("sceneEnvironment.imagesAreLoaded !== true"),
         noHardcodedCubeExt: !rebuildWebgl.includes("const cubeExt = \"webp\""),
         noRuntimeJpgFallback: !rebuildWebgl.includes("`${cubeBase}/${side}.jpg`"),
         runtimeGuard: rebuildWebgl.includes("source-p1-addEnvironment-Le-WEBP-selected-extension-no-runtime-fallback"),

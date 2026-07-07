@@ -9766,6 +9766,25 @@ void main() {
     const mouseSimulation = this.mouseSimulationProbe(mouseSimProbe);
     const mainFluid = this.mainFluidProbe();
     const activeWorkItem = this.workItems.find((item) => item.slug === this.activeSlug) ?? this.workItems[0];
+    const sceneEnvironment = this.homeScene.environment as (Texture & {
+      isCubeTexture?: boolean;
+      images?: unknown[];
+    }) | null;
+    const sceneEnvironmentImages = Array.isArray(sceneEnvironment?.image)
+      ? sceneEnvironment.image
+      : Array.isArray(sceneEnvironment?.images)
+        ? sceneEnvironment.images
+        : [];
+    const sceneEnvironmentImageDimensions = sceneEnvironmentImages.map((image) => {
+      const imageLike = image && typeof image === "object"
+        ? image as { width?: number; height?: number; complete?: boolean }
+        : {};
+      return {
+        width: imageLike.width ?? null,
+        height: imageLike.height ?? null,
+        complete: imageLike.complete ?? null,
+      };
+    });
     const luminosityProbe = (material: ShaderMaterial) => ({
       blending: material.blending,
       materialMode: "source-sg-raw-glsl3",
@@ -11264,10 +11283,25 @@ void main() {
             constantsMatchSource: environmentShaderConstantsMatchSource,
             ...environmentShaderSurface,
           },
-          sceneEnvironment: this.homeScene.environment ? {
-            colorSpace: this.homeScene.environment.colorSpace,
-            type: this.homeScene.environment.type,
-            format: this.homeScene.environment.format,
+          sceneEnvironment: sceneEnvironment ? {
+            mode: "source-CubeTextureLoader-default-CubeTexture-srgb-direct-scene-environment",
+            isCubeTexture: sceneEnvironment.isCubeTexture === true,
+            colorSpace: sceneEnvironment.colorSpace,
+            mapping: sceneEnvironment.mapping,
+            flipY: sceneEnvironment.flipY,
+            wrapS: sceneEnvironment.wrapS,
+            wrapT: sceneEnvironment.wrapT,
+            minFilter: sceneEnvironment.minFilter,
+            magFilter: sceneEnvironment.magFilter,
+            generateMipmaps: sceneEnvironment.generateMipmaps,
+            anisotropy: sceneEnvironment.anisotropy,
+            type: sceneEnvironment.type,
+            format: sceneEnvironment.format,
+            imageCount: sceneEnvironmentImages.length,
+            imageCompleteCount: sceneEnvironmentImageDimensions.filter((image) => image.complete !== false).length,
+            imageDimensions: sceneEnvironmentImageDimensions,
+            imagesAreLoaded: sceneEnvironmentImages.length === 6
+              && sceneEnvironmentImageDimensions.every((image) => image.complete !== false),
           } : null,
           sceneEnvironmentLoadMode: this.sourceCubemapLoadState.mode,
           sceneEnvironmentExt: this.sourceCubemapLoadState.ext,

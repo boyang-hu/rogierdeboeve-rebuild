@@ -47,8 +47,9 @@ Work path:
 
 1. Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
 2. Treat current structural guardrails as closed unless new evidence contradicts them.
-3. Look for source asset properties, async timing, render target contents, material inputs, or renderer state before changing production behavior.
-4. Do not tune horizon, fog, brightness, or floor color by eye.
+3. Treat cubemap loader defaults and `scene.environment` sampling state as guarded unless a new probe contradicts them.
+4. Look for async timing, render target contents, material inputs, shader target distribution, or renderer state before changing production behavior.
+5. Do not tune horizon, fog, brightness, or floor color by eye.
 
 Required validation:
 

@@ -23,7 +23,7 @@ The three Markdown files do not maintain separate timelines. Keep history in git
 | Phase 1 status | Open, roughly 65-70% complete |
 | Current production priority | Floor/environment distribution residuals |
 | Next secondary priority | Spotlight/thumb projection transfer feel |
-| Latest completed source batch | `38931a6 Align animate-in texture await semantics` |
+| Latest source-backed guard batch | Cubemap `scene.environment` sampling surface |
 | Expected local service | Stopped unless actively reviewing |
 | Expected worktree | Clean unless a scoped batch is in progress |
 
@@ -57,6 +57,7 @@ Continue Phase 1 with floor/environment distribution.
 
 Do not spend the next batch first on these guarded areas unless new evidence points back at them:
 
+- Cubemap `scene.environment` loader defaults and sampling surface.
 - `kA/Lu/I1` default visible target transfer.
 - Spotlight-map shader and Three light-chunk multiplication.
 - `w1.updateGalleryProgress()` centered wrapping.

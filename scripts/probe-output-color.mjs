@@ -2822,6 +2822,27 @@ async function runProbe() {
   if (Array.isArray(environmentUniforms?.sceneEnvironmentUrls) && !environmentUniforms.sceneEnvironmentUrls.every((url) => url.endsWith(`.${updateOrder?.sourceAssetExt}`))) {
     skyUniformErrors.push("sceneEnvironmentUrlExt");
   }
+  const sceneEnvironment = environmentUniforms?.sceneEnvironment || {};
+  const sourceCubeReflectionMapping = 301;
+  const sourceClampToEdgeWrapping = 1001;
+  const sourceLinearMipmapLinearFilter = 1008;
+  const sourceLinearFilter = 1006;
+  const sourceUnsignedByteType = 1009;
+  const sourceRgbaFormat = 1023;
+  if (sceneEnvironment.mode !== "source-CubeTextureLoader-default-CubeTexture-srgb-direct-scene-environment") skyUniformErrors.push("sceneEnvironmentMode");
+  if (sceneEnvironment.isCubeTexture !== true) skyUniformErrors.push("sceneEnvironmentCubeTexture");
+  if (sceneEnvironment.colorSpace !== "srgb") skyUniformErrors.push("sceneEnvironmentColorSpace");
+  if (sceneEnvironment.mapping !== sourceCubeReflectionMapping) skyUniformErrors.push("sceneEnvironmentMapping");
+  if (sceneEnvironment.flipY !== false) skyUniformErrors.push("sceneEnvironmentFlipY");
+  if (sceneEnvironment.wrapS !== sourceClampToEdgeWrapping || sceneEnvironment.wrapT !== sourceClampToEdgeWrapping) skyUniformErrors.push("sceneEnvironmentWrap");
+  if (sceneEnvironment.minFilter !== sourceLinearMipmapLinearFilter) skyUniformErrors.push("sceneEnvironmentMinFilter");
+  if (sceneEnvironment.magFilter !== sourceLinearFilter) skyUniformErrors.push("sceneEnvironmentMagFilter");
+  if (sceneEnvironment.generateMipmaps !== true) skyUniformErrors.push("sceneEnvironmentMipmaps");
+  if (sceneEnvironment.type !== sourceUnsignedByteType) skyUniformErrors.push("sceneEnvironmentType");
+  if (sceneEnvironment.format !== sourceRgbaFormat) skyUniformErrors.push("sceneEnvironmentFormat");
+  if (sceneEnvironment.imageCount !== 6 || sceneEnvironment.imageCompleteCount !== 6 || sceneEnvironment.imagesAreLoaded !== true) {
+    skyUniformErrors.push("sceneEnvironmentImages");
+  }
   if (skyUniforms?.uShader1Mix3Binding !== "source-declared-only") skyUniformErrors.push("uShader1Mix3Binding");
   if (skyUniforms?.uShader3ScaleBinding !== "source-declared-only") skyUniformErrors.push("uShader3ScaleBinding");
   if (skyUniforms?.uShaderMix !== null) skyUniformErrors.push("uShaderMixValue");
