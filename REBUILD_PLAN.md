@@ -41,6 +41,7 @@ The first incomplete item is the next production batch unless new source evidenc
 
 1. Floor/environment distribution.
    - Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
+   - Recently closed while tracing this chain: `nD.animateIn()` waits immediate `Xt` texture objects, not image-load promises.
    - The current structural guardrails pass, so look for content, timing, or source asset/state inputs before changing visual parameters.
    - Do not tune horizon, fog, brightness, or floor color by eye.
    - Required checks: build, renderer audit, desktop/mobile output probes, project media probe, and focused band/capture attribution when relevant.

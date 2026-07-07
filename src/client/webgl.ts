@@ -5488,6 +5488,8 @@ export class WebGLBackdrop {
     perlin1: false,
     perlin2: false,
   };
+  private readonly sourceTextureAnimateInAwaitMode = "source-nD-awaits-Xt-Texture-objects-not-image-load-promises";
+  private sourceTextureAnimateInAwaitedObjects = false;
   private sourceTextureAssets?: SourceTextureAssets;
   private sourceBlueNoiseTexture: Texture | null = null;
   private sourceBlueNoiseLoadedTexture: Texture | null = null;
@@ -5923,10 +5925,12 @@ export class WebGLBackdrop {
   async animateIn() {
     if (this.canvasAnimateInPromise) return this.canvasAnimateInPromise;
     this.canvasAnimateInStarted = true;
-    this.canvasAnimateInPromise = Promise.all([
-      this.sourceInitLifecyclePromise,
-      this.sourceTexturePreloadPromise,
-    ]).then(() => {
+    this.canvasAnimateInPromise = this.sourceInitLifecyclePromise.then(async () => {
+      await this.sourceBlueNoiseTexture;
+      await this.sourceFloorNormalTexture;
+      await this.sourcePerlin1Texture;
+      await this.sourcePerlin2Texture;
+      this.sourceTextureAnimateInAwaitedObjects = true;
       gsap.fromTo(this.renderer.domElement, { opacity: 0 }, {
         opacity: 1,
         duration: 0.5,
@@ -10690,11 +10694,15 @@ void main() {
           delayedBindingsApplied: this.sourceInitLifecycle.delayedBindingsApplied,
           secondResizeAfterDelayedBindings: this.sourceInitLifecycle.secondResizeAfterDelayedBindings,
           startedAfterDelayedBindings: this.sourceInitLifecycle.started && this.sourceInitLifecycle.delayedBindingsApplied,
-          preloadGate: "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in",
-          animateInMode: "source-nD-animateIn-awaits-init-and-four-preloaded-textures",
+          preloadGate: "source-nD-await-Xt-texture-objects-not-image-load-promises-before-animate-in",
+          animateInMode: "source-nD-animateIn-awaits-init-and-immediate-texture-objects",
           animateInStarted: this.canvasAnimateInStarted,
           animateInResolvedMode: "source-nD-animateIn-resolves-after-fade-scheduled",
           canvasFadeCompleted: this.canvasFadeCompleted,
+          sourceTextureAwaitMode: this.sourceTextureAnimateInAwaitMode,
+          sourceTextureObjectsAwaited: this.sourceTextureAnimateInAwaitedObjects,
+          sourceTextureLoadPromiseAwaitedByAnimateIn: false,
+          sourceTextureLoadStateMode: "source-Xt-loadTexture-onload-tracked-for-probe-not-animateIn-gate",
           sourceWebpDetectionMode: "source-Qe-k0-lossy-before-Xt-and-p1-assets",
           sourceTextureAssetMode: this.sourceTextureAssets?.mode ?? "fallback-instance-preload",
           sourceTextureAssetsPreparedBeforeConstructor: this.sourceTextureAssets?.mode === "source-Qe-webp-before-Xt-preloadTextures-before-J-init",

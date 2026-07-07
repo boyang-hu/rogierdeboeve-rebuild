@@ -2280,7 +2280,7 @@ async function runProbe() {
   if (initLifecycleErrors.length) {
     throw new Error(`nD init lifecycle source-shape mismatch: ${initLifecycleErrors.join(", ")}`);
   }
-  if (updateOrder?.preloadGate !== "source-nD-await-blueNoise-floorNormal-perlin1-perlin2-before-animate-in") {
+  if (updateOrder?.preloadGate !== "source-nD-await-Xt-texture-objects-not-image-load-promises-before-animate-in") {
     throw new Error(`Texture preload gate source-shape mismatch: ${updateOrder?.preloadGate || "missing"}`);
   }
   const preloadState = updateOrder?.sourceTexturePreloadState || {};
@@ -2291,9 +2291,15 @@ async function runProbe() {
   if (![true, false].includes(updateOrder?.sourceWebpSupport)) preloadErrors.push("sourceWebpSupport");
   if (!["webp", "jpg"].includes(updateOrder?.sourceAssetExt)) preloadErrors.push("sourceAssetExt");
   if (updateOrder?.sourceAssetExt !== (updateOrder?.sourceWebpSupport ? "webp" : "jpg")) preloadErrors.push("sourceAssetExtSupportMismatch");
-  if (updateOrder?.animateInMode !== "source-nD-animateIn-awaits-init-and-four-preloaded-textures") preloadErrors.push("animateInMode");
+  if (updateOrder?.animateInMode !== "source-nD-animateIn-awaits-init-and-immediate-texture-objects") preloadErrors.push("animateInMode");
   if (updateOrder?.animateInStarted !== true) preloadErrors.push("animateInStarted");
   if (updateOrder?.animateInResolvedMode !== "source-nD-animateIn-resolves-after-fade-scheduled") preloadErrors.push("animateInResolvedMode");
+  if (updateOrder?.sourceTextureAwaitMode !== "source-nD-awaits-Xt-Texture-objects-not-image-load-promises") preloadErrors.push("sourceTextureAwaitMode");
+  if (updateOrder?.sourceTextureObjectsAwaited !== true) preloadErrors.push("sourceTextureObjectsAwaited");
+  if (updateOrder?.sourceTextureLoadPromiseAwaitedByAnimateIn !== false) preloadErrors.push("sourceTextureLoadPromiseAwaitedByAnimateIn");
+  if (updateOrder?.sourceTextureLoadStateMode !== "source-Xt-loadTexture-onload-tracked-for-probe-not-animateIn-gate") {
+    preloadErrors.push("sourceTextureLoadStateMode");
+  }
   if (updateOrder?.sourceTexturePreloadComplete !== true) preloadErrors.push("sourceTexturePreloadComplete");
   for (const key of ["blueNoise", "floorNormal", "perlin1", "perlin2"]) {
     if (preloadState[key] !== true) preloadErrors.push(`preload-${key}`);

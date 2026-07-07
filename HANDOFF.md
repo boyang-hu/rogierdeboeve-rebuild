@@ -27,8 +27,8 @@ git show 9986590:REBUILD_PLAN.md
 | --- | --- |
 | Active phase | Phase 1, Home WebGL source parity |
 | Phase 1 status | Open, roughly 65-70% complete |
-| Last code-changing source batch | `9986590 Align about destroy spotlight map ownership` |
-| Last investigation/doc anchor | `53b13f4 Narrow Phase 1 render-manager follow-up` |
+| Last code-changing source batch | Align `nD.animateIn()` texture-object await semantics |
+| Last investigation/doc anchor | `5e824a0 Organize status docs around current priorities` |
 | Expected worktree | Clean unless a new batch is in progress |
 | Expected local service | Stopped after review |
 | Next production batch | Floor/environment distribution attribution |

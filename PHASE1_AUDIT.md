@@ -64,7 +64,14 @@ Phase 1 is open. Earlier closeout language accepted too many visible deviations;
 
 ## Current Evidence Anchors
 
-Last code-changing source edge: `9986590 Align about destroy spotlight map ownership`.
+Last code-changing source edge: Align `nD.animateIn()` texture-object await semantics.
+
+- Source `Xt.loadTexture()` returns the immediate Three `Texture` object from `TextureLoader.load()`, not a load promise.
+- Source `nD.animateIn()` awaits `initPromise`, then awaits `Xt.blueNoise`, `Xt.floorNormal`, `Xt.perlin1`, and `Xt.perlin2`; those texture awaits resolve immediately because the values are `Texture` objects.
+- Rebuild now keeps `animateIn()` gated on the delayed init lifecycle and immediate texture-object awaits, while image onload state is tracked separately for probes.
+- Renderer audit and output probe guard against reintroducing `sourceTexturePreloadPromise` as an `animateIn()` gate.
+
+Previous code-changing source edge: `9986590 Align about destroy spotlight map ownership`.
 
 - Source `TD.addEvents()` binds `J.workScene.spotLight.map` to `J.characterScene.renderManager.renderTargetComposite.texture` after the `100ms` delay.
 - Source `TD.animateOut()` only tweens about reveal uniforms and calls `Se.setSpotLightIntensity(0)`.
@@ -88,6 +95,7 @@ Keep this table short and current. It is a lookup table for recently closed edge
 
 | Commit | Area | Closed edge |
 | --- | --- | --- |
+| latest | `nD/Xt` canvas animate-in texture awaits | `animateIn()` awaits immediate `Texture` objects, not image-load promises; load completion remains probe state only. |
 | `9986590` | `TD` about destroy spotlight map | About out/destroy keep the current spotlight map; `SD.init()` owns later Home map bind. |
 | `a42e975` | `p1/SD/TD` spotlight init lifecycle | Constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
 | `a69ad3a` | `Ir/GT` main-fluid bounded geometry | Bounded passes use source geometry and default culling; force pass stays fullscreen. |

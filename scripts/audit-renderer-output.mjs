@@ -233,6 +233,7 @@ const rebuildApplySourceTextureConstructorObjects = extractBlock(rebuildWebgl, "
 const rebuildBindPreparedSourceTextures = extractBlock(rebuildWebgl, "private async bindPreparedSourceTextures(");
 const rebuildLoadCompositeTextures = extractBlock(rebuildWebgl, "private loadCompositeTextures()");
 const rebuildLoadCompositeTexturesFromSourceWebpState = extractBlock(rebuildWebgl, "private async loadCompositeTexturesFromSourceWebpState()");
+const rebuildAnimateIn = extractBlock(rebuildWebgl, "async animateIn()");
 const rebuildInitWebgl = extractBlock(rebuildMain, "async function initWebGL()");
 const rebuildSetGalleryProgress = extractBlock(rebuildWebgl, "setGalleryProgress(progress");
 const rebuildSetProject = extractBlock(rebuildWebgl, "setProject(payload: ProjectPayload)");
@@ -2783,8 +2784,17 @@ const summary = {
           ]),
         startNoImmediateTick: Boolean(rebuildSourceInitLifecycle)
           && !rebuildSourceInitLifecycle.includes("this.tick();"),
-        animateInAwaitsInitLifecycle: rebuildWebgl.includes("this.sourceInitLifecyclePromise")
-          && rebuildWebgl.includes("this.sourceTexturePreloadPromise"),
+        animateInAwaitsInitLifecycleOnly: Boolean(rebuildAnimateIn)
+          && rebuildAnimateIn.includes("this.sourceInitLifecyclePromise.then(async () =>")
+          && !rebuildAnimateIn.includes("this.sourceTexturePreloadPromise"),
+        animateInAwaitsImmediateTextureObjects: Boolean(rebuildAnimateIn)
+          && orderedIncludes(rebuildAnimateIn, [
+            "await this.sourceBlueNoiseTexture;",
+            "await this.sourceFloorNormalTexture;",
+            "await this.sourcePerlin1Texture;",
+            "await this.sourcePerlin2Texture;",
+            "this.sourceTextureAnimateInAwaitedObjects = true;",
+          ]),
       },
       excerpt: compact(sourceCanvasManager.text),
     },
@@ -5795,15 +5805,19 @@ const summary = {
   rebuildRuntime: {
     texturePreloadAnimateIn: checks(rebuildWebgl, [
       "async animateIn()",
-      "this.canvasAnimateInPromise = Promise.all([",
-      "this.sourceInitLifecyclePromise",
-      "this.sourceTexturePreloadPromise",
+      "this.canvasAnimateInPromise = this.sourceInitLifecyclePromise.then(async () =>",
+      "await this.sourceBlueNoiseTexture;",
+      "await this.sourceFloorNormalTexture;",
+      "await this.sourcePerlin1Texture;",
+      "await this.sourcePerlin2Texture;",
+      "this.sourceTextureAnimateInAwaitedObjects = true;",
       "Promise.all([blueNoise, floorNormal, perlin1, perlin2])",
       "this.sourceTexturePreloadState.blueNoise = true",
       "this.sourceTexturePreloadState.floorNormal = true",
       "this.sourceTexturePreloadState.perlin1 = true",
       "this.sourceTexturePreloadState.perlin2 = true",
-      "animateInMode: \"source-nD-animateIn-awaits-init-and-four-preloaded-textures\"",
+      "animateInMode: \"source-nD-animateIn-awaits-init-and-immediate-texture-objects\"",
+      "sourceTextureLoadPromiseAwaitedByAnimateIn: false",
       "animateInResolvedMode: \"source-nD-animateIn-resolves-after-fade-scheduled\"",
     ]),
     mainHomeEnter: checks(rebuildMain, [
