@@ -210,6 +210,7 @@ const rebuildCreateBlurMaterial = extractBlock(rebuildWebgl, "private createBlur
 const rebuildCreateBloomCompositeMaterial = extractBlock(rebuildWebgl, "private createBloomCompositeMaterial(");
 const rebuildCreateFloorReflectionBlurMaterial = extractBlock(rebuildWebgl, "private createFloorReflectionBlurMaterial()");
 const rebuildCreateFloorMaterial = extractBlock(rebuildWebgl, "private createFloorMaterial()");
+const rebuildCreateSkyCompositeMaterial = extractBlock(rebuildWebgl, "private createSkyCompositeMaterial()");
 const rebuildCreateFxaaMaterial = extractBlock(rebuildWebgl, "private createFxaaMaterial()");
 const rebuildCreateCompositeMaterial = extractBlock(rebuildWebgl, "private createCompositeMaterial()");
 const rebuildCreateMainCompositeMaterial = extractBlock(rebuildWebgl, "private createMainCompositeMaterial()");
@@ -4744,6 +4745,36 @@ const summary = {
         "uniform sampler2D tScene",
         "FragColor = vec4(.9 - diffuseColor.rgb, 1.)",
       ]),
+      sourceUniformSurface: {
+        declaresShaderOnlyMixUniforms:
+          sourceSkyB1.includes("uniform float uShader1Mix3;")
+          && sourceSkyB1.includes("uniform float uShader3Scale;")
+          && sourceSkyB1.includes("uniform float uShaderMix;"),
+        constructorBindsOnlyUShaderMix:
+          sourceSkyZ1.text.includes("uShaderMix:new I(Zs.SHADER_1_MIX_3)")
+          && !sourceSkyZ1.text.includes("uShader1Mix3:new I")
+          && !sourceSkyZ1.text.includes("uShader3Scale:new I"),
+        sourceZsHasOnlyShaderMix:
+          sourceSkyZ1.text.includes("SHADER_MIX:1.5")
+          && !sourceSkyZ1.text.includes("SHADER_1_MIX_3:"),
+      },
+      rebuildUniformSurface: {
+        constructorFound: Boolean(rebuildCreateSkyCompositeMaterial),
+        bindsOnlySourceRuntimeUniform:
+          Boolean(rebuildCreateSkyCompositeMaterial)
+          && rebuildCreateSkyCompositeMaterial.includes("uShaderMix: { value: undefined }")
+          && !rebuildCreateSkyCompositeMaterial.includes("uShader1Mix3:")
+          && !rebuildCreateSkyCompositeMaterial.includes("uShader3Scale:"),
+        probePublishesDeclaredOnlyUniforms:
+          rebuildWebgl.includes("uShader1Mix3Binding: this.skyCompositeMaterial.uniforms.uShader1Mix3 ? \"runtime\" : \"source-declared-only\"")
+          && rebuildWebgl.includes("uShader3ScaleBinding: this.skyCompositeMaterial.uniforms.uShader3Scale ? \"runtime\" : \"source-declared-only\"")
+          && rebuildWebgl.includes("uShaderMixMode: this.skyCompositeMaterial.uniforms.uShaderMix.value == null"),
+        outputProbeRejectsRuntimeBindings:
+          rebuildOutputProbe.includes("skyUniforms?.uShader1Mix3Binding !== \"source-declared-only\"")
+          && rebuildOutputProbe.includes("skyUniforms?.uShader3ScaleBinding !== \"source-declared-only\"")
+          && rebuildOutputProbe.includes("skyUniforms?.uShaderMix !== null")
+          && rebuildOutputProbe.includes("skyUniforms?.uShaderMixMode !== \"source-Zs-missing-SHADER_1_MIX_3\""),
+      },
       excerpt: compact(sourceSkyZ1.text),
     },
     mgRoundedBox: sourceMG && {

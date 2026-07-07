@@ -51,6 +51,7 @@ Already guarded for this lane:
 - Home camera surfaces.
 - Environment hierarchy/material ownership.
 - `u1` environment shader surface: source `l1` fragment and source `c1` vertex.
+- Sky composite `V1/H1/z1/B1` target chain, height-based square sizing, post-render `uTime`, delayed repeat `tSky` binding, and source `z1` declared-only uniform behavior.
 - Cubemap `scene.environment` loader defaults and sampling fields.
 - `p1.addEnvironment()` fire-and-forget cubemap start order before floor/env sceneWrap attachment.
 - Renderer constructor clear state: source `qw` has no `setClearColor`, and probes guard default clear color/alpha.
@@ -59,14 +60,13 @@ Already guarded for this lane:
 
 Next source candidates:
 
-1. Remaining sky/environment frame timing beyond cubemap startup and renderer constructor clear state.
-2. Environment target contents.
-3. Final work target distribution.
-4. Renderer state not yet covered by existing output-color audit guards.
+1. Environment target contents beyond the guarded sky composite input.
+2. Final work target distribution.
+3. Renderer state not yet covered by existing output-color audit guards.
 
 Rules:
 
-- Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and target contents.
+- Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, environment target contents, and final work target distribution.
 - Treat current structural guardrails as closed unless new evidence contradicts them.
 - Do not tune horizon, fog, brightness, or floor color by eye.
 

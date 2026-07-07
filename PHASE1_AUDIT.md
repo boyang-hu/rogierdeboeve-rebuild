@@ -84,6 +84,8 @@ Current source read:
 - Source floor reflection assigns `tReflect` and `uMatrix` from the reflector, rotates the floor to `-PI/2`, hides the floor group during reflection render, updates the reflector, then restores visibility.
 - Source environment `h1/u1` uses an icosahedron `Du(300,10)`, `side: BackSide`, `envMapIntensity:1`, `fog:false`, `dithering:true`, and `speed=5e-5`.
 - Source environment fragment shader is `l1`; source environment vertex shader is `c1`.
+- Source sky composite `V1/H1/z1/B1` renders a height `*.75` square raw target through `Lo`, then a cloned composite target, with no explicit clear.
+- Source `z1` shader declares `uShader1Mix3`, `uShader3Scale`, and `uShaderMix`, but the constructor only binds `uShaderMix` from missing `Zs.SHADER_1_MIX_3`; `Zs` defines `SHADER_MIX`, so that runtime value is undefined.
 
 Current guarded rebuild facts:
 
@@ -93,7 +95,8 @@ Current guarded rebuild facts:
 - `p1.addEnvironment()` cubemap loading now starts as a source-shaped fire-and-forget call before floor/env sceneWrap attachment. The texture preload binder no longer owns cubemap startup, and browser output probes guard `sceneEnvironmentStartOrder`.
 - `u1-environment` shader dump coverage now includes both source `l1` fragment and source `c1` vertex extraction.
 - The environment vertex shader text in rebuild matches the source `c1` surface, including the source `vViewPosition = - mvPosition.xyz` expression and chunk order.
-- Remaining investigation should focus on sky/environment timing, environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state.
+- Sky composite target contents are guarded for source `V1/H1/z1/B1` render-manager shape, height-based square sizing, no explicit clear, post-render `uTime` write, delayed `tSky` repeat binding, and source `z1` declared-only uniform oddities.
+- Remaining investigation should focus on environment target contents, final target distribution, or renderer state not covered by the guarded constructor clear state.
 
 ### Renderer State
 
@@ -175,6 +178,7 @@ These are current boundaries, grouped by system instead of discovery time.
 | Floor/environment | Cubemap loader defaults and `scene.environment` sampling fields are guarded by browser probe. |
 | Floor/environment | `p1.addEnvironment()` starts cubemap loading fire-and-forget before floor/env sceneWrap attachment. |
 | Floor/environment | `u1` environment shader surface is guarded through source `l1` fragment and `c1` vertex extraction. |
+| Floor/environment | Sky composite `V1/H1/z1/B1` target chain and source `z1` missing-uniform behavior are guarded by audit and browser probe. |
 | Renderer state | Renderer constructor has no source `setClearColor`; probes guard default clear color `[0,0,0]` and clear alpha `0`. |
 | Texture lifecycle | `nD.animateIn()` awaits immediate texture objects, not image-load promises. |
 | Render managers | Work luminosity branch runs before and independently of bloom. |
