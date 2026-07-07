@@ -4,13 +4,13 @@ Last updated: 2026-07-07
 
 ## Purpose
 
-This file is the forward execution plan. It is ordered by execution priority, not chronology. It does not track historical batch detail; closed source edges live in `PHASE1_AUDIT.md`, and quick resume context lives in `HANDOFF.md`.
+This file is the forward execution plan. It is ordered by what to do next, not by discovery date.
 
-## Document Map
+Do not use this file as a history log:
 
-- `HANDOFF.md`: current snapshot, immediate next action, run commands.
-- `PHASE1_AUDIT.md`: active Phase 1 audit, blockers, closed source edges, closeout criteria.
-- `REBUILD_PLAN.md`: phase order, next batches, validation matrix.
+- current snapshot lives in `HANDOFF.md`
+- active Phase 1 evidence and source-edge ledger live in `PHASE1_AUDIT.md`
+- older timelines live in git
 
 ## Execution Rules
 
@@ -37,12 +37,11 @@ This file is the forward execution plan. It is ordered by execution priority, no
 
 ## Phase 1 Work Queue
 
-The first incomplete item is the next production batch unless new source evidence changes priority.
+The first item is the next production batch unless new source evidence changes priority.
 
 1. Floor/environment distribution.
    - Continue source-backed attribution in `a1/i1/o1/t1`, `h1/u1/l1/c1`, `V1/H1/z1/B1`, and their target contents.
-   - Recently closed while tracing this chain: `nD.animateIn()` waits immediate `Xt` texture objects, not image-load promises.
-   - The current structural guardrails pass, so look for content, timing, or source asset/state inputs before changing visual parameters.
+   - Current structural guardrails pass, so look for content, timing, source asset/state inputs, or renderer state before changing production behavior.
    - Do not tune horizon, fog, brightness, or floor color by eye.
    - Required checks: build, renderer audit, desktop/mobile output probes, project media probe, and focused band/capture attribution when relevant.
 

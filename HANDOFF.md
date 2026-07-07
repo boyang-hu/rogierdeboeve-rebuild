@@ -2,43 +2,49 @@
 
 Last updated: 2026-07-07
 
-## Read Order
+## Read This First
 
-1. `HANDOFF.md` - fast resume context and immediate next action.
-2. `PHASE1_AUDIT.md` - current Phase 1 source-parity audit.
-3. `REBUILD_PLAN.md` - execution order and validation matrix.
+This file is the fast resume sheet. It should answer only:
 
-These docs are intentionally state-based, not append-only timelines:
+- where the rebuild is now
+- what just finished
+- what to do next
+- how to run or validate it
 
-- `HANDOFF.md` answers "where are we and what should happen next?"
-- `PHASE1_AUDIT.md` answers "what is still blocking Phase 1, and what source evidence is already closed?"
-- `REBUILD_PLAN.md` answers "what order should the next batches run in, and how do we validate them?"
+Use the other docs for deeper detail:
 
-Use git only when older archaeology is needed:
+| File | Role |
+| --- | --- |
+| `HANDOFF.md` | Current snapshot and immediate next action. |
+| `PHASE1_AUDIT.md` | Canonical Phase 1 evidence, active blockers, and source-edge ledger. |
+| `REBUILD_PLAN.md` | Forward execution order and validation matrix. |
+
+Historical timelines are not maintained in these files. Use git when older archaeology is needed:
 
 ```sh
-git show 9986590:PHASE1_AUDIT.md
-git show 9986590:REBUILD_PLAN.md
+git log --oneline
+git show <commit>:PHASE1_AUDIT.md
+git show <commit>:REBUILD_PLAN.md
 ```
 
-## Resume Snapshot
+## Current Snapshot
 
 | Item | Current value |
 | --- | --- |
 | Active phase | Phase 1, Home WebGL source parity |
 | Phase 1 status | Open, roughly 65-70% complete |
-| Last code-changing source batch | Align `nD.animateIn()` texture-object await semantics |
-| Last investigation/doc anchor | `5e824a0 Organize status docs around current priorities` |
+| Current priority | Floor/environment distribution attribution |
+| Last completed code batch | `38931a6 Align animate-in texture await semantics` |
+| Docs policy | Current-state docs only; use git log for docs-only history. |
 | Expected worktree | Clean unless a new batch is in progress |
 | Expected local service | Stopped after review |
-| Next production batch | Floor/environment distribution attribution |
 
 Estimated parity:
 
 | Area | Estimate | Read |
 | --- | ---: | --- |
 | Architecture/lifecycle | 75-80% | Broad scene structure, route ownership, probes, and source guardrails are in place. |
-| Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is now a guarded follow-up, not the first suspect. |
+| Shader/render-manager parity | 65-75% | Many shader surfaces and pass edges are source-shaped; `kA/Lu/I1` is a guarded follow-up, not the first suspect. |
 | Final Home visual parity | 55-65% | Home still diverges in spotlight/thumb projection feel and floor/environment distribution. |
 
 ## Source Of Truth
@@ -52,6 +58,26 @@ Estimated parity:
 - Audio must continue to use Howler.
 - Do not delete `public/` or `legacy-mirror/`.
 
+## Immediate Next Action
+
+Continue Phase 1 with a scoped source-backed batch:
+
+1. Trace the floor/environment visible residual from source-owned content, timing, material inputs, target contents, or renderer state.
+2. Avoid repeating already-closed structural checks unless new evidence contradicts them.
+3. Patch only after a concrete source mismatch is identified.
+4. Update `PHASE1_AUDIT.md` and `REBUILD_PLAN.md` with the source evidence, then commit the batch.
+
+Do not tune horizon, fog, brightness, or floor color by eye.
+
+## Do Not Reopen First
+
+These areas are guarded and should stay secondary unless new probe/source evidence points back at them:
+
+- `kA/Lu/I1` default visible target transfer.
+- Spotlight-map shader and Three light-chunk multiplication.
+- `w1.updateGalleryProgress()` centered wrapping.
+- `T1/x1/E1/M1` thumb scene surface.
+
 ## Important Files
 
 - Rebuild WebGL: `src/client/webgl.ts`
@@ -64,25 +90,6 @@ Estimated parity:
   - `scripts/probe-thumb-spotlight.mjs`
   - `scripts/probe-about-scroll-opacity.mjs`
   - `scripts/probe-project-media.mjs`
-
-## Evidence Location
-
-Use `PHASE1_AUDIT.md` for the active evidence set:
-
-- Current blockers and their priority order.
-- Source edges already closed.
-- Narrowed non-primary suspects.
-- Phase 1 closeout criteria.
-
-## Next Action
-
-Continue Phase 1 in this order:
-
-1. Continue floor/environment visible residual attribution from source-backed target content and material inputs.
-2. Re-check spotlight/thumb projected content only after a concrete source-owned content/timing edge is identified.
-3. Keep `kA/Lu/I1` render-target/default-screen behavior as a guardrail, not the primary next suspect, unless new evidence contradicts the current audit.
-
-Do not repeat already-closed checks around spotlight-map multiplication or `w1.updateGalleryProgress()` centered wrapping unless new evidence contradicts the current probes.
 
 ## Validation Baseline
 

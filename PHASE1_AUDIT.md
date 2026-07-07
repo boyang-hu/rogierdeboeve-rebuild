@@ -4,9 +4,16 @@ Last updated: 2026-07-07
 
 ## Purpose
 
-This is the canonical active audit for Phase 1. It records current parity, open blockers, closed source edges, and closeout criteria.
+This is the canonical active audit for Phase 1. It records:
 
-It is not an append-only work log. Blockers are ordered by current priority, not by discovery date. The old long-form timelines remain available in git when needed:
+- current parity read
+- active blockers
+- source evidence already closed
+- closeout criteria
+
+It is not a running diary. Blockers are ordered by current priority. Closed batches are listed newest first in one table below.
+
+Older long-form timelines remain available through git:
 
 ```sh
 git show 9986590:PHASE1_AUDIT.md
@@ -33,7 +40,7 @@ Primary source areas:
 
 ## Status Snapshot
 
-Phase 1 is open. Earlier closeout language accepted too many visible deviations; current closeout requires source-backed parity or explicit technical bridge documentation.
+Phase 1 is open. Closeout requires source-backed parity or explicit technical bridge documentation.
 
 | Area | Estimate | Confidence | Current read |
 | --- | ---: | --- | --- |
@@ -49,7 +56,7 @@ Phase 1 is open. Earlier closeout language accepted too many visible deviations;
    - Open: hard horizon/fog-bed distribution still differs. Do not tune brightness or fog visually without source ownership evidence.
 
 2. Spotlight/thumb projection transfer feel.
-   - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about previous map, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
+   - Guarded: `SpotLight.map` path, source spotlight constructor defaults, `SD.init()` Home map setup, direct-about map state, about destroy map retention, active-project spotlight ownership/order, thumb scene settings, thumb shader surfaces, and projection sampling guardrails.
    - Open: projected thumb brightness, depth, content transfer, and timing still do not feel source-exact.
 
 3. `kA/Lu/I1` composite and transfer interpretation.
@@ -62,24 +69,17 @@ Phase 1 is open. Earlier closeout language accepted too many visible deviations;
    - Guarded: `Ka` mouse simulation constructor/update ownership, raycast hit-UV ownership, main-fluid pointer/diff ownership, bounded pass geometry, and interactive probe coverage.
    - Open: final feel remains a regression concern when touching interaction paths.
 
-## Current Evidence Anchors
+## Current Evidence
 
-Last code-changing source edge: Align `nD.animateIn()` texture-object await semantics.
+### `38931a6` `nD/Xt` Animate-In Texture Awaits
 
 - Source `Xt.loadTexture()` returns the immediate Three `Texture` object from `TextureLoader.load()`, not a load promise.
 - Source `nD.animateIn()` awaits `initPromise`, then awaits `Xt.blueNoise`, `Xt.floorNormal`, `Xt.perlin1`, and `Xt.perlin2`; those texture awaits resolve immediately because the values are `Texture` objects.
-- Rebuild now keeps `animateIn()` gated on the delayed init lifecycle and immediate texture-object awaits, while image onload state is tracked separately for probes.
-- Renderer audit and output probe guard against reintroducing `sourceTexturePreloadPromise` as an `animateIn()` gate.
+- Rebuild now keeps `animateIn()` gated on the delayed init lifecycle and immediate texture-object awaits.
+- Image onload state remains separate probe state and is not an `animateIn()` gate.
+- Renderer audit and output probe guard against reintroducing `sourceTexturePreloadPromise` as an `animateIn()` dependency.
 
-Previous code-changing source edge: `9986590 Align about destroy spotlight map ownership`.
-
-- Source `TD.addEvents()` binds `J.workScene.spotLight.map` to `J.characterScene.renderManager.renderTargetComposite.texture` after the `100ms` delay.
-- Source `TD.animateOut()` only tweens about reveal uniforms and calls `Se.setSpotLightIntensity(0)`.
-- Source `TD.destroy()` removes the about RAF handler, clears about block visibility/tracking, restores `spotLightParallax=true`, and removes character rotatable events.
-- Neither source method restores `J.workScene.spotLight.map` to the Home thumb composite; `SD.init()` owns that later Home bind.
-- Rebuild about lifecycle probes and renderer audit now guard this ownership edge.
-
-Most recent investigation narrowed `kA/Lu/I1` without changing production code:
+### `53b13f4` `kA/Lu/I1` Render-Manager Follow-Up
 
 - `VA-work` shader dump matched source-shaped vertex and fragment text with zero recorded deltas.
 - `OA-work-composite`, `A1-pre-composite`, thumb, floor, environment, media, and fluid shaders were source-shaped.
@@ -89,13 +89,21 @@ Most recent investigation narrowed `kA/Lu/I1` without changing production code:
 - Source `nD.init()` binds C1 `tWork`, `tMedia`, and `tMouseSim` once after the `100ms` delayed resize/bind phase. Rebuild keeps those as delayed one-time bindings.
 - Full renderer audit has zero recursive false/null findings, and desktop browser output/thumb probes pass on these surfaces.
 
-## Closed Source Edges
+### `9986590` `TD` About Destroy Spotlight Map
 
-Keep this table short and current. It is a lookup table for recently closed edges, not the forward plan. For full historical detail, use the git version noted above.
+- Source `TD.addEvents()` binds `J.workScene.spotLight.map` to `J.characterScene.renderManager.renderTargetComposite.texture` after the `100ms` delay.
+- Source `TD.animateOut()` only tweens about reveal uniforms and calls `Se.setSpotLightIntensity(0)`.
+- Source `TD.destroy()` removes the about RAF handler, clears about block visibility/tracking, restores `spotLightParallax=true`, and removes character rotatable events.
+- Neither source method restores `J.workScene.spotLight.map` to the Home thumb composite; `SD.init()` owns that later Home bind.
+- Rebuild about lifecycle probes and renderer audit guard this ownership edge.
+
+## Source-Edge Ledger
+
+Newest first. This is the only maintained source-edge timeline in the docs; docs-only reshuffles stay in git.
 
 | Commit | Area | Closed edge |
 | --- | --- | --- |
-| latest | `nD/Xt` canvas animate-in texture awaits | `animateIn()` awaits immediate `Texture` objects, not image-load promises; load completion remains probe state only. |
+| `38931a6` | `nD/Xt` canvas animate-in texture awaits | `animateIn()` awaits immediate `Texture` objects, not image-load promises; load completion remains probe state only. |
 | `9986590` | `TD` about destroy spotlight map | About out/destroy keep the current spotlight map; `SD.init()` owns later Home map bind. |
 | `a42e975` | `p1/SD/TD` spotlight init lifecycle | Constructor leaves map/target defaults; `SD.init()` owns Home map, target, position, and intensity. |
 | `a69ad3a` | `Ir/GT` main-fluid bounded geometry | Bounded passes use source geometry and default culling; force pass stays fullscreen. |
