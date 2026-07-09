@@ -1,0 +1,73 @@
+---
+import Button from "./Button.astro";
+import Footer from "./Footer.astro";
+import { activeProjects, thumbSrc } from "../data/site";
+
+const colorValue = (value?: string) => {
+  if (!value) return undefined;
+  return value.startsWith("#") ? value : `#${value}`;
+};
+---
+
+<section data-view="home" class="ui-work">
+  <div class="ui-work-container">
+    <div class="ui-work-content">
+      <div class="wrap">
+        <div class="lg:grid grid-cols-24 gap-24">
+          <div class="col-span-12 xl:col-span-10 col-start-12 lg:col-start-13 xl:col-start-15 work-index">
+            <div class="ui-title ts-m c-color"><span class="ui-title-inner">Index</span></div>
+            <ul class="ui-work-ul">
+              {activeProjects.map((project, index) => (
+                <li
+                  class="c-color"
+                  data-project-card
+                  data-slug={project.data.slug}
+                  data-color={colorValue(project.data.colors.primary)}
+                  data-secondary={colorValue(project.data.colors.secondary)}
+                  data-invert={colorValue(project.data.colors.invert)}
+                  data-media-color={colorValue(project.data.colors.media)}
+                  data-blocks={colorValue(project.data.colors.blocks)}
+                  data-thumb={thumbSrc(project)}
+                  data-darkness={project.data.darkenOverview}
+                  data-overview-darkness={project.data.darkenOverview}
+                  data-thumb-darkness={project.data.thumbnail.darkness}
+                  data-darkness-color={colorValue(project.data.thumbnail.darknessColor)}
+                  data-saturation={project.data.saturation}
+                  data-thumb-saturation={project.data.thumbnail.saturation}
+                  data-contrast={project.data.contrast}
+                  data-mouse-lightness={project.data.thumbnail.mouseLightness}
+                  data-ambient={project.data.ambient}
+                  data-spotlight={project.data.spotlight}
+                >
+                  <div class="ui-work-a" data-sound data-sound-click>
+                    <span>{project.data.title}</span>
+                  </div>
+                  <a href={`/${project.data.slug}/`} data-transition="project" class="ui-work-cta">
+                    <Button text="View project" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <Footer />
+  <div class="ui-progressbar ui-progressbar--work c-color" aria-label="Project progress">
+    <div class="ui-progressbar-items">
+      {activeProjects.map((project, index) => (
+        <button
+          class="ui-progressbar-item"
+          type="button"
+          data-slug={project.data.slug}
+          data-progress-slug={project.data.slug}
+          data-sound
+          data-sound-click
+        >
+          <span>{project.data.title}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+</section>

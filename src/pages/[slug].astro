@@ -21,7 +21,7 @@ const nextProject = getNextProject(project);
 const [hero, ...restMedia] = project.data.content;
 ---
 
-<BaseLayout title={`${project.data.title} - Rogier de Boevé`} description={project.data.description.replace(/<[^>]+>/g, "")}>
+<BaseLayout title={`${project.data.title} - Rogier de Boevé`}>
   <div data-view="project" class="ui-project" data-project={project.data.slug}>
     <div class="ui-project-header c-color">
       <div class="wrap">
@@ -150,7 +150,7 @@ const [hero, ...restMedia] = project.data.content;
     <div class="c-scroll-cta c-color">
       <div class="wrap wrap--md">
         <div class="lg:grid grid-cols-24 gap-24">
-          <div class="lg:col-span-8 lg:col-start-5">
+          <div class="lg:col-start-5 lg:col-span-10 xl:col-span-8 xl:col-start-5">
             <div class="c-scroll-cta-inner">
               <span class="c-scroll-cta-icon" aria-hidden="true">
                 <svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6">

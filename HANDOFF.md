@@ -1,6 +1,6 @@
 # Rogier de Boeve Rebuild Handoff
 
-Last updated: 2026-07-07
+Last updated: 2026-07-10
 
 ## Purpose
 
@@ -18,9 +18,9 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Item | Value |
 | --- | --- |
 | Active production phase | None |
-| Overall status | Phase 1 through Phase 6 are closed/guarded as of 2026-07-07 |
-| Latest closed batch | Phase 6 final QA and documentation cleanup |
-| Last source-backed code batch | Phase 5 audio lifecycle source alignment |
+| Overall status | Phase 1 through Phase 6 are closed/guarded; post-phase source parity batch closed 2026-07-10 |
+| Latest closed batch | Source parity alignment: head metadata, 404/sitemap routes, lg/xl grid classes, button SVG overflow, justify-end, scrollbar drag ownership, About title |
+| Last source-backed code batch | Same batch (2026-07-10) |
 | Current priority | Do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after the Phase 6 docs commit |
@@ -38,38 +38,33 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 
 ## Latest Evidence
 
-Phase 6 final QA was run against `http://localhost:5173/`.
+The 2026-07-10 source parity batch was validated against `http://127.0.0.1:5173/` (static `serve.mjs` over a fresh `dist/`).
+
+Batch content (each item attributed to the mirror HTML/CSS/bundle before patching):
+
+- Scrollbar drag now calls only the page scroll controller (`source onPointerMove` has no `window.scrollTo` fallback; the previous `??`-on-void expression double-fired native scroll).
+- `.justify-end` utility restored; `.items-end` value aligned to source `flex-end`.
+- About title restored to `Rogier de Boevé - About`.
+- Head parity: `mask-icon`, `msapplication-TileColor`, `theme-color`, `generator`, `og:url/type/image(+width/height)`, and the five twitter tags, with absolute `og:image`/`twitter:image` URLs.
+- `404.astro` added (build output is byte-identical to `index.html`, matching the mirror) via shared `src/components/HomeView.astro`; `Header.astro`/`BaseLayout.astro` treat `/404` as home for `is-active`/page class.
+- `public/sitemap.xml` copied verbatim from the mirror.
+- Grid classes restored to mirror strings: home index column, header availability column, project scroll-CTA column.
+- Button SVG restored to source mechanism: rects `width="155"` overflowing the 150 viewBox, `.c-button-bg svg { overflow: visible }`, hover transition `0.3s`.
+- Project pages use the site-default meta description (mirror never varies it).
 
 Static/build checks:
 
-- `ASTRO_TELEMETRY_DISABLED=1 npm run build`
-- `OUT_DIR=/tmp/rd-phase6-final-renderer node scripts/audit-renderer-output.mjs`
-- `git diff --check` before the docs rewrite
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` (17 pages; requires a synced `npm install` — `detect-gpu` was missing locally before this batch)
+- `OUT_DIR=/tmp/rd-a-renderer node scripts/audit-renderer-output.mjs`
 
-Fresh browser probes:
+Fresh browser probes (all `failures: 0`, `exceptions: 0`, `consoleMessages: 0`):
 
-- Home desktop output: `/tmp/rd-phase6-final-home-desktop/summary.json`
-  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
-  - Active project `hashgraph-vc`; desktop CTA parent opacity remains source-shaped at `0`.
-- Home mobile output: `/tmp/rd-phase6-final-home-mobile/summary.json`
-  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
-  - Active project `hashgraph-vc`; mobile CTA parent opacity remains source-shaped at `1`.
-- Thumb spotlight: `/tmp/rd-phase6-final-thumb/summary.json`
-  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
-  - Raw-to-composite transfer, `SpotLight.map` composite ownership, and thumb projection sampling are source-shaped.
-- Project media: `/tmp/rd-phase6-final-project-media/summary.json`
-  - `gc-2026` and `hashgraph-vc` each have `5` visible media planes.
-  - Shader surfaces, constructor defaults, runtime backgrounds, failures, exceptions, and console messages all pass.
-- About desktop: `/tmp/rd-phase6-final-about-desktop/summary.json`
-  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
-  - Desktop scroll opacity is source `1`; destroy lifecycle keeps the current spotlight map.
-- About mobile: `/tmp/rd-phase6-final-about-mobile/summary.json`
-  - `failures: 0`, `exceptions: 0`, `consoleMessages: 0`
-  - Mobile scroll opacity is source `0.3507`; destroy lifecycle keeps the current spotlight map.
-- Interactive mouse: `/tmp/rd-phase6-final-mouse/summary.json`
-  - Source interaction assertions passed: mouse simulation, active raycast target ownership, input normalization, and main-fluid gating are source-shaped.
-  - The dev-server run recorded one canceled Vite script request and two Vite connection logs. This is not a product/source mismatch.
-  - The probe ran under SwiftShader fallback GPU tier `1`; source `I1` disables main fluid when `Le.GPU_TIER < 3`, and rebuild matches.
+- Home desktop output: `/tmp/rd-a-home-desktop/summary.json`
+- Home mobile output: `/tmp/rd-a-home-mobile2/summary.json`
+- About desktop/mobile: `/tmp/rd-a-about-desktop/summary.json`, `/tmp/rd-a-about-mobile/summary.json`
+- Project media: `/tmp/rd-a-media/summary.json`
+
+Probe timing note: on a real-GPU machine (tier 3, main fluid enabled) the gallery-entry `mouseFactor` tween has not reached its steady value at the default `PROBE_WAIT=5200`; the same assertion passes with `PROBE_WAIT=25000` (desktop) / `PROBE_WAIT=45000` (mobile emulation). This is probe timing, not a product mismatch. The Phase 6 baseline ran under SwiftShader tier 1.
 
 ## Source Of Truth
 

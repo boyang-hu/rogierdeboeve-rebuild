@@ -1219,7 +1219,7 @@ function initScrollState() {
       0,
       lastScrollState.limit,
     );
-    (window as HomeGalleryProbeWindow).__rogierPageScroll?.scrollTo(target, { immediate: true }) ?? window.scrollTo(0, target);
+    (window as HomeGalleryProbeWindow).__rogierPageScroll?.scrollTo(target, { immediate: true });
   };
   const onPointerUp = () => {
     pointerStart = null;

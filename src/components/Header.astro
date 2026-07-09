@@ -1,5 +1,6 @@
 ---
 const pathname = Astro.url.pathname;
+const isHome = pathname === "/" || pathname.startsWith("/404");
 ---
 
 <header class="ui-header">
@@ -10,7 +11,7 @@ const pathname = Astro.url.pathname;
         <div class="col-span-4">
           <a href="/" class="ui-header-version ts-m c-color">V-004</a>
         </div>
-        <div class="col-span-6 col-start-19 ui-header-availability ts-m c-color">
+        <div class="col-span-7 xl:col-span-6 lg:col-start-17 xl:col-start-19 ui-header-availability ts-m c-color">
           <span class="ui-header-part-outer"><span class="ui-header-part-inner">Available for freelance</span></span>
         </div>
       </div>
@@ -56,7 +57,7 @@ const pathname = Astro.url.pathname;
       <div class="ui-nav-mobile-content">
         <div class="ui-nav-mobile-content-main">
           <div class="wrap">
-            <a class={`ui-nav-mobile-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="home">
+            <a class={`ui-nav-mobile-a c-color ${isHome ? "is-active" : ""}`} href="/" data-slug="home">
               <span class="ui-nav-mobile-a-inner">
                 <span class="ui-nav-mobile-a-title">Work</span>
               </span>
@@ -93,7 +94,7 @@ const pathname = Astro.url.pathname;
   <div class="wrap">
     <ul>
       <li>
-        <a class={`ui-nav-a c-color ${pathname === "/" ? "is-active" : ""}`} href="/" data-slug="home" data-sound data-sound-click>
+        <a class={`ui-nav-a c-color ${isHome ? "is-active" : ""}`} href="/" data-slug="home" data-sound data-sound-click>
           <span class="ui-nav-a-icon" aria-hidden="true"><svg class="c-icon-arrow-xs" width="6" height="6" viewBox="0 0 6 6"><rect rx="1" width="2" height="2" fill="currentColor"></rect><rect rx="1" x="3.4" y="2" width="2" height="2" fill="currentColor"></rect><rect rx="1" y="4" width="2" height="2" fill="currentColor"></rect></svg></span>
           <span class="ui-nav-a-inner">
             <span class="ui-nav-a-title">Work</span>

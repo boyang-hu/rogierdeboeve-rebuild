@@ -198,7 +198,11 @@ body.is-ready [data-view] {
 }
 
 .items-end {
-  align-items: end;
+  align-items: flex-end;
+}
+
+.justify-end {
+  justify-content: flex-end;
 }
 
 .col-span-1 { grid-column: span 1 / span 1; }
@@ -721,13 +725,12 @@ body.is-project .ui-header-description {
 }
 
 .c-button-bg svg {
-  width: 100%;
-  height: 100%;
+  overflow: visible;
 }
 
 .c-button-bg-hover {
   opacity: 0;
-  transition: opacity 0.25s linear;
+  transition: opacity 0.3s linear;
 }
 
 .c-button-icon {
