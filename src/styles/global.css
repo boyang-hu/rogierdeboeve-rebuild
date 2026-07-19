@@ -554,16 +554,6 @@ body.is-ready [data-view] {
   opacity: 0;
 }
 
-body.is-project .ui-nav {
-  display: none;
-  opacity: 0;
-  pointer-events: none;
-}
-
-body.is-project .ui-header-description {
-  display: none;
-}
-
 .ui-title {
   margin-bottom: 0;
   padding-top: var(--py);

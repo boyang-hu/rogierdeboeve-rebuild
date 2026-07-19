@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Reverse CSS scan: header-bg gradient, work-a transform transition, mobile text-shadow removed |
+| Latest closed batch | Project-page nav restore (is-project display:none rules removed); prior: reverse CSS scan |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -68,6 +68,10 @@ Everything else is compatible: `dist/404.html` is byte-identical to home (exactl
 
 
 ## Latest Evidence
+
+### 2026-07-19 Project-page nav restore
+
+- Project pages were missing the left Work/About nav. Live measurement: source shows it (`display:block/opacity:1`, inner tweened in). The rebuild's invented `body.is-project .ui-nav{display:none}` (mis-classified as an equivalent mechanism in the reverse scan) hid it; `body.is-project .ui-header-description{display:none}` was likewise removed — the description stays hidden on project pages naturally via its mask default (the reveal tween is home-view-gated). Local project nav now measures identical to live. Gates: media/home/preload green.
 
 ### 2026-07-19 Reverse CSS scan batch
 
