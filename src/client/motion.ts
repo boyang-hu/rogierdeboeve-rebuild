@@ -291,7 +291,9 @@ function initIntroAnimations(restoreHeaderChrome: boolean) {
     ));
   });
 
-  if (headerDescriptionTargets.length) {
+  const isHomeView = Boolean(document.querySelector("[data-view='home']"));
+
+  if (isHomeView && headerDescriptionTargets.length) {
     tweens.push(gsap.fromTo(
       headerDescriptionTargets,
       { y: "130%", opacity: 0 },
@@ -299,7 +301,7 @@ function initIntroAnimations(restoreHeaderChrome: boolean) {
     ));
   }
 
-  if (headerAvailabilityTargets.length) {
+  if (isHomeView && headerAvailabilityTargets.length) {
     tweens.push(gsap.fromTo(
       headerAvailabilityTargets,
       { y: "130%", opacity: 0 },

@@ -395,10 +395,6 @@ body.is-ready [data-view] {
   pointer-events: none;
 }
 
-.ui-header a,
-.ui-header button {
-  pointer-events: auto;
-}
 
 .ui-header-bg {
   position: absolute;
@@ -407,10 +403,8 @@ body.is-ready [data-view] {
   background: linear-gradient(to bottom, rgba(20, 20, 20, 0.75), rgba(20, 20, 20, 0));
 }
 
-.ui-header-secondary,
-.ui-header-version,
-.ui-header-availability {
-  color: var(--muted);
+.ui-header-secondary {
+  opacity: var(--opacity-dimmed);
 }
 
 .ui-header-secondary .ts-m {
@@ -666,7 +660,7 @@ body.is-project .ui-header-description {
 .ui-title {
   margin-bottom: 0;
   padding-top: var(--py);
-  color: var(--muted);
+  opacity: var(--opacity-dimmed);
   overflow: hidden;
 }
 

@@ -5756,11 +5756,19 @@ export class WebGLBackdrop {
   }
 
   prepareHomeVisualState(payload: ProjectPayload) {
+    this.ensureWorkScene();
     this.applyProjectLook(payload);
     this.setCameraControllerSettings();
     this.spotLightParallax = true;
     this.spotLight.map = this.homeSpotlightMap();
     this.keepWorkSceneHidden();
+  }
+
+  private ensureWorkScene() {
+    if (this.workItems.length) return;
+    if (!document.querySelector("[data-project-card]")) return;
+    this.createWorkScene();
+    this.resize();
   }
 
   private applyActiveProjectSourceOrder(payload: ProjectPayload, active?: WorkItem) {
@@ -5967,6 +5975,7 @@ export class WebGLBackdrop {
   }
 
   initHomeSpotlight() {
+    this.ensureWorkScene();
     if (!this.sourceHomeEntryLifecycle.enterWorkGalleryCalled) {
       this.sourceHomeEntryLifecycle.initHomeSpotlightBeforeGalleryIn = true;
     }
@@ -9127,10 +9136,10 @@ void main() {
           const px = x * cell - width / 2;
           const py = y * cell - height / 2;
           const colorSeed = item.colors[index * 3] || 0;
-          let pz = z * (cell + depthRange * colorSeed) + colorSeed * depthRange - depthRange / 2;
-          pz -= time * MathUtils.clamp((item.colors[index * 2] || colorSeed) * 15, 5, 50);
+          let pz = z * (cell + depthRange * colorSeed) + (item.colors[index] || 0) * depthRange - depthRange / 2;
+          pz -= time * MathUtils.clamp((item.colors[index * 2] || 0) * 15, 5, 50);
           pz -= item.translationZ;
-          pz = ((pz % (depthRange / 2)) + depthRange / 2) % (depthRange / 2) + 10;
+          pz = pz % (depthRange / 2) + 10;
           if (px > -3.5 && px < 3.5 && py < 5) dummy.position.set(-10000, -10000, -10000);
           else dummy.position.set(px, py, pz);
           dummy.updateMatrix();

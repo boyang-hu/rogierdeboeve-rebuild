@@ -19,8 +19,8 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | About background/character follow-up: env+floor scene-level parenting, character target depth, sitewide typography audit |
-| Last source-backed code batch | Same batch (2026-07-19); about-parity and preloader batches closed same day |
+| Latest closed batch | Header color/pointer model, home-view-only description/availability reveal, floating-block drift, cross-route work gallery rebuild |
+| Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after the Phase 6 docs commit |
@@ -37,6 +37,15 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Phase 6: Final QA/cleanup | Closed/guarded | Final regression gates fail or docs drift from current state again. |
 
 ## Latest Evidence
+
+### 2026-07-19 Header/floating/route-rebuild batch
+
+- Header colors: invented `color: var(--muted)` on `.ui-header-secondary/.ui-header-version/.ui-header-availability` and `.ui-title` replaced with the source model — `.c-color` inline color (JS `setMainColor`, already implemented) plus `.ui-header-secondary{opacity:var(--opacity-dimmed)}` and `.ui-title{opacity:var(--opacity-dimmed)}`.
+- V-004 is no longer clickable: removed invented `.ui-header a/button{pointer-events:auto}`; source re-enables only `.ui-header-name` via JS (already present) and `.ui-nav-mobile-toggle{pointer-events:all}` covers the mobile toggle.
+- `CREATIVE DEVELOPER` / `AVAILABLE FOR FREELANCE` now reveal only on the home view (source calls `Ki.animateDescriptionIn/AvailibilityIn` solely from the home view's `animateIn`); on about/project they stay masked, matching live.
+- About floating blocks were invisible because the rebuild replaced source's signed modulo (`pz % 250 + 10`, mostly negative z into the scene) with a positive modulo (all z in front of/behind the camera); restored source `ZA.positionOnUpdate` math including its seed indexing (`colors[n]`, `colors[n*2]`).
+- Direct about/project loads then routing to home showed no work gallery: `createWorkScene()` only ran in the constructor from `[data-project-card]` DOM. `ensureWorkScene()` now rebuilds it on home entry (`prepareHomeVisualState`/`initHomeSpotlight`) when items are missing — source is data-driven (`is.getProjects()`) and never has this gap.
+- Validated: swap capture `/tmp/rd-swap-test` (about direct load -> Work click -> full gallery), about capture with drifting blocks + hidden availability, and the five regression gates (`/tmp/rd-c-*`).
 
 ### 2026-07-19 About background/character follow-up batch
 
