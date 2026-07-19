@@ -1501,8 +1501,20 @@ async function initWebGL() {
   }
 }
 
+function registerSw() {
+  if (!("serviceWorker" in navigator)) return;
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").then((registration) => {
+      registration.update();
+    }).catch((error) => {
+      console.log("SW registration failed: ", error);
+    });
+  });
+}
+
 function boot() {
   document.documentElement.classList.toggle("is-mobile", window.matchMedia("(pointer: coarse)").matches);
+  registerSw();
   let webgl: WebGLLike | undefined;
   let homeGalleryEntered = false;
   let routing = false;

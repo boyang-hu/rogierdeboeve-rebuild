@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Persistent chrome: router no longer replaces header/nav; JS updateNavActive like source |
+| Latest closed batch | Release prep: service worker restored (source-verbatim), astro 6.4.8 security upgrade |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -44,7 +44,7 @@ Visual/interaction parity is closed (live-vs-local pixel profiles at noise level
 
 | # | Item | Current state | Recommendation |
 | --- | --- | --- | --- |
-| 1 | Service worker | Source registers `/sw.js` (offline-fallback cache); rebuild has it patched out for local serving | Keep disabled during QA (SW caching poisons visual checks); restore as a final release batch (needs `sw.js`, `registerSw`, and an `offline/index.html`) |
+| 1 | Service worker | RESTORED 2026-07-19: `public/sw.js` verbatim from mirror, `public/offline/index.html` mirrored from origin, `registerSw()` in `main.ts` matching the live bundle (load-event register + update + catch-log). Network-first with offline-only fallback, so it cannot serve stale builds during QA. Verified: registration active, cache `r24-001` created | Done |
 | 2 | Video loading | Source fetches video bytes in a Worker -> blob URL (`/workers/video-loader.js`, already present in `public/` but unwired); rebuild sets `video.src` directly + IntersectionObserver | Wire the worker: source asset already on disk, small change in `loadMediaPlane`, aligns network behavior. Medium priority |
 | 3 | Character raw target depth buffer | Bundle literally says `depthBuffer:false`, but live occludes the head back; rebuild enables depth on the raw target (composite target stays source-shaped) | Keep as-is; live baseline wins. Documented |
 | 4 | Nav DOM structure | Rebuild uses `ul/li` + server-baked `is-active`; source uses `div.ui-nav-items/.ui-nav-item` grid + JS `updateNavActive`. Same visuals/interaction (verified) | Keep; harmless (arguably better semantics). Align only if the goal becomes view-source-level indistinguishability. Same verdict for the `work-index` hook class and the unreproduced stray empty spans in header name/description |
@@ -53,7 +53,7 @@ Visual/interaction parity is closed (live-vs-local pixel profiles at noise level
 ### Engineering hygiene (not 1:1-related)
 
 - tsconfig: drop deprecated `baseUrl`, fix paths, burn down the 17 real type errors (16 in `webgl.ts`, 1 in `main.ts`) so `npm exec tsc -- --noEmit` rejoins the gates. Cheap, zero runtime impact.
-- `npm audit fix`: astro 6.4.4 -> 6.4.8 (published XSS/SSRF advisories).
+- DONE 2026-07-19: astro upgraded 6.4.4 -> 6.4.8 (lockfile + tree verified). Remaining `npm audit`: 2 low (esbuild dev-server arbitrary file read, Windows-only dev scenario; fix requires astro 7 breaking upgrade) - accepted, does not affect the static production build.
 - Git: ~111MB of tracked media in `public/` (largest file ~6MB, so no hard GitHub blocker). Before pushing to a remote decide: keep as-is (simplest, repo ~350MB with history), Git LFS, or media out-of-repo with a fetch script.
 - Small: move `typescript`/`@types/*` to devDependencies; archive the 8-9 orphaned scripts in `scripts/`; harden `serve.mjs` (bind 127.0.0.1 by default, real 404 status) only if it will ever face a network.
 
