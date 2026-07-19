@@ -21,7 +21,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
 | Latest closed batch | 1:1 self-audit: utility cascade order, px/py ladder, project fog, asset hashes, full CSS property diff |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
-| Current priority | Do not patch unless a new source-owned mismatch is isolated |
+| Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after the Phase 6 docs commit |
 
@@ -35,6 +35,37 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Phase 4: About and auxiliary pages | Closed/guarded | A concrete About DOM, CSS, motion, route, modal, or auxiliary visual mismatch is found. |
 | Phase 5: Transitions/audio/Lenis lifecycle | Closed/guarded | A concrete transition, audio, or page-scroll lifecycle mismatch is found. |
 | Phase 6: Final QA/cleanup | Closed/guarded | Final regression gates fail or docs drift from current state again. |
+
+## Open Decisions (awaiting owner)
+
+Visual/interaction parity is closed (live-vs-local pixel profiles at noise level on home/about/project; all gates green). The items below are the remaining engineering-level divergences and hygiene tasks. None block local use; decide before/at release.
+
+### Intentional divergences from source (keep or align)
+
+| # | Item | Current state | Recommendation |
+| --- | --- | --- | --- |
+| 1 | Service worker | Source registers `/sw.js` (offline-fallback cache); rebuild has it patched out for local serving | Keep disabled during QA (SW caching poisons visual checks); restore as a final release batch (needs `sw.js`, `registerSw`, and an `offline/index.html`) |
+| 2 | Video loading | Source fetches video bytes in a Worker -> blob URL (`/workers/video-loader.js`, already present in `public/` but unwired); rebuild sets `video.src` directly + IntersectionObserver | Wire the worker: source asset already on disk, small change in `loadMediaPlane`, aligns network behavior. Medium priority |
+| 3 | Character raw target depth buffer | Bundle literally says `depthBuffer:false`, but live occludes the head back; rebuild enables depth on the raw target (composite target stays source-shaped) | Keep as-is; live baseline wins. Documented |
+| 4 | Nav DOM structure | Rebuild uses `ul/li` + server-baked `is-active`; source uses `div.ui-nav-items/.ui-nav-item` grid + JS `updateNavActive`. Same visuals/interaction (verified) | Keep; harmless (arguably better semantics). Align only if the goal becomes view-source-level indistinguishability. Same verdict for the `work-index` hook class and the unreproduced stray empty spans in header name/description |
+| 5 | Probe scaffolding in production bundle | ~2,500 lines of `source-*` mode strings and `window.__rogier*` exposure; home writes `__rogierHomeGalleryRuntime` every frame unconditionally | Gate the unconditional per-frame writes behind the existing `?debug-output-probe` flag; keep the rest (regression gates depend on it). Optional later: dual build via `import.meta.env` |
+
+### Engineering hygiene (not 1:1-related)
+
+- tsconfig: drop deprecated `baseUrl`, fix paths, burn down the 17 real type errors (16 in `webgl.ts`, 1 in `main.ts`) so `npm exec tsc -- --noEmit` rejoins the gates. Cheap, zero runtime impact.
+- `npm audit fix`: astro 6.4.4 -> 6.4.8 (published XSS/SSRF advisories).
+- Git: ~111MB of tracked media in `public/` (largest file ~6MB, so no hard GitHub blocker). Before pushing to a remote decide: keep as-is (simplest, repo ~350MB with history), Git LFS, or media out-of-repo with a fetch script.
+- Small: move `typescript`/`@types/*` to devDependencies; archive the 8-9 orphaned scripts in `scripts/`; harden `serve.mjs` (bind 127.0.0.1 by default, real 404 status) only if it will ever face a network.
+
+### Deployment note (GitHub Pages)
+
+The built `dist/` is fully static and self-contained — no server-side behavior is required (the `ENABLE_CONTENT_JSON_FALLBACK` logic in `serve.mjs` exists only for the legacy-mirror service on :5174; the rebuild bundle never requests `src/content/*.json`). GitHub Pages works with two conditions:
+
+1. **Must be served from the domain root** — user/org site (`username.github.io` repo) or a custom domain. A project-page subpath (`username.github.io/repo/`) would break the site: absolute paths are hardcoded throughout (`/fonts/`, `/content/`, `/models/me/me.gltf`, `/images/textures/*`, router route normalization), matching the source site's own root-absolute layout.
+2. Deploy via GitHub Actions (checkout -> `npm ci` -> `astro build` -> upload `dist/`), not by committing `dist/`.
+
+Everything else is compatible: `dist/404.html` is byte-identical to home (exactly the source pattern; Pages serves 404.html for unknown routes), no special headers/COOP/COEP needed, mp4/gltf/woff2 all fine on the Pages CDN, published size ~125MB (limit 1GB), and the service worker (if restored) works since Pages is HTTPS.
+
 
 ## Latest Evidence
 
