@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Header color/pointer model, home-view-only description/availability reveal, floating-block drift, cross-route work gallery rebuild |
+| Latest closed batch | Open-items closure: character K1 composite pass (contrast 1.65 + saturation .5) and ts-split source CSS |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -37,6 +37,11 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Phase 6: Final QA/cleanup | Closed/guarded | Final regression gates fail or docs drift from current state again. |
 
 ## Latest Evidence
+
+### 2026-07-19 Open-items closure batch
+
+- Character `K1` composite restored (`webgl.ts`): the character scene now renders to `characterRawTarget` (depth-buffered — the documented live-baseline divergence moved here) and is composited into `characterTarget` through a new `Y1`-equivalent material (fragment mirrors source `q1`: `contrast(rgb, 1.65)` then `saturation(rgb, .5)`, tonemapping include inert under `toneMapped:false`, unused `tBloom/tFluid/tBlur/tMouseSim` + bool uniforms carried for constructor parity; vertex = source `el` == `sourceMatrixFullscreenVertex`). The spotlight keeps projecting `characterTarget.texture`. Head highlights now read desaturated/high-contrast like live.
+- `.ts-split` block copied verbatim into `global.css`. Attribution: the class appears only in the source CSS bundle — zero hits in the JS bundle and mirror HTML — so it is dead code that never renders on live; no runtime trigger exists to reproduce.
 
 ### 2026-07-19 Sitewide color audit batch
 
@@ -67,7 +72,7 @@ Reported symptoms: character block-matrix look/rotation wrong, a background anim
 - Character scene (`webgl.ts`): camera restored to source `Iu` default (FOV 55, pos `(0,0,5)`, near 1 far 2000; was invented FOV 30 @ z=12); lights restored to source `J1` (Ambient `#fff` 5, Directional `#ff9d00` 3 @ `(2,-1,-1)`, Directional `blue` 2 @ `(-1,1,0)`; was white 1.2/2.5); scene background black (linear->sRGB); `me.gltf` used as-is per source `eD` (`gltf.scene.children[0]`, no rotation flip / bounding-box normalize / recenter — origin model ships intrinsic scale 31.17); body group position `(0,-.05,0)`, scale 0.125 initial, resize `>=1000 ? 0.145 : 0.085`. Model/texture files verified byte-identical to origin.
 - About direct-load rendering (`webgl.ts` tick): work scene render was gated on `sceneWrap.visible` (home work items exist), so a direct `/about/` load rendered a black canvas (nav-from-home worked, which masked it). Gate now also passes when `aboutBlocks`/`floatingBlocks` groups are visible — source `nD.update` renders all scenes every frame.
 
-Resolved in later same-day batches: about backdrop brightness (sceneWrap visibility), floating-block drift (signed modulo), and the floor/dome horizon (floor reflection gate) — a 2026-07-19 row-luminance comparison of live vs local about (`/tmp/rd-about-live/t2.png` vs `/tmp/rd-about-local9/t2.png`) matches within noise, so the earlier "camera pitch" suspicion is closed. Still open as a noted, unverified divergence: the character composite runs without the source `K1` composite pass, and the runtime `ts-split` RGB text-split effect (source applies it via JS-generated classes; no CSS/JS equivalent in the rebuild yet).
+Resolved in later same-day batches: about backdrop brightness (sceneWrap visibility), floating-block drift (signed modulo), and the floor/dome horizon (floor reflection gate) — a 2026-07-19 row-luminance comparison of live vs local about (`/tmp/rd-about-live/t2.png` vs `/tmp/rd-about-local9/t2.png`) matches within noise, so the earlier "camera pitch" suspicion is closed. Both remaining open items closed by the open-items batch: the character render now runs the source `K1`/`Y1` composite pass (raw scene target -> `q1` grade: `contrast(rgb, 1.65)` + `saturation(rgb, .5)` + inert tonemapping include, all bool passes false; depth-buffer divergence now lives on the raw target only), and the `.ts-split` CSS block is carried verbatim — attribution showed it is dead code in the source (present only in the CSS bundle; zero references in the JS bundle or mirror HTML, so it never renders live; no JS trigger is reproduced).
 
 Validated with: build; home desktop output probe (`/tmp/rd-ab-home`), about probe (`/tmp/rd-ab-about`), project media probe (`/tmp/rd-ab-media`), thumb spotlight probe (`/tmp/rd-ab-thumb`); side-by-side live-vs-local headless captures (`/tmp/rd-about-live`, `/tmp/rd-about-local4`) via scratchpad `capture-about.mjs` — head now renders with source lighting and auto-rotates ~1 rad/s on direct load.
 

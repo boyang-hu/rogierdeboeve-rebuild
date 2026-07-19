@@ -3957,6 +3957,40 @@ void main() {
 }
 `;
 
+const characterSceneCompositeFragment = `
+precision highp float;
+
+#include <tonemapping_pars_fragment>
+
+${sourceSaturationHelper}
+${sourceContrastHelper}
+
+uniform sampler2D tScene;
+uniform sampler2D tBloom;
+uniform sampler2D tFluid;
+uniform sampler2D tBlur;
+uniform sampler2D tMouseSim;
+
+uniform bool boolBloom;
+uniform bool boolFluid;
+uniform bool boolLuminosity;
+uniform bool boolFxaa;
+
+in vec2 vUv;
+out vec4 FragColor;
+
+void main() {
+  vec2 uv = vUv;
+  vec4 mixed = texture(tScene, uv);
+  mixed.rgb = contrast(mixed.rgb, 1.65);
+  mixed.rgb = saturation(mixed.rgb, .5);
+
+  FragColor = vec4(mixed.rgb, 1.);
+
+  #include <tonemapping_fragment>
+}
+`;
+
 const mouseSimulationVertex = `
 precision highp float;
 
@@ -5349,7 +5383,10 @@ export class WebGLBackdrop {
   private characterBodyGroup = new Group();
   private characterModelRoot = new Group();
   private characterFallbackMesh: Mesh<PlaneGeometry, ShaderMaterial>;
-  private characterTarget = makeSourceRenderTarget(true);
+  private characterRawTarget = makeSourceRenderTarget(true);
+  private characterTarget = makeSourceRenderTarget(false);
+  private characterPostScreen = makeSourcePassScreen();
+  private characterSceneCompositeMaterial: ShaderMaterial;
   private characterRotatableEventsActive = false;
   private characterRotatablePointerDown = false;
   private characterRotatablePointer = new Vector2();
@@ -5689,6 +5726,7 @@ export class WebGLBackdrop {
     this.mainFluidPass = this.createMainFluidPass();
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.characterMaterial = this.createCharacterMaterial();
+    this.characterSceneCompositeMaterial = this.createCharacterSceneCompositeMaterial();
     this.characterFallbackMesh = new Mesh(new PlaneGeometry(2, 2), this.characterMaterial);
     this.characterDirectionalLight.position.set(2, -1, -1);
     this.characterDirectionalLight2.position.set(-1, 1, 0);
@@ -6488,7 +6526,9 @@ export class WebGLBackdrop {
     this.thumbCompositeTarget.dispose();
     this.thumbCompositeMaterial.dispose();
     this.disposeCharacterModel();
+    this.characterRawTarget.dispose();
     this.characterTarget.dispose();
+    this.characterSceneCompositeMaterial.dispose();
     this.characterMaterial.dispose();
     this.floorPlane.geometry.dispose();
     this.floorMaterial.dispose();
@@ -7821,6 +7861,31 @@ void main() {
     });
   }
 
+  private createCharacterSceneCompositeMaterial() {
+    dumpShader("Y1-character-composite", sourceMatrixFullscreenVertex, characterSceneCompositeFragment);
+    return new RawShaderMaterial({
+      glslVersion: GLSL3,
+      toneMapped: false,
+      blending: NoBlending,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      uniforms: {
+        tScene: { value: null },
+        tBloom: { value: null },
+        tBlur: { value: null },
+        tFluid: { value: null },
+        tMouseSim: { value: null },
+        boolBloom: { value: false },
+        boolFluid: { value: false },
+        boolLuminosity: { value: false },
+        boolFxaa: { value: false },
+      },
+      vertexShader: sourceMatrixFullscreenVertex,
+      fragmentShader: characterSceneCompositeFragment,
+    });
+  }
+
   private createCharacterMaterial() {
     return new ShaderMaterial({
       depthWrite: false,
@@ -8773,6 +8838,7 @@ void main() {
     const thumbSize = Math.round(height);
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
+    this.characterRawTarget.setSize(thumbSize, thumbSize);
     this.characterTarget.setSize(thumbSize, thumbSize);
     this.characterBodyGroup.scale.setScalar(width >= 1000 ? 0.145 : 0.085);
     this.renderCharacterTarget();
@@ -12438,10 +12504,14 @@ void main() {
   }
 
   private renderCharacterTarget() {
-    this.renderer.setRenderTarget(this.characterTarget);
+    this.renderer.setRenderTarget(this.characterRawTarget);
     this.renderer.clear();
     if (this.characterFallbackMesh.visible) this.renderer.render(this.characterScene, this.backgroundCamera);
     else this.renderer.render(this.characterScene, this.characterCamera);
+    this.characterSceneCompositeMaterial.uniforms.tScene.value = this.characterRawTarget.texture;
+    this.characterPostScreen.material = this.characterSceneCompositeMaterial;
+    this.renderer.setRenderTarget(this.characterTarget);
+    this.renderer.render(this.characterPostScreen, this.backgroundCamera);
     this.renderer.setRenderTarget(null);
   }
 
