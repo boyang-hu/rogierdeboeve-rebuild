@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | TO INDEX inheritance fix (.c-link invented color removed); prior: 1:1 self-audit sweep |
+| Latest closed batch | Route-transition color ramp (.c-color transition removed) + TO INDEX inheritance fix |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -68,6 +68,10 @@ Everything else is compatible: `dist/404.html` is byte-identical to home (exactl
 
 
 ## Latest Evidence
+
+### 2026-07-19 Route-transition color ramp fix
+
+- During route changes every piece of text visibly wandered through intermediate colors instead of ramping straight to the target page color. Cause: the rebuild's invented `.c-color{color:var(--fg);transition:color .6s ease,opacity .3s linear}` — `setMainColor` writes an inline rgb() every GSAP tick, and the CSS transition chased each tick with 600ms lag (and double-eased the GSAP opacity tweens on the same elements). Source has only `.c-color{will-change:color}`; rule replaced verbatim. Verified by sampling `.ui-header-name` computed color at 120ms intervals through a home->demorgen navigation on both sites: trajectories now match point-by-point (single expo ramp, blue->red, converged by ~1.7s, per-sample RGB delta <=6). Gates: home/media/preload-state green.
 
 ### 2026-07-19 TO INDEX color fix
 

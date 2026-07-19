@@ -281,8 +281,7 @@ body.is-ready [data-view] {
 }
 
 .c-color {
-  color: var(--fg);
-  transition: color 0.6s ease, opacity 0.3s linear;
+  will-change: color;
 }
 
 .ui-header {
