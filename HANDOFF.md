@@ -38,6 +38,11 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 
 ## Latest Evidence
 
+### 2026-07-19 Sitewide color audit batch
+
+- Declaration-level diff of `color`/`opacity`/`background` between the bundle CSS and `global.css` (same script approach as the typography audit). Net result: one real divergence — `.ui-nav-a` opacity was 0.45 vs source `var(--opacity-dimmed)` (0.6); fixed. Every other reported gap resolved to equivalent rebuild selectors (`.social-a` vs `.ui-footer-socials a`, `.c-button-bg-hover` vs `.c-button-bg .c-button-bg-hover`, about `.ts-m` section variants) or to selectors absent from the mirror markup (`.ts-m-link-inner`, `.ui-footer-secondary`).
+- Horizon check closed: fresh live-vs-local about captures compared by row-luminance profile match within ±3 grey levels; no camera-pitch divergence exists (the earlier seam was the unrendered floor reflection, fixed previously).
+
 ### 2026-07-19 Header/floating/route-rebuild batch
 
 - Header colors: invented `color: var(--muted)` on `.ui-header-secondary/.ui-header-version/.ui-header-availability` and `.ui-title` replaced with the source model — `.c-color` inline color (JS `setMainColor`, already implemented) plus `.ui-header-secondary{opacity:var(--opacity-dimmed)}` and `.ui-title{opacity:var(--opacity-dimmed)}`.
@@ -62,7 +67,7 @@ Reported symptoms: character block-matrix look/rotation wrong, a background anim
 - Character scene (`webgl.ts`): camera restored to source `Iu` default (FOV 55, pos `(0,0,5)`, near 1 far 2000; was invented FOV 30 @ z=12); lights restored to source `J1` (Ambient `#fff` 5, Directional `#ff9d00` 3 @ `(2,-1,-1)`, Directional `blue` 2 @ `(-1,1,0)`; was white 1.2/2.5); scene background black (linear->sRGB); `me.gltf` used as-is per source `eD` (`gltf.scene.children[0]`, no rotation flip / bounding-box normalize / recenter — origin model ships intrinsic scale 31.17); body group position `(0,-.05,0)`, scale 0.125 initial, resize `>=1000 ? 0.145 : 0.085`. Model/texture files verified byte-identical to origin.
 - About direct-load rendering (`webgl.ts` tick): work scene render was gated on `sceneWrap.visible` (home work items exist), so a direct `/about/` load rendered a black canvas (nav-from-home worked, which masked it). Gate now also passes when `aboutBlocks`/`floatingBlocks` groups are visible — source `nD.update` renders all scenes every frame.
 
-Known remaining divergence (next batch): about background fog/floating-block brightness vs live (`p1.setLights`/darken chain on about not yet attributed); character composite runs without the source `K1` composite pass.
+Resolved in later same-day batches: about backdrop brightness (sceneWrap visibility), floating-block drift (signed modulo), and the floor/dome horizon (floor reflection gate) — a 2026-07-19 row-luminance comparison of live vs local about (`/tmp/rd-about-live/t2.png` vs `/tmp/rd-about-local9/t2.png`) matches within noise, so the earlier "camera pitch" suspicion is closed. Still open as a noted, unverified divergence: the character composite runs without the source `K1` composite pass, and the runtime `ts-split` RGB text-split effect (source applies it via JS-generated classes; no CSS/JS equivalent in the rebuild yet).
 
 Validated with: build; home desktop output probe (`/tmp/rd-ab-home`), about probe (`/tmp/rd-ab-about`), project media probe (`/tmp/rd-ab-media`), thumb spotlight probe (`/tmp/rd-ab-thumb`); side-by-side live-vs-local headless captures (`/tmp/rd-about-live`, `/tmp/rd-about-local4`) via scratchpad `capture-about.mjs` — head now renders with source lighting and auto-rotates ~1 rad/s on direct load.
 

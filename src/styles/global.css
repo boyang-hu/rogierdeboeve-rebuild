@@ -472,7 +472,7 @@ body.is-ready [data-view] {
   display: inline-flex;
   padding-left: 1.25rem;
   margin-left: -1.25rem;
-  opacity: 0.45;
+  opacity: var(--opacity-dimmed);
   pointer-events: none;
   overflow: hidden;
   transition: opacity 0.3s ease-in-out;
