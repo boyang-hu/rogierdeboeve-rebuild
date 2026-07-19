@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Project title descender clip fix; prior: color ramp + TO INDEX inheritance |
+| Latest closed batch | Reverse CSS scan: header-bg gradient, work-a transform transition, mobile text-shadow removed |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -68,6 +68,15 @@ Everything else is compatible: `dist/404.html` is byte-identical to home (exactl
 
 
 ## Latest Evidence
+
+### 2026-07-19 Reverse CSS scan batch
+
+- Reverse scan: enumerated all 118 rebuild-only (media, selector) keys in `global.css` (rules absent from the source bundle) and classified each. Three genuine inventions fixed:
+  - `.ui-header-bg`: rebuild painted a 10rem top gradient on ALL viewports; source has no desktop background at all (bare positioned div, `height:200%`) and the gradient only inside `max-width:999px`. Replaced with the source rules verbatim.
+  - `.ui-work-a` transition carried an invented `transform .6s var(--expo)` term (nothing ever transforms the anchor; source is `opacity .3s linear` only, scoped `>=1000px`).
+  - Mobile `.ui-work-a` had an invented `text-shadow`; source has no text-shadow anywhere in the bundle.
+- Everything else classified as intentional/equivalent: rebuild state-class mechanisms (`body.is-*`, `is-ready`/`[data-view]`, `has-entered`), alias selectors reaching identical declarations (`.social-a` family, `.ui-nav ul/li`, sound-toggle `is-active` prefix), media-scope-only differences (mobile nav family: source declares top-level, rebuild scopes under `max-999` — elements are `lg:hidden` anyway), the mobile `.grid -> display:block` collapse family (verified equivalent by measurement: mobile work title/cta rects identical live-vs-local at 390px: title y678/h24/fs24, cta y718/h60), unused utility classes, sr-only progressbar spans, and the reduced-motion global block (documented rebuild extra).
+- Gates: home desktop+mobile, about, media, preload-state all green.
 
 ### 2026-07-19 Project title descender clip fix
 
