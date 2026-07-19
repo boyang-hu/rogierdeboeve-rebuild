@@ -578,11 +578,14 @@ function initMenu() {
   };
 
   if (nav) {
-    const fadeIn = () => gsap.fromTo(nav, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "none" });
+    const fadeIn = () => {
+      nav.dataset.rdShown = "1";
+      gsap.fromTo(nav, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "none" });
+    };
     if (document.querySelector(".preloader") && !document.body.classList.contains("has-entered")) {
       window.addEventListener("rd:animate-in", fadeIn, { once: true });
       cleanupCallbacks.push(() => window.removeEventListener("rd:animate-in", fadeIn));
-    } else {
+    } else if (nav.dataset.rdShown !== "1") {
       fadeIn();
     }
   }
@@ -1554,18 +1557,18 @@ function boot() {
   const replacePageDom = (doc: Document) => {
     const nextBody = doc.body;
     const nextHtml = doc.documentElement;
-    const nextHeader = doc.querySelector<HTMLElement>(".ui-header");
-    const nextNav = doc.querySelector<HTMLElement>(".ui-nav");
     const nextMain = doc.querySelector<HTMLElement>(".ui-main");
-    const header = document.querySelector<HTMLElement>(".ui-header");
-    const nav = document.querySelector<HTMLElement>(".ui-nav");
     const main = document.querySelector<HTMLElement>(".ui-main");
     if (!nextMain || !main) throw new Error("Router response is missing .ui-main");
-    if (nextHeader && header) header.replaceWith(nextHeader);
-    if (nextNav && nav) nav.replaceWith(nextNav);
     main.replaceWith(nextMain);
     document.title = doc.title;
     setPageClasses(nextBody, nextHtml);
+  };
+  const updateNavActive = () => {
+    document.querySelectorAll<HTMLAnchorElement>(".ui-nav-a, .ui-nav-mobile-a").forEach((link) => {
+      const target = new URL(link.getAttribute("href") ?? "/", window.location.href);
+      link.classList.toggle("is-active", target.pathname === window.location.pathname);
+    });
   };
   const initWebglForCurrentPage = (callbacks: Array<() => void>) => {
     const active = document.querySelector<HTMLElement>("[data-project-card].is-active");
@@ -1614,6 +1617,7 @@ function boot() {
   };
   const initCurrentPage = () => {
     cleanupPage();
+    updateNavActive();
     cleanupPageCallbacks.push(initViewLifecycle(!document.documentElement.classList.contains("is-route-swapping")));
     void import("./motion").then(({ initMotion }) => {
       cleanupMotion = initMotion();

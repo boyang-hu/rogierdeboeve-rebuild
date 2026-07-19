@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Project-page nav restore (is-project display:none rules removed); prior: reverse CSS scan |
+| Latest closed batch | Persistent chrome: router no longer replaces header/nav; JS updateNavActive like source |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -68,6 +68,11 @@ Everything else is compatible: `dist/404.html` is byte-identical to home (exactl
 
 
 ## Latest Evidence
+
+### 2026-07-19 Persistent chrome batch
+
+- Header, left nav, and (perceived) sound toggle re-mounted on every route change: `replacePageDom` swapped `.ui-header` and `.ui-nav` wholesale and re-ran their entrance animations. Source keeps them as persistent global components outside the router wrapper (only the view inside `main` swaps; `updateNavActive` adjusts `is-active` via JS). The rebuild router now replaces only `.ui-main`; a source-style `updateNavActive()` (pathname compare) runs in `initCurrentPage`, and `setProjectNavActive` still marks Work active on project views. The mobile-nav fade is marked once-per-session (`data-rd-shown`) so it no longer replays per swap. Description/availability keep their source per-view choreography (fade out on home leave, home-gated fromTo on home enter); version/name inline end-states persist naturally now.
+- Verified by DOM identity: `.ui-header`/`.ui-nav`/`.ui-sound-toggle` are the same nodes across home->about->home->project navigations, `is-active` follows the route, name part-inners stay at rest transform (no replay).
 
 ### 2026-07-19 Project-page nav restore
 
