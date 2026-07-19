@@ -19,8 +19,8 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | About-page parity: source typography (letter-spacing/responsive sizes/root font scope), character scene (camera 55/lights/model transform/scale), about direct-load work-scene rendering |
-| Last source-backed code batch | Same batch (2026-07-19); preloader entry-sequence batch closed same day |
+| Latest closed batch | About background/character follow-up: env+floor scene-level parenting, character target depth, sitewide typography audit |
+| Last source-backed code batch | Same batch (2026-07-19); about-parity and preloader batches closed same day |
 | Current priority | Do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after the Phase 6 docs commit |
@@ -37,6 +37,13 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Phase 6: Final QA/cleanup | Closed/guarded | Final regression gates fail or docs drift from current state again. |
 
 ## Latest Evidence
+
+### 2026-07-19 About background/character follow-up batch
+
+- Double-face fix: the character render target now has a depth buffer, so the head occludes its far side when rotated. Documented divergence: the bundle's `Lu` targets are literally `depthBuffer:false`, but the live baseline visibly occludes the back of the head; the live site is the acceptance baseline, so depth stays on (`characterTarget = makeSourceRenderTarget(true)`).
+- About background restored: `sceneWrap` (which parents `blocksWrap` + `floorGroup` + `environmentGroup`, matching source `p1.sceneWrap`) was hidden whenever home work items were absent, so about pages had no fog dome/floor at all and the drifting `floatingBlocks` had no lit backdrop. Source never hides `sceneWrap`; the tick now derives `sceneWrap.visible` from `workItems.length > 0 || aboutBlocks/floatingBlocks visible`, which also restores the floor reflection on about (the previous hard floor/dome seam came from the black, never-rendered reflection). Hierarchy stays source-shaped (home output probe asserts it). About lighting config verified to already match source `xt` (`#bcbcbc` main color, darken .2, saturation .35, contrast 1.1, ambient `#000000`@1, directional 5, spotlight 270).
+- Sitewide typography audit (declaration-level diff of bundle CSS vs `global.css`): base `html{font-size:min(4.26667vw,16px);font-weight:400}` restored; `.c-list-section-title` letter-spacing `-.03em` (+`-.01em` mobile, later `line-height:1.1rem` override); `.ui-nav-a-title` `-.03em`/weight 400; `.c-button-text` mono typography block (`.75rem`/700/uppercase/`.04em`) restored.
+- Validated: build; home desktop output (`/tmp/rd-bg-home2`), about (`/tmp/rd-bg2-about`), project media (`/tmp/rd-bg2-media`), thumb spotlight (`/tmp/rd-bg2-thumb`), preload-state (`/tmp/rd-bg2-preload`) — all failures empty. Live-vs-local captures: `/tmp/rd-about-live` vs `/tmp/rd-about-local8`.
 
 ### 2026-07-19 About-page parity batch
 

@@ -5349,7 +5349,7 @@ export class WebGLBackdrop {
   private characterBodyGroup = new Group();
   private characterModelRoot = new Group();
   private characterFallbackMesh: Mesh<PlaneGeometry, ShaderMaterial>;
-  private characterTarget = makeSourceRenderTarget(false);
+  private characterTarget = makeSourceRenderTarget(true);
   private characterRotatableEventsActive = false;
   private characterRotatablePointerDown = false;
   private characterRotatablePointer = new Vector2();
@@ -12596,9 +12596,10 @@ void main() {
     this.updateMediaPlanePositions();
 
     const isProjectView = document.body.classList.contains("is-project");
-    const hasHome = this.sceneWrap.visible
+    this.sceneWrap.visible = this.workItems.length > 0
       || Boolean(this.aboutBlocks?.group.visible)
       || Boolean(this.floatingBlocks?.group.visible);
+    const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     const debugRawWorkComposite = this.debugPassOrder === "raw-work-composite";
 
