@@ -1,6 +1,6 @@
 # Rogier de Boeve Rebuild Handoff
 
-Last updated: 2026-07-10
+Last updated: 2026-07-19
 
 ## Purpose
 
@@ -18,9 +18,9 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Item | Value |
 | --- | --- |
 | Active production phase | None |
-| Overall status | Phase 1 through Phase 6 are closed/guarded; post-phase source parity batch closed 2026-07-10 |
-| Latest closed batch | Source parity alignment: head metadata, 404/sitemap routes, lg/xl grid classes, button SVG overflow, justify-end, scrollbar drag ownership, About title |
-| Last source-backed code batch | Same batch (2026-07-10) |
+| Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
+| Latest closed batch | Preloader entry-sequence parity: pre-enter hidden states, ANIMATE_IN gating, header version/name/availability DOM, nav icon placement |
+| Last source-backed code batch | Same batch (2026-07-19) |
 | Current priority | Do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after the Phase 6 docs commit |
@@ -38,31 +38,29 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 
 ## Latest Evidence
 
-The 2026-07-10 source parity batch was validated against `http://127.0.0.1:5173/` (static `serve.mjs` over a fresh `dist/`).
+The 2026-07-19 preloader entry-sequence batch was validated against `http://127.0.0.1:5173/` (static `serve.mjs` over a fresh `dist/`). Reported symptom: during preload, the whole home UI (work list, INDEX title, nav, footer, header description/availability) was already visible. Source model (attributed before patching): mirror ships `<body style="opacity: 0;">` cleared by the preloader's `init` (`document.body.style=""`); CSS defaults keep everything masked (`.ui-main [data-view]{opacity:0}`, `.ui-header-secondary .ts-m>*` at `102%`, part-inners at `130%`, `.ui-nav-a-inner` at `102%`, `.ui-nav-mobile{opacity:0}`); during preload only `Ki.animateVersionIn()`, `Ki.animateNameIn()`, and the canvas `J.animateIn()` run; everything else waits for the Enter click (`ANIMATE_IN` -> view `animateIn` 0.5s linear fade + `Tr`/`Ar` nav + description/availability + title/footer/work reveals).
 
-Batch content (each item attributed to the mirror HTML/CSS/bundle before patching):
+Batch changes:
 
-- Scrollbar drag now calls only the page scroll controller (`source onPointerMove` has no `window.scrollTo` fallback; the previous `??`-on-void expression double-fired native scroll).
-- `.justify-end` utility restored; `.items-end` value aligned to source `flex-end`.
-- About title restored to `Rogier de Boevé - About`.
-- Head parity: `mask-icon`, `msapplication-TileColor`, `theme-color`, `generator`, `og:url/type/image(+width/height)`, and the five twitter tags, with absolute `og:image`/`twitter:image` URLs.
-- `404.astro` added (build output is byte-identical to `index.html`, matching the mirror) via shared `src/components/HomeView.astro`; `Header.astro`/`BaseLayout.astro` treat `/404` as home for `is-active`/page class.
-- `public/sitemap.xml` copied verbatim from the mirror.
-- Grid classes restored to mirror strings: home index column, header availability column, project scroll-CTA column.
-- Button SVG restored to source mechanism: rects `width="155"` overflowing the 150 viewBox, `.c-button-bg svg { overflow: visible }`, hover transition `0.3s`.
-- Project pages use the site-default meta description (mirror never varies it).
+- `BaseLayout.astro`: body ships `style="opacity: 0;"`; `initPreloader` clears it (source `iD.init`).
+- `main.ts`: `is-ready` no longer added at boot; `reveal()` adds `is-ready`/`has-entered` and dispatches `rd:animate-in` (source `ANIMATE_IN`); skip-preloader path adds both; header version/name tweens run inside the preloader's 100ms timer (source `initLoader`); mobile-nav fade and `initViewLifecycle` first-load view fade now wait for `rd:animate-in`; `webgl.animateIn()` fires when the instance is created so the canvas fades in during preload (source `J.animateIn` at `LOAD_START`).
+- `motion.ts`: invented header-container tween removed; intro animations (nav, description, availability, title, footer, work links, about intro, project header) deferred to `rd:animate-in` on first load, immediate on route swaps; on swaps the replaced header's version/name are `gsap.set` to their post-preload state.
+- `Header.astro`: version restored to mirror DOM (`div.ui-header-version.ts-m > a.c-color`); name uses `part-outer/part-inner` pairs; availability column split into mirror's outer grid div + inner `div.ui-header-availability.ts-m.c-color` with a bare `part-inner` (no outer); desktop nav icon moved inside `.ui-nav-a-inner` (mirror) so the mask hides it pre-enter.
+- `global.css`: added source rules `.ui-header-secondary .ts-m{overflow:hidden}` + `.ui-header-secondary .ts-m>*{...translateY(102%)}`, nav icon `left:-1.25rem` + staggered `rect` transitions; removed invented `.ui-nav-a-inner{opacity:0}` and icon width/height.
+
+Known intentional divergences kept: nav markup stays `ul/li` (mirror uses `div.ui-nav-items/.ui-nav-item` grid), nav `is-active` is server-baked (source sets it via JS `updateNavActive`), and the mirror's stray empty `<span><span></span></span>` artifacts inside name/description part-inners are not reproduced.
 
 Static/build checks:
 
-- `ASTRO_TELEMETRY_DISABLED=1 npm run build` (17 pages; requires a synced `npm install` — `detect-gpu` was missing locally before this batch)
-- `OUT_DIR=/tmp/rd-a-renderer node scripts/audit-renderer-output.mjs`
+- `ASTRO_TELEMETRY_DISABLED=1 npm run build` (17 pages; `dist/404.html` still byte-identical to `dist/index.html`)
+- `OUT_DIR=/tmp/rd-pre-renderer node scripts/audit-renderer-output.mjs`
 
-Fresh browser probes (all `failures: 0`, `exceptions: 0`, `consoleMessages: 0`):
+Fresh browser probes (all `failures: []`, no exceptions/console messages):
 
-- Home desktop output: `/tmp/rd-a-home-desktop/summary.json`
-- Home mobile output: `/tmp/rd-a-home-mobile2/summary.json`
-- About desktop/mobile: `/tmp/rd-a-about-desktop/summary.json`, `/tmp/rd-a-about-mobile/summary.json`
-- Project media: `/tmp/rd-a-media/summary.json`
+- Home desktop output: `/tmp/rd-pre-home-desktop2/summary.json` (`PROBE_WAIT=25000`)
+- Home mobile output: `/tmp/rd-pre-home-mobile2/summary.json` (`VIEWPORT=mobile PROBE_WAIT=45000`)
+- About: `/tmp/rd-pre-about/summary.json`; project media: `/tmp/rd-pre-media/summary.json`
+- Preload-state probe (session scratchpad `probe-preload-state.mjs`, `/tmp/rd-pre-preload-state/`): pre-enter asserts body style cleared, no `is-ready`, `[data-view]` opacity 0, nav/mobile-nav/description/availability hidden, version+name animated in; post-enter asserts full reveal. Screenshots `before-enter.png`/`after-enter.png` match the source's preload composition (V-004 + name + WebGL backdrop + loader only).
 
 Probe timing note: on a real-GPU machine (tier 3, main fluid enabled) the gallery-entry `mouseFactor` tween has not reached its steady value at the default `PROBE_WAIT=5200`; the same assertion passes with `PROBE_WAIT=25000` (desktop) / `PROBE_WAIT=45000` (mobile emulation). This is probe timing, not a product mismatch. The Phase 6 baseline ran under SwiftShader tier 1.
 

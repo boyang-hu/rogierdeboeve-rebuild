@@ -200,8 +200,9 @@ function initAboutSplitArticles() {
   };
 }
 
-function initIntroAnimations() {
-  const chromeTargets = gsap.utils.toArray<HTMLElement>(".ui-header-primary, .ui-header-secondary");
+function initIntroAnimations(restoreHeaderChrome: boolean) {
+  const headerVersionTarget = document.querySelector<HTMLElement>(".ui-header-version > a");
+  const headerNameTargets = gsap.utils.toArray<HTMLElement>(".ui-header-name .ui-header-part-inner");
   const navInnerTargets = gsap.utils.toArray<HTMLElement>(".ui-nav-a-inner");
   const navLinkTargets = gsap.utils.toArray<HTMLElement>(".ui-nav-a");
   const headerDescriptionTargets = gsap.utils.toArray<HTMLElement>(".ui-header-description .ui-header-part-inner");
@@ -221,7 +222,7 @@ function initIntroAnimations() {
       target.style.opacity = "1";
       target.style.transform = "translate3d(0, 0, 0)";
     });
-    [...titleTargets, ...footerSocialTargets, ...footerContactTargets, ...aboutIntroTitleTargets].forEach((target) => {
+    [...(headerVersionTarget ? [headerVersionTarget] : []), ...headerNameTargets, ...titleTargets, ...footerSocialTargets, ...footerContactTargets, ...aboutIntroTitleTargets].forEach((target) => {
       target.style.opacity = "1";
       target.style.transform = "translate3d(0, 0, 0)";
     });
@@ -239,19 +240,16 @@ function initIntroAnimations() {
         target.style.opacity = "";
         target.style.transform = "";
       });
-      [...titleTargets, ...footerSocialTargets, ...footerContactTargets, ...aboutIntroTitleTargets].forEach((target) => {
+      [...(headerVersionTarget ? [headerVersionTarget] : []), ...headerNameTargets, ...titleTargets, ...footerSocialTargets, ...footerContactTargets, ...aboutIntroTitleTargets].forEach((target) => {
         target.style.opacity = "";
         target.style.transform = "";
       });
     };
   }
 
-  if (chromeTargets.length) {
-    tweens.push(gsap.fromTo(
-      chromeTargets,
-      { y: 18, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.1, stagger: 0.08, ease: "expo.out" },
-    ));
+  if (restoreHeaderChrome) {
+    if (headerVersionTarget) gsap.set(headerVersionTarget, { y: 0 });
+    if (headerNameTargets.length) gsap.set(headerNameTargets, { y: 0, opacity: 1 });
   }
 
   if (navInnerTargets.length) {
@@ -409,10 +407,18 @@ export function initMotion() {
   const cleanupLenis = initLenis();
   const cleanupFooter = initFooterContactLabel();
   const cleanupSplitArticles = initAboutSplitArticles();
-  const cleanupIntro = initIntroAnimations();
-  initProjectHeaderAnimation();
+  const pendingPreloaderEnter = Boolean(document.querySelector(".preloader"))
+    && !document.body.classList.contains("has-entered");
+  let cleanupIntro: (() => void) | undefined;
+  const startIntro = () => {
+    cleanupIntro = initIntroAnimations(!pendingPreloaderEnter);
+    initProjectHeaderAnimation();
+  };
+  if (pendingPreloaderEnter) window.addEventListener("rd:animate-in", startIntro, { once: true });
+  else startIntro();
   return () => {
-    cleanupIntro();
+    window.removeEventListener("rd:animate-in", startIntro);
+    cleanupIntro?.();
     cleanupSplitArticles();
     cleanupLenis();
     cleanupFooter();

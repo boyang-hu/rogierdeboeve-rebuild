@@ -373,8 +373,11 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
   const ctaTextInner = document.querySelector<HTMLElement>(".preloader-cta-text-inner");
   const ctaTextInner2 = document.querySelector<HTMLElement>(".preloader-cta-text-2-inner");
   const footerTextInner = document.querySelector<HTMLElement>(".preloader-footer-text-inner");
+  const headerVersion = document.querySelector<HTMLElement>(".ui-header-version > a");
+  const headerNameInners = gsap.utils.toArray<HTMLElement>(".ui-header-name .ui-header-part-inner");
   const isMobile = () => window.matchMedia("(pointer: coarse)").matches;
   const skipPreloader = new URLSearchParams(window.location.search).has("skip-preloader");
+  document.body.style.cssText = "";
   const progressState = {
     progress: 0,
     progressCircleR: progressCircle?.r.baseVal.value ?? 230,
@@ -405,7 +408,8 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
     }
     window.dispatchEvent(new CustomEvent("rd:sound-show-button"));
     document.body.classList.remove("is-preloading");
-    document.body.classList.add("has-entered");
+    document.body.classList.add("is-ready", "has-entered");
+    window.dispatchEvent(new CustomEvent("rd:animate-in"));
     if (preloader) preloader.style.pointerEvents = "none";
     if (cta) cta.style.pointerEvents = "none";
     if (cta2) cta2.style.pointerEvents = "none";
@@ -433,7 +437,7 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
 
   if (skipPreloader) {
     document.body.classList.remove("is-preloading");
-    document.body.classList.add("has-entered");
+    document.body.classList.add("is-ready", "has-entered");
     preloader?.remove();
     emitPageEntered();
     return;
@@ -527,6 +531,8 @@ function initPreloader(loadCompletePromise: Promise<unknown> = Promise.resolve()
 
   setProgressCircle(0);
   window.setTimeout(() => {
+    if (headerVersion) gsap.fromTo(headerVersion, { y: "130%" }, { y: 0, duration: 1.8, ease: "expo.out" });
+    if (headerNameInners.length) gsap.fromTo(headerNameInners, { y: "130%", opacity: 0 }, { y: 0, opacity: 1, delay: 0.1, duration: 1.8, ease: "expo.out" });
     if (progressContainer) gsap.fromTo(progressContainer, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 3, ease: "power4.out" });
     if (footerTextInner) gsap.fromTo(footerTextInner, { opacity: 0, translateY: "110%" }, { opacity: 1, translateY: "0", duration: 1.8, delay: 0.02, ease: "expo.out" });
     rotationTween = gsap.to(progressState, {
@@ -572,7 +578,13 @@ function initMenu() {
   };
 
   if (nav) {
-    gsap.fromTo(nav, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "none" });
+    const fadeIn = () => gsap.fromTo(nav, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "none" });
+    if (document.querySelector(".preloader") && !document.body.classList.contains("has-entered")) {
+      window.addEventListener("rd:animate-in", fadeIn, { once: true });
+      cleanupCallbacks.push(() => window.removeEventListener("rd:animate-in", fadeIn));
+    } else {
+      fadeIn();
+    }
   }
 
   const onToggleClick = () => {
@@ -1415,10 +1427,17 @@ function initViewLifecycle(animate = true) {
   const viewClass = `is-${view.dataset.view}`;
   document.documentElement.classList.add(viewClass);
   document.querySelector<HTMLElement>(".ui-header-name")?.style.setProperty("pointer-events", "all");
+  const pendingPreloaderEnter = () =>
+    Boolean(document.querySelector(".preloader")) && !document.body.classList.contains("has-entered");
 
   if (prefersReducedMotion()) {
-    view.style.opacity = "1";
+    const show = () => {
+      view.style.opacity = "1";
+    };
+    if (pendingPreloaderEnter()) window.addEventListener("rd:animate-in", show, { once: true });
+    else show();
     return () => {
+      window.removeEventListener("rd:animate-in", show);
       document.documentElement.classList.remove(viewClass);
       view.style.opacity = "";
       document.querySelector<HTMLElement>(".ui-header-name")?.style.removeProperty("pointer-events");
@@ -1441,10 +1460,15 @@ function initViewLifecycle(animate = true) {
     };
   }
 
-  gsap.killTweensOf(view);
-  gsap.fromTo(view, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "linear" });
+  const runReveal = () => {
+    gsap.killTweensOf(view);
+    gsap.fromTo(view, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "linear" });
+  };
+  if (pendingPreloaderEnter()) window.addEventListener("rd:animate-in", runReveal, { once: true });
+  else runReveal();
 
   return () => {
+    window.removeEventListener("rd:animate-in", runReveal);
     gsap.killTweensOf(view);
     document.documentElement.classList.remove(viewClass);
     view.style.opacity = "";
@@ -1477,7 +1501,6 @@ async function initWebGL() {
 
 function boot() {
   document.documentElement.classList.toggle("is-mobile", window.matchMedia("(pointer: coarse)").matches);
-  document.body.classList.add("is-ready");
   let webgl: WebGLLike | undefined;
   let homeGalleryEntered = false;
   let routing = false;
@@ -1672,6 +1695,7 @@ function boot() {
 
   const webglReady = initWebGL().then((instance) => {
     webgl = instance;
+    void instance?.animateIn?.();
     initWebglForCurrentPage(cleanupPageCallbacks);
   });
   const audioReady = import("./audio").then(({ initAudio }) => {
