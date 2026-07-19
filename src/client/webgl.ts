@@ -12677,7 +12677,8 @@ void main() {
     const isProjectView = document.body.classList.contains("is-project");
     this.sceneWrap.visible = this.workItems.length > 0
       || Boolean(this.aboutBlocks?.group.visible)
-      || Boolean(this.floatingBlocks?.group.visible);
+      || Boolean(this.floatingBlocks?.group.visible)
+      || isProjectView;
     const hasHome = this.sceneWrap.visible;
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     const debugRawWorkComposite = this.debugPassOrder === "raw-work-composite";

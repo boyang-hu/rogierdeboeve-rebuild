@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Route-swap view fade (source 0->1 0.5s linear on swapped views); project video pipeline verified end-to-end |
+| Latest closed batch | 1:1 self-audit: utility cascade order, px/py ladder, project fog, asset hashes, full CSS property diff |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -37,6 +37,15 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | Phase 6: Final QA/cleanup | Closed/guarded | Final regression gates fail or docs drift from current state again. |
 
 ## Latest Evidence
+
+### 2026-07-19 Self-audit batch (1:1 verification sweep)
+
+- Assets: every file under `public/` hash-compared against the origin — 116 non-video files byte-identical, all 23 videos size-matched. Three `android-chrome-*.png` replaced with origin bytes; `public/favicon.svg` deleted because the origin 404s it (the mirror head link is kept, replicating the broken link). `vendor/`+`workers/` are rebuild-local infra, excluded.
+- CSS cascade order: the source bundle emits layout utilities (`.grid`, `.col-*`, `lg:/xl:/md:` variants) at the END of the stylesheet; the rebuild had them first, so same-specificity conflicts resolved backwards — concretely `.ui-project-media-items{display:flex}` beat `lg:grid` and collapsed the project media grid to a full-width column. Utilities moved to the end; project media rects now match live pixel-for-pixel at 1440 (x619/w647 for the col-start-7 block, y-positions incl. next-project at 3952 vs the previous 3000px phantom gap).
+- Root ladder: `--px/--py` restored to source values (1.5rem base; 4.5rem/3.25rem at min-width:1000 — the bundle has two min-1000 blocks and the later wins; the rebuild used invented clamp() approximations that matched only at >=1370px).
+- Project-page fog: work scene (env dome/floor) now renders on project views too (`sceneWrap.visible ||= isProjectView`), matching source rendering every scene per frame. Live-vs-local project row-luminance mean |delta| dropped 38.3 -> 4.5 (home 3.9, about ~3: all at noise level).
+- Full CSS property diff (all properties, all shared selectors): 2 remaining mismatches, both mechanism-equivalent and intentional: `.ui-footer{bottom}` (rebuild positions the fixed home footer via its own scoped rule) and `.ui-nav-a{pointer-events}` (source: CSS `all` + JS disables until reveal; rebuild: CSS `none` + JS enables on reveal). Additional parity picked up: mobile `.c-button` block (3.75rem height, 3.5rem icon via `--icon-size`), `--icon-size`/`--cta-size` var mechanisms, `--expo-out`/`--circ-out` easing names, `.ui-progressbar` z-index 1000, `a{text-decoration:inherit}`, `.ui-header-primary` padding 2.8125rem, `.ui-work-ul` mobile bottom 4rem, source font fallback chain.
+- Gates: build, renderer audit, home desktop+mobile, about, media, thumb spotlight, preload-state — all green post-change (`/tmp/rd-g-*`, `/tmp/rd-h-*`).
 
 ### 2026-07-19 Route-swap view fade batch
 
