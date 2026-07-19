@@ -1445,9 +1445,8 @@ function initViewLifecycle(animate = true) {
   }
 
   if (!animate) {
-    view.style.opacity = "1";
+    gsap.fromTo(view, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "linear" });
     const reveal = () => {
-      gsap.killTweensOf(view);
       gsap.to(view, { opacity: 1, duration: 0.5, ease: "linear" });
     };
     window.addEventListener("rd:page-entered", reveal, { once: true });

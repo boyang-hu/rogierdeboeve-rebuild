@@ -38,6 +38,12 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 
 ## Latest Evidence
 
+### 2026-07-19 Route-swap view fade batch
+
+- Project/route transitions flashed full content for a frame before intro tweens applied their from-states. Source appends the incoming view at CSS opacity 0 and fades it in 0.5s linear via the view's `animateIn`; the rebuild's swap branch instead popped the view to `opacity:1` instantly. `initViewLifecycle`'s swap path now runs the source `fromTo(0 -> 1, 0.5s linear)` synchronously before the first paint, masking late-arriving intro from-states. Verified with staged captures 700ms/1200ms into home->project and project->project transitions (`/tmp/rd-flow/p*-enter-*.png`) — content fades in gradually.
+- Project bottom videos investigated end-to-end: all 23 mp4 files serve 200; WebGL video planes render on direct load, home->project, and project->project (`/tmp/rd-flow/p1-videos.png`, `p2-videos.png`); with autoplay denied the VideoTexture still shows the first frame. Not reproducible on the current build. Known implementation divergence kept: source routes video bytes through a `videoWorker` (blob URL) while the rebuild sets `video.src` directly with IntersectionObserver lazy-load.
+
+
 ### 2026-07-19 Open-items closure batch
 
 - Character `K1` composite restored (`webgl.ts`): the character scene now renders to `characterRawTarget` (depth-buffered — the documented live-baseline divergence moved here) and is composited into `characterTarget` through a new `Y1`-equivalent material (fragment mirrors source `q1`: `contrast(rgb, 1.65)` then `saturation(rgb, .5)`, tonemapping include inert under `toneMapped:false`, unused `tBloom/tFluid/tBlur/tMouseSim` + bool uniforms carried for constructor parity; vertex = source `el` == `sourceMatrixFullscreenVertex`). The spotlight keeps projecting `characterTarget.texture`. Head highlights now read desaturated/high-contrast like live.
