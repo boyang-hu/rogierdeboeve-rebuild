@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Route-transition color ramp (.c-color transition removed) + TO INDEX inheritance fix |
+| Latest closed batch | Project title descender clip fix; prior: color ramp + TO INDEX inheritance |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -68,6 +68,10 @@ Everything else is compatible: `dist/404.html` is byte-identical to home (exactl
 
 
 ## Latest Evidence
+
+### 2026-07-19 Project title descender clip fix
+
+- Project titles clipped descenders (the "g" in Thoughtlab). The rebuild had invented `.ui-project-content-header .ts-2, .ui-project-info-item { overflow: hidden }` as a reveal mask; source has NO overflow on either (title/info reveals are unmasked y+opacity fromTo tweens — verified against bundle CSS), so descenders overflow the line-height:1 box freely. Invented rules removed (plus the redundant scoped `.ts-2>span` duplicate); both sites now measure `overflow:visible` with identical box heights on `/thoughtlab/`. Gates: media/home green.
 
 ### 2026-07-19 Route-transition color ramp fix
 

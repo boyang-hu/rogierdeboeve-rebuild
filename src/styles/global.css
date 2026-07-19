@@ -1841,14 +1841,6 @@ html.is-mobile .preloader-cta-2 {
   justify-content: space-between;
 }
 
-.ui-project-content-header .ts-2,
-.ui-project-info-item {
-  overflow: hidden;
-}
-
-.ui-project-content-header .ts-2 > span {
-  display: block;
-}
 
 .ui-project-media-items {
   display: flex;
