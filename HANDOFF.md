@@ -19,8 +19,8 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | Preloader entry-sequence parity: pre-enter hidden states, ANIMATE_IN gating, header version/name/availability DOM, nav icon placement |
-| Last source-backed code batch | Same batch (2026-07-19) |
+| Latest closed batch | About-page parity: source typography (letter-spacing/responsive sizes/root font scope), character scene (camera 55/lights/model transform/scale), about direct-load work-scene rendering |
+| Last source-backed code batch | Same batch (2026-07-19); preloader entry-sequence batch closed same day |
 | Current priority | Do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
 | Expected worktree | Clean after the Phase 6 docs commit |
@@ -38,7 +38,21 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 
 ## Latest Evidence
 
-The 2026-07-19 preloader entry-sequence batch was validated against `http://127.0.0.1:5173/` (static `serve.mjs` over a fresh `dist/`). Reported symptom: during preload, the whole home UI (work list, INDEX title, nav, footer, header description/availability) was already visible. Source model (attributed before patching): mirror ships `<body style="opacity: 0;">` cleared by the preloader's `init` (`document.body.style=""`); CSS defaults keep everything masked (`.ui-main [data-view]{opacity:0}`, `.ui-header-secondary .ts-m>*` at `102%`, part-inners at `130%`, `.ui-nav-a-inner` at `102%`, `.ui-nav-mobile{opacity:0}`); during preload only `Ki.animateVersionIn()`, `Ki.animateNameIn()`, and the canvas `J.animateIn()` run; everything else waits for the Enter click (`ANIMATE_IN` -> view `animateIn` 0.5s linear fade + `Tr`/`Ar` nav + description/availability + title/footer/work reveals).
+### 2026-07-19 About-page parity batch
+
+Reported symptoms: character block-matrix look/rotation wrong, a background animation missing, fonts inconsistent. All fixes attributed to the source bundle/CSS/origin assets first:
+
+- Typography (`global.css`): base `.ts-1/.ts-2/.ts-3/.ts-p` restored to source (`letter-spacing:-.03em`, `.ts-1` 2rem base + 2.25rem@1000 + 2.625rem@1280, `.ts-p` mobile `1rem/1.625/-.01em`, `.ts-2>span`, `.ts-p br` rules); root `font-size: clamp(...)` scoped to `min-width:1000px` (source top-level uses browser default); invented mobile `html{16px}`/`.ts-*` overrides removed. Font binaries verified byte-identical to origin `/fonts/*` (mirror never captured them). Live/local heading+paragraph line wraps now match.
+- Character scene (`webgl.ts`): camera restored to source `Iu` default (FOV 55, pos `(0,0,5)`, near 1 far 2000; was invented FOV 30 @ z=12); lights restored to source `J1` (Ambient `#fff` 5, Directional `#ff9d00` 3 @ `(2,-1,-1)`, Directional `blue` 2 @ `(-1,1,0)`; was white 1.2/2.5); scene background black (linear->sRGB); `me.gltf` used as-is per source `eD` (`gltf.scene.children[0]`, no rotation flip / bounding-box normalize / recenter — origin model ships intrinsic scale 31.17); body group position `(0,-.05,0)`, scale 0.125 initial, resize `>=1000 ? 0.145 : 0.085`. Model/texture files verified byte-identical to origin.
+- About direct-load rendering (`webgl.ts` tick): work scene render was gated on `sceneWrap.visible` (home work items exist), so a direct `/about/` load rendered a black canvas (nav-from-home worked, which masked it). Gate now also passes when `aboutBlocks`/`floatingBlocks` groups are visible — source `nD.update` renders all scenes every frame.
+
+Known remaining divergence (next batch): about background fog/floating-block brightness vs live (`p1.setLights`/darken chain on about not yet attributed); character composite runs without the source `K1` composite pass.
+
+Validated with: build; home desktop output probe (`/tmp/rd-ab-home`), about probe (`/tmp/rd-ab-about`), project media probe (`/tmp/rd-ab-media`), thumb spotlight probe (`/tmp/rd-ab-thumb`); side-by-side live-vs-local headless captures (`/tmp/rd-about-live`, `/tmp/rd-about-local4`) via scratchpad `capture-about.mjs` — head now renders with source lighting and auto-rotates ~1 rad/s on direct load.
+
+### 2026-07-19 preloader entry-sequence batch
+
+The preloader batch was validated against `http://127.0.0.1:5173/` (static `serve.mjs` over a fresh `dist/`). Reported symptom: during preload, the whole home UI (work list, INDEX title, nav, footer, header description/availability) was already visible. Source model (attributed before patching): mirror ships `<body style="opacity: 0;">` cleared by the preloader's `init` (`document.body.style=""`); CSS defaults keep everything masked (`.ui-main [data-view]{opacity:0}`, `.ui-header-secondary .ts-m>*` at `102%`, part-inners at `130%`, `.ui-nav-a-inner` at `102%`, `.ui-nav-mobile{opacity:0}`); during preload only `Ki.animateVersionIn()`, `Ki.animateNameIn()`, and the canvas `J.animateIn()` run; everything else waits for the Enter click (`ANIMATE_IN` -> view `animateIn` 0.5s linear fade + `Tr`/`Ar` nav + description/availability + title/footer/work reveals).
 
 Batch changes:
 

@@ -46,12 +46,18 @@
 html {
   min-height: 100%;
   font-family: var(--font-mono);
-  font-size: clamp(14px, 0.92593vw, 18px);
   line-height: 1;
   background: var(--bg);
   color: var(--fg);
   -webkit-font-smoothing: antialiased;
   scrollbar-width: none;
+}
+
+@media (min-width: 1000px) {
+  html {
+    font-size: 0.92593vw;
+    font-size: clamp(14px, 0.92593vw, 18px);
+  }
 }
 
 html::-webkit-scrollbar {
@@ -304,33 +310,72 @@ body.is-ready [data-view] {
   text-transform: uppercase;
 }
 
-.ts-1,
-.ts-2,
-.ts-3,
-.ts-p {
+.ts-1 {
   font-family: var(--font-sans);
+  font-style: normal;
   font-weight: 400;
-  letter-spacing: 0;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-size: 2rem;
 }
 
-.ts-1 {
-  font-size: 2.625rem;
-  line-height: 1;
+@media (min-width: 1000px) {
+  .ts-1 {
+    font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .ts-1 {
+    font-size: 2.625rem;
+  }
 }
 
 .ts-2 {
-  font-size: 1.75rem;
+  font-family: var(--font-sans);
   line-height: 1;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  font-size: 1.75rem;
+}
+
+.ts-2 > span {
+  display: block;
 }
 
 .ts-3 {
-  font-size: 1.5rem;
+  font-family: var(--font-sans);
   line-height: 1;
+  font-weight: 400;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
 }
 
 .ts-p {
+  font-family: var(--font-sans);
   font-size: 1.25rem;
+  font-style: normal;
+  font-weight: 400;
   line-height: 1.4;
+  letter-spacing: -0.03em;
+}
+
+@media (max-width: 999px) {
+  .ts-p {
+    font-size: 1rem;
+    line-height: 1.625;
+    letter-spacing: -0.01em;
+  }
+}
+
+.ts-p br {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .ts-p br {
+    display: block;
+  }
 }
 
 .c-color {
@@ -2193,26 +2238,6 @@ html.is-scrolled .c-scroll-cta {
   :root {
     --px: 1.5rem;
     --py: 2rem;
-  }
-
-  html {
-    font-size: 16px;
-  }
-
-  .ts-1 {
-    font-size: 2rem;
-  }
-
-  .ts-2 {
-    font-size: 1.85rem;
-  }
-
-  .ts-3 {
-    font-size: 1.55rem;
-  }
-
-  .ts-p {
-    font-size: 1rem;
   }
 
   .grid,

@@ -5167,10 +5167,11 @@ export class WebGLBackdrop {
   private thumbCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private mainCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private mainCameraDistance = 1000;
-  private characterCamera = new PerspectiveCamera(30, 1, 0.1, 100);
+  private characterCamera = new PerspectiveCamera(55, 1, 1, 2000);
   private mediaCamera = new PerspectiveCamera(55, 1, 1, 2000);
-  private characterAmbientLight = new AmbientLight(colorFrom("white"), 1.2);
-  private characterDirectionalLight = new DirectionalLight(colorFrom("white"), 2.5);
+  private characterAmbientLight = new AmbientLight(colorFrom("#fff"), 5);
+  private characterDirectionalLight = new DirectionalLight(colorFrom("#ff9d00"), 3);
+  private characterDirectionalLight2 = new DirectionalLight(colorFrom("blue"), 2);
   private sceneWrap = new Object3D();
   private blocksWrap = new Object3D();
   private aboutBlocks?: AuxiliaryBlockItem;
@@ -5630,7 +5631,7 @@ export class WebGLBackdrop {
     this.cameraOrigin.copy(this.cameraControllerGroup.position);
     this.thumbCamera.position.set(0, 0, 0);
     this.mainCamera.position.set(0, 0, this.mainCameraDistance);
-    this.characterCamera.position.set(0, 0, 12);
+    this.characterCamera.position.set(0, 0, 5);
     this.characterCamera.lookAt(0, 0, 0);
     this.mediaCamera.position.set(0, 0, 1000);
     this.mainScene.background = sourceLinearToSrgbColor(SOURCE_MAIN_SCENE_BACKGROUND, SOURCE_MAIN_SCENE_BACKGROUND);
@@ -5689,14 +5690,19 @@ export class WebGLBackdrop {
     this.thumbCompositeMaterial = this.createThumbCompositeMaterial();
     this.characterMaterial = this.createCharacterMaterial();
     this.characterFallbackMesh = new Mesh(new PlaneGeometry(2, 2), this.characterMaterial);
-    this.characterDirectionalLight.position.set(2, 3, 5);
-    this.characterBodyGroup.add(this.characterFallbackMesh);
+    this.characterDirectionalLight.position.set(2, -1, -1);
+    this.characterDirectionalLight2.position.set(-1, 1, 0);
+    this.characterScene.add(this.characterFallbackMesh);
     this.characterBodyGroup.add(this.characterModelRoot);
+    this.characterBodyGroup.position.set(0, -0.05, 0);
+    this.characterBodyGroup.scale.setScalar(0.125);
     this.characterRotatableMesh.add(this.characterBodyGroup);
     this.characterCameraPanGroup.add(this.characterRotatableMesh);
     this.characterScene.add(this.characterCameraPanGroup);
     this.characterScene.add(this.characterAmbientLight);
     this.characterScene.add(this.characterDirectionalLight);
+    this.characterScene.add(this.characterDirectionalLight2);
+    this.characterScene.background = sourceLinearToSrgbColor("black");
     this.floorMaterial = this.createFloorMaterial();
     this.floorPlane = new Mesh(new CircleGeometry(60, 32), this.floorMaterial);
     this.floorPlane.rotation.x = -Math.PI / 2;
@@ -7826,35 +7832,9 @@ void main() {
       "/models/me/me.gltf",
       (gltf) => {
         this.characterModelRoot.clear();
-        const model = gltf.scene;
-        model.rotation.set(0, Math.PI, 0);
-        model.updateMatrixWorld(true);
-        const box = new Box3().setFromObject(model);
-        const size = new Vector3();
-        box.getSize(size);
-        const maxSize = Math.max(size.x, size.y, size.z);
-        if (maxSize > 0) model.scale.multiplyScalar(4.8 / maxSize);
-        model.updateMatrixWorld(true);
-        const centeredBox = new Box3().setFromObject(model);
-        const center = new Vector3();
-        centeredBox.getCenter(center);
-        model.position.sub(center);
-        model.position.y -= 0.15;
-        model.traverse((child) => {
-          if (!(child instanceof Mesh)) return;
-          child.frustumCulled = false;
-          if (Array.isArray(child.material)) {
-            child.material.forEach((material) => {
-              material.depthWrite = true;
-              material.depthTest = true;
-            });
-          } else {
-            child.material.depthWrite = true;
-            child.material.depthTest = true;
-          }
-        });
+        const modelTextured = gltf.scene.children[0];
         this.characterFallbackMesh.visible = false;
-        this.characterModelRoot.add(model);
+        this.characterModelRoot.add(modelTextured);
         this.renderCharacterTarget();
       },
       undefined,
@@ -8785,6 +8765,7 @@ void main() {
     this.thumbTarget.setSize(thumbSize, thumbSize);
     this.thumbCompositeTarget.setSize(thumbSize, thumbSize);
     this.characterTarget.setSize(thumbSize, thumbSize);
+    this.characterBodyGroup.scale.setScalar(width >= 1000 ? 0.145 : 0.085);
     this.renderCharacterTarget();
     this.calcThumbItemWidth();
 
@@ -12615,7 +12596,9 @@ void main() {
     this.updateMediaPlanePositions();
 
     const isProjectView = document.body.classList.contains("is-project");
-    const hasHome = this.sceneWrap.visible;
+    const hasHome = this.sceneWrap.visible
+      || Boolean(this.aboutBlocks?.group.visible)
+      || Boolean(this.floatingBlocks?.group.visible);
     const hasMedia = this.mediaPlanes.some((plane) => plane.mesh.visible);
     const debugRawWorkComposite = this.debugPassOrder === "raw-work-composite";
 
