@@ -1643,11 +1643,6 @@ html.is-mobile .preloader-cta-2 {
   display: inline-flex;
   align-items: center;
   position: relative;
-  color: var(--muted);
-}
-
-.c-link:hover {
-  color: var(--fg);
 }
 
 .c-link .c-icon-arrow-border-hover {

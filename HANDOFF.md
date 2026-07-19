@@ -19,7 +19,7 @@ This is the resume sheet for the rebuild. Keep it current-only: replace stale de
 | --- | --- |
 | Active production phase | None |
 | Overall status | Phase 1 through Phase 6 are closed/guarded; latest post-phase source parity batch closed 2026-07-19 |
-| Latest closed batch | 1:1 self-audit: utility cascade order, px/py ladder, project fog, asset hashes, full CSS property diff |
+| Latest closed batch | TO INDEX inheritance fix (.c-link invented color removed); prior: 1:1 self-audit sweep |
 | Last source-backed code batch | Same batch (2026-07-19); three earlier same-day batches (about backdrop, about parity, preloader) |
 | Current priority | Owner is weighing the Open Decisions list below; do not patch unless a new source-owned mismatch is isolated |
 | Local service | Dev server is listening at `http://localhost:5173/`; older static service is also listening at `http://127.0.0.1:5174/` |
@@ -68,6 +68,10 @@ Everything else is compatible: `dist/404.html` is byte-identical to home (exactl
 
 
 ## Latest Evidence
+
+### 2026-07-19 TO INDEX color fix
+
+- Project pages' `TO INDEX` link (and its icon) stayed grey while the rest of the header took the project color. Source colors it purely by inheritance: the anchor is a bare `.c-link` inside `.ui-project-header.c-color` (inline color via `setMainColor`); the rebuild's invented `.c-link{color:var(--muted)}` + `:hover{color:var(--fg)}` blocked that inheritance. Rules removed; computed link color now matches live exactly (`rgb(255,54,43)` on demorgen, verified on both sites). Bonus verification: demorgen media rects are also pixel-identical live-vs-local. Gates: media/about/home probes green.
 
 ### 2026-07-19 Self-audit batch (1:1 verification sweep)
 
