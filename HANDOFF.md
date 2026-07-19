@@ -57,7 +57,11 @@ Visual/interaction parity is closed (live-vs-local pixel profiles at noise level
 - Git: ~111MB of tracked media in `public/` (largest file ~6MB, so no hard GitHub blocker). Before pushing to a remote decide: keep as-is (simplest, repo ~350MB with history), Git LFS, or media out-of-repo with a fetch script.
 - Small: move `typescript`/`@types/*` to devDependencies; archive the 8-9 orphaned scripts in `scripts/`; harden `serve.mjs` (bind 127.0.0.1 by default, real 404 status) only if it will ever face a network.
 
-### Deployment note (GitHub Pages)
+### Deployment note
+
+Deployed to a private VPS behind OpenResty; deployment tooling and server details are intentionally kept out of the repository (local-only files, gitignored). The GitHub Pages analysis below is kept for reference.
+
+#### GitHub Pages (reference)
 
 The built `dist/` is fully static and self-contained — no server-side behavior is required (the `ENABLE_CONTENT_JSON_FALLBACK` logic in `serve.mjs` exists only for the legacy-mirror service on :5174; the rebuild bundle never requests `src/content/*.json`). GitHub Pages works with two conditions:
 
